@@ -45,13 +45,14 @@ static void serial_setbrg_port (unsigned port_base)
 {
         
     unsigned long baud_para;
-    
+    int clk81=clk_get_rate(UART_CLK_SRC);
+    if(clk81<0)
+        return;
      
     
     /* baud rate */
-//    baud_para=get_clk81()/(gd->baudrate*4) -1;
-//   baud_para=25000000/(115200*4) -1;
-#warning todo add implement here
+    baud_para=clk81/(gd->baudrate*4) -1;
+
     baud_para &= UART_CNTL_MASK_BAUD_RATE;
     
     /* write to the register */ 

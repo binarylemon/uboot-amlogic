@@ -70,7 +70,11 @@
 
 #endif
 #if CONFIG_SDIO_B1 || CONFIG_SDIO_A || CONFIG_SDIO_B || CONFIG_SDIO_C
-#define CONFIG_CMD_MMC   1
+#define CONFIG_CMD_MMC          1
+#define CONFIG_MMC              1
+#define CONFIG_DOS_PARTITION    1
+#define CONFIG_AML_SDIO         1
+#define CONFIG_GENERIC_MMC      1
 #endif
 
 #if CONFIG_NAND_AML_M1 || CONFIG_AMLOGIC_SPI_FLASH

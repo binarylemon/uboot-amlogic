@@ -24,6 +24,8 @@
 #else
 #error Please define CONFIG_CONS_INDEX==[0|1]
 #endif
+#include "clock.h"
+#define UART_CLK_SRC CLK_CLK81
 #define UART_PORT_0 UART0_WFIFO
 #define UART_PORT_1 UART1_WFIFO
 #define UART_WFIFO      0
