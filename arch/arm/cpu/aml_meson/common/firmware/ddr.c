@@ -434,7 +434,8 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	        serial_put_hex(ret,32);
 
 	}
+	serial_puts("\nDDR Init Finish\n");
 
-	ddr_start_again=ret?1:ddr_start_again;
+//	ddr_start_again=ret?1:ddr_start_again;
 	return ret;
 }

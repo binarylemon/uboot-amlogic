@@ -32,7 +32,7 @@
 #define MAGIC_WORD2         0x3130304e
 #define CONFIG_ROMBOOT_READ_SIZE    6*1024
 #define READ_SIZE       	6*1024      // memory size for data reading
-
+#define CONFIG_NAND_PAGES         1024
 #define ROM_BOOT_INFO                               (AHB_SRAM_BASE + 0x1f00)
 #define MAGIC_STRUCT_OFF							(AHB_SRAM_BASE +0x1b0)
 /**

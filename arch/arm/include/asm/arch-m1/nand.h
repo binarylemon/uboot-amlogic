@@ -1,33 +1,25 @@
 
-#ifndef NAND_H_INCLUDED
-#define NAND_H_INCLUDED
-#include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
-#include <common.h>
-#include "regs.h"
+#ifndef _ASM_NAND_H_INCLUDED
+#define _ASM_NAND_H_INCLUDED
+//This File only include the register define relative code 
+//It should describe some 
 #include "reg_addr.h"
 
 /** Register defination **/
 
-#define NAND_SYS_CLK_NAME	  "clk81"
 #define NAND_CYCLE_DELAY	  65
-#define NAND_BOOT_NAME		  "nand0"
-#define NAND_NORMAL_NAME	  "nand1"
-#define NAND_MULTI_NAME		  "nand2"
 
-#define NAND_CONVERST_ADDR	  0xa0000000
-
-#define NFC_BASE			  CBUS_REG_ADDR(NAND_CMD)
-#define NFC_OFF_CMD           ((NAND_CMD -NAND_CMD)<<2)
-#define NFC_OFF_CFG           ((NAND_CFG -NAND_CMD)<<2)
-#define NFC_OFF_DADR          ((NAND_DADR-NAND_CMD)<<2)
-#define NFC_OFF_IADR          ((NAND_IADR-NAND_CMD)<<2)
-#define NFC_OFF_BUF           ((NAND_BUF -NAND_CMD)<<2)
-#define NFC_OFF_INFO          ((NAND_INFO-NAND_CMD)<<2)
-#define NFC_OFF_DC            ((NAND_DC  -NAND_CMD)<<2)
-#define NFC_OFF_ADR           ((NAND_ADR -NAND_CMD)<<2)
-#define NFC_OFF_DL            ((NAND_DL  -NAND_CMD)<<2)
-#define NFC_OFF_DH            ((NAND_DH  -NAND_CMD)<<2)
+#define NFC_BASE			  P_NAND_CMD
+#define NFC_OFF_CMD           ((P_NAND_CMD -P_NAND_CMD))
+#define NFC_OFF_CFG           ((P_NAND_CFG -P_NAND_CMD))
+#define NFC_OFF_DADR          ((P_NAND_DADR-P_NAND_CMD))
+#define NFC_OFF_IADR          ((P_NAND_IADR-P_NAND_CMD))
+#define NFC_OFF_BUF           ((P_NAND_BUF -P_NAND_CMD))
+#define NFC_OFF_INFO          ((P_NAND_INFO-P_NAND_CMD))
+#define NFC_OFF_DC            ((P_NAND_DC  -P_NAND_CMD))
+#define NFC_OFF_ADR           ((P_NAND_ADR -P_NAND_CMD))
+#define NFC_OFF_DL            ((P_NAND_DL  -P_NAND_CMD))
+#define NFC_OFF_DH            ((P_NAND_DH  -P_NAND_CMD))
 
 /*
    Common Nand Read Flow
@@ -137,7 +129,6 @@
 #define NFC_CMDFIFO_SIZE()                  ((NFC_INFO_GET()>>20)&0x1f)
 #define NFC_CHECEK_RB_TIMEOUT()             ((NFC_INFO_GET()>>25)&0x1)
 #define NFC_GET_RB_STATUS(ce)               (((NFC_INFO_GET()>>26)&((~(ce>>10))&0xf))&0xf)
-typedef unsigned    t_nfc_info;
 
 #define NAND_INFO_DONE(a)         (((a)>>31)&1)
 #define NAND_ECC_ENABLE(a)        (((a)>>30)&1)

@@ -29,7 +29,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	int i;
 	unsigned * mem;
 	int rc=0;
-
+    serial_puts("HHH\n");
 	size=__TEXT_SIZE;
 	if(boot_id>1)
         boot_id=0;
@@ -52,10 +52,11 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         return ;
     }
 #endif    
+#if CONFIG_ENABLE_EXT_DEVICE_RETRY	
+
 	while(rc)
 	{
         debug_rom(__FILE__,__LINE__);	        
-#if CONFIG_ENABLE_EXT_DEVICE_RETRY	
         
 	    rc=fw_init_extl(por_cfg);//INTL device  BOOT FAIL
 	    if(rc)
@@ -66,8 +67,9 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK	        
 	    rc=check_sum(__TEXT_BASE);
 #endif	    
-#endif	    
 	}
+#endif	    
+
 	fw_print_info(por_cfg,1);
     return ;
 }

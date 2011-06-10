@@ -27,7 +27,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(SOC).o
 
-COBJS	= temp.o
+COBJS	= clock.o
 SOBJS = 
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)

@@ -18,7 +18,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	timer_init();
 
     serial_init(UART_CONTROL_SET(CONFIG_BAUDRATE,CONFIG_CRYSTAL_MHZ*1000000));
-	serial_put_dword(get_timer(0));
+	serial_put_dword(get_utimer(0));
 	writel(0,P_WATCHDOG_TC);//disable Watchdog
     debug_rom(__FILE__,__LINE__);
 

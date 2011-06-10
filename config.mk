@@ -46,7 +46,7 @@ PLATFORM_LDFLAGS =
 
 #########################################################################
 
-HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
+HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89\
 		  $(HOSTCPPFLAGS)
 HOSTSTRIP	= strip
 
@@ -88,7 +88,7 @@ endif
 # exceptions for files that aren't complaint.
 
 HOSTCFLAGS_NOPED = $(filter-out -pedantic,$(HOSTCFLAGS))
-HOSTCFLAGS	+= -pedantic
+#HOSTCFLAGS	+= -pedantic
 
 #########################################################################
 #

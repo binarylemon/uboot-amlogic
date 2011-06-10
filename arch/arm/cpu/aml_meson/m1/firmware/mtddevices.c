@@ -1,17 +1,20 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
-#include <asm/arch/nand.h>
+#if CONFIG_CMD_SF
 SPL_STATIC_FUNC void spi_init()
 {
     spi_pinmux_init();
     writel(__plls.spi_setting,P_SPI_FLASH_CTRL);
 }
+#endif
+#if CONFIG_CMD_NAND
+#include <asm/arch/nand.h>
 SPL_STATIC_FUNC void nf_pinmux_init()
 {
     NAND_IO_ENABLE(0);
 }
-SPL_STATIC_FUNC  void nf_reset(t_nf_ce ce)
+SPL_STATIC_FUNC  void nf_reset(unsigned ce)
 {
 	NFC_SEND_CMD(1<<31);
 
@@ -61,7 +64,7 @@ SPL_STATIC_FUNC  int nf_send_read_cmd(unsigned page_off,unsigned page_mode)
 	while (NFC_CMDFIFO_SIZE() > 0);      // all cmd is finished
 	return 0;
 }
-SPL_STATIC_FUNC int nf_read_dma(unsigned * dest, volatile unsigned * info,unsigned size,t_ecc_mode ecc_mode)
+SPL_STATIC_FUNC int nf_read_dma(unsigned * dest, volatile unsigned * info,unsigned size,unsigned ecc_mode)
 {
    unsigned cnt,i;
 
@@ -110,7 +113,7 @@ SPL_STATIC_FUNC void nf_cntl_init(const T_ROM_BOOT_RETURN_INFO* bt_info)
 /*
    Large Page NAND flash Read flow
 */
-#define CONFIG_NAND_INFO_DMA_ADDR 0x80000000
+#define CONFIG_NAND_INFO_DMA_ADDR CONFIG_SYS_SDRAM_BASE
 SPL_STATIC_FUNC int  nf_lp_read(volatile unsigned  dest, volatile unsigned size)
 {
 	volatile  	unsigned page_base,cnt,cur;
@@ -185,3 +188,4 @@ SPL_STATIC_FUNC int nf_sp_read(unsigned dest,unsigned size)
 }
 
 
+#endif

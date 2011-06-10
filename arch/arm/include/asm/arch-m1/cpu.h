@@ -12,6 +12,10 @@
 #error please define CONFIG_M1
 #endif
 //U boot code control
+
+//timer
+#define CONFIG_SYS_HZ 1000
+
 #define CONFIG_SYS_NO_FLASH 1
 #define CONFIG_NR_DRAM_BANKS 1
 
@@ -37,14 +41,21 @@
 /** Internal storage setting **/
 //size Limitation
 //#include "romboot.h"
-#warning todo implement it 
+#warning todo implement CONFIG_BOARD_SIZE_LIMIT 
 //#define CONFIG_BOARD_SIZE_LIMIT 
-#define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
+
 
 #ifdef CONFIG_CMD_NAND
 #define CONFIG_NAND_AML_M1 1
 #define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of */
 #define CONFIG_SYS_NAND_MAX_CHIPS	4
+#ifndef CONFIG_NAND_SP_BLOCK_SIZE
+#define CONFIG_NAND_SP_BLOCK_SIZE 32
+#endif
+#warning todo implement nand driver later
+#define CONFIG_SYS_MAX_NAND_DEVICE  1  //make uboot happy
+#define CONFIG_SYS_NAND_BASE_LIST   {0}//make uboot happy
+//#define CONFIG_SYS_NAND_BASE 0 //make uboot happy
 #endif
 
 #ifdef CONFIG_CMD_SF
@@ -57,6 +68,9 @@
 //#define CONFIG_SPI_FLASH_STMICRO    1
 #define CONFIG_SPI_FLASH_WINBOND    1
 
+#endif
+#if CONFIG_SDIO_B1 || CONFIG_SDIO_A || CONFIG_SDIO_B || CONFIG_SDIO_C
+#define CONFIG_CMD_MMC   1
 #endif
 
 #if CONFIG_NAND_AML_M1 || CONFIG_AMLOGIC_SPI_FLASH

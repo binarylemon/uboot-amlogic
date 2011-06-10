@@ -350,7 +350,7 @@ $(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
 else
 $(obj)u-boot.bin:	$(obj)firmware.bin $(obj)u-boot-orig.bin 
 endif
-	$(obj)tools/convert -soc $(SOC) -o $@ -firmware $(obj)firmware.bin $(obj)u-boot-orig.bin
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $(obj)u-boot-orig.bin -o $@
 $(obj)u-boot-orig.bin:	$(obj)u-boot
 endif
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@

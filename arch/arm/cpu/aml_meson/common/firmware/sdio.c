@@ -135,7 +135,7 @@ static short sdio_send_cmd(unsigned cmd,unsigned arg,unsigned time,short err)
 {
     writel(arg,P_CMD_ARGUMENT);
     writel(cmd,P_CMD_SEND);
-    unsigned time_b=get_timer(0);
+    unsigned time_b=get_utimer(0);
     if (wait_busy(time))
     {
         return err;
@@ -306,7 +306,7 @@ SPL_STATIC_FUNC short sdio_init(unsigned dev)
         if(error)
             return error;
     }
-    unsigned time_cal=get_timer(0);
+    unsigned time_cal=get_utimer(0);
     while (retry < VOLTAGE_VALIDATION_RETRY) {
         if(retry_app_cmd >= APP55_RETRY)
         {
@@ -371,7 +371,7 @@ SPL_STATIC_FUNC short sdio_init(unsigned dev)
         retry++;
     }
     serial_put_dword(retry);
-    serial_put_dword(get_timer(time_cal));
+    serial_put_dword(get_utimer(time_cal));
     if (retry >= VOLTAGE_VALIDATION_RETRY) {
         return ERROR_VOLTAGE_VALIDATION;
     }
