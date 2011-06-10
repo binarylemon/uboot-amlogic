@@ -8,6 +8,7 @@
 
 #ifndef _M1_ROMBOOT_H_
 #define _M1_ROMBOOT_H_
+#include "cpu.h"
 #define POR_ROM_BOOT_ENABLE                         (1<<7)
 #define POR_JTAG_ENABLE                             (1<<6)
 //Power On setting
@@ -23,6 +24,7 @@
 #define POR_SDIO_C_ENABLE                           (2<<8)
 //#define POR_SDIO_B1_ENABLE                          (0<<8)
 #define POR_GET_SDIO_CFG(a)                         ((a&POR_SDIO_CFG_MASK))
+#define POR_ASSIST_CONFIG                           P_ASSIST_POR_CONFIG
 /*
  * "MESON001"
  */
@@ -30,8 +32,6 @@
 #define MAGIC_WORD2         0x3130304e
 #define READ_SIZE       	6*1024      // memory size for data reading
 
-#define SPI_MEM_BASE                                0x40000000
-#define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
 #define ROM_BOOT_INFO                               (AHB_SRAM_BASE + 0x1f00)
 #define MAGIC_STRUCT_OFF							(AHB_SRAM_BASE +0x1b0)
 /**

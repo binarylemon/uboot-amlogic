@@ -36,5 +36,15 @@
 #endif
 
 #define CONFIG_AML_ROMBOOT    1
+#define SPI_MEM_BASE                                0x40000000
+#define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
 
+
+#ifdef CONFIG_AML_ROMBOOT_SPL
+#define SPL_STATIC_FUNC     static
+#define SPL_STATIC_VAR      static
+#else
+#define SPL_STATIC_FUNC     
+#define SPL_STATIC_VAR      
+#endif
 #endif /* _CPU_H */

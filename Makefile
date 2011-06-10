@@ -531,8 +531,8 @@ unconfig:
 	@$(MKCONFIG) -A $(@:_config=)
 
 sinclude $(obj).boards.depend
-$(obj).boards.depend:	boards.cfg
-	awk '(NF && $$1 !~ /^#/) { print $$1 ": " $$1 "_config; $$(MAKE)" }' $< > $@
+$(obj).boards.depend:	boards.cfg	amlogic_boards.cfg
+	awk '(NF && $$1 !~ /^#/) { print $$1 ": " $$1 "_config; $$(MAKE)" }' $^ > $@
 
 #
 # Functions to generate common board directory names

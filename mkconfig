@@ -18,10 +18,9 @@ board=""
 vendor=""
 soc=""
 options=""
-
 if [ \( $# -eq 2 \) -a \( "$1" = "-A" \) ] ; then
 	# Automatic mode
-	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg` || {
+	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg amlogic_boards.cfg` || {
 		echo "make: *** No rule to make target \`$2_config'.  Stop." >&2
 		exit 1
 	}
@@ -30,6 +29,18 @@ if [ \( $# -eq 2 \) -a \( "$1" = "-A" \) ] ; then
 	# add default board name if needed
 	[ $# = 3 ] && set ${line} ${1}
 fi
+
+#if [ \( $# -eq 3 \) -a \( "$1" = "-f" \) ] ; then
+#	# Automatic mode
+#	line=`egrep -i "^[[:space:]]*${3}[[:space:]]" $2 ` || {
+#		echo "make: *** No rule to make target \`$3_config'.  Stop." >&2
+#		exit 1
+#	}
+#
+#	set ${line}
+#	# add default board name if needed
+#	[ $# = 3 ] && set ${line} ${1}
+#fi
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
