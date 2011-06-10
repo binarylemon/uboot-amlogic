@@ -30,6 +30,7 @@
  */
 #define MAGIC_WORD1         0x4f53454d
 #define MAGIC_WORD2         0x3130304e
+#define CONFIG_ROMBOOT_READ_SIZE    6*1024
 #define READ_SIZE       	6*1024      // memory size for data reading
 
 #define ROM_BOOT_INFO                               (AHB_SRAM_BASE + 0x1f00)

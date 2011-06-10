@@ -278,7 +278,7 @@ else
 PLATFORM_LIBGCC = -L $(shell dirname `$(CC) $(CFLAGS) -print-libgcc-file-name`) -lgcc
 endif
 PLATFORM_LIBS += $(PLATFORM_LIBGCC)
-export PLATFORM_LIBS
+export PLATFORM_LIBS PLATFORM_LIBGCC
 
 # Special flags for CPP when processing the linker script.
 # Pass the version down so we can handle backwards compatibility
@@ -321,7 +321,17 @@ BOARD_SIZE_CHECK =
 endif
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
+ifneq ($(CONFIG_AML_MESON),y)
+ALL += $(obj)u-boot.srec
+else
+ALL += $(obj)u-boot-orig.bin
+ALL += $(obj)firmware.bin
+endif
+ALL += $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
+ifeq  ($(CONFIG_SELF_COMPRESS),y)
+ALL += $(obj)u-boot-comp.bin
+endif
+
 
 all:		$(ALL)
 
@@ -330,10 +340,27 @@ $(obj)u-boot.hex:	$(obj)u-boot
 
 $(obj)u-boot.srec:	$(obj)u-boot
 		$(OBJCOPY) -O srec $< $@
-
+ifneq ($(CONFIG_AML_MESON),y)
 $(obj)u-boot.bin:	$(obj)u-boot
+else
+ifeq ($(CONFIG_SELF_COMPRESS),y)
+$(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
+	$(obj)/pack -comp $(CONFIG_COMPRESS_METHOD) -o $@ $<
+$(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
+else
+$(obj)u-boot.bin:	$(obj)firmware.bin $(obj)u-boot-orig.bin 
+endif
+	$(obj)tools/convert -soc $(SOC) -o $@ -firmware $(obj)firmware.bin $(obj)u-boot-orig.bin
+$(obj)u-boot-orig.bin:	$(obj)u-boot
+endif
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 		$(BOARD_SIZE_CHECK)
+ifeq ($(CONFIG_AML_MESON),y)
+firmware:$(obj)firmware.bin
+.PHONY :	$(obj)firmware.bin
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE)
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware FIRMWARE=$@
+endif
 
 $(obj)u-boot.ldr:	$(obj)u-boot
 		$(CREATE_LDR_ENV)
@@ -372,7 +399,7 @@ GEN_UBOOT = \
 		sed  -n -e 's/.*\($(SYM_PREFIX)__u_boot_cmd_.*\)/-u\1/p'|sort|uniq`;\
 		cd $(LNDIR) && $(LD) $(LDFLAGS) $(LDFLAGS_$(@F)) $$UNDEF_SYM $(__OBJS) \
 			--start-group $(__LIBS) --end-group $(PLATFORM_LIBS) \
-			-Map u-boot.map -o u-boot
+			-Map $(obj)u-boot.map -o u-boot
 $(obj)u-boot:	depend \
 		$(SUBDIRS) $(OBJS) $(LIBBOARD) $(LIBS) $(LDSCRIPT) $(obj)u-boot.lds
 		$(GEN_UBOOT)
@@ -1149,7 +1176,7 @@ clean:
 
 clobber:	clean
 	@find $(OBJTREE) -type f \( -name '*.depend' \
-		-o -name '*.srec' -o -name '*.bin' -o -name u-boot.img \) \
+		-o -name '*.srec' -o -name '*.bin' -o -name u-boot.img -o -name '*.d' \) \
 		-print0 \
 		| xargs -0 rm -f
 	@rm -f $(OBJS) $(obj)*.bak $(obj)ctags $(obj)etags $(obj)TAGS \

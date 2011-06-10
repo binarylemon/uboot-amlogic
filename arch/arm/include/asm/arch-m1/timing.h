@@ -30,6 +30,7 @@ struct ddr_set{
         unsigned       mcfg;
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;//400M for DDR 800 , 333M for DDR667
+        unsigned       ram_size;
 }__attribute__ ((packed));
 struct pll_clk_settings{
 	unsigned sys_pll_cntl;//0x7c

@@ -6,7 +6,10 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/io.h>
 #include <asm/arch/timing.h>
-SPL_STATIC_FUNC void pll_initial(struct pll_clk_settings * plls) 
+#include <asm/arch/romboot.h>
+#include <asm/arch/uart.h>
+SPL_STATIC_FUNC void serial_init(unsigned set);
+SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls) 
 {
     
 	writel(plls->sys_pll_cntl,P_HHI_SYS_PLL_CNTL);

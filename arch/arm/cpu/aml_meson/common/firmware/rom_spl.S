@@ -67,7 +67,11 @@ _READ_SIZE:
 __TEXT_BASE:
     .word TEXT_BASE
 __TEXT_SIZE:
+#ifdef CONFIG_BOARD_SIZE_LIMIT
+    .word CONFIG_BOARD_SIZE_LIMIT
+#else
     .word 0x60000 - READ_SIZE
+#endif    
 __ROM_STACK_END:
     .word ROM_STACK_END
 __BSS_START:

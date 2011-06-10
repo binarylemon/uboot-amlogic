@@ -12,15 +12,6 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/uart.h>
-#if (BOARD_UART_PORT!=UART_PORT_0) && (BOARD_UART_PORT!=UART_PORT_1)
-#if CONFIG_AML_DEF_UART==0
-#define BOARD_UART_PORT UART_PORT_0
-#elif CONFIG_AML_DEF_UART==1
-#define BOARD_UART_PORT UART_PORT_1
-#else
-#error IPL BOARD_UART_PORT configure Error .
-#endif
-#endif
 
 SPL_STATIC_FUNC void serial_init(unsigned set)
 {
@@ -30,9 +21,9 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    |UART_CNTL_MASK_RST_TX 
 	    |UART_CNTL_MASK_RST_RX 
 	    |UART_CNTL_MASK_CLR_ERR
-	,P_UART_CONTROL(BOARD_UART_PORT));
-    serial_hw_init();
-    clrbits_le32(P_UART_CONTROL(BOARD_UART_PORT),
+	,P_UART_CONTROL(UART_PORT_CONS));
+    serial_set_pin_port(UART_PORT_CONS);
+    clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),
 	    UART_CNTL_MASK_RST_TX | UART_CNTL_MASK_RST_RX | UART_CNTL_MASK_CLR_ERR);
     
 }
@@ -40,12 +31,12 @@ SPL_STATIC_FUNC void serial_putc(const char c)
 {
     if (c == '\n') 
     {
-        while ((readl(P_UART_STATUS(BOARD_UART_PORT)) & UART_STAT_MASK_TFIFO_FULL));
-        writel('\r', P_UART_WFIFO(BOARD_UART_PORT));
+        while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_FULL));
+        writel('\r', P_UART_WFIFO(UART_PORT_CONS));
     }
     /* Wait till dataTx register is not full */
-    while ((readl(P_UART_STATUS(BOARD_UART_PORT)) & UART_STAT_MASK_TFIFO_FULL));
-    writel(c, P_UART_WFIFO(BOARD_UART_PORT));
+    while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_FULL));
+    writel(c, P_UART_WFIFO(UART_PORT_CONS));
     /* Wait till dataTx register is empty */
 }
 /*
@@ -55,7 +46,7 @@ SPL_STATIC_FUNC void serial_putc(const char c)
 SPL_STATIC_FUNC
 int serial_tstc(void)
 {
-	return (readl(P_UART_STATUS(BOARD_UART_PORT)) & UART_STAT_MASK_RFIFO_CNT);
+	return (readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_RFIFO_CNT);
 
 }
 
@@ -67,16 +58,16 @@ int serial_getc(void)
 {
     unsigned char ch;   
     /* Wait till character is placed in fifo */
-  	while((readl(P_UART_STATUS(BOARD_UART_PORT)) & UART_STAT_MASK_RFIFO_CNT)==0) ;
+  	while((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_RFIFO_CNT)==0) ;
     
     /* Also check for overflow errors */
-    if (readl(P_UART_STATUS(BOARD_UART_PORT)) & (UART_STAT_MASK_PRTY_ERR | UART_STAT_MASK_FRAM_ERR))
+    if (readl(P_UART_STATUS(UART_PORT_CONS)) & (UART_STAT_MASK_PRTY_ERR | UART_STAT_MASK_FRAM_ERR))
 	{
-	    setbits_le32(P_UART_CONTROL(BOARD_UART_PORT),UART_CNTL_MASK_CLR_ERR);
-	    clrbits_le32(P_UART_CONTROL(BOARD_UART_PORT),UART_CNTL_MASK_CLR_ERR);
+	    setbits_le32(P_UART_CONTROL(UART_PORT_CONS),UART_CNTL_MASK_CLR_ERR);
+	    clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),UART_CNTL_MASK_CLR_ERR);
 	}
     
-    ch = readl(P_UART_RFIFO(BOARD_UART_PORT)) & 0x00ff;
+    ch = readl(P_UART_RFIFO(UART_PORT_CONS)) & 0x00ff;
     return ((int)ch);
 
 }

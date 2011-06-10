@@ -1,9 +1,9 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/io.h>
-#include <asm/arch/timming.h>
-#ifndef SPL_STATIC_FUNC 
-#define SPL_STATIC_FUNC 
+#include <asm/arch/timing.h>
+#ifndef SPL_STATIC_FUNC
+#define SPL_STATIC_FUNC
 #endif
 
 #define DDR_RSLR_LEN 6
@@ -11,8 +11,8 @@
 #define DDR_MAX_WIN_LEN (DDR_RSLR_LEN*DDR_RDGR_LEN)
 
 static unsigned ddr_start_again=1;
-#define APB_Wr(addr, data) WRITE_APB_REG(addr,data)
-#define APB_Rd(addr) READ_APB_REG(addr)
+#define APB_Wr WRITE_APB_REG
+#define APB_Rd READ_APB_REG
 
 #define NOP_CMD   0
 #define PREA_CMD   1
@@ -69,7 +69,7 @@ static void init_pctl(struct ddr_set * ddr_setting)
                   ( 0 << 0 ) ;              // dll_enable;       // 0=enable : 1=disable       (A0)
     mrs2_value = 0;
     mrs3_value = 0;
-    
+
     APB_Wr(PCTL_IOCR_ADDR, ddr_setting->iocr);
     //write memory timing registers
     APB_Wr(PCTL_TOGCNT1U_ADDR, 		ddr_setting->t_1us_pck);
@@ -103,7 +103,7 @@ static void init_pctl(struct ddr_set * ddr_setting)
     APB_Wr(PCTL_TDQS_ADDR, 	ddr_setting->t_dqs);
     //configure the PCTL for DDR2 SDRAM burst length = 4
    APB_Wr(PCTL_MCFG_ADDR, ddr_setting->mcfg);
-                   
+
     APB_Wr(PCTL_PHYCR_ADDR, APB_Rd(PCTL_PHYCR_ADDR)&(~0x100));
 
    // Don't do it for gates simulation.
@@ -294,7 +294,7 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 {
 	unsigned char Tra[4];
 	unsigned char chk[DDR_RSLR_LEN*DDR_RDGR_LEN];
-	
+
 	int i,j,k,t=0;
 
 	for (k = 0; k < ((ddr_setting->ddr_ctrl&(1<<7))?0x2:0x4); k++) {
@@ -306,7 +306,7 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 				if (!start_ddr_config()) {
 					return 1;
 				}
-                
+
 				// add for DTU
 				APB_Wr(PCTL_DTUWD0_ADDR, 0x55aa55aa);
 				APB_Wr(PCTL_DTUWD1_ADDR, 0xaa55aa55);
@@ -328,7 +328,7 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 				if(ddr_start_again){
 				    serial_puts("\ndtu windows:");
 				    serial_put_hex(i * 4 + j,8);
-				    
+
 				    chk[i * DDR_RDGR_LEN + j] = check_dtu();
 				    serial_puts("result windows :");
 				    serial_put_hex(chk[i * 4 + j],8);
@@ -342,17 +342,17 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 			Tra[k]=0;
 			serial_puts("\nlane");
 			serial_put_hex(k,8);
-				    
+
 			serial_puts(" Fail\n");
-				    
-			
+
+
 		}else{
 			serial_puts("\nlane");
 			serial_put_hex(k,8);
-				    
+
 			serial_puts(" Success");
 			serial_put_hex(Tra[k],8);
-			
+
 		}
 
 	}
@@ -368,18 +368,18 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 
 		return 1;
 	}
-	
+
 	init_dmc(ddr_setting);
     return 0;
 
 }
 static inline void hw_tran(void)
 {
-		
+
 	init_pctl(&__ddr_setting);
 	hw_training();
 	init_dmc(&__ddr_setting);
-	
+
 }
 static inline unsigned lowlevel_ddr(void)
 {
@@ -387,17 +387,17 @@ static inline unsigned lowlevel_ddr(void)
 }
 static inline unsigned lowlevel_mem_test_device(void)
 {
-    return (unsigned)memTestDevice((volatile datum *)PHYS_MEMORY_START
-		    ,PHYS_MEMORY_SIZE);
+    return (unsigned)memTestDevice((volatile datum *)CONFIG_SYS_SDRAM_BASE
+		    ,__ddr_setting.ram_size);
 }
 static inline unsigned lowlevel_mem_test_data(void)
 {
-    return (unsigned)memTestDataBus((volatile datum *) PHYS_MEMORY_START);
+    return (unsigned)memTestDataBus((volatile datum *) CONFIG_SYS_SDRAM_BASE);
 }
 static inline unsigned lowlevel_mem_test_addr(void)
 {
-    return (unsigned)memTestAddressBus((volatile datum *)PHYS_MEMORY_START,
-				    PHYS_MEMORY_SIZE);
+    return (unsigned)memTestAddressBus((volatile datum *)CONFIG_SYS_SDRAM_BASE,
+				    __ddr_setting.ram_size);
 }
 
 static const unsigned ( * mem_test[])(void)={
@@ -421,20 +421,20 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
     serial_putc('\n');
     ddr_pll_init(&__ddr_setting);
 
-#ifdef CONFIG_ENABLE_MEM_DEVICE_TEST    
+#ifdef CONFIG_ENABLE_MEM_DEVICE_TEST
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE+ddr_start_again&&ret==0;i++)
-#else    
+#else
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&ret==0;i++)
-#endif    
+#endif
 	{
-	        por_cfg=mem_test[i]();
+	        ret=mem_test[i]();
 	        serial_puts("\nStage ");
 	        serial_put_hex(i,8);
 	        serial_puts(" Result ");
-	        serial_put_hex(por_cfg,32);
-	        
+	        serial_put_hex(ret,32);
+
 	}
-	
+
 	ddr_start_again=ret?1:ddr_start_again;
-	return por_cfg;
+	return ret;
 }

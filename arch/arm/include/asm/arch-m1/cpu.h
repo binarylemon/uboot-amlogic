@@ -17,7 +17,7 @@
 
 #define CONFIG_BAUDRATE                 115200
 #define CONFIG_SYS_BAUDRATE_TABLE       { 9600, 19200, 38400, 57600, 115200}
-
+#define CONFIG_SERIAL_MULTI             1
 #define CONFIG_SYS_SDRAM_BASE   0x80000000
 
 #define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0x8F800000)
@@ -31,7 +31,15 @@
 #define CONFIG_SYS_CBSIZE          1024
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 
+#define CONFIG_L2_OFF
+/** Timer relative Configuration **/
+#define CONFIG_CRYSTAL_MHZ  24
 /** Internal storage setting **/
+//size Limitation
+//#include "romboot.h"
+#warning todo implement it 
+//#define CONFIG_BOARD_SIZE_LIMIT 
+#define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 #ifdef CONFIG_CMD_NAND
 #define CONFIG_NAND_AML_M1 1

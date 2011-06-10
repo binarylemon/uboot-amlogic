@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2000-2003
+# (C) Copyright 2000, 2001, 2002
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 # See file CREDITS for list of people who contributed to this
@@ -23,20 +23,22 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(CPU).o
+LIB	= $(obj)lib$(BOARD).o
 
-START	:= start.o
-COBJS	:= cpu.o timer.o reset.o board.o serial.o
-COBJS  += syslib.o
+CSRCS	:= $(wildcard *.c */*.c)
+COBJS	:= $(CSRCS:%.c=%.o)
 
-SRCS	:= $(START:.o=.S) $(COBJS:.o=.c)
+SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
-START	:= $(addprefix $(obj),$(START))
 
-all:	$(obj).depend $(START) $(LIB)
-
-$(LIB):	$(OBJS)
+$(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+
+clean:
+	rm -f $(OBJS)
+
+distclean:	clean
+	rm -f $(LIB) core *.bak $(obj).depend
 
 #########################################################################
 
@@ -44,5 +46,3 @@ $(LIB):	$(OBJS)
 include $(SRCTREE)/rules.mk
 
 sinclude $(obj).depend
-
-#########################################################################

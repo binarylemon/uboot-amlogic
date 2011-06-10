@@ -58,7 +58,6 @@ done
 
 # Strip all options and/or _config suffixes
 CONFIG_NAME="${1%_config}"
-echo CONFIG_NAME=$CONFIG_NAME $1
 [ "${BOARD_NAME}" ] || BOARD_NAME="${1%_config}"
 
 arch="$2"
@@ -158,8 +157,9 @@ else
 	> config.h		# Create new config file
 fi
 echo "/* Automatically generated - do not edit */" >>config.h
+tmp_board="`echo ${board} | sed 's/[^A-Za-z0-9]\{1,\}/_/g'`"
 declare -u tmp_targets
-tmp_targets="${cpu} ${soc}"
+tmp_targets="${cpu} ${soc} ${tmp_board}"
 
 for i in ${TARGETS} ${tmp_targets}; do
 	i="`echo ${i} | sed '/=/ {s/=/\t/;q } ; { s/$/\t1/ }'`"

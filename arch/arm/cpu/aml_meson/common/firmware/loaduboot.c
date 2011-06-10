@@ -5,8 +5,8 @@
 #ifndef CONFIG_AML_UBOOT_MAGIC
 #define CONFIG_AML_UBOOT_MAGIC 0x12345678
 #endif
-
-SPL_STATIC_FUNC short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
+#ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
+SPL_STATIC_FUNC short check_sum(unsigned * addr)
 {
     int i;
     unsigned short * p=(unsigned short *)addr;
@@ -19,8 +19,8 @@ SPL_STATIC_FUNC short check_sum(unsigned * addr,unsigned short check_sum,unsigne
 #endif        
     return 0;
 }
-
-SPL_STATIC_FUNC int loaduboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
+#endif
+SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
 	unsigned por_cfg=romboot_info->por_cfg;
@@ -39,24 +39,33 @@ SPL_STATIC_FUNC int loaduboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	}else{
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size); 
 	}
-	
+#ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK	
 	if(!rc&&check_sum(__TEXT_BASE)==0)
 	{
 	    fw_print_info(por_cfg,boot_id);
         return ;
     }
+#else
+    if(rc==0)
+	{
+	    fw_print_info(por_cfg,boot_id);
+        return ;
+    }
+#endif    
 	while(rc)
 	{
-	    if(serial_tstc())
-	        debugrom();
-#if CONFIG_DIABLE_EXT_DEVICE_RETRY	        
+        debug_rom(__FILE__,__LINE__);	        
+#if CONFIG_ENABLE_EXT_DEVICE_RETRY	
+        
 	    rc=fw_init_extl(por_cfg);//INTL device  BOOT FAIL
 	    if(rc)
 	        continue;
 	    rc=fw_load_extl(por_cfg,__TEXT_BASE,size);
 	    if(rc)
 	        continue;
+#ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK	        
 	    rc=check_sum(__TEXT_BASE);
+#endif	    
 #endif	    
 	}
 	fw_print_info(por_cfg,1);

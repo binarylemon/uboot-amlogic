@@ -14,6 +14,16 @@
 #ifndef __MESON_FIRM_UART_H_
 #define __MESON_FIRM_UART_H_
 #include "registers.h"
+#ifndef CONFIG_CONS_INDEX
+#error Please define CONFIG_CONS_INDEX==[0|1]
+#endif
+#if CONFIG_CONS_INDEX==0
+#define UART_PORT_CONS UART_PORT_0
+#elif CONFIG_CONS_INDEX==1
+#define UART_PORT_CONS UART_PORT_1
+#else
+#error Please define CONFIG_CONS_INDEX==[0|1]
+#endif
 #define UART_PORT_0 UART0_WFIFO
 #define UART_PORT_1 UART1_WFIFO
 #define UART_WFIFO      0

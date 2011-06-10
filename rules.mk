@@ -22,7 +22,6 @@
 #
 
 #########################################################################
-
 _depend:	$(obj).depend
 
 $(obj).depend:	$(src)Makefile $(TOPDIR)/config.mk $(SRCS) $(HOSTSRCS)

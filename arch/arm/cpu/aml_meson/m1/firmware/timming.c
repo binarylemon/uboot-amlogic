@@ -1,7 +1,8 @@
 #include <config.h>
 #include <asm/arch/io.h>
-#include <asm/arch/timming.h>
-SPL_STATIC_DATA struct ddr_set __ddr_setting=
+#include <asm/arch/cpu.h>
+#include <asm/arch/timing.h>
+SPL_STATIC_VAR struct ddr_set __ddr_setting=
 {
                     .cl             =   6,
                     .t_faw          =  20,
@@ -35,7 +36,7 @@ SPL_STATIC_DATA struct ddr_set __ddr_setting=
 				    .ddr_pll_cntl   =   0x110220,//400
 };
 
-SPL_STATIC_DATA struct pll_clk_settings __plls 
+SPL_STATIC_VAR struct pll_clk_settings __plls 
 ={
     .sys_pll_cntl=0x232,//1200M
 	.other_pll_cntl=0x00000219,//0x2d*24/2=540M

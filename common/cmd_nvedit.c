@@ -167,6 +167,7 @@ int do_env_print (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 int _do_env_set (int flag, int argc, char * const argv[])
 {
+    
 	bd_t  *bd = gd->bd;
 	int   i, len;
 	int   console = -1;

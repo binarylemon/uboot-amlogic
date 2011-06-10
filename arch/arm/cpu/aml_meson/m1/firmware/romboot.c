@@ -5,7 +5,7 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 {
     serial_puts("Boot from");
     if(stage==0){
-        serial_puts(" internal device "
+        serial_puts(" internal device ");
         switch(por_cfg&POR_INTL_CFG_MASK)
         {
     #if CONFIG_CMD_SF        

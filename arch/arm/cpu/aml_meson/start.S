@@ -295,9 +295,11 @@ cpu_init_crit:
 	 * basic memory. Go here to bump up clock rate and handle
 	 * wake up conditions.
 	 */
-	mov	ip, lr			@ persevere link reg across call
+/*	mov	ip, lr			@ persevere link reg across call
 	bl	lowlevel_init		@ go setup pll,mux,memory
 	mov	lr, ip			@ restore link
+	
+*/
 	mov	pc, lr			@ back to my caller
 /*
  *************************************************************************
