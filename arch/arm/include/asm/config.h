@@ -23,4 +23,7 @@
 
 #define CONFIG_LMB
 #define CONFIG_SYS_BOOT_RAMDISK_HIGH
+#if CONFIG_AML_MESON
+#include <asm/arch/cpu.h>
+#endif
 #endif

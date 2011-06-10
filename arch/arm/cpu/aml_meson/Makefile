@@ -1,9 +1,6 @@
 #
-# (C) Copyright 2006 - 2008
-# Texas Instruments, <www.ti.com>
-#
-# EVM uses OMAP3 (ARM-CortexA8) cpu
-# see http://www.ti.com/ for more information on Texas Instruments
+# (C) Copyright 2000-2003
+# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 # See file CREDITS for list of people who contributed to this
 # project.
@@ -23,11 +20,29 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307 USA
 #
-# Physical Address:
-# 8000'0000 (bank0)
-# A000/0000 (bank1)
-# Linux-Kernel is expected to be at 8000'8000, entry 8000'8000
-# (mem base + reserved)
 
-# For use with external or internal boots.
-CONFIG_SYS_TEXT_BASE = 0x80008000
+include $(TOPDIR)/config.mk
+
+LIB	= $(obj)lib$(CPU).o
+
+START	:= start.o
+COBJS	:= cpu.o
+COBJS  += syslib.o
+
+SRCS	:= $(START:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(COBJS))
+START	:= $(addprefix $(obj),$(START))
+
+all:	$(obj).depend $(START) $(LIB)
+
+$(LIB):	$(OBJS)
+	$(call cmd_link_o_target, $(OBJS))
+
+#########################################################################
+
+# defines $(obj).depend target
+include $(SRCTREE)/rules.mk
+
+sinclude $(obj).depend
+
+#########################################################################

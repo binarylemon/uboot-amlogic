@@ -5,9 +5,31 @@
 
 #ifndef _CPU_H
 #define _CPU_H
-#if CONFIG_AML_M1==0
-#error please define CONFIG_AML_MEASON_1
+#if CONFIG_AML_MESON==0
+#error please define CONFIG_AML_MESON
 #endif
+#if CONFIG_M1==0
+#error please define CONFIG_M1
+#endif
+//U boot code control
+#define CONFIG_SYS_NO_FLASH 1
+#define CONFIG_NR_DRAM_BANKS 1
+
+#define CONFIG_BAUDRATE                 115200
+#define CONFIG_SYS_BAUDRATE_TABLE       { 9600, 19200, 38400, 57600, 115200}
+
+#define CONFIG_SYS_SDRAM_BASE   0x80000000
+
+#define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0x8F800000)
+#define CONFIG_SYS_TEXT_BASE    0x8F800000
+#define CONFIG_SYS_MALLOC_LEN   (4<<20)
+#define CONFIG_ENV_SIZE         (16 * 1024)
+#define CONFIG_SYS_MAXARGS      16
+
+#define CONFIG_ENV_IS_NOWHERE    1
+#define CONFIG_SYS_LOAD_ADDR    0x82000000
+#define CONFIG_SYS_CBSIZE          1024
+#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 
 /** Internal storage setting **/
 

@@ -531,7 +531,7 @@ unconfig:
 	@$(MKCONFIG) -A $(@:_config=)
 
 sinclude $(obj).boards.depend
-$(obj).boards.depend:	boards.cfg	amlogic_boards.cfg
+$(obj).boards.depend:	boards.cfg	board/amlogic/boards.cfg
 	awk '(NF && $$1 !~ /^#/) { print $$1 ": " $$1 "_config; $$(MAKE)" }' $^ > $@
 
 #

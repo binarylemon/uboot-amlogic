@@ -20,7 +20,7 @@ soc=""
 options=""
 if [ \( $# -eq 2 \) -a \( "$1" = "-A" \) ] ; then
 	# Automatic mode
-	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg amlogic_boards.cfg` || {
+	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg board/amlogic/boards.cfg` || {
 		echo "make: *** No rule to make target \`$2_config'.  Stop." >&2
 		exit 1
 	}
@@ -157,8 +157,10 @@ else
 	> config.h		# Create new config file
 fi
 echo "/* Automatically generated - do not edit */" >>config.h
+declare -u tmp_targets
+tmp_targets="${cpu} ${soc}"
 
-for i in ${TARGETS} ; do
+for i in ${TARGETS} ${tmp_targets}; do
 	i="`echo ${i} | sed '/=/ {s/=/\t/;q } ; { s/$/\t1/ }'`"
 	echo "#define CONFIG_${i}" >>config.h ;
 done
@@ -169,6 +171,7 @@ cat << EOF >> config.h
 #include <config_defaults.h>
 #include <configs/${CONFIG_NAME}.h>
 #include <asm/config.h>
+#define CONFIG_SYS_PROMPT "${1%_config}"
 EOF
 
 exit 0
