@@ -20,11 +20,12 @@ soc=""
 options=""
 if [ \( $# -eq 2 \) -a \( "$1" = "-A" \) ] ; then
 	# Automatic mode
-	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg board/amlogic/boards.cfg` || {
+	line=`cat boards.cfg board/amlogic/boards.cfg | egrep -i "^[[:space:]]*${2}[[:space:]]"  ` ||  {
 		echo "make: *** No rule to make target \`$2_config'.  Stop." >&2
 		exit 1
 	}
 
+	echo $line
 	set ${line}
 	# add default board name if needed
 	[ $# = 3 ] && set ${line} ${1}
@@ -57,7 +58,7 @@ done
 
 # Strip all options and/or _config suffixes
 CONFIG_NAME="${1%_config}"
-
+echo CONFIG_NAME=$CONFIG_NAME $1
 [ "${BOARD_NAME}" ] || BOARD_NAME="${1%_config}"
 
 arch="$2"

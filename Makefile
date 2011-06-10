@@ -528,7 +528,7 @@ unconfig:
 		$(obj)include/autoconf.mk $(obj)include/autoconf.mk.dep
 
 %_config::	unconfig
-	@$(MKCONFIG) -A $(@:_config=)
+	$(MKCONFIG) -A $(@:_config=)
 
 sinclude $(obj).boards.depend
 $(obj).boards.depend:	boards.cfg	board/amlogic/boards.cfg
