@@ -39,6 +39,11 @@
 
 static int dsp_start=0;
 
+inline void load_firmware(void *firmware_addr, u32 size)
+{
+	memcpy((void *)AUDIO_DSP_START_PHY_ADDR, firmware_addr, size);
+}
+
 int start_dsp()
 {
 
@@ -47,7 +52,8 @@ int start_dsp()
 
 	if(dsp_start)
 		return 0;
-	memcpy((void *)AUDIO_DSP_START_PHY_ADDR,dsp_firmware,sizeof(dsp_firmware));
+	load_firmware(dsp_firmware, sizeof(dsp_firmware));
+
 	clk=READ_CBUS_REG_BITS(PREG_CTLREG0_ADDR,4,5);
 	clk=clk*1000*1000;
 	DSP_WD(DSP_MEM_START,0xa7020000);
@@ -92,8 +98,6 @@ int stop_dsp()
 	 DSP_WD(DSP_STATUS, DSP_STATUS_HALT);
 	dsp_start=0;
 	return 0;
-	
-	
 }
 
 
