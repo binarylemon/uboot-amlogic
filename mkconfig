@@ -158,8 +158,8 @@ else
 fi
 echo "/* Automatically generated - do not edit */" >>config.h
 tmp_board="`echo ${board} | sed 's/[^A-Za-z0-9]\{1,\}/_/g'`"
-declare -u tmp_targets
-tmp_targets="${cpu} ${soc} ${tmp_board}"
+#declare -u tmp_targets
+tmp_targets=`echo ${cpu} ${soc} ${tmp_board} | tr a-z A-Z`
 
 for i in ${TARGETS} ${tmp_targets}; do
 	i="`echo ${i} | sed '/=/ {s/=/\t/;q } ; { s/$/\t1/ }'`"
