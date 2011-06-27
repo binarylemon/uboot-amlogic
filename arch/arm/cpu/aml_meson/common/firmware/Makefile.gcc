@@ -47,6 +47,11 @@ CFLAGS+=$(VPATH_LIST:%=-I%)
 vpath %.c $(VPATH_LIST)
 vpath %.S $(VPATH_LIST)
 vpath %.s $(VPATH_LIST)
+origin_LDS=$(abspath firmware.lds)
+target_LDS=$(abspath $(obj)firmware.lds)
+ifeq ( $(origin_LDS),$(target_LDS))
+	target_LDS=$(OBJTREE)/firmware.lds
+endif
 
 ALL	= $(FIRMWARE) $(dir $(FIRMWARE))aml-debug-rom.bin \
 			$(basename $(FIRMWARE)).out $(dir $(FIRMWARE))aml-debug-rom.out
@@ -56,14 +61,14 @@ all: $(ALL) $(ELFFILES)
 	
 %.bin:	%.out
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-$(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(obj)firmware.lds
+$(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(target_LDS)
 $(dir $(FIRMWARE))aml-debug-rom.out:$(OBJS) $(obj)debugrom.o $(obj)firmware.lds
 %.out:
 	
 	$(LD) $(LDFLAGS) $(filter %.o,$^) $(PLATFORM_LIBGCC)\
 		-Map $(@:%=%.map) --cref \
 		-o $@
-$(obj)firmware.lds:firmware.lds
+$(target_LDS):$(origin_LDS)
 	$(CPP) $(CPPFLAGS)   $(LDPPFLAGS) -std=c99 -D__ASSEMBLY__ -P - <$^ >$@
 
 sinclude $(wildcard $(obj)*.d)
