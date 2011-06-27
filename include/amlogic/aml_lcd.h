@@ -1,8 +1,11 @@
+
+#ifndef __AMLOGIC_LCD_H_
+#define __AMLOGIC_LCD_H_
 #include <common.h>
 #include <linux/list.h>
 #include <asm/arch/tcon.h>
 
-int aml_lcd_init(void);
+extern int aml_lcd_init(void);
 
 extern void lcd_power_on(void);
 extern void lcd_power_off(void);
@@ -31,4 +34,7 @@ extern int lcd_opt_cmd(int argc, char *argv[]);
 #ifdef CONFIG_PANEL_T13
 extern struct panel_dev panel_t13;
 #endif
+
+#endif
+
 
