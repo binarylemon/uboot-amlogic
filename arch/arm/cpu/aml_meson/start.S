@@ -206,7 +206,7 @@ fixloop:
 	cmp	r7, #2			/* absolute fixup? */
 	beq	fixabs
 	/* ignore unknown type of fixup */
-	b	fixnext
+	b	fixnone
 fixabs:
 	/* absolute fix: set location to (offset) symbol value */
 	mov	r1, r1, LSR #4		/* r1 <- symbol index in .dynsym */
@@ -220,6 +220,7 @@ fixrel:
 	add	r1, r1, r9
 fixnext:
 	str	r1, [r0]
+fixnone:
 	add	r2, r2, #8		/* each rel.dyn entry is 8 bytes */
 	cmp	r2, r3
 	blo	fixloop
@@ -271,6 +272,8 @@ _dynsym_start_ofs:
  * setup memory timing
  *
  *************************************************************************/
+ __mmu_table:
+ 	.word mmu_table
 cpu_init_crit:
 	/*
 	 * Invalidate L1 I/D
@@ -300,6 +303,12 @@ cpu_init_crit:
 	mov	lr, ip			@ restore link
 	
 */
+#ifdef CONFIG_CACHE_ENABLE
+	mov ip, lr
+	ldr r0,__mmu_table
+	bl	cache_init		@go setup pll,mux,memory
+	mov lr, ip			@ restore link
+#endif
 	mov	pc, lr			@ back to my caller
 /*
  *************************************************************************

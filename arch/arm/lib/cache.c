@@ -43,5 +43,134 @@ void  flush_cache (unsigned long dummy1, unsigned long dummy2)
 
 	v7_flush_cache_all();
 #endif
+	dcache_flush();
+
 	return;
 }
+
+void cache_flush(void)
+{
+	asm ("mcr p15, 0, %0, c7, c5, 0": :"r" (0));
+}
+
+void dcache_flush(void)
+{
+#ifndef CONFIG_DCACHE_OFF
+    if(dcache_status())
+    {
+        _clean_invd_dcache();
+    }
+#endif
+
+#ifdef CONFIG_CACHE_L2X0
+    if(l2x0_status())
+    {
+        l2x0_clean_inv_all();
+    }
+#endif
+}
+
+#ifdef CONFIG_CACHE_L2X0
+void l2_cache_enable(void)
+{
+	l2x0_enable();
+}
+void l2_cache_disable(void)
+{
+	l2x0_disable();
+}
+int  l2_cache_status(void)
+{
+	return l2x0_status();
+}
+#endif
+
+void dcache_flush_line(unsigned addr)
+{
+#ifndef CONFIG_DCACHE_OFF
+        _clean_invd_dcache_addr(addr);    
+#endif
+#ifdef CONFIG_CACHE_L2X0
+      l2x0_flush_line(addr);  
+#endif
+
+}
+void dcache_clean_line(unsigned addr)
+{
+#ifndef CONFIG_DCACHE_OFF
+        _clean_dcache_addr(addr);    
+#endif
+#ifdef CONFIG_CACHE_L2X0
+      l2x0_clean_line(addr);  
+#endif
+
+}
+void dcache_inv_line(unsigned addr)
+{
+#ifndef CONFIG_DCACHE_OFF
+        _invalidate_dcache_addr(addr);    
+#endif
+#ifdef CONFIG_CACHE_L2X0
+      l2x0_inv_line(addr);  
+#endif
+
+}
+#ifndef CONFIG_SYS_CACHE_LINE_SIZE
+#error please define 'CONFIG_SYS_CACHE_LINE_SIZE'
+#else
+#define CACHE_LINE_SIZE CONFIG_SYS_CACHE_LINE_SIZE
+#endif
+void dcache_flush_range(unsigned start, unsigned size)
+{
+    unsigned st,end,i;
+    st=start&(~(CACHE_LINE_SIZE-1));
+    end=start+size;
+    for(i=st;i<end;i+=CACHE_LINE_SIZE)
+    {
+        dcache_flush_line(i);
+    }
+#ifdef CONFIG_CACHE_L2X0
+    l2x0_wait_flush();
+#endif    
+}
+void dcache_clean_range(unsigned start,unsigned size)
+{
+    unsigned st,end,i;
+    st=start&(~(CACHE_LINE_SIZE-1));
+    end=start+size;
+    for(i=st;i<end;i+=CACHE_LINE_SIZE)
+    {
+        dcache_clean_line(i);
+    }
+#ifdef CONFIG_CACHE_L2X0
+    l2x0_wait_clean();
+#endif    
+    
+}
+void dcache_invalid_range(unsigned start, unsigned size)
+{
+    unsigned st,end,i;
+    st=start&(~(CACHE_LINE_SIZE-1));
+    end=(start+size)&(~(CACHE_LINE_SIZE-1));
+    if(st!=start)
+    {
+        dcache_flush_line(st);
+    }
+    if(end!=(start+size))
+    {
+        dcache_flush_line(end);
+        end+=CACHE_LINE_SIZE;
+    }
+#ifdef CONFIG_CACHE_L2X0    
+    l2x0_wait_flush();
+#endif    
+    for(i=st;i<end;i+=CACHE_LINE_SIZE)
+    {
+        dcache_inv_line(i);
+    }
+#ifdef CONFIG_CACHE_L2X0    
+    l2x0_wait_inv();
+#endif    
+    
+}
+

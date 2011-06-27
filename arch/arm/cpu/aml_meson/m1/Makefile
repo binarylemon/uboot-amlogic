@@ -14,7 +14,7 @@ COBJS-$(CONFIG_AML_SDIO)+=sdio.o
 
 
 COBJS	= clock.o $(COBJS-y)
-SOBJS = 
+SOBJS := mmutable.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))

@@ -129,7 +129,7 @@ uchar default_environment[] = {
 	"\0"
 };
 
-struct hsearch_data env_htab;
+struct hsearch_data env_htab={NULL,0,0};
 
 static uchar env_get_char_init (int index)
 {
