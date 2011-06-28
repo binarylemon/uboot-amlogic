@@ -322,4 +322,8 @@ extern int                cpu_sdio_init(unsigned port);
 extern void               cpu_sdio_pwr_prepare(unsigned port); 
 struct mmc;//mmc is struct mmc , to avoid include mmc.h , declare it 
 extern void               sdio_register(struct mmc* mmc,struct aml_card_sd_info *);
+extern int sdio_get_port(unsigned por_config);
+unsigned enable_sdio(unsigned por_config);
+void disable_sdio(unsigned por_config);
+
 #endif  /* __AML_SDIO_H_ */

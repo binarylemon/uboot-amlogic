@@ -39,7 +39,6 @@
 #include <asm/arch/sys_proto.h>
 #endif
 
-static void cache_flush(void);
 
 int cleanup_before_linux(void)
 {
@@ -64,7 +63,7 @@ int cleanup_before_linux(void)
 	/* turn off L2 cache */
 	l2_cache_disable();
 	/* invalidate L2 cache also */
-	invalidate_dcache(get_device_type());
+	invalidate_l2_cache();
 #endif
 	i = 0;
 	/* mem barrier to sync up things */
@@ -76,8 +75,8 @@ int cleanup_before_linux(void)
 
 	return 0;
 }
-
+/*
 static void cache_flush(void)
 {
 	asm ("mcr p15, 0, %0, c7, c5, 0": :"r" (0));
-}
+	}*/

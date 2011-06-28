@@ -39,16 +39,17 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 SPL_STATIC_FUNC int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
-    unsigned * mem;
 
     switch(por_cfg&POR_INTL_CFG_MASK)
     {
 #if CONFIG_CMD_SF        
         case POR_INTL_SPI:
+	    {
+            unsigned* mem;
             mem=(unsigned *)(SPI_MEM_BASE+READ_SIZE);
             spi_init();
             ipl_memcpy((unsigned*)target,mem,size);
-            
+            }
             break;
 #endif
 #if CONFIG_CMD_NAND            

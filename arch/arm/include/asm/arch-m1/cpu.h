@@ -35,14 +35,23 @@
 #define CONFIG_SYS_CBSIZE          1024
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 
-#define CONFIG_L2_OFF
+#define CONFIG_SYS_LONGHELP	1
+
+#define CONFIG_SYS_CACHE_LINE_SIZE 32
+#define CONFIG_CMD_CACHE	1
+//#define CONFIG_SYS_NO_CP15_CACHE	1
+//#define CONFIG_L2_OFF			1
+//#define CONFIG_DCACHE_OFF    		1
+//#define CONFIG_ICACHE_OFF    		1
+
+
 /** Timer relative Configuration **/
 #define CONFIG_CRYSTAL_MHZ  24
 /** Internal storage setting **/
 //size Limitation
 //#include "romboot.h"
-#warning todo implement CONFIG_BOARD_SIZE_LIMIT 
-//#define CONFIG_BOARD_SIZE_LIMIT 
+//#warning todo implement CONFIG_BOARD_SIZE_LIMIT 
+#define CONFIG_BOARD_SIZE_LIMIT 600000
 
 
 #ifdef CONFIG_CMD_NAND
@@ -86,7 +95,13 @@
 #define CONFIG_AML_ROMBOOT    1
 #define SPI_MEM_BASE                                0x40000000
 #define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
+#define IO_REGION_BASE                              0xe0000000
 
+#if (CONFIG_ICACHE_OFF && CONFIG_DCACHE_OFF)
+#undef CONFIG_MMU
+#else
+#define CONFIG_MMU 	1
+#endif
 
 #ifdef CONFIG_AML_ROMBOOT_SPL
 #define SPL_STATIC_FUNC     static

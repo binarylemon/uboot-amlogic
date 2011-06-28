@@ -2,6 +2,7 @@
 #include <asm/arch/io.h>
 #include <asm/arch/romboot.h>
 #include <asm/arch/timer.h>
+#include <asm/arch/sdio.h>
 
 /**
 **/
@@ -135,7 +136,7 @@ static short sdio_send_cmd(unsigned cmd,unsigned arg,unsigned time,short err)
 {
     writel(arg,P_CMD_ARGUMENT);
     writel(cmd,P_CMD_SEND);
-    unsigned time_b=get_utimer(0);
+    get_utimer(0);
     if (wait_busy(time))
     {
         return err;
@@ -204,6 +205,7 @@ SPL_STATIC_FUNC int sdio_read(unsigned target,unsigned size,unsigned por_sel)
         if(error)
             return error;
     }
+    return 0;
 }
 
 SPL_STATIC_FUNC short sdio_init(unsigned dev)

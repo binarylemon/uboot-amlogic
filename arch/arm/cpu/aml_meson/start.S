@@ -303,7 +303,7 @@ cpu_init_crit:
 	mov	lr, ip			@ restore link
 	
 */
-#ifdef CONFIG_CACHE_ENABLE
+#if !(CONFIG_ICACHE_OFF && CONFIG_DCACHE_OFF)
 	mov ip, lr
 	ldr r0,__mmu_table
 	bl	cache_init		@go setup pll,mux,memory

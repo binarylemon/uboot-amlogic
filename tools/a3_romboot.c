@@ -1,5 +1,7 @@
 
 #include "romfuns.h"
+#include <stdio.h>
+#include <string.h>
 #define READ_SIZE       32*1024     // Size for data reading
 #define CHECK_SIZE      8*1024      // Size for data checking
 
@@ -35,20 +37,20 @@ static unsigned short arc_a1h_crc_16(unsigned short * indata) {
 }
 static void caculate(void)
 {
-	int i;
-	unsigned short sum=0;
-	unsigned * magic;
+	unsigned short* magic;
 	
 	buf[0x1b8/2]=arc_a1h_crc_16(buf);
-	magic=(unsigned *)&buf[0x1b0/2];
-	magic[0]=MAGIC_WORD1;
-	magic[1]=MAGIC_WORD2;
+	magic=(unsigned short *)(&(buf[0x1b0/2]));
+	magic[0]=(MAGIC_WORD1 & 0xFFFF);
+	magic[1]=MAGIC_WORD1>>16;
+	magic[2]=(MAGIC_WORD2 & 0xFFFF);
+	magic[3]=MAGIC_WORD2>>16;
 }
 int a3_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 {
     int count;
     memset(buf,0,sizeof(buf));
-	fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
+	count = fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	caculate();
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))

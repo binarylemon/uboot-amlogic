@@ -36,7 +36,7 @@ static unsigned long    clk_util_clk_msr( unsigned long   clk_mux )
     clrbits_le32(P_MSR_CLK_REG0,((1 << 18) | (1 << 17)));
 	clrsetbits_le32(P_MSR_CLK_REG0,(0xf<<20),(clk_mux<<20)|(1<<19)|(1<<16));
 
-	{ unsigned long dummy_rd = readl(P_MSR_CLK_REG0); }
+	{ readl(P_MSR_CLK_REG0); }
     // Wait for the measurement to be done
     while( readl(P_MSR_CLK_REG0) & (1 << 31))  {};
     // disable measuring
@@ -53,7 +53,7 @@ static unsigned do_get_clk_rate(unsigned clksrc)
 }
 struct __clk_rate{
     unsigned clksrc;
-    unsigned (*get_rate)(void);
+    unsigned long(*get_rate)(void);
 };
 static unsigned long get_clk81(void)
 {

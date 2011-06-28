@@ -39,9 +39,16 @@ GLCOBJS	+= div0.o
 COBJS-y	+= board.o
 COBJS-y	+= bootm.o
 COBJS-y	+= cache.o
-COBJS-$(CONFIG_CACHE_L2X0) += cache-l2x0.o 
-SOBJS-$(CONFIG_CACHE_ENABLE) += cache_init.o
-SOBJS-$(CONFIG_CACHE_ENABLE) += cache_v7.o
+ifndef CONFIG_L2_OFF
+COBJS-y += cache-l2x0.o 
+endif
+ifndef CONFIG_DCACHE_OFF
+SOBJS-y += cache_init.o
+SOBJS-y += cache_v7.o
+else ifndef CONFIG_ICACHE_OFF
+SOBJS-y += cache_init.o
+SOBJS-y += cache_v7.o
+endif
 ifndef CONFIG_SYS_NO_CP15_CACHE
 COBJS-y	+= cache-cp15.o
 endif

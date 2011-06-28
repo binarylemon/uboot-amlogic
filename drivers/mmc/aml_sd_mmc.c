@@ -156,7 +156,6 @@ int aml_sdio_io_init(struct mmc *mmc, ulong flag)
 void aml_sd_cfg_swth(struct mmc *mmc)
 {
 	//DECLARE_GLOBAL_DATA_PTR;
-	unsigned temp_clk;
 
 	struct aml_card_sd_info *aml_priv = mmc->priv;
 	
@@ -401,7 +400,7 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + (16 - 1) * 4;
 		else
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;
-		buffer = dma_map_single(data->dest,data->blocks*data->blocksize,DMA_FROM_DEVICE);
+		buffer = dma_map_single((void*)data->dest,data->blocks*data->blocksize,DMA_FROM_DEVICE);
 		//dcache_invalid_range(buffer,data->blocks<<9);
 		break;
 	case MMC_CMD_WRITE_SINGLE_BLOCK:
@@ -413,7 +412,7 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + (16 - 1) * 4;
 		else
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;
-		buffer = dma_map_single(data->src,data->blocks*data->blocksize,DMA_TO_DEVICE);//(char *)data->src;
+		buffer = dma_map_single((void*)data->src,data->blocks*data->blocksize,DMA_TO_DEVICE);//(char *)data->src;
 //        dcache_clean_range(buffer,data->blocks<<9);
 //        dcache_flush();
 		break;
@@ -542,11 +541,11 @@ CMD_RETRY:
 	case SD_CMD_APP_SEND_SCR:
 		if(!data)
 			break;
-        dma_unmap_single(data->dest,data->blocks*data->blocksize,buffer);
+        dma_unmap_single((void*)data->dest,data->blocks*data->blocksize,buffer);
 		break;
 	case MMC_CMD_WRITE_SINGLE_BLOCK:
 	case MMC_CMD_WRITE_MULTIPLE_BLOCK:
-	    dma_unmap_single(data->src,data->blocks*data->blocksize,buffer);
+	    dma_unmap_single((void*)data->src,data->blocks*data->blocksize,buffer);
 		break;
 	default:
 		break;

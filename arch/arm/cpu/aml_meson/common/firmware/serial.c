@@ -16,7 +16,6 @@
 SPL_STATIC_FUNC void serial_init(unsigned set)
 {
     /* baud rate */
-    unsigned baud_para=0;
 	writel(set
 	    |UART_CNTL_MASK_RST_TX 
 	    |UART_CNTL_MASK_RST_RX 

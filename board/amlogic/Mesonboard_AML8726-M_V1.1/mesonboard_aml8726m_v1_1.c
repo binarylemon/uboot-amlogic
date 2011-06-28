@@ -13,6 +13,7 @@ int board_init(void)
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>
+#include <exports.h>
 static int  sdio_init(unsigned port)
 {
 	//setbits_le32(P_PREG_CGPIO_EN_N,1<<5);

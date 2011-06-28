@@ -43,7 +43,6 @@ SPL_STATIC_FUNC
 void __udelay(unsigned long usec);
 static void init_pctl(struct ddr_set * ddr_setting)
 {
-    int i;
     int mrs0_value;
     int mrs1_value;
     int mrs2_value;
@@ -135,11 +134,11 @@ static inline void init_dmc (struct ddr_set * ddr_setting)
 }
 
 
-static int hw_training()
+static int hw_training(void)
 {
     APB_Wr(PCTL_DLLCR2_ADDR, (APB_Rd(PCTL_DLLCR2_ADDR) & 0xfffc3fff) |
 									 (3 << 14 ));
-	APB_Wr(PCTL_DLLCR3_ADDR, (APB_Rd(PCTL_DLLCR3_ADDR) & 0xfffc3fff) |
+    APB_Wr(PCTL_DLLCR3_ADDR, (APB_Rd(PCTL_DLLCR3_ADDR) & 0xfffc3fff) |
 									 (3 << 14 ));
     APB_Wr(PCTL_DTUWD0_ADDR, 0xdd22ee11);
     APB_Wr(PCTL_DTUWD1_ADDR, 0x7788bb44);
@@ -295,7 +294,7 @@ SPL_STATIC_FUNC unsigned ddr_init (struct ddr_set * ddr_setting)
 	unsigned char Tra[4];
 	unsigned char chk[DDR_RSLR_LEN*DDR_RDGR_LEN];
 
-	int i,j,k,t=0;
+	int i,j,k;
 
 	for (k = 0; k < ((ddr_setting->ddr_ctrl&(1<<7))?0x2:0x4); k++) {
 
@@ -381,20 +380,20 @@ static inline void hw_tran(void)
 	init_dmc(&__ddr_setting);
 
 }
-static inline unsigned lowlevel_ddr(void)
+static const unsigned lowlevel_ddr(void)
 {
     return ddr_init(&__ddr_setting);
 }
-static inline unsigned lowlevel_mem_test_device(void)
+static const unsigned lowlevel_mem_test_device(void)
 {
     return (unsigned)memTestDevice((volatile datum *)CONFIG_SYS_SDRAM_BASE
 		    ,__ddr_setting.ram_size);
 }
-static inline unsigned lowlevel_mem_test_data(void)
+static const unsigned lowlevel_mem_test_data(void)
 {
     return (unsigned)memTestDataBus((volatile datum *) CONFIG_SYS_SDRAM_BASE);
 }
-static inline unsigned lowlevel_mem_test_addr(void)
+static const unsigned lowlevel_mem_test_addr(void)
 {
     return (unsigned)memTestAddressBus((volatile datum *)CONFIG_SYS_SDRAM_BASE,
 				    __ddr_setting.ram_size);

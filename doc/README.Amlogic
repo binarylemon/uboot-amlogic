@@ -1,0 +1,18 @@
+;=============================================
+; board m1_8726m_mid  
+;=============================================
+1. Build process:
+	a) make distclean
+	b) make arm_8726m_config
+	c) make all
+
+2. Cache config macro
+	a) CONFIG_L2_OFF:  to disable l2 cache
+	b) CONFGI_ICACHE_OFF: to disable icache
+	c) CONFIG_DCACHE_OFF: to disabel dcache
+
+3. Soft link "amlogic" to "board/amlogic/configs" in "include/configs".
+
+
+
+

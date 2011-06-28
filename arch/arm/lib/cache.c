@@ -24,6 +24,10 @@
 /* for now: just dummy functions to satisfy the linker */
 
 #include <common.h>
+#include <asm/cache.h>
+#ifndef CONFIG_L2_OFF
+#include <asm/cache-l2x0.h>
+#endif
 
 void  flush_cache (unsigned long dummy1, unsigned long dummy2)
 {
@@ -62,7 +66,7 @@ void dcache_flush(void)
     }
 #endif
 
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
     if(l2x0_status())
     {
         l2x0_clean_inv_all();
@@ -70,7 +74,7 @@ void dcache_flush(void)
 #endif
 }
 
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
 void l2_cache_enable(void)
 {
 	l2x0_enable();
@@ -90,7 +94,7 @@ void dcache_flush_line(unsigned addr)
 #ifndef CONFIG_DCACHE_OFF
         _clean_invd_dcache_addr(addr);    
 #endif
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
       l2x0_flush_line(addr);  
 #endif
 
@@ -100,7 +104,7 @@ void dcache_clean_line(unsigned addr)
 #ifndef CONFIG_DCACHE_OFF
         _clean_dcache_addr(addr);    
 #endif
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
       l2x0_clean_line(addr);  
 #endif
 
@@ -110,7 +114,7 @@ void dcache_inv_line(unsigned addr)
 #ifndef CONFIG_DCACHE_OFF
         _invalidate_dcache_addr(addr);    
 #endif
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
       l2x0_inv_line(addr);  
 #endif
 
@@ -129,7 +133,7 @@ void dcache_flush_range(unsigned start, unsigned size)
     {
         dcache_flush_line(i);
     }
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
     l2x0_wait_flush();
 #endif    
 }
@@ -142,7 +146,7 @@ void dcache_clean_range(unsigned start,unsigned size)
     {
         dcache_clean_line(i);
     }
-#ifdef CONFIG_CACHE_L2X0
+#ifndef CONFIG_L2_OFF
     l2x0_wait_clean();
 #endif    
     
@@ -161,14 +165,14 @@ void dcache_invalid_range(unsigned start, unsigned size)
         dcache_flush_line(end);
         end+=CACHE_LINE_SIZE;
     }
-#ifdef CONFIG_CACHE_L2X0    
+#ifndef CONFIG_L2_OFF
     l2x0_wait_flush();
 #endif    
     for(i=st;i<end;i+=CACHE_LINE_SIZE)
     {
         dcache_inv_line(i);
     }
-#ifdef CONFIG_CACHE_L2X0    
+#ifndef CONFIG_L2_OFF
     l2x0_wait_inv();
 #endif    
     

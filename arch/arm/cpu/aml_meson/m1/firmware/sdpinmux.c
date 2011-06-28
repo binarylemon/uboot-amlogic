@@ -68,7 +68,6 @@ SPL_STATIC_FUNC void disable_sdio(unsigned por_config)
 }
 SPL_STATIC_FUNC unsigned enable_sdio(unsigned por_config)
 {
-    unsigned SD_boot_type=2;
 #if CONFIG_SDIO_B1    
     if(POR_GET_SDIO_CFG(por_config)==0)
     {

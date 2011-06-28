@@ -8,14 +8,16 @@
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 SPL_STATIC_FUNC short check_sum(unsigned * addr)
 {
-    int i;
-    unsigned short * p=(unsigned short *)addr;
     serial_put_dword(addr[15]);
     if(addr[15]!=CONFIG_AML_UBOOT_MAGIC)
         return -1;
 #if 0        
-    for(i=0;i<size>>1;i++)
+    {
+     int i;
+     unsigned short * p=(unsigned short *)addr;
+     for(i=0;i<size>>1;i++)
         check_sum^=p[i];
+    }
 #endif        
     return 0;
 }
@@ -26,8 +28,6 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned por_cfg=romboot_info->por_cfg;
 	unsigned boot_id=romboot_info->boot_id;
 	unsigned size;
-	int i;
-	unsigned * mem;
 	int rc=0;
     serial_puts("HHH\n");
 	size=__TEXT_SIZE;
@@ -40,16 +40,16 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size); 
 	}
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK	
-	if(!rc&&check_sum(__TEXT_BASE)==0)
+	if(!rc&&check_sum((unsigned*)__TEXT_BASE)==0)
 	{
 	    fw_print_info(por_cfg,boot_id);
-        return ;
+        return rc;
     }
 #else
     if(rc==0)
 	{
 	    fw_print_info(por_cfg,boot_id);
-        return ;
+        return rc;
     }
 #endif    
 #if CONFIG_ENABLE_EXT_DEVICE_RETRY	
@@ -65,13 +65,13 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	    if(rc)
 	        continue;
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK	        
-	    rc=check_sum(__TEXT_BASE);
+	    rc=check_sum((unsigned*)__TEXT_BASE);
 #endif	    
 	}
 #endif	    
 
 	fw_print_info(por_cfg,1);
-    return ;
+    return rc;
 }
 
 
