@@ -252,8 +252,7 @@ int mmc_go_idle(struct mmc* mmc)
 	return 0;
 }
 
-int
-sd_send_op_cond(struct mmc *mmc)
+int sd_send_op_cond(struct mmc *mmc)
 {
 	int timeout = 1000;
 	int err;
@@ -266,9 +265,13 @@ sd_send_op_cond(struct mmc *mmc)
 		cmd.flags = 0;
 
 		err = mmc_send_cmd(mmc, &cmd, NULL);
-
-		if (err)
+		
+		if (err == TIMEOUT)
 			return err;
+		else if(err){
+			udelay(10000);
+			continue;
+		}
 
 		cmd.cmdidx = SD_CMD_APP_SEND_OP_COND;
 		cmd.resp_type = MMC_RSP_R3;
@@ -512,6 +515,9 @@ retry_scr:
 			break;
 	}
 
+	if (mmc->scr[0] & SD_DATA_4BIT)
+			mmc->card_caps |= MMC_MODE_4BIT;
+
 	/* Version 1.0 doesn't support switching */
 	if (mmc->version == SD_VERSION_1_0)
 		return 0;
@@ -528,9 +534,6 @@ retry_scr:
 		if (!(__be32_to_cpu(switch_status[7]) & SD_HIGHSPEED_BUSY))
 			break;
 	}
-
-	if (mmc->scr[0] & SD_DATA_4BIT)
-		mmc->card_caps |= MMC_MODE_4BIT;
 
 	/* If high-speed isn't supported, we return */
 	if (!(__be32_to_cpu(switch_status[3]) & SD_HIGHSPEED_SUPPORTED))
@@ -871,6 +874,9 @@ block_dev_desc_t *mmc_get_dev(int dev)
 int mmc_init(struct mmc *mmc)
 {
 	int err;
+	
+	if (mmc->has_init)
+		return 0;
 
 	err = mmc->init(mmc);
 
@@ -888,6 +894,8 @@ int mmc_init(struct mmc *mmc)
 
 	/* Test for SD version 2 */
 	err = mmc_send_if_cond(mmc);
+	if (err)
+		err = mmc_go_idle(mmc);
 
 	/* Now try to get the SD card's operating condition */
 	err = sd_send_op_cond(mmc);
@@ -902,7 +910,12 @@ int mmc_init(struct mmc *mmc)
 		}
 	}
 
-	return mmc_startup(mmc);
+	err = mmc_startup(mmc);
+	if (err)
+		mmc->has_init = 0;
+	else
+		mmc->has_init = 1;
+	return err;
 }
 
 /*

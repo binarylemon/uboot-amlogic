@@ -187,7 +187,7 @@ void aml_sd_cfg_swth(struct mmc *mmc)
 	sd_debug("bus_width=%d\tclk_div=%d\n\tclk=%d\tsd_clk=%d",
 	    bus_width,clk_div,clk,mmc->clock);
     	    
-	sd_debug("port=%d act_clk=%d",aml_priv->sdio_port,get_clk81()/(2*(clk_div+1)));
+	sd_debug("port=%d act_clk=%d",aml_priv->sdio_port,clk/(2*(clk_div+1)));
 	return;
 }
 
@@ -416,7 +416,7 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 //        dcache_clean_range(buffer,data->blocks<<9);
 //        dcache_flush();
 		break;
-#if 0		
+#if 0
 	case SD_CMD_APP_SEND_SCR:
 		cmd_send_reg->res_with_data = 1;
 		if(mmc->bus_width == SD_BUS_WIDE)
@@ -425,8 +425,8 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;
 		buffer = dma_map_single(data->dest,cmd_ext_reg->data_rw_number,DMA_FROM_DEVICE);//(char *)data->src;
 		//dcache_flush();
-		break;
-#endif		
+		break;		
+#endif
 	default:
 		break;
 	}
@@ -577,13 +577,17 @@ CMD_RETRY:
 		response_buf[--num_res - 1] = (data_temp >> 24) & 0xFF;
 	}
 	while (loop_num--) {
-		cmd->response[loop_num]=((uint *)response_buf)[loop_num] = __be32_to_cpu(((uint *)cmd->response)[loop_num]);
+		((uint *)cmd->response)[loop_num] = __be32_to_cpu(((uint *)response_buf)[loop_num]);
+		((uint *)response_buf)[loop_num] = ((uint *)cmd->response)[loop_num];
 	}
 	
 	//check_response
+	/* for resp_type 'MMC_RSP_R6' is changed in mmc.h*/
+	if(cmd->cmdidx != SD_CMD_SEND_RELATIVE_ADDR){
 	ret = sd_inand_check_response(response_buf,cmd->resp_type);
 	if(ret)
-		return ret;
+			return ret;
+	}
 
 	//cmd with adtc
 	switch (cmd->cmdidx) {

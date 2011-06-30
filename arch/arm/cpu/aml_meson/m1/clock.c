@@ -93,7 +93,7 @@ int clk_get_rate(unsigned clksrc)
     }
     for(i=0;sizeof(clkrate)/sizeof(clkrate[0]);i++)
     {
-        return clkrate[i].get_rate()-1;
+        return clkrate[i].get_rate();
     }
     
     return -1;

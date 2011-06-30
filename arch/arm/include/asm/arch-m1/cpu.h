@@ -24,7 +24,7 @@
 #define CONFIG_SERIAL_MULTI             1
 #define CONFIG_SYS_SDRAM_BASE   0x80000000
 
-#define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0xF00000)
+#define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0xF000000)
 #define CONFIG_SYS_TEXT_BASE    0x8F800000
 #define CONFIG_SYS_MALLOC_LEN   (4<<20)
 #define CONFIG_ENV_SIZE         (16 * 1024)
@@ -66,7 +66,7 @@
 #define CONFIG_SYS_NAND_BASE_LIST   {0}//make uboot happy
 //#define CONFIG_SYS_NAND_BASE 0 //make uboot happy
 #endif
-
+#define CONFIG_CMD_MEMORY           1
 #ifdef CONFIG_CMD_SF
 #define CONFIG_AMLOGIC_SPI_FLASH    1
 #define CONFIG_SPI_FLASH            1

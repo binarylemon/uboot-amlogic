@@ -31,10 +31,10 @@
 #ifndef DDR_TOTAL_BITS
 error please define DDR_TOTAL_BITS
 #endif
-#define PHYS_MEMORY_SIZE  ((unsigned long)(DDR_TOTAL_BITS / 8 ) * CONFIG_DDR_PCS * 1024 * 1024);
+#define PHYS_MEMORY_SIZE  ((unsigned long)(DDR_TOTAL_BITS / 8 ) * CONFIG_DDR_PCS * 1024 * 1024)
 
 #define CONFIG_SYS_MEMTEST_START	PHYS_MEMORY_START	/* memtest works on	*/      
-#define CONFIG_SYS_MEMTEST_END		#define CONFIG_SYS_MEMTEST_START + PHYS_MEMORY_SIZE	 
+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + PHYS_MEMORY_SIZE)
 
 #include <asm/arch/cpu.h>
 
