@@ -8,6 +8,12 @@
 #include <malloc.h>
 #include <spi_flash.h>
 
+#ifdef CONFIG_AMLOGIC_SPI_FLASH 
+
+#include "spi_flash_amlogic.h"
+
+#else //else CONFIG_AMLOGIC_SPI_FLASH
+
 #include "spi_flash_internal.h"
 
 /* M25Pxx-specific commands */
@@ -25,6 +31,8 @@
 #define CMD_W25_RES		0xab	/* Release from DP, and Read Signature */
 
 #define WINBOND_SR_WIP		(1 << 0)	/* Write-in-Progress */
+
+#endif //else end for CONFIG_AMLOGIC_SPI_FLASH
 
 struct winbond_spi_flash_params {
 	uint16_t	id;
@@ -106,6 +114,29 @@ static const struct winbond_spi_flash_params winbond_spi_flash_table[] = {
 		.name			= "W25Q128",
 	},
 };
+
+#ifdef CONFIG_AMLOGIC_SPI_FLASH 
+//new solution for Amlogic SPI controller 
+//
+//
+static int winbond_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
+{
+	while(1);//dead lock here,must implement
+	return 0;
+}
+
+static int winbond_read_fast(struct spi_flash *flash, u32 offset, size_t len, void *buf)
+{
+	while(1);//dead lock here,must implement
+	return 0;
+}
+int winbond_erase(struct spi_flash *flash, u32 offset, size_t len)
+{
+	while(1);//dead lock here,must implement
+	return 0;
+}
+
+#else //else for CONFIG_AMLOGIC_SPI_FLASH, keep former for rollback verify
 
 static int winbond_wait_ready(struct spi_flash *flash, unsigned long timeout)
 {
@@ -313,6 +344,8 @@ out:
 	spi_release_bus(flash->spi);
 	return ret;
 }
+
+#endif // else end for CONFIG_AMLOGIC_SPI_FLASH
 
 struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode)
 {
