@@ -13,6 +13,7 @@
 
 3. Soft link "amlogic" to "board/amlogic/configs" in "include/configs".
 
-
-
-
+4. SPI flash support
+    a) CONFIG_AML_MESON_1: to use M1 SPI control
+    b) CONFIG_CMD_SF: to open UBoot command "sf probe/erase/read/write"
+    c) CONFIG_CMD_MEMORY: to open memory dump for verify SPI operation
