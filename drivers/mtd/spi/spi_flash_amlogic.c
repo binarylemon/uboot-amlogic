@@ -37,10 +37,6 @@ int spi_flash_cmd(struct spi_slave *spi, u32 cmd, void *response, size_t len)
 
 	if (ret) {
 		debug("SF: Failed to send command %02x: %d\n", cmd, ret);
-		//log by Hisun
-		printf("Hisun:Failed to send command %02x: %d\n", cmd, ret);
-		//end 
-
 		return ret;
 	}
 
@@ -206,7 +202,7 @@ int spi_claim_bus(struct spi_slave *slave)
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_1,( (1<<29) | (1<<27) | (1<<25) | (1<<23)));
 	//CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,0x7fff); by hisun 2011.07.01 PM17:32
 #else //else CONFIG_AML_MESON_1
-	#ifdef CONFIG_AML_MESON2
+	#ifdef CONFIG_AML_MESON_2
 		//for MESON 2	
 		CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,0x7fff);
 		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,( (1<<7) | (1<<8) | (1<<9) | (1<<10)|(1<<11)|(1<<12)));
@@ -241,7 +237,7 @@ void spi_release_bus(struct spi_slave *slave)
 	///for MESON 1 
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_1,( (1<<29) | (1<<27) | (1<<25) | (1<<23)));
 #else //else for CONFIG_AML_MESON_1
-	#ifdef CONFIG_AML_MESON2
+	#ifdef CONFIG_AML_MESON_2
 		//for CONFIG_AML_MESON_2
 		CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,( (1<<7) | (1<<8) | (1<<9) | (1<<10)|(1<<11)|(1<<12)));
 	#else //else for CONFIG_AML_MESON_2
@@ -414,18 +410,15 @@ int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 
 		debug("Erase:%x\n",actual);
 			
 		var=(offset+actual) & 0xffffff;
-		spi_flash_addr_write(slave,var);	
-		//printf("Hisun: spi_falsh_addr_set addr=0x%0X\n",var);
+		spi_flash_addr_write(slave,var);
 	
 		//Trigger write enable command
 		var=1<<SPI_FLASH_WREN;
 		spi_flash_cmd(slave,var,NULL,0);	
-		//printf("Hisun: send cmd= Write Enable\n");
 		
 		//Trigger sector erase command
 		var=1<<SPI_FLASH_SE;
 		spi_flash_cmd(slave,var,NULL,0);	
-		//printf("Hisun: send cmd= Sector Erase\n");
 
 		//debug for hangup
 		//printf("PIN_MAX_REG0 = 0x%08X\n",READ_CBUS_REG(PERIPHS_PIN_MUX_1));
@@ -457,7 +450,8 @@ int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, cons
 	nReturn = 1;
 
 	//clean data cache
-	dcache_clean_range((u32)buf, len);
+	//dcache_clean_range((u32)buf, len);
+	dcache_flush();
 
 	//close AHB bus before any APB bus operation
 	CLEAR_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB);  	
@@ -499,6 +493,9 @@ int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, cons
     spi_enable_write_protect();
 #endif
 
+	//cache refresh
+	dcache_flush();
+
 	return nReturn;
 }
 
@@ -512,8 +509,10 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
 	if(!len)
 		return 0;	
 		
-		//invalid data cache
-		dcache_invalid_range((u32)buf,len);
+	//invalid data cache
+	//dcache_invalid_range((u32)buf,len);
+	dcache_flush();
+
 		
     /* 0x400000 ~ 0x7fffff */
     if(temp_addr + len > 0x400000 && temp_addr < 0x400000){
@@ -552,7 +551,10 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
 		buf			+= (temp_length>=32?32:temp_length);	
 		temp_length -= (temp_length>=32?32:temp_length);			
 	}		
-	
+
+	//cache refresh
+	dcache_flush();	
+
 	return 0;	
 }
 
