@@ -17,3 +17,11 @@
     a) CONFIG_AML_MESON_1: to use M1 SPI control
     b) CONFIG_CMD_SF: to open UBoot command "sf probe/erase/read/write"
     c) CONFIG_CMD_MEMORY: to open memory dump for verify SPI operation
+
+5. NAND flash support
+    a) CONFIG_CMD_NAND: support nand flash command
+    b) CONFIG_NAND_AML: use amlogic nand flash driver
+    c) Since "nand_info_t* nand_info[CONFIG_SYS_NAND_MAX_DEVICE];" 
+       replaced with "nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE];" in base driver.
+       1. Modified struct aml_nand_chip member 'mtd' from struct to pointer in aml_nand.h.
+       2. Modified function mtd_to_nand_chip in aml_nand.h. Use member chip to get aml_nand_chip pointer.

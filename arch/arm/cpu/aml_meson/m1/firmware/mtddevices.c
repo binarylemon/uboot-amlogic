@@ -1,6 +1,7 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
+#include <asm/arch/nand.h>
 #if CONFIG_CMD_SF
 SPL_STATIC_FUNC void spi_init()
 {
@@ -10,7 +11,7 @@ SPL_STATIC_FUNC void spi_init()
 #endif
 #if CONFIG_CMD_NAND
 #include <asm/arch/nand.h>
-SPL_STATIC_FUNC void nf_pinmux_init()
+SPL_STATIC_FUNC void nf_pinmux_init(void)
 {
     NAND_IO_ENABLE(0);
 }
@@ -118,7 +119,6 @@ SPL_STATIC_FUNC int  nf_lp_read(volatile unsigned  dest, volatile unsigned size)
 {
 	volatile  	unsigned page_base,cnt,cur;
 	volatile   	int ret=0;
-	unsigned char lp=0;
 	nf_cntl_init(romboot_info);
 	cnt=0;
 	cur=READ_SIZE/(3*512);

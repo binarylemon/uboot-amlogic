@@ -1,8 +1,43 @@
 #include <common.h>
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
+#include <asm/arch/nand.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+static struct aml_nand_platform aml_nand_mid_platform[] = {
+	{
+		.name = NAND_BOOT_NAME,
+		.chip_enable_pad = AML_NAND_CE0,
+		.ready_busy_pad = AML_NAND_CE0,
+		.platform_nand_data = {
+			.chip =  {
+				.nr_chips = 1,
+				.options = (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE),
+			},
+    	},
+		.T_REA = 20,
+		.T_RHOH = 15,
+	},
+	{
+		.name = NAND_NORMAL_NAME,
+		.chip_enable_pad = (AML_NAND_CE0 | (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
+		.ready_busy_pad = (AML_NAND_CE0 | (AML_NAND_CE0 << 4) | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
+		.platform_nand_data = {
+			.chip =  {
+				.nr_chips = 4,
+				.options = (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE),
+			},
+    	},
+		.T_REA = 20,
+		.T_RHOH = 15,
+	}
+};
+
+struct aml_nand_device aml_nand_mid_device = {
+	.aml_nand_platform = aml_nand_mid_platform,
+	.dev_num = ARRAY_SIZE(aml_nand_mid_platform),
+};
 
 int board_init(void)
 {

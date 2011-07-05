@@ -14,7 +14,6 @@
 #define CONFIG_SDIO_C    1
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
-
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

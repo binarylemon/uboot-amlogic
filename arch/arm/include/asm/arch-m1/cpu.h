@@ -53,17 +53,21 @@
 //#warning todo implement CONFIG_BOARD_SIZE_LIMIT 
 #define CONFIG_BOARD_SIZE_LIMIT 600000
 
+/*--------------------------------------------------------------------
+* Nand flash
+*/
+#define CONFIG_NAND_AML        1
+#define CONFIG_CMD_NAND        1
+#define CONFIG_MTD_DEVICE      1
 
 #ifdef CONFIG_CMD_NAND
 #define CONFIG_NAND_AML_M1 1
-#define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of */
+#define CONFIG_SYS_MAX_NAND_DEVICE	2		/* Max number of */
 #define CONFIG_SYS_NAND_MAX_CHIPS	4
 #ifndef CONFIG_NAND_SP_BLOCK_SIZE
 #define CONFIG_NAND_SP_BLOCK_SIZE 32
 #endif
-#warning todo implement nand driver later
-#define CONFIG_SYS_MAX_NAND_DEVICE  1  //make uboot happy
-#define CONFIG_SYS_NAND_BASE_LIST   {0}//make uboot happy
+#define CONFIG_SYS_NAND_BASE_LIST   {NFC_BASE} 
 //#define CONFIG_SYS_NAND_BASE 0 //make uboot happy
 #endif
 #define CONFIG_CMD_MEMORY           1
