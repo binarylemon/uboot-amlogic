@@ -582,8 +582,9 @@ CMD_RETRY:
 	}
 	
 	//check_response
-	/* for resp_type 'MMC_RSP_R6' is changed in mmc.h*/
-	if(cmd->cmdidx != SD_CMD_SEND_RELATIVE_ADDR){
+	/* for resp_type 'MMC_RSP_R6''MMC_RSP_R7' is changed in mmc.h*/
+	if(cmd->cmdidx != SD_CMD_SEND_RELATIVE_ADDR 
+		&& cmd->cmdidx != SD_CMD_SEND_IF_COND){
 	ret = sd_inand_check_response(response_buf,cmd->resp_type);
 	if(ret)
 			return ret;
