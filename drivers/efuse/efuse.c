@@ -16,7 +16,6 @@
 #include <asm/arch/io.h>
 #include <command.h>
 #include <malloc.h>
-
 #include "efuse.h"
 #include "efuse_regs.h"
 
