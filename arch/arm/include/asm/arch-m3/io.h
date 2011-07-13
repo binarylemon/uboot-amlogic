@@ -23,7 +23,7 @@
 #define WRITE_CBUS_REG(reg, val) __raw_writel(val, P_##reg)
 #define READ_CBUS_REG(reg) (__raw_readl(P_##reg))
 #define WRITE_CBUS_REG_BITS(reg, val, start, len) \
-    clrsetbits_le32(P_##reg,~(((1L<<(len))-1)<<(start)), \
+    clrsetbits_le32(P_##reg, (((1L<<(len))-1)<<(start)), \
     ((unsigned)((val)&((1L<<(len))-1)) << (start)))
     
 #define READ_CBUS_REG_BITS(reg, start, len) \
@@ -36,7 +36,7 @@
 #define WRITE_AXI_REG(reg, val) __raw_writel(val, P_##reg)
 #define READ_AXI_REG(reg) (__raw_readl(P_##reg))
 #define WRITE_AXI_REG_BITS(reg, val, start, len) \
-    clrsetbits_le32(P_##reg,~(((1L<<(len))-1)<<(start)), \
+    clrsetbits_le32(P_##reg, (((1L<<(len))-1)<<(start)), \
     ((unsigned)((val)&((1L<<(len))-1)) << (start)))
     
 #define READ_AXI_REG_BITS(reg, start, len) \
@@ -50,7 +50,7 @@
 #define WRITE_AHB_REG(reg, val) __raw_writel(val, P_##reg)
 #define READ_AHB_REG(reg) (__raw_readl(P_##reg))
 #define WRITE_AHB_REG_BITS(reg, val, start, len) \
-    clrsetbits_le32(P_##reg,~(((1L<<(len))-1)<<(start)), \
+    clrsetbits_le32(P_##reg, (((1L<<(len))-1)<<(start)), \
     ((unsigned)((val)&((1L<<(len))-1)) << (start)))
     
 #define READ_AHB_REG_BITS(reg, start, len) \
@@ -64,7 +64,7 @@
 #define WRITE_APB_REG(reg, val) __raw_writel(val, P_##reg)
 #define READ_APB_REG(reg) (__raw_readl(P_##reg))
 #define WRITE_APB_REG_BITS(reg, val, start, len) \
-    clrsetbits_le32(P_##reg,~(((1L<<(len))-1)<<(start)), \
+    clrsetbits_le32(P_##reg, (((1L<<(len))-1)<<(start)), \
     ((unsigned)((val)&((1L<<(len))-1)) << (start)))
     
 #define READ_APB_REG_BITS(reg, start, len) \

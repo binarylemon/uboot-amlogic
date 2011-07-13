@@ -288,6 +288,12 @@ void main_loop (void)
 	char bcs_set[16];
 #endif /* CONFIG_BOOTCOUNT_LIMIT */
 
+#ifdef CONFIG_EFUSE
+	char *r_addr;
+	char *r_efus;
+	char addr[20];
+#endif
+
 #if defined(CONFIG_VFD) && defined(VFD_TEST_LOGO)
 	ulong bmp = 0;		/* default bitmap */
 	extern int trab_vfd (ulong bitmap);
@@ -358,6 +364,16 @@ void main_loop (void)
 #if defined(CONFIG_UPDATE_TFTP)
 	update_tftp ();
 #endif /* CONFIG_UPDATE_TFTP */
+
+#ifdef CONFIG_EFUSE
+	r_addr = getenv ("ethaddr");
+	if(efuse_chk_written(2)){
+		r_efus = efuse_read_usr(2);
+		memset(addr,0,sizeof(addr));
+		sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",r_efus[0],r_efus[1],r_efus[2],r_efus[3],r_efus[4],r_efus[5]);
+		setenv ("ethaddr", addr);
+	}
+#endif
 
 #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
 	s = getenv ("bootdelay");

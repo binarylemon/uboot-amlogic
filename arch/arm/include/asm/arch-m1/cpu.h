@@ -44,6 +44,7 @@
 //#define CONFIG_DCACHE_OFF    		1
 //#define CONFIG_ICACHE_OFF    		1
 
+//#define CONFIG_EFUSE 1
 
 /** Timer relative Configuration **/
 #define CONFIG_CRYSTAL_MHZ  24

@@ -44,6 +44,7 @@
 #warning todo implement CONFIG_BOARD_SIZE_LIMIT 
 //#define CONFIG_BOARD_SIZE_LIMIT 
 
+//#define CONFIG_EFUSE 1
 
 #ifdef CONFIG_CMD_NAND
 #define CONFIG_NAND_AML_M1 1
