@@ -14,6 +14,11 @@
 #include <asm/cache.h>      
 #include "spi_flash_amlogic.h"
 
+//note: To use Amlogic SPI flash controller for SPI flash access 
+//         two macro CONFIG_CMD_SF & CONFIG_AML_MESON_1/2/3
+//         must be set to 1
+//         header file locate at:  \board\amlogic\configs\
+
 //backup PIN_MAX_1 value before claim bus for SPI controller
 //restore the original value after usage
 //note: following two functions for one SPI operation
@@ -99,10 +104,12 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	amls->slave.bus = bus;
 	amls->slave.cs 	= cs;
 
-#ifdef CONFIG_AML_MESON_1
+#if defined(CONFIG_AML_MESON_1) || defined (CONFIG_AML_MESON_2)||defined(CONFIG_AML_MESON_3)
     amls->adr_base 	=(void*)0x40000000;
+#elif defined(CONFIG_AML_MESON_A3)
+	#error "please implement A3 SPI buffer address!"
 #else
-	#error "please define CONFIG_AML_MESON_1 or others for SPI controler base address initialize!"
+	#error "please define [CONFIG_AML_MESON_1/2/3/A2/A2/A1] for SPI controler base address setting!"
 #endif
 
 	amls->mode=mode;
@@ -201,27 +208,54 @@ int spi_claim_bus(struct spi_slave *slave)
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_11,((1<<13)|(1<<15)));
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_1,( (1<<29) | (1<<27) | (1<<25) | (1<<23)));
 	//CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,0x7fff); by hisun 2011.07.01 PM17:32
+	//check for multi define
+	#if defined (CONFIG_AML_MESON_2) || defined(CONFIG_AML_MESON_3)
+		#error "Only one chip[CONFIG_AML_MESON_1/2/3] can be defined for SPI controller!"
+	#endif
 #else //else CONFIG_AML_MESON_1
 	#ifdef CONFIG_AML_MESON_2
 		//for MESON 2	
 		CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,0x7fff);
 		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,( (1<<7) | (1<<8) | (1<<9) | (1<<10)|(1<<11)|(1<<12)));
+		//check for multi define
+		#if defined (CONFIG_AML_MESON_1) || defined(CONFIG_AML_MESON_3)
+			#error "Only one chip[CONFIG_AML_MESON_1/2/3] can be defined for SPI controller!"
+		#endif
 	#else //else for CONFIG_AML_MESON_2
-		#ifdef CONFIG_AML_MESON_A3
-			//for MESON_A3
-			// Disable NAND pin select just for safe or potential easy debug if system not switched off
-			//            *P_PERIPHS_PIN_MUX_4 &= ~(0x3f<<14);
-			//            
-			//            // Enable SPI pin select
-			//            *P_PERIPHS_PIN_MUX_6 |= (0x1<<28); // SPI CS
-			//            *P_PERIPHS_PIN_MUX_5 |= (0x1f<<1); // other 5 SPI pins
-			clrbits_le32(P_PERIPHS_PIN_MUX_4,0x3f<<14);
-			setbits_le32(P_PERIPHS_PIN_MUX_6,1<<28);
-			setbits_le32(P_PERIPHS_PIN_MUX_5,0x1f<<1);
-		#else //else for CONFIG_AML_MESON_A3
-			//Amlogic SPI controller need use pinmax setting
-			#error "please define CONFIG_AML_MESON_1 or others for SPI controler initialize!"
-		#endif //end for CONFIG_AML_MESON_A3	
+		#ifdef CONFIG_AML_MESON_3
+			//for MESON 3 @chip\AppNote-M3-CorePinMux.xlsx
+			//BOOT_12-- SPI_NOR_D_A       -- NAND_ALE
+			//BOOT_13-- SPI_NOR_Q_A       -- NAND_CLE
+			//BOOT_14-- SPI_NOR_C_A       -- NAND_WEn_CLK
+			//BOOT_17-- SPI_NOR_CS_n_A -- NAND_REn_WR
+			CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,((1<<19)|(1<<20)|(1<<21)));
+			CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,((1<<6)|(1<<7)|(1<<8)|(1<<9)));
+			SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,((1<<0) | (1<<1) | (1<<2) | (1<<3)));
+			//check for multi define
+			#if defined (CONFIG_AML_MESON_1) || defined(CONFIG_AML_MESON_2)
+				#error "Only one chip[CONFIG_AML_MESON_1/2/3] can be defined for SPI controller!"
+			#endif
+		#else //else for CONFIG_AML_MESON_3
+			#ifdef CONFIG_AML_MESON_A3
+				//for MESON_A3
+				// Disable NAND pin select just for safe or potential easy debug if system not switched off
+				//            *P_PERIPHS_PIN_MUX_4 &= ~(0x3f<<14);
+				//            
+				//            // Enable SPI pin select
+				//            *P_PERIPHS_PIN_MUX_6 |= (0x1<<28); // SPI CS
+				//            *P_PERIPHS_PIN_MUX_5 |= (0x1f<<1); // other 5 SPI pins
+				clrbits_le32(P_PERIPHS_PIN_MUX_4,0x3f<<14);
+				setbits_le32(P_PERIPHS_PIN_MUX_6,1<<28);
+				setbits_le32(P_PERIPHS_PIN_MUX_5,0x1f<<1);
+				//check for multi define
+				#if defined (CONFIG_AML_MESON_1)|| defined (CONFIG_AML_MESON_2) || defined(CONFIG_AML_MESON_3)
+					#error "Only one chip[CONFIG_AML_MESON_1/2/3/A2/A2/A1] can be defined for SPI controler!"
+				#endif
+			#else //else for CONFIG_AML_MESON_A3
+				//Amlogic SPI controller need use pinmax setting
+				#error "please define one chip[CONFIG_AML_MESON_1/2/3/A2/A2/A1] for SPI controller pinmax setting!"
+			#endif //end for CONFIG_AML_MESON_A3	
+		#endif //end for CONFIG_AML_MESON_3
 	#endif //end for CONFIG_AML_MESON_2
 #endif //end for CONFIG_AML_MESON_1
 
@@ -241,8 +275,13 @@ void spi_release_bus(struct spi_slave *slave)
 		//for CONFIG_AML_MESON_2
 		CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,( (1<<7) | (1<<8) | (1<<9) | (1<<10)|(1<<11)|(1<<12)));
 	#else //else for CONFIG_AML_MESON_2
+		#ifdef CONFIG_AML_MESON_3
+			//for MESON 3 @chip\AppNote-M3-CorePinMux.xlsx				
+			CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,((1<<0)|(1<<1)|(1<<2)|(1<<3)));
+		#else //else for CONFIG_AML_MESON_3
 		//Amlogic SPI controller need use pinmax setting
-		#error "please define CONFIG_AML_MESON_1 or others for SPI controler initialize!"
+		#error "please define CONFIG_AML_MESON_1 or others for SPI controller initialize!"
+		#endif //end for CONFIG_AML_MESON_3
 	#endif //end for CONFIG_AML_MESON_2
 #endif //end for CONFIG_AML_MESON_1
 
