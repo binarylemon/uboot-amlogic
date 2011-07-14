@@ -58,60 +58,60 @@ to_winbond_spi_flash(struct spi_flash *flash)
 
 static const struct winbond_spi_flash_params winbond_spi_flash_table[] = {
 	{
-		.id			= 0x3015,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 32,
-		.name			= "W25X16",
+		.id                 = 0x3015,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 32,
+		.name               = "W25X16",
 	},
 	{
-		.id			= 0x3016,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 64,
-		.name			= "W25X32",
+		.id                 = 0x3016,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 64,
+		.name               = "W25X32",
 	},
 	{
-		.id			= 0x3017,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 128,
-		.name			= "W25X64",
+		.id                 = 0x3017,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 128,
+		.name               = "W25X64",
 	},
 	{
-		.id			= 0x4015,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 32,
-		.name			= "W25Q16",
+		.id                 = 0x4015,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 32,
+		.name               = "W25Q16",
 	},
 	{
-		.id			= 0x4016,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 64,
-		.name			= "W25Q32",
+		.id                 = 0x4016,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 64,
+		.name               = "W25Q32",
 	},
 	{
-		.id			= 0x4017,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 128,
-		.name			= "W25Q64",
+		.id                 = 0x4017,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 128,
+		.name               = "W25Q64",
 	},
 	{
-		.id			= 0x4018,
-		.l2_page_size		= 8,
-		.pages_per_sector	= 16,
-		.sectors_per_block	= 16,
-		.nr_blocks		= 256,
-		.name			= "W25Q128",
+		.id                 = 0x4018,
+		.l2_page_size       = 8,
+		.pages_per_sector   = 16,
+		.sectors_per_block  = 16,
+		.nr_blocks          = 256,
+		.name               = "W25Q128",
 	},
 };
 
@@ -120,20 +120,45 @@ static const struct winbond_spi_flash_params winbond_spi_flash_table[] = {
 //
 //
 static int winbond_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
-{
-	while(1);//dead lock here,must implement
-	return 0;
+{	
+	int nReturn = 0;
+	
+	spi_claim_bus(flash->spi);
+    
+    nReturn = spi_flash_write_amlogic(flash, offset, len,buf);
+    
+    spi_release_bus(flash->spi);
+
+	return nReturn;
 }
 
 static int winbond_read_fast(struct spi_flash *flash, u32 offset, size_t len, void *buf)
 {
-	while(1);//dead lock here,must implement
-	return 0;
+	int nReturn =0;
+	
+	spi_claim_bus(flash->spi);
+
+    nReturn = spi_flash_read_amlogic(flash, offset, len,buf);
+
+    spi_release_bus(flash->spi);
+
+	return nReturn;
 }
 int winbond_erase(struct spi_flash *flash, u32 offset, size_t len)
 {
-	while(1);//dead lock here,must implement
-	return 0;
+	struct winbond_spi_flash *stm = to_winbond_spi_flash(flash);
+	u32 sector_size;
+	int nReturn;
+
+	sector_size = (1<< stm->params->l2_page_size) * stm->params->pages_per_sector;
+
+	spi_claim_bus(flash->spi);
+
+	nReturn = spi_flash_erase_amlogic(flash, offset, len, sector_size);
+	
+	spi_release_bus(flash->spi);
+
+	return nReturn;
 }
 
 #else //else for CONFIG_AMLOGIC_SPI_FLASH, keep former for rollback verify
