@@ -96,4 +96,7 @@
 #define SPL_STATIC_FUNC     
 #define SPL_STATIC_VAR      
 #endif
+
+//#define CONFIG_AML_RTC
+
 #endif /* _CPU_H */
