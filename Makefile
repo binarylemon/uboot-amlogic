@@ -1062,6 +1062,11 @@ versatile_config	\
 versatileab_config	\
 versatilepb_config :	unconfig
 	@board/armltd/versatile/split_by_variant.sh $@
+	
+#########################################################################
+## Amlogic -- CORTEX A9
+#########################################################################
+include $(wildcard $(SRCTREE)/board/amlogic/Readme.mk)
 
 #########################################################################
 ## XScale Systems

@@ -8,8 +8,8 @@
 #if CONFIG_AML_MESON==0
 #error please define CONFIG_AML_MESON
 #endif
-#if CONFIG_M1==0
-#error please define CONFIG_M1
+#if CONFIG_M3==0
+#error please define CONFIG_M3
 #endif
 //U boot code control
 
@@ -42,12 +42,12 @@
 //size Limitation
 //#include "romboot.h"
 #warning todo implement CONFIG_BOARD_SIZE_LIMIT 
-//#define CONFIG_BOARD_SIZE_LIMIT 
+#define CONFIG_BOARD_SIZE_LIMIT 600000
 
 //#define CONFIG_EFUSE 1
 
 #ifdef CONFIG_CMD_NAND
-#define CONFIG_NAND_AML_M1 1
+#define CONFIG_NAND_AML_M3 1
 #define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of */
 #define CONFIG_SYS_NAND_MAX_CHIPS	4
 #ifndef CONFIG_NAND_SP_BLOCK_SIZE
@@ -78,7 +78,7 @@
 #define CONFIG_GENERIC_MMC      1
 #endif
 
-#if CONFIG_NAND_AML_M1 || CONFIG_AMLOGIC_SPI_FLASH
+#if CONFIG_NAND_AML_M3 || CONFIG_AMLOGIC_SPI_FLASH
 #define CONFIG_MTD_DEVICE     1
 #define CONFIG_MTD_PARTITIONS 1
 #define CONFIG_CMD_MTDPARTS   1

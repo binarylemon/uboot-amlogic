@@ -25,15 +25,23 @@ struct ddr_set{
         unsigned short t_al;     // Additive Latency
         unsigned short t_clr;    // cas_latency for DDR2 (nclk cycles)
         unsigned short t_dqs;    // distance between data phases to different ranks
-        unsigned short zqcr;
+        unsigned short t_cwl;     // cas write latency.
+        unsigned short t_mod;     // MRS command  
+        unsigned short t_zqcl;    // ZQ calibration long period in clock cycles.
+        unsigned short t_cksrx;   // CKE maintained high before issuing self refresh command. 
+        unsigned short t_cksre;   // Time after Self Refresh Entry that CKE is heold high before going low. 
+        unsigned short t_cke;     // CKE minimum pulse width in memory clock cycles. 
+        unsigned short pad;
+        unsigned       dllcr;
         unsigned       iocr;
         unsigned       mcfg;
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;//400M for DDR 800 , 333M for DDR667
-        unsigned       ram_size;
+        int            (* init_pctl)(struct ddr_set *);
 }__attribute__ ((packed));
 struct pll_clk_settings{
 	unsigned sys_pll_cntl;//0x7c
+	unsigned sys_clk_cntl;//0x7c
 	unsigned other_pll_cntl;
 	unsigned mpeg_clk_cntl;
 	unsigned clk81;//0x80
