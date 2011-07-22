@@ -1075,8 +1075,13 @@ static int flash_io (int mode)
 		
 		if(DEVTYPE(dev_target) == MTD_NANDFLASH){
 			printf("Write to Nand.\n");
-			printf("Write env offset:  %lx\n",  DEVOFFSET(dev_target)+ENVNEXTOFFSET(dev_target));
-			printf("Erase old env offset:  %lx\n", DEVOFFSET(dev_target)+ENVCUROFFSET(dev_target));
+			printf("Write env offset:  %lx\n",  ENVNEXTOFFSET(dev_target));
+			printf("Erase old env offset:  %lx\n", ENVCUROFFSET(dev_target));
+		}
+		else{
+			printf("Write to SPI flash.\n");
+			printf("Erase size:  %lx\n", DEVESIZE(dev_target));
+			printf("Write env to %s\n",  DEVNAME(dev_target));			
 		}
 		
 		if (HaveRedundEnv) {
@@ -1198,8 +1203,9 @@ static int env_offset_init_sub(int dev)
 			return 0;			
 		}
 	}
-	else
+	else{	
 		return 0;
+	}
 }
 //=====================================================================================
 static int env_offset_init()
