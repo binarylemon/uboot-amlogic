@@ -1187,9 +1187,21 @@ static int env_offset_init_sub(int dev)
 				}					
 			}			
 		}
-		if(env_flag != 1)
-			return -1;
-		else{
+		if(env_flag == 0){			
+			for(i=0; i<ENVSECTORS(dev); i++){				
+				if(env_status[i] == 0){
+					ENVNEXTOFFSET(dev) = offset + i*blocksize;
+					ENVCUROFFSET(dev) = offset + i*blocksize;
+					break;
+				}
+			}		
+			
+			if(i==ENVSECTORS(dev))
+				return -1;
+			else
+				return 0;
+		}				
+		else if(env_flag == 1){
 			i = (ENVCUROFFSET(dev)-offset)/blocksize;
 			nextidx = i + 1;
 			if(nextidx >= ENVSECTORS(dev))
@@ -1202,6 +1214,8 @@ static int env_offset_init_sub(int dev)
 			ENVNEXTOFFSET(dev) = offset + nextidx*blocksize;			
 			return 0;			
 		}
+		else
+			return -1;
 	}
 	else{	
 		return 0;
