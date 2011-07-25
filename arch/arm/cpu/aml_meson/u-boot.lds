@@ -75,6 +75,13 @@ SECTIONS
 		__bss_end__ = .;
 	}
 
+	.net ALIGN(0x2000):
+	{
+		__net_dma_start	=	.;
+		. = __net_dma_start + 0x20000;
+		__net_dma_end = .;
+	}
+
 	/DISCARD/ : { *(.dynstr*) }
 	/DISCARD/ : { *(.dynamic*) }
 	/DISCARD/ : { *(.plt*) }

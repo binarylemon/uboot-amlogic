@@ -3,6 +3,12 @@
 #include <asm/arch/memory.h>
 #include <asm/arch/nand.h>
 
+#if defined(CONFIG_CMD_NET)
+#include <asm/arch/aml_eth_reg.h>
+#include <asm/arch/aml_eth_pinmux.h>
+#include <asm/arch/pinmux.h>
+#endif /*(CONFIG_CMD_NET)*/
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
@@ -39,12 +45,102 @@ struct aml_nand_device aml_nand_mid_device = {
 	.dev_num = ARRAY_SIZE(aml_nand_mid_platform),
 };
 
+
+///////////////////////////////////////////////////////////////
+//temp solution for LAN8720 control
+//copy from trunk
+#define creg(a) (*(volatile unsigned*)(0xc1100000 + ((a)<<2)))
+#define reg(a) (*(volatile unsigned*)(a))
+#define delay_us(a) udelay(a)
+
+#define EIO_ID 0x44
+ 
+static void hardi2c_init(void)
+{
+    /***Clear pinmux***/    
+    reg(0xc11080e0) &= ~(1<<31);reg(0xc11080c4) &= ~((1<<16)|(1<<22));reg(0xc11080d0) &= ~(1<<19);//GPIO D12
+    
+    reg(0xc110804c) &= ~(1<<10);
+    reg(0xc1108048) &= ~(1<<10);
+    delay_us(20000);
+    reg(0xc110804c) |= (1<<10);
+    delay_us(20000);
+    
+    hard_i2c_init(400);
+    reg(0xc11080b8) &= ~(0x3f<<0);reg(0xc11080c8) &= ~(3<<28);reg(0xc11080b4) &= ~(1<<31);//AA10 & AB10     GPIOB0(SCL) & GPIOB1(SDA)     HW_I2C_SDA & HW_I2C_SCL
+    reg(0xc11080b8) |= ((1<<2) | (1<<5));
+    delay_us(10000);
+}
+
+static void eio_init(void)
+{
+    /***output enable***/
+    hard_i2c_write8(EIO_ID, 0x0c, 0);
+    hard_i2c_write8(EIO_ID, 0x0d, 0xF7);//RMII_nRST port13 output
+    hard_i2c_write8(EIO_ID, 0x0e, 0x1f);
+}
+ 
+static void power_init(void)
+{
+    eio_init();
+    hard_i2c_write8(EIO_ID, 0x04, 0xfa);//P00 VCC5V_EN & P02 LCD3.3_EN set to low level
+    hard_i2c_write8(EIO_ID, 0x05, 0xff);//RMII_nRST port13 output
+    hard_i2c_write8(EIO_ID, 0x06, 0x1f);	
+}
+
+///////////////////////////////////////////////////////////////
+
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
-	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-	return 0;
+    gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
+    gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
+
+    //copy from trunk
+    hardi2c_init();
+    power_init();
+	
+    return 0;
 }
+
+#if defined(CONFIG_CMD_NET)
+/*
+ * Routine: setup_net_chip
+ * Description: Setting up the configuration GPMC registers specific to the
+ *		Ethernet hardware.
+ */
+static void setup_net_chip(void)
+{}
+extern int aml_eth_init(bd_t *bis);
+int board_eth_init(bd_t *bis)
+{        
+    eth_clk_set(ETH_CLKSRC_APLL_CLK,400*CLK_1M,50*CLK_1M);
+        
+    aml_eth_set_pinmux(ETH_BANK2_GPIOD15_D23,ETH_CLK_OUT_GPIOD24_REG5_1,0);
+        
+    writel(readl(ETH_PLL_CNTL) & ~(1 << 0), ETH_PLL_CNTL); // Disable the Ethernet clocks     
+    
+    writel(readl(ETH_PLL_CNTL) | (0 << 3), ETH_PLL_CNTL); // desc endianess "same order"   
+    writel(readl(ETH_PLL_CNTL) | (0 << 2), ETH_PLL_CNTL); // data endianess "little"    
+    writel(readl(ETH_PLL_CNTL) | (1 << 1), ETH_PLL_CNTL); // divide by 2 for 100M     
+    writel(readl(ETH_PLL_CNTL) | (1 << 0), ETH_PLL_CNTL);  // enable Ethernet clocks   
+    
+    udelay(100);
+
+    /*reset*/
+    //EIO P13 SET LOW
+    hard_i2c_write8(EIO_ID, 0x05, 0xf7);//RMII_nRST port13 output to low	
+    udelay(100);
+    //EIO P13 SET HIGH
+    hard_i2c_write8(EIO_ID, 0x05, 0xff);//RMII_nRST port13 output to high
+    udelay(100);
+
+    aml_eth_init(bis);
+
+	  return 0;
+}
+#endif /* (CONFIG_CMD_NET) */
+
+
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>

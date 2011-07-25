@@ -29,6 +29,12 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	 */
     writel(plls->other_pll_cntl,P_HHI_OTHER_PLL_CNTL);
 	writel(plls->mpeg_clk_cntl,P_HHI_MPEG_CLK_CNTL);
+
+#ifdef CONFIG_CMD_NET
+	/*Demod PLL,1.2G for SATA/Ethernet*/
+	writel(plls->demod_pll400m_cntl,P_HHI_DEMOD_PLL_CNTL);
+#endif /*CONFIG_CMD_NET*/
+	
 	romboot_info->clk81 = plls->clk81;
 	serial_init(UART_CONTROL_SET(CONFIG_BAUDRATE,plls->clk81));
 }
