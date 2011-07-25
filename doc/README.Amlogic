@@ -25,3 +25,25 @@
        replaced with "nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE];" in base driver.
        1. Modified struct aml_nand_chip member 'mtd' from struct to pointer in aml_nand.h.
        2. Modified function mtd_to_nand_chip in aml_nand.h. Use member chip to get aml_nand_chip pointer.
+       
+6. M1 support Ethernet (Rev2172 2011-07-25 16:30:11)
+	6.1. board/amlogic/configs/arm_8726m.h
+	     add CONFIG_CMD_NET and net related macro
+	6.2. arch/arm/cpu/aml_meson/m1/firmware/pll.c
+		   set PLL for amlogic Ethernet controller
+	6.3. arch/arm/cpu/aml_meson/u-boot.lds
+		   add label for Ethernet DMA data transfer (__net_dma_start & __net_dma_end)
+	6.4. board/amlogic/Mesonboard_AML8726-M_V1.1/mesonboard_aml8726m_v1_1.c
+		   add code for LAN8720 net IC control
+	     6.4.1 add new file: board/amlogic/Mesonboard_AML8726-M_V1.1/m1_hardi2c.c
+		       Note: m1_hardi2c.c is a temp solution and will be removed when I2C solution is ready.
+	6.5. arch/arm/cpu/aml_meson/m1/Makefile
+		   add two files for Ethernet clock & pinmux setting
+		   6.5.1 add source: arch/arm/cpu/aml_meson/m1/aml_eth_pinmux.c
+		   6.5.2 add source: arch/arm/cpu/aml_meson/m1/aml_eth_clk_set.c
+		   6.5.3 add header file: arch/arm/include/asm/arch-m1/aml_eth_pinmux.h
+		   6.5.4 add header file: arch/arm/include/asm/arch-m1/aml_eth_clk_set.h
+		   6.5.5 add herder file: arch/arm/include/asm/arch-m1/aml_emac_lan8700.h
+	6.6. drivers/net/Makefile
+		   update for Amlogic Ethernet controller
+		   6.1 add source: drivers/net/aml_ethernet.c
