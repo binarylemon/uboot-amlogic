@@ -284,7 +284,6 @@ int fw_printenv (int argc, char *argv[])
 	char *env, *nxt;
 	int i, n_flag;
 	int rc = 0;
-
 	if (fw_env_open())
 		return -1;
 
@@ -642,7 +641,7 @@ int fw_parse_script(char *fname)
  */
 static int flash_bad_block (int fd, uint8_t mtd_type, loff_t *blockstart)
 {
-	if (mtd_type == MTD_NANDFLASH) {
+	if (mtd_type == MTD_NANDFLASH) {		
 		int badblock = ioctl (fd, MEMGETBADBLOCK, blockstart);
 
 		if (badblock < 0) {
@@ -686,10 +685,10 @@ static int flash_read_buf (int dev, int fd, void *buf, size_t count,
 	 * erase sector size is always a power of 2
 	 */
 	blockstart = offset & ~(DEVESIZE (dev) - 1);
-
+	
 	/* Offset inside a block */
-	block_seek = offset - blockstart;
-
+	block_seek = offset - blockstart;	
+	
 	if (mtd_type == MTD_NANDFLASH) {
 		/*
 		 * NAND: calculate which blocks we are reading. We have
@@ -735,7 +734,6 @@ static int flash_read_buf (int dev, int fd, void *buf, size_t count,
 		 * offset - see common/env_nand.c::writeenv()
 		 */
 		lseek (fd, blockstart + block_seek, SEEK_SET);
-
 		rc = read (fd, buf + processed, readlen);
 		if (rc != readlen) {
 			fprintf (stderr, "Read error on %s: %s\n",
@@ -794,6 +792,7 @@ static int flash_write_buf (int dev, int fd, void *buf, size_t count,
 	erase_len = top_of_range - erase_offset;
 
 	blockstart = erase_offset;
+	
 	/* Offset inside a block */
 	block_seek = offset - erase_offset;
 
@@ -829,10 +828,10 @@ static int flash_write_buf (int dev, int fd, void *buf, size_t count,
 		/*
 		 * We get here, iff offset is block-aligned and count is a
 		 * multiple of blocklen - see write_total calculation above
-		 */
-		data = buf;
+		 */	 
+		data = buf;		
 	}
-
+	
 	if (mtd_type == MTD_NANDFLASH) {
 		/*
 		 * NAND: calculate which blocks we are writing. We have
@@ -844,13 +843,12 @@ static int flash_write_buf (int dev, int fd, void *buf, size_t count,
 	}
 
 	erase.length = erasesize;
-
 	/* This only runs once on NOR flash */
-	while (processed < write_total) {
-		rc = flash_bad_block (fd, mtd_type, &blockstart);
+	while (processed < write_total) {	
+		 rc = flash_bad_block (fd, mtd_type, &blockstart);
 		if (rc < 0)		/* block test failed */
 			return rc;
-
+		
 		if (blockstart + erasesize > top_of_range) {
 			fprintf (stderr, "End of range reached, aborting\n");
 			return -1;
@@ -860,55 +858,55 @@ static int flash_write_buf (int dev, int fd, void *buf, size_t count,
 			blockstart += blocklen;
 			continue;
 		}
-
-		erase.start = blockstart;
-		ioctl (fd, MEMUNLOCK, &erase);
-
-		if (ioctl (fd, MEMERASE, &erase) != 0) {
-			fprintf (stderr, "MTD erase error on %s: %s\n",
-				 DEVNAME (dev),
-				 strerror (errno));
-			return -1;
-		}
-
+			
+		erase.start = blockstart;		
+		if((mtd_type == MTD_NANDFLASH) || (mtd_type == MTD_NORFLASH)){			
+			ioctl (fd, MEMUNLOCK, &erase);
+		
+			if (ioctl (fd, MEMERASE, &erase) != 0) {
+				fprintf (stderr, "MTD erase error on %s: %s\n",
+					 DEVNAME (dev),
+					 strerror (errno));
+				return -1;
+			}	
+		}		
 		if (lseek (fd, blockstart, SEEK_SET) == -1) {
 			fprintf (stderr,
 				 "Seek error on %s: %s\n",
 				 DEVNAME (dev), strerror (errno));
 			return -1;
 		}
-
 #ifdef DEBUG
 		printf ("Write 0x%x bytes at 0x%llx\n", erasesize, blockstart);
-#endif
+#endif				
 		if (write (fd, data + processed, erasesize) != erasesize) {
 			fprintf (stderr, "Write error on %s: %s\n",
 				 DEVNAME (dev), strerror (errno));
 			return -1;
 		}
-
-		ioctl (fd, MEMLOCK, &erase);
-
+		if((mtd_type == MTD_NANDFLASH) || (mtd_type == MTD_NORFLASH)){			
+			ioctl (fd, MEMLOCK, &erase);
+		}
+		
 		processed  += blocklen;
 		block_seek = 0;
 		blockstart += blocklen;
 	}
 
 	if (write_total > count)
-		free (data);
-		
-	// AML: erase the last env block
-	if ((mtd_type == MTD_NANDFLASH) && (ENVCUROFFSET(dev) != ENVNEXTOFFSET(dev))){	
+		free (data);		
+	
+	// AML: erase the last env block	
+	if ((mtd_type == MTD_NANDFLASH) && (ENVCUROFFSET(dev) != ENVNEXTOFFSET(dev))){			
 		erase.start = ENVCUROFFSET(dev);
-		erase.length = DEVESIZE(dev);
-		ioctl (fd, MEMUNLOCK, &erase);		
+		erase.length = DEVESIZE(dev);		
+		ioctl (fd, MEMUNLOCK, &erase);			
 		if (ioctl (fd, MEMERASE, &erase) != 0) {
 			fprintf (stderr, "MTD erase error on %s: %s\n",  DEVNAME (dev), strerror (errno));
 			return -1;
-		}
+		}		
 		ioctl (fd, MEMLOCK, &erase);		
-	}			
-
+	}	
 	return processed;
 }
 
@@ -1000,9 +998,9 @@ static int flash_write (int fd_current, int fd_target, int dev_target)
 		if (rc < 0)
 			return rc;
 	}
-
-	if (environment.flag_scheme == FLAG_BOOLEAN) {
-		/* Have to set obsolete flag */
+	
+	if ((environment.flag_scheme == FLAG_BOOLEAN) && (DEVTYPE(dev_target) == MTD_NORFLASH)) {
+		/* Have to set obsolete flag */		
 		off_t offset = DEVOFFSET (dev_current) +
 			offsetof (struct env_image_redundant, flags);
 #ifdef DEBUG
@@ -1017,9 +1015,11 @@ static int flash_write (int fd_current, int fd_target, int dev_target)
 
 static int flash_read (int fd)
 {
-	struct mtd_info_user mtdinfo;
 	int rc;
 
+/*
+	// initial device type is done in env_offset_init_sub
+	struct mtd_info_user mtdinfo;
 	rc = ioctl (fd, MEMGETINFO, &mtdinfo);
 	if (rc < 0) {
 		perror ("Cannot get MTD information");
@@ -1030,11 +1030,10 @@ static int flash_read (int fd)
 		fprintf (stderr, "Unsupported flash type %u\n", mtdinfo.type);
 		return -1;
 	}
-
 	DEVTYPE(dev_current) = mtdinfo.type;
-
+*/		
 	rc = flash_read_buf (dev_current, fd, environment.image, CONFIG_ENV_SIZE,
-			     ENVCUROFFSET (dev_current), mtdinfo.type);
+			     ENVCUROFFSET (dev_current), DEVTYPE(dev_current));
 
 	return (rc != CONFIG_ENV_SIZE) ? -1 : 0;
 }
@@ -1043,7 +1042,7 @@ static int flash_io (int mode)
 {
 	int fd_current, fd_target, rc, dev_target;
 
-	/* dev_current: fd_current, erase_current */
+	/* dev_current: fd_current, erase_current */	
 	fd_current = open (DEVNAME (dev_current), mode);
 	if (fd_current < 0) {
 		fprintf (stderr,
@@ -1069,21 +1068,24 @@ static int flash_io (int mode)
 		} else {
 			dev_target = dev_current;
 			fd_target = fd_current;
-		}
-
+		}		
 		rc = flash_write (fd_current, fd_target, dev_target);
-		
-		if(DEVTYPE(dev_target) == MTD_NANDFLASH){
-			printf("Write to Nand.\n");
-			printf("Write env offset:  %lx\n",  ENVNEXTOFFSET(dev_target));
-			printf("Erase old env offset:  %lx\n", ENVCUROFFSET(dev_target));
+		if(!rc){
+			if(DEVTYPE(dev_target) == MTD_NANDFLASH){
+				printf("Write to Nand.\n");
+				printf("Write env offset:  %lx\n",  ENVNEXTOFFSET(dev_target));
+				printf("Erase old env offset:  %lx\n", ENVCUROFFSET(dev_target));
+			}
+			else if(DEVTYPE(dev_target) == MTD_NORFLASH){
+				printf("Write to SPI flash.\n");
+				printf("Erase size:  %lx\n", DEVESIZE(dev_target));
+				printf("Write env to %s\n",  DEVNAME(dev_target));			
+			}
+			else{
+				printf("Write to mmc.\n");			
+				printf("Write env to offset:%x of dev:%s\n",  DEVOFFSET(dev_target), DEVNAME(dev_target));			
+			}
 		}
-		else{
-			printf("Write to SPI flash.\n");
-			printf("Erase size:  %lx\n", DEVESIZE(dev_target));
-			printf("Write env to %s\n",  DEVNAME(dev_target));			
-		}
-		
 		if (HaveRedundEnv) {
 			if (close (fd_target)) {
 				fprintf (stderr,
@@ -1137,31 +1139,41 @@ static int env_offset_init_sub(int dev)
 	char env_flag = 0;
 	loff_t badtest;
 	char env_status[10];
-	int nextidx;
+	int nextidx;	
+	int ret = 0;
 	
 	fd = open (DEVNAME (dev), O_RDONLY);
 	if (fd < 0) {
 		fprintf (stderr,	 "Can't open %s: %s\n",	 DEVNAME (dev), strerror (errno));
 		return -1;
 	}
+	
 	rc = ioctl (fd, MEMGETINFO, &mtdinfo);
-	if (rc < 0) {
-		perror ("Cannot get MTD information");
-		return -1;
+	if (rc < 0) {		
+		//perror ("Cannot get MTD information");
+		//return -1;
+		// support env located in mmc
+		DEVTYPE(dev) = MTD_ABSENT;
 	}
-	if (mtdinfo.type != MTD_NORFLASH && mtdinfo.type != MTD_NANDFLASH) {
-		fprintf (stderr, "Unsupported flash type %u\n", mtdinfo.type);
-		return -1;
+	else{
+		if (mtdinfo.type != MTD_NORFLASH && mtdinfo.type != MTD_NANDFLASH) {
+			fprintf (stderr, "Unsupported flash type %u\n", mtdinfo.type);
+			ret = -1;
+			goto exit;
+		}
+		else
+			DEVTYPE(dev) = mtdinfo.type;
 	}
-	error = 0;
-	DEVPAGESIZE(dev) = mtdinfo.writesize;
+	
+	ENVCUROFFSET(dev) = DEVOFFSET(dev);	
 	if(mtdinfo.type == MTD_NANDFLASH){
+		error = 0;
+		DEVPAGESIZE(dev) = mtdinfo.writesize;
 		pagesize = mtdinfo.writesize;
 		blocksize = DEVESIZE(dev);
 		env_size = ENVSIZE(dev);
 		len = min(pagesize, env_size);
-		char temp_buf[pagesize];
-		ENVCUROFFSET(dev) = DEVOFFSET(dev);
+		char temp_buf[pagesize];		
 		
 		for(i=0; i<ENVSECTORS(dev); i++){  //scan block, find valid env block
 			addr = offset + i*blocksize;					
@@ -1196,10 +1208,14 @@ static int env_offset_init_sub(int dev)
 				}
 			}		
 			
-			if(i==ENVSECTORS(dev))
-				return -1;
-			else
-				return 0;
+			if(i==ENVSECTORS(dev)){
+					ret = -1;
+					goto exit;
+			}
+			else{
+					ret = 0;
+					goto exit;
+			}
 		}				
 		else if(env_flag == 1){
 			i = (ENVCUROFFSET(dev)-offset)/blocksize;
@@ -1212,14 +1228,29 @@ static int env_offset_init_sub(int dev)
 				nextidx++;
 			}
 			ENVNEXTOFFSET(dev) = offset + nextidx*blocksize;			
-			return 0;			
+			ret = 0;
+			goto exit;		
 		}
-		else
-			return -1;
+		else{
+			ret = -1;
+			goto exit;
+		}
 	}
 	else{	
-		return 0;
+			ENVCUROFFSET(dev) = DEVOFFSET(dev);
+			ENVNEXTOFFSET(dev) = DEVOFFSET(dev);
+			ret = 0;
+			goto exit;
 	}
+
+exit:
+	if (close (fd)) {
+		fprintf (stderr,
+			 "I/O error on %s: %s\n",
+			 DEVNAME (dev_current), strerror (errno));
+		ret = -1;
+	}
+	return ret;
 }
 //=====================================================================================
 static int env_offset_init()
@@ -1278,7 +1309,6 @@ int fw_env_open(void)
 		environment.flags	= NULL;
 		environment.data	= single->data;
 	}
-
 	dev_current = 0;
 	if (flash_io (O_RDONLY))
 		return -1;
@@ -1319,7 +1349,10 @@ int fw_env_open(void)
 		} else if (DEVTYPE(dev_current) == MTD_NANDFLASH &&
 			   DEVTYPE(!dev_current) == MTD_NANDFLASH) {
 			environment.flag_scheme = FLAG_INCREMENTAL;
-		} else {
+		}else if(DEVTYPE(dev_current) == MTD_ABSENT &&
+			DEVTYPE(!dev_current) == MTD_ABSENT){
+			 environment.flag_scheme = FLAG_BOOLEAN;
+		}else {
 			fprintf (stderr, "Incompatible flash types!\n");
 			return -1;
 		}
@@ -1425,6 +1458,7 @@ static int parse_config ()
 	HaveRedundEnv = 1;
 #endif
 #endif
+	
 	if (stat (DEVNAME (0), &st)) {
 		fprintf (stderr,
 			"Cannot access MTD device %s: %s\n",
@@ -1437,7 +1471,7 @@ static int parse_config ()
 			"Cannot access MTD device %s: %s\n",
 			DEVNAME (1), strerror (errno));
 		return -1;
-	}
+	}	
 	return 0;
 }
 
