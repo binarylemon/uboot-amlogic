@@ -169,8 +169,7 @@ void rtc_ser_static_write_auto (unsigned long static_reg_data_in)
     data32 |= (static_reg_data_in & 0xff) << 24; // auto_static_reg
     WRITE_CBUS_REG(RTC_ADDR0,data32);
     // Poll auto_serializer_busy bit until it's low (IDLE)
-    while ((READ_CBUS_REG(RTC_ADDR0)) & 1<<22) {}
-    printf("Ada: RTC_ADDR0=%x, RTC_ADDR4=%x\n", READ_CBUS_REG(RTC_ADDR0), READ_CBUS_REG(RTC_ADDR4));    
+    while ((READ_CBUS_REG(RTC_ADDR0)) & 1<<22) {}    
 }
 
 
