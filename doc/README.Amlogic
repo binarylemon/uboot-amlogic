@@ -1,10 +1,12 @@
 ;=============================================
-; board m1_8726m_mid  
+; board m1_8726m_mid  & M3_SKT_V1
 ;=============================================
 1. Build process:
-	a) make distclean
-	b) make arm_8726m_config
-	c) make all
+	a) make help
+	b) make distclean
+	c) make xxxx_config
+	d) make all
+	** make help infomation is in board/amlogic/Readme.mk.
 
 2. Cache config macro
 	a) CONFIG_L2_OFF:  to disable l2 cache
@@ -47,3 +49,10 @@
 	6.6. drivers/net/Makefile
 		   update for Amlogic Ethernet controller
 		   6.1 add source: drivers/net/aml_ethernet.c
+		   
+7. Add new configuration
+   7.1. Add help information in "board/amlogic/Readme.mk"
+   7.2. Add board configs in "board/amlogic/boards.cfg"
+   7.3. Add new "soc" like "m1,m3" in "tools/convert.c"
+   7.4. Add config head file in "board/amlogic/configs" like "m3_socket.h"
+   7.5. Add board dependent file in "boare/amlogic/xxxx/" like "/m3_skt_v1/m3_skt_v1.c"
