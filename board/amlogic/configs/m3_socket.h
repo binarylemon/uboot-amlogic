@@ -3,7 +3,7 @@
 
 
 //UART Sectoion
-#define CONFIG_CONS_INDEX   1
+#define CONFIG_CONS_INDEX   2
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1
@@ -20,23 +20,6 @@
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
 #define CONFIG_SYS_LONGHELP	1
-
-#define CONFIG_SYS_CACHE_LINE_SIZE 32
-#define CONFIG_CMD_CACHE	1
-//#define CONFIG_L2_OFF
-#ifndef CONFIG_L2_OFF
-#define CONFIG_CACHE_L2X0       1
-#endif
-
-//#define CONFIG_DCACHE_OFF    
-//#define CONFIG_ICACHE_OFF    
-#ifndef CONFIG_DCACHE_OFF
-#define CONFIG_CACHE_ENABLE     1
-#else
-#ifndef CONFIG_ICACHE_OFF
-#define CONFIG_CACHE_ENABLE     1
-#endif
-#endif
 
 #define CONFIG_MEMSIZE	512	/*unit is MB*/ 
 #if(CONFIG_MEMSIZE == 512)

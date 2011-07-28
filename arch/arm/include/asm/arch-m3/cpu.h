@@ -35,7 +35,7 @@
 #define CONFIG_SYS_CBSIZE          1024
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 
-#define CONFIG_L2_OFF
+
 /** Timer relative Configuration **/
 #define CONFIG_CRYSTAL_MHZ  24
 /** Internal storage setting **/
@@ -43,6 +43,13 @@
 //#include "romboot.h"
 #warning todo implement CONFIG_BOARD_SIZE_LIMIT 
 #define CONFIG_BOARD_SIZE_LIMIT 600000
+
+#define CONFIG_SYS_CACHE_LINE_SIZE 32
+//#define CONFIG_CMD_CACHE	1
+#define CONFIG_SYS_NO_CP15_CACHE	1
+#define CONFIG_L2_OFF			1
+#define CONFIG_DCACHE_OFF    		1
+#define CONFIG_ICACHE_OFF    		1
 
 //#define CONFIG_EFUSE 1
 

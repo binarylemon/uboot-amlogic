@@ -1,8 +1,11 @@
 #include <config.h>
-#include <asm/arch/io.h>
 #include <asm/arch/romboot.h>
-#include <asm/arch/timer.h>
+#include <asm/arch/timing.h>
+#include <asm/arch/reg_addr.h>
+#include <asm/arch/io.h>
 #include <asm/arch/sdio.h>
+#include "nfio.c"
+//#include <asm/arch/firm/config.h>
 
 
 /**
@@ -109,14 +112,14 @@
 #define VOLTAGE_VALIDATION_RETRY    0x8000
 #define APP55_RETRY                 3
 
-#define TIMEOUT_SHORT       (300*1000)  /* 250ms */
-#define TIMEOUT_DATA        (400*1000)  /* 300ms (TIMEOUT_SHORT+ (READ_SIZE*8)/10000000) */
+#define TIMEOUT_SHORT       (250*1000)  /* 250ms */
+#define TIMEOUT_DATA        (300*1000)  /* 300ms (TIMEOUT_SHORT+ (READ_SIZE*8)/10000000) */
 #ifndef CONFIG_SDIO_BUFFER_SIZE
 #define CONFIG_SDIO_BUFFER_SIZE 64*1024
 #endif
 #define NO_DELAY_DATA 0
 
-static  int wait_busy(unsigned timeout)
+static inline int wait_busy(unsigned timeout)
 {
     unsigned this_timeout = TIMERE_GET();
     unsigned r;
@@ -133,11 +136,10 @@ static  int wait_busy(unsigned timeout)
 }
 
 
-static short sdio_send_cmd(unsigned cmd,unsigned arg,unsigned time,short err)
+static inline short sdio_send_cmd(unsigned cmd,unsigned arg,unsigned time,short err)
 {
     writel(arg,P_CMD_ARGUMENT);
     writel(cmd,P_CMD_SEND);
-    get_utimer(0);
     if (wait_busy(time))
     {
         return err;
@@ -145,7 +147,7 @@ static short sdio_send_cmd(unsigned cmd,unsigned arg,unsigned time,short err)
     return 0;
 }
  
-SPL_STATIC_FUNC int sdio_read(unsigned target,unsigned size,unsigned por_sel)
+STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
 {
    unsigned addr,cur_size,read_size;
 
@@ -155,8 +157,7 @@ SPL_STATIC_FUNC int sdio_read(unsigned target,unsigned size,unsigned por_sel)
    unsigned arg;
    cmd_clk_divide=__plls.sdio_cmd_clk_divide;
    SD_boot_type=sdio_get_port(por_sel);
-   if(SD_boot_type<0)
-    return -1;
+   unsigned card_type=(romboot_info->ext>>4)&0xf;
     
    //set clk to trnsfer clk rate and bus width
    WRITE_CBUS_REG(SDIO_CONFIG,(2 << sdio_write_CRC_ok_status_bit) |
@@ -180,10 +181,9 @@ SPL_STATIC_FUNC int sdio_read(unsigned target,unsigned size,unsigned por_sel)
 
       WRITE_CBUS_REG(SDIO_M_ADDR,read_size+target);
       read_size+=cur_size;
-      cur_size>>=9;
 
       WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)) << 16);
-      if(romboot_info->card_type==CARD_TYPE_SDHC)
+      if(card_type==CARD_TYPE_SDHC)
             arg=addr>>9;
       else
         arg=addr;
@@ -207,19 +207,21 @@ SPL_STATIC_FUNC int sdio_read(unsigned target,unsigned size,unsigned por_sel)
             return error;
     }
     return 0;
+    
 }
 
-SPL_STATIC_FUNC short sdio_init(unsigned dev)
+STATIC_PREFIX short sdio_init(unsigned dev)
 {
     unsigned SD_boot_type, temp;  // bits [9:8]
     unsigned card_type = CARD_TYPE_SD;
     short error;
     disable_sdio(dev);
     __udelay(200000);
+
     SD_boot_type=enable_sdio(dev);
+    
     if(SD_boot_type<0)
-     return -1;
-   
+    	return -1;
     __udelay(200000);
     setbits_le32(P_SDIO_IRQ_CONFIG,1<<soft_reset_bit);
     
@@ -442,8 +444,7 @@ SPL_STATIC_FUNC short sdio_init(unsigned dev)
             return error;
         //--------------------------------------------------------------------------------
         // send ACMD51 -- SEND_SCR
-#define MEMORY_LOC 0x80000000
-        writel(MEMORY_LOC,P_SDIO_M_ADDR);
+        writel(0x80000000,P_SDIO_M_ADDR);
         writel(79<<16,P_SDIO_EXTENSION);
 
         error=sdio_send_cmd(
@@ -456,7 +457,7 @@ SPL_STATIC_FUNC short sdio_init(unsigned dev)
             return error;
     }
 
-    romboot_info->card_type=card_type;
+    romboot_info->ext|=(romboot_info->ext&(0xf<<4))|((card_type&0xf)<<4);
     return ERROR_NONE;
 }
 

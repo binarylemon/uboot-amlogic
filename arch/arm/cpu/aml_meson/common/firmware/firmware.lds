@@ -42,4 +42,4 @@ SECTIONS
 	_bssend = . ;
 }
 ASSERT(_end <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bootstrap too big");
-ASSERT(_bssend <= ROM_BOOT_INFO, "ROM BOOT bss  too big");
+ASSERT(_bssend <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bss  too big");

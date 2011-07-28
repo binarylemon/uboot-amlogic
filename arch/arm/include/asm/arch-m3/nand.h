@@ -29,23 +29,37 @@
 #define CE2         (0xb<<10)
 #define CE3         (0x7<<10)
 #define CE_NOT_SEL  (0xf<<10)
-
+#define IO4 ((0xe<<10)|(1<<18)) 
+#define IO5 ((0xd<<10)|(1<<18)) 
+#define IO6 ((0xb<<10)|(1<<18)) 
 #define CLE         (0x5<<14)
 #define ALE         (0x6<<14)
 #define DWR         (0x4<<14)
 #define DRD         (0x8<<14)
 #define IDLE        (0xc<<14)
-#define RB          (0x10<<14)
+#define RB  		(1<<20) 
+
 #define STANDBY     (0xf<<10)
 
-#define ADL  (0xc<<16)
-#define ADH  (0xd<<16)
-#define AIL  (0xe<<16)
-#define AIH  (0xf<<16)
-#define M2N  (0x4<<17)
-#define N2M  (0x5<<17)
+#define PER_INFO_BYTE 8
+#define SIZE_INT	  (sizeof(unsigned int))	
+
+#define M2N  ((0<<17) | (2<<20) | (1<<19))
+#define N2M  ((1<<17) | (2<<20) | (1<<19))
+
+#define M2N_NORAN  0x00200000
+#define N2M_NORAN  0x00220000
+
+#define STS  ((3<<17) | (2<<20))
+#define ADL  ((0<<16) | (3<<20))
+#define ADH  ((1<<16) | (3<<20))
+#define AIL  ((2<<16) | (3<<20))
+#define AIH  ((3<<16) | (3<<20))
+#define ASL  ((4<<16) | (3<<20))
+#define ASH  ((5<<16) | (3<<20))
+#define SEED ((8<<16) | (3<<20))
 /**
-    Nand Flash Controller (M1)
+    Nand Flash Controller (M3)
     Global Macros
 */
 /**
@@ -84,7 +98,7 @@
 */
 #define NFC_SEND_CMD(cmd)           (WRITE_CBUS_REG(NAND_CMD,cmd))
 #define NFC_READ_INFO()             (READ_CBUS_REG(NAND_CMD))
-/** ECC defination(M1) */
+/** ECC defination(M3) */
 #define NAND_ECC_NONE             (0x0<<14)
 #define NAND_ECC_REV0             (0x1<<14)
 #define NAND_ECC_REV1             (0x2<<14)

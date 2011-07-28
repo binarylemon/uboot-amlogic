@@ -96,6 +96,7 @@ static struct ddr_set __ddr_setting={
                     .t_cksre        =   7,
                     .t_cke          =   4,
          .ddr_pll_cntl=0x0011021c,
+         .ddr_clk=336,
          .ddr_ctrl= (1 << 24 ) |    //pctl_brst 4,
                     (0xff << 16) |  //reorder en for the 8 channel.
                     (0 << 15 ) |     // pctl16 mode = 0.  pctl =   32bits data pins
@@ -179,20 +180,23 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	        (0<<2)    |  // divided 2
 	        (1<<4)    |  //APB_en
 	        (1<<5)    |  //AT en
-	        (1<<7)    ,  // send to sys cpu
+	        (1<<7)    |(1<<8),  // send to sys cpu
+	.sys_clk=800,
+	
 	.other_pll_cntl=0x00000664,//800M todo
-	.mpeg_clk_cntl=	(1 << 12) |                     // select other PLL
+	.mpeg_clk_cntl=	(2 << 12) |                     // select other PLL
 			        ((4- 1) << 0 ) |    // div1
 			        (1 << 7 ) |                     // cntl_hi_mpeg_div_en, enable gating
 			        (1 << 8 ) |(1<<15),                    // Connect clk81 to the PLL divider output
+    .other_clk=800,
+	
+	
 	.demod_pll400m_cntl=(1<<9)	| //n 1200=xtal*m/n 
 			(50<<0),	//m 50*24
-	.clk81=200000000,
-	.a9_clk=800*1000000,
 	.spi_setting=0xea949,
 
 	.nfc_cfg=(((0)&0xf)<<10) | (0<<9) | (0<<5) | 5,
-	.sdio_cmd_clk_divide=5,
+	.sdio_cmd_clk_divide=6,
 	.sdio_time_short=(250*200000)/(2*(12)),
 	.uart=
         (200000000/(CONFIG_BAUDRATE*4) )

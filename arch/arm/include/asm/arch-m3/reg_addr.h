@@ -2,6 +2,7 @@
 #define __MACH_MESSON_REG_ADDR_H
 //CBUS REG ADDR
 #include "registers.h"
+#include "ao_reg.h"
 #define P_SECOND_DEMUX_OFFSET_0 CBUS_REG_ADDR(SECOND_DEMUX_OFFSET_0)
 #define P_THIRD_DEMUX_OFFSET_0 CBUS_REG_ADDR(THIRD_DEMUX_OFFSET_0)
 #define P_STB_TOP_CONFIG CBUS_REG_ADDR(STB_TOP_CONFIG)
@@ -2720,5 +2721,25 @@ APB Bus registers
 #define P_MMC_REQ5_CTRL APB_REG_ADDR(MMC_REQ5_CTRL)
 #define P_MMC_REQ6_CTRL APB_REG_ADDR(MMC_REQ6_CTRL)
 #define P_MMC_REQ7_CTRL APB_REG_ADDR(MMC_REQ7_CTRL)
+
+#define P_PREG_PAD_GPIO0_EN_N                        CBUS_REG_ADDR(0x200c)
+#define P_PREG_PAD_GPIO0_O                           CBUS_REG_ADDR(0x200d)
+#define P_PREG_PAD_GPIO0_I                           CBUS_REG_ADDR(0x200e)
+#define P_PREG_PAD_GPIO1_EN_N                        CBUS_REG_ADDR(0x200f)
+#define P_PREG_PAD_GPIO1_O                           CBUS_REG_ADDR(0x2010)
+#define P_PREG_PAD_GPIO1_I                           CBUS_REG_ADDR(0x2011)
+#define P_PREG_PAD_GPIO2_EN_N                        CBUS_REG_ADDR(0x2012)
+#define P_PREG_PAD_GPIO2_O                           CBUS_REG_ADDR(0x2013)
+#define P_PREG_PAD_GPIO2_I                           CBUS_REG_ADDR(0x2014)
+#define P_PREG_PAD_GPIO3_EN_N                        CBUS_REG_ADDR(0x2015)
+#define P_PREG_PAD_GPIO3_O                           CBUS_REG_ADDR(0x2016)
+#define P_PREG_PAD_GPIO3_I                           CBUS_REG_ADDR(0x2017)
+#define P_PREG_PAD_GPIO4_EN_N                        CBUS_REG_ADDR(0x2018)
+#define P_PREG_PAD_GPIO4_O                           CBUS_REG_ADDR(0x2019)
+#define P_PREG_PAD_GPIO4_I                           CBUS_REG_ADDR(0x201a)
+#define P_PREG_PAD_GPIO5_EN_N                        CBUS_REG_ADDR(0x201b)
+#define P_PREG_PAD_GPIO5_O                           CBUS_REG_ADDR(0x201c)
+#define P_PREG_PAD_GPIO5_I                           CBUS_REG_ADDR(0x201d)
+
 
 #endif

@@ -130,7 +130,6 @@ static int init_baudrate (void)
 {
 	char tmp[64];	/* long enough for environment variables */
 	int i = getenv_f("baudrate", tmp, sizeof (tmp));
-
 	gd->baudrate = (i > 0)
 			? (int) simple_strtoul (tmp, NULL, 10)
 			: CONFIG_BAUDRATE;

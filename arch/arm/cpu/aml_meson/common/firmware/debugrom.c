@@ -1,15 +1,15 @@
 #define  CONFIG_AMLROM_SPL      1
 #define  CONFIG_SPL_DEBUGROM    1
 #include <uartpin.c>
-#include <pinmux.c>
 #include <serial.c>
+#include <pinmux.c>
+#include <sdpinmux.c>
 #include <timer.c>
 #include <timming.c>
 #include <memtest.c>
 #include <pll.c>
 #include <ddr.c>
 #include <sdio.c>
-
 #include <debug_rom.c>
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)

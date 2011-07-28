@@ -6,75 +6,134 @@
  *      This file described romboot area usage and power on settings
  */
 
-#ifndef _M1_ROMBOOT_H_
-#define _M1_ROMBOOT_H_
+#ifndef _M3_ROMBOOT_H_
+#define _M3_ROMBOOT_H_
 #include "cpu.h"
-#define POR_ROM_BOOT_ENABLE                         (1<<7)
-#define POR_JTAG_ENABLE                             (1<<6)
-//Power On setting
-#define POR_INTL_CFG_MASK                           (7<<0)
-#define POR_INTL_NAND_LP                            (7<<0)
-#define POR_INTL_SPI                                (5<<0)
-#define POR_INTL_SDIO_B1                            (6<<0)
-#define POR_INTL_NAND_SP                            (4<<0)
-#define POR_GET_INTL_CFG(a)                         (a&POR_INTL_CFG_MASK)
-#define POR_SDIO_CFG_MASK                           (3<<8)
-#define POR_SDIO_A_ENABLE                           (3<<8)
-#define POR_SDIO_B_ENABLE                           (1<<8)
-#define POR_SDIO_C_ENABLE                           (2<<8)
-//#define POR_SDIO_B1_ENABLE                          (0<<8)
-#define POR_GET_SDIO_CFG(a)                         ((a&POR_SDIO_CFG_MASK))
-#define POR_ASSIST_CONFIG                           P_ASSIST_POR_CONFIG
-/*
- * "MESON001"
- */
-#define MAGIC_WORD1         0x4f53454d
-#define MAGIC_WORD2         0x3130304e
-#define CONFIG_ROMBOOT_READ_SIZE    6*1024
-#define READ_SIZE       	6*1024      // memory size for data reading
-#define CONFIG_NAND_PAGES         1024
-#define ROM_BOOT_INFO                               (AHB_SRAM_BASE + 0x1f00)
-#define MAGIC_STRUCT_OFF							(AHB_SRAM_BASE +0x1b0)
+#define RAM_START 0x49000000
+#define RAM_SIZE 0x20000
+#define RAM_END (RAM_START+RAM_SIZE)
+#define MEMORY_LOC RAM_START
+
+#define ROMBOOT_START 0x49800000
+#define ROM_SIZE (16*1024)
+#define ROMBOOT_END   (ROMBOOT_START+ROM_SIZE)
+
+#define GL_DATA_ADR (RAM_END-256)
+#define READ_SIZE 32*1024
+#define CHECK_SIZE 8*1024
+#define NOR_START_ADDR 0x40000000
+
+/* USB PCD buff */
+#define NAND_INFO_BUF (RAM_END-2*1024)
+#define NAND_INFO_BUF_SIZE (2*1024-256)
+#define BSS_SIZE (30*1024)
+#define BSS_START (RAM_END-32*1024)
+#define _STACK_END (BSS_START+BSS_SIZE)
+#define PCD_BUFF NAND_INFO_BUF
+#define POR_ROM_BOOT_ENABLE (1<<5)
+#define POR_JTAG_ENABLE (1<<6)
+#define POR_GET_1ST_CFG(a) (a&7)
+#define POR_1ST_NAND 7
+#define POR_1ST_NAND_RB 6
+#define POR_1ST_SPI 5
+#define POR_1ST_SPI_RESERVED 4
+#define POR_1ST_SDIO_C 3
+#define POR_1ST_SDIO_B 2
+#define POR_1ST_SDIO_A 1
+#define POR_1ST_NEVER_CHECKED 0
+#define POR_GET_2ND_CFG(a) ((a>>3)&3)
+#define POR_2ND_SDIO_B 3
+#define POR_2ND_SDIO_A 2
+#define POR_2ND_SDIO_C 1
+#define POR_2ND_NEVER_CHECKED 0
+#define POR_GET_CRYSTAL(a) ((a>>7)&1)
+#define POR_CRYSTAL_24M 1
+#define POR_CRYSTAL_25M 0
+#define POR_GET_USB_CFG(a) ((a>>8)&1)
+#define POR_USB_ENABLE 1
+#define POR_USB_DISABLE 0
+//** ECC mode 7, dma 528 bytes(data+parity),Short mode , no scramble
+#define DEFAULT_ECC_MODE ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
+
+#define C_ROM_BOOT_DEBUG_LOG (volatile unsigned long *)(GL_DATA_ADR + 0xe0)
+//#define DEBUG_EFUSE
+#define NULL (void*)0
+#define CARD_TYPE_SD 0
+#define CARD_TYPE_SDHC 1
+#define CARD_TYPE_MMC 2
+#define CARD_TYPE_EMMC 3
+#define MAGIC_WORD1 0x4848334d
+#define MAGIC_WORD2 0x30564552
+
 /**
- * rom debug area structure offsets
+ * This Section is about the romboot spl's first sector structure
  */
-#define POR_CFG	0
-#define BOOT_ID	4
-#define LOAD_0	8
-#define LOAD_1	12
-#define DCHK_0	16
-#define DCHK_1	20
-#define NAND_ADDR	24
-#define CARD_TYPE	28
+#define ROM_BOOT_INFO     (GL_DATA_ADR)
+
 #ifndef __ASSEMBLY__
-/**
- * rom debug area structure (c format)
- */
 typedef struct {
-    unsigned  por_cfg; // current boot configuration
-    unsigned  boot_id; // boot from which device
-    int       load[2];
-    int       dchk[2];
-    int       nand_addr;
-    int       card_type;
-    unsigned  clk81;
-    unsigned  a9_clk;
+    unsigned por_cfg; // current boot configuration
+    unsigned boot_id; // boot from which device
+    short init[2];
+    short load[2][4];
+    short dchk[2][4];
+    void*    read;
+    unsigned ext;
+    unsigned nand_info_adr;
+    unsigned loop;
+    unsigned efuse_bch_uncor;
 } T_ROM_BOOT_RETURN_INFO;
-/**
- * magic structure
- */
-typedef struct data_format{
-    unsigned  magic[2];
-    unsigned short crc[2];
-} DataFormat ;
+#define C_ROM_BOOT_DEBUG ((volatile T_ROM_BOOT_RETURN_INFO *)(ROM_BOOT_INFO))
 extern  T_ROM_BOOT_RETURN_INFO * romboot_info;
+typedef struct data_format{
+    unsigned magic[2];
+    unsigned short crc[2];
+} DataFormat;
 extern  DataFormat * magic_info;
+extern DataFormat  __magic_word;
+#else
+#define C_ROM_BOOT_DEBUG ((ROM_BOOT_INFO))
 #endif
-/**
- *
- */
-#define    ROM_STACK_END  	(AHB_SRAM_BASE+0x1d80)
-#define    ROM_FIQ_STACK	(AHB_SRAM_BASE+0x1e00)
-#define    ROM_IRQ_STACK  	(AHB_SRAM_BASE+0x1f00)
+#define AHB_SRAM_BASE RAM_START
+#define ROM_STACK_END       (GL_DATA_ADR)
+/** SDIO Return **/
+#define ERROR_NONE 0
+#define ERROR_GO_IDLE1 1
+#define ERROR_GO_IDLE2 2
+#define ERROR_APP55_1 3
+#define ERROR_ACMD41 4
+#define ERROR_APP55_2 5
+#define ERROR_VOLTAGE_VALIDATION 6
+#define ERROR_SEND_CID1 7
+#define ERROR_SEND_RELATIVE_ADDR 8
+#define ERROR_SEND_CID2 9
+#define ERROR_SELECT_CARD 10
+#define ERROR_APP55_RETRY3 11
+#define ERROR_SEND_SCR 12
+#define ERROR_READ_BLOCK 13
+#define ERROR_STOP_TRANSMISSION 14
+#define ERROR_MAGIC_WORDS 15
+#define ERROR_CMD1 16
+#define ERROR_MMC_SWITCH_BUS 17
+#define ERROR_MMC_SWITCH_BOOT 18
+/* Data Check Return */ //
+#define ERROR_MAGIC_CHECK_SUM 19
+#define ERROR_MAGIC_WORD_ERROR 20
+/* NAND Return */ //
+#define ERROR_NAND_TIMEOUT 21
+#define ERROR_NAND_ECC 22
+#define ERROR_NAND_MAGIC_WORD 23
+#define ERROR_NAND_INIT_READ 24
+#define ERROR_CMD1 16
+#define ERROR_MMC_SWITCH_BUS 17
+#define ERROR_MMC_SWITCH_BOOT 18
+/* Data Check Return */ //
+#define ERROR_MAGIC_CHECK_SUM 19
+#define ERROR_MAGIC_WORD_ERROR 20
+/* NAND Return */ //
+#define ERROR_NAND_TIMEOUT 21
+#define ERROR_NAND_ECC 22
+#define ERROR_NAND_MAGIC_WORD 23
+#define ERROR_NAND_INIT_READ 24
 
 #endif /* ROMBOOT_H_ */

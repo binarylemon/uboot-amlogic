@@ -38,6 +38,13 @@ SPL_STATIC_FUNC void serial_putc(const char c)
     writel(c, P_UART_WFIFO(UART_PORT_CONS));
     /* Wait till dataTx register is empty */
 }
+
+SPL_STATIC_FUNC 
+void serial_wait_tx_empty()
+{
+    while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY)==0);
+    
+}
 /*
  * Read a single byte from the serial port. Returns 1 on success, 0
  * otherwise 0.
@@ -71,7 +78,7 @@ int serial_getc(void)
 
 }
 
-SPL_STATIC_FUNC
+//SPL_STATIC_FUNC
 void serial_puts(const char *s)
 {
     while (*s) {

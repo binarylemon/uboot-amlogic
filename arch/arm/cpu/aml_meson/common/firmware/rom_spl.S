@@ -73,7 +73,7 @@ __TEXT_SIZE:
     .word 0x60000 - READ_SIZE
 #endif    
 __ROM_STACK_END:
-    .word ROM_STACK_END
+	.word ROM_STACK_END
 __BSS_START:
 	.word _bssstart
 __BSS_END:
@@ -83,7 +83,18 @@ __BSS_END:
     .type   romboot_info, %object
 	.size   romboot_info, 4
 romboot_info:
-        .word   ROM_BOOT_INFO
+		.word   ROM_BOOT_INFO
+.global	magic_info
+  .type   magic_info, %object
+	.size   magic_info, 4
+magic_info:
+	.word  __magic_word
+    .global	__load_table
+    .type   __load_table, %object
+	.size   __load_table, 24
+__load_table:
+  .space 24
+	
     .global	ipl_memcpy
 	.type	ipl_memcpy, %function
 ipl_memcpy:
@@ -106,6 +117,17 @@ ipl_memcpy:
 .L4:
 	ldmfd	sp!, {r4}
 	bx	lr
+  .global	memset
+	.type	memset, %function
+memset:
+	@ args: address, value, count
+  str r1,[r0]
+  add r0,r0,#4
+  sub r2,r2,#4
+  cmp r2,#0
+  BNE memset
+	bx  lr
+	
 undefined_instruction: 
 	mov r0,#1
 	b fail_sleep

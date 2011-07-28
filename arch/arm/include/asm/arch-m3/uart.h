@@ -13,29 +13,52 @@
  */
 #ifndef __MESON_FIRM_UART_H_
 #define __MESON_FIRM_UART_H_
-#include "registers.h"
+#include "reg_addr.h"
+
 #ifndef CONFIG_CONS_INDEX
 #error Please define CONFIG_CONS_INDEX==[0|1]
 #endif
+
 #if CONFIG_CONS_INDEX==0
 #define UART_PORT_CONS UART_PORT_0
 #elif CONFIG_CONS_INDEX==1
 #define UART_PORT_CONS UART_PORT_1
+#elif CONFIG_CONS_INDEX==2
+#define UART_PORT_CONS UART_PORT_AO
+#define USE_AO_UART   1
 #else
 #error Please define CONFIG_CONS_INDEX==[0|1]
 #endif
+/*
+#define UART_PORT_0     CBUS_REG_ADDR(UART0_WFIFO)
+#define UART_PORT_1     CBUS_REG_ADDR(UART1_WFIFO)
+#define UART_PORT_2     CBUS_REG_ADDR(UART2_WFIFO)
+#define UART_PORT_AO    P_AO_UART_WFIFO
+
+#define UART_WFIFO      (0<<2)
+#define UART_RFIFO      (1<<2)
+#define UART_CONTROL    (2<<2)
+#define UART_STATUS     (3<<2)
+#define UART_MISC       (4<<2)
+*/
+
 #include "clock.h"
-#define UART_CLK_SRC CLK_CLK81
-#define UART_PORT_0 UART0_WFIFO
-#define UART_PORT_1 UART1_WFIFO
+
+#define UART_CLK_SRC    CLK81
+#define UART_PORT_0     UART0_WFIFO
+#define UART_PORT_1     UART1_WFIFO
+#define UART_PORT_AO    P_AO_UART_WFIFO
 #define UART_WFIFO      0
 #define UART_RFIFO      1
 #define UART_CONTROL    2
 #define UART_STATUS     3
 #define UART_MISC       4
 
-
+#if USE_AO_UART == 1
+#define P_UART(uart_base,reg)    	  (uart_base + (reg<<2))
+#else
 #define P_UART(uart_base,reg)    	CBUS_REG_ADDR(uart_base+reg)
+#endif
 #define P_UART_WFIFO(uart_base)   	P_UART(uart_base,UART_WFIFO)
 #define P_UART_RFIFO(uart_base)   	P_UART(uart_base,UART_RFIFO)
 
@@ -77,6 +100,7 @@
     #define UART_STAT_MASK_TFIFO_FULL               (1<<21)
     #define UART_STAT_MASK_TFIFO_EMPTY              (1<<22)
 #define P_UART_MISC(uart_base)    P_UART(uart_base,UART_MISC   )
+
 
 #ifndef CONFIG_SERIAL_STP_BITS
 #define CONFIG_SERIAL_STP_BITS 1 // 1 , 2

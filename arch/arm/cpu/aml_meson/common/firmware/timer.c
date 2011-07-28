@@ -6,7 +6,7 @@ SPL_STATIC_FUNC int timer_init(void)
 {
     WRITE_CBUS_REG_BITS(PREG_CTLREG0_ADDR,CONFIG_CRYSTAL_MHZ,4,5);
     //set timer E usec base
-	//clrsetbits_le32(P_ISA_TIMER_MUX,0x7<<8,0x1<<8);
+  	clrsetbits_le32(P_ISA_TIMER_MUX,0x7<<8,0x1<<8);
 	return 0;
 }
 SPL_STATIC_FUNC unsigned get_utimer(unsigned base)

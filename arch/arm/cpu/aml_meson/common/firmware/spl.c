@@ -1,12 +1,12 @@
 #define  CONFIG_AMLROM_SPL 1
-#include <pll.c>
 #include <timer.c>
+#include <timming.c>
 #include <uartpin.c>
+#include <serial.c>
 #include <pinmux.c>
 #include <sdpinmux.c>
-#include <serial.c>
-#include <timming.c>
 #include <memtest.c>
+#include <pll.c>
 #include <ddr.c>
 #include <mtddevices.c>
 #include <sdio.c>
@@ -16,10 +16,11 @@
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
+		int i;
     //Adjust 1us timer base
     timer_init();
-
-    serial_init(UART_CONTROL_SET(CONFIG_BAUDRATE,CONFIG_CRYSTAL_MHZ*1000000));
+	  //default uart clock.
+    serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
     debug_rom(__FILE__,__LINE__);
@@ -30,5 +31,8 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     // load uboot
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
     serial_puts("Systemp Started\n");
+    //wait serial_puts end.
+    for(i = 0; i < 10; i++)
+		  __udelay(1000);
     return 0;
 }

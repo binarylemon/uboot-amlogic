@@ -13,12 +13,7 @@
 #include <asm/arch/io.h>
 #include <asm/arch/romboot.h>
 #include <asm/arch/reg_addr.h>
-
-SPL_STATIC_FUNC void spi_pinmux_init(void)
-{
-
-}
-
+#include <spiwrite.c>
 
 
 

@@ -37,21 +37,26 @@ struct ddr_set{
         unsigned       mcfg;
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;//400M for DDR 800 , 333M for DDR667
+        unsigned       ddr_clk;
         int            (* init_pctl)(struct ddr_set *);
 }__attribute__ ((packed));
 struct pll_clk_settings{
 	unsigned sys_pll_cntl;//0x7c
 	unsigned sys_clk_cntl;//0x7c
+	unsigned sys_clk;//0x80
+	
+	
 	unsigned other_pll_cntl;
 	unsigned mpeg_clk_cntl;
-	unsigned clk81;//0x80
-	unsigned a9_clk;
+	unsigned other_clk;
+	
 	unsigned spi_setting;
 	unsigned nfc_cfg;
 	unsigned sdio_cmd_clk_divide;
 	unsigned sdio_time_short;//0x90
 	unsigned demod_pll400m_cntl;
 	unsigned uart;
+
 }__attribute__ ((packed));
 
 //extern struct ddr_set __ddr_setting;

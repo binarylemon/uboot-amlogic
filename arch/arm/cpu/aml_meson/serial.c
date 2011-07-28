@@ -19,14 +19,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 SPL_STATIC_FUNC int serial_set_pin_port(unsigned port_base);
 static void serial_putc_port (unsigned port_base,const char c);
-//#include <asm/arch/clock.h>
-/*
- * clear the uart error
- */
 
-/*
- * Sets stop bits
- */
 //static unsigned port_base_addrs[]={UART_PORT_0,UART_PORT_1};
 #if 0 // due to errror
 static void serial_clr_err (unsigned port_base)
@@ -54,14 +47,10 @@ static void serial_setbrg_port (unsigned port_base)
     baud_para=clk81/(gd->baudrate*4) -1;
 
     baud_para &= UART_CNTL_MASK_BAUD_RATE;
-    
+
     /* write to the register */ 
     writel((readl(P_UART_CONTROL(port_base)) & ~UART_CNTL_MASK_BAUD_RATE) | baud_para, P_UART_CONTROL(port_base));
 }
-//void serial_setbrg()
-//{
-//	serial_setbrg_port(UART);
-//}
 
 /*
  * Sets stop bits
@@ -111,11 +100,7 @@ static void serial_set_parity_port(unsigned port_base,int type)
  #endif   
     /* write to the register */
     writel(uart_config, P_UART_CONTROL(port_base));
-//    if(port==UART_B)
-//    {
-//        while(1)
-//        serial_puts_port(UART_B,"aaa\n");
-//    }
+
 }
 
 /*
@@ -164,11 +149,11 @@ static void serial_reset_port(unsigned port_base) {
 /*
  * Intialise the serial port with given baudrate
  */
+
 static int serial_init_port (unsigned port_base)
 {
 	int ret;
-	
-//    serial_puts_port(port," ");
+
     writel(0,P_UART_CONTROL(port_base));
     ret = serial_set_pin_port(port_base);
     if (ret < 0)
@@ -192,7 +177,6 @@ static int serial_init_port (unsigned port_base)
     while(!(readl(P_UART_STATUS(port_base)) & UART_STAT_MASK_TFIFO_EMPTY));
     serial_reset_port(port_base);
     serial_putc_port(port_base,'\n');
-   
     return 0;
 }
 
@@ -288,6 +272,10 @@ DECLARE_UART_FUNCTIONS(UART_PORT_0);
 INIT_UART_STRUCTURE(UART_PORT_0,"uart0","UART0");
 DECLARE_UART_FUNCTIONS(UART_PORT_1);
 INIT_UART_STRUCTURE(UART_PORT_1,"uart1","UART1");
+#ifdef UART_PORT_AO
+DECLARE_UART_FUNCTIONS(UART_PORT_AO);
+INIT_UART_STRUCTURE(UART_PORT_AO,"uart_ao","UART_AO");
+#endif
 struct serial_device * default_serial_console (void)
 {
 #if (UART_PORT_CONS==UART_PORT_0)
@@ -295,13 +283,22 @@ struct serial_device * default_serial_console (void)
 #elif (UART_PORT_CONS==UART_PORT_1)
     return &device_UART_PORT_1;
 #else
-    #error      
+#ifdef UART_PORT_AO
+#if (UART_PORT_CONS==UART_PORT_AO)
+   return &device_UART_PORT_AO;      
+#else
+	#error "invalid uart port index defined"
+#endif
+#endif
 #endif    
 }
 void serial_aml_register(void)
 {
     serial_register(&device_UART_PORT_0);
     serial_register(&device_UART_PORT_1);
+#ifdef UART_PORT_AO    
+    serial_register(&device_UART_PORT_AO);
+#endif
 }
 #endif
 #if !(defined CONFIG_SERIAL_MULTI)

@@ -51,13 +51,21 @@ int cleanup_before_linux(void)
 	 * we turn off caches etc ...
 	 */
 	disable_interrupts();
-
+#ifndef CONFIG_ICACHE_OFF
 	/* turn off I/D-cache */
 	icache_disable();
+#endif
+#ifndef CONFIG_DCACHE_OFF
 	dcache_disable();
-
+#endif
+#ifndef CONFIG_ICAHCE_OFF
 	/* invalidate I-cache */
 	cache_flush();
+#else
+#ifndef CONFIG_DCACHE_OFF
+	cache_flush();
+#endif
+#endif
 
 #ifndef CONFIG_L2_OFF
 	/* turn off L2 cache */
