@@ -71,9 +71,8 @@ Bank1_GPIOD2-D11
 #define ETH_CLK_OUT_GPIOD14_REG7_13	8
 #define ETH_CLK_OUT_GPIOD24_REG5_1	9
 
-
-int eth_clearall_pinmux(void);
-int eth_set_pinmux(int bank_id,int clk_in_out_id,unsigned long ext_msk);
+int aml_eth_clearall_pinmux(void);
+int aml_eth_set_pinmux(int bank_id,int clk_in_out_id,unsigned long ext_msk);
 
 #endif  //_AML_ETH_PINMUX_HEADER_
 
