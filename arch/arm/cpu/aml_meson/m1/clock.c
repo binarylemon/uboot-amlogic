@@ -55,15 +55,14 @@ struct __clk_rate{
     unsigned clksrc;
     unsigned long(*get_rate)(void);
 };
-static unsigned long get_clk81(void)
+
+unsigned long get_clk81(void)
 {
 	if((readl(P_HHI_MPEG_CLK_CNTL)&(1<<8))==0)
 	{
 		return CONFIG_CRYSTAL_MHZ*1000000;
 	}
     return (do_get_clk_rate(CLK_OTHER_PLL_CLK))/((readl(P_HHI_MPEG_CLK_CNTL)&0x7f)+1);
-	
-    
 }
 struct __clk_rate clkrate[]={
     {

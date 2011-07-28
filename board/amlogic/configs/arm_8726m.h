@@ -9,6 +9,8 @@
 #define CONFIG_CMD_SF      1
 #define CONFIG_AML_MESON_1 1
 
+#define CONFIG_AML_I2C        1
+#define AML_MESON_BOARD_8726M_2010_11_18_V11 1
 
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)

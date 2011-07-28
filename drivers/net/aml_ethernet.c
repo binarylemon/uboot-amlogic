@@ -737,7 +737,7 @@ int aml_eth_init(bd_t *bis)
 {
 	struct eth_device *dev;
 	dev = (struct eth_device *) malloc(sizeof(*dev)); 
-	sprintf(dev->name,"Apollo EMAC");
+	sprintf(dev->name,"Apollo_EMAC");
 	dev->init	= aml_ethernet_init;
 	dev->halt 	= aml_eth_halt;
 	dev->send	= aml_eth_send;

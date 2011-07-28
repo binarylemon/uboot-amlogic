@@ -60,7 +60,6 @@
     >0 return clk in COUNTER per CONFIG_SYS_HZ counter
 */
 int clk_get_rate(unsigned clksrc);
-
-
+unsigned long get_clk81(void);
 
 #endif
