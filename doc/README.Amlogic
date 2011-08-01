@@ -56,3 +56,36 @@
    7.3. Add new "soc" like "m1,m3" in "tools/convert.c"
    7.4. Add config head file in "board/amlogic/configs" like "m3_socket.h"
    7.5. Add board dependent file in "boare/amlogic/xxxx/" like "/m3_skt_v1/m3_skt_v1.c"
+   
+8. M1 support I2C driver.
+   8.1 arch/arm/include/asm/arch-m1/clock.h & arch/arm/cpu/aml_meson/m1/clock.c
+	   change function get_clk81() type from static to global
+   8.2 board/amlogic/Mesonboard_AML8726-M_V1.1/mesonboard_aml8726m_v1_1.c
+	   board level implement for CONFIG_AML_I2C(pinmax setting, external I2C chip reset, etc)
+	   update Ethernet controller part with new I2C driver API
+   8.3 board/amlogic/configs/arm_8726m.h
+	   add macro CONFIG_AML_I2C for I2C support
+	   add macro AML_MESON_BOARD_8726M_2010_11_18_V11 for check board depend I2C feature
+	   8.3.1 common/cmd_net.c
+	         add code to test I2C driver workable with TCA6424 
+	        (red & blue LED will light on/off when use net cmd "ping")
+	   8.3.2 drivers/net/aml_ethernet.c
+	         just change name to remove the warning message when compiling
+   8.4 drivers/i2c/Makefile
+	   update for new I2C driver source
+	   8.4.1 add source: drivers/i2c/aml_i2c.c
+	   8.4.2 add header: arch/arm/include/asm/arch-m1/i2c.h
+	   8.4.3 add header: include/aml_i2c.h
+       
+9. M1 support SAR ADC
+	9.1 Add new folder/files
+		9.1.1 add new header file: arch/arm/include/asm/arch-m1/saradc.h
+	  	9.1.2 add new file: driver/adc/Makefile
+	  	9.1.3 add new source: drivers/adc/saradc.c
+	9.2 modify following files
+		9.2.1 board/amlogic/configs/arm_8726m.h
+		      add SARADC support macro CONFIG_SARADC  
+		9.2.2 modify make file Makefile
+		      LIBS += drivers/adc/libadc.o	     
+		9.2.3 board/amlogic/Mesonboard_AML8726-M_V1.1/mesonboard_aml8726m_v1_1.c
+	   		  add commom code for sys-test feature, add demo code for ADC test
