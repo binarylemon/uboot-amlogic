@@ -12,6 +12,9 @@
 #define CONFIG_AML_I2C        1
 #define AML_MESON_BOARD_8726M_2010_11_18_V11 1
 
+//Amlogic SARADC support
+#define CONFIG_SARADC 1
+
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 #define CONFIG_AML_ETHERNET 1

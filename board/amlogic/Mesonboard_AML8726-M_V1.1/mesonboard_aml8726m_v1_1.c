@@ -11,8 +11,11 @@
 
 #ifdef CONFIG_AML_I2C
 #include <aml_i2c.h>
-#endif //CONFIG_AML_I2C
+#endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_SARADC
+#include <asm/arch/saradc.h>
+#endif /*CONFIG_SARADC*/
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -255,6 +258,75 @@ struct aml_i2c_platform g_aml_i2c_plat = {
 #endif /*#ifdef CONFIG_AML_I2C*/
 
 ///////////////////////////////////////////////////////////////
+
+
+#ifdef CONFIG_SARADC
+/*following key value are test with board 
+  [Meson Board_AML_8726-M 2010-11-18_V1.1]
+  ref doc:
+  1. AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf
+  2. M1-Periphs-Registers.docx (Pg49-53)
+*/
+static struct adckey_info g_key_menu_info[] = {
+    {"menu", 0, 60},
+};
+static struct adckey_info g_key_up_info[] = {
+    {"up",   177, 60},
+};
+static struct adckey_info g_key_down_info[] = {
+    {"down", 284, 60},
+};
+static struct adckey_info g_key_left_info[] = {
+    {"left", 399, 60},
+};
+static struct adckey_info g_key_right_info[] = {
+    {"rigth",506, 60},
+};
+static struct adckey_info g_key_exit_info[] = {
+    {"exit", 622, 60},
+};
+static struct adckey_info g_key_ok_info[] = {
+    {"ok",   852, 60},
+};
+
+static struct adc_info g_adc_info[] = {
+    {"Press Key menu", AML_ADC_CHAN_4, ADC_KEY,&g_key_menu_info},
+    {"Press Key up",   AML_ADC_CHAN_4, ADC_KEY,&g_key_up_info},
+    {"Press Key down", AML_ADC_CHAN_4, ADC_KEY,&g_key_down_info},
+    {"Press Key left", AML_ADC_CHAN_4, ADC_KEY,&g_key_left_info},
+    {"Press Key right",AML_ADC_CHAN_4, ADC_KEY,&g_key_right_info},
+    {"Press Key exit", AML_ADC_CHAN_4, ADC_KEY,&g_key_exit_info},
+    {"Press Key ok",   AML_ADC_CHAN_4, ADC_KEY,&g_key_ok_info},
+    {"Press Key N/A",  AML_ADC_CHAN_5, ADC_OTHER, NULL},
+};
+
+/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
+/* void adc_init(struct adc_info *adc_info, unsigned int len) 
+     @trunk/common/sys_test.c */
+
+/*following is test code to test ADC & key pad*/
+/*
+#ifdef CONFIG_SARADC
+#include <asm/arch/saradc.h>
+	saradc_enable();	
+	u32 nDelay = 0xffff;
+	int nKeyVal = 0;
+	int nCnt = 0;
+	while(nCnt < 3)
+	{
+		udelay(nDelay);
+		nKeyVal = get_adc_sample(4);
+		if(nKeyVal > 1000)
+			continue;
+		
+		printf("get_key(): %d\n", nKeyVal);
+		nCnt++;
+	}
+	saradc_disable();
+#endif
+*/
+
+#endif //CONFIG_SARADC
 
 int board_init(void)
 {
