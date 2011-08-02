@@ -16,6 +16,8 @@ COBJS-$(CONFIG_AML_SDIO)+=sdio.o
 COBJS	= clock.o $(COBJS-y)
 SOBJS := mmutable.o
 
+COBJS-$(CONFIG_AML_ETHERNET) += aml_eth_clk_set.o aml_eth_pinmux.o
+
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 

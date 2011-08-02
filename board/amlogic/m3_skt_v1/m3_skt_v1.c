@@ -2,6 +2,12 @@
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
 
+#if defined(CONFIG_CMD_NET)
+#include <asm/arch/aml_eth_reg.h>
+#include <asm/arch/aml_eth_pinmux.h>
+#include <asm/arch/io.h>
+#endif /*(CONFIG_CMD_NET)*/
+
 DECLARE_GLOBAL_DATA_PTR;
 
 int board_init(void)
@@ -10,6 +16,60 @@ int board_init(void)
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 	return 0;
 }
+
+#if defined(CONFIG_CMD_NET)
+
+/*************************************************
+  * Amlogic Ethernet controller operation
+  * 
+  * Note: The LAN chip LAN8720 need to be reset by GPIOA_23
+  *
+  *************************************************/
+static void setup_net_chip(void)
+{
+	//disable all other pins which share the GPIOA_23
+    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_0,(1<<6)); //LCDin_B7 R0[6]
+    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_7,(1<<11));//ENC_11 R7[11]
+	//GPIOA_23 -> 0
+    CLEAR_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);    //RST -> 0
+    //GPIOA_23 output enable
+    CLEAR_CBUS_REG_MASK(PREG_EGPIO_EN_N,1<<23); //OUTPUT enable	
+    udelay(2000);
+	//GPIOA_23 -> 1
+    SET_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);      //RST -> 1
+    udelay(2000);	
+}
+
+int board_eth_init(bd_t *bis)
+{   	
+	//set clock
+    eth_clk_set(ETH_CLKSRC_MISC_PLL_CLK,800*CLK_1M,50*CLK_1M);	
+
+	//set pinmux
+    aml_eth_set_pinmux(ETH_BANK0_GPIOY1_Y9,ETH_CLK_OUT_GPIOY0_REG6_17,0);
+
+	//ethernet pll control
+    writel(readl(ETH_PLL_CNTL) & ~(0xF << 0), ETH_PLL_CNTL); // Disable the Ethernet clocks        
+    writel(readl(ETH_PLL_CNTL) | (0 << 3), ETH_PLL_CNTL);    // desc endianess "same order"   
+    writel(readl(ETH_PLL_CNTL) | (0 << 2), ETH_PLL_CNTL);    // data endianess "little"    
+    writel(readl(ETH_PLL_CNTL) | (1 << 1), ETH_PLL_CNTL);    // divide by 2 for 100M     
+    writel(readl(ETH_PLL_CNTL) | (1 << 0), ETH_PLL_CNTL);    // enable Ethernet clocks   
+    
+    udelay(1000);
+
+	//reset LAN8720 with GPIOA_23
+    setup_net_chip();
+
+    udelay(1000);
+	
+extern int aml_eth_init(bd_t *bis);
+
+    aml_eth_init(bis);
+
+	return 0;
+}
+#endif /* (CONFIG_CMD_NET) */
+
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>
