@@ -87,7 +87,7 @@ __attribute__((weak)) void spi_cs_activate(struct spi_slave *slave) {}
 
 __attribute__((weak)) void spi_cs_deactivate(struct spi_slave *slave){}
 
-void spi_init(){ 
+static void spi_initialize(){ 
 	writel(0xea949,P_SPI_FLASH_CTRL); //SPI clock-> system clock / 10
 }
 
@@ -99,7 +99,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	if (!amls)
 		return NULL;
 
-	spi_init(); 
+	spi_initialize(); 
 
 	amls->slave.bus = bus;
 	amls->slave.cs 	= cs;

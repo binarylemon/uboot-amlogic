@@ -1,6 +1,8 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
+//conflict with spiwrite.c, function redefine
+#if 0
 #if CONFIG_CMD_SF
 SPL_STATIC_FUNC void spi_init()
 {
@@ -8,6 +10,8 @@ SPL_STATIC_FUNC void spi_init()
     writel(__plls.spi_setting,P_SPI_FLASH_CTRL);
 }
 #endif
+#endif
+
 #if CONFIG_CMD_NAND
 #include <asm/arch/nand.h>
 SPL_STATIC_FUNC void nf_pinmux_init()

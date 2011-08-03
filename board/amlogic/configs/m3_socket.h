@@ -7,7 +7,14 @@
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1
-//#define CONFIG_CMD_SF    1
+#define CONFIG_CMD_SF    1
+
+#if defined(CONFIG_CMD_SF)
+#define CONFIG_AML_MESON_3 1
+#define SPI_WRITE_PROTECT  1
+#define CONFIG_CMD_MEMORY  1
+#endif /*CONFIG_CMD_SF*/
+
 
 #define CONFIG_CMD_NET   1
 
