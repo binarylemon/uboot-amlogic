@@ -15,6 +15,8 @@
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
+//Amlogic SARADC support
+#define CONFIG_SARADC 1
 
 #define CONFIG_CMD_NET   1
 

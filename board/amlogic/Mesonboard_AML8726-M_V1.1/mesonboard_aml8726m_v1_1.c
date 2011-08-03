@@ -14,7 +14,7 @@
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_SARADC
-#include <asm/arch/saradc.h>
+#include <asm/saradc.h>
 #endif /*CONFIG_SARADC*/
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -307,7 +307,7 @@ static struct adc_info g_adc_info[] = {
 /*following is test code to test ADC & key pad*/
 /*
 #ifdef CONFIG_SARADC
-#include <asm/arch/saradc.h>
+#include <asm/saradc.h>
 	saradc_enable();	
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;

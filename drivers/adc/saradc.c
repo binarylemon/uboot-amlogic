@@ -21,7 +21,8 @@
  */
  
 #include <asm/arch/io.h>
-#include <asm/arch/saradc.h>
+#include <asm/saradc.h>
+
 
 #define AML_ADC_SAMPLE_DEBUG 1
 
