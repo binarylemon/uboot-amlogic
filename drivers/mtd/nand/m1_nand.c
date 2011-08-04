@@ -16,7 +16,7 @@ int nand_curr_device = -1;
 //extern struct aml_nand_platform aml_nand_platform[];
 extern struct aml_nand_device aml_nand_mid_device;
 #define CONFIG_SYS_NAND_MAX_DEVICE 		4
-nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE];
+nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE]={0};
 #ifdef CONFIG_MTD_DEVICE
 static __attribute__((unused)) char dev_name[CONFIG_SYS_MAX_NAND_DEVICE][8];
 #endif

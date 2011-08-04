@@ -92,6 +92,24 @@
 #define CONFIG_CMD_MTDPARTS   1
 #endif
 
+//#define CONFIG_UBI_SUPPORT
+//#ifdef	CONFIG_UBI_SUPPORT
+//#define CONFIG_CMD_UBI
+//#define CONFIG_CMD_UBIFS
+//#define CONFIG_RBTREE
+//#endif
+
+//#ifdef	CONFIG_UBI_SUPPORT
+//#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
+//#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+//
+//#define CONFIG_EXTRA_ENV_SETTINGS \
+//	"mtdids=" MTDIDS_DEFAULT \
+//	"mtdparts="MTDPARTS_DEFAULT
+//#else
+//
+//#endif
+
 #define CONFIG_AML_ROMBOOT    1
 #define SPI_MEM_BASE                                0x40000000
 #define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
@@ -106,5 +124,6 @@
 #endif
 
 //#define CONFIG_AML_RTC
+//#define CONFIG_LZO
 
 #endif /* _CPU_H */

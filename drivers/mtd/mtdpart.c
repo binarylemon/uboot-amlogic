@@ -20,7 +20,7 @@
 #include <linux/mtd/compat.h>
 
 /* Our partition linked list */
-struct list_head mtd_partitions;
+struct list_head mtd_partitions={0};
 
 /* Our partition node structure */
 struct mtd_part {
