@@ -71,6 +71,7 @@
 #define CONFIG_SPI_FLASH            1
 #define SPI_FLASH_CACHELINE         64 //amlogic special setting. in M1 , SPI_A for SPI flash
 #define CONFIG_SPI_FLASH_MACRONIX   1
+#define CONFIG_SPI_FLASH_EON        1
 //#define CONFIG_SPI_FLASH_SPANSION   1
 #define CONFIG_SPI_FLASH_SST        1
 //#define CONFIG_SPI_FLASH_STMICRO    1

@@ -16,7 +16,11 @@
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-		int i;
+	//PWREN GPIOAO_2, PWRHLD GPIOAO_6 pull up
+	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
+	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
+	 
+	int i;
     //Adjust 1us timer base
     timer_init();
 	  //default uart clock.
