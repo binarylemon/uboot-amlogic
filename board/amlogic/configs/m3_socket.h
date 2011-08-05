@@ -1,9 +1,13 @@
 #ifndef __CONFIG_M3_SOCKET_H_
 #define __CONFIG_M3_SOCKET_H_
 
+#define M3_SKT_V1_20110622 1
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
+
+
+//#define CONFIG_AML_I2C      1
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1

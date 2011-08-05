@@ -12,14 +12,14 @@
 #include <asm/saradc.h>
 #endif /*CONFIG_SARADC*/
 
+#if defined(CONFIG_AML_I2C)
+#include <aml_i2c.h>
+#include <asm/arch/io.h>
+#endif /*CONFIG_AML_I2C*/
+
+
 DECLARE_GLOBAL_DATA_PTR;
 
-int board_init(void)
-{
-	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
-	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-	return 0;
-}
 
 #if defined(CONFIG_CMD_NET)
 
@@ -82,7 +82,7 @@ extern int aml_eth_init(bd_t *bis);
   2. M3-Periphs-Registers.docx (Pg43-47)
 */
 static struct adckey_info g_key_K1_info[] = {
-    {"K1", 0, 60},
+    {"K1", 6, 60},
 };
 static struct adckey_info g_key_K2_info[] = {
     {"K2", 180, 60},
@@ -216,3 +216,66 @@ int board_mmc_init(bd_t	*bis)
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_AML_I2C 
+/*I2C module is board depend*/
+#error "Please define the board depend I2C setting as following!"
+static void board_i2c_set_pinmux(void){
+/*board depend I2C initialization*/
+/*..........*/
+};
+struct aml_i2c_platform g_aml_i2c_plat = {
+    .wait_count         = 0,
+    .wait_ack_interval  = 0,
+    .wait_read_interval = 0,
+    .wait_xfer_interval = 0,
+    .master_no          = 0,
+    .use_pio            = 0,
+    .master_i2c_speed   = 0,
+    .master_ao_pinmux = {
+        .scl_reg  = 0,
+        .scl_bit  = 0,
+        .sda_reg  = 0,
+        .sda_bit  = 0,
+    }
+};
+static void board_i2c_init(void)
+{		
+	//set I2C pinmux with PCB board layout
+	//refer AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf
+	board_i2c_set_pinmux();
+
+	//Amlogic I2C controller initialized
+	//note: it must be call before any I2C operation
+	aml_i2c_init();
+
+	//must call aml_i2c_init(); before any I2C operation	
+
+	udelay(10000);		
+}
+
+//for sys_test only, not check yet
+#error "Please define the I2C device address of board!"
+static struct i2c_board_info aml_i2c_info[] = {
+    {
+        I2C_BOARD_INFO("I2C ?????", 000),
+        .device_init = board_i2c_init,
+    },
+};
+#endif /*CONFIG_AML_I2C*/
+
+
+int board_init(void)
+{
+	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
+	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
+
+#ifdef CONFIG_AML_I2C  
+	board_i2c_init();
+#endif /*CONFIG_AML_I2C*/
+
+	
+	return 0;
+}
+
+
