@@ -16,10 +16,15 @@
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
+
+#ifdef WA_AML8726_M3_REF_V10
 	//PWREN GPIOAO_2, PWRHLD GPIOAO_6 pull up
+	//@WA-AML8726-M3_REF_V1.0.pdf
+	//@AppNote-M3-CorePinMux.xlsx
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
-	 
+#endif
+
 	int i;
     //Adjust 1us timer base
     timer_init();
