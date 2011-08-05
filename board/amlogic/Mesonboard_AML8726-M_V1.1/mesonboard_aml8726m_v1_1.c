@@ -96,7 +96,7 @@ static void board_i2c_set_pinmux(void)
     udelay(10000);
 }
 
-#define I2C_TCA6424_ADDR   (0x44)
+#define I2C_TCA6424_ADDR   (0x22)
 
 static void i2c_tca6424_write(unsigned char reg, unsigned char val)
 {

@@ -17,8 +17,9 @@
 #include <aml_i2c.h>
 
 
-#define AML_I2C_CTRL_CLK_DELAY_MASK			(0x3ff)
-#define AML_I2C_SLAVE_ADDR_MASK				(0xff)
+#define AML_I2C_CTRL_CLK_DELAY_MASK    (0x3FF)
+#define AML_I2C_SLAVE_ADDR_MASK        (0xFF)
+#define AML_I2C_SLAVE_ADDR_MASK_7BIT   (0x7F)
 
 #define AML_I2C_ASSERT(X)							\
 do {												\
@@ -289,11 +290,13 @@ static int aml_i2c_do_address(struct aml_i2c *i2c, unsigned int addr)
 {
     AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
     
-    i2c->cur_slave_addr = addr&0x7f;
+    i2c->cur_slave_addr = addr & AML_I2C_SLAVE_ADDR_MASK_7BIT;
 	
-    i2c->master_regs->i2c_slave_addr = ((i2c->master_regs->i2c_slave_addr & AML_I2C_SLAVE_ADDR_MASK)|i2c->cur_slave_addr);
-
-	return 0;
+    i2c->master_regs->i2c_slave_addr &=(~AML_I2C_SLAVE_ADDR_MASK);
+	
+    i2c->master_regs->i2c_slave_addr |=(i2c->cur_slave_addr<<1);
+	
+    return 0;
 }
 
 static void aml_i2c_stop(struct aml_i2c *i2c)
