@@ -488,6 +488,11 @@ int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, cons
 
 	nReturn = 1;
 
+#ifdef SPI_WRITE_PROTECT
+	spi_disable_write_protect();
+#endif
+
+
 	//clean data cache
 	//dcache_clean_range((u32)buf, len);
 	dcache_flush();
