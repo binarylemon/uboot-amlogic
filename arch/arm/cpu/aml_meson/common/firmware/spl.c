@@ -14,6 +14,7 @@
 
 #include <loaduboot.c>
 
+
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
@@ -26,15 +27,20 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 	int i;
+		
     //Adjust 1us timer base
     timer_init();
 	  //default uart clock.
     serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
-    debug_rom(__FILE__,__LINE__);
     // initial pll
     pll_init(&__plls);
+    
+    __udelay(100000);//wait for a uart input 
+	 if(serial_tstc()){
+	    debug_rom(__FILE__,__LINE__);
+	 }
     // initial ddr
     ddr_init_test();
     // load uboot

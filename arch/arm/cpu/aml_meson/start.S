@@ -224,6 +224,13 @@ fixnone:
 	add	r2, r2, #8		/* each rel.dyn entry is 8 bytes */
 	cmp	r2, r3
 	blo	fixloop
+	/* relocate mmu table*/
+	mrc p15, 0, r0, c1, c0, 0 		// write control register
+	tst r0,#1
+	beq mmu_ignore
+	ldr r0,__mmu_table
+	mcr p15,0,r0,c2,c0,0      		// reset TTB0
+mmu_ignore:
 
 clear_bss:
 	ldr	r0, _bss_start_ofs
@@ -272,6 +279,7 @@ _dynsym_start_ofs:
  * setup memory timing
  *
  *************************************************************************/
+ .globl __mmu_table
  __mmu_table:
  	.word mmu_table
 cpu_init_crit:

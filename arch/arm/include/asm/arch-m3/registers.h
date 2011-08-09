@@ -13,7 +13,7 @@
 #ifndef __MACH_MESSON_ONE_REGS_H
 #define __MACH_MESSON_ONE_REGS_H
 
-#define IO_CBUS_BASE			0xc1100000
+#define IO_CBUS_BASE			  0xc1100000
 #define IO_AXI_BUS_BASE			0xc1300000
 #define IO_AHB_BUS_BASE			0xc9000000
 #define IO_APB_BUS_BASE			0xc8000000
@@ -2247,7 +2247,7 @@
     #define RESET_VLD           (1<<1)
     #define RESET_IQIDCT        (1<<2)
     #define RESET_MC            (1<<3)
-	#define RESET_DCU			(1<<4)
+	  #define RESET_DCU			      (1<<4)
     #define RESET_VIU           (1<<5)
     #define RESET_AIU           (1<<6)
     #define RESET_VCPU          (1<<7)
@@ -2274,6 +2274,7 @@
     #define RESET_PSCALE        (1<<4)
     #define RESET_PNAND         (1<<5)
     #define RESET_GE2D          (1<<6)
+    #define RESET_ARC625        (1<<13)
 #define RESET3_REGISTER                            0x1104
 #define RESET4_REGISTER                            0x1105
 

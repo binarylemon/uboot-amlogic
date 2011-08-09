@@ -9,4 +9,7 @@ endif
 
 all:	  
 	$(MAKE) -f Makefile.$(targetComplier)
+ifeq ($(CONFIG_CMD_RUNARC),y)
+	$(MAKE) -f Makefile.rbt
+endif
 

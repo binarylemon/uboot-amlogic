@@ -89,3 +89,105 @@
 		      LIBS += drivers/adc/libadc.o	     
 		9.2.3 board/amlogic/Mesonboard_AML8726-M_V1.1/mesonboard_aml8726m_v1_1.c
 	   		  add commom code for sys-test feature, add demo code for ADC test
+	   		  
+10. Add new command "arc"
+	 10.1. run program on "arc"
+   10.2. using macro "CONFIG_CMD_RUNARC" to enable/disable this command.
+   10.3. command code file is "arch/arm/cpu/aml_meson/m3/cmd_arc.c"
+   10.4. command format "arc <address>" address: memory address for arc code.
+   10.5. limitation: address cannot be in 0x49000000 ~ 0x4900c000 and size must be less than 16K Bytes.
+   10.6. arc program example:
+        int main(void)
+				{
+	        unsigned armrunning;
+	        char c;
+	        int i = 0,j;
+	        timer_init();
+	        serial_puts("arc >");
+	        while(1){
+		      		if(serial_tstc()==0){
+			           if((get_tick(0)&0x7FFFFFFF) < 100)
+				             serial_puts("enter\n");
+			           continue;
+		          }	
+		          i++;
+		          c=serial_getc();
+		          serial_putc(c);
+		          if(c == 'q') //exit arc program
+			            break;
+		          switch(c){
+	 			      case 't': //test ARM running
+                  writel(0x80000000|((i&0xffff)<<16)|1,P_AO_RTI_STATUS_REG0);
+			            armrunning = readl(P_AO_RTI_STATUS_REG1);
+				          serial_puts(" - ARM power on test: ");
+                  writel(((i&0xffff)<<16)|1,P_AO_RTI_STATUS_REG0);
+							    break;
+				       default:
+					         serial_puts(" - ! unsupported command\n");
+					         break;
+		           }
+		           serial_puts("arc >");
+	         }
+	
+	         serial_puts("exit arc loop\n");
+	         //must set this flag to let arm exit "arc" command.
+	         writel(0,P_AO_RTI_STATUS_REG0);
+	
+		       while(1){
+			        asm("SLEEP");
+		       }
+	        return 0;
+	      }
+	      
+11. Add new command "testpd"
+   11.1. test power down/up ARM cpu
+   11.2. using macro "CONFIG_CMD_RUNARC" to enable/disable this command.
+   11.3. command code file is "arch/arm/cpu/aml_meson/m3/cmd_arc.c"
+   11.4. command format "testpd <address>" address: memory address for arc code.
+   11.5. limitation: address cannot be in 0x49000000 ~ 0x4900c000 and size must be less than 16K Bytes.
+   11.6. arm reboot code file is "arch/arm/cpu/aml_meson/m3/firmware/reboot.S".
+   11.7. make file is "arch/arm/cpu/aml_meson/common/firmware/Makefile.rbt"
+   11.8. load file is "arch/arm/cpu/aml_meson/common/firmware/reboot.lds"
+   11.9. fixed address at 0
+   11.10. recovery environment address is at 0x4900EF00.
+   11.11. need ARC program to do power down and power up.
+   11.12. ARC code run at 0x49008000 and reboot code is at 0x4900B000
+   11.13. reboot binary file is "build/aml-reboot.bin"
+   11.14. ARC program example:
+         int main(void)
+         {
+	           unsigned cmd;
+	           char c;
+	           int i = 0,j;
+	           timer_init();
+	           serial_puts("ARC application running .......\n");
+	           while(1){
+		             cmd = readl(P_AO_RTI_STATUS_REG0);
+		             if(cmd == 0){
+			              t_delay();
+			              continue;
+		              }
+		              c = (char)cmd;
+		             if(c == 't'){
+		             	   /* copy reboot arm code to sdram */
+			               copy_reboot_code();
+			               /* power down and power up ARM cpu then reboot it */
+		                 test_pd();
+			               break; //exit the loop.
+		              }
+              		else if(c == 'q'){
+				              serial_puts(" - quit command loop\n");
+				              writel(0,P_AO_RTI_STATUS_REG0); //set command done flag
+			                break;
+		              }
+		              else
+				              serial_puts(" - cmd no support (ARC)\n");
+				         writel(0,P_AO_RTI_STATUS_REG0); //set command done flag
+	             }
+	             
+			        serial_puts("ARC enter sleep...\n");
+	            while(1){
+		              asm("SLEEP");
+	            }
+	            return 0;
+           }

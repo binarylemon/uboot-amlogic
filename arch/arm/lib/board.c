@@ -273,7 +273,7 @@ init_fnc_t *init_sequence[] = {
 #endif
 	NULL,
 };
-
+extern ulong __mmu_table; 
 void board_init_f (ulong bootflag)
 {
 	bd_t *bd;
@@ -335,15 +335,15 @@ void board_init_f (ulong bootflag)
 	debug ("Reserving %ldk for protected RAM at %08lx\n", reg, addr);
 #endif /* CONFIG_PRAM */
 
-#if !(defined(CONFIG_SYS_NO_ICACHE) && defined(CONFIG_SYS_NO_DCACHE))
+#if !(defined(CONFIG_ICACHE_OFF) && defined(CONFIG_DCACHE_OFF))
 	/* reserve TLB table */
 	addr -= (4096 * 4);
 
 	/* round down to next 64 kB limit */
 	addr &= ~(0x10000 - 1);
 
-	gd->tlb_addr = addr;
-	debug ("TLB table at: %08lx\n", addr);
+//	gd->tlb_addr = addr;
+//	debug ("TLB table at: %08lx\n", addr);
 #endif
 
 	/* round down to next 4 kB limit */
@@ -429,6 +429,13 @@ void board_init_f (ulong bootflag)
 	gd->relocaddr = addr;
 	gd->start_addr_sp = addr_sp;
 	gd->reloc_off = addr - _TEXT_BASE;
+	
+#if !(defined(CONFIG_ICACHE_OFF) && defined(CONFIG_DCACHE_OFF))
+	/* adjust mmu table address */
+	gd->tlb_addr = __mmu_table + gd->reloc_off;
+  debug ("TLB table at: %08lx\n", gd->tlb_addr);
+#endif
+
 	debug ("relocation Offset is: %08lx\n", gd->reloc_off);
 	memcpy (id, (void *)gd, sizeof (gd_t));
 

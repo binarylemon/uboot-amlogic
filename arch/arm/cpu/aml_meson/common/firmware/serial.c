@@ -12,6 +12,7 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/uart.h>
+#include <asm/arch/io.h>
 
 SPL_STATIC_FUNC void serial_init(unsigned set)
 {
@@ -26,7 +27,8 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    UART_CNTL_MASK_RST_TX | UART_CNTL_MASK_RST_RX | UART_CNTL_MASK_CLR_ERR);
     
 }
-SPL_STATIC_FUNC void serial_putc(const char c)
+//SPL_STATIC_FUNC 
+void serial_putc(const char c)
 {
     if (c == '\n') 
     {

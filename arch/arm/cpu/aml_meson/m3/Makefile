@@ -11,8 +11,7 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)lib$(SOC).o
 
 COBJS-$(CONFIG_AML_SDIO)+=sdio.o
-
-
+COBJS-$(CONFIG_CMD_RUNARC)+=cmd_arc.o
 COBJS	= clock.o $(COBJS-y)
 SOBJS := mmutable.o
 
