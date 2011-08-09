@@ -398,6 +398,13 @@ extern int aml_eth_init(bd_t *bis);
 }
 #endif /* (CONFIG_CMD_NET) */
 
+u32 get_board_rev(void)
+{
+    /*
+    @todo implement this function
+    */
+	return 0x20;
+}
 
 #if CONFIG_CMD_MMC
 #include <mmc.h>
