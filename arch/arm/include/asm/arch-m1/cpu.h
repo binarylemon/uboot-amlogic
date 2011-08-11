@@ -149,7 +149,7 @@
 	"bootsize=60000\0"
 	
 #define CONFIG_BOOTCOMMAND  "nand read 84100000 ${logo_start} ${logo_size};nand read ${loadaddr} ${normal_start} ${normal_size};lcd bl off;bootm"
-//#define CONFIG_BOOTCOMMAND  "lcd bl off;mmcinfo;ext2load mmc 0:1 82000000 uImage"
+//#define CONFIG_BOOTCOMMAND  "lcd bl off;mmcinfo;fatload mmc 0:1 82000000 uImage;bootm"
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \

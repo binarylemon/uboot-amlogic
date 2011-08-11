@@ -107,6 +107,8 @@ IRQ_STACK_START_IN:
  */
 
 reset:
+	dmb
+	isb
 	/*
 	 * set the cpu to SVC32 mode
 	 */
