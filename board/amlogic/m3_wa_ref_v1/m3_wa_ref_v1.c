@@ -224,6 +224,14 @@ static struct adc_info g_adc_info[] = {
 */
 #endif
 
+u32 get_board_rev(void)
+{
+    /*
+    @todo implement this function
+    */
+	return 0x20;
+}
+
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>

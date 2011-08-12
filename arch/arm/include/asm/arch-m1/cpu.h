@@ -108,14 +108,6 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
-#if defined(PHYS_MEMORY_SIZE) == 0x20000000
-	#define BOARD_INFO_ENV  " mem=512M"
-	#define UBOOTPATH		"u-boot-512M-UartB.bin"
-#else
-	#define BOARD_INFO_ENV ""
-	#define UBOOTPATH		"u-boot-aml.bin"
-#endif
-
 #ifdef	CONFIG_UBI_SUPPORT
 #define MTDIDS_DEFAULT		"nand1=nandflash1\0"
 #define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						

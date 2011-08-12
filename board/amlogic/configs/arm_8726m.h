@@ -38,6 +38,15 @@
 #define CONFIG_SDIO_C    1
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
+#define CONFIG_MEMSIZE	512	/*unit is MB*/ 
+#if(CONFIG_MEMSIZE == 512)
+#define BOARD_INFO_ENV  " mem=512M"
+#define UBOOTPATH		"u-boot-512M-UartB.bin"
+#else
+#define BOARD_INFO_ENV ""
+#define UBOOTPATH		"u-boot-aml.bin"
+#endif
+
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
