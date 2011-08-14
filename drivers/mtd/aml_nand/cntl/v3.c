@@ -272,5 +272,5 @@ static int32_t v3_nop(cntl_t * cntl, uint16_t ce, uint16_t cycles)
 }
 static int32_t v3_sts(cntl_t * cntl, jobkey_t job, uint16_t mode)
 {
-
+	return v3_fifo_write(cntl,NFC_CMD_STS(mode));
 }
