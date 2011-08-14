@@ -4,7 +4,7 @@
 //This File only include the register define relative code 
 //It should describe some 
 #include "reg_addr.h"
-
+#if 1
 /** Register defination **/
 
 #define NAND_CYCLE_DELAY	  65
@@ -172,6 +172,6 @@
 
 
 
-
+#endif
 #endif // NAND_H_INCLUDED
 
