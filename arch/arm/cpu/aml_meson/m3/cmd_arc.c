@@ -115,40 +115,44 @@ U_BOOT_CMD(
 inline static void rbt_save_env()
 {		
 	  /* save return pc */
-	  asm("ldr r0,=0x4900EF34");
-	  asm("str lr,[r0]");
+	  asm volatile ("ldr r0,=0x4900EF38");
+	  asm volatile ("str lr,[r0]");
 	  /* save vector base addr */
-	  asm("mrc p15,0,r1,c12,c0,0");
-	  asm("str r1,[r0,#4]");
+	  asm volatile ("mrc p15,0,r1,c12,c0,0");
+	  asm volatile ("str r1,[r0,#4]");
 	  /* save monitor vector base addr */
-	  asm("mrc p15,0,r1,c12,c0,1");
-	  asm("str r1,[r0,#8]");
+	  asm volatile ("mrc p15,0,r1,c12,c0,1");
+	  asm volatile ("str r1,[r0,#8]");
 }
 
 inline static void rbt_save_sp()
 {
-	asm("ldr r0,=0x4900EF00");
-	asm("str sp, [r0]");
+ 	asm volatile ("ldr r0,=0x4900EF00");
+	asm volatile ("str sp, [r0]");
 	
  // save cache status
-	asm("mrc p15,0,r1,c1,c0,0");
-	asm("str r1,[r0,#4]");
+	asm volatile ("mrc p15,0,r1,c1,c0,0");
+	asm volatile ("str r1,[r0,#4]");
+	
+	// save mmu table
+	asm volatile ("mrc p15,0,r1,c2,c0,0");
+	asm volatile ("str r1,[r0,#8]");
 }
 
 inline static void rbt_save_regs()
 {	/* save general registers */
-	asm("ldr r0,=0x4900EF08");
-	asm("str r2, [r0]");
-	asm("str r3, [r0,#4]");
-	asm("str r4, [r0,#8]");
-	asm("str r5, [r0,#12]");
-	asm("str r6, [r0,#16]");
-	asm("str r7, [r0,#20]");
-	asm("str r8, [r0,#24]");
-	asm("str r9, [r0,#28]");
-	asm("str r10, [r0,#32]");
-	asm("str r11, [r0,#36]");
-	asm("str r12, [r0,#40]");
+	asm volatile ("ldr r0,=0x4900EF0c");
+	asm volatile ("str r2, [r0]");
+	asm volatile ("str r3, [r0,#4]");
+	asm volatile ("str r4, [r0,#8]");
+	asm volatile ("str r5, [r0,#12]");
+	asm volatile ("str r6, [r0,#16]");
+	asm volatile ("str r7, [r0,#20]");
+	asm volatile ("str r8, [r0,#24]");
+	asm volatile ("str r9, [r0,#28]");
+	asm volatile ("str r10, [r0,#32]");
+	asm volatile ("str r11, [r0,#36]");
+	asm volatile ("str r12, [r0,#40]");
 }
 
 int run_testpd(unsigned addr)
@@ -189,7 +193,7 @@ int run_testpd(unsigned addr)
 				__udelay(1000);
 				__udelay(1000);		
 				if(cmd == 't'){
-					asm("wfi");
+					asm volatile ("wfi");
 				}
 				else{
     				while(readl(P_AO_RTI_STATUS_REG0) != 0)
@@ -212,7 +216,6 @@ int do_testpd (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return cmd_usage(cmdtp);
 		
 	rbt_save_sp();
-		
 #ifndef CONFIG_DCACHE_OFF
 	  dcache_disable();
 		cache_flush();

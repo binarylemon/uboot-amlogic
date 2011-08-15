@@ -3,6 +3,7 @@ void load_nop(void)
   APB_Wr(PCTL_MCMD_ADDR, (1 << 31) |
                          (DDR_RANK << 20) |   //rank select
                           NOP_CMD );
+  __udelay(1000);
   while ( APB_Rd(PCTL_MCMD_ADDR) & 0x80000000 ) {}
 }
 void load_prea(void)
@@ -20,6 +21,7 @@ void load_mrs(int mrs_num, int mrs_value)
                    (mrs_num << 17) |
                   (mrs_value << 4) |
                            MRS_CMD );
+  __udelay(1000);
   while ( APB_Rd(PCTL_MCMD_ADDR) & 0x80000000 ) {};
 }
 
@@ -49,13 +51,22 @@ unsigned get_mrs0(struct ddr_set * timing_reg)
     //cl
     ret|=((timing_reg->cl-4)&0x7)<<4;
     //wr: write recovery 
-    ret|=((timing_reg->t_wr-4)&0x7)<<9;
+    if(timing_reg->t_wr <= 8)
+        ret|=((timing_reg->t_wr-4)&0x7)<<9;
+    else
+    	  ret|=((timing_reg->t_wr>>1)&7)<<9;
     return ret&0x1fff;
 }
 
 unsigned get_mrs1(struct ddr_set * timing_reg)
 {
-    unsigned ret=(1<<6)|(1<<2);//rtt_nominal;      //(A9, A6, A2) 000 : disabled. 001 : RZQ/4   (A6:A2)
+    //unsigned ret=(1<<6)|(1<<2);//rtt_nominal;      //(A9, A6, A2) 000 : disabled. 001 : RZQ/4   (A6:A2)
+    unsigned ret = 0;
+    ret|=timing_reg->mrs[1]&((1<<9)|(1<<6)|(1<<2)| //rtt_nominal
+                             (1<<5)|(1<<1) |       //(A5 A1),Output driver impedance control 00:RZQ/6,01:RZQ/7,10£ºRZQ/5 11:Reserved
+                             (0<<12)|              //Qoff output buffer
+                             (0<<7) );             //Write level  
+
     //cl
     if(timing_reg->t_al)
     {
@@ -77,9 +88,14 @@ static int init_pctl_ddr3(struct ddr_set * timing_reg)
    int mrs1_value;
    int mrs2_value;
    int mrs3_value;
-
+   static unsigned time_tag = 1;
     Wr(RESET1_REGISTER,1<<3);
-		__udelay(1000);
+    if(time_tag){
+    	serial_puts(__DATE__);
+    	serial_puts(__TIME__);
+    	time_tag=0;
+    }
+		APB_Wr(MMC_DDR_CTRL,timing_reg->ddr_ctrl);
 #if 0    
      mrs0_value =           (1 << 12 ) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
                             (4 <<9 )   |   //wr recovery   4 means write recovery = 8 cycles..
@@ -125,24 +141,19 @@ static int init_pctl_ddr3(struct ddr_set * timing_reg)
       // to disalbe cmd lande receiver current. 
       // we don't need receive data from command lane.
       APB_Wr(MMC_PHY_CTRL,   1 );  
-
-/*#ifdef ENABLE_POWER_SAVING    
+#define ENABLE_POWER_SAVING
+#ifdef ENABLE_POWER_SAVING    
       APB_Wr(PCTL_IOCR_ADDR, 0xfe000f0d);
 #else
       APB_Wr(PCTL_IOCR_ADDR, 0xcc000f0d);
 #endif
-*/
-			APB_Wr(PCTL_IOCR_ADDR,0xcc0c0ffd);
 
-      APB_Wr(PCTL_TRSTH_ADDR, 500);       // 500us  to hold reset high before assert CKE. change it to 50 for fast simulation time.
-      APB_Wr(PCTL_TRSTL_ADDR, 100);        //  100 clock cycles for reset low 
-
-#if 0
-      APB_Wr(PCTL_PHYCR_ADDR, APB_Rd(PCTL_PHYCR_ADDR) & 0xfffffeff );   //disable auto data training when PCTL exit low power state.
-#else
+#ifdef ENABLE_POWER_SAVING
       APB_Wr(PCTL_PHYCR_ADDR, 0x070); // bit 0 0 = active windowing mode.
                                      // bit 3 0 = drift compensation disabled.
                                      // bit 8 0 = automatic data training enable.
+#else
+      APB_Wr(PCTL_PHYCR_ADDR, APB_Rd(PCTL_PHYCR_ADDR) & 0xfffffeff );   //disable auto data training when PCTL exit low power state.
 #endif                                     
 
       while (!(APB_Rd(PCTL_POWSTAT_ADDR) & 2)) {} // wait for dll lock
@@ -182,10 +193,12 @@ static int init_pctl_ddr3(struct ddr_set * timing_reg)
       APB_Wr(PCTL_TDQS_ADDR,  timing_reg->t_dqs);
       APB_Wr(PCTL_TMOD_ADDR,  timing_reg->t_mod);
       APB_Wr(PCTL_TZQCL_ADDR, timing_reg->t_zqcl);
+      APB_Wr(PCTL_TZQCSI_ADDR, 4095);
       APB_Wr(PCTL_TCKSRX_ADDR, timing_reg->t_cksrx);
       APB_Wr(PCTL_TCKSRE_ADDR, timing_reg->t_cksre);
       APB_Wr(PCTL_TCKE_ADDR,   timing_reg->t_cke);
       APB_Wr(PCTL_ODTCFG_ADDR, 8);         //configure ODT
+#if 0
     //ZQ calibration 
     APB_Wr(PCTL_ZQCR_ADDR, ( 1 << 31) | (0x7b <<16) );
     //wait for ZQ calibration.
@@ -194,6 +207,9 @@ static int init_pctl_ddr3(struct ddr_set * timing_reg)
             serial_puts("ZQ Fail\n");
         return -1;
     }
+#else
+    APB_Wr(PCTL_ZQCR_ADDR, ( 1 << 24) | 0x11dd);
+#endif
 
       // initialize DDR3 SDRAM
         load_nop();

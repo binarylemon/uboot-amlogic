@@ -45,12 +45,17 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     Wr(HHI_DDR_PLL_CNTL2,0x65e31ff);
     Wr(HHI_DDR_PLL_CNTL3,0x1649a941);
     Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl);
+   	while(!(readl(P_HHI_DDR_PLL_CNTL3)&(1<<31)));
     wait_pll(3,timing_reg->ddr_clk);
-    serial_put_hex(timing_reg->ddr_ctrl,32);
+    wait_pll(30,timing_reg->ddr_clk);
+/*    serial_put_hex(timing_reg->ddr_ctrl,32);
     for ( i = 0; i <= 1000; i ++) {          
        APB_Wr(MMC_DDR_CTRL, timing_reg->ddr_ctrl );   // 
    }
-   
+   */
+   Wr(RESET1_REGISTER,1<<3);
+    __udelay(1000);
+
    serial_puts("set ddr clock ok!\n");
 }
 
@@ -108,7 +113,7 @@ unsigned m3_ddr_init_test(int arg)
 }
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
 {
-		m3_ddr_init_test(7);
+		m3_ddr_init_test(6);
 		return 0;
 }
 	

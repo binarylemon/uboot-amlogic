@@ -20,36 +20,45 @@ pwr_reboot:
 pwr_restart:
     dmb
     isb
-   // wfi /* for debug */
+    /* for debug */
+    // wfi 
      
 		/********************************************/
 		/* restore reboot enviroment                */    
     ldr r0, =CONFIG_RST_ENV_BASE
     ldr sp,[r0]
     
-		/*restore system control. bit[12]:icache, bit[2]:dcache*/
-    ldr r1,[r0,#4]
-    mcr p15,0,r1,c1,c0,0
-    
+		/********************************************/
+		/* restore reboot enviroment                */    
+    ldr r0, =CONFIG_RST_ENV_BASE
+    ldr sp,[r0,#0]
+       
 		/* common registers */
-    ldr r2,[r0,#8]
-    ldr r3,[r0,#12]
-    ldr r4,[r0,#16]
-    ldr r5,[r0,#20]
-    ldr r6,[r0,#24]
-    ldr r7,[r0,#28]
-    ldr r8,[r0,#32]
-    ldr r9,[r0,#36]
-    ldr r10,[r0,#40]
-    ldr r11,[r0,#44]
-    ldr r12,[r0,#48]
+    ldr r2,[r0,#12]
+    ldr r3,[r0,#16]
+    ldr r4,[r0,#20]
+    ldr r5,[r0,#24]
+    ldr r6,[r0,#28]
+    ldr r7,[r0,#32]
+    ldr r8,[r0,#36]
+    ldr r9,[r0,#40]
+    ldr r10,[r0,#44]
+    ldr r11,[r0,#48]
+    ldr r12,[r0,#52]
     
 		/* lr and vector settings */    
-    ldr lr,[r0,#52]
-    ldr r1,[r0,#56]
-    mcr p15,0,r1,c12,c0,0 /*restore vector base addr*/
+    ldr lr,[r0,#56]
     ldr r1,[r0,#60]
+    mcr p15,0,r1,c12,c0,0 /*restore vector base addr*/
+    ldr r1,[r0,#64]
     mcr p15,0,r1,c12,c0,1 /*restore monitor vector base addr*/
+    
+ 		ldr r1,[r0,#8]
+	  MCR p15,0,r1,c2,c0,0      		// setup TTB0
+	  
+  	/*restore system control. bit[12]:icache, bit[2]:dcache*/
+    ldr r1,[r0,#4]
+    mcr p15,0,r1,c1,c0,0
     
  		/* return to powerdown location*/
     mov pc,lr
@@ -78,7 +87,12 @@ pwr_fiq:
 	mov r0,#7
 	b pwr_fail_sleep	
 pwr_fail_sleep:
-	ldr     sp, =0x49002000  // setup stack pointer 			
+  /* setup stack pointer (relocated 0x49002000) */
+	mov r1 , pc
+	ldr r2 , =0xFFFF0000
+	and r1, r1, r2
+	add r1, r1, #0x2000
+	mov sp, r1
 	bl      disp_exception
 	wfi
 	

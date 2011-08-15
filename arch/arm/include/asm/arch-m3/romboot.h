@@ -94,7 +94,7 @@ extern DataFormat  __magic_word;
 #else
 #define C_ROM_BOOT_DEBUG ((ROM_BOOT_INFO))
 #endif
-#define AHB_SRAM_BASE RAM_START
+//#define AHB_SRAM_BASE RAM_START
 #define ROM_STACK_END       (GL_DATA_ADR)
 /** SDIO Return **/
 #define ERROR_NONE 0

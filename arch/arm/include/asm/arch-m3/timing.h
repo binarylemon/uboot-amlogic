@@ -31,10 +31,12 @@ struct ddr_set{
         unsigned short t_cksrx;   // CKE maintained high before issuing self refresh command. 
         unsigned short t_cksre;   // Time after Self Refresh Entry that CKE is heold high before going low. 
         unsigned short t_cke;     // CKE minimum pulse width in memory clock cycles. 
+        unsigned short t_rtw;
+        unsigned short t_ccd;
         unsigned short pad;
+        unsigned short mrs[4];
         unsigned       dllcr;
         unsigned       iocr;
-        unsigned       mcfg;
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;//400M for DDR 800 , 333M for DDR667
         unsigned       ddr_clk;

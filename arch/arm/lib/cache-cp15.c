@@ -44,20 +44,6 @@ static void cp_delay (void)
 	asm volatile("" : : : "memory");
 }
 
-static inline void dram_bank_mmu_setup(int bank)
-{
-	u32 *page_table = (u32 *)gd->tlb_addr;
-	bd_t *bd = gd->bd;
-	int	i;
-
-	debug("%s: bank: %d\n", __func__, bank);
-	for (i = bd->bi_dram[bank].start >> 20;
-	     i < (bd->bi_dram[bank].start + bd->bi_dram[bank].size) >> 20;
-	     i++) {
-		page_table[i] = i << 20 | (3 << 10) | CACHE_SETUP;
-	}
-}
-
 /* to activate the MMU we need to set up virtual memory: use 1M areas */
 static inline void mmu_setup(void)
 {
@@ -65,20 +51,12 @@ static inline void mmu_setup(void)
 	int i;
 	u32 reg;
 
-	/* Set up an identity-mapping for all 4GB, rw for everyone */
-	for (i = 0; i < 4096; i++)
-		page_table[i] = i << 20 | (3 << 10) | 0x12;
-
-	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
-		dram_bank_mmu_setup(i);
-	}
-
 	/* Copy the page table address to cp15 */
 	asm volatile("mcr p15, 0, %0, c2, c0, 0"
 		     : : "r" (page_table) : "memory");
-	/* Set the access control to all-supervisor */
+	/* Set the access control to client */
 	asm volatile("mcr p15, 0, %0, c3, c0, 0"
-		     : : "r" (~0));
+		     : : "r" (0x55555555));
 	/* and enable the mmu */
 	reg = get_cr();	/* get control reg. */
 	cp_delay();

@@ -30,6 +30,8 @@ static void wait_pll(unsigned clk,unsigned dest)
 
 SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls) 
 {
+    clrbits_le32(P_HHI_A9_CLK_CNTL,1<<7);
+    clrbits_le32(P_HHI_MPEG_CLK_CNTL,1<<8);
      //* sys pll
     writel(plls->sys_pll_cntl|0x8000,P_HHI_SYS_PLL_CNTL);//800Mhz(0x664),600Mhz,400Mhz , 200Mhz
     writel(0x65e31ff  ,P_HHI_SYS_PLL_CNTL2);
