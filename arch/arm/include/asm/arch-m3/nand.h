@@ -80,8 +80,8 @@
 */
 #define NFC_SET_CMD_START()						   		setbits_le32(P_NAND_CFG,1<<12)
 #define NFC_SET_CMD_AUTO()						   		setbits_le32(P_NAND_CFG,1<<13)
-#define NFC_GET_CMD_START()                             ((readl(P_NAND_CFG)>>12)&1)
-#define NFC_GET_CMD_AUTO()                              ((readl(P_NAND_CFG)>>13)&1)
+#define NFC_GET_CMD_FIFO_STATUS()                       ((readl(P_NAND_CFG)>>12)&3)
+
 #define NFC_SET_STS_IRQ(en)					       		clrsetbits_le32(P_NAND_CFG,1<<20,en<<20)
 #define NFC_SET_CMD_IRQ(en)					       		clrsetbits_le32(P_NAND_CFG,1<<21,en<<21)
 #define NFC_SET_TIMING_ASYC(bus_tim,bus_cyc)       		WRITE_CBUS_REG_BITS(NAND_CFG,((bus_cyc&31)|((bus_tim&31)<<5)|(0<<10)),0,12)

@@ -208,6 +208,13 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 static int32_t v3_fifo_write(cntl_t *cntl, uint32_t cmd)
 {
     DEFINE_CNTL_PRIV(priv, cntl);
+    uint32_t fifo_status=NFC_GET_CMD_FIFO_STATUS();
+    
+    if(fifo_status)
+    {
+        
+        
+    }
 //    
 //    if(NFC_CMDFIFO_AVAIL
 	///@todo implement it
