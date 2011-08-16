@@ -277,7 +277,11 @@ int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-
+#if CONFIG_JERRY_NAND_TEST //temp test	
+    board_nand_init();
+    
+#endif    
+    
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/

@@ -221,5 +221,4 @@ static int init_pctl_ddr3(struct ddr_set * timing_reg)
         load_mrs(0, mrs0_value);
         load_zqcl(0);     // send ZQ calibration long command.
         return 0;
-
 }
