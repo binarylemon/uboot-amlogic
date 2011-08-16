@@ -53,7 +53,8 @@ struct v3_priv
 	uint32_t    sts_size;
 	uint32_t    temp;
 	sts_t*      sts_buf;
-	uint32_t    fifo_size;
+	uint32_t    fifo_mask;
+	uint32_t    tail;
 	uint32_t *  cmd_fifo;
 	struct aml_nand_platform * plat;
 };
@@ -205,15 +206,48 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 }
 
 #define V3_FIFO_WRITE(ret,cmd) {if((ret=v3_fifo_write(cntl,cmd))<0)return ret;}
+static inline uint32_t v3_cmd_fifo_head(struct v3_priv * priv)
+{
+	uint32_t  readp=readl(P_NAND_CADR);
+	if(readp<(uint32_t)(priv->cmd_fifo))
+		BUG();
+	readp-=(uint32_t)(priv->cmd_fifo);
+	readp>>=2;
+	if(readp>priv->fifo_mask)
+		readp=0;
+	return readp;
+}
+static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv)
+{
+	return (priv->tail - v3_cmd_fifo_head(priv))&(priv->fifo_mask);
+}
+static inline uint32_t v3_cmd_fifo_avail(struct v3_priv * priv)
+{
+	return priv->fifo_mask-v3_cmd_fifo_size(priv);
+}
+
+static inline int32_t v3_cmd_fifo_compare(struct v3_priv * priv)
+{
+	uint32_t head=readl(P_NAND_CADR);
+	uint32_t tail=(uint32_t)&(priv->cmd_fifo[priv->tail]);
+	if(head>tail)
+	{
+		return 1;
+	}
+	return 0;
+}
 static int32_t v3_fifo_write(cntl_t *cntl, uint32_t cmd)
 {
     DEFINE_CNTL_PRIV(priv, cntl);
     uint32_t fifo_status=NFC_GET_CMD_FIFO_STATUS();
-    
-    if(fifo_status)
+    if(v3_cmd_fifo_size(priv))
     {
-        
-        
+    	if(v3_cmd_fifo_avail(priv)==0)
+    		return -1;
+    	if(v3_cmd_fifo_compare(priv)){
+    		priv->cmd_fifo[(priv->tail++)&((priv->fifo_mask))]=cmd;
+    		priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]=0;
+    	}
     }
 //    
 //    if(NFC_CMDFIFO_AVAIL

@@ -33,6 +33,7 @@
 #define P_NAND_ADR             (NFC_BASE+28)
 #define P_NAND_DL              (NFC_BASE+32)
 #define P_NAND_DH              (NFC_BASE+36)
+#define P_NAND_CADR            (NFC_BASE+40)
 
 /*
    Common Nand Read Flow
