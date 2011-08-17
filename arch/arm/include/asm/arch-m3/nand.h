@@ -203,7 +203,6 @@
 #define NFC_CLEAR_SPARE_ONLY()			(CLEAR_CBUS_REG_MASK(NAND_CFG,1<<15))
 #define NFC_GET_BUF() 					READ_CBUS_REG(NAND_BUF)
 #define NFC_GET_CFG() 					READ_CBUS_REG(NAND_CFG)
-#define NFC_SET_CFG(val) 			    WRITE_CBUS_REG(NAND_CFG,(unsigned)val)
 
 
 #define NAND_IO_ENABLE(mode)        {               \

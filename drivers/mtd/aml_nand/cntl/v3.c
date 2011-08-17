@@ -53,9 +53,11 @@ struct v3_priv
 	uint32_t    sts_size;
 	uint32_t    temp;
 	sts_t*      sts_buf;
+	uint32_t    nfc_ce;
 	uint32_t    fifo_mask;
 	uint32_t    tail;
 	uint32_t *  cmd_fifo;
+	
 	struct aml_nand_platform * plat;
 };
 #define v3_lock_sts_buf(priv)
@@ -107,23 +109,13 @@ static cntl_t v3_driver =
     .priv = &v3_priv
 };
 
-#define NFC_REG_CMD           (priv->reg_base+0x00)
-#define NFC_REG_CFG           (priv->reg_base+0x04)
-#define NFC_REG_DADR          (priv->reg_base+0x08)
-#define NFC_REG_IADR          (priv->reg_base+0x0C)
-#define NFC_REG_BUF           (priv->reg_base+0x10)
-#define NFC_REG_INFO          (priv->reg_base+0x14)
-#define NFC_REG_DC            (priv->reg_base+0x18)
-#define NFC_REG_ADR           (priv->reg_base+0x1C)
-#define NFC_REG_DL            (priv->reg_base+0x20)
-#define NFC_REG_DH            (priv->reg_base+0x24)
 
 #define NFC_CMD_WAIT_EMPTY()       wait_fifo_empty(priv)
 static inline void wait_fifo_empty(struct v3_priv * priv)
 {
     uint32_t st;
     do{
-        st=readl(NFC_REG_CFG);
+        st=readl(P_NAND_CFG);
     }while((st&(1<<12))!=0);
     while(NFC_CMDFIFO_SIZE()>0){};
     writel(P_NAND_CMD,NFC_CMD_STANDBY(0));
@@ -175,7 +167,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 			NFC_CMD_WAIT_EMPTY();
 			bus_cycle=t_rhoh;
 			bus_time=t_rea;
-			clrsetbits_le32(NFC_REG_CFG,0xfff|(1<<16),(bus_cycle&0x1f)|((bus_time&0x1f)<<5)| (mode<<10)|(sync_adjust<<16));
+			clrsetbits_le32(P_NAND_CFG,0xfff|(1<<16),(bus_cycle&0x1f)|((bus_time&0x1f)<<5)| (mode<<10)|(sync_adjust<<16));
 		}
 		break;
         case NAND_CNTL_POWER_SET:
@@ -192,7 +184,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
     			priv->fifo_mode=mode;
     			if(xor&2)
     			{
-    				clrsetbits_le32(NFC_REG_CFG,3<<20,(mode&1?3:0)<<20);
+    				clrsetbits_le32(P_NAND_CFG,3<<20,(mode&1?3:0)<<20);
     			}
 		    }
 		}
@@ -205,17 +197,22 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 	return 0;
 }
 
-#define V3_FIFO_WRITE(ret,cmd) {if((ret=v3_fifo_write(cntl,cmd))<0)return ret;}
+
 static inline uint32_t v3_cmd_fifo_head(struct v3_priv * priv)
 {
-	uint32_t  readp=readl(P_NAND_CADR);
-	if(readp<(uint32_t)(priv->cmd_fifo))
-		BUG();
-	readp-=(uint32_t)(priv->cmd_fifo);
-	readp>>=2;
-	if(readp>priv->fifo_mask)
-		readp=0;
-	return readp;
+    uint32_t head=readl(P_NAND_CADR);
+	uint32_t mask=(priv->fifo_mask<<2)|3;
+	uint32_t fifo=(uint32_t)priv->cmd_fifo;
+	if(head<fifo||head>fifo+mask)
+	    return 0;
+	
+	head-=fifo;
+	head>>=2;
+	return head;
+}
+static inline uint32_t  v3_cmd_fifo_tail(struct v3_priv * priv)
+{
+    return (priv->tail )&(priv->fifo_mask);
 }
 static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv)
 {
@@ -236,57 +233,143 @@ static inline int32_t v3_cmd_fifo_compare(struct v3_priv * priv)
 	}
 	return 0;
 }
-static int32_t v3_fifo_write(cntl_t *cntl, uint32_t cmd)
+#define nfc_mb(a,b)
+static inline void v3_cmd_fifo_reset(struct v3_priv * priv)
 {
-    DEFINE_CNTL_PRIV(priv, cntl);
+    uint32_t head=readl(P_NAND_CADR);
+	uint32_t mask=(priv->fifo_mask<<2)|3;
+	uint32_t fifo=(uint32_t)priv->cmd_fifo;
+	if(head<fifo||head>fifo+mask)
+	     writel(priv->cmd_fifo,P_NAND_CADR);
+}
+#define cmd(a)  cmd_##a
+#define ret(a)  ret_##a
+#define EXTEND(name,a)   name(a)
+#define TMP_VAR(name) EXTEND(name,__LINE__)
+#define V3_FIFO_WRITE(x...) {   uint32_t TMP_VAR(cmd)[]={x};                            \
+                                int32_t TMP_VAR(ret);                                   \
+                                if(( TMP_VAR(ret)=v3_fifo_write(priv,TMP_VAR(cmd),             \
+                                    sizeof(TMP_VAR(cmd))/sizeof(TMP_VAR(cmd)[0])))<0)   \
+                                    return TMP_VAR(ret);}
+
+static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd[],uint32_t size)
+{
     uint32_t fifo_status=NFC_GET_CMD_FIFO_STATUS();
-    if(v3_cmd_fifo_size(priv))
+    uint32_t mb_tag;
+    int i,j;
+    if((priv->fifo_mode&1)==0&&NFC_CMDFIFO_AVAIL()<size)//mode does not match
+        return -2;
+    if(v3_cmd_fifo_avail(priv)<size)
+   		return -1;
+
+    i=0;
+    if(v3_cmd_fifo_size(priv)==0&&NFC_CMDFIFO_AVAIL())
     {
-    	if(v3_cmd_fifo_avail(priv)==0)
-    		return -1;
-    	if(v3_cmd_fifo_compare(priv)){
-    		priv->cmd_fifo[(priv->tail++)&((priv->fifo_mask))]=cmd;
-    		priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]=0;
-    	}
+        for(;i<size&&NFC_CMDFIFO_AVAIL();i++)
+            writel(cmd[i],P_NAND_CMD);
+        if(i==size)
+            return 0;
     }
-//    
-//    if(NFC_CMDFIFO_AVAIL
-	///@todo implement it
-	return -1;
+    
+    for(j=0;i<size;i++,j++)
+    {
+        priv->cmd_fifo[(priv->tail+j)&((priv->fifo_mask))]=cmd[i];
+    }
+    
+    priv->cmd_fifo[(priv->tail+j)&((priv->fifo_mask))]=0;
+	if(((priv->tail+j)&(priv->fifo_mask))<(priv->tail&priv->fifo_mask))
+	{
+	    mb_tag=priv->fifo_mask+1-(priv->tail&priv->fifo_mask);
+        priv->cmd_fifo[priv->fifo_mask+1]=0;
+        priv->cmd_fifo[priv->fifo_mask+2]=0;
+        priv->cmd_fifo[priv->fifo_mask+3]=0;
+        nfc_mb(&(priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]),(mb_tag+3)*sizeof(priv->cmd_fifo[0]));
+        nfc_mb(&(priv->cmd_fifo[0]),(j-mb_tag)*sizeof(priv->cmd_fifo[0]));
+    }else{
+        nfc_mb(&(priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]),(j+3)*sizeof(priv->cmd_fifo[0]));
+    }
+    
+    priv->tail+=j;
+    //@todo we should think about it again cache write buffer relavtive issues
+    //
+	v3_cmd_fifo_reset(priv);
+	setbits_le32(P_NAND_CFG,1<<12);//start fifo immediatly 
+	return 0;
 }
 
 static int32_t v3_fifo_anchor(cntl_t *cntl_t, jobkey_t job)
 {
-    
-
 	///@todo implement it
 	return -1;
 }
-
+static inline int32_t v3_check_and_insert_interrupt(struct v3_priv * priv,uint32_t nfc_ce)
+{
+    uint32_t tail,leave,avail;
+    int32_t ret;
+    if(priv->nfc_ce==nfc_ce)
+        return 0;
+    
+    if((priv->fifo_mode&2)==0 ||//interrupt disable
+        NFC_CMDFIFO_AVAIL())    //write to hardware directorly 
+    {
+        priv->nfc_ce=nfc_ce;
+        return 0;
+    }
+    
+    
+    tail=v3_cmd_fifo_tail(priv);
+    if(tail<priv->fifo_mask-31)//no need insert interrupt 
+    {
+        priv->nfc_ce=nfc_ce;
+        return 0;
+    }
+    avail=v3_cmd_fifo_avail(priv);
+    leave=priv->fifo_mask+1-tail;
+    if(avail>3&&leave>3)
+    {
+        V3_FIFO_WRITE(
+            NFC_CMD_IDLE(CE_NOT_SEL,0),
+            NFC_CMD_ASL(priv->temp),
+            NFC_CMD_ASH(priv->temp),
+            NFC_CMD_STS(2));
+        priv->nfc_ce=nfc_ce;
+        return 0;
+    }
+    if(leave<4&&avail>4-leave)
+    {
+    }
+    if(tail>priv->fifo_mask-3)
+    {
+    }
+    if(tail>priv->fifo_mask-31&&tail<priv->fifo_mask-2)
+    {
+    }
+} 
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 {
-    int32_t ret;
-//	DEFINE_CNTL_PRIV(priv, cntl);
+    DEFINE_CNTL_PRIV(priv,cntl);
 	if (ctrl & 0x100)
-		V3_FIFO_WRITE(ret,NFC_CMD_CLE(NFC_CE(ce),ctrl));
-	V3_FIFO_WRITE(ret, NFC_CMD_ALE(NFC_CE(ce),ctrl));
+		V3_FIFO_WRITE(NFC_CMD_CLE(NFC_CE(ce),ctrl));
+	V3_FIFO_WRITE(NFC_CMD_ALE(NFC_CE(ce),ctrl));
 	return 0;
 }
 static int32_t v3_wait(cntl_t * cntl, uint8_t mode, uint16_t ce,uint8_t cycle_log2)
 {
 	uint32_t cmd;
-	int32_t ret;
+    DEFINE_CNTL_PRIV(priv,cntl);
 	if (mode & 1)
         cmd=NFC_CMD_RB(NFC_CE(ce),cycle_log2);
     else
         cmd=NFC_CMD_RBIO(NFC_RBIO(ce), cycle_log2);
-	V3_FIFO_WRITE(ret,cmd);
+	V3_FIFO_WRITE(cmd);
 	return 0;
 }
 static int32_t v3_nop(cntl_t * cntl, uint16_t ce, uint16_t cycles)
 {
     int32_t ret;
-	V3_FIFO_WRITE(ret, NFC_CMD_IDLE(NFC_CE(ce),cycles));
+    DEFINE_CNTL_PRIV(priv,cntl);
+
+	V3_FIFO_WRITE( NFC_CMD_IDLE(NFC_CE(ce),cycles));
 	return ret;
 }
 
@@ -331,12 +414,14 @@ static int32_t v3_free_sts(cntl_t * cntl,uint32_t sts)
 static int32_t v3_sts(cntl_t * cntl, jobkey_t *job, uint16_t mode)
 {
     int32_t ret;
+    DEFINE_CNTL_PRIV(priv, cntl);
     uint32_t sts_addr=(uint32_t)job;
     if(sts_addr==0)
         return -1;
-    V3_FIFO_WRITE(ret,NFC_CMD_ASL(sts_addr));
-    V3_FIFO_WRITE(ret,NFC_CMD_ASH(sts_addr));
-    V3_FIFO_WRITE(ret,NFC_CMD_STS(mode));
+    V3_FIFO_WRITE(
+        NFC_CMD_ASL(sts_addr),
+        NFC_CMD_ASH(sts_addr),
+        NFC_CMD_STS(mode));
     return ret;
 }
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma_desc,uint32_t size,uint32_t short_size,uint32_t seed_en)
@@ -441,16 +526,7 @@ static int32_t v3_data2info(void * inf,void * data,dma_t dma)
     return ret;
 
 }
-
-static inline int32_t dma_set_addr(cntl_t  * cntl,uint32_t data,uint32_t info)
-{
-    int32_t ret;
-    V3_FIFO_WRITE(ret,NFC_CMD_ADL(data));
-    V3_FIFO_WRITE(ret,NFC_CMD_ADH(data));
-    V3_FIFO_WRITE(ret,NFC_CMD_AIL(info));
-    V3_FIFO_WRITE(ret,NFC_CMD_AIH(info));
-    return 0;
-}
+#define dma_set_addr(data,info) NFC_CMD_ADL(data),NFC_CMD_ADH(data),NFC_CMD_AIL(info),NFC_CMD_AIH(info)
 static int32_t v3_readbytes(cntl_t  * cntl,void * addr, dma_t dma_mode)
 {
     dma_t dma;
@@ -460,8 +536,9 @@ static int32_t v3_readbytes(cntl_t  * cntl,void * addr, dma_t dma_mode)
     assert((dma_mode&(7<<14))==0);
     assert((dma_mode&((1<<14)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<14)-1));
-    if((ret=dma_set_addr(cntl,(uint32_t)addr,priv->temp))<0)return ret;
-    V3_FIFO_WRITE(ret,NFC_CMD_READ(dma));
+
+    
+    V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,priv->temp),NFC_CMD_READ(dma));
     return ret;
 }
 static int32_t v3_writebytes(cntl_t * cntl,void * addr, dma_t dma_mode)
@@ -473,37 +550,31 @@ static int32_t v3_writebytes(cntl_t * cntl,void * addr, dma_t dma_mode)
     assert((dma_mode&(7<<14))==0);
     assert((dma_mode&((1<<14)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<14)-1));
-    if((ret=dma_set_addr(cntl,(uint32_t)addr,priv->temp))<0)
-        return ret;
-    V3_FIFO_WRITE(ret,NFC_CMD_WRITE(dma));
+    V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,priv->temp),NFC_CMD_WRITE(dma));
     return ret;
 }
 static int32_t v3_readecc(cntl_t * cntl, void * addr, void * info,dma_t dma_mode)
 {
     dma_t dma;
     int32_t ret;
-//    DEFINE_CNTL_PRIV(priv, cntl);
+    DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))!=0);
     assert((dma_mode&((1<<17)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<17)-1));
-    if((ret=dma_set_addr(cntl,(uint32_t)addr,(uint32_t)info))<0)
-        return ret;
-    V3_FIFO_WRITE(ret,NFC_CMD_READ(dma));
+    V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,(uint32_t)info),NFC_CMD_READ(dma));
     return ret;
 }
 static int32_t v3_writeecc(cntl_t * cntl, void * addr, void * info,dma_t dma_mode)
 {
     dma_t dma;
     int32_t ret;
-//    DEFINE_CNTL_PRIV(priv, cntl);
+    DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))!=0);
     assert((dma_mode&((1<<17)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<17)-1));
-    if((ret=dma_set_addr(cntl,(uint32_t)addr,(uint32_t)info))<0)
-        return ret;
-    V3_FIFO_WRITE(ret,NFC_CMD_READ(dma));
+    V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,(uint32_t)info),NFC_CMD_READ(dma));
     return ret;
 }
 
