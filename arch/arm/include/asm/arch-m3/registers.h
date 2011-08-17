@@ -1486,11 +1486,11 @@
 // ---------------------------
 // RTC (4)
 // ---------------------------
-#define RTC_ADDR0                                  0x21d0
-#define RTC_ADDR1                                  0x21d1
-#define RTC_ADDR2                                  0x21d2
-#define RTC_ADDR3                                  0x21d3
-#define RTC_ADDR4                                  0x21d4
+//#define RTC_ADDR0                                  0x21d0
+//#define RTC_ADDR1                                  0x21d1
+//#define RTC_ADDR2                                  0x21d2
+//#define RTC_ADDR3                                  0x21d3
+//#define RTC_ADDR4                                  0x21d4
 // ----------------------------
 // clock measure (4)
 // ----------------------------

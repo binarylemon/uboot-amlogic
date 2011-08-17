@@ -2,6 +2,16 @@
 * this driver is written for the internal rtc for M1
 */
 
+
+/*
+ The bus of RTC is different between M1 and M3:
+	 M1: connect to CBUS
+	 M3: connect to AOBUS
+ RTC driver use absolute RTC register address to avoid the difference.
+ So need define RTC register absolute address separately  
+ P_RTC_ADDRx
+ */
+ 
 #include <asm-generic/errno.h>
 #include <common.h>
 #include <asm/arch/io.h>
@@ -13,7 +23,10 @@ int c_dbg_lvl = 0;
 #define RTC_DBG_VAL 1 << 0
 #define RTC_DBG_WR 1 << 1
 
-// Define register RTC_ADDR0 bit map
+#define WR_RTC(reg, val) __raw_writel(val, P_##reg)
+#define RD_RTC(reg) (__raw_readl(P_##reg))
+
+// Define register (AOBUS/CBUS) RTC_ADDR0 bit map
 #define RTC_REG0_BIT_sclk_static     20
 #define RTC_REG0_BIT_ildo_ctrl_1      7
 #define RTC_REG0_BIT_ildo_ctrl_0      6
@@ -24,13 +37,13 @@ int c_dbg_lvl = 0;
 #define RTC_REG0_BIT_sen                  1
 #define RTC_REG0_BIT_sclk                 0
 
-// Define register RTC_ADDR1 bit map
+// Define register (AOBUS/CBUS) RTC_ADDR1 bit map
 #define RTC_REG1_BIT_gpo_to_dig     3
 #define RTC_REG1_BIT_gpi_to_dig      2
 #define RTC_REG1_BIT_s_ready          1
 #define RTC_REG1_BIT_sdo                  0
 
-// Define register RTC_ADDR3 bit map
+// Define register (AOBUS/CBUS) RTC_ADDR3 bit map
 #define RTC_REG3_BIT_count_always   17
 
 // Define RTC serial protocal
@@ -42,42 +55,42 @@ int c_dbg_lvl = 0;
 #define s_do                       1 << RTC_REG1_BIT_sdo
 #define RESET_RETRY_TIMES           15
 
-#define RTC_sbus_LOW(x)             WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                      (READ_CBUS_REG(RTC_ADDR0) & \
+#define RTC_sbus_LOW(x)             WR_RTC(RTC_ADDR0, \
+                                                                      (RD_RTC(RTC_ADDR0) & \
                                                                       ~((1<<RTC_REG0_BIT_sen)|(1<<RTC_REG0_BIT_sclk)|(1<<RTC_REG0_BIT_sdi))))
                                                                       
-#define RTC_sdi_HIGH(x)             WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                  (READ_CBUS_REG(RTC_ADDR0) | (1<<RTC_REG0_BIT_sdi) ))
+#define RTC_sdi_HIGH(x)             WR_RTC(RTC_ADDR0, \
+                                                                  (RD_RTC(RTC_ADDR0) | (1<<RTC_REG0_BIT_sdi) ))
                                                                   
-#define RTC_sdi_LOW(x)               WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                   (READ_CBUS_REG(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sdi) ))
+#define RTC_sdi_LOW(x)               WR_RTC(RTC_ADDR0, \
+                                                                   (RD_RTC(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sdi) ))
                                                                    
-#define RTC_sen_HIGH(x)             WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                   (READ_CBUS_REG(RTC_ADDR0) | (1<<RTC_REG0_BIT_sen) ))
+#define RTC_sen_HIGH(x)             WR_RTC(RTC_ADDR0, \
+                                                                   (RD_RTC(RTC_ADDR0) | (1<<RTC_REG0_BIT_sen) ))
                                                                    
-#define RTC_sen_LOW(x)               WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                    (READ_CBUS_REG(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sen) ))
+#define RTC_sen_LOW(x)               WR_RTC(RTC_ADDR0, \
+                                                                    (RD_RTC(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sen) ))
                                                                     
-#define RTC_sclk_HIGH(x)             WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                    (READ_CBUS_REG(RTC_ADDR0) |(1<<RTC_REG0_BIT_sclk)))
+#define RTC_sclk_HIGH(x)             WR_RTC(RTC_ADDR0, \
+                                                                    (RD_RTC(RTC_ADDR0) |(1<<RTC_REG0_BIT_sclk)))
                                                                     
-#define RTC_sclk_LOW(x)               WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                      (READ_CBUS_REG(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sclk)))
+#define RTC_sclk_LOW(x)               WR_RTC(RTC_ADDR0, \
+                                                                      (RD_RTC(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sclk)))
                                                                       
-#define RTC_sdo_READBIT             (READ_CBUS_REG(RTC_ADDR1)&(1<<RTC_REG1_BIT_sdo))
+#define RTC_sdo_READBIT             (RD_RTC(RTC_ADDR1)&(1<<RTC_REG1_BIT_sdo))
 
-#define RTC_sclk_static_HIGH(x)   WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                      (READ_CBUS_REG(RTC_ADDR0) |(1<<RTC_REG0_BIT_sclk_static)))
+#define RTC_sclk_static_HIGH(x)   WR_RTC(RTC_ADDR0, \
+                                                                      (RD_RTC(RTC_ADDR0) |(1<<RTC_REG0_BIT_sclk_static)))
                                                                       
-#define RTC_sclk_static_LOW(x)      WRITE_CBUS_REG(RTC_ADDR0, \
-                                                                        (READ_CBUS_REG(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sclk_static)))
+#define RTC_sclk_static_LOW(x)      WR_RTC(RTC_ADDR0, \
+                                                                        (RD_RTC(RTC_ADDR0) & ~(1<<RTC_REG0_BIT_sclk_static)))
 
-#define RTC_count_always_HIGH(x)     WRITE_CBUS_REG(RTC_ADDR3, \
-                                                                             (READ_CBUS_REG(RTC_ADDR3) |(1<<RTC_REG3_BIT_count_always)))
-#define RTC_count_always_LOW(x)      WRITE_CBUS_REG(RTC_ADDR3, \
-                                                                              (READ_CBUS_REG(RTC_ADDR3) & ~(1<<RTC_REG3_BIT_count_always)))
+#define RTC_count_always_HIGH(x)     WR_RTC(RTC_ADDR3, \
+                                                                             (RD_RTC(RTC_ADDR3) |(1<<RTC_REG3_BIT_count_always)))
+#define RTC_count_always_LOW(x)      WR_RTC(RTC_ADDR3, \
+                                                                              (RD_RTC(RTC_ADDR3) & ~(1<<RTC_REG3_BIT_count_always)))
 
-#define RTC_Sdo_READBIT                       READ_CBUS_REG(RTC_ADDR1)&s_do`
+#define RTC_Sdo_READBIT                       RD_RTC(RTC_ADDR1)&s_do`
 
 
 #define RTC_SER_REG_DATA_NOTIFIER   0xb41b// Define RTC register address mapping
@@ -130,18 +143,18 @@ static int  check_osc_clk(void)
 	unsigned long   osc_clk_count1; 
 	unsigned long   osc_clk_count2; 
 
-	WRITE_CBUS_REG(RTC_ADDR3, READ_CBUS_REG(RTC_ADDR3) | (1 << 17));   // Enable count always    
+	WR_RTC(RTC_ADDR3, RD_RTC(RTC_ADDR3) | (1 << 17));   // Enable count always    
 
 	RTC_DBG(RTC_DBG_VAL, "aml_rtc -- check os clk_1\n");
-	osc_clk_count1 = READ_CBUS_REG(RTC_ADDR2);    // Wait for 50uS.  32.768khz is 30.5uS.  This should be long   
+	osc_clk_count1 = RD_RTC(RTC_ADDR2);    // Wait for 50uS.  32.768khz is 30.5uS.  This should be long   
 										// enough for one full cycle of 32.768 khz   
 	RTC_DBG(RTC_DBG_VAL, "the aml_rtc os clk 1 is %d\n", (unsigned int)osc_clk_count1);									
 	delay_us( 50 );   
-	osc_clk_count2 = READ_CBUS_REG(RTC_ADDR2);    
+	osc_clk_count2 = RD_RTC(RTC_ADDR2);    
 	RTC_DBG(RTC_DBG_VAL, "the aml_rtc os clk 2 is %d\n", (unsigned int)osc_clk_count2);
 
 	RTC_DBG(RTC_DBG_VAL, "aml_rtc -- check os clk_2\n");
-	WRITE_CBUS_REG(RTC_ADDR3, READ_CBUS_REG(RTC_ADDR3) & ~(1 << 17));  // disable count always    
+	WR_RTC(RTC_ADDR3, RD_RTC(RTC_ADDR3) & ~(1 << 17));  // disable count always    
 
 	if( osc_clk_count1 == osc_clk_count2 ) { 
 	       RTC_DBG(RTC_DBG_VAL, "The osc_clk is not running now! need to invcrease the power!\n");
@@ -160,16 +173,16 @@ void rtc_ser_static_write_auto (unsigned long static_reg_data_in)
     
     // Program MSB 15-8    
     data32  = (static_reg_data_in >> 8) & 0xff;    
-    WRITE_CBUS_REG(RTC_ADDR4,data32);
+    WR_RTC(RTC_ADDR4,data32);
 	
     // Program LSB 7-0, and start serializing
-    data32  = READ_CBUS_REG(RTC_ADDR0);
+    data32  = RD_RTC(RTC_ADDR0);
     data32 |= 1                           << 17; // auto_serialize_start 
     data32 &= ~(0xff << 24);
     data32 |= (static_reg_data_in & 0xff) << 24; // auto_static_reg
-    WRITE_CBUS_REG(RTC_ADDR0,data32);
+    WR_RTC(RTC_ADDR0,data32);
     // Poll auto_serializer_busy bit until it's low (IDLE)
-    while ((READ_CBUS_REG(RTC_ADDR0)) & 1<<22) {}    
+    while ((RD_RTC(RTC_ADDR0)) & 1<<22) {}    
 }
 
 
@@ -191,7 +204,7 @@ static int rtc_wait_s_ready(void)
 		}
 	return i;
 	*/
-	while(!(READ_CBUS_REG(RTC_ADDR1)&s_ready)){
+	while(!(RD_RTC(RTC_ADDR1)&s_ready)){
 		i--;
 		if(i == 0){
 				if(try_cnt > RESET_RETRY_TIMES){
@@ -414,7 +427,7 @@ int aml_rtc_write_time(struct rtc_time *tm)
 int aml_rtc_init(void)
 {
     printf("aml_rtc_init\n");
-	static_register_write(0x0004);
+	static_register_write(get_rtc_static_reg_init_val());
 	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);
 	return 0;
 }

@@ -47,6 +47,8 @@
 #define UBOOTPATH		"u-boot-aml.bin"
 #endif
 
+#define CONFIG_AML_RTC
+
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

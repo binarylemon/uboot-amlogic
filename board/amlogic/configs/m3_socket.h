@@ -89,4 +89,6 @@
 #define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
 
 #define CONFIG_CMD_RUNARC 1 /* runarc */
+
+#define CONFIG_AML_RTC
 #endif

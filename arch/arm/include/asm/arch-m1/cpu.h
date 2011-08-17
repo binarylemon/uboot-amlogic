@@ -212,8 +212,6 @@
 #define SPL_STATIC_VAR      
 #endif
 
-#define CONFIG_AML_RTC
-
 #define CONFIG_LZMA  1
 #define CONFIG_LZO
 
