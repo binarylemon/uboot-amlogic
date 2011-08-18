@@ -443,3 +443,4 @@ struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode)
 
 	return &stm->flash;
 }
+
