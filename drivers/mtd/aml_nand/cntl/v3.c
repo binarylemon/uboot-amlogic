@@ -54,8 +54,12 @@ struct v3_priv
 	uint32_t    temp;
 	sts_t*      sts_buf;
 	uint32_t    nfc_ce;
+
+	uint32_t 	int_seq;
+	uint32_t	tail;
 	uint32_t    fifo_mask;
-	uint32_t    tail;
+	uint32_t    fifo_size;
+	uint32_t    fifo_tail;
 	uint32_t *  cmd_fifo;
 	
 	struct aml_nand_platform * plat;
@@ -197,26 +201,34 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 	return 0;
 }
 
+static inline void v3_write_hardware_fifo(struct v3_priv * priv,uint32_t cmd)
+{
+	if(cmd==NAND_CMD_STS(2))
+		priv->int_seq=priv->tail;
+	priv->tail++;
+	writel(cmd,P_NAND_CMD);
+}
 
 static inline uint32_t v3_cmd_fifo_head(struct v3_priv * priv)
 {
     uint32_t head=readl(P_NAND_CADR);
-	uint32_t mask=(priv->fifo_mask<<2)|3;
+    uint32_t mask=(priv->fifo_mask<<3)|7;
 	uint32_t fifo=(uint32_t)priv->cmd_fifo;
 	if(head<fifo||head>fifo+mask)
 	    return 0;
-	
 	head-=fifo;
 	head>>=2;
 	return head;
 }
 static inline uint32_t  v3_cmd_fifo_tail(struct v3_priv * priv)
 {
-    return (priv->tail )&(priv->fifo_mask);
+	uint32_t fifo_mask=(priv->fifo_mask<<1)|1;
+    return (priv->fifo_tail )&(fifo_mask);
 }
 static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv)
 {
-	return (priv->tail - v3_cmd_fifo_head(priv))&(priv->fifo_mask);
+	uint32_t tail=v3_cmd_fifo_tail(priv);
+	return (priv->fifo_tail - v3_cmd_fifo_head(priv))&(priv->fifo_mask);
 }
 static inline uint32_t v3_cmd_fifo_avail(struct v3_priv * priv)
 {
@@ -226,7 +238,7 @@ static inline uint32_t v3_cmd_fifo_avail(struct v3_priv * priv)
 static inline int32_t v3_cmd_fifo_compare(struct v3_priv * priv)
 {
 	uint32_t head=readl(P_NAND_CADR);
-	uint32_t tail=(uint32_t)&(priv->cmd_fifo[priv->tail]);
+	uint32_t tail=(uint32_t)&(priv->cmd_fifo[priv->fifo_tail]);
 	if(head>tail)
 	{
 		return 1;
@@ -239,8 +251,11 @@ static inline void v3_cmd_fifo_reset(struct v3_priv * priv)
     uint32_t head=readl(P_NAND_CADR);
 	uint32_t mask=(priv->fifo_mask<<2)|3;
 	uint32_t fifo=(uint32_t)priv->cmd_fifo;
-	if(head<fifo||head>fifo+mask)
-	     writel(priv->cmd_fifo,P_NAND_CADR);
+	if(!(head<fifo||head>fifo+mask))
+		return;
+	uint32_t * phead=(uint32_t *)head;
+	if(head>fifo+mask&&*phead==0)
+		writel((uint32_t)(priv->cmd_fifo),P_NAND_CADR);
 }
 #define cmd(a)  cmd_##a
 #define ret(a)  ret_##a
@@ -251,49 +266,125 @@ static inline void v3_cmd_fifo_reset(struct v3_priv * priv)
                                 if(( TMP_VAR(ret)=v3_fifo_write(priv,TMP_VAR(cmd),             \
                                     sizeof(TMP_VAR(cmd))/sizeof(TMP_VAR(cmd)[0])))<0)   \
                                     return TMP_VAR(ret);}
-
-static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd[],uint32_t size)
+static inline int32_t v3_check_fifo_interrupt(uint32_t * cmd_q,uint32_t size,uint32_t modify)
 {
-    uint32_t fifo_status=NFC_GET_CMD_FIFO_STATUS();
-    uint32_t mb_tag;
-    int i,j;
-    if((priv->fifo_mode&1)==0&&NFC_CMDFIFO_AVAIL()<size)//mode does not match
-        return -2;
-    if(v3_cmd_fifo_avail(priv)<size)
-   		return -1;
-
-    i=0;
-    if(v3_cmd_fifo_size(priv)==0&&NFC_CMDFIFO_AVAIL())
-    {
-        for(;i<size&&NFC_CMDFIFO_AVAIL();i++)
-            writel(cmd[i],P_NAND_CMD);
-        if(i==size)
-            return 0;
-    }
-    
-    for(j=0;i<size;i++,j++)
-    {
-        priv->cmd_fifo[(priv->tail+j)&((priv->fifo_mask))]=cmd[i];
-    }
-    
-    priv->cmd_fifo[(priv->tail+j)&((priv->fifo_mask))]=0;
-	if(((priv->tail+j)&(priv->fifo_mask))<(priv->tail&priv->fifo_mask))
+	uint32_t cmd;
+	int i;
+	for(i=0;i<size;i++)
 	{
-	    mb_tag=priv->fifo_mask+1-(priv->tail&priv->fifo_mask);
-        priv->cmd_fifo[priv->fifo_mask+1]=0;
-        priv->cmd_fifo[priv->fifo_mask+2]=0;
-        priv->cmd_fifo[priv->fifo_mask+3]=0;
-        nfc_mb(&(priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]),(mb_tag+3)*sizeof(priv->cmd_fifo[0]));
-        nfc_mb(&(priv->cmd_fifo[0]),(j-mb_tag)*sizeof(priv->cmd_fifo[0]));
-    }else{
-        nfc_mb(&(priv->cmd_fifo[(priv->tail)&((priv->fifo_mask))]),(j+3)*sizeof(priv->cmd_fifo[0]));
+		cmd=cmd_q[i];
+		if(cmd==0)
+			return 0;
+		switch(cmd&(0xf<<18))
+		{
+		case (4<<18):
+		case (5<<18):
+		case (6<<18):
+		case (7<<18):
+			if(cmd&(0xf<<14))
+				return 1;
+			if(modify)
+			{
+				cmd_q[i]=cmd|((cmd&(0xf<<10))<<4);
+				return 1;
+			}
+			break;
+		case (9<<18):
+			if(cmd==NFC_CMD_STS(2))
+				return 1;
+			if(modify)
+			{
+				cmd_q[i]=NFC_CMD_STS(2);
+				return 1;
+			}
+
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
+}
+#define nfc_dmb()
+static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t size)
+{
+    uint32_t mb_tag;
+    uint32_t head,tail,sizefifo,avail,hw_avail;
+    uint32_t begin,end,mask,int_tag;
+    uint32_t * cmd_fifo;
+    uint32_t tmp;
+    int i,j;
+    hw_avail=NFC_CMDFIFO_AVAIL();
+    if((priv->fifo_mode&1)==0&&hw_avail<size)//mode does not match
+        return -2;
+    sizefifo=v3_cmd_fifo_size(priv);
+    avail=v3_cmd_fifo_avail(priv);
+    if(sizefifo==0&&(avail+hw_avail)<size)//no enough space
+   		return -1;
+    head=v3_cmd_fifo_head(priv);
+    tail=v3_cmd_fifo_tail(priv);
+    if(tail<head&&avail<size)//no enough space
+    	return -1;
+    begin=tail;
+    end=tail+size;
+    cmd_fifo=priv->cmd_fifo;
+    if((priv->fifo_mode&2)==0//no interrupt mode
+    	||(end<mask-31)	)
+	{
+    	goto write_fifo_raw;
+	}
+
+
+    ///@todo I am writting this section
+    ///end > mask-31 , we must do interrupt check;
+    int_tag=0;
+    if(begin>mask-31)
+    {
+    	int_tag=v3_check_fifo_interrupt(&cmd_fifo[mask-31],begin-mask+31,0);
     }
-    
-    priv->tail+=j;
-    //@todo we should think about it again cache write buffer relavtive issues
-    //
-	v3_cmd_fifo_reset(priv);
-	setbits_le32(P_NAND_CFG,1<<12);//start fifo immediatly 
+    if(int_tag==0)
+    {
+    	uint32_t c_s,c_e;
+    	c_s=begin>mask-31?0:mask-31-begin;
+    	c_e=end>mask?mask+1:size;
+    	int_tag=v3_check_fifo_interrupt(&cmd_fifo[c_s],c_e-c_s,1);
+    }
+    if(int_tag)
+    {
+    	goto write_fifo_raw;
+    }
+    if(avail<size+5&&begin<mask-4)//no enough space
+    	return -1;
+    cmd_fifo[begin+1]=NFC_CMD_ASL(priv->temp);
+    cmd_fifo[begin+2]=NFC_CMD_ASH(priv->temp),
+    cmd_fifo[begin+3]=NFC_CMD_STS(2);
+    cmd_fifo[begin+4]=NFC_CMD_IDLE(priv->nfc_ce,0);
+    cmd_fifo[begin+5]=0;
+    cmd_fifo[begin]=NFC_CMD_IDLE(CE_NOT_SEL,0);
+    nfc_dmb();
+    if(begin>=mask-4)
+    	priv->fifo_tail+=begin+5-mask;
+    else
+    	priv->fifo_tail+=5;
+	priv->tail+=5;
+	tail=v3_cmd_fifo_tail(priv);
+	begin=tail;
+	end=tail+size;
+write_fifo_raw:
+	if(end<mask+1)
+	{
+		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(size)*sizeof(uint32_t));
+	}else{
+		cmd_fifo[mask+1]=0;
+		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(mask-tail)*sizeof(uint32_t));
+		memcpy(&cmd_fifo[0],cmd_q[(mask+1-tail)],(size+1-(mask+1-tail))*sizeof(uint32_t));
+	}
+	cmd_fifo[begin]=cmd_q[0];
+	nfc_dmb();
+	priv->tail+=size;
+	priv->fifo_tail+=size;
+	if(priv->fifo_mode&2)
+		setbits_le32(P_NAND_CFG,1<<12);//start fifo immediatly
 	return 0;
 }
 
@@ -337,17 +428,24 @@ static inline int32_t v3_check_and_insert_interrupt(struct v3_priv * priv,uint32
     }
     if(leave<4&&avail>4-leave)
     {
+    	priv->cmd_fifo[tail]  =NFC_CMD_IDLE(CE_NOT_SEL,0);
+    	priv->cmd_fifo[tail+1]=NFC_CMD_ASL(priv->temp),
+        priv->cmd_fifo[tail+2]=NFC_CMD_ASH(priv->temp),
+        priv->cmd_fifo[tail+3]=NFC_CMD_STS(2);
+    	priv->cmd_fifo[tail+4]=0;
+    	nfc_mb(&priv->cmd_fifo[fifo_tail],5*sizeof(priv->cmd_fifo[0]));
+    	priv->fifo_tail+=leave;
+    	priv->cmd_fifo[0]=0;
+    	nfc_mb(&priv->cmd_fifo[0],sizeof(priv->cmd_fifo[0]));
+    	priv->nfc_ce=nfc_ce;
+    	return 0;
     }
-    if(tail>priv->fifo_mask-3)
-    {
-    }
-    if(tail>priv->fifo_mask-31&&tail<priv->fifo_mask-2)
-    {
-    }
+    return -1;
 } 
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 {
     DEFINE_CNTL_PRIV(priv,cntl);
+    v3_check_and_insert_interrupt(priv,NFC_CE(ce));
 	if (ctrl & 0x100)
 		V3_FIFO_WRITE(NFC_CMD_CLE(NFC_CE(ce),ctrl));
 	V3_FIFO_WRITE(NFC_CMD_ALE(NFC_CE(ce),ctrl));
@@ -358,7 +456,10 @@ static int32_t v3_wait(cntl_t * cntl, uint8_t mode, uint16_t ce,uint8_t cycle_lo
 	uint32_t cmd;
     DEFINE_CNTL_PRIV(priv,cntl);
 	if (mode & 1)
+	{
+		v3_check_and_insert_interrupt(priv,NFC_CE(ce));
         cmd=NFC_CMD_RB(NFC_CE(ce),cycle_log2);
+	}
     else
         cmd=NFC_CMD_RBIO(NFC_RBIO(ce), cycle_log2);
 	V3_FIFO_WRITE(cmd);
@@ -366,11 +467,11 @@ static int32_t v3_wait(cntl_t * cntl, uint8_t mode, uint16_t ce,uint8_t cycle_lo
 }
 static int32_t v3_nop(cntl_t * cntl, uint16_t ce, uint16_t cycles)
 {
-    int32_t ret;
-    DEFINE_CNTL_PRIV(priv,cntl);
 
+    DEFINE_CNTL_PRIV(priv,cntl);
+    v3_check_and_insert_interrupt(priv,NFC_CE(ce));
 	V3_FIFO_WRITE( NFC_CMD_IDLE(NFC_CE(ce),cycles));
-	return ret;
+	return 0;
 }
 
 static uint32_t v3_alloc_sts(cntl_t * cntl,uint32_t  key)
@@ -413,7 +514,7 @@ static int32_t v3_free_sts(cntl_t * cntl,uint32_t sts)
 
 static int32_t v3_sts(cntl_t * cntl, jobkey_t *job, uint16_t mode)
 {
-    int32_t ret;
+
     DEFINE_CNTL_PRIV(priv, cntl);
     uint32_t sts_addr=(uint32_t)job;
     if(sts_addr==0)
@@ -422,7 +523,7 @@ static int32_t v3_sts(cntl_t * cntl, jobkey_t *job, uint16_t mode)
         NFC_CMD_ASL(sts_addr),
         NFC_CMD_ASH(sts_addr),
         NFC_CMD_STS(mode));
-    return ret;
+    return 0;
 }
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma_desc,uint32_t size,uint32_t short_size,uint32_t seed_en)
 {
@@ -507,10 +608,15 @@ static int32_t v3_info2data(void * data,void * inf,dma_t dma)//-1,found ecc fail
     }
     return ret;
 }
+/**
+ * @param inf
+ * @param data
+ * @param dma
+ * @return
+ */
 static int32_t v3_data2info(void * inf,void * data,dma_t dma)
 {
     uint32_t pages=dma&0x3f;
-    uint32_t bits;
     info_t *info;
     uint8_t *dat;
     int ret,i;
@@ -530,7 +636,6 @@ static int32_t v3_data2info(void * inf,void * data,dma_t dma)
 static int32_t v3_readbytes(cntl_t  * cntl,void * addr, dma_t dma_mode)
 {
     dma_t dma;
-    int32_t ret;
     DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))==0);
@@ -539,44 +644,62 @@ static int32_t v3_readbytes(cntl_t  * cntl,void * addr, dma_t dma_mode)
 
     
     V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,priv->temp),NFC_CMD_READ(dma));
-    return ret;
+    return 0;
 }
 static int32_t v3_writebytes(cntl_t * cntl,void * addr, dma_t dma_mode)
 {
     dma_t dma;
-    int32_t ret;
     DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))==0);
     assert((dma_mode&((1<<14)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<14)-1));
     V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,priv->temp),NFC_CMD_WRITE(dma));
-    return ret;
+    return 0;
 }
 static int32_t v3_readecc(cntl_t * cntl, void * addr, void * info,dma_t dma_mode)
 {
     dma_t dma;
-    int32_t ret;
     DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))!=0);
     assert((dma_mode&((1<<17)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<17)-1));
     V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,(uint32_t)info),NFC_CMD_READ(dma));
-    return ret;
+    return 0;
 }
 static int32_t v3_writeecc(cntl_t * cntl, void * addr, void * info,dma_t dma_mode)
 {
     dma_t dma;
-    int32_t ret;
     DEFINE_CNTL_PRIV(priv, cntl);
     assert(dma_mode>0);
     assert((dma_mode&(7<<14))!=0);
     assert((dma_mode&((1<<17)-1))!=0);
     dma=dma_mode&((1<<19)|((1<<17)-1));
     V3_FIFO_WRITE(dma_set_addr((uint32_t)addr,(uint32_t)info),NFC_CMD_READ(dma));
-    return ret;
+    return 0;
 }
+/**
+ *
+ * @param
+ * @param config
+ * @return
+ */
+
+static int32_t v3_fifo(cntl_t *cntl, uint32_t config, ...)
+{
+	return -1;
+}
+static uint32_t v3_size(cntl_t * cntl)
+{
+    dma_t dma;
+    int32_t ret;
+    DEFINE_CNTL_PRIV(priv, cntl);
+
+}
+static uint32_t v3_avail(cntl_t *);
+static uint32_t v3_head(cntl_t *);
+static uint32_t v3_tail(cntl_t *);
 
 
 void board_nand_init()
