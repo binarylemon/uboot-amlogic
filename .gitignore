@@ -31,8 +31,9 @@
 /u-boot.lds
 /u-boot-onenand.bin
 /u-boot-flexonenand.bin
-/build/*
-/include/configs/amlogic/*
+/build
+/include/configs/amlogic
+
 #
 # Generated files
 #
