@@ -181,6 +181,7 @@
 /**
     Cmd Info Macros
 */
+#define NFC_CMDFIFO_MAX						(0x1f)
 #define NFC_INFO_GET()                      (readl(P_NAND_CMD))
 #define NFC_CMDFIFO_SIZE()                  ((NFC_INFO_GET()>>22)&0x1f)
 #define NFC_CMDFIFO_AVAIL()                 (0x1f-((NFC_INFO_GET()>>22)&0x1f))
