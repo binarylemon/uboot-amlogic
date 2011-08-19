@@ -363,7 +363,7 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     cmd_fifo[begin+5]=0;
     cmd_fifo[begin]=NFC_CMD_IDLE(CE_NOT_SEL,0);
     nfc_dmb();
-    if(begin>=mask-4)
+    if(begin>mask-5)
     	priv->fifo_tail+=mask+1-begin;
     else
     	priv->fifo_tail+=5;
@@ -372,13 +372,13 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
 	begin=tail;
 	end=tail+size;
 write_fifo_raw:
-	if(end<mask+1)
+	if(end<=mask+1)
 	{
 		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(size)*sizeof(uint32_t));
 	}else{
 		cmd_fifo[mask+1]=0;
-		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(mask-tail)*sizeof(uint32_t));
-		memcpy(&cmd_fifo[0],&cmd_q[(mask+1-tail)],(size+1-(mask+1-tail))*sizeof(uint32_t));
+		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(mask+1-(begin+1))*sizeof(uint32_t));
+		memcpy(&cmd_fifo[0],&cmd_q[(mask-begin)+1],(size-(mask-begin+1))*sizeof(uint32_t));
 	}
 	cmd_fifo[begin]=cmd_q[0];
 	nfc_dmb();
