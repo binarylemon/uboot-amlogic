@@ -342,7 +342,7 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     if(begin<anchor_s && end < anchor_s)
     {
     	write_cmd[0]=cmd_q;
-    	write_size=size;
+    	write_size[0]=size;
     	goto write_fifo_raw;//write cmd directly
     }
     end+=STS_2_CMD_SIZE;
@@ -415,6 +415,8 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
 	begin=tail;
 	end=tail+size;
 write_fifo_raw:
+
+
 	if(end<=fifo_size+1)
 	{
 		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(size)*sizeof(uint32_t));
