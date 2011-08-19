@@ -5,6 +5,7 @@
 #include <amlogic/nand/platform.h>
 #include <asm/io.h>
 #include <asm/arch/nand.h>
+
 static ecc_t ecc_table[] ={
     { .name = "BCH OFF  ", .mode = 0, .bits = 0,  .data = 0,    .parity = 0,    .info = 0,.max=(1<<14)-1 },
     { .name = "BCH 8/512", .mode = 1, .bits = 8,  .data = 64,   .parity = 14,   .info = 2,.max=0x3f*512  },
