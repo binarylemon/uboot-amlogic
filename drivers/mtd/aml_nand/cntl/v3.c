@@ -309,12 +309,11 @@ static inline int32_t v3_check_fifo_interrupt(uint32_t * cmd_q,uint32_t size,uin
 #define nfc_dmb()
 static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t size)
 {
-    uint32_t mb_tag;
+
     uint32_t head,tail,sizefifo,avail,hw_avail;
     uint32_t begin,end,mask,int_tag;
     uint32_t * cmd_fifo;
-    uint32_t tmp;
-    int i,j;
+
     hw_avail=NFC_CMDFIFO_AVAIL();
     if((priv->fifo_mode&1)==0&&hw_avail<size)//mode does not match
         return -2;
@@ -329,6 +328,7 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     begin=tail;
     end=tail+size;
     cmd_fifo=priv->cmd_fifo;
+    mask=priv->fifo_mask;
     if((priv->fifo_mode&2)==0//no interrupt mode
     	||(end<mask-31)	)
 	{
@@ -364,7 +364,7 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     cmd_fifo[begin]=NFC_CMD_IDLE(CE_NOT_SEL,0);
     nfc_dmb();
     if(begin>=mask-4)
-    	priv->fifo_tail+=begin+5-mask;
+    	priv->fifo_tail+=mask+1-begin;
     else
     	priv->fifo_tail+=5;
 	priv->tail+=5;
@@ -378,7 +378,7 @@ write_fifo_raw:
 	}else{
 		cmd_fifo[mask+1]=0;
 		memcpy(&cmd_fifo[begin+1],&cmd_q[1],(mask-tail)*sizeof(uint32_t));
-		memcpy(&cmd_fifo[0],cmd_q[(mask+1-tail)],(size+1-(mask+1-tail))*sizeof(uint32_t));
+		memcpy(&cmd_fifo[0],&cmd_q[(mask+1-tail)],(size+1-(mask+1-tail))*sizeof(uint32_t));
 	}
 	cmd_fifo[begin]=cmd_q[0];
 	nfc_dmb();
