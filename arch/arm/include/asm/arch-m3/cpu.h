@@ -47,7 +47,7 @@
 #define CONFIG_SYS_CACHE_LINE_SIZE 32
 #define CONFIG_CMD_CACHE	1
 //#define CONFIG_SYS_NO_CP15_CACHE	1
-//#define CONFIG_L2_OFF			1
+#define CONFIG_L2_OFF			1
 //#define CONFIG_DCACHE_OFF    		1
 //#define CONFIG_ICACHE_OFF    		1
 
@@ -92,15 +92,15 @@
 #define CONFIG_CMD_MTDPARTS   1
 #endif
 
-//#define CONFIG_UBI_SUPPORT
-//#ifdef	CONFIG_UBI_SUPPORT
-//#define CONFIG_CMD_UBI
-//#define CONFIG_CMD_UBIFS
-//#define CONFIG_RBTREE
-//#endif
+#define CONFIG_UBI_SUPPORT
+#ifdef	CONFIG_UBI_SUPPORT
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#endif
 
 /* Environment information */
-/*#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
 #ifdef	CONFIG_UBI_SUPPORT
@@ -113,30 +113,25 @@
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m1_mid\0" \
+	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
-	"machid=B8C\0" \
-	"bootargs=init=/init console=ttyS0,115200"  BOARD_INFO_ENV  " board_ver=v2 clk81=187500k hdmitx=vdacoff,powermode1,unplug_powerdown rootwait logo=osd1,0x84100000,lcd,full, root=/dev/cardblksd2 \0" \
-	"mtdids=" MTDIDS_DEFAULT \
-	"mtdparts="MTDPARTS_DEFAULT \
-	"logo_start=0x4800000\0" \
-	"logo_size=0x200000\0" \
-	"aml_logo_start=0x5800000\0" \
-	"aml_logo_size=0x200000\0" \
-	"bootloader_start=0\0" \
-	"bootloader_size=60000\0" \
-	"bootloader_path=" UBOOTPATH "\0" \
-	"normal_start=0x8800000\0" \
-	"normal_size=0x800000\0" \
-	"recovery_start=0x6800000\0" \
-	"recovery_size=0x800000\0" \
-	"recovery_path=uImage_recovery\0" \
-	"env_path=u-boot-env\0" \
+	"machid=B8E\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
+	"partnum=2\0" \
+	"p0start=1000000\0" \
+	"p0size=400000\0" \
+	"p0path=uImage\0" \
+	"p1start=1400000\0" \
+	"p1size=8000000\0" \
+	"p1path=android.rootfs\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0"
+	"bootsize=60000\0" \
+	"bootpath=u-boot-512M-UartB.bin\0" \
+	"normalstart=1000000\0" \
+	"normalsize=400000\0" \
 	
-#define CONFIG_BOOTCOMMAND  "nand read 84100000 ${logo_start} ${logo_size};nand read ${loadaddr} ${normal_start} ${normal_size};lcd bl off;bootm"
-//#define CONFIG_BOOTCOMMAND  "lcd bl off;mmcinfo;fatload mmc 0:1 82000000 uImage;bootm"
+//#define CONFIG_BOOTCOMMAND  "nand read 84100000 ${logo_start} ${logo_size};nand read ${loadaddr} ${normal_start} ${normal_size};lcd bl off;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uImage-m3;bootm"
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
@@ -146,7 +141,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m1_mid\0" \
 	"chipname=8726m\0" \
-	"machid=B8C\0" \
+	"machid=B8E\0" \
 	"bootargs=init=/init console=ttyS0,115200"  BOARD_INFO_ENV  " board_ver=v2 clk81=187500k hdmitx=vdacoff,powermode1,unplug_powerdown rootwait logo=osd1,0x84100000,lcd,full,root=/dev/cardblksd2\0" \
 	"partnum=4\0" \
 	"p0start=0x4800000\0" \
@@ -180,7 +175,7 @@
 #define CONFIG_BOOTCOMMAND  "nand read 84100000 ${p0start} ${p0size};nand read ${loadaddr} ${normalstart} ${normalsize};lcd bl off;bootm"
 #endif
 #define CONFIG_AUTO_COMPLETE	1
-*/
+
 /*
  * File system
  */
@@ -203,14 +198,14 @@
 
 //#define CONFIG_AML_RTC
 
-//#define CONFIG_LZMA  1
-//#define CONFIG_LZO
+#define CONFIG_LZMA  1
+#define CONFIG_LZO
 
-//#define CONFIG_CMDLINE_TAG		1	/* enable passing of ATAGs */
-//#define CONFIG_SETUP_MEMORY_TAGS	1
-//#define CONFIG_INITRD_TAG		1
-//#define CONFIG_REVISION_TAG		1
-//#define CONFIG_CMD_KGDB			1
+#define CONFIG_CMDLINE_TAG		1	/* enable passing of ATAGs */
+#define CONFIG_SETUP_MEMORY_TAGS	1
+#define CONFIG_INITRD_TAG		1
+#define CONFIG_REVISION_TAG		1
+#define CONFIG_CMD_KGDB			1
 ////#define CONFIG_SERIAL_TAG       1*/
 
 #endif /* _CPU_H */

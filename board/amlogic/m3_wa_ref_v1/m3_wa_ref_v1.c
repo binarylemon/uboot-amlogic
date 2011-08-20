@@ -154,7 +154,7 @@ static struct i2c_board_info aml_i2c_info[] = {
 
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
+	gd->bd->bi_arch_number=2958; //MACH_TYPE_MESON_8626M;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 
 #ifdef CONFIG_AML_I2C  
@@ -308,8 +308,8 @@ static void board_mmc_register(unsigned port)
 }
 int board_mmc_init(bd_t	*bis)
 {
-	board_mmc_register(SDIO_PORT_A);
-//	board_mmc_register(SDIO_PORT_B);
+//	board_mmc_register(SDIO_PORT_A);
+	board_mmc_register(SDIO_PORT_B);
 //	board_mmc_register(SDIO_PORT_C);
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;

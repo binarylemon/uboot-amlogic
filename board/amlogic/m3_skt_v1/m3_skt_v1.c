@@ -217,8 +217,8 @@ static void board_mmc_register(unsigned port)
 }
 int board_mmc_init(bd_t	*bis)
 {
-	board_mmc_register(SDIO_PORT_A);
-//	board_mmc_register(SDIO_PORT_B);
+//board_mmc_register(SDIO_PORT_A);
+	board_mmc_register(SDIO_PORT_B);
 //	board_mmc_register(SDIO_PORT_C);
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;
@@ -275,7 +275,8 @@ static struct i2c_board_info aml_i2c_info[] = {
 
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
+	//gd->bd->bi_arch_number=MACH_TYPE_MESON_8626M;
+	gd->bd->bi_arch_number=2958;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
     board_nand_init();
