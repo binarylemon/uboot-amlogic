@@ -44,7 +44,6 @@ struct __cntl_info_s{
     /** configure and control function **/
     int32_t (* config)(cntl_t *, uint32_t config,...);
     /** fifo relative functions **/
-    int32_t (* fifo)(cntl_t *,uint32_t config,...);
     uint32_t (* size)(cntl_t *);
     uint32_t (* avail)(cntl_t *);
     uint32_t (* head)(cntl_t *);
@@ -63,8 +62,7 @@ struct __cntl_info_s{
 
     /** util functions for async mode **/
     jobkey_t*  (* job_get)(cntl_t * cntl_t,uint32_t mykey);
-    int32_t  (* job_select)(cntl_t * cntl_t,jobkey_t* job);
-    int32_t  (* job_finish)(cntl_t * cntl_t,jobkey_t* job);
+    int32_t  (* job_free)(cntl_t * cntl_t,jobkey_t* job);
     int32_t  (* job_status)(cntl_t * cntl_t,jobkey_t* job);
     void *   priv;
 };
