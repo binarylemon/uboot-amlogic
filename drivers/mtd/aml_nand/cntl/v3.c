@@ -438,7 +438,7 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
 		}
     uint32_t old_ce=v3_find_ce(cmd,0,priv->nfc_ce);
     uint32_t new_ce=v3_find_ce(cmd,1,priv->nfc_ce);
-    priv->nfc_ce=new_ce;
+
     if(cmd_size>NFC_CMDFIFO_MAX-2 || write_size[0])
     {
     	write_cmd[1]=cmd;
@@ -489,6 +489,7 @@ write_fifo_raw:
 	else
 		priv->tail=tail;
 	sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
+	priv->nfc_ce=new_ce;
 	if((priv->fifo_mode&2)&&sizefifo)
 		setbits_le32(P_NAND_CFG,1<<12);//start fifo immediatly
 	return 0;
