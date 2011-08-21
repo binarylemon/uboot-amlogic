@@ -36,6 +36,9 @@ static int32_t v3_job_status(cntl_t * cntl_t, jobkey_t * job);
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma,uint32_t size,uint32_t short_size,uint32_t seed);
 static int32_t v3_info2data(void * data,void * info,dma_t dma);//-1,found ecc fail,>=0,ecc counter .
 static int32_t v3_data2info(void * info,void * data,dma_t dma);//-1,error found
+static int32_t v3_convert_cmd(cmd_t * in,cmd_t* out,uint32_t out_size);
+static int32_t v3_write_cmd(cntl_t * ,cmd_t * cmd);
+static int32_t v3_seed(cntl_t *, uint16_t seed);//0 disable
 
 typedef struct {
     uint8_t st[2];
@@ -90,6 +93,8 @@ static cntl_t v3_driver =
 	.tail = v3_tail,
 
 	/** nand command routines*/
+	.convert_cmd=v3_convert_cmd,
+	.write_cmd=v3_write_cmd,
 	.ctrl = v3_ctrl,
 	.wait = v3_wait,
 	.nop = v3_nop,
@@ -98,6 +103,7 @@ static cntl_t v3_driver =
 	.writebytes = v3_writebytes,
 	.readecc =	v3_readecc,
 	.writeecc = v3_writeecc,
+	.seed=v3_seed,
 
 	/** util functions for async mode **/
 	.job_get = v3_job_get,
@@ -592,10 +598,87 @@ static inline int32_t v3_check_and_insert_interrupt(struct v3_priv * priv,uint32
     }
     return -1;
 } 
+static int32_t v3_seed(cntl_t * cntl, uint16_t seed)
+{
+		DEFINE_CNTL_PRIV(priv,cntl);
+		V3_FIFO_WRITE( NFC_CMD_SEED(seed));
+		return 0;
+}
+static int32_t v3_convert_cmd(cmd_t * in,cmd_t* out,uint32_t out_size)
+{
+	uint32_t cur=0;
+	while(*in++!=NULL&&cur<out_size)
+	{
+
+		switch(*in&(0xf<<28))
+		{
+		case 1: //cle
+			*out = NFC_CMD_CLE(NFC_CE((*in>>24)&0x3),*in&0xff);
+			break;
+		case 2: //ale
+			*out = NFC_CMD_ALE(NFC_CE((*in>>24)&0x3),*in&0xff);
+			break;
+		case 8: //nop
+			*out = NFC_CMD_CLE(NFC_CE((*in>>24)&0x3),*in&0xffff);
+			break;
+		case 3: //wait
+			if((*out>>20)&0xf)
+				*out = NFC_CMD_RB(NFC_CE((*in>>24)&0x3),*in&0xff);
+			else
+				*out = NFC_CMD_RBIO(NFC_RBIO(((*in>>24)&0x3)),(*in&0xff));
+			break;
+		case 4:
+			*out=NFC_CMD_SEED(*in);
+			break;
+		case 5:
+			*out++=NFC_CMD_ASL(*(in+1));
+			*out++=NFC_CMD_ASH(*(in+1));
+
+			*out=NFC_CMD_STS((*in>>24)&3);
+			in++;
+			cur+=2;
+			break;
+		case 6:
+			*out++ = NFC_CMD_ADL(*(in+1));
+			*out++ = NFC_CMD_ADH(*(in+1));
+
+			*out++ = NFC_CMD_AIL(*(in+2));
+			*out++ = NFC_CMD_AIH(*(in+2));
+			*out = NFC_CMD_READ(*in);
+			in+=2;
+			cur+=4;
+			break;
+		case 7:
+			*out++ = NFC_CMD_ADL(*(in+1));
+			*out++ = NFC_CMD_ADH(*(in+1));
+
+			*out++ = NFC_CMD_AIL(*(in+2));
+			*out++ = NFC_CMD_AIH(*(in+2));
+			*out = NFC_CMD_WRITE(*in);
+			in+=2;
+			cur+=4;
+			break;
+
+
+		}
+		in++;
+		cur++;
+		out++;
+	}
+	return cur<out_size?0:-1;
+}
+static int32_t v3_write_cmd(cntl_t * cntl ,cmd_t * cmd)
+{
+	DEFINE_CNTL_PRIV(priv,cntl);
+	uint32_t size=0;
+	cmd_t * p=cmd;
+	while(*p++!=NULL)size++;
+	return v3_fifo_write(priv,cmd,size);
+}
+
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 {
     DEFINE_CNTL_PRIV(priv,cntl);
-    v3_check_and_insert_interrupt(priv,NFC_CE(ce));
 	if (ctrl & 0x100)
 		V3_FIFO_WRITE(NFC_CMD_CLE(NFC_CE(ce),ctrl));
 	V3_FIFO_WRITE(NFC_CMD_ALE(NFC_CE(ce),ctrl));
@@ -607,7 +690,6 @@ static int32_t v3_wait(cntl_t * cntl, uint8_t mode, uint16_t ce,uint8_t cycle_lo
     DEFINE_CNTL_PRIV(priv,cntl);
 	if (mode & 1)
 	{
-		v3_check_and_insert_interrupt(priv,NFC_CE(ce));
         cmd=NFC_CMD_RB(NFC_CE(ce),cycle_log2);
 	}
     else
@@ -619,7 +701,6 @@ static int32_t v3_nop(cntl_t * cntl, uint16_t ce, uint16_t cycles)
 {
 
     DEFINE_CNTL_PRIV(priv,cntl);
-    v3_check_and_insert_interrupt(priv,NFC_CE(ce));
 	V3_FIFO_WRITE( NFC_CMD_IDLE(NFC_CE(ce),cycles));
 	return 0;
 }

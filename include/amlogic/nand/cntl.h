@@ -55,15 +55,15 @@ struct __cntl_info_s{
 #define CNTL_CMD_NOP(ce,cycle)			((8<<28)|(ce<<24)|(cycle))
 #define CNTL_CMD_CLE(ce,cle)			((1<<28)|(ce<<24)|(cle&0xff))
 #define CNTL_CMD_ALE(ce,ale)			((2<<28)|(ce<<24)|(ale&0xff))
-#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&3)<<24)|cycle)
+#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&3)<<20)|cycle)
 #define CNTL_CMD_SEED(seed)				((4<<28)|(seed))
-#define CNTL_CMD_STATUS(mode,addr,job)	((5<<28)|((mode&3)<<24)),(cmd_t)address,(cmd_t)job
+#define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
 #define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
 #define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode),(cmd_t)data,(cmd_t)info
     int32_t	 (* convert_cmd)(cmd_t * in,cmd_t* out,uint32_t out_size);
     /** This command will send to cntl directly     */
     int32_t  (* write_cmd)(cntl_t * ,cmd_t * cmd);
-/*
+
     int32_t   (* ctrl)(cntl_t *, uint16_t ce,uint16_t ctrl);
     int32_t   (* wait)(cntl_t *, uint8_t mode,uint16_t ce,uint8_t cycle_log2);
     int32_t    (* nop)(cntl_t *, uint16_t ce,uint16_t cycles);
@@ -73,7 +73,7 @@ struct __cntl_info_s{
     int32_t     (* readecc)(cntl_t *,void * addr ,void * info,dma_t dma_mode);
     int32_t    (* writeecc)(cntl_t *,void * addr ,void * info,dma_t dma_mode);
     int32_t    (* seed)(cntl_t *, uint16_t seed);//0 disable
-*/
+
     /** util functions for async mode **/
     jobkey_t*  (* job_get)(cntl_t * cntl_t,uint32_t mykey);
     int32_t  (* job_free)(cntl_t * cntl_t,jobkey_t* job);
