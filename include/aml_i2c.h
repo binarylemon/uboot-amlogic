@@ -232,6 +232,10 @@ struct i2c_board_info {
 #define I2C_BOARD_INFO(dev_type, dev_addr) \
 	.type = dev_type, .addr = (dev_addr)
 
+struct aml_i2c_device {
+	struct i2c_borad_info *aml_i2c_boards;
+	unsigned dev_num;
+};
 
 #ifdef AML_MESON_BOARD_8726M_2010_11_18_V11
 //Please refer board schematic for detail pin connection

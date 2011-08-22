@@ -33,6 +33,11 @@ typedef struct adc_info{
 	void * adc_data;
 }adc_info_t;
 
+struct adc_device{
+	adc_info_t * adc_device_info;
+	unsigned dev_num;
+};
+
 void saradc_enable(void);
 int  get_adc_sample(int chan);
 

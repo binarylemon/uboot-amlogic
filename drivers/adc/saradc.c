@@ -24,7 +24,7 @@
 #include <asm/saradc.h>
 
 
-#define AML_ADC_SAMPLE_DEBUG 1
+//#define AML_ADC_SAMPLE_DEBUG 1
 
 /**********************************************************************************/
 // REG0 (0x21A0)

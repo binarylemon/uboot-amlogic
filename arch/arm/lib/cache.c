@@ -178,3 +178,36 @@ void dcache_invalid_range(unsigned start, unsigned size)
     
 }
 
+void icache_invalid(void)
+{
+#ifndef CONFIG_ICACHE_OFF        
+    _invalidate_icache();
+#endif    	
+}
+
+void dcache_invalid(void)
+{
+#ifndef CONFIG_DCACHE_OFF
+    _invalidate_dcache();
+#endif	
+#ifndef CONFIG_L2_OFF
+    l2x0_inv_all();
+#endif
+}
+
+void dcache_clean(void)
+{
+#ifndef CONFIG_DCACHE_OFF
+    if(dcache_status())
+    {
+        _clean_dcache();
+    }
+#endif
+
+#ifndef CONFIG_L2_OFF
+   if(l2x0_status())
+    {
+        l2x0_clean_all();
+    }
+#endif		
+}

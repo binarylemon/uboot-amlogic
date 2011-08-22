@@ -60,4 +60,8 @@ void _invalidate_dcache_addr(unsigned long addr);
 void _clean_invd_dcache_addr(unsigned long addr);
 void _invalidate_icache(void);
 
+void icache_invalid(void);
+void dcache_invalid(void);
+void dcache_clean(void);
+
 #endif /* _ASM_CACHE_H */
