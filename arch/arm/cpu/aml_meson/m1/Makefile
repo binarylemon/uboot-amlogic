@@ -12,6 +12,7 @@ LIB	= $(obj)lib$(SOC).o
 
 COBJS-$(CONFIG_AML_SDIO)+=sdio.o
 
+COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 
 COBJS	= clock.o $(COBJS-y)
 SOBJS := mmutable.o

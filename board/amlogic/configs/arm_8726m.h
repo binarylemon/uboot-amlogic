@@ -12,6 +12,24 @@
 #define CONFIG_AML_I2C        1
 #define AML_MESON_BOARD_8726M_2010_11_18_V11 1
 
+/* USB
+ * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
+ * Enable CONFIG_MUSB_UDD for Device functionalities.
+ */
+/* #define CONFIG_MUSB_UDC		1 */
+#define CONFIG_CMD_USB 1
+//#define CONFIG_MUSB_HCD 1
+#define CONFIG_M1_USBPORT_BASE	IO_USB_B_BASE
+#define CONFIG_USB_STORAGE       1
+#define CONFIG_USB_DWC_OTG_HCD   1
+
+#ifdef CONFIG_USB_DWC_OTG_HCD
+  #ifndef CONFIG_AML_I2C
+    #error "Please define CONFIG_AML_I2C for USB bus power enable!"
+  #endif
+#endif /*CONFIG_USB_DWC_OTG_HCD*/
+
+
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
 

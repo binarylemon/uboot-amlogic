@@ -17,6 +17,12 @@
 #include <asm/saradc.h>
 #endif /*CONFIG_SARADC*/
 
+/*board depend @AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf*/
+#ifndef AML_MESON_BOARD_8726M_2010_11_18_V11
+  #error "Please define AML_MESON_BOARD_8726M_2010_11_18_V11 before any operation!"
+#endif /*AML_MESON_BOARD_8726M_2010_11_18_V11*/
+  
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
@@ -199,7 +205,7 @@ static void board_i2c_init(void)
 	i2c_tca6424_write(I2C_EIO_PORT1_CFG,0xF7);//TCA6424 port1: P13 is output for LAN8720 reset, others are input
 	i2c_tca6424_write(I2C_EIO_PORT2_CFG,0x1F);//TCA6424 port2: P27~P25 are output(LED), others are input
     //set output level for port0/1/2 (without any effect for the input mode port)    
-	i2c_tca6424_write(I2C_EIO_PORT0_OUT,0xFA);//port0 ->0xFA
+	i2c_tca6424_write(I2C_EIO_PORT0_OUT,0xFA);//port0 ->0xFA		
 	i2c_tca6424_write(I2C_EIO_PORT1_OUT,0xFF);//port1 ->0xFF
 	i2c_tca6424_write(I2C_EIO_PORT2_OUT,(I2C_LED_RED & I2C_LED_GREEN & I2C_LED_BLUE));//LED all on
 
@@ -259,6 +265,30 @@ struct aml_i2c_platform g_aml_i2c_plat = {
 
 ///////////////////////////////////////////////////////////////
 
+#ifdef CONFIG_USB_DWC_OTG_HCD
+
+#include <asm/arch/usb.h>
+static void set_usb_a_vbus_power(char is_power_on)
+{
+    //TCA6424 port0 control USB power:@ AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf
+    //               Port00 -> VCC5V_EN(0:enable, 1: disable)
+    //               Port01 -> USB_PWR_CTL(0:disable, 1: enable)
+	unsigned char byPP0 = 0xF9; //off
+	
+	if(is_power_on)
+		byPP0 = 0xFA;
+		
+	i2c_tca6424_write(I2C_EIO_PORT0_OUT,byPP0);	
+}
+
+struct amlogic_usb_config g_usb_config={
+	USB_PHY_CLOCK_SEL_XTAL_DIV2,
+	0, // no use if clock sel == xtal or xtal/2
+	CONFIG_M1_USBPORT_BASE,
+	0,
+	set_usb_a_vbus_power, //set_vbus_power
+};
+#endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 #ifdef CONFIG_SARADC
 /*following key value are test with board 
@@ -336,6 +366,10 @@ int board_init(void)
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*#ifdef CONFIG_AML_I2C*/
+
+#ifdef CONFIG_USB_DWC_OTG_HCD
+	board_usb_init(&g_usb_config);
+#endif /*CONFIG_USB_DWC_OTG_HCD*/
 
     return 0;
 }
