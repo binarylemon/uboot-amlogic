@@ -1,13 +1,11 @@
 #ifndef __AMLOGIC_NAND_CNTL_H_
 #define __AMLOGIC_NAND_CNTL_H_
 
+#include <stdarg.h>
 #include <linux/types.h>
+#include "platform.h"
 #define MAX_CMD_SIZE 32
 //typedef unsigned uint32_t;
-typedef struct __cntl_cmd_s {
-    uint32_t size;
-    uint32_t cmd[MAX_CMD_SIZE];
-}cntl_cmd_t;
 typedef uint64_t cntl_feature_t;
 typedef struct __cntl_info_s cntl_t;
 typedef struct __ecc_info_s ecc_t;
@@ -25,6 +23,10 @@ struct __ecc_info_s {
 typedef uint32_t jobkey_t;
 typedef int32_t dma_t;
 typedef uint32_t cmd_t;
+typedef struct{
+	uint32_t size;
+	cmd_t 	* cmd;
+} cmdq_t;
 typedef struct __dma_desc_s{
     dma_t       dma;
     uint16_t    page_size;
@@ -43,7 +45,8 @@ struct __cntl_info_s{
     int32_t  (* data2info)(void * info,void * data,dma_t dma);//-1,error found
     
     /** configure and control function **/
-    int32_t (* config)(cntl_t *, uint32_t config,...);
+    int32_t (* config)(cntl_t * cntl, uint32_t config, va_list args);
+
     /** fifo relative functions **/
     uint32_t (* size)(cntl_t *);
     uint32_t (* avail)(cntl_t *);
@@ -60,9 +63,9 @@ struct __cntl_info_s{
 #define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
 #define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
 #define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode),(cmd_t)data,(cmd_t)info
-    int32_t	 (* convert_cmd)(cmd_t * in,cmd_t* out,uint32_t out_size);
+    int32_t	 (* convert_cmd)(cmdq_t * in,cmdq_t* out);
     /** This command will send to cntl directly     */
-    int32_t  (* write_cmd)(cntl_t * ,cmd_t * cmd);
+    int32_t  (* write_cmd)(cntl_t * ,cmdq_t * cmd);
 
     int32_t   (* ctrl)(cntl_t *, uint16_t ce,uint16_t ctrl);
     int32_t   (* wait)(cntl_t *, uint8_t mode,uint16_t ce,uint8_t cycle_log2);
@@ -77,10 +80,18 @@ struct __cntl_info_s{
     /** util functions for async mode **/
     jobkey_t*  (* job_get)(cntl_t * cntl_t,uint32_t mykey);
     int32_t  (* job_free)(cntl_t * cntl_t,jobkey_t* job);
-    int32_t  (* job_status)(cntl_t * cntl_t,jobkey_t* job);
+    uint32_t  (* job_key)(cntl_t * cntl_t,jobkey_t* job);
+    uint32_t  (* job_status)(cntl_t * cntl_t,jobkey_t* job);
+    /**
+     *
+     * @param cntl_t controller
+     * @param jobs	in/out parameter ,the finish status job list
+     * @param size	input jobs size
+     * @return <0 , error ; >=0 , return size of jobs
+     */
+    int32_t (*job_lookup)(cntl_t * cntl, jobkey_t ** jobs,uint32_t size);//
     void *   priv;
 };
-
 #define FEATURE_SUPPORT_SHORT_ECC       (1<<0)
 #define FEATURE_SUPPORT_NO_RB           (1<<1)
 #define FEATURE_SUPPORT_STS_INTERRUPT   (1<<2)
@@ -93,9 +104,43 @@ struct __cntl_info_s{
 /*
     config command
 */
-#define NAND_CNTL_MODE_SET      0   // uint32_t io_base,uint32_t nand_delay,uint8_t edo,uint8_t rbmod,void (* claim_bus)(uint32_t get)
+#define NAND_CNTL_INIT      	0   // struct aml_nand_platform *
 #define NAND_CNTL_TIME_SET      1   // t_rea,t_rhoh
 #define NAND_CNTL_FIFO_MODE     2
 #define NAND_CNTL_POWER_SET     3   //@todo
+#define NAND_CNTL_FIFO_RESET    4   //@todo
+
+/**
+ * Interface functions
+ */
+
+extern uint32_t cntl_try_lock(void);
+extern void cntl_unlock(void);
+extern void cntl_init(struct aml_nand_platform * plat);
+extern int32_t cntl_config(uint32_t config, ...);
+extern uint32_t cntl_size(void);
+extern uint32_t cntl_avail(void);
+extern uint32_t cntl_head(void);
+extern uint32_t cntl_tail(void);
+extern int32_t cntl_ctrl(uint16_t ce, uint16_t ctrl);
+extern int32_t cntl_wait(uint8_t mode, uint16_t ce, uint8_t cycle_log2);
+extern int32_t cntl_nop(uint16_t ce, uint16_t cycles);
+extern int32_t cntl_sts(jobkey_t *job, uint16_t mode);
+extern int32_t cntl_readbytes(void *addr, dma_t dma_mode);
+extern int32_t cntl_writebytes(void *addr, dma_t dma_mode);
+extern int32_t cntl_readecc(void *addr, void *info, dma_t dma_mode);
+extern int32_t cntl_writeecc(void *addr, void *info, dma_t dma_mode);
+extern jobkey_t *cntl_job_get(uint32_t mykey);
+extern int32_t cntl_job_free(jobkey_t *job);
+extern int32_t cntl_job_lookup(jobkey_t **jobs, uint32_t size);
+extern int32_t cntl_seed(uint16_t seed);
+extern int32_t cntl_ecc2dma(ecc_t *orig, dma_desc_t *dma, uint32_t size, uint32_t short_size, uint32_t seed);
+extern int32_t cntl_info2data(void *data, void *info, dma_t dma);
+extern int32_t cntl_data2info(void *info, void *data, dma_t dma);
+extern int32_t cmdq_alloc(cmdq_t *cmdq);
+extern void cmdq_free(cmdq_t *cmdq);
+extern int32_t cntl_write_cmd(cmdq_t *in, cmdq_t *out);
+extern int32_t cntl_finish_jobs(void (*cb_finish)(uint32_t key, uint32_t st));
+
 
 #endif

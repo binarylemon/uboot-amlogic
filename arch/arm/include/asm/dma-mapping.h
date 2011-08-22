@@ -32,7 +32,7 @@ enum dma_data_direction {
 	DMA_FROM_DEVICE		= 2,
 };
 
-static void *dma_alloc_coherent(size_t len, unsigned long *handle)
+static inline void *dma_alloc_coherent(size_t len, unsigned long *handle)
 {
 	void *addr = malloc(len + CONFIG_SYS_CACHE_LINE_SIZE);
 	if (!addr)

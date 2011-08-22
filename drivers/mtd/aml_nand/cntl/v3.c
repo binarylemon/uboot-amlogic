@@ -5,6 +5,7 @@
 #include <amlogic/nand/platform.h>
 #include <asm/io.h>
 #include <asm/arch/nand.h>
+#include <asm/dma-mapping.h>
 
 static ecc_t ecc_table[] ={
     { .name = "BCH OFF  ", .mode = 0, .bits = 0,  .data = 0,    .parity = 0,    .info = 0,.max=(1<<14)-1 },
@@ -17,7 +18,7 @@ static ecc_t ecc_table[] ={
     { .name = "BCH 60/1k", .mode = 7, .bits = 60, .data = 128,  .parity = 106,  .info = 2,.max=0x3f*1024 },
     { .name = NULL, .mode = 0, .bits = 0, .data = 0, .parity = 0,.info = 0 },
 };
-static int32_t v3_config(cntl_t *, uint32_t config, ...); //done the basic
+static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args); //done the basic
 static uint32_t v3_size(cntl_t *);
 static uint32_t v3_avail(cntl_t *);
 static uint32_t v3_head(cntl_t *);
@@ -32,13 +33,22 @@ static int32_t v3_readecc(cntl_t * , void * addr, void * info,dma_t dma_mode);
 static int32_t v3_writeecc(cntl_t *, void * addr, void * info,dma_t dma_mode);
 static jobkey_t * v3_job_get(cntl_t * cntl_t,uint32_t mykey);
 static int32_t v3_job_free(cntl_t * cntl_t, jobkey_t * job);
-static int32_t v3_job_status(cntl_t * cntl_t, jobkey_t * job);
+static uint32_t v3_job_key(cntl_t * cntl_t, jobkey_t * job);
+static uint32_t v3_job_status(cntl_t * cntl, jobkey_t * job);
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma,uint32_t size,uint32_t short_size,uint32_t seed);
 static int32_t v3_info2data(void * data,void * info,dma_t dma);//-1,found ecc fail,>=0,ecc counter .
 static int32_t v3_data2info(void * info,void * data,dma_t dma);//-1,error found
-static int32_t v3_convert_cmd(cmd_t * in,cmd_t* out,uint32_t out_size);
-static int32_t v3_write_cmd(cntl_t * ,cmd_t * cmd);
+static int32_t v3_convert_cmd(cmdq_t * in,cmdq_t* out);
+static int32_t v3_write_cmd(cntl_t * ,cmdq_t * cmd);
 static int32_t v3_seed(cntl_t *, uint16_t seed);//0 disable
+/**
+ *
+ * @param cntl_t controller
+ * @param jobs	in/out parameter ,the finish status job list
+ * @param size	input jobs size
+ * @return <0 , error ; >=0 , return size of jobs
+ */
+static int32_t v3_job_lookup(cntl_t * cntl_t, jobkey_t ** jobs,uint32_t size);
 
 typedef struct {
     uint8_t st[2];
@@ -108,7 +118,9 @@ static cntl_t v3_driver =
 	/** util functions for async mode **/
 	.job_get = v3_job_get,
 	.job_free =v3_job_free,
-	.job_status = v3_job_status,
+	.job_lookup = v3_job_lookup,
+	.job_key=v3_job_key,
+	.job_status=v3_job_status,
 	/** ecc dma relative functions **/
 	.ecc2dma    =  v3_ecc2dma   ,
     .info2data  =  v3_info2data ,
@@ -133,22 +145,25 @@ static const uint32_t v3_ce[]={CE0,CE1,CE2,CE3,CE_NOT_SEL};
 static const uint32_t v3_rbio[]={IO4,IO5,IO6};
 #define NFC_CE(ce)      (v3_ce[ce])
 #define NFC_RBIO(io)    (v3_rbio[io])
-static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
+static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv);
+#define CNTL_BUF_SIZE	(4*1026)
+#define CMD_FIFO_PLUS	64
+static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 {
 	DEFINE_CNTL_PRIV(priv,cntl);
-	va_list ap;
+//	va_list args;
 	struct aml_nand_platform * plat;
 	int32_t ret;
 	uint32_t int_temp;
 	uint8_t char_temp;
 	uint16_t mode;
 	void* p_temp;
-	va_start(ap, config);
+//	va_start(args, config);
 	switch(config)
 	{
-		case NAND_CNTL_MODE_SET: // struct aml_nand_platform *
+		case NAND_CNTL_INIT: // struct aml_nand_platform *
 		{
-			plat=va_arg(ap,struct aml_nand_platform *);
+			plat=va_arg(args,struct aml_nand_platform *);
 			if(plat)
 			    priv->plat=plat;
 			priv->delay=plat->delay?plat->delay:priv->delay;
@@ -156,20 +171,29 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 			assert(priv->delay<120);
 			assert(priv->edo<10);
 			assert(priv->reg_base>0);
+			priv->cmd_fifo=(uint32_t*)dma_alloc_coherent(CNTL_BUF_SIZE*sizeof(cmd_t),&int_temp);
+			priv->fifo_mask=(CNTL_BUF_SIZE>>2)-1;
+			priv->sts_buf=(sts_t*)&(priv->cmd_fifo[(CNTL_BUF_SIZE>>2)+CMD_FIFO_PLUS]);
+			priv->temp=(uint32_t)&(priv->cmd_fifo[(CNTL_BUF_SIZE)-2]);
+			priv->sts_size=(priv->temp - (uint32_t)priv->sts_buf)/sizeof(sts_t);
 		}
 		break;
 		case NAND_CNTL_TIME_SET: //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust
 		{
-			mode=va_arg(ap,uint32_t)&3;
+			mode=va_arg(args,uint32_t)&3;
 
-			uint16_t bus_cycle,t_rea=(uint16_t)va_arg(ap,uint32_t);
-			uint16_t bus_time,t_rhoh=(uint16_t)va_arg(ap,uint32_t);
+			uint16_t bus_cycle,t_rea=(uint16_t)va_arg(args,uint32_t);
+			uint16_t bus_time,t_rhoh=(uint16_t)va_arg(args,uint32_t);
 			uint16_t sync_adjust=0;
 			assert(mode<3);
 			if(mode)
-			    sync_adjust=(uint16_t)va_arg(ap,uint32_t)&1;
+			    sync_adjust=(uint16_t)va_arg(args,uint32_t)&1;
+			/*
 			assert(t_rea>=priv->plat->t_rea);
 			assert(t_rhoh>=priv->plat->t_rhoh);
+			*/
+			t_rea=max(t_rea,priv->plat->t_rea);
+			t_rhoh=max(t_rhoh,priv->plat->t_rhoh);
 			assert(v3_time_caculate(&t_rea,&t_rhoh,priv->edo,priv->delay,clk_get_rate(priv->plat->clk_src)));
 			NFC_CMD_WAIT_EMPTY();
 			bus_cycle=t_rhoh;
@@ -183,7 +207,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 		break;
 		case NAND_CNTL_FIFO_MODE: //uint16_t start(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
 		{
-			mode=((uint16_t)va_arg(ap,uint32_t))&3;
+			mode=((uint16_t)va_arg(args,uint32_t))&3;
 			uint16_t xor=mode^priv->fifo_mode;
 			if(xor!=0)
 			{
@@ -196,16 +220,24 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, ...)
 		    }
 		}
 		break;
+		case NAND_CNTL_FIFO_RESET://uint16_t mode : 1, force reset ; 0, reset possible
+			mode=((uint16_t)va_arg(args,uint32_t))&3;
+			if(mode)
+				NFC_CMD_WAIT_EMPTY();
+			if(v3_cmd_fifo_size(priv))
+				break;
+			writel((uint32_t)(priv->cmd_fifo),P_NAND_CADR);
+			break;
 		default:
 		    break;
 
 	}
-	va_end(ap);
+//	va_end(args);
 	return 0;
 }
 #define nfc_dmb()
 #define STS_2_CMD_SIZE 	5
-#define CMD_FIFO_PLUS	64
+
 #define ANCHOR_POS_E		(priv->fifo_mask+1-(NFC_CMDFIFO_MAX-1))
 #define ANCHOR_POS_S 		(ANCHOR_POS_E - STS_2_CMD_SIZE )
 
@@ -244,17 +276,6 @@ static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv)
 		tmp1=head>=fifo_size?0:head;
 		return ((tail-tmp1)&priv->fifo_mask)+i;
 	}
-#if 0
-	if(head==tail)
-	{
-		/// Reset Fifo
-		cmd_fifo[0]=0;
-		nfc_dmb();
-		priv->tail=0;
-		writel((uint32_t)cmd_fifo,P_NAND_CADR);
-		return 0;
-	}
-#endif
 	return tail-head;
 }
 static inline uint32_t v3_cmd_fifo_avail_plus(struct v3_priv * priv,uint32_t plus)
@@ -281,6 +302,7 @@ static inline uint32_t v3_cmd_fifo_avail(struct v3_priv * priv)
 }
 
 #define nfc_mb(a,b)
+#if 0
 static inline void v3_cmd_fifo_reset(struct v3_priv * priv)
 {
     uint32_t head=readl(P_NAND_CADR);
@@ -292,6 +314,7 @@ static inline void v3_cmd_fifo_reset(struct v3_priv * priv)
 	if(head>fifo+mask&&*phead==0)
 		writel((uint32_t)(priv->cmd_fifo),P_NAND_CADR);
 }
+#endif
 #define cmd(a)  cmd_##a
 #define ret(a)  ret_##a
 #define EXTEND(name,a)   name(a)
@@ -604,10 +627,14 @@ static int32_t v3_seed(cntl_t * cntl, uint16_t seed)
 		V3_FIFO_WRITE( NFC_CMD_SEED(seed));
 		return 0;
 }
-static int32_t v3_convert_cmd(cmd_t * in,cmd_t* out,uint32_t out_size)
+static int32_t v3_convert_cmd(cmdq_t * inq,cmdq_t* outq)
 {
 	uint32_t cur=0;
-	while(*in++!=NULL&&cur<out_size)
+	cmd_t * in;
+	cmd_t * out;
+	in=inq->cmd;
+	out=outq->cmd;
+	while(*in!=0&&cur<outq->size)
 	{
 
 		switch(*in&(0xf<<28))
@@ -665,15 +692,14 @@ static int32_t v3_convert_cmd(cmd_t * in,cmd_t* out,uint32_t out_size)
 		cur++;
 		out++;
 	}
-	return cur<out_size?0:-1;
+	return cur<outq->size?0:-1;
 }
-static int32_t v3_write_cmd(cntl_t * cntl ,cmd_t * cmd)
+static int32_t v3_write_cmd(cntl_t * cntl ,cmdq_t * cmdq)
 {
 	DEFINE_CNTL_PRIV(priv,cntl);
 	uint32_t size=0;
-	cmd_t * p=cmd;
-	while(*p++!=NULL)size++;
-	return v3_fifo_write(priv,cmd,size);
+	cmd_t * p=cmdq->cmd;
+	return v3_fifo_write(priv,p,cmdq->size);
 }
 
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
@@ -908,21 +934,43 @@ static int32_t v3_job_free(cntl_t * cntl, jobkey_t * job)
 	return 0;
 }
 
-static int32_t v3_job_status(cntl_t * cntl_t, jobkey_t * job)
+/**
+ *
+ * @param cntl_t controller
+ * @param jobs	in/out parameter ,the finish status job list
+ * @param size	input jobs size
+ * @return <0 , error ; >=0 , return size of jobs
+ */
+static int32_t v3_job_lookup(cntl_t * cntl, jobkey_t ** jobs,uint32_t size)//
 {
-	sts_t * p=(sts_t *)job;
-	assert(((uint32_)job&7)==0);
-	if(p->key==0)
-		return -1;//job is free
-	if(p->done==0)
-		return -2;
+	DEFINE_CNTL_PRIV(priv, cntl);
+	int32_t i;
+	int32_t ret;
+	assert(jobs!=0);
+
+	for(i=0,ret=0;i<priv->sts_size&&ret<size;i++)
+	{
+		if(priv->sts_buf[i].key==0)
+			continue;
+		if(priv->sts_buf[i].done==0)
+			continue;
+		jobs[ret++]=(jobkey_t*)&(priv->sts_buf[i]);
+	}
+	return ret;
+}
+static uint32_t v3_job_key(cntl_t * cntl, jobkey_t * job)
+{
+	sts_t * p=(sts_t*)job;
+	return p->key;
+}
+static uint32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
+{
+	sts_t * p=(sts_t*)job;
 	return p->st[0];
 }
 
-
-
-
-void board_nand_init()
+cntl_t * get_v3(void)
 {
-    v3_driver.name="hh";
+	return &v3_driver;
 }
+

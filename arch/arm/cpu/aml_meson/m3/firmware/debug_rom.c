@@ -14,7 +14,7 @@ static  char cmd_buf[DEBUGROM_CMD_BUF_SIZE];
 STATIC_PREFIX char * get_cmd()
 {
     
-    int i,j,k;
+    int i,j;
     char c;
     i=0;
     

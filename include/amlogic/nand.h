@@ -1,6 +1,6 @@
 #ifndef __AMLOGIC_NAND_H_
 #define __AMLOGIC_NAND_H_
-#include <linux/types>
+#include <linux/types.h>
 /* These struct will descriptor the Controller 's ability and interface */
 typedef struct cntl_ecc_ability ecc_modes_t;
 struct cntl_ecc_ability{
