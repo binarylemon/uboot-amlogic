@@ -1,5 +1,6 @@
 #ifndef __AMLOGIC_NAND_PLATFORM_H_
 #define __AMLOGIC_NAND_PLATFORM_H_
+#include <linux/types.h>
 typedef void (* claim_bus_t)(uint32_t get);
 struct aml_nand_platform{
     uint32_t        reg_base;

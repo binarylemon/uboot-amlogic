@@ -271,6 +271,30 @@ static struct i2c_board_info aml_i2c_info[] = {
     },
 };
 #endif /*CONFIG_AML_I2C*/
+#if CONFIG_JERRY_NAND_TEST //temp test
+#include <amlogic/nand/platform.h>
+#include <linux/mtd/partitions.h>
+static struct aml_nand_platform nand_plat={
+/*
+		uint32_t        reg_base;
+		    uint32_t        delay;
+		    uint32_t        rbmod;
+		    uint32_t        t_rea;
+		    uint32_t        t_rhoh;
+		    uint32_t        ce_num;
+		    uint32_t        clk_src;
+		    claim_bus_t     claim_bus;
+*/
+		.ce_num=1,
+		.rbmod=1,
+};
+void    board_nand_init(void)
+{
+	cntl_init(&nand_plat);
+//	amlnand_probe();
+}
+
+#endif
 
 
 int board_init(void)
@@ -279,7 +303,7 @@ int board_init(void)
 	gd->bd->bi_arch_number=2958;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
-    board_nand_init();
+    nand_init();
     
 #endif    
     

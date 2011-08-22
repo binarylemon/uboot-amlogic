@@ -10,3 +10,8 @@
 #include <malloc.h>
 #include <errno.h>
 
+void nand_init(void)
+{
+	board_nand_init();
+}
+

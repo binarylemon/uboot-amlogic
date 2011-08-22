@@ -25,10 +25,16 @@
 static cntl_t * cntl=NULL;
 uint32_t cntl_try_lock(void)
 {
+	/**
+	 * @todo implement this function
+	 */
 	return -1;
 }
 void cntl_unlock(void)
 {
+	/**
+	 * @todo implement this function
+	 */
 	return;
 }
 void cntl_init(struct aml_nand_platform * plat)
