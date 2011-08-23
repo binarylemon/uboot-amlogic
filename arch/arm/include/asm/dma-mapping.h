@@ -21,30 +21,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#include <asm/io.h>
-#include <asm/cache.h>
 #ifndef __ASM_ARM_DMA_MAPPING_H
 #define __ASM_ARM_DMA_MAPPING_H
-
+#include <asm/arch/cpu.h>
+#include <asm/io.h>
+#include <asm/cache.h>
+#include <asm/types.h>
 enum dma_data_direction {
 	DMA_BIDIRECTIONAL	= 0,
 	DMA_TO_DEVICE		= 1,
 	DMA_FROM_DEVICE		= 2,
 };
-
-static inline void *dma_alloc_coherent(size_t len, unsigned long *handle)
+//typedef unsigned long dma_addr_t;
+static inline void *dma_alloc_coherent(size_t len, dma_addr_t *handle)
 {
 	void *addr = malloc(len + CONFIG_SYS_CACHE_LINE_SIZE);
 	if (!addr)
 		return 0;
 	flush_cache((unsigned long)addr, len + CONFIG_SYS_CACHE_LINE_SIZE);
-	*handle = ((unsigned long)addr +
-		   (CONFIG_SYS_CACHE_LINE_SIZE - 1)) &
-		~(CONFIG_SYS_CACHE_LINE_SIZE - 1) & ~(IO_REGION_BASE);
-	return (void *)(*handle | IO_REGION_BASE);
+	*handle = ((((unsigned long)addr + (CONFIG_SYS_CACHE_LINE_SIZE - 1)) &
+		~(CONFIG_SYS_CACHE_LINE_SIZE - 1))& ~(IO_REGION_BASE))|IO_REGION_BASE;
+	return addr;
+}
+static inline void dma_free_coherent(size_t len, dma_addr_t handle,void * addr)
+{
+	free(addr);
 }
 
-static inline unsigned long dma_map_single(void *vaddr, size_t len,
+static inline dma_addr_t dma_map_single(void *vaddr, size_t len,
 					   enum dma_data_direction dir)
 {
 	switch (dir) {
@@ -66,7 +70,7 @@ static inline unsigned long dma_map_single(void *vaddr, size_t len,
 }
 
 static inline void dma_unmap_single(void *vaddr, size_t len,
-				    unsigned long paddr)
+		dma_addr_t paddr)
 {
 }
 

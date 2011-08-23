@@ -91,7 +91,7 @@ static inline struct v3_priv *get_priv(cntl_t * cntl)
 static cntl_t v3_driver =
 {
     .name = "aml_v3_nand_driver",
-	.feature = 0x3f,
+	.feature = 0x3f4,
 	.nand_cycle = 0, //cycle time int 0.1ns
 	.ecc = ecc_table,
 	/** configure and control function **/
@@ -737,6 +737,7 @@ static int32_t v3_sts(cntl_t * cntl, jobkey_t *job, uint16_t mode)
 {
 
     DEFINE_CNTL_PRIV(priv, cntl);
+
     uint32_t sts_addr=(uint32_t)job;
     if(sts_addr==0)
         return -1;

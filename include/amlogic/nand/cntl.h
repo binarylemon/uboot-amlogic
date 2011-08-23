@@ -19,6 +19,15 @@ struct __ecc_info_s {
     uint8_t     parity;
     uint32_t    max;
 };
+#define CNTL_CMD_END()					0
+#define CNTL_CMD_NOP(ce,cycle)			((8<<28)|(ce<<24)|(cycle))
+#define CNTL_CMD_CLE(ce,cle)			((1<<28)|(ce<<24)|(cle&0xff))
+#define CNTL_CMD_ALE(ce,ale)			((2<<28)|(ce<<24)|(ale&0xff))
+#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&3)<<20)|cycle)
+#define CNTL_CMD_SEED(seed)				((4<<28)|(seed))
+#define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
+#define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
+#define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode),(cmd_t)data,(cmd_t)info
 
 typedef uint32_t jobkey_t;
 typedef int32_t dma_t;
@@ -54,15 +63,6 @@ struct __cntl_info_s{
     uint32_t (* tail)(cntl_t *);
 
     /** nand command routines*/
-#define CNTL_CMD_END()					0
-#define CNTL_CMD_NOP(ce,cycle)			((8<<28)|(ce<<24)|(cycle))
-#define CNTL_CMD_CLE(ce,cle)			((1<<28)|(ce<<24)|(cle&0xff))
-#define CNTL_CMD_ALE(ce,ale)			((2<<28)|(ce<<24)|(ale&0xff))
-#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&3)<<20)|cycle)
-#define CNTL_CMD_SEED(seed)				((4<<28)|(seed))
-#define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
-#define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
-#define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode),(cmd_t)data,(cmd_t)info
     int32_t	 (* convert_cmd)(cmdq_t * in,cmdq_t* out);
     /** This command will send to cntl directly     */
     int32_t  (* write_cmd)(cntl_t * ,cmdq_t * cmd);
@@ -92,14 +92,14 @@ struct __cntl_info_s{
     int32_t (*job_lookup)(cntl_t * cntl, jobkey_t ** jobs,uint32_t size);//
     void *   priv;
 };
-#define FEATURE_SUPPORT_SHORT_ECC       (1<<0)
-#define FEATURE_SUPPORT_NO_RB           (1<<1)
-#define FEATURE_SUPPORT_STS_INTERRUPT   (1<<2)
-#define FEATURE_SUPPORT_TOGGLE          (1<<3)
-#define FEATURE_SUPPORT_SYNC            (1<<3)
-#define FEATURE_SUPPORT_CMDFIFO         (1<<4)
-#define FEATURE_SUPPORT_SCRAMBLE        (1<<5)
-#define FEATURE_SUPPORT_MAX_CES         (0xf<<6)
+#define FEATURE_SUPPORT_MAX_CES         (0xf<<0)
+#define FEATURE_SUPPORT_SHORT_ECC       (1<<4)
+#define FEATURE_SUPPORT_NO_RB           (1<<5)
+#define FEATURE_SUPPORT_STS_INTERRUPT   (1<<6)
+#define FEATURE_SUPPORT_TOGGLE          (1<<7)
+#define FEATURE_SUPPORT_SYNC            (1<<8)
+#define FEATURE_SUPPORT_CMDFIFO         (1<<9)
+#define FEATURE_SUPPORT_SCRAMBLE        (1<<10)
 
 /*
     config command
@@ -116,7 +116,8 @@ struct __cntl_info_s{
 
 extern uint32_t cntl_try_lock(void);
 extern void cntl_unlock(void);
-extern void cntl_init(struct aml_nand_platform * plat);
+extern int32_t cntl_init(struct aml_nand_platform * plat);
+extern cntl_t * cntl_get(void);
 extern int32_t cntl_config(uint32_t config, ...);
 extern uint32_t cntl_size(void);
 extern uint32_t cntl_avail(void);

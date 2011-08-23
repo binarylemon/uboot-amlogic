@@ -37,7 +37,7 @@ void cntl_unlock(void)
 	 */
 	return;
 }
-void cntl_init(struct aml_nand_platform * plat)
+int cntl_init(struct aml_nand_platform * plat)
 {
 
     cntl=get_v3();
@@ -46,8 +46,13 @@ void cntl_init(struct aml_nand_platform * plat)
     cntl_config(NAND_CNTL_INIT,plat);
     //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust(optional)
     cntl_config(NAND_CNTL_TIME_SET,0,0,0);
+    return 0;
 }
+cntl_t * cntl_get()
+{
 
+	return cntl;
+}
 int32_t cntl_config(uint32_t config, ...)
 {
 	int32_t ret;

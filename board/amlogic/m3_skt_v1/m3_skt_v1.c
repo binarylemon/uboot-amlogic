@@ -290,7 +290,8 @@ static struct aml_nand_platform nand_plat={
 };
 void    board_nand_init(void)
 {
-	cntl_init(&nand_plat);
+	nand_probe(&nand_plat);
+//	cntl_init(&nand_plat);
 //	amlnand_probe();
 }
 

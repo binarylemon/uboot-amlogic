@@ -48,7 +48,7 @@
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 
-#define IO_REGION_BASE                0xe0000000
+
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
 #define CONFIG_SYS_LONGHELP	1

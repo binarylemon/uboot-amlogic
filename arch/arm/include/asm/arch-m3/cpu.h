@@ -5,6 +5,7 @@
 
 #ifndef _CPU_H
 #define _CPU_H
+#include <config.h>
 #if CONFIG_AML_MESON==0
 #error please define CONFIG_AML_MESON
 #endif
@@ -43,7 +44,7 @@
 //#include "romboot.h"
 //#warning todo implement CONFIG_BOARD_SIZE_LIMIT 
 #define CONFIG_BOARD_SIZE_LIMIT 600000
-
+#define IO_REGION_BASE                0xe0000000
 #define CONFIG_SYS_CACHE_LINE_SIZE 32
 #define CONFIG_CMD_CACHE	1
 //#define CONFIG_SYS_NO_CP15_CACHE	1
