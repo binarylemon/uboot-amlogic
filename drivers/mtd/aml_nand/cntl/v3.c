@@ -705,7 +705,7 @@ static int32_t v3_write_cmd(cntl_t * cntl ,cmdq_t * cmdq)
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 {
     DEFINE_CNTL_PRIV(priv,cntl);
-	if (ctrl & 0x100)
+	if (IS_CLE(ctrl))
 		V3_FIFO_WRITE(NFC_CMD_CLE(NFC_CE(ce),ctrl));
 	V3_FIFO_WRITE(NFC_CMD_ALE(NFC_CE(ce),ctrl));
 	return 0;
@@ -714,7 +714,7 @@ static int32_t v3_wait(cntl_t * cntl, uint8_t mode, uint16_t ce,uint8_t cycle_lo
 {
 	uint32_t cmd;
     DEFINE_CNTL_PRIV(priv,cntl);
-	if (mode & 1)
+	if (mode == NAND_RB_PIN)
 	{
         cmd=NFC_CMD_RB(NFC_CE(ce),cycle_log2);
 	}

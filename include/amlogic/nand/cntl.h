@@ -66,8 +66,15 @@ struct __cntl_info_s{
     int32_t	 (* convert_cmd)(cmdq_t * in,cmdq_t* out);
     /** This command will send to cntl directly     */
     int32_t  (* write_cmd)(cntl_t * ,cmdq_t * cmd);
-
+#define IS_CLE(a)	((a&0x100)==0)
+#define NAND_CLE(a)	((a)&0xff)
+#define NAND_ALE(a)	(((a)&0xff)|0x100)
     int32_t   (* ctrl)(cntl_t *, uint16_t ce,uint16_t ctrl);
+#define NAND_RB_IO 		1
+#define IO4				0
+#define IO5				1
+#define IO6				2
+#define NAND_RB_PIN		0
     int32_t   (* wait)(cntl_t *, uint8_t mode,uint16_t ce,uint8_t cycle_log2);
     int32_t    (* nop)(cntl_t *, uint16_t ce,uint16_t cycles);
     int32_t    (* sts)(cntl_t *,jobkey_t* job, uint16_t mode);

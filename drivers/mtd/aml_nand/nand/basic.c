@@ -9,7 +9,7 @@
 #include <amlogic/nand/platform.h>
 #include <amlogic/nand/types.h>
 #include <asm/dma-mapping.h>
-
+#include "nand_cmd.h"
 typedef struct __nand_command_s nand_cmd_t;
 struct __nand_command_s{
 	int32_t stat;
@@ -27,14 +27,11 @@ struct nand_cfg_s{
 };
 struct id_read_s{
 	uint64_t id;
-	uint32_t onfi;
+	uint64_t onfi;
 };
 static nand_cfg_t nand_cfg;
 
 #define min(a,b)	(a)<(b)?(a):(b)
-#define NAND_CLE(a)		((a)|0x100)
-#define NAND_CMD_RESET 	NAND_CLE(0xff)
-#define NAND_CMD_STATUS NAND_CLE(0x70)
 int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_t *cntl)
 {
 	int32_t num,i,max_ce;
@@ -44,19 +41,43 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 	addr=dma_alloc_coherent(max_ce*sizeof(struct id_read_s),(dma_addr_t *)&id);
 	for(i=0;i<max_ce;i++)
 	{
-		cntl_ctrl(i,NAND_CMD_RESET);
+		cntl_ctrl(i,NAND_CLE(NAND_CMD_RESET));
+		cntl_ctrl(i,NAND_CLE(NAND_CMD_STATUS));
 	}
 	for(i=0;i<max_ce;i++)
 	{
-
-#if 0
-		cntl_ctrl(i,NAND_CMD_STATUS);
-		cntl_wait(RBIO)
-		cntl_ctrl(i,NAND_CMD_ID);
-		cntl_dma_id();
-		cntl_ctrl(i,)
-#endif
+		cntl_wait(NAND_RB_IO,IO6,16);//wait for 1M/16 nand cycle , about 1sec
+		/// read uni id
+		cntl_ctrl(i,NAND_CLE(NAND_CMD_READID));
+		cntl_ctrl(i,NAND_ALE(0));
+		cntl_readbytes(&id[i].id,sizeof(id[i].id));
+		/// read onfi id
+		cntl_ctrl(i,NAND_CLE(NAND_CMD_READID));
+		cntl_ctrl(i,NAND_ALE(0x20));
+		cntl_readbytes(&id[i].onfi,sizeof(id[i].onfi));
 	}
+	jobkey_t * job=cntl_job_get(-1);
+	///@todo cntl_wait_job(job);
+/**
+ * @todo implement this function
+	if(nand_cfg_set(&nand_cfg,0,id)<0)
+		return -1;
+*/
+	nand_cfg.ce_mask=1;
+	num=1;
+	for(i=1;i<max_ce;i++)
+	{
+		if(id[i].id!=id[0].id||id[i].onfi!=id[0].onfi)
+		{
+			nand_cfg.ce_mask&=~(1<<i);
+			continue;
+		}
+		nand_cfg.ce_mask|=(1<<i);
+		num++;
+	}
+
+//	dma_free_coherent(addr);
+
 
 
 	return num;
