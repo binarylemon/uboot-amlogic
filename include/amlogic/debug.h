@@ -9,7 +9,7 @@
 #define _AMLOGIC_DEBUG_H_
 
 #ifdef CONFIG_ENABLE_NAND_DEBUG
-#define nanddebug(a...) prinf(a)
+#define nanddebug(a...) printf(a)
 #else
 #define nanddebug(a...)
 #endif
