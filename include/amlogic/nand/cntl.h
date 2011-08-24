@@ -77,6 +77,16 @@ struct __cntl_info_s{
 #define NAND_RB_PIN		0
     int32_t   (* wait)(cntl_t *, uint8_t mode,uint16_t ce,uint8_t cycle_log2);
     int32_t    (* nop)(cntl_t *, uint16_t ce,uint16_t cycles);
+    /**
+     *
+     * @param
+     * @param job
+     * @param mode	1 , initerrupt disable ; 2 interrupt enable
+     * @return success >0
+     */
+#define STS_NO_INTERRUPT 	1
+#define STS_INTERRUPT 		2
+
     int32_t    (* sts)(cntl_t *,jobkey_t* job, uint16_t mode);
     int32_t   (* readbytes)(cntl_t *,void * addr,dma_t dma_mode);
     int32_t  (* writebytes)(cntl_t *,void * addr,dma_t dma_mode);
@@ -88,7 +98,13 @@ struct __cntl_info_s{
     jobkey_t*  (* job_get)(cntl_t * cntl_t,uint32_t mykey);
     int32_t  (* job_free)(cntl_t * cntl_t,jobkey_t* job);
     uint32_t  (* job_key)(cntl_t * cntl_t,jobkey_t* job);
-    uint32_t  (* job_status)(cntl_t * cntl_t,jobkey_t* job);
+    /**
+     *
+     * @param cntl_t
+     * @param job
+     * @return <0 , job is doing; others , value readback from nand flash .
+     */
+    int32_t  (* job_status)(cntl_t * cntl_t,jobkey_t* job);
     /**
      *
      * @param cntl_t controller

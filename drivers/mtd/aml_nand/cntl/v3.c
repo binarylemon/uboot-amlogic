@@ -34,7 +34,7 @@ static int32_t v3_writeecc(cntl_t *, void * addr, void * info,dma_t dma_mode);
 static jobkey_t * v3_job_get(cntl_t * cntl_t,uint32_t mykey);
 static int32_t v3_job_free(cntl_t * cntl_t, jobkey_t * job);
 static uint32_t v3_job_key(cntl_t * cntl_t, jobkey_t * job);
-static uint32_t v3_job_status(cntl_t * cntl, jobkey_t * job);
+static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job);
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma,uint32_t size,uint32_t short_size,uint32_t seed);
 static int32_t v3_info2data(void * data,void * info,dma_t dma);//-1,found ecc fail,>=0,ecc counter .
 static int32_t v3_data2info(void * info,void * data,dma_t dma);//-1,error found
@@ -964,10 +964,12 @@ static uint32_t v3_job_key(cntl_t * cntl, jobkey_t * job)
 	sts_t * p=(sts_t*)job;
 	return p->key;
 }
-static uint32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
+static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 {
 	sts_t * p=(sts_t*)job;
-	return p->st[0];
+	if(p->done)
+		return p->st[0];
+	return -1;
 }
 
 cntl_t * get_v3(void)

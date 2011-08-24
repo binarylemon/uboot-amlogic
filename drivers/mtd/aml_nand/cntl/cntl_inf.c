@@ -142,6 +142,15 @@ int32_t cntl_job_lookup( jobkey_t ** jobs,uint32_t size)
 	assert(cntl!=NULL);
 	return cntl->job_lookup(cntl,jobs,size);
 }
+int32_t cntl_job_status(jobkey_t * job,uint32_t key)
+{
+	int32_t ret;
+	assert(cntl->job_key(cntl,job)!=key);
+	if((ret=cntl->job_status(cntl,job))<0 )
+		return -1;
+
+	return ret;
+}
 
 
 int32_t cntl_seed(  uint16_t seed)//0 disable
