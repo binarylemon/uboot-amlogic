@@ -45,6 +45,69 @@
 
 #if CONFIG_POST & CONFIG_SYS_POST_RTC
 
+#ifdef CONFIG_POST_AML
+#include <aml_rtc.h>
+
+//===============================================================
+struct rtc_time pattern1 ={
+	.tm_year = 111,
+	.tm_mon = 2,
+	.tm_mday = 23,
+	.tm_hour = 13,
+	.tm_min = 15,
+	.tm_sec = 3,
+};
+
+//===============================================================
+static void write_rtc(struct rtc_time *pattern)
+{
+	struct rtc_time tm;
+	tm.tm_year = pattern->tm_year;
+	tm.tm_mon = pattern->tm_mon;
+	tm.tm_mday = pattern->tm_mday;						
+	tm.tm_hour = pattern->tm_hour;						
+	tm.tm_min = pattern->tm_min;
+	tm.tm_sec = pattern->tm_sec;	 
+	aml_rtc_write_time(&tm); 
+	post_log("<%d>RTC: set time: %04d-%02d-%02d %02d:%02d:%02d\n", SYSTEST_INFO_L2,
+						tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+						tm.tm_hour, tm.tm_min, tm.tm_sec);	
+}
+//===============================================================
+static int read_rtc(struct rtc_time* pattern)
+{
+	struct rtc_time tm;
+	aml_rtc_read_time(&tm);
+	post_log("<%d>RTC: get time: %04d-%02d-%02d %02d:%02d:%02d\n", SYSTEST_INFO_L2, 
+						tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+						tm.tm_hour, tm.tm_min, tm.tm_sec);
+						
+	if((tm.tm_year != pattern->tm_year) || (tm.tm_mon != pattern->tm_mon) || (tm.tm_mday != pattern->tm_mday)
+		|| (tm.tm_hour != pattern->tm_hour) || (tm.tm_min != pattern->tm_min) 
+		|| (tm.tm_sec < 0) || (tm.tm_sec > 60)) 
+		return -1;	
+	
+	else	
+		return 0;		
+	
+}
+//===============================================================
+int rtc_post_test (int flags)
+{
+	int i, ret;
+	write_rtc(&pattern1);	
+	ret = 0;
+	for(i=0; i<4;i++){
+		if(read_rtc(&pattern1) < 0){
+			post_log("<%d>%s:%d: RTC read time[%d] fail.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__, i);						
+			ret = -1;
+		}		
+	}
+	return ret;
+}
+//===============================================================
+
+#else
 static int rtc_post_skip (ulong * diff)
 {
 	struct rtc_time tm1;
@@ -192,4 +255,5 @@ int rtc_post_test (int flags)
 	return 0;
 }
 
+#endif /*CONFIG_POST_AML*/
 #endif /* CONFIG_POST & CONFIG_SYS_POST_RTC */

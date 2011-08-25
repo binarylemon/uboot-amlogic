@@ -65,6 +65,13 @@
 #include "../drivers/net/lan91c96.h"
 #endif
 
+#ifdef CONFIG_POST
+#include <post.h>
+#endif
+#ifdef CONFIG_LOGBUFFER
+#include <logbuff.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 ulong monitor_flash_len;
@@ -642,8 +649,10 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		pram += (LOGBUFF_LEN+LOGBUFF_OVERHEAD)/1024;
 #endif
 #endif
+#ifndef CONFIG_POST_AML
 		sprintf ((char *)memsz, "%ldk", (bd->bi_memsize / 1024) - pram);
 		setenv ("mem", (char *)memsz);
+#endif		
 	}
 #endif
 

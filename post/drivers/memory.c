@@ -155,6 +155,12 @@
 
 #if CONFIG_POST & CONFIG_SYS_POST_MEMORY
 
+#ifdef CONFIG_POST_AML
+#include <asm/cache.h>
+#define POST_MEM_START CONFIG_SYS_SDRAM_BASE
+#define POST_MEM_SIZE 0x1000000
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
@@ -455,16 +461,36 @@ static int memory_post_tests (unsigned long start, unsigned long size)
 __attribute__((weak))
 int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
-	bd_t *bd = gd->bd;
-	*vstart = CONFIG_SYS_SDRAM_BASE;
-	*size = (bd->bi_memsize >= 256 << 20 ?
-			256 << 20 : bd->bi_memsize) - (1 << 20);
-
+ 	bd_t *bd = gd->bd;
+#ifdef CONFIG_POST_AML
+	*vstart = POST_MEM_START;
+	*size=POST_MEM_SIZE;
+	//*size = (gd->ram_size >= 256 << 20 ?
+	//		256 << 20 :  gd->ram_size) - (1 << 20);	
 	/* Limit area to be tested with the board info struct */
-	if ((*vstart) + (*size) > (ulong)bd)
-		*size = (ulong)bd - *vstart;
-
-	return 0;
+	//if ((*vstart) + (*size) > (ulong)bd)
+	//	*size = (ulong)bd - *vstart;
+		
+/*	dcache_flush();	
+	icache_invalid();		
+	dcache_clean();
+	dcache_disable();
+	 // must invalid dcache after dcache_disable	
+	 // if no valid dcache, dcache_enable() will jump here
+	dcache_invalid();  
+	asm("mov r0, r0");
+	asm("mov r0, r0");
+	asm("mov r0, r0");	*/
+#else		
+ 	*vstart = CONFIG_SYS_SDRAM_BASE;
+ 	*size = (bd->bi_memsize >= 256 << 20 ?
+ 			256 << 20 : bd->bi_memsize) - (1 << 20);
+ 	/* Limit area to be tested with the board info struct */
+ 	if ((*vstart) + (*size) > (ulong)bd)
+ 		*size = (ulong)bd - *vstart;
+#endif
+ 
+ 	return 0;
 }
 
 __attribute__((weak))
@@ -476,7 +502,10 @@ int arch_memory_test_advance(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 __attribute__((weak))
 int arch_memory_test_cleanup(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
-	return 0;
+#ifdef CONFIG_POST_AML	
+	//dcache_enable();	
+#endif		
+ 	return 0;
 }
 
 __attribute__((weak))
@@ -500,10 +529,10 @@ int memory_post_test(int flags)
 			unsigned long i;
 			for (i = 0; i < (memsize >> 20) && ret == 0; i++) {
 				if (ret == 0)
-					ret = memory_post_tests(i << 20, 0x800);
+					ret = memory_post_tests(vstart+(i << 20), 0x800);
 				if (ret == 0)
 					ret = memory_post_tests(
-						(i << 20) + 0xff800, 0x800);
+						vstart+ (i << 20) + 0xff800, 0x800);
 			}
 		}
 	} while (!ret &&

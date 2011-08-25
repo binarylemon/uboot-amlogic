@@ -67,6 +67,48 @@
 
 #define CONFIG_AML_RTC
 
+/*POST support*/
+#define CONFIG_POST (CONFIG_SYS_POST_MEMORY | CONFIG_SYS_POST_RTC | \
+										CONFIG_SYS_POST_CACHE | CONFIG_SYS_POST_BSPEC1 | \
+										CONFIG_SYS_POST_BSPEC2 | CONFIG_SYS_POST_BSPEC3 | \
+										CONFIG_SYS_POST_I2C | CONFIG_SYS_POST_PLL |\
+										CONFIG_SYS_POST_NAND | CONFIG_SYS_POST_SDCARD | CONFIG_SYS_POST_ADC)
+										
+#ifdef CONFIG_POST
+#define CONFIG_POST_AML
+#define CONFIG_POST_ALT_LIST
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV  /* Otherwise it catches logbuffer as output */
+#define CONFIG_LOGBUFFER
+#define CONFIG_CMD_DIAG
+
+#define SYSTEST_INFO_L1 1
+#define SYSTEST_INFO_L2 2
+#define SYSTEST_INFO_L3 3
+
+#define CONFIG_POST_BSPEC1 {    \
+	"L2CACHE test", \
+	"l2cache", \
+	"This test verifies the L2 cache operation.", \
+	POST_RAM | POST_MANUAL,   \
+	&l2cache_post_test,		\
+	NULL,		\
+	NULL,		\
+	CONFIG_SYS_POST_BSPEC1 	\
+	}
+	
+#define CONFIG_POST_BSPEC2 {  \
+	"BIST test", \
+	"bist", \
+	"This test checks bist test", \
+	POST_RAM | POST_MANUAL, \
+	&bist_post_test, \
+	NULL, \
+	NULL, \
+	CONFIG_SYS_POST_BSPEC1  \
+	}	
+#endif   /*end ifdef CONFIG_POST*/
+
+
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

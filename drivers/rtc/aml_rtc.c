@@ -15,6 +15,7 @@
 #include <asm-generic/errno.h>
 #include <common.h>
 #include <asm/arch/io.h>
+#include <aml_rtc.h>
 
 #define printk printf
 

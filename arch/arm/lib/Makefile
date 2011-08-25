@@ -56,6 +56,8 @@ COBJS-y	+= interrupts.o
 COBJS-y	+= reset.o
 COBJS-$(CONFIG_CMD_KGDB) += kgdb.o
 
+COBJS-$(CONFIG_POST_AML) += tests.o
+
 SRCS	:= $(GLSOBJS:.o=.S) $(GLCOBJS:.o=.c) \
 	   $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
