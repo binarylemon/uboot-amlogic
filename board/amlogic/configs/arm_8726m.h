@@ -67,34 +67,6 @@
 
 #define CONFIG_AML_RTC
 
-#define CONFIG_SYS_TEST
-#ifdef CONFIG_SYS_TEST
-#define CONFIG_TEST_TYPE MANUAL_TEST
-#define CONFIG_CMD_SYSTEST
-#define CONFIG_AUTO_SYSTEST
-
-#define CONFIG_SYS_TEST_MEM		
-#define CONFIG_SYS_TEST_L1CACHE
-#define CONFIG_SYS_TEST_L2CACHE
-//#define CONFIG_SYS_TEST_BIST
-#define CONFIG_SYS_TEST_PLL
-#define CONFIG_SYS_TEST_NAND
-#define CONFIG_SYS_TEST_SDCARD
-#define CONFIG_SYS_TEST_RTC
-#define CONFIG_SYS_TEST_I2C
-#define CONFIG_SYS_TEST_ADC
-
-// specify systest output log device
-//#define CONFIG_SYS_TEST_LOGDEV_SDCARD
-
-// define systest output information display level
-#define SYSTEST_INFO_L1	1    // display test item name and result(pass or fail)
-#define SYSTEST_INFO_L2 2    // display test item detailed fail information
-#define SYSTEST_INFO_L3	4	 // display test item process information
-#define CONFIG_SYS_TEST_INFO		SYSTEST_INFO_L1|SYSTEST_INFO_L2|SYSTEST_INFO_L3
-#endif
-
-
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

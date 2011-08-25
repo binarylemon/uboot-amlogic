@@ -82,9 +82,6 @@ endif
 ifdef CONFIG_POST
 COBJS-$(CONFIG_CMD_DIAG) += cmd_diag.o
 endif
-ifdef CONFIG_SYS_TEST
-COBJS-$(CONFIG_CMD_SYSTEST) += cmd_systest.o
-endif
 COBJS-$(CONFIG_CMD_DISPLAY) += cmd_display.o
 COBJS-$(CONFIG_CMD_DTT) += cmd_dtt.o
 COBJS-$(CONFIG_CMD_ECHO) += cmd_echo.o
