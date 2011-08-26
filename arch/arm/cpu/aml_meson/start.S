@@ -107,7 +107,7 @@ IRQ_STACK_START_IN:
  */
 
 reset:
-	wfi
+	//wfi
 	dmb
 	isb
 	/*

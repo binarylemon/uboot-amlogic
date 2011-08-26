@@ -20,7 +20,7 @@ int sum = 0;
 //===================================================================================
 
 const unsigned L1_cache_pattern[]={
-    0xaaaaaaaa/*,
+    0xaaaaaaaa,
     0xdd22ee11, 0x7788bb44, 0x337755aa, 0xff00aa55,
     0xff000000, 0x000000ff, 0x00ffffff, 0xffffff00,
     0x01000200, 0x04000800, 0x10002000, 0x40008000,
@@ -46,7 +46,7 @@ const unsigned L1_cache_pattern[]={
     0xef10ff00, 0xef10ff00, 0xef10ff00, 0xef10ff00,
     0xdf20ff00, 0xdf20ff00, 0xdf20ff00, 0xdf20ff00,
     0xbf40ff00, 0xbf40ff00, 0xbf40ff00, 0xbf40ff00,
-    0x7f80ff00, 0x7f80ff00, 0x7f80ff00, 0x7f80ff00*/
+    0x7f80ff00, 0x7f80ff00, 0x7f80ff00, 0x7f80ff00
     };
 //==============================================================
 unsigned test_w_l1cache(unsigned fill_value, unsigned modify_value)
@@ -62,26 +62,25 @@ unsigned test_w_l1cache(unsigned fill_value, unsigned modify_value)
 	for(i=0; i<size; i++, addr++)
 		*addr = fill_value;
 	
-	asm("dmb");
-	asm("isb");
+//	asm("dmb");
+//	asm("isb");
 	
 	// map cache-memory data to cache
 	addr = (unsigned*)cache_mem_start;
 	size = cache_size/CONFIG_SYS_CACHE_LINE_SIZE;	
 	dcache_enable();		
-	asm("dmb");
-	asm("isb");
+//	asm("dmb");
+//	asm("isb");
 	for(i=0; i<size; i++, addr+=CONFIG_SYS_CACHE_LINE_SIZE)
 		val = *addr;
-	
-	asm("wfi");
+		
 	// write to cache
 	addr = (unsigned*)cache_mem_start;	
 	size = cache_size/sizeof(unsigned);			
 	for(i=0; i<size; i++, addr++){
 		*addr = modify_value;			
 	}		
-	printf("%s:%d.\n", __FUNCTION__, __LINE__);	
+	
 	dcache_flush();
 	dcache_clean();
 	dcache_disable();
@@ -90,7 +89,7 @@ unsigned test_w_l1cache(unsigned fill_value, unsigned modify_value)
 	asm("mov r0, r0");
 	asm("mov r0, r0");
 	asm("mov r0, r0");
-	printf("%s:%d.\n", __FUNCTION__, __LINE__);
+		
 	err_addr = 0;
 	addr = (unsigned*)no_cache_mem_start;	
 	for(i=0; i<size; i++, addr++){

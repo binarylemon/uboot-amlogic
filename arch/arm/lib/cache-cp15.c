@@ -57,6 +57,14 @@ static inline void mmu_setup(void)
 	/* Set the access control to client */
 	asm volatile("mcr p15, 0, %0, c3, c0, 0"
 		     : : "r" (0x55555555));
+		     	
+ 	asm volatile("mcr p15, 0, %0, c7, c5, 6"   : : "r" (0));   // invalidate BTAC    				   	
+ 	asm volatile("mcr p15, 0, %0, c7, c5, 0"   : : "r" (0));   // invalidate ICache
+   asm volatile("dsb");
+   asm volatile("mcr p15, 0, %0, c8, c7, 0"	  : : "r" (0));    // invalidate TLBs
+	asm volatile("dsb");
+ 	asm volatile("isb");
+	
 	/* and enable the mmu */
 	reg = get_cr();	/* get control reg. */
 	cp_delay();

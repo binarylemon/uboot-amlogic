@@ -157,8 +157,6 @@
 
 #ifdef CONFIG_POST_AML
 #include <asm/cache.h>
-#define POST_MEM_START CONFIG_SYS_SDRAM_BASE
-#define POST_MEM_SIZE 0x1000000
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -463,15 +461,16 @@ int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
  	bd_t *bd = gd->bd;
 #ifdef CONFIG_POST_AML
-	*vstart = POST_MEM_START;
-	*size=POST_MEM_SIZE;
-	//*size = (gd->ram_size >= 256 << 20 ?
-	//		256 << 20 :  gd->ram_size) - (1 << 20);	
+	//*vstart = POST_MEM_START;
+	//*size=POST_MEM_SIZE;  // just for test
+	*vstart = CONFIG_SYS_SDRAM_BASE;	
+	*size = (gd->ram_size >= 256 << 20 ?
+			256 << 20 :  gd->ram_size) - (1 << 20);	
 	/* Limit area to be tested with the board info struct */
-	//if ((*vstart) + (*size) > (ulong)bd)
-	//	*size = (ulong)bd - *vstart;
+	if ((*vstart) + (*size) > (ulong)bd)
+		*size = (ulong)bd - *vstart;
 		
-/*	dcache_flush();	
+	dcache_flush();	
 	icache_invalid();		
 	dcache_clean();
 	dcache_disable();
@@ -480,7 +479,7 @@ int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 	dcache_invalid();  
 	asm("mov r0, r0");
 	asm("mov r0, r0");
-	asm("mov r0, r0");	*/
+	asm("mov r0, r0");	
 #else		
  	*vstart = CONFIG_SYS_SDRAM_BASE;
  	*size = (bd->bi_memsize >= 256 << 20 ?
@@ -503,7 +502,7 @@ __attribute__((weak))
 int arch_memory_test_cleanup(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
 #ifdef CONFIG_POST_AML	
-	//dcache_enable();	
+	dcache_enable();	
 #endif		
  	return 0;
 }
