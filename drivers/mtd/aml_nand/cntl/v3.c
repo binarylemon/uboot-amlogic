@@ -403,6 +403,111 @@ static uint32_t v3_find_ce(uint32_t * cmd , uint32_t tag,uint32_t old)
 	}
 	return ce;
 }
+static char * v3_cmd_printstr(cmd_t cmd)
+{
+	static char  cmd_str[256];
+	strcpy(cmd_str,"unkown command");
+	uint32_t ce,interrupt;
+	switch((cmd>>20))
+	{
+	case 0:
+		ce=(cmd&(0xf<<10));
+		if(ce==0xf<<10)
+		{
+			sprintf(cmd_str,"standby , time=%04d",cmd&0x3ff);
+			break;
+		}
+		switch((cmd>>14)&0xf)
+		{
+		case 0xc:
+			sprintf(cmd_str, "idle , cemask=%x,time=%04d", (cmd >> 10) & 0xf,
+					cmd & 0x3ff);
+			break;
+		case 0x8:
+			sprintf(cmd_str, "DRD , cemask=%x,time=%04d", (cmd >> 10) & 0xf,
+					cmd & 0x3ff);
+			break;
+		case 0x5:
+			sprintf(cmd_str, "CLE %02x , cemask=%x", cmd & 0xff,
+					(cmd >> 10) & 0xf);
+			break;
+		case 0x6:
+			sprintf(cmd_str, "ALE %02x , cemask=%x", cmd & 0xff,
+					(cmd >> 10) & 0xf);
+			break;
+		case 0x4:
+			sprintf(cmd_str, "DWR %02x , cemask=%x", cmd & 0xff,
+					ce>>10);
+			break;
+
+		}
+		break;
+	case 1:
+		ce = (cmd >> 10) & (0xf);
+		interrupt = (cmd >> 14) & (0xf);
+		sprintf(cmd_str, "%s id=%02x, cemask=%x,interrupt mask=%x,time=%d",
+				cmd & (1 << 18) ? "RBIO" : "RB", (cmd >> 5) & 0x1f, ce,
+				interrupt, 1 << (cmd & 0x1f));
+
+		break;
+	case 2:
+		if (((cmd >> 17) & 7) == 3)
+		{
+			if ((cmd & (0x1ffff)) == 1 || (cmd & (0x1ffff)) == 2)
+				sprintf(cmd_str, "STS %s interrupt",
+						(cmd & (0x1ffff)) == 1 ? "without" : "with");
+
+		}
+		else if (((cmd >> 17) & 2) == 0)
+		{
+			sprintf(cmd_str, "%s dma ,seed %s,ecc=%s",
+					cmd & (1 << 17) ? "Write" : "Read ",
+					cmd & (1 << 19) ? "Enable" : "Disable",
+					ecc_table[(cmd >> 14) & 7].name);
+			if (((cmd >> 14) & 7) == 0)
+			{
+				sprintf(cmd_str, "%s ,size=%d", cmd_str, cmd & 0x3fff);
+			}
+			else
+			{
+				uint32_t short_mode = cmd & (1 << 13);
+				uint32_t pages = cmd & 0x3f;
+				uint32_t page_size =
+						short_mode ?
+								(cmd & (0x7f << 6)) >> (6 - 3) :
+								ecc_table[(cmd >> 14) & 7].data << 3;
+				sprintf(cmd_str, "%s,%spage_size=%d,pages=%d,size=%d", cmd_str,
+						short_mode ? "short Mode," : "", page_size, pages,
+						page_size * pages);
+			}
+
+		}
+		break;
+	case 3:
+		if(cmd&1<<19)
+		{
+			if((cmd&0x7ffff)<(1<<15))
+			{
+				sprintf(cmd_str,"SEED,seed=%04x",cmd&0x3fff);
+			}
+		}else{
+			if((cmd&(3<<17))<(3<<17))
+			{
+				sprintf(
+						cmd_str,
+						"%s %s addr,val=%04x",
+						((cmd >> 17) & 3) == 0 ? "Data" :
+						((cmd >> 17) & 3) == 1 ? "Info" : "Sts",
+						(cmd & (1 << 16)) ? "High" : "Low", cmd
+						& 0xffff);
+
+			}
+
+		}
+		break;
+	}
+	return  cmd_str;
+}
 static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t size)
 {
 
@@ -421,7 +526,10 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     if((priv->fifo_mode&1)==0)
     {
     	if(hw_avail<size)//mode does not match
+    	{
+    		nanddebug(1,"Hardware fifo is full");
     		return -2;//mode does not match
+    	}
     	write_cmd[0]=cmd_q;
     	write_size[0]=size;
     	goto write_fifo_raw;
@@ -516,14 +624,24 @@ write_fifo_raw:
 	{
 		for(i=0;i<write_size[0];i++,priv->tail++)
 		{
+			nanddebug(16,"%s",v3_cmd_printstr(write_cmd[0][i]));
 			writel(write_cmd[0][i],P_NAND_CMD);
 		}
 	}
 	uint32_t keep=0,keep_pos=tail;
+
 	for(i=1;i<sizeof(write_size)/sizeof(write_size[0]);i++)
 	{
 		if(!(write_cmd[i]&&write_size[i]))
 			continue;
+		if(16<=CONFIG_ENABLE_NAND_DEBUG)
+		{
+			int j;
+			for(j=0;j<write_size[i];j++)
+			{
+				nanddebug(16,"%s",v3_cmd_printstr(write_cmd[i][j]));
+			}
+		}
 		if(keep==0)
 		{
 			keep=write_cmd[i][0];
@@ -758,8 +876,10 @@ static int32_t v3_write_cmd(cntl_t * cntl ,cmdq_t * cmdq)
 static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 {
     DEFINE_CNTL_PRIV(priv,cntl);
-	if (IS_CLE(ctrl))
+	if (IS_CLE(ctrl)){
 		V3_FIFO_WRITE(NFC_CMD_CLE(NFC_CE(ce),ctrl));
+		return 0;
+	}
 	V3_FIFO_WRITE(NFC_CMD_ALE(NFC_CE(ce),ctrl));
 	return 0;
 }

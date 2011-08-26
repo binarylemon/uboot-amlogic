@@ -209,17 +209,34 @@
 #define NFC_GET_CFG() 					READ_CBUS_REG(NAND_CFG)
 
 
-#define NAND_IO_ENABLE(mode)        {               \
-        SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x1f5); \
-	    SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_1, ((1<<30) | (1<<28) | (1<<26) | (1<<24))); \
-	    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_1, ((1<<29) | (1<<27) | (1<<25) | (1<<23))); \
-	    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_7, ((1<<29) | (1<<28) | (1<<27) | (1<<26) | (1<<25) | (1<<24))); \
-    }
-#define NAND_IO_DISABLE(mode) {                         \
-        CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x7fff); \
-	    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_1, ((1<<30) | (1<<28) | (1<<26) | (1<<24)));    \
-    }
+#define NAND_IO_ENABLE(mode)  nand_get_chip()
+#define NAND_IO_DISABLE(mode) nand_release_chip()
 
+static void inline  nand_get_chip(void )
+{
+	setbits_le32(P_PREG_PAD_GPIO3_EN_N,0x3ffff);	//enable gpio output
+	SET_CBUS_REG_MASK(PAD_PULL_UP_REG3,(0xff<<0) | (1<<16));
+	setbits_le32(P_PERIPHS_PIN_MUX_5,0x7<<7);
+#if CONFIG_AM_NAND_RBPIN
+	setbits_le32(P_PERIPHS_PIN_MUX_2, (1<<27) | (1<<26) | (1<<25) | (0xf<<18)|(1<<17));
+//	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_4, (0x1<<11) | (0xff<<14));
+#else
+	setbits_le32(P_PERIPHS_PIN_MUX_2, (1<<27) | (1<<26) | (1<<25) | (0xf<<18));
+#endif
+	//SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_1, ((1<<30) | (1<<28) | (1<<26) | (1<<24)));
+}
+static void inline nand_release_chip(void)
+{
+	setbits_le32 (P_PREG_PAD_GPIO3_O,0x3ffff);
+	clrbits_le32(P_PREG_PAD_GPIO3_EN_N,0x3ffff);	//enable gpio output
+#if CONFIG_AM_NAND_RBPIN
+	clrbits_le32(P_PERIPHS_PIN_MUX_2, (1<<27) | (1<<26) | (1<<25) | (0xf<<18)|(1<<17));
+#else
+	clrbits_le32(P_PERIPHS_PIN_MUX_2, (1<<27) | (1<<26) | (1<<25) | (0xf<<18));
+#endif
+//	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_4, (0x1<<11) | (0xff<<14));
+//	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_1, ((1<<30) | (1<<28) | (1<<26) | (1<<24)));
+}
 
 
 

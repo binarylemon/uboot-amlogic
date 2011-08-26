@@ -526,7 +526,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		hang ();
 	}
 #endif
-
+#if CONFIG_JERRY_NAND_TEST
+	nand_init();
+#endif
 #if defined(CONFIG_CMD_NAND)
 	puts ("NAND:  ");
 	nand_init();		/* go init the NAND */
