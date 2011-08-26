@@ -154,6 +154,7 @@ static struct i2c_board_info aml_i2c_info[] = {
 #if CONFIG_JERRY_NAND_TEST //temp test
 #include <amlogic/nand/platform.h>
 #include <asm/arch/nand.h>
+#include <asm/arch/clock.h>
 #include <linux/mtd/partitions.h>
 static void claim_bus(uint32_t get)
 {
@@ -177,6 +178,8 @@ static struct aml_nand_platform nand_plat={
 */
 		.ce_num=4,
 		.rbmod=1,
+		.clk_src=CLK81,
+		.claim_bus=claim_bus
 };
 void    board_nand_init(void)
 {
@@ -191,7 +194,7 @@ int board_init(void)
 {
 	gd->bd->bi_arch_number=2958; //MACH_TYPE_MESON_8626M;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-	board_nand_init();
+
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
