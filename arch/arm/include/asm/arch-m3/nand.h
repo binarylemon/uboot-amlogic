@@ -108,8 +108,11 @@
 #define NFC_CMD_DWR(data)              (DWR     |(data&0xff  ))
 #define NFC_CMD_DRD(ce,size)           (ce|DRD|size)
 #define NFC_CMD_RB(ce,time  )          ((ce)|RB  |(time&0x1f))
+#define NFC_CMD_RB_ID(ce,id,time  )          ((ce)|RB  |(time&0x1f)|((id&0x1f)<<5))
+
 #define NFC_CMD_RB_INT(ce,time)        ((ce)|RB|(((ce>>10)^0xf)<<14)|(time&0x1f))
 #define NFC_CMD_RBIO(time,io)		   (RB|io|(time&0x1f)|(1<<18))
+#define NFC_CMD_RBIO_ID(io,id,time)		   (RB|io|(time&0x1f)|(1<<18)|((id&0x1f)<<5))
 #define NFC_CMD_RBIO_INT(io,time)      (RB|(((io>>10)^0x7)<<14)|(time&0x1f)|(1<<18))
 #define NFC_CMD_SEED(seed)			   (SEED|(seed&0x7fff))
 #define NFC_CMD_STS(tim) 			   (STS|(tim&3))

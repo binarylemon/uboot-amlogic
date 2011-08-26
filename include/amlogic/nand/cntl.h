@@ -23,7 +23,7 @@ struct __ecc_info_s {
 #define CNTL_CMD_NOP(ce,cycle)			((8<<28)|(ce<<24)|(cycle))
 #define CNTL_CMD_CLE(ce,cle)			((1<<28)|(ce<<24)|(cle&0xff))
 #define CNTL_CMD_ALE(ce,ale)			((2<<28)|(ce<<24)|(ale&0xff))
-#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&3)<<20)|cycle)
+#define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&0xff)<<16)|cycle)
 #define CNTL_CMD_SEED(seed)				((4<<28)|(seed))
 #define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
 #define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
@@ -70,12 +70,24 @@ struct __cntl_info_s{
 #define NAND_CLE(a)	((a)&0xff)
 #define NAND_ALE(a)	(((a)&0xff)|0x100)
     int32_t   (* ctrl)(cntl_t *, uint16_t ce,uint16_t ctrl);
-#define NAND_RB_IO 		1
-#define IO4				0
-#define IO5				1
-#define IO6				2
-#define NAND_RB_PIN		0
-    int32_t   (* wait)(cntl_t *, uint8_t mode,uint16_t ce,uint8_t cycle_log2);
+
+#define NAND_RB_IO4 		0x10
+#define NAND_RB_IO5 		0x11
+#define NAND_RB_IO6 		0x12
+#define NAND_RB_PIN0		0
+#define NAND_RB_PIN1		1
+#define NAND_RB_PIN2		2
+#define NAND_RB_PIN3		3
+#define NAND_RB_INT_IO4 		(0x20|0x10)
+#define NAND_RB_INT_IO5 		(0x20|0x11)
+#define NAND_RB_INT_IO6 		(0x20|0x12)
+#define NAND_RB_INT_PIN0		(0x20|0   )
+#define NAND_RB_INT_PIN1		(0x20|1   )
+#define NAND_RB_INT_PIN2		(0x20|2   )
+#define NAND_RB_INT_PIN3		(0x20|3   )
+#define NAND_RB_IS_INT(mode) 	(mode&0x20)
+#define NAND_RB_IS_RBIO(mode) 	(mode&0x10)
+    int32_t   (* wait)(cntl_t *, uint16_t ce,uint8_t mode,uint8_t cycle_log2);
     int32_t    (* nop)(cntl_t *, uint16_t ce,uint16_t cycles);
     /**
      *
@@ -132,7 +144,11 @@ struct __cntl_info_s{
 #define NAND_CNTL_FIFO_MODE     2
 #define NAND_CNTL_POWER_SET     3   //@todo
 #define NAND_CNTL_FIFO_RESET    4   //@todo
+#define NAND_CNTL_ERROR			5
+#define NAND_CNTL_GO			6
+#define NAND_CNTL_RESET			7
 
+#define NAND_CNTL_ERROR_TIMEOUT -1
 /**
  * Interface functions
  */
@@ -147,7 +163,7 @@ extern uint32_t cntl_avail(void);
 extern uint32_t cntl_head(void);
 extern uint32_t cntl_tail(void);
 extern int32_t cntl_ctrl(uint16_t ce, uint16_t ctrl);
-extern int32_t cntl_wait(uint8_t mode, uint16_t ce, uint8_t cycle_log2);
+extern int32_t cntl_wait( uint16_t ce, uint8_t mode,uint8_t cycle_log2);
 extern int32_t cntl_nop(uint16_t ce, uint16_t cycles);
 extern int32_t cntl_sts(jobkey_t *job, uint16_t mode);
 extern int32_t cntl_readbytes(void *addr, dma_t dma_mode);
@@ -165,6 +181,8 @@ extern int32_t cmdq_alloc(cmdq_t *cmdq);
 extern void cmdq_free(cmdq_t *cmdq);
 extern int32_t cntl_write_cmd(cmdq_t *in, cmdq_t *out);
 extern int32_t cntl_finish_jobs(void (*cb_finish)(uint32_t key, uint32_t st));
-
+extern int32_t cntl_error(uint32_t * val);
+extern void cntl_continue(void);
+extern void cntl_reset(void);
 
 #endif

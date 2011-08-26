@@ -39,7 +39,9 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 	max_ce=min(cntl->feature&FEATURE_SUPPORT_MAX_CES,plat->ce_num?plat->ce_num:FEATURE_SUPPORT_MAX_CES);
 	struct id_read_s *id;
 	addr=dma_alloc_coherent(max_ce*sizeof(struct id_read_s),(dma_addr_t *)&id);
-	jobkey_t * job=cntl_job_get(-1);
+	jobkey_t * job[5];
+	 for(i=0;i<5;i++)
+			job[i]=cntl_job_get((i|0x100));
 	for(i=0;i<max_ce;i++)
 	{
 		cntl_ctrl(i,NAND_CLE(NAND_CMD_RESET));
@@ -47,7 +49,8 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 	}
 	for(i=0;i<max_ce;i++)
 	{
-		cntl_wait(NAND_RB_IO,IO6,16);//wait for 1M/16 nand cycle , about 1sec
+		cntl_wait(i,NAND_RB_IO6,16);//wait for 1M/16 nand cycle , about 1sec
+		cntl_sts(job[i],STS_NO_INTERRUPT);
 		/// read uni id
 		cntl_ctrl(i,NAND_CLE(NAND_CMD_READID));
 		cntl_ctrl(i,NAND_ALE(0));
@@ -58,8 +61,18 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 		cntl_readbytes(&id[i].onfi,sizeof(id[i].onfi));
 	}
 	cntl_sts(job,STS_NO_INTERRUPT);
-	while(cntl_job_status(job,-1)<0);
-	cntl_job_free(job);
+	while(cntl_job_status(job[4],4|0x100)<0)
+	{
+		uint32_t ce;
+		if(cntl_error(&ce)==NAND_CNTL_ERROR_TIMEOUT)
+		{
+			nanddebug(1,"ce %d timeout",ce);
+			cntl_continue();
+		}
+	};
+
+
+
 /**
  * @todo implement this function
 	if(nand_cfg_set(&nand_cfg,0,id)<0)
@@ -67,8 +80,10 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 */
 	for(i=0;i<max_ce;i++)
 	{
-		nanddebug("CE%d:id=%llx,onfi=%llx",id[i].id,id[i].onfi);
+		nanddebug(1,"CE%d:id=%llx,onfi=%llx,sts=%x",i,id[i].id,id[i].onfi,cntl_job_status(job[i],i|0x100));
+		cntl_job_free(job[i]);
 	}
+	cntl_job_free(job[4]);
 	nand_cfg.ce_mask=1;
 	num=1;
 	for(i=1;i<max_ce;i++)
@@ -90,7 +105,8 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 }
 int32_t nand_probe(struct aml_nand_platform * plat)
 {
-
+	assert(plat&&plat->claim_bus);
+	plat->claim_bus(0xfffff);
 	if(cntl_init(plat)<0)
 		return -1;
 	if(nand_reset_identy(&nand_cfg,plat,cntl_get())<0)

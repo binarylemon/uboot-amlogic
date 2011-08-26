@@ -8,8 +8,13 @@
 #ifndef _AMLOGIC_DEBUG_H_
 #define _AMLOGIC_DEBUG_H_
 
-#ifdef CONFIG_ENABLE_NAND_DEBUG
-#define nanddebug(a...) printf(a)
+#if CONFIG_ENABLE_NAND_DEBUG
+#define nanddebug(level,a...) if(level<=CONFIG_ENABLE_NAND_DEBUG){ \
+		printf("%s +%d func=%s:",__FILE__,__LINE__,__func__);	\
+		printf(a);printf("\n");}
+#undef assert
+#define assert(a)	if((a)==0){printf("%s +%d func=%s: %s fail\n",__FILE__,__LINE__,__func__,#a);while(1);};
+
 #else
 #define nanddebug(a...)
 #endif

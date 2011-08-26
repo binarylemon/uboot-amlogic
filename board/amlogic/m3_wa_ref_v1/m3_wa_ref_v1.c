@@ -183,7 +183,7 @@ static struct aml_nand_platform nand_plat={
 };
 void    board_nand_init(void)
 {
-	nanddebug("NAND is inited\n");
+	nanddebug(1,"NAND is inited\n");
 	nand_probe(&nand_plat);
 //	cntl_init(&nand_plat);
 //	amlnand_probe();

@@ -62,6 +62,22 @@ int32_t cntl_config(uint32_t config, ...)
 	va_end(args);
 	return ret;
 }
+#define NAND_CNTL_ERROR			5
+#define NAND_CNTL_GO			6
+#define NAND_CNTL_RESET			7
+int32_t cntl_error(uint32_t * val)
+{
+	return cntl_config(NAND_CNTL_ERROR,val);
+}
+void cntl_continue(void)
+{
+	cntl_config(NAND_CNTL_GO);
+}
+void cntl_reset(void)
+{
+	cntl_config(NAND_CNTL_RESET);
+}
+
 uint32_t cntl_size(void)
 {
 	assert(cntl!=NULL);
@@ -88,10 +104,10 @@ int32_t cntl_ctrl(uint16_t ce, uint16_t ctrl)
 	assert(cntl!=NULL);
 	return cntl->ctrl(cntl,ce,ctrl);
 }
-int32_t cntl_wait(uint8_t mode,uint16_t ce,uint8_t cycle_log2)
+int32_t cntl_wait(uint16_t ce,uint8_t mode,uint8_t cycle_log2)
 {
 	assert(cntl!=NULL);
-	return cntl->wait(cntl,mode,ce,cycle_log2);
+	return cntl->wait(cntl,ce,mode,cycle_log2);
 }
 int32_t cntl_nop(  uint16_t ce, uint16_t cycles)
 {
