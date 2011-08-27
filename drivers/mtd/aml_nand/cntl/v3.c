@@ -148,6 +148,54 @@ static const uint32_t v3_rbio[]={IO4,IO5,IO6};
 static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv);
 #define CNTL_BUF_SIZE	(4*1024)
 #define CMD_FIFO_PLUS	64
+#if 0
+int32_t
+cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
+		uint32_t delay, uint32_t clk, uint32_t bus_cycle)
+{
+	int32_t ret=-1;
+	double tSys, tCycle, tDelay, tRea, tRHOH; //input parameters, all is base on ns
+	double tBegin, tEnd; //base on cycle
+	uint32_t begin, end;
+	tSys = (double) 1000 / (clk / 1000000);
+	tDelay = (double) delay;
+	tRea = (double) *rea;
+	tRHOH = (double) *rhoh;
+	tBegin = (tDelay + tRea) / tSys;
+	tCycle = tSys * (bus_cycle);
+	tEnd = (tDelay + tRHOH + tCycle / 2) / tSys;
+	for (begin = 0; begin < tBegin; begin++)
+		;
+	for (end = 0; end < tEnd; end++)
+		;
+	end--;
+	if (((begin >= 3 && begin <= bus_cycle + edo)
+			|| (end >= 3 && end <= bus_cycle + edo)) && begin <= end)
+	{
+		ret=0;
+
+	}
+	printf("%s%04dMhz\t%.02fns\t%.02fcycle\t%02d\t%02d\t%s\t%.02fcycle\t%.02fns\033[0m\n",ret?"\033[41m":"\033[0m",clk/1000000,
+			tSys,tBegin,begin,end,ret?"FALSE":"TRUE",tEnd,tCycle);
+	/*
+	 for (bus_cycle = 1; bus_cycle < 32; bus_cycle++)
+	 {
+	 tCycle=tSys*bus_cycle;
+	 }*/
+	return ret;
+}
+
+int main(void) {
+	uint32_t rea=20,rhoh=15;
+	int i;
+	for(i=25;i<250;i+=5)
+	{
+		cntl_time_caculate(&rea,&rhoh,2,9,i*1000000,5);
+	}
+
+	return EXIT_SUCCESS;
+}
+#endif
 static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 {
 	DEFINE_CNTL_PRIV(priv,cntl);
@@ -794,35 +842,25 @@ static int32_t v3_convert_cmd(cmdq_t * inq,cmdq_t* outq)
 			*out = NFC_CMD_CLE(ce,*in&0xffff);
 			break;
 		case 3: //wait
-/*
-   uint32_t new_mode=NFC_CE(mode&0xf)|NAND_RB_IS_INT(mode)?(0xf<<14):0;
+			mode = (*in >> 16) & 0xff;
+			para = *in & 0xffff;
+			cur++;
+			*out++ = NFC_CMD_IDLE(ce,0);
+			ce = (*in >> 24) & 0xf;
 
-	if (NAND_RB_IS_RBIO(mode))
-	{
-		V3_FIFO_WRITE(NFC_CMD_IDLE(NFC_CE(ce),0),NFC_CMD_RBIO_ID(new_mode,ce, cycle_log2));
-		return 0;
-	}
-
-	V3_FIFO_WRITE(NFC_CMD_RB_ID(new_mode,ce,cycle_log2));
-*/
-			mode=(*in>>16)&0xff;
-
-			para=*in&0xffff;
-			if(NAND_RB_IS_RBIO(mode))
+			if (NAND_RB_IS_RBIO(mode))
 			{
-				cur++;
-				*out++=NFC_CMD_IDLE(ce,0);
-				ce=(*in>>24)&0xf;
-				*out=NFC_CMD_RBIO_ID(NFC_CE(mode&0xf),ce, para);
-			}else{
-				ce=(*in>>24)&0xf;
-				*out=NFC_CMD_RB_ID(NFC_CE(mode&0xf),ce, para);
+				*out = NFC_CMD_RBIO_ID(NFC_CE(mode&0xf),ce, para);
 			}
-			if(NAND_RB_IS_INT(mode))
+			else
 			{
-				mode=NFC_CE(mode&0xf);
-				mode^=CE_NOT_SEL;
-				*out|=mode<<4;
+				*out = NFC_CMD_RB_ID(NFC_CE(mode&0xf),ce, para);
+			}
+			if (NAND_RB_IS_INT(mode))
+			{
+				mode = NFC_CE(mode&0xf);
+				mode ^= CE_NOT_SEL;
+				*out |= mode << 4;
 			}
 			break;
 		case 4:
@@ -894,7 +932,7 @@ static int32_t v3_wait(cntl_t * cntl, uint16_t ce,uint8_t mode, uint8_t cycle_lo
 		V3_FIFO_WRITE(NFC_CMD_IDLE(NFC_CE(ce),0),NFC_CMD_RBIO_ID(new_mode,ce, cycle_log2));
         return 0;
 	}
-	V3_FIFO_WRITE(NFC_CMD_RB_ID(new_mode,ce,cycle_log2));
+	V3_FIFO_WRITE(NFC_CMD_IDLE(NFC_CE(ce),0),NFC_CMD_RB_ID(new_mode,ce,cycle_log2));
 	return 0;
 }
 static int32_t v3_nop(cntl_t * cntl, uint16_t ce, uint16_t cycles)
