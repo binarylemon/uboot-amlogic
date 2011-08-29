@@ -52,10 +52,7 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 		cntl_nop(i,1);
 		cntl_ctrl(i,NAND_CLE(NAND_CMD_STATUS));
 		cntl_wait(i,NAND_RB_IO6,31);//wait for 1M/16 nand cycle , about 1sec
-
-
 		cntl_sts(job[i],STS_NO_INTERRUPT);
-		asm volatile ("wfi");
 		/// read uni id
 		cntl_ctrl(i,NAND_CLE(NAND_CMD_READID));
 		cntl_ctrl(i,NAND_ALE(0));
@@ -102,7 +99,7 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 		num++;
 	}
 
-//	dma_free_coherent(addr);
+	dma_free_coherent(max_ce*sizeof(struct id_read_s),(dma_addr_t )id,addr);
 
 
 

@@ -149,24 +149,28 @@ static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv);
 #define CNTL_BUF_SIZE	(4*1024)
 #define CMD_FIFO_PLUS	64
 #if 0
-int32_t
+static int32_t
 cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
 		uint32_t delay, uint32_t clk, uint32_t bus_cycle)
 {
 	int32_t ret=-1;
-	double tSys, tCycle, tDelay, tRea, tRHOH; //input parameters, all is base on ns
-	double tBegin, tEnd; //base on cycle
+	uint32_t tSys, tCycle, tDelay, tRea, tRHOH; //input parameters, all is base on ns
+	uint32_t tBegin, tEnd; //base on cycle
 	uint32_t begin, end;
-	tSys = (double) 1000 / (clk / 1000000);
-	tDelay = (double) delay;
-	tRea = (double) *rea;
-	tRHOH = (double) *rhoh;
-	tBegin = (tDelay + tRea) / tSys;
+	uint32_t fact=100;
+	uint32_t ceiling_cycle;
+	tSys =  1000 * fact / (clk / 1000000);
+	tDelay =  delay * fact;
+	tRea = *rea * fact;
+	tRHOH = *rhoh * fact;
+	tBegin = (tDelay + tRea) * fact / tSys;
 	tCycle = tSys * (bus_cycle);
-	tEnd = (tDelay + tRHOH + tCycle / 2) / tSys;
-	for (begin = 0; begin < tBegin; begin++)
+	ceiling_cycle=bus_cycle*fact/2;
+//	for(ceiling_cycle=0;ceiling_cycle<bus_cycle*fact/2;ceiling_cycle+=fact);
+	tEnd = (tDelay + tRHOH )* fact /tSys + ceiling_cycle;
+	for (begin = 0; begin*fact < tBegin; begin++)
 		;
-	for (end = 0; end < tEnd; end++)
+	for (end = 0; end*fact < tEnd; end++)
 		;
 	end--;
 	if (((begin >= 3 && begin <= bus_cycle + edo)
@@ -175,7 +179,7 @@ cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
 		ret=0;
 
 	}
-	printf("%s%04dMhz\t%.02fns\t%.02fcycle\t%02d\t%02d\t%s\t%.02fcycle\t%.02fns\033[0m\n",ret?"\033[41m":"\033[0m",clk/1000000,
+	printf("%s%04dMhz\t%d\t%d\t%02d\t%02d\t%s\t%d\t%d\t\033[0m\n",ret?"\033[41m":"\033[0m",clk/1000000,
 			tSys,tBegin,begin,end,ret?"FALSE":"TRUE",tEnd,tCycle);
 	/*
 	 for (bus_cycle = 1; bus_cycle < 32; bus_cycle++)
@@ -185,17 +189,66 @@ cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
 	return ret;
 }
 
-int main(void) {
+int test_main(void) {
 	uint32_t rea=20,rhoh=15;
 	int i;
+	asm volatile ("wfi");
 	for(i=25;i<250;i+=5)
 	{
 		cntl_time_caculate(&rea,&rhoh,2,9,i*1000000,5);
 	}
 
-	return EXIT_SUCCESS;
+	return 0;
 }
 #endif
+
+static int32_t
+cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
+		uint32_t delay, uint32_t clk)
+{
+	int32_t ret=-1;
+	uint32_t tSys, tCycle, tDelay, tRea, tRHOH; //input parameters, all is base on ns
+	uint32_t tBegin, tEnd; //base on cycle
+	uint32_t begin, end;
+	uint32_t fact=100;
+	uint32_t ceiling_cycle;
+	uint32_t bus_cycle;
+	tSys =  1000 * fact / (clk / 1000000);
+	tDelay =  delay * fact;
+	tRea = *rea * fact;
+	tRHOH = *rhoh * fact;
+
+
+
+	tBegin = (tDelay + tRea) * fact / tSys;
+	for(bus_cycle=3;bus_cycle<32;bus_cycle++){
+		tCycle = tSys * (bus_cycle);
+		ceiling_cycle=bus_cycle*fact/2;
+	//	for(ceiling_cycle=0;ceiling_cycle<bus_cycle*fact/2;ceiling_cycle+=fact);
+		tEnd = (tDelay + tRHOH )* fact /tSys + ceiling_cycle;
+		for (begin = 0; begin*fact < tBegin; begin++)
+			;
+		for (end = 0; end*fact < tEnd; end++)
+			;
+		end--;
+		if (((begin >= 3 && begin <= bus_cycle + edo)
+				|| (end >= 3 && end <= bus_cycle + edo)) && begin <= end)
+		{
+			*rea=bus_cycle;
+			end=end>bus_cycle+edo?bus_cycle+edo:end;
+			*rhoh=(begin+end + 1)>>1;
+			return 0;
+		}
+	}
+//	printf("%s%04dMhz\t%d\t%d\t%02d\t%02d\t%s\t%d\t%d\t\033[0m\n",ret?"\033[41m":"\033[0m",clk/1000000,
+//			tSys,tBegin,begin,end,ret?"FALSE":"TRUE",tEnd,tCycle);
+	/*
+	 for (bus_cycle = 1; bus_cycle < 32; bus_cycle++)
+	 {
+	 tCycle=tSys*bus_cycle;
+	 }*/
+	return ret;
+}
 static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 {
 	DEFINE_CNTL_PRIV(priv,cntl);
@@ -212,6 +265,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 	{
 		case NAND_CNTL_INIT: // struct aml_nand_platform *
 		{
+//			test_main();
 			plat=va_arg(args,struct aml_nand_platform *);
 			if(plat)
 			    priv->plat=plat;
@@ -236,8 +290,8 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 		{
 			mode=va_arg(args,uint32_t)&3;
 
-			uint16_t bus_cycle,t_rea=(uint16_t)va_arg(args,uint32_t);
-			uint16_t bus_time,t_rhoh=(uint16_t)va_arg(args,uint32_t);
+			uint32_t bus_cycle,t_rea=(uint32_t)va_arg(args,uint32_t);
+			uint32_t bus_time,t_rhoh=(uint32_t)va_arg(args,uint32_t);
 			uint16_t sync_adjust=0;
 			assert(mode<3);
 			if(mode)
@@ -246,14 +300,15 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 			assert(t_rea>=priv->plat->t_rea);
 			assert(t_rhoh>=priv->plat->t_rhoh);
 			*/
-			t_rea=max(t_rea,priv->plat->t_rea);
-			t_rhoh=max(t_rhoh,priv->plat->t_rhoh);
+			t_rea=max(t_rea,priv->plat->t_rea)?max(t_rea,priv->plat->t_rea):20;
+			t_rhoh=max(t_rhoh,priv->plat->t_rhoh)?max(t_rhoh,priv->plat->t_rhoh):15;
+
 			nanddebug(1,"input parameters t_rea=%dns,t_rhoh=%dns\n",t_rea,t_rhoh);
 			/**
 			 * @todo implement it .
 			 * assert(v3_time_caculate(&t_rea,&t_rhoh,priv->edo,priv->delay,clk_get_rate(priv->plat->clk_src)));
 			 */
-
+			assert((cntl_time_caculate(&t_rea,&t_rhoh,priv->edo,priv->delay,clk_get_rate(priv->plat->clk_src))>=0));
 			NFC_CMD_WAIT_EMPTY();
 			bus_cycle=t_rhoh?t_rhoh:10;
 			bus_time=t_rea?t_rea:7;
