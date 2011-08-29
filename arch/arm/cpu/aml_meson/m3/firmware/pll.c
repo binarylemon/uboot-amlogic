@@ -18,11 +18,11 @@ static void wait_pll(unsigned clk,unsigned dest)
     do{
         cur=clk_util_clk_msr(clk);
         
-        serial_puts("wait pll");
+        serial_puts("wait pll-0x");
         serial_put_hex(clk,8);
-        serial_puts("target is");
+        serial_puts(" target is ");
         serial_put_hex(dest,16);
-        serial_puts(" now it is");
+        serial_puts(" now it is ");
         serial_put_dword(cur);
         __udelay(100);
     }while(cur<dest-1 || cur >dest+1);

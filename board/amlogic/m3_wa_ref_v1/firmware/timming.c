@@ -10,13 +10,47 @@
 #define STATIC_PREFIX_DATA static
 #endif
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
-//row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
-#define ddr3_row_size 2 
-//col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
-#define ddr3_col_size 2
+
+#if 0
+  //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
+  #define ddr3_row_size 2 
+  //col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
+  #define ddr3_col_size 2
+
+#else
+
+  #define DDR3_2Gbx16
+  
+  #ifdef DDR2_1Gbx16
+    //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
+    #define ddr2_row_size 1 
+    //col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
+    #define ddr2_col_size 2
+  #else
+    //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
+    #define ddr2_row_size 1 
+    //col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
+    #define ddr2_col_size 2
+  #endif
+    #ifdef DDR3_2Gbx16	
+      //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
+      #define ddr3_row_size 2 
+      //col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
+      #define ddr3_col_size 2
+    #else
+      #define DDR3_2Gbx16
+      //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
+      #define ddr3_row_size 2 
+      //col size 00 : A0~A7,   01 : A0~A8, 10: A0 ~A9.  11, A0~A9, A11. 
+      #define ddr3_col_size 2
+    #endif
+    
+#endif
+
+#define DDR3_533_SAMSUNG
 
 //533~400 Elpida
-#define DDR3_400
+//#define DDR3_400
 static struct ddr_set __ddr_setting={
 #ifdef	DDR3_533
                     .cl             =   8,
@@ -112,6 +146,62 @@ static struct ddr_set __ddr_setting={
                     (ddr3_row_size << 2) |  
                     (ddr3_col_size),
          .init_pctl=init_pctl_ddr3
+#elif defined(DDR3_533_SAMSUNG)
+/*from @2347 trunk/arch/arm/cpu/aml_meson/m3/firmware/timming.c*/
+                    .cl             =   9,
+                    .t_faw          =  30,
+                    .t_mrd          =   4,
+                    .t_1us_pck      = 132,
+                    .t_100ns_pck    =  14,
+                    .t_init_us      = 511,
+                    .t_ras          =  24,
+                    .t_rc           =  33,
+                    .t_rcd          =   9,
+                    .t_refi_100ns   =  39,
+                    .t_rfc          =  107,//110,
+                    .t_rp           =   9,
+                    .t_rrd          =   5,
+                    .t_rtp          =   5,
+                    .t_wr           =   10,
+                    .t_wtr          =   5,
+                    .t_xp           =   4,
+                    .t_xsrd         =   0,   // init to 0 so that if only one of them is defined, this is chosen
+                    .t_xsnr         =   0,
+                    .t_exsr         = 512,
+                    .t_al           =   7,   // Additive Latency
+                    .t_clr          =   8,   // cas_latency for DDR2 (nclk cycles)
+                    .t_dqs          =   2,   // distance between data phases to different ranks
+                    .t_cwl          =   6,//7,
+                    .t_mod          =   12,
+                    .t_zqcl         = 512,
+                    .t_rtw          =   2,
+                    .t_cksrx        =   7,
+                    .t_cksre        =   7,
+                    .t_cke          =   4,
+                    .mrs={  [0]=0,
+                            [1]=(0<<6)|(1<<2)| //rtt_nominal;      //(A9, A6, A2) 000 : disabled. 001 : RZQ/4   010:RZQ/2 (A6:A2)
+                                (0<<5)|(0<<1)| //(A5 A1),Output driver impedance control 00:RZQ/6,01:RZQ/7,10£ºRZQ/5 11:Reserved
+                                (0<<12)|(0<<7),
+                            [2]=0,
+                            [3]=0
+                        },
+         .ddr_pll_cntl=0x0011022c,
+         .ddr_clk=528,
+         .ddr_ctrl= (0 << 24 ) |    //pctl_brst 4,
+                    (0xff << 16) |  //reorder en for the 8 channel.
+                    (0 << 15 ) |     // pctl16 mode = 0.  pctl =   32bits data pins
+                    (0 << 14 ) |     // page policy = 0.
+                    (1 << 13 ) |     // command reorder enabled.
+                    (0 << 12 ) |     // bank map = 0, bank sweep between 4 banks.
+                    (0 << 11 ) |     // Block size.  0 = 32x32 bytes.  1 = 64x32 bytes.
+                    (0 << 9 )  |     // ddr burst 0 = 8 burst. 1 = 4 burst.
+                    (3 << 8 )  |      // ddr type.  2 = DDR2 SDRAM.  3 = DDR3 SDRAM.
+                    (0 << 7 )  |     // ddr 16 bits mode.  0 = 32bits mode.
+                    (1 << 6 )  |     // 1 = 8 banks.  0 = 4 banks.
+                    (0 << 4 )  |     // rank size.   0= 1 rank.   1 = 2 rank.
+                    (ddr3_row_size << 2) |
+                    (ddr3_col_size),
+         .init_pctl=init_pctl_ddr3  
 #else             
                     .cl             =   8,
                     .t_cwl          =   6,
