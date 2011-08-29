@@ -12,6 +12,6 @@
 
 void nand_init(void)
 {
-	board_nand_init();
+	board_mynand_init();
 }
 

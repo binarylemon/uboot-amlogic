@@ -209,9 +209,20 @@
 #define NFC_GET_CFG() 					READ_CBUS_REG(NAND_CFG)
 
 
-#define NAND_IO_ENABLE(mode)  nand_get_chip()
-#define NAND_IO_DISABLE(mode) nand_release_chip()
-
+static inline void  NAND_IO_ENABLE(uint32_t mode)
+{
+		if(mode==0)
+		{
+			clrbits_le32(P_PERIPHS_PIN_MUX_2,(0x3ff<<18));//disable nand
+		}
+		setbits_le32(P_PAD_PULL_UP_REG3,(0xff<<0) | (1<<16));
+        clrbits_le32(P_PERIPHS_PIN_MUX_4,(0x1f<<26));//sdxc
+        clrbits_le32(P_PERIPHS_PIN_MUX_6,(0x3f<<24));//sdio-C
+        clrbits_le32(P_PERIPHS_PIN_MUX_3,(0x1<<31));//I2C_SDA--production
+        clrsetbits_le32(P_PERIPHS_PIN_MUX_5,(0x7<<7)|(0x7<<1),(0x7<<7));//disable spi
+        setbits_le32(P_PERIPHS_PIN_MUX_2,(0x3ff<<18));//set nand
+}
+#define NAND_IO_DISABLE(mode) NAND_IO_ENABLE(0)
 static void inline  nand_get_chip(void )
 {
 	setbits_le32(P_PREG_PAD_GPIO3_EN_N,0x3ffff);	//enable gpio output

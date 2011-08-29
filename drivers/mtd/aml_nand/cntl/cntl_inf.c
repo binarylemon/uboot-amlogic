@@ -62,22 +62,6 @@ int32_t cntl_config(uint32_t config, ...)
 	va_end(args);
 	return ret;
 }
-#define NAND_CNTL_ERROR			5
-#define NAND_CNTL_GO			6
-#define NAND_CNTL_RESET			7
-int32_t cntl_error(uint32_t * val)
-{
-	return cntl_config(NAND_CNTL_ERROR,val);
-}
-void cntl_continue(void)
-{
-	cntl_config(NAND_CNTL_GO);
-}
-void cntl_reset(void)
-{
-	cntl_config(NAND_CNTL_RESET);
-}
-
 uint32_t cntl_size(void)
 {
 	assert(cntl!=NULL);
@@ -167,6 +151,20 @@ int32_t cntl_job_status(jobkey_t * job,uint32_t key)
 
 	return ret;
 }
+int32_t cntl_error(void * desc)
+{
+	return cntl_config(NAND_CNTL_ERROR,desc);
+}
+void cntl_continue(void)
+{
+	cntl_config(NAND_CNTL_GO);
+}
+
+void cntl_reset(void)
+{
+	cntl_config(NAND_CNTL_RESET);
+}
+
 
 
 int32_t cntl_seed(  uint16_t seed)//0 disable

@@ -231,6 +231,8 @@ fixnone:
 	mrc p15, 0, r0, c1, c0, 0 		// write control register
 	tst r0,#1
 	beq mmu_ignore
+	LDR r0,=0x55555555              // all domains set to client
+	MCR p15,0,r0,c3,c0,0            // write Domain access control register
 	ldr r0,__mmu_table
 	mcr p15,0,r0,c2,c0,0      		// reset TTB0
 mmu_ignore:

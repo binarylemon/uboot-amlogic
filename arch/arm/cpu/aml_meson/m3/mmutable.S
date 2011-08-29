@@ -93,6 +93,6 @@ mmu_table:
 		
 		/** DDR memory **/
 		.rept 0x1000 - 0xe00
-		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_WB)
+		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_SO_MEM)
 		.set __base, __base + 1
 		.endr

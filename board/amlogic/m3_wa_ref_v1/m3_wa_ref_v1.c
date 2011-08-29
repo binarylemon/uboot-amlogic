@@ -162,7 +162,7 @@ static void claim_bus(uint32_t get)
 	{
 		NAND_IO_DISABLE(0);
 	}else{
-		NAND_IO_ENABLE(0);
+		NAND_IO_ENABLE(1);
 	}
 }
 static struct aml_nand_platform nand_plat={
@@ -181,9 +181,10 @@ static struct aml_nand_platform nand_plat={
 		.clk_src=CLK81,
 		.claim_bus=claim_bus
 };
-void    board_nand_init(void)
+void    board_mynand_init(void)
 {
 	nanddebug(1,"NAND is inited\n");
+	nand_plat.clk_src=CLK81;
 	nand_probe(&nand_plat);
 //	cntl_init(&nand_plat);
 //	amlnand_probe();

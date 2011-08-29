@@ -6,7 +6,7 @@
 #include <asm/arch/nand.h>
 #include <asm/arch/clock.h>
 #include <asm/dma-mapping.h>
-
+#define NAND_V3_DETAILS 16
 static ecc_t ecc_table[] ={
     { .name = "BCH OFF  ", .mode = 0, .bits = 0,  .data = 0,    .parity = 0,    .info = 0,.max=(1<<14)-1 },
     { .name = "BCH 8/512", .mode = 1, .bits = 8,  .data = 64,   .parity = 14,   .info = 2,.max=0x3f*512  },
@@ -53,7 +53,7 @@ static int32_t v3_job_lookup(cntl_t * cntl_t, jobkey_t ** jobs,uint32_t size);
 typedef struct {
     uint8_t st[2];
     uint8_t seq;
-    uint8_t done;
+    int8_t done;
     uint32_t key;
 }sts_t;
 struct v3_priv
@@ -206,56 +206,62 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 	uint8_t char_temp;
 	uint16_t mode;
 	void* p_temp;
+	ret=0;
 //	va_start(args, config);
 	switch(config)
 	{
-	case NAND_CNTL_INIT: // struct aml_nand_platform *
-	{
-		plat = va_arg(args,struct aml_nand_platform *);
-		if (plat)
-			priv->plat = plat;
-		priv->delay = plat->delay ? plat->delay : priv->delay;
-		priv->reg_base = plat->reg_base ? plat->reg_base : priv->reg_base;
-		assert(priv->delay<120);
-		assert(priv->edo<10);
-		assert(priv->reg_base>0);
-		priv->cmd_fifo = (uint32_t*) dma_alloc_coherent(
-				(CNTL_BUF_SIZE << 1) * sizeof(cmd_t), &int_temp);
-		priv->fifo_mask = (CNTL_BUF_SIZE >> 2) - 1;
-		priv->sts_buf = (sts_t*) &(priv->cmd_fifo[(CNTL_BUF_SIZE >> 2)
-				+ CMD_FIFO_PLUS]);
-		priv->temp = (uint32_t) &(priv->cmd_fifo[(CNTL_BUF_SIZE >> 1) - 2]);
-		priv->sts_size = (priv->temp - (uint32_t) priv->sts_buf)
-				/ sizeof(sts_t);
-	}
-		break;
-	case NAND_CNTL_TIME_SET: //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust
-	{
-		mode = va_arg(args,uint32_t) & 3;
+		case NAND_CNTL_INIT: // struct aml_nand_platform *
+		{
+			plat=va_arg(args,struct aml_nand_platform *);
+			if(plat)
+			    priv->plat=plat;
+			priv->delay=plat->delay?plat->delay:priv->delay;
+			priv->reg_base=plat->reg_base?plat->reg_base:priv->reg_base;
+			assert(priv->delay<120);
+			assert(priv->edo<10);
+			assert(priv->reg_base>0);
+			(uint32_t*)dma_alloc_coherent((CNTL_BUF_SIZE<<1)*sizeof(cmd_t),&(priv->cmd_fifo));
 
-		uint16_t bus_cycle, t_rea = (uint16_t) va_arg(args,uint32_t);
-		uint16_t bus_time, t_rhoh = (uint16_t) va_arg(args,uint32_t);
-		uint16_t sync_adjust = 0;
-		assert(mode<3);
-		if (mode)
-			sync_adjust = (uint16_t) va_arg(args,uint32_t) & 1;
-		/*
-		 assert(t_rea>=priv->plat->t_rea);
-		 assert(t_rhoh>=priv->plat->t_rhoh);
-		 */
-		t_rea = max(t_rea,priv->plat->t_rea);
-		t_rhoh = max(t_rhoh,priv->plat->t_rhoh);
-//		assert(
-//				v3_time_caculate(&t_rea,&t_rhoh,priv->edo,priv->delay,clk_get_rate(priv->plat->clk_src)));
-		NFC_CMD_WAIT_EMPTY();
-		bus_cycle = t_rhoh ? t_rhoh : 10;
-		bus_time = t_rea ? t_rea : 7;
-		clrsetbits_le32(
-				P_NAND_CFG,
-				0xfff|(1<<16)|(1<<14),
-				(bus_cycle&0x1f)|((bus_time&0x1f)<<5)| (mode<<10)|(sync_adjust<<16));
-		nanddebug(1,"NAND_CFG=%x",readl(P_NAND_CFG));
-	}
+			priv->fifo_mask=(CNTL_BUF_SIZE>>2)-1;
+			priv->sts_buf=(sts_t*)&(priv->cmd_fifo[(CNTL_BUF_SIZE>>2)+CMD_FIFO_PLUS]);
+			priv->temp=(uint32_t)&(priv->cmd_fifo[(CNTL_BUF_SIZE>>1)-2]);
+			priv->sts_size=(priv->temp - (uint32_t)priv->sts_buf)/sizeof(sts_t);
+			nanddebug(1,"cmd_fifo addr=%p,size=%d,plus=%d ",priv->cmd_fifo,priv->fifo_mask+1,CMD_FIFO_PLUS);
+			nanddebug(1,"sts_buf addr=%p,size=%d ",priv->sts_buf,priv->sts_size);
+			nanddebug(1,"temp addr=%p\n ",priv->temp);
+			writel(0xc00000ea,P_NAND_CFG);
+		}
+		break;
+				case NAND_CNTL_TIME_SET: //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust
+		{
+			mode=va_arg(args,uint32_t)&3;
+
+			uint16_t bus_cycle,t_rea=(uint16_t)va_arg(args,uint32_t);
+			uint16_t bus_time,t_rhoh=(uint16_t)va_arg(args,uint32_t);
+			uint16_t sync_adjust=0;
+			assert(mode<3);
+			if(mode)
+			    sync_adjust=(uint16_t)va_arg(args,uint32_t)&1;
+			/*
+			assert(t_rea>=priv->plat->t_rea);
+			assert(t_rhoh>=priv->plat->t_rhoh);
+			*/
+			t_rea=max(t_rea,priv->plat->t_rea);
+			t_rhoh=max(t_rhoh,priv->plat->t_rhoh);
+			nanddebug(1,"input parameters t_rea=%dns,t_rhoh=%dns\n",t_rea,t_rhoh);
+			/**
+			 * @todo implement it .
+			 * assert(v3_time_caculate(&t_rea,&t_rhoh,priv->edo,priv->delay,clk_get_rate(priv->plat->clk_src)));
+			 */
+
+			NFC_CMD_WAIT_EMPTY();
+			bus_cycle=t_rhoh?t_rhoh:10;
+			bus_time=t_rea?t_rea:7;
+			nanddebug(1,"bus_time=%dcycle,bus_cycle=%dcycle mode=%d sync_adjust=%d clksrc=%d ",bus_time,bus_cycle,mode,sync_adjust,clk_get_rate(priv->plat->clk_src));
+
+			clrsetbits_le32(P_NAND_CFG,0xfff|(1<<16),(bus_cycle&0x1f)|((bus_time&0x1f)<<5)| (mode<<10)|(sync_adjust<<16));
+			nanddebug(1,"P_NAND_CFG=%x\n",readl(P_NAND_CFG));
+		}
 		break;
 	case NAND_CNTL_FIFO_MODE: //uint16_t start(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
 	{
@@ -509,7 +515,7 @@ static char * v3_cmd_printstr(cmd_t cmd)
 		else if (((cmd >> 17) & 2) == 0)
 		{
 			sprintf(cmd_str, "%s dma ,seed %s,ecc=%s",
-					cmd & (1 << 17) ? "Write" : "Read ",
+					cmd & (1 << 17) ? "Read " : "Write",
 					cmd & (1 << 19) ? "Enable" : "Disable",
 					ecc_table[(cmd >> 14) & 7].name);
 			if (((cmd >> 14) & 7) == 0)
@@ -644,8 +650,9 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     	NFC_CMD_IDLE(ce,0)			\
 		}
     uint32_t old_ce=v3_find_ce(cmd,0,priv->nfc_ce);
-    uint32_t new_ce=v3_find_ce(cmd,1,priv->nfc_ce);
-
+    uint32_t new_ce=0;
+//    =v3_find_ce(cmd,1,priv->nfc_ce);
+    new_ce=v3_find_ce(cmd,1,priv->nfc_ce);
     if(cmd_size>NFC_CMDFIFO_MAX-2 || write_size[0])
     {
     	write_cmd[1]=cmd;
@@ -672,7 +679,7 @@ write_fifo_raw:
 	{
 		for(i=0;i<write_size[0];i++,priv->tail++)
 		{
-			nanddebug(16,"%s",v3_cmd_printstr(write_cmd[0][i]));
+			nanddebug(NAND_V3_DETAILS,"Write fifo:%x fifo size=%d ,%s ",write_cmd[0][i],NFC_CMDFIFO_SIZE(),v3_cmd_printstr(write_cmd[0][i]));
 			writel(write_cmd[0][i],P_NAND_CMD);
 		}
 	}
@@ -923,9 +930,9 @@ static int32_t v3_ctrl(cntl_t *cntl, uint16_t ce, uint16_t ctrl)
 }
 static int32_t v3_wait(cntl_t * cntl, uint16_t ce,uint8_t mode, uint8_t cycle_log2)
 {
-	uint32_t cmd;
+
     DEFINE_CNTL_PRIV(priv,cntl);
-    uint32_t new_mode=NFC_CE(mode&0xf)|NAND_RB_IS_INT(mode)?(0xf<<14):0;
+    uint32_t new_mode=NFC_CE(mode&0xf)|(NAND_RB_IS_INT(mode)?(0xf<<14):0);
 
 	if (NAND_RB_IS_RBIO(mode))
 	{
@@ -1130,7 +1137,7 @@ static jobkey_t * v3_job_get(cntl_t * cntl,uint32_t mykey)
 		if(priv->sts_buf[i].key==0)
 		{
 			priv->sts_buf[i].key=mykey;
-			priv->sts_buf[i].done=0;
+			priv->sts_buf[i].done=0x0;
 			v3_unlock_sts_buf();
 			return (jobkey_t*)(priv->sts_buf+i);
 		}
@@ -1178,8 +1185,8 @@ static uint32_t v3_job_key(cntl_t * cntl, jobkey_t * job)
 }
 static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 {
-	sts_t * p=(sts_t*)job;
-	if(p->done)
+	volatile sts_t * p=(volatile sts_t*)job;
+	if(p->done<0)
 		return p->st[0];
 	return -1;
 }

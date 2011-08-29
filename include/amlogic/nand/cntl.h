@@ -181,7 +181,7 @@ extern int32_t cmdq_alloc(cmdq_t *cmdq);
 extern void cmdq_free(cmdq_t *cmdq);
 extern int32_t cntl_write_cmd(cmdq_t *in, cmdq_t *out);
 extern int32_t cntl_finish_jobs(void (*cb_finish)(uint32_t key, uint32_t st));
-extern int32_t cntl_error(uint32_t * val);
+extern int32_t cntl_error(void * val);
 extern void cntl_continue(void);
 extern void cntl_reset(void);
 
