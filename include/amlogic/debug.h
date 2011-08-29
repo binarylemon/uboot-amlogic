@@ -7,7 +7,9 @@
 
 #ifndef _AMLOGIC_DEBUG_H_
 #define _AMLOGIC_DEBUG_H_
-
+#ifndef CONFIG_ENABLE_NAND_DEBUG
+#define CONFIG_ENABLE_NAND_DEBUG 0
+#endif
 #if CONFIG_ENABLE_NAND_DEBUG
 #define nanddebug(level,a...) if(level<=CONFIG_ENABLE_NAND_DEBUG){ \
 		printf("\033[41m%s +%d func=%s:\033[0m",__FILE__,__LINE__,__func__);	\

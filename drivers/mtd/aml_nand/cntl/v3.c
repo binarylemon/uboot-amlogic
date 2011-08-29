@@ -214,7 +214,7 @@ cntl_time_caculate(uint32_t * rea, uint32_t * rhoh, uint32_t edo,
 	uint32_t ceiling_cycle;
 	uint32_t bus_cycle;
 	tSys =  1000 * fact / (clk / 1000000);
-	tDelay =  delay * fact;
+	tDelay =  delay * fact/10;
 	tRea = *rea * fact;
 	tRHOH = *rhoh * fact;
 
@@ -274,7 +274,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 			assert(priv->delay<120);
 			assert(priv->edo<10);
 			assert(priv->reg_base>0);
-			(uint32_t*)dma_alloc_coherent((CNTL_BUF_SIZE<<1)*sizeof(cmd_t),&(priv->cmd_fifo));
+			dma_alloc_coherent((CNTL_BUF_SIZE<<1)*sizeof(cmd_t),&(priv->cmd_fifo));
 
 			priv->fifo_mask=(CNTL_BUF_SIZE>>2)-1;
 			priv->sts_buf=(sts_t*)&(priv->cmd_fifo[(CNTL_BUF_SIZE>>2)+CMD_FIFO_PLUS]);
@@ -282,8 +282,9 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 			priv->sts_size=(priv->temp - (uint32_t)priv->sts_buf)/sizeof(sts_t);
 			nanddebug(1,"cmd_fifo addr=%p,size=%d,plus=%d ",priv->cmd_fifo,priv->fifo_mask+1,CMD_FIFO_PLUS);
 			nanddebug(1,"sts_buf addr=%p,size=%d ",priv->sts_buf,priv->sts_size);
-			nanddebug(1,"temp addr=%p\n ",priv->temp);
+			nanddebug(1,"temp addr=%x\n ",priv->temp);
 			writel(0xc00000ea,P_NAND_CFG);
+
 		}
 		break;
 				case NAND_CNTL_TIME_SET: //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust
