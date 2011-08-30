@@ -56,12 +56,13 @@
 
 #ifdef CONFIG_CMD_NAND
 #define CONFIG_NAND_AML_M3 1
-#define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of */
+#define CONFIG_NAND_AML  1
+//#define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of */
 #define CONFIG_SYS_NAND_MAX_CHIPS	4
 #ifndef CONFIG_NAND_SP_BLOCK_SIZE
 #define CONFIG_NAND_SP_BLOCK_SIZE 32
 #endif
-#warning todo implement nand driver later
+//#warning todo implement nand driver later
 #define CONFIG_SYS_MAX_NAND_DEVICE  1  //make uboot happy
 #define CONFIG_SYS_NAND_BASE_LIST   {0}//make uboot happy
 //#define CONFIG_SYS_NAND_BASE 0 //make uboot happy

@@ -151,11 +151,11 @@ static struct i2c_board_info aml_i2c_info[] = {
 
 
 
-#if CONFIG_JERRY_NAND_TEST //temp test
-#include <amlogic/nand/platform.h>
+#if CONFIG_NAND_AML_M3 //temp test
+//#include <amlogic/nand/platform.h>
 #include <asm/arch/nand.h>
-#include <asm/arch/clock.h>
 #include <linux/mtd/partitions.h>
+#if 0
 static void claim_bus(uint32_t get)
 {
 	if(get==NAND_BUS_RELEASE)
@@ -191,6 +191,49 @@ void    board_mynand_init(void)
 }
 
 #endif
+
+static struct aml_nand_platform aml_nand_mid_platform[] = {
+    {
+        .name = NAND_BOOT_NAME,
+        .chip_enable_pad = AML_NAND_CE0,
+        .ready_busy_pad = AML_NAND_CE0,
+        .platform_nand_data = {
+            .chip =  {
+                .nr_chips = 1,
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_SHORT_MODE),
+            },
+        },
+        .rbpin_mode=1,
+        .short_pgsz=384,
+        .ran_mode=0,
+        .T_REA = 20,
+        .T_RHOH = 15,
+    },
+    {
+        .name = NAND_NORMAL_NAME,
+        .chip_enable_pad = (AML_NAND_CE0) ,  //| (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
+        .ready_busy_pad = (AML_NAND_CE0) ,  //| (AML_NAND_CE0 << 4) | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
+        .platform_nand_data = {
+            .chip =  {
+                .nr_chips = 1,
+                .options = (NAND_TIMING_MODE5| NAND_ECC_BCH30_MODE),
+            },
+        },
+        .rbpin_mode = 1,
+        .short_pgsz = 0,
+        .ran_mode = 0,
+        .T_REA = 20,
+        .T_RHOH = 15,
+    }
+    
+};
+
+struct aml_nand_device aml_nand_mid_device = {
+    .aml_nand_platform = aml_nand_mid_platform,
+    .dev_num = 2,
+};
+#endif
+
 int board_init(void)
 {
 	gd->bd->bi_arch_number=2958; //MACH_TYPE_MESON_8626M;

@@ -83,7 +83,7 @@ SPL_STATIC_FUNC int nf_read_dma(unsigned * dest, volatile unsigned * info,unsign
   }
   NFC_SET_DADDR(dest);
   NFC_SET_IADDR(&info[0]);
-  NFC_SEND_CMD_N2M(size,ecc_mode);
+//  NFC_SEND_CMD_N2M(size,ecc_mode);
   NFC_SEND_CMD_IDLE(CE0,5);
   NFC_SEND_CMD_IDLE(CE0,0);
   while (NFC_CMDFIFO_SIZE() > 0);      // all cmd is finished
@@ -176,13 +176,13 @@ SPL_STATIC_FUNC int nf_sp_read(unsigned dest,unsigned size)
 	   do{
 		   nf_send_read_cmd(page_base+cur,1);//small Page mode
 		   ret=nf_read_dma((unsigned*)(dest+cnt),(unsigned*)CONFIG_NAND_INFO_DMA_ADDR,
-				   512, NAND_ECC_BCH8);
+				   512, NAND_ECC_BCH8_512);
 
 		   if(ret!=-1)
 			   break;
 		   else{
 			   page_base+=CONFIG_NAND_SP_BLOCK_SIZE;
-			   if((page_base+cur)>=CONFIG_NAND_PAGES)
+			   if((page_base+cur)>=  4096*1024/*CONFIG_NAND_PAGES*/)
 				   return -1;
 		   }
 	   } while(ret==-1);

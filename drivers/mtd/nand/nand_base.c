@@ -2794,10 +2794,13 @@ int nand_scan_tail(struct mtd_info *mtd)
 	 * mode
 	 */
 	chip->ecc.steps = mtd->writesize / chip->ecc.size;
+#if 0	
 	if(chip->ecc.steps * chip->ecc.size != mtd->writesize) {
 		printk(KERN_WARNING "Invalid ecc parameters\n");
 		BUG();
 	}
+#endif
+
 	chip->ecc.total = chip->ecc.steps * chip->ecc.bytes;
 
 	/*

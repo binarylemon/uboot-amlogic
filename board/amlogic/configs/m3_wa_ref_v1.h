@@ -36,7 +36,7 @@
 
 
 //Enable storage devices
-/*#define CONFIG_CMD_NAND  1*/
+#define CONFIG_CMD_NAND  1
 #define CONFIG_CMD_SF        1
 
 

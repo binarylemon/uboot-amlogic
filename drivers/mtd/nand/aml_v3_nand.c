@@ -202,41 +202,11 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{NULL,}
 };
 
-static void aml_platform_get_user_byte(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num)
-{
-	int read_times = 0;
-	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
-
-	while (byte_num > 0) {
-		*oob_buf++ = (aml_chip->user_info_buf[read_times*len] & 0xff);
-		byte_num--;
-		if (aml_chip->user_byte_mode == 2) {
-			*oob_buf++ = ((aml_chip->user_info_buf[read_times*len] >> 8) & 0xff);
-			byte_num--;
-		}
-		read_times++;
-	}
-}
-
-static void aml_platform_set_user_byte(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num)
-{
-	int write_times = 0;
-	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
-
-	while (byte_num > 0) {
-		aml_chip->user_info_buf[write_times*len] = *oob_buf++;
-		byte_num--;
-		if (aml_chip->user_byte_mode == 2) {
-			aml_chip->user_info_buf[write_times*len] |= (*oob_buf++ << 8);
-			byte_num--;
-		}
-		write_times++;
-	}
-}
+static void aml_nand_command(struct mtd_info *mtd, unsigned command, int column, int page_addr);
 
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 {
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	struct nand_chip *chip = &aml_chip->chip;
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct clk *sys_clk;
@@ -288,30 +258,201 @@ static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 
 }
 
-
-static void aml_nand_select_chip(struct mtd_info *mtd, int chipnr)
+static int aml_platform_options_confirm(struct aml_nand_chip *aml_chip)
 {
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct mtd_info *mtd = aml_chip->mtd;
+	struct nand_chip *chip = &aml_chip->chip;
+	struct aml_nand_platform *plat = aml_chip->platform;
+	struct ecc_desc_s * ecc_supports=aml_chip->ecc;
+	unsigned max_ecc=aml_chip->max_ecc;
 	
-	switch (chipnr) {
-		case -1:
-			NFC_SEND_CMD_STANDBY(3);
-//			nand_release_chip();
+	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define;
+	int error = 0,i;
+
+
+//ecc check 
+	options_selected = (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK);
+	options_define = (aml_chip->options & NAND_ECC_OPTIONS_MASK);
+    aml_nand_debug("options_selected=%s options_define=%s\n",
+       ecc_supports[options_selected].name,ecc_supports[options_define].name);
+    ///caculate the chips support ECC
+    for(i=max_ecc-1;i>0;i--)//0 always is raw mode 
+    {
+        ecc_bytes = aml_chip->oob_size / (aml_chip->page_size / ecc_supports[i].size);
+        if(ecc_bytes>=ecc_supports[i].parity+ecc_supports[i].user)
+        {
+            options_support=ecc_supports[i].bch;
+            break;
+        }
+    }
+    if(options_support==0)
+        BUG_printk("Could NOT Find out support ecc");
+    aml_nand_debug("This one can support %s",ecc_supports[options_support].name);
+
+#if 0       
+ecc_unit_change:
+	ecc_bytes = aml_chip->oob_size / (aml_chip->page_size / chip->ecc.size);
+	
+	if (chip->ecc.size == NAND_ECC_UNIT_1KSIZE) 
+	{
+		if (ecc_bytes >= (NAND_BCH60_ECC_SIZE + 2))
+			options_support = NAND_ECC_BCH60_MODE;
+		else 
+		{
+			aml_nand_debug(" aml_chip->page_size %d   chip->ecc.size  %d , div res \n",
+			    aml_chip->page_size,chip->ecc.size);
+			aml_nand_debug("oob_size %d ecc_bytes %d\n",aml_chip->oob_size,ecc_bytes);
+			aml_nand_debug("oob size is not enough for 1K UNIT ECC mode: "
+			    "%d try 512 UNIT ECC\n", aml_chip->oob_size);
+		
+			chip->ecc.size = NAND_ECC_UNIT_SIZE;
+			goto ecc_unit_change;
+		}	
+	}
+	else {
+		/*if (ecc_bytes >= (NAND_BCH16_ECC_SIZE + 2))
+			options_support = NAND_ECC_BCH16_MODE;
+		else if (ecc_bytes >= (NAND_BCH12_ECC_SIZE + 2))
+			options_support = NAND_ECC_BCH12_MODE;
+		else*/ 
+        if (ecc_bytes >= (NAND_BCH8_512_ECC_SIZE + 2))
+			options_support = NAND_ECC_BCH8_512_MODE;
+		else {
+			options_support = NAND_ECC_SOFT_MODE;
+			aml_nand_debug("page size: %d oob size %d is not enough for HW ECC\n", aml_chip->page_size, aml_chip->oob_size);
+		}
+	}
+#endif	
+	if (options_define != options_support) {
+		options_define = options_support;
+		aml_nand_debug("define oob size: %d could support bch mode: %s\n", aml_chip->oob_size, ecc_supports[options_support].name);
+	}
+
+	if ((options_selected > options_define) && (strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))) {
+		aml_nand_debug("oob size is not enough for selected bch mode: %s force bch to mode: %s\n", 
+		    ecc_supports[options_selected].name,ecc_supports[options_define].name);
+		options_selected = options_define;
+		//BUG_printk("Wrong NAND option, Please Check Your setting and confirm it with U Boot");
+	}
+
+	switch (options_selected) {
+
+		case NAND_ECC_BCH8_512_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_SIZE;				//our hardware ecc unit is 512bytes
+			chip->ecc.bytes = NAND_BCH8_512_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH8_512;
+			aml_chip->user_byte_mode = 2;
 			break;
-		case 0:
-			nand_get_chip();								/*FIXME A3 rb0 rb1 ce2 ce3*/
-			aml_chip->aml_nand_select_chip(aml_chip, chipnr);
+
+		case NAND_ECC_BCH8_1K_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH8_1K_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH8_1K;
+			aml_chip->user_byte_mode = 2;
 			break;
-		case 1:
-		case 2:
-		case 3:
-			aml_chip->aml_nand_select_chip(aml_chip, chipnr);
+
+		case NAND_ECC_BCH30_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH30_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH30;
+			aml_chip->user_byte_mode = 2;
+			break;
+		case NAND_ECC_BCH40_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH40_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH40;
+			aml_chip->user_byte_mode = 2;
+			break;
+		case NAND_ECC_BCH60_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH60_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH60;
+			aml_chip->user_byte_mode = 2;
+			break;
+		case NAND_ECC_SHORT_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_SHORT;
+			chip->ecc.bytes = NAND_BCH60_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH60;
+			aml_chip->user_byte_mode = 2;
+			break;
+		case NAND_ECC_BCH16_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH16_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH16;
+			aml_chip->user_byte_mode = 2;
+			break;
+
+		case NAND_ECC_BCH24_MODE:
+			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
+			chip->ecc.bytes = NAND_BCH24_ECC_SIZE;
+			aml_chip->bch_mode = NAND_ECC_BCH24;
+			aml_chip->user_byte_mode = 2;
+			break;
+
+		default :
+			if ((plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK) != NAND_ECC_SOFT_MODE) {
+				aml_nand_debug("soft ecc or none ecc just support in linux self nand base please selected it at platform options\n");
+				error = -ENXIO;
+			}
+			break;
+	}
+
+//plane check 
+	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
+	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
+	if (options_selected > options_define) {
+		aml_nand_debug("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
+		options_selected = options_define;
+	}
+
+	switch (options_selected) {
+
+		case NAND_TWO_PLANE_MODE:
+			aml_chip->plane_num = 2;
+			mtd->erasesize *= 2;
+			mtd->writesize *= 2;
+			mtd->oobsize *= 2;
 			break;
 
 		default:
-			BUG();
+			aml_chip->plane_num = 1;
+			break;
 	}
-	return;
+//interleave check 
+	options_selected = (plat->platform_nand_data.chip.options & NAND_INTERLEAVING_OPTIONS_MASK);
+	options_define = (aml_chip->options & NAND_INTERLEAVING_OPTIONS_MASK);
+	if (options_selected > options_define) {
+		aml_nand_debug("internal mode error for selected internal mode: %s force internal mode to : %s\n", aml_nand_internal_string[options_selected >> 16], aml_nand_internal_string[options_define >> 16]);
+		options_selected = options_define;
+	}
+
+	switch (options_selected) {
+
+		case NAND_INTERLEAVING_MODE:
+			aml_chip->ops_mode |= AML_INTERLEAVING_MODE;
+			mtd->erasesize *= aml_chip->internal_chipnr;
+			mtd->writesize *= aml_chip->internal_chipnr;
+			mtd->oobsize *= aml_chip->internal_chipnr;
+			break;
+
+		default:		
+			break;
+	}
+
+	return error;
+}
+
+static void aml_platform_cmd_ctrl(struct aml_nand_chip *aml_chip, int cmd,  unsigned int ctrl)
+{
+	if (cmd == NAND_CMD_NONE)
+		return;
+
+	if (ctrl & NAND_CLE)
+		cmd=NFC_CMD_CLE(aml_chip->chip_selected, cmd);
+	else
+		cmd=NFC_CMD_ALE(aml_chip->chip_selected, cmd);
+
+    NFC_SEND_CMD(cmd);
 }
 
 static void aml_platform_select_chip(struct aml_nand_chip *aml_chip, int chipnr)
@@ -362,24 +503,12 @@ static void aml_platform_select_chip(struct aml_nand_chip *aml_chip, int chipnr)
 	return;
 }
 
-static void aml_platform_cmd_ctrl(struct aml_nand_chip *aml_chip, int cmd,  unsigned int ctrl)
-{
-	if (cmd == NAND_CMD_NONE)
-		return;
-
-	if (ctrl & NAND_CLE)
-		cmd=NFC_CMD_CLE(aml_chip->chip_selected, cmd);
-	else
-		cmd=NFC_CMD_ALE(aml_chip->chip_selected, cmd);
-
-    NFC_SEND_CMD(cmd);
-}
 /*ADD RBPIN NO mode*/
 static int aml_platform_wait_devready(struct aml_nand_chip *aml_chip, int chipnr)
 {
 #if   CONFIG_AM_NAND_RBPIN
 	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	unsigned time_out_cnt = 0;
 	int status;
 
@@ -414,134 +543,42 @@ static int aml_platform_wait_devready(struct aml_nand_chip *aml_chip, int chipnr
 	return 1;
 }
 
-static int aml_nand_dev_ready(struct mtd_info *mtd)
+static void aml_platform_get_user_byte(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num)
 {
-	struct nand_chip *chip = mtd->priv;
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	unsigned  ce= aml_chip->chip_selected;
+	int read_times = 0;
+	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
 
-#if 	1
-	if(aml_chip->rbpin_mode)	
-		return NFC_GET_RB_STATUS(aml_chip->rb_received);
-	else
-	{
-		BUG();
-		return 1;
-	}
-#endif		
-
-//	NFC_CMD_FIFO_RESET();
-	
-   	NFC_SEND_CMD(ce|IDLE | 0);
-	NFC_SEND_CMD(ce|CLE|NAND_CMD_STATUS);
-   	NFC_SEND_CMD(ce|IDLE | 0);
-	NFC_SEND_CMD(RB|IO6|28);
-	NFC_SEND_CMD(ce|IDLE | 0);
-	while(NFC_CMDFIFO_SIZE()>0);
-	NFC_SEND_CMD(ce|DRD|3);
-
-	return readb(chip->IO_ADDR_R);	
-		
-}
-
-static int aml_platform_dma_waiting(struct aml_nand_chip *aml_chip)
-{
-	unsigned time_out_cnt = 0;
-
-	NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 0);
-	NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 0);
-	do {
-		if (NFC_CMDFIFO_SIZE() <= 0)
-			break;
-	}while (time_out_cnt++ <= AML_DMA_BUSY_TIMEOUT);
-
-	if (time_out_cnt < AML_DMA_BUSY_TIMEOUT)
-		return 0;
-
-	printk("nand fifo %d\n", NFC_CMDFIFO_SIZE());
-	return -EBUSY;
-}
-
-static int aml_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
-{
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct nand_chip *chip = mtd->priv;
-
-	chip->read_buf(mtd, aml_chip->aml_nand_data_buf, len);
-	if (memcmp(buf, aml_chip->aml_nand_data_buf, len))
-		return -EFAULT;
-
-	return 0;
-}
-
-static void aml_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,  unsigned int ctrl)
-{
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-
-	aml_chip->aml_nand_cmd_ctrl(aml_chip, cmd, ctrl);
-}
-
-static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
-{
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	int status[MAX_CHIP_NUM], state = chip->state, i = 0, time_cnt = 0;
-
-	status[0] = 0;
-
-	/* Apply this short delay always to ensure that we do wait tWB in
-	 * any case on any machine. */
-	ndelay(100);
-
-	//for (i=0; i<aml_chip->chip_num; i++) {
-		if (aml_chip->valid_chip[i]) {
-			//active ce for operation chip and send cmd
-			aml_chip->aml_nand_select_chip(aml_chip, i);
-
-			if (aml_chip->ops_mode == AML_MULTI_CHIP_SHARE_RB) {
-
-				time_cnt = 0;
-				while (time_cnt++ < 0x10000) {
-					if (state == FL_ERASING)
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
-					else
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
-					status[i] = (int)chip->read_byte(mtd);
-					if (status[i] & NAND_STATUS_READY_MULTI)
-						break;
-					udelay(2);
-				}
-			}
-			else {
-				if ((state == FL_ERASING) && (chip->options & NAND_IS_AND))
-					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
-				else
-					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
-					
-				time_cnt = 0;
-				while (time_cnt++ < 0x10000) {
-					if (chip->dev_ready) {
-						if (chip->dev_ready(mtd))
-							break;
-					} else {
-						if (chip->read_byte(mtd) & NAND_STATUS_READY)
-							break;
-					}
-					udelay(9);
-				}
-				status[i] = (int)chip->read_byte(mtd);
-			}
-
-			status[0] |= status[i];
+	while (byte_num > 0) {
+		*oob_buf++ = (aml_chip->user_info_buf[read_times*len] & 0xff);
+		byte_num--;
+		if (aml_chip->user_byte_mode == 2) {
+			*oob_buf++ = ((aml_chip->user_info_buf[read_times*len] >> 8) & 0xff);
+			byte_num--;
 		}
-	//}
+		read_times++;
+	}
+}
 
-	return status[0];
+static void aml_platform_set_user_byte(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num)
+{
+	int write_times = 0;
+	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
+
+	while (byte_num > 0) {
+		aml_chip->user_info_buf[write_times*len] = *oob_buf++;
+		byte_num--;
+		if (aml_chip->user_byte_mode == 2) {
+			aml_chip->user_info_buf[write_times*len] |= (*oob_buf++ << 8);
+			byte_num--;
+		}
+		write_times++;
+	}
 }
 
 static void aml_nand_base_command(struct aml_nand_chip *aml_chip, unsigned command, int column, int page_addr, int chipnr)
 {
 	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	unsigned command_temp, pages_per_blk_shift, plane_page_addr = 0, plane_blk_addr = 0;
 	pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 
@@ -826,145 +863,27 @@ static void aml_nand_base_command(struct aml_nand_chip *aml_chip, unsigned comma
 	ndelay(100);
 }
 
-static void aml_nand_command(struct mtd_info *mtd, unsigned command, int column, int page_addr)
+static int aml_platform_dma_waiting(struct aml_nand_chip *aml_chip)
 {
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct nand_chip *chip = &aml_chip->chip;
-	int i = 0, valid_page_num = 1, internal_chip;
+	unsigned time_out_cnt = 0;
 
-//remember address for lower 
-	if (page_addr != -1) {
-		valid_page_num = (mtd->writesize >> chip->page_shift);
-		valid_page_num /= aml_chip->plane_num;
+	NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 0);
+	NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 0);
+	do {
+		if (NFC_CMDFIFO_SIZE() <= 0)
+			break;
+	}while (time_out_cnt++ <= AML_DMA_BUSY_TIMEOUT);
 
-		aml_chip->page_addr = page_addr / valid_page_num;      //address save for next op 
-		if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
-			internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums; 
-			aml_chip->page_addr -= aml_chip->internal_page_nums;
-			aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chip;
-		}
-	}
+	if (time_out_cnt < AML_DMA_BUSY_TIMEOUT)
+		return 0;
 
-	/* Emulate NAND_CMD_READOOB */
-	if (command == NAND_CMD_READOOB) {
-		command = NAND_CMD_READ0;
- 	}
-
-	if (command == NAND_CMD_READ0) {
-		aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, 0);
-#if (!CONFIG_AM_NAND_RBPIN)	
-		if ( chip->waitfunc(mtd, chip)& NAND_STATUS_READY)
-		 {
-			// aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, -1, -1, i);  //read mode for next data out
-			 chip->cmd_ctrl(mtd, 0, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
- 		 }		 
- #endif		 
-		return;
-	}
-	
-//	if (command == NAND_CMD_PAGEPROG)  //filter  0x10 
-//		return;
-
-	if (command == NAND_CMD_SEQIN) {
-		aml_chip->aml_nand_select_chip(aml_chip, 0);
-		aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, 0);
-		return;
-	}
-
-	for (i=0; i<aml_chip->chip_num; i++) {
-		if (aml_chip->valid_chip[i]) {
-			//active ce for operation chip and send cmd
-			aml_chip->aml_nand_wait_devready(aml_chip, i);
-			aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, i);
-		}
-	}
-
-	return;
-}
-
-static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
-{
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct nand_chip *chip = mtd->priv;
-	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
-	unsigned vt_page_num, i = 0, j = 0, internal_chipnr = 1, page_addr, valid_page_num;
-
-	vt_page_num = (mtd->writesize / (1 << chip->page_shift));
-	vt_page_num *= (1 << pages_per_blk_shift);
-	if (page % vt_page_num)
-		return;
-
-	/* Send commands to erase a block */
-	page_addr = page;
-	valid_page_num = (mtd->writesize >> chip->page_shift);
-	valid_page_num /= aml_chip->plane_num;
-
-	page_addr /= valid_page_num;
-	if (unlikely(page_addr >= aml_chip->internal_page_nums)) {
-		internal_chipnr = page_addr / aml_chip->internal_page_nums;
-		page_addr -= aml_chip->internal_page_nums;
-		page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chipnr;
-	}
-
-	if (unlikely(aml_chip->ops_mode & AML_INTERLEAVING_MODE))
-		internal_chipnr = aml_chip->internal_chipnr;
-	else
-		internal_chipnr = 1;
-
-	for (i=0; i<aml_chip->chip_num; i++) {
-		if (aml_chip->valid_chip[i]) {
-
-			aml_chip->aml_nand_select_chip(aml_chip, i);
-			for (j=0; j<internal_chipnr; j++) {
-				if (j > 0)
-					page_addr |= (1 << aml_chip->internal_chip_shift) * j;
-
-				aml_chip->aml_nand_command(aml_chip, NAND_CMD_ERASE1, -1, page_addr, i);
-				aml_chip->aml_nand_command(aml_chip, NAND_CMD_ERASE2, -1, -1, i);
-			}
-		}
-	}
-
-	return ;
-}
-
-static int aml_platform_hwecc_correct(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf)
-{
-	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
-
-	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
-	unsigned ecc_step_num;
-		
-	//#define INFO_BYTE 8
-	if (size % chip->ecc.size) {
-		aml_nand_debug ("error parameter size for ecc correct %x\n", size);
-		return -EINVAL;
-	}
-
-	 for (ecc_step_num = 0; ecc_step_num < (size / chip->ecc.size); ecc_step_num++) {
-	 	//check if there have uncorrectable sector
-		if(NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]))==63)
-	   	//if (NAND_ECC_FAIL(aml_chip->user_info_buf[ecc_step_num])) 
-		{
-	 		aml_nand_debug ("nand communication have uncorrectable ecc error\n");
-	 		return -EIO;
-	 	}
-	 	else {
-	 	    mtd->ecc_stats.corrected += NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]));
-	 	    if(NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]))){
-	 	        aml_nand_debug("ECC CNT=%d ",NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len])));
-	 	    }
-			
-		}
-	}
-
-	return 0;
+	printk("nand fifo %d\n", NFC_CMDFIFO_SIZE());
+	return -EBUSY;
 }
 
 static int aml_platform_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode)
 {
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	struct nand_chip *chip = &aml_chip->chip;
 	unsigned count= len/chip->ecc.size,pgsz=0;
 	int ret = 0;
@@ -994,9 +913,10 @@ static int aml_platform_dma_write(struct aml_nand_chip *aml_chip, unsigned char 
 	
 	return ret;		 
 }
+
 static int aml_platform_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode)
 {
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	struct nand_chip *chip = &aml_chip->chip;
 //	unsigned dma_unit_size=0;
 	unsigned count= len/chip->ecc.size,pgsz=0;
@@ -1040,6 +960,42 @@ static int aml_platform_dma_read(struct aml_nand_chip *aml_chip, unsigned char *
 	return 0;
 }
 
+static int aml_platform_hwecc_correct(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf)
+{
+	struct nand_chip *chip = &aml_chip->chip;
+	struct mtd_info *mtd = aml_chip->mtd;
+
+	unsigned int len=PER_INFO_BYTE/sizeof(unsigned int);
+	unsigned ecc_step_num;
+		
+	//#define INFO_BYTE 8
+	if (size % chip->ecc.size) {
+		aml_nand_debug ("error parameter size for ecc correct %x\n", size);
+		return -EINVAL;
+	}
+
+	 for (ecc_step_num = 0; ecc_step_num < (size / chip->ecc.size); ecc_step_num++) {
+	 	//check if there have uncorrectable sector
+		if(NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]))==63)
+	   	//if (NAND_ECC_FAIL(aml_chip->user_info_buf[ecc_step_num])) 
+		{
+	 		aml_nand_debug ("nand communication have uncorrectable ecc error\n");
+	 		return -EIO;
+	 	}
+	 	else {
+	 	    mtd->ecc_stats.corrected += NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]));
+	 	    if(NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len]))){
+	 	        aml_nand_debug("ECC CNT=%d ",NAND_ECC_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*len])));
+	 	    }
+			
+		}
+	}
+
+	return 0;
+}
+
+//nandchip cb  before scan 
+
 static void aml_nand_dma_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
@@ -1052,6 +1008,178 @@ static void aml_nand_dma_write_buf(struct mtd_info *mtd, const uint8_t *buf, int
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 
 	aml_chip->aml_nand_dma_write(aml_chip, (unsigned char *)buf, len, 0);
+}
+
+static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
+{ 
+	struct nand_chip * chip = mtd->priv;	
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct mtd_oob_ops aml_oob_ops;
+	int32_t ret = 0, read_cnt, page;
+	uint32_t failed;
+	chip->pagebuf = -1;
+	//return 0;
+    
+	if (getchip) {
+
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = 0;//mtd->writesize;
+		aml_oob_ops.ooblen = mtd->oobavail;
+		aml_oob_ops.ooboffs = chip->ecc.layout->oobfree[0].offset;
+		aml_oob_ops.datbuf = NULL;//chip->buffers->databuf;
+		aml_oob_ops.oobbuf = chip->oob_poi;
+
+		for (read_cnt=0; read_cnt<1; read_cnt++) {
+		    failed=mtd->ecc_stats.failed;
+			ret = mtd->read_oob(mtd, ofs, &aml_oob_ops);
+			if (ret == -EUCLEAN)
+				ret = 0;
+		    if(ret<0||mtd->ecc_stats.failed!=failed)
+		        aml_nand_debug(" NAND detect Bad block at %llx %d\n", (uint64_t)ofs,ret);
+			if ((aml_oob_ops.oobbuf[chip->badblockpos] != 0) && (ret == 0))
+				return 0;
+		}
+
+		if (ret < 0) {
+			aml_nand_debug(" NAND detect Bad block at %llx %d\n", (uint64_t)ofs, ret);
+			return -EFAULT;
+		}
+		if (aml_oob_ops.oobbuf[chip->badblockpos] == 0) {
+			memset(aml_chip->aml_nand_data_buf, 0, (mtd->writesize + mtd->oobsize));
+			if (!memcmp(aml_chip->aml_nand_data_buf + mtd->writesize, aml_oob_ops.oobbuf, aml_oob_ops.ooblen)) {
+				aml_nand_debug(" NAND detect Bad block at %llx \n", (uint64_t)ofs);
+				return -EFAULT;
+			}
+		}
+	}
+	else {
+
+		page = (int)(ofs >> chip->page_shift);
+		failed=mtd->ecc_stats.failed;
+		ret = chip->ecc.read_oob(mtd, chip, page, 1);
+		if (ret == -EUCLEAN)
+			ret = 0;
+		if (ret < 0)
+			return -EFAULT;
+		if (chip->oob_poi[chip->badblockpos] == 0xFF)
+			return 0;
+
+		if (chip->oob_poi[chip->badblockpos] == 0||mtd->ecc_stats.failed!=failed) {
+			memset(aml_chip->aml_nand_data_buf, 0, (mtd->writesize + mtd->oobsize));
+			if (!memcmp(aml_chip->aml_nand_data_buf + mtd->writesize, chip->oob_poi, mtd->oobavail)) {
+				aml_nand_debug(" NAND detect Bad block at %llx \n", (uint64_t)ofs);
+				return -EFAULT;
+		}	
+	}
+	}
+
+	return 0;
+}
+
+static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
+{ 
+	struct nand_chip * chip = mtd->priv;	
+	struct mtd_oob_ops aml_oob_ops;
+
+	aml_oob_ops.mode = MTD_OOB_AUTO;
+	aml_oob_ops.len = mtd->writesize;
+	aml_oob_ops.ooblen = mtd->oobavail;
+	aml_oob_ops.ooboffs = chip->ecc.layout->oobfree[0].offset;
+	aml_oob_ops.datbuf = chip->buffers->databuf;
+	aml_oob_ops.oobbuf = chip->oob_poi;
+	chip->pagebuf = -1;
+
+	memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
+	memset((unsigned char *)aml_oob_ops.oobbuf, 0x0, aml_oob_ops.ooblen);
+
+	return mtd->write_oob(mtd, ofs, &aml_oob_ops);
+}
+
+static void aml_nand_select_chip(struct mtd_info *mtd, int chipnr)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	
+	switch (chipnr) {
+		case -1:
+			NFC_SEND_CMD_STANDBY(3);
+//			nand_release_chip();
+			break;
+		case 0:
+			nand_get_chip();								/*FIXME A3 rb0 rb1 ce2 ce3*/
+			aml_chip->aml_nand_select_chip(aml_chip, chipnr);
+			break;
+		case 1:
+		case 2:
+		case 3:
+			aml_chip->aml_nand_select_chip(aml_chip, chipnr);
+			break;
+
+		default:
+			BUG();
+	}
+	return;
+}
+
+static void aml_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,  unsigned int ctrl)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+
+	aml_chip->aml_nand_cmd_ctrl(aml_chip, cmd, ctrl);
+}
+
+static int aml_nand_dev_ready(struct mtd_info *mtd)
+{
+	struct nand_chip *chip = mtd->priv;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	unsigned  ce= aml_chip->chip_selected;
+
+#if 	1
+	if(aml_chip->rbpin_mode)	
+		return NFC_GET_RB_STATUS(aml_chip->rb_received);
+	else
+	{
+		BUG();
+		return 1;
+	}
+#endif		
+
+//	NFC_CMD_FIFO_RESET();
+	
+   	NFC_SEND_CMD(ce|IDLE | 0);
+	NFC_SEND_CMD(ce|CLE|NAND_CMD_STATUS);
+   	NFC_SEND_CMD(ce|IDLE | 0);
+	NFC_SEND_CMD(RB|IO6|28);
+	NFC_SEND_CMD(ce|IDLE | 0);
+	while(NFC_CMDFIFO_SIZE()>0);
+	NFC_SEND_CMD(ce|DRD|3);
+
+	return readb(chip->IO_ADDR_R);	
+		
+}
+
+static int aml_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct nand_chip *chip = mtd->priv;
+
+	chip->read_buf(mtd, aml_chip->aml_nand_data_buf, len);
+	if (memcmp(buf, aml_chip->aml_nand_data_buf, len))
+		return -EFAULT;
+
+	return 0;
+}
+
+static uint8_t aml_platform_read_byte(struct mtd_info *mtd)
+{
+	struct nand_chip *chip = mtd->priv;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	
+	NFC_CMD_FIFO_RESET();
+
+	NFC_SEND_CMD(aml_chip->chip_selected | DRD | 0);
+	NFC_SEND_CMD(aml_chip->chip_selected | IDLE | 5);
+	while(NFC_CMDFIFO_SIZE()>0);
+	return readb(chip->IO_ADDR_R);
 }
 
 static int aml_nand_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip, uint8_t *buf, int page)
@@ -1392,54 +1520,6 @@ exit:
 	return;
 }
 
-static int aml_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip, const uint8_t *buf, int page, int cached, int raw)
-{
-	int status;
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-
-	chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, page);
-
-	if (unlikely(raw))
-		chip->ecc.write_page_raw(mtd, chip, buf);
-	else
-		chip->ecc.write_page(mtd, chip, buf);
-
-	if (!cached || !(chip->options & NAND_CACHEPRG)) {
-
-//		chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
-		status = chip->waitfunc(mtd, chip);
-		/*
-		 * See if operation failed and additional status checks are
-		 * available
-		 */
-		if ((status & NAND_STATUS_FAIL) && (chip->errstat))
-			status = chip->errstat(mtd, chip, FL_WRITING, status, page);
-
-		if (status & NAND_STATUS_FAIL)
-			return -EIO;
-	} else {
-		//chip->cmdfunc(mtd, NAND_CMD_CACHEDPROG, -1, -1);
-		status = chip->waitfunc(mtd, chip);
-	}
-
-	aml_chip->cached_prog_status = 0;
-
-#ifdef CONFIG_MTD_NAND_VERIFY_WRITE
-	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
-	status = chip->ecc.read_page(mtd, chip, chip->buffers->databuf, page);
-	if (status == -EUCLEAN)
-		status = 0;
-	chip->pagebuf = page;
-
-	if (memcmp(buf, chip->buffers->databuf, mtd->writesize)) {
-		aml_nand_debug("nand verify failed at %d \n", page);
-		return -EFAULT;
-	}
-#endif
-
-	return 0;
-}
-
 static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int page, int sndcmd)
 {
 	int32_t error = 0, i, stat = 0, j = 0, page_addr, internal_chipnr = 1; 
@@ -1567,10 +1647,7 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, nand_buffer, dma_once_size, oob_buffer);
 					if (stat < 0) {
 						mtd->ecc_stats.failed++;
-
-						aml_nand_debug("read oob ecc failed at page %d xxx\n", page_addr);
-						
-						
+						aml_nand_debug("read oob ecc failed at page %d xxx\n", page_addr);					
 					}
 					else
 						mtd->ecc_stats.corrected += stat;
@@ -1596,92 +1673,215 @@ static int aml_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int 
 	return 0;
 }
 
-static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
-{ 
-	struct nand_chip * chip = mtd->priv;	
+//nandchip cb after scan
+static void aml_nand_command(struct mtd_info *mtd, unsigned command, int column, int page_addr)
+{
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct mtd_oob_ops aml_oob_ops;
-	int32_t ret = 0, read_cnt, page;
-	uint32_t failed;
-	chip->pagebuf = -1;
-	//return 0;
-    
-	if (getchip) {
+	struct nand_chip *chip = &aml_chip->chip;
+	int i = 0, valid_page_num = 1, internal_chip;
 
-		aml_oob_ops.mode = MTD_OOB_AUTO;
-		aml_oob_ops.len = 0;//mtd->writesize;
-		aml_oob_ops.ooblen = mtd->oobavail;
-		aml_oob_ops.ooboffs = chip->ecc.layout->oobfree[0].offset;
-		aml_oob_ops.datbuf = NULL;//chip->buffers->databuf;
-		aml_oob_ops.oobbuf = chip->oob_poi;
+//remember address for lower 
+	if (page_addr != -1) {
+		valid_page_num = (mtd->writesize >> chip->page_shift);
+		valid_page_num /= aml_chip->plane_num;
 
-		for (read_cnt=0; read_cnt<1; read_cnt++) {
-		    failed=mtd->ecc_stats.failed;
-			ret = mtd->read_oob(mtd, ofs, &aml_oob_ops);
-			if (ret == -EUCLEAN)
-				ret = 0;
-		    if(ret<0||mtd->ecc_stats.failed!=failed)
-		        aml_nand_debug(" NAND detect Bad block at %llx %d\n", (uint64_t)ofs,ret);
-			if ((aml_oob_ops.oobbuf[chip->badblockpos] != 0) && (ret == 0))
-				return 0;
+		aml_chip->page_addr = page_addr / valid_page_num;      //address save for next op 
+		if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
+			internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums; 
+			aml_chip->page_addr -= aml_chip->internal_page_nums;
+			aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chip;
 		}
+	}
 
-		if (ret < 0) {
-			aml_nand_debug(" NAND detect Bad block at %llx %d\n", (uint64_t)ofs, ret);
-			return -EFAULT;
+	/* Emulate NAND_CMD_READOOB */
+	if (command == NAND_CMD_READOOB) {
+		command = NAND_CMD_READ0;
+ 	}
+
+	if (command == NAND_CMD_READ0) {
+		aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, 0);
+#if (!CONFIG_AM_NAND_RBPIN)	
+		if ( chip->waitfunc(mtd, chip)& NAND_STATUS_READY)
+		 {
+			// aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, -1, -1, i);  //read mode for next data out
+			 chip->cmd_ctrl(mtd, 0, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
+ 		 }		 
+ #endif		 
+		return;
+	}
+	
+//	if (command == NAND_CMD_PAGEPROG)  //filter  0x10 
+//		return;
+
+	if (command == NAND_CMD_SEQIN) {
+		aml_chip->aml_nand_select_chip(aml_chip, 0);
+		aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, 0);
+		return;
+	}
+
+	for (i=0; i<aml_chip->chip_num; i++) {
+		if (aml_chip->valid_chip[i]) {
+			//active ce for operation chip and send cmd
+			aml_chip->aml_nand_wait_devready(aml_chip, i);
+			aml_chip->aml_nand_command(aml_chip, command, column, aml_chip->page_addr, i);
 		}
-		if (aml_oob_ops.oobbuf[chip->badblockpos] == 0) {
-			memset(aml_chip->aml_nand_data_buf, 0, (mtd->writesize + mtd->oobsize));
-			if (!memcmp(aml_chip->aml_nand_data_buf + mtd->writesize, aml_oob_ops.oobbuf, aml_oob_ops.ooblen)) {
-				aml_nand_debug(" NAND detect Bad block at %llx \n", (uint64_t)ofs);
-				return -EFAULT;
+	}
+
+	return;
+}
+
+
+static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	int status[MAX_CHIP_NUM], state = chip->state, i = 0, time_cnt = 0;
+
+	status[0] = 0;
+
+	/* Apply this short delay always to ensure that we do wait tWB in
+	 * any case on any machine. */
+	ndelay(100);
+
+	//for (i=0; i<aml_chip->chip_num; i++) {
+		if (aml_chip->valid_chip[i]) {
+			//active ce for operation chip and send cmd
+			aml_chip->aml_nand_select_chip(aml_chip, i);
+
+			if (aml_chip->ops_mode == AML_MULTI_CHIP_SHARE_RB) {
+
+				time_cnt = 0;
+				while (time_cnt++ < 0x10000) {
+					if (state == FL_ERASING)
+						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
+					else
+						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
+					status[i] = (int)chip->read_byte(mtd);
+					if (status[i] & NAND_STATUS_READY_MULTI)
+						break;
+					udelay(2);
+				}
+			}
+			else {
+				if ((state == FL_ERASING) && (chip->options & NAND_IS_AND))
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
+				else
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
+					
+				time_cnt = 0;
+				while (time_cnt++ < 0x10000) {
+					if (chip->dev_ready) {
+						if (chip->dev_ready(mtd))
+							break;
+					} else {
+						if (chip->read_byte(mtd) & NAND_STATUS_READY)
+							break;
+					}
+					udelay(9);
+				}
+				status[i] = (int)chip->read_byte(mtd);
+			}
+
+			status[0] |= status[i];
+		}
+	//}
+
+	return status[0];
+}
+
+static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct nand_chip *chip = mtd->priv;
+	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
+	unsigned vt_page_num, i = 0, j = 0, internal_chipnr = 1, page_addr, valid_page_num;
+
+	vt_page_num = (mtd->writesize / (1 << chip->page_shift));
+	vt_page_num *= (1 << pages_per_blk_shift);
+	if (page % vt_page_num)
+		return;
+
+	/* Send commands to erase a block */
+	page_addr = page;
+	valid_page_num = (mtd->writesize >> chip->page_shift);
+	valid_page_num /= aml_chip->plane_num;
+
+	page_addr /= valid_page_num;
+	if (unlikely(page_addr >= aml_chip->internal_page_nums)) {
+		internal_chipnr = page_addr / aml_chip->internal_page_nums;
+		page_addr -= aml_chip->internal_page_nums;
+		page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chipnr;
+	}
+
+	if (unlikely(aml_chip->ops_mode & AML_INTERLEAVING_MODE))
+		internal_chipnr = aml_chip->internal_chipnr;
+	else
+		internal_chipnr = 1;
+
+	for (i=0; i<aml_chip->chip_num; i++) {
+		if (aml_chip->valid_chip[i]) {
+
+			aml_chip->aml_nand_select_chip(aml_chip, i);
+			for (j=0; j<internal_chipnr; j++) {
+				if (j > 0)
+					page_addr |= (1 << aml_chip->internal_chip_shift) * j;
+
+				aml_chip->aml_nand_command(aml_chip, NAND_CMD_ERASE1, -1, page_addr, i);
+				aml_chip->aml_nand_command(aml_chip, NAND_CMD_ERASE2, -1, -1, i);
 			}
 		}
 	}
-	else {
 
-		page = (int)(ofs >> chip->page_shift);
-		failed=mtd->ecc_stats.failed;
-		ret = chip->ecc.read_oob(mtd, chip, page, 1);
-		if (ret == -EUCLEAN)
-			ret = 0;
-		if (ret < 0)
-			return -EFAULT;
-		if (chip->oob_poi[chip->badblockpos] == 0xFF)
-			return 0;
+	return ;
+}
 
-		if (chip->oob_poi[chip->badblockpos] == 0||mtd->ecc_stats.failed!=failed) {
-			memset(aml_chip->aml_nand_data_buf, 0, (mtd->writesize + mtd->oobsize));
-			if (!memcmp(aml_chip->aml_nand_data_buf + mtd->writesize, chip->oob_poi, mtd->oobavail)) {
-				aml_nand_debug(" NAND detect Bad block at %llx \n", (uint64_t)ofs);
-				return -EFAULT;
-		}	
+
+static int aml_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip, const uint8_t *buf, int page, int cached, int raw)
+{
+	int status;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+
+	chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, page);
+
+	if (unlikely(raw))
+		chip->ecc.write_page_raw(mtd, chip, buf);
+	else
+		chip->ecc.write_page(mtd, chip, buf);
+
+	if (!cached || !(chip->options & NAND_CACHEPRG)) {
+
+//		chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
+		status = chip->waitfunc(mtd, chip);
+		/*
+		 * See if operation failed and additional status checks are
+		 * available
+		 */
+		if ((status & NAND_STATUS_FAIL) && (chip->errstat))
+			status = chip->errstat(mtd, chip, FL_WRITING, status, page);
+
+		if (status & NAND_STATUS_FAIL)
+			return -EIO;
+	} else {
+		//chip->cmdfunc(mtd, NAND_CMD_CACHEDPROG, -1, -1);
+		status = chip->waitfunc(mtd, chip);
 	}
+
+	aml_chip->cached_prog_status = 0;
+
+#ifdef CONFIG_MTD_NAND_VERIFY_WRITE
+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
+	status = chip->ecc.read_page(mtd, chip, chip->buffers->databuf, page);
+	if (status == -EUCLEAN)
+		status = 0;
+	chip->pagebuf = page;
+
+	if (memcmp(buf, chip->buffers->databuf, mtd->writesize)) {
+		aml_nand_debug("nand verify failed at %d \n", page);
+		return -EFAULT;
 	}
+#endif
 
 	return 0;
 }
-
-static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
-{ 
-	struct nand_chip * chip = mtd->priv;	
-	struct mtd_oob_ops aml_oob_ops;
-
-	aml_oob_ops.mode = MTD_OOB_AUTO;
-	aml_oob_ops.len = mtd->writesize;
-	aml_oob_ops.ooblen = mtd->oobavail;
-	aml_oob_ops.ooboffs = chip->ecc.layout->oobfree[0].offset;
-	aml_oob_ops.datbuf = chip->buffers->databuf;
-	aml_oob_ops.oobbuf = chip->oob_poi;
-	chip->pagebuf = -1;
-
-	memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
-	memset((unsigned char *)aml_oob_ops.oobbuf, 0x0, aml_oob_ops.ooblen);
-
-	return mtd->write_oob(mtd, ofs, &aml_oob_ops);
-}
-
-
 
 static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 						  struct nand_chip *chip,
@@ -1726,7 +1926,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 #ifdef CONFIG_MTD_DEVICE
 	//mtd->name = NULL;
 	//if (!mtd->info)
-		mtd->info = type->name;
+//		mtd->info = type->name;
 #else
 	if (!mtd->name)
 		mtd->name = type->name;
@@ -1915,208 +2115,11 @@ int aml_nand_scan(struct mtd_info *mtd, int maxchips)
 	return ret;
 }
 
-static int aml_platform_options_confirm(struct aml_nand_chip *aml_chip)
-{
-	struct mtd_info *mtd = &aml_chip->mtd;
-	struct nand_chip *chip = &aml_chip->chip;
-	struct aml_nand_platform *plat = aml_chip->platform;
-	struct ecc_desc_s * ecc_supports=aml_chip->ecc;
-	unsigned max_ecc=aml_chip->max_ecc;
-	
-	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define;
-	int error = 0,i;
-
-
-//ecc check 
-	options_selected = (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK);
-	options_define = (aml_chip->options & NAND_ECC_OPTIONS_MASK);
-    aml_nand_debug("options_selected=%s options_define=%s\n",
-       ecc_supports[options_selected].name,ecc_supports[options_define].name);
-    ///caculate the chips support ECC
-    for(i=max_ecc-1;i>0;i--)//0 always is raw mode 
-    {
-        ecc_bytes = aml_chip->oob_size / (aml_chip->page_size / ecc_supports[i].size);
-        if(ecc_bytes>=ecc_supports[i].parity+ecc_supports[i].user)
-        {
-            options_support=ecc_supports[i].bch;
-            break;
-        }
-    }
-    if(options_support==0)
-        BUG_printk("Could NOT Find out support ecc");
-    aml_nand_debug("This one can support %s",ecc_supports[options_support].name);
-
-#if 0       
-ecc_unit_change:
-	ecc_bytes = aml_chip->oob_size / (aml_chip->page_size / chip->ecc.size);
-	
-	if (chip->ecc.size == NAND_ECC_UNIT_1KSIZE) 
-	{
-		if (ecc_bytes >= (NAND_BCH60_ECC_SIZE + 2))
-			options_support = NAND_ECC_BCH60_MODE;
-		else 
-		{
-			aml_nand_debug(" aml_chip->page_size %d   chip->ecc.size  %d , div res \n",
-			    aml_chip->page_size,chip->ecc.size);
-			aml_nand_debug("oob_size %d ecc_bytes %d\n",aml_chip->oob_size,ecc_bytes);
-			aml_nand_debug("oob size is not enough for 1K UNIT ECC mode: "
-			    "%d try 512 UNIT ECC\n", aml_chip->oob_size);
-		
-			chip->ecc.size = NAND_ECC_UNIT_SIZE;
-			goto ecc_unit_change;
-		}	
-	}
-	else {
-		/*if (ecc_bytes >= (NAND_BCH16_ECC_SIZE + 2))
-			options_support = NAND_ECC_BCH16_MODE;
-		else if (ecc_bytes >= (NAND_BCH12_ECC_SIZE + 2))
-			options_support = NAND_ECC_BCH12_MODE;
-		else*/ 
-        if (ecc_bytes >= (NAND_BCH8_512_ECC_SIZE + 2))
-			options_support = NAND_ECC_BCH8_512_MODE;
-		else {
-			options_support = NAND_ECC_SOFT_MODE;
-			aml_nand_debug("page size: %d oob size %d is not enough for HW ECC\n", aml_chip->page_size, aml_chip->oob_size);
-		}
-	}
-#endif	
-	if (options_define != options_support) {
-		options_define = options_support;
-		aml_nand_debug("define oob size: %d could support bch mode: %s\n", aml_chip->oob_size, ecc_supports[options_support].name);
-	}
-
-	if ((options_selected > options_define) && (strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))) {
-		aml_nand_debug("oob size is not enough for selected bch mode: %s force bch to mode: %s\n", 
-		    ecc_supports[options_selected].name,ecc_supports[options_define].name);
-		options_selected = options_define;
-		//BUG_printk("Wrong NAND option, Please Check Your setting and confirm it with U Boot");
-	}
-
-	switch (options_selected) {
-
-		case NAND_ECC_BCH8_512_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_SIZE;				//our hardware ecc unit is 512bytes
-			chip->ecc.bytes = NAND_BCH8_512_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH8_512;
-			aml_chip->user_byte_mode = 2;
-			break;
-
-		case NAND_ECC_BCH8_1K_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH8_1K_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH8_1K;
-			aml_chip->user_byte_mode = 2;
-			break;
-
-		case NAND_ECC_BCH30_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH30_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH30;
-			aml_chip->user_byte_mode = 2;
-			break;
-		case NAND_ECC_BCH40_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH40_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH40;
-			aml_chip->user_byte_mode = 2;
-			break;
-		case NAND_ECC_BCH60_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH60_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH60;
-			aml_chip->user_byte_mode = 2;
-			break;
-		case NAND_ECC_SHORT_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_SHORT;
-			chip->ecc.bytes = NAND_BCH60_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH60;
-			aml_chip->user_byte_mode = 2;
-			break;
-		case NAND_ECC_BCH16_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH16_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH16;
-			aml_chip->user_byte_mode = 2;
-			break;
-
-		case NAND_ECC_BCH24_MODE:
-			chip->ecc.size = NAND_ECC_UNIT_1KSIZE;
-			chip->ecc.bytes = NAND_BCH24_ECC_SIZE;
-			aml_chip->bch_mode = NAND_ECC_BCH24;
-			aml_chip->user_byte_mode = 2;
-			break;
-
-		default :
-			if ((plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK) != NAND_ECC_SOFT_MODE) {
-				aml_nand_debug("soft ecc or none ecc just support in linux self nand base please selected it at platform options\n");
-				error = -ENXIO;
-			}
-			break;
-	}
-
-//plane check 
-	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
-	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
-	if (options_selected > options_define) {
-		aml_nand_debug("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
-		options_selected = options_define;
-	}
-
-	switch (options_selected) {
-
-		case NAND_TWO_PLANE_MODE:
-			aml_chip->plane_num = 2;
-			mtd->erasesize *= 2;
-			mtd->writesize *= 2;
-			mtd->oobsize *= 2;
-			break;
-
-		default:
-			aml_chip->plane_num = 1;
-			break;
-	}
-//interleave check 
-	options_selected = (plat->platform_nand_data.chip.options & NAND_INTERLEAVING_OPTIONS_MASK);
-	options_define = (aml_chip->options & NAND_INTERLEAVING_OPTIONS_MASK);
-	if (options_selected > options_define) {
-		aml_nand_debug("internal mode error for selected internal mode: %s force internal mode to : %s\n", aml_nand_internal_string[options_selected >> 16], aml_nand_internal_string[options_define >> 16]);
-		options_selected = options_define;
-	}
-
-	switch (options_selected) {
-
-		case NAND_INTERLEAVING_MODE:
-			aml_chip->ops_mode |= AML_INTERLEAVING_MODE;
-			mtd->erasesize *= aml_chip->internal_chipnr;
-			mtd->writesize *= aml_chip->internal_chipnr;
-			mtd->oobsize *= aml_chip->internal_chipnr;
-			break;
-
-		default:		
-			break;
-	}
-
-	return error;
-}
-
-static uint8_t aml_platform_read_byte(struct mtd_info *mtd)
-{
-	struct nand_chip *chip = mtd->priv;
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	
-	NFC_CMD_FIFO_RESET();
-
-	NFC_SEND_CMD(aml_chip->chip_selected | DRD | 0);
-	NFC_SEND_CMD(aml_chip->chip_selected | IDLE | 5);
-	while(NFC_CMDFIFO_SIZE()>0);
-	return readb(chip->IO_ADDR_R);
-}
-
 int aml_nand_init(struct aml_nand_chip *aml_chip)
 {
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
+	struct mtd_info *mtd = aml_chip->mtd;
 	int err = 0, i = 0;
 	
 	aml_chip->ran_mode=plat->ran_mode; 				//def close, for all part

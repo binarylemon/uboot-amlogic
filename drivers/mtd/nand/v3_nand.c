@@ -17,7 +17,7 @@ int nand_curr_device = -1;
 extern struct aml_nand_device aml_nand_mid_device;
 #define CONFIG_SYS_NAND_MAX_DEVICE 		4
 nand_info_t *pnand_info[CONFIG_SYS_NAND_MAX_DEVICE];
-nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE];
+nand_info_t nand_info[CONFIG_SYS_NAND_MAX_DEVICE]={0};
 #ifdef CONFIG_MTD_DEVICE
 /*static __attribute__((unused)) */char dev_name[CONFIG_SYS_MAX_NAND_DEVICE][8];
 #endif
@@ -59,13 +59,14 @@ static int a3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 	}
 
 	/* initialize mtd info data struct */
+	aml_chip->mtd = &(nand_info[dev_num]);
 
-	aml_chip->platform = plat;
 	chip = &aml_chip->chip;
-	chip->priv = &aml_chip->mtd;
-	mtd = &aml_chip->mtd;
+	mtd = aml_chip->mtd;
 	mtd->priv = chip;
-      chip->priv = aml_chip;
+     chip->priv = aml_chip;
+	aml_chip->platform = plat;
+
 	mtd->name = plat->name;
     aml_chip->max_ecc=sizeof(ecc_list)/sizeof(ecc_list[0]);
     aml_chip->ecc=ecc_list;
@@ -88,8 +89,8 @@ static int a3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 	if (err)
 		goto exit_error;
 
-	pnand_info[dev_num] = &aml_chip->mtd;
-      memcpy(&nand_info[dev_num], pnand_info[dev_num], sizeof(nand_info_t));
+//	pnand_info[dev_num] = aml_chip->mtd;
+//      memcpy(&nand_info[dev_num], pnand_info[dev_num], sizeof(nand_info_t));
 	return 0;
 
 exit_error:
@@ -103,7 +104,6 @@ exit_error:
 #define DRV_VERSION	"1.0"
 #define DRV_AUTHOR	"xiaojun_yoyo"
 #define DRV_DESC	"Amlogic nand flash uboot driver for A3/M3"
-
 void nand_init(void)
 {
 	struct aml_nand_platform *plat = NULL;
