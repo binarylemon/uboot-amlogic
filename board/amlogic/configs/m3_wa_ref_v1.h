@@ -36,7 +36,9 @@
 
 
 //Enable storage devices
+#ifndef CONFIG_JERRY_NAND_TEST
 #define CONFIG_CMD_NAND  1
+#endif
 #define CONFIG_CMD_SF        1
 
 

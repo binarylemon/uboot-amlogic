@@ -151,11 +151,12 @@ static struct i2c_board_info aml_i2c_info[] = {
 
 
 
-#if CONFIG_NAND_AML_M3 //temp test
-//#include <amlogic/nand/platform.h>
+#if CONFIG_JERRY_NAND_TEST //temp test
+#include <amlogic/nand/platform.h>
 #include <asm/arch/nand.h>
+#include <asm/arch/clock.h>
 #include <linux/mtd/partitions.h>
-#if 0
+#include <amlogic/debug.h>
 static void claim_bus(uint32_t get)
 {
 	if(get==NAND_BUS_RELEASE)
@@ -190,7 +191,11 @@ void    board_mynand_init(void)
 //	amlnand_probe();
 }
 
-#endif
+#elif CONFIG_NAND_AML_M3 //temp test
+//#include <amlogic/nand/platform.h>
+#include <asm/arch/nand.h>
+#include <linux/mtd/partitions.h>
+
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
     {
