@@ -25,9 +25,18 @@ struct __ecc_info_s {
 #define CNTL_CMD_ALE(ce,ale)			((2<<28)|(ce<<24)|(ale&0xff))
 #define CNTL_CMD_WAIT(ce,mode,cycle)	((3<<28)|(ce<<24)|((mode&0xff)<<16)|cycle)
 #define CNTL_CMD_SEED(seed)				((4<<28)|(seed))
-#define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),(cmd_t)address
-#define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode),(cmd_t)data,(cmd_t)info
-#define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode),(cmd_t)data,(cmd_t)info
+#define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),((cmd_t)(addr))
+#define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode)),((cmd_t)(data)),((cmd_t)(info))
+#define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode)),((cmd_t)(data)),((cmd_t)(info))
+
+#define CNTL_CMD_NOP_COUNT              1
+#define CNTL_CMD_CLE_COUNT              1
+#define CNTL_CMD_ALE_COUNT              1
+#define CNTL_CMD_WAIT_COUNT				1
+#define CNTL_CMD_SEED_COUNT				1
+#define CNTL_CMD_STATUS_COUNT			2
+#define CNTL_CMD_READ_COUNT				3
+#define CNTL_CMD_WRITE_COUNT			3
 
 typedef uint32_t jobkey_t;
 typedef int32_t dma_t;
@@ -142,6 +151,8 @@ struct __cntl_info_s{
 #define NAND_CNTL_INIT      	0   // struct aml_nand_platform *
 #define NAND_CNTL_TIME_SET      1   // t_rea,t_rhoh
 #define NAND_CNTL_FIFO_MODE     2
+	#define	NAND_CNTL_FIFO_SW		1
+	#define	NAND_CNTL_CMD_INT		2
 #define NAND_CNTL_POWER_SET     3   //@todo
 #define NAND_CNTL_FIFO_RESET    4   //@todo
 #define NAND_CNTL_ERROR			5
@@ -184,5 +195,6 @@ extern int32_t cntl_finish_jobs(void (*cb_finish)(uint32_t key, uint32_t st));
 extern int32_t cntl_error(void * val);
 extern void cntl_continue(void);
 extern void cntl_reset(void);
+int32_t cntl_job_status(jobkey_t * job,uint32_t key);
 
 #endif

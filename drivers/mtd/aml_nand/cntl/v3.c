@@ -6,6 +6,7 @@
 #include <asm/arch/nand.h>
 #include <asm/arch/clock.h>
 #include <asm/dma-mapping.h>
+#include <amlogic/debug.h>
 #define NAND_V3_DETAILS 16
 static ecc_t ecc_table[] ={
     { .name = "BCH OFF  ", .mode = 0, .bits = 0,  .data = 0,    .parity = 0,    .info = 0,.max=(1<<14)-1 },
@@ -142,9 +143,9 @@ static inline void wait_fifo_empty(struct v3_priv * priv)
     while(NFC_CMDFIFO_SIZE()>0){};
 }
 static const uint32_t v3_ce[]={CE0,CE1,CE2,CE3,CE_NOT_SEL};
-static const uint32_t v3_rbio[]={IO4,IO5,IO6};
+//static const uint32_t v3_rbio[]={IO4,IO5,IO6};
 #define NFC_CE(ce)      (v3_ce[ce])
-#define NFC_RBIO(io)    (v3_rbio[io])
+//#define NFC_RBIO(io)    (v3_rbio[io])
 static inline uint32_t v3_cmd_fifo_size(struct v3_priv * priv);
 #define CNTL_BUF_SIZE	(4*1024)
 #define CMD_FIFO_PLUS	64
@@ -302,15 +303,13 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 		assert(mode<3);
 		if (mode)
 			sync_adjust = (uint16_t) va_arg(args,uint32_t) & 1;
-		/*
-		 assert(t_rea>=priv->plat->t_rea);
-		 assert(t_rhoh>=priv->plat->t_rhoh);
-		 */
+
+		/** Onfi 2.2 Timing Mode 0 **/
 		t_rea = max(t_rea,priv->plat->t_rea) ?
-				max(t_rea,priv->plat->t_rea) : 20;
+				max(t_rea,priv->plat->t_rea) : 40;
 		t_rhoh =
 				max(t_rhoh,priv->plat->t_rhoh) ?
-						max(t_rhoh,priv->plat->t_rhoh) : 15;
+						max(t_rhoh,priv->plat->t_rhoh) : 0;
 
 		nanddebug(
 				1,
@@ -635,6 +634,17 @@ static char * v3_cmd_printstr(cmd_t cmd)
 	}
 	return  cmd_str;
 }
+static void cmd_print(uint32_t priv,uint16_t size,void * data)
+{
+	uint16_t i;
+	cmd_t * cmd=(cmd_t*)data;
+	printf("\t\bCurrent Hardware FIFO length %d",priv);
+	for(i=0;i<size/sizeof(cmd_t);i++)
+	{
+		printf("\n\t%06x\t%s",cmd[i],v3_cmd_printstr(cmd[i]));
+	}
+}
+#define HW_FIFO_LOG(size,data) debug_log(cmd_print,NFC_CMDFIFO_SIZE(),size,data)
 static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t size)
 {
 
@@ -648,18 +658,23 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     uint32_t write_size[4]={0,0,0,0};
     int32_t int_tag;
     uint32_t int_pos;
-    int i;
+    int i,j;
     hw_avail=NFC_CMDFIFO_AVAIL();
-    if((priv->fifo_mode&1)==0)
+    if((priv->fifo_mode&NAND_CNTL_FIFO_SW)==0)
     {
-    	if(hw_avail<size)//mode does not match
+    	i=0;
+    	while(i<size)
     	{
-    		nanddebug(1,"Hardware fifo is full");
-    		return -2;//mode does not match
+    		while((hw_avail=NFC_CMDFIFO_AVAIL())==0)
+    			__udelay(100);
+    		for(j=0;j<((size-i)>hw_avail?hw_avail:size-i);j++)
+    		{
+    			writel(cmd_q[i+j],P_NAND_CMD);
+    		}
+    		HW_FIFO_LOG(j*sizeof(cmd_t),&cmd_q[i]);
+    		i+=j;
     	}
-    	write_cmd[0]=cmd_q;
-    	write_size[0]=size;
-    	goto write_fifo_raw;
+    	return 0;
     }
     sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
     avail=v3_cmd_fifo_avail_plus(priv,CMD_FIFO_PLUS);
@@ -752,9 +767,11 @@ write_fifo_raw:
 	{
 		for(i=0;i<write_size[0];i++,priv->tail++)
 		{
-			nanddebug(NAND_V3_DETAILS,"Write fifo:%x fifo size=%d ,%s ",write_cmd[0][i],NFC_CMDFIFO_SIZE(),v3_cmd_printstr(write_cmd[0][i]));
+			//nanddebug(NAND_V3_DETAILS,"Write fifo:%x fifo size=%d ,%s ",write_cmd[0][i],NFC_CMDFIFO_SIZE(),v3_cmd_printstr(write_cmd[0][i]));
 			writel(write_cmd[0][i],P_NAND_CMD);
 		}
+
+		HW_FIFO_LOG(write_size[0]*sizeof(cmd_t),write_cmd[0]);
 	}
 	uint32_t keep=0,keep_pos=tail;
 
@@ -762,6 +779,7 @@ write_fifo_raw:
 	{
 		if(!(write_cmd[i]&&write_size[i]))
 			continue;
+/*
 		if(16<=CONFIG_ENABLE_NAND_DEBUG)
 		{
 			int j;
@@ -770,6 +788,8 @@ write_fifo_raw:
 				nanddebug(16,"%s",v3_cmd_printstr(write_cmd[i][j]));
 			}
 		}
+*/
+		HW_FIFO_LOG(write_size[i]*sizeof(cmd_t),write_cmd[i]);
 		if(keep==0)
 		{
 			keep=write_cmd[i][0];
@@ -797,10 +817,7 @@ write_fifo_raw:
  * @param config
  * @return
  */
-static int32_t v3_fifo(cntl_t *cntl, uint32_t config, ...)
-{
-	return -1;
-}
+
 static uint32_t v3_size(cntl_t * cntl)
 {
 	DEFINE_CNTL_PRIV(priv, cntl);

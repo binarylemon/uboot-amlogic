@@ -209,5 +209,5 @@
 #define CONFIG_REVISION_TAG		1
 #define CONFIG_CMD_KGDB			1
 ////#define CONFIG_SERIAL_TAG       1*/
-#include <amlogic/debug.h>
+
 #endif /* _CPU_H */
