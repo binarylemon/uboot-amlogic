@@ -9,4 +9,7 @@ ddwin32 of=t.bin if=%1   bs=512 skip=1 seek=1
 
 ddwin32 if=/dev/zero of=t.bin  bs=512 seek=1023 count=1
 ddwin32 if=t.bin of=\\?\Device\Harddisk3\Partition0 
+
 sync
+date /t
+time /t

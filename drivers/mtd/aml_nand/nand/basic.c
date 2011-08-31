@@ -35,6 +35,7 @@ struct id_read_s{
 	uint64_t onfi;
 };
 static nand_cfg_t nand_cfg;
+/*
 typedef struct cmd_queue_s cmd_queue_t;
 struct cmd_queue_s{
 	uint32_t maxsize;
@@ -42,80 +43,12 @@ struct cmd_queue_s{
 	uint32_t size;
 	cmd_t 	* queue;
 };
-#ifndef CONFIG_NANDCMD_QUEUE_SIZE
-#define CONFIG_NANDCMD_QUEUE_SIZE 128
-#endif
-cmd_queue_t * cmd_queue_alloc(cmd_queue_t * queue)
-{
-	cmd_queue_t * ret=queue?queue:malloc(sizeof(*queue));
-	if(ret==NULL)
-		return NULL;
-	memset(ret,0,sizeof(*ret));
-	ret->maxsize=CONFIG_NANDCMD_QUEUE_SIZE;
-	ret->queue=malloc(ret->maxsize*sizeof(*(ret->queue)));
-	if(ret->queue==NULL)
-	{
-		free(ret);
-		return NULL;
-	}
-	memset(ret->queue,0,ret->maxsize*sizeof(*(ret->queue)));
-	return ret;
-}
-void cmd_queue_free(cmd_queue_t * queue)
-{
-	free(queue->queue);
-	free(queue);
-}
 
-int32_t cmd_queue_write_sigle(cmd_queue_t * queue,cmd_t cmd)
-{
-	typeof(queue->queue)  new_queue;
-	assert(queue&&queue->queue);
-	if(queue->size==queue->maxsize)
-	{
-
-		new_queue=malloc((queue->maxsize+CONFIG_NANDCMD_QUEUE_SIZE)*sizeof(*new_queue));
-		if(new_queue==NULL)
-		{
-			assert(0);
-			return -1;
-		}
-		memcpy(new_queue,queue->queue,(queue->maxsize)*sizeof(*new_queue));
-		free(queue->queue);
-		memset(&new_queue[(CONFIG_NANDCMD_QUEUE_SIZE)],0,(CONFIG_NANDCMD_QUEUE_SIZE)*sizeof(*new_queue));
-		queue->maxsize+=CONFIG_NANDCMD_QUEUE_SIZE;
-		queue->queue=new_queue;
-	}
-	queue->queue[queue->size++]=cmd;
-	return 0;
-}
-int32_t cmd_queue_write(cmd_queue_t * queue,uint32_t count,...)
-{
-	va_list args;
-	int32_t i;
-	int32_t ret;
-	if(count==0)
-		return 0;
-	typeof(*(queue->queue)) cmd;
-	va_start(args,count);
-	for(i=0,ret=0;i<count&&ret==0;i++)
-	{
-		cmd= va_arg(args,typeof(*(queue->queue)));
-		ret=cmd_queue_write_sigle(queue,cmd);
-	}
-	va_end(args);
-	return ret;
-}
-cmd_t cmd_queue_get_next(cmd_queue_t* queue)
-{
-	if(queue->cur==queue->size)
-		return 0;
-	return queue->queue[queue->cur++];
-}
 #define NAND_CMD_STAT_START 0
 #define NAND_CMD_STAT_END 	-1
 #define DECLARE_POUT(out) cmd_queue_t * pout=out
 #define WRITE_CMD_QUEUE(a,b...) cmd_queue_write(pout,CNTL_CMD_##a##_COUNT,CNTL_CMD_##a(b))
+*/
 int32_t nand_reset_identy_queue(cmd_queue_t * out,int32_t st,int32_t ce,struct id_read_s * id,jobkey_t * job)
 {
 	DECLARE_POUT(out);
@@ -143,6 +76,13 @@ int32_t nand_reset_identy_queue(cmd_queue_t * out,int32_t st,int32_t ce,struct i
 		break;
 	}
 	return NAND_CMD_STAT_END;
+}
+int32_t nand_write_finish(cmd_queue_t * out,jobkey_t * job)
+{
+	DECLARE_POUT(out);
+	WRITE_CMD_QUEUE(NOP, 4, 0);
+	WRITE_CMD_QUEUE(STATUS, STS_NO_INTERRUPT, job);
+	return 0;
 }
 int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_t *cntl)
 {
@@ -176,12 +116,14 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 		cntl_ctrl(i,NAND_ALE(0x20));
 		cntl_readbytes(&id[i].onfi,sizeof(id[i].onfi));
 	}
+	cntl_sts(job[4],STS_NO_INTERRUPT);
 #else
-	cmd_queue_t queue;
-	cmd_queue_t * p=cmd_queue_alloc(&queue);
+	cmd_queue_t *pout;
+	cmd_queue_t * p=cmd_queue_alloc();
 	uint32_t cemask=0;
 	int32_t stat[max_ce];
 	assert(p!=NULL);
+	debug_sleep();
 	for (i = 0; i < max_ce; i++)
 	{
 		stat[i]=NAND_CMD_STAT_START;
@@ -198,9 +140,13 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 				cemask|=(1<<i);
 		}
 	}
+	nand_write_finish(p,job[4]);
+	pout=cmd_queue_alloc();
+	cntl_write_cmd(p,pout);
 	cmd_queue_free(p);
+	cmd_queue_free(pout);
 #endif
-	cntl_sts(job[4],STS_NO_INTERRUPT);
+
 	while(cntl_job_status(job[4],4|0x100)<0)
 	{
 		uint32_t ce;

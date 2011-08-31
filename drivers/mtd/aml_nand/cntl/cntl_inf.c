@@ -23,12 +23,12 @@
 #define in_interrupt() FALSE
 #endif
 static cntl_t * cntl=NULL;
-uint32_t cntl_try_lock(void)
+int32_t cntl_try_lock(void)
 {
 	/**
 	 * @todo implement this function
 	 */
-	return -1;
+	return 0;
 }
 void cntl_unlock(void)
 {
@@ -37,6 +37,7 @@ void cntl_unlock(void)
 	 */
 	return;
 }
+cntl_t * get_v3(void);
 int cntl_init(struct aml_nand_platform * plat)
 {
 
@@ -191,42 +192,17 @@ int32_t cntl_data2info(void * info,void * data,dma_t dma)//-1,error found
 	return cntl->data2info(info,data,dma);
 }
 
-int32_t cmdq_alloc(cmdq_t * cmdq)
-{
-	cmdq->cmd=(cmd_t*)malloc(cmdq->size*sizeof(cmd_t));
-	if(cmdq->cmd==NULL)
-		return -1;
-	return 0;
-}
-void cmdq_free(cmdq_t * cmdq)
-{
-	if(cmdq->cmd)
-		free(cmdq->cmd);
-	cmdq->cmd=NULL;
-}
 
-int32_t cntl_write_cmd(cmdq_t * in,cmdq_t * out)
+
+int32_t cntl_write_cmd(cmd_queue_t * in,cmd_queue_t * out)
 {
-	assert(cntl!=NULL);
+	assert(cntl!=NULL&&cntl->convert_cmd);
+	assert(out!=NULL);
+	//assert(in!=NULL);
 	int32_t ret=0;
-	uint32_t step=0x10;
-	if (in != NULL)
-	{
-		do
-		{
-
-			if (ret < 0 || out->cmd == NULL || in_interrupt()==FALSE)
-			{
-				cmdq_free(out);
-				out->size += step;
-				if (cmdq_alloc(out) < 0)
-					return -1; //space not enough
-			}
-
-			ret = cntl->convert_cmd(in, out);
-		} while (ret < 0 && in_interrupt()==FALSE);
-	}
-	if(ret==0)
+	if(in!=NULL)
+		ret = cntl->convert_cmd(in, out);
+	if(ret>=0)
 	{
 		if(cntl_try_lock())
 			return -EAGAIN;
@@ -254,5 +230,74 @@ int32_t cntl_finish_jobs(void (* cb_finish)(uint32_t key,uint32_t st))
 
 	return 0;
 }
+#ifndef CONFIG_NANDCMD_QUEUE_SIZE
+#define CONFIG_NANDCMD_QUEUE_SIZE 128
+#endif
+cmd_queue_t * cmd_queue_alloc(void)
+{
+	cmd_queue_t * ret=malloc(sizeof(*ret));
+	if(ret==NULL)
+		return NULL;
+	memset(ret,0,sizeof(*ret));
+	ret->maxsize=CONFIG_NANDCMD_QUEUE_SIZE;
+	ret->queue=malloc(ret->maxsize*sizeof(*(ret->queue)));
+	if(ret->queue==NULL)
+	{
+		free(ret);
+		return NULL;
+	}
+	memset(ret->queue,0,ret->maxsize*sizeof(*(ret->queue)));
+	return ret;
+}
+void cmd_queue_free(cmd_queue_t * queue)
+{
+	free(queue->queue);
+	free(queue);
+}
 
+static int32_t cmd_queue_write_sigle(cmd_queue_t * queue,cmd_t cmd)
+{
+	typeof(queue->queue)  new_queue;
+	assert(queue&&queue->queue);
+	if(queue->size==queue->maxsize)
+	{
+
+		new_queue=malloc((queue->maxsize+CONFIG_NANDCMD_QUEUE_SIZE)*sizeof(*new_queue));
+		if(new_queue==NULL)
+		{
+			assert(0);
+			return -1;
+		}
+		memcpy(new_queue,queue->queue,(queue->maxsize)*sizeof(*new_queue));
+		free(queue->queue);
+		memset(&new_queue[(CONFIG_NANDCMD_QUEUE_SIZE)],0,(CONFIG_NANDCMD_QUEUE_SIZE)*sizeof(*new_queue));
+		queue->maxsize+=CONFIG_NANDCMD_QUEUE_SIZE;
+		queue->queue=new_queue;
+	}
+	queue->queue[queue->size++]=cmd;
+	return 0;
+}
+int32_t cmd_queue_write(cmd_queue_t * queue,uint32_t count,...)
+{
+	va_list args;
+	int32_t i;
+	int32_t ret;
+	if(count==0)
+		return 0;
+	typeof(*(queue->queue)) cmd;
+	va_start(args,count);
+	for(i=0,ret=0;i<count&&ret==0;i++)
+	{
+		cmd= va_arg(args,typeof(*(queue->queue)));
+		ret=cmd_queue_write_sigle(queue,cmd);
+	}
+	va_end(args);
+	return ret;
+}
+cmd_t cmd_queue_get_next(cmd_queue_t* queue)
+{
+	if(queue->cur==queue->size)
+		return 0;
+	return queue->queue[queue->cur++];
+}
 

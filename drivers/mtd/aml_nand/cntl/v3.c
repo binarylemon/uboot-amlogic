@@ -39,8 +39,8 @@ static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job);
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma,uint32_t size,uint32_t short_size,uint32_t seed);
 static int32_t v3_info2data(void * data,void * info,dma_t dma);//-1,found ecc fail,>=0,ecc counter .
 static int32_t v3_data2info(void * info,void * data,dma_t dma);//-1,error found
-static int32_t v3_convert_cmd(cmdq_t * in,cmdq_t* out);
-static int32_t v3_write_cmd(cntl_t * ,cmdq_t * cmd);
+static int32_t v3_convert_cmd(cmd_queue_t * in,cmd_queue_t* out);
+static int32_t v3_write_cmd(cntl_t * ,cmd_queue_t * cmd);
 static int32_t v3_seed(cntl_t *, uint16_t seed);//0 disable
 /**
  *
@@ -335,17 +335,26 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 		nanddebug(1, "P_NAND_CFG=%x\n", readl(P_NAND_CFG));
 	}
 		break;
-	case NAND_CNTL_FIFO_MODE: //uint16_t start(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
+	case NAND_CNTL_MODE: //uint16_t start(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
 	{
-		mode = ((uint16_t) va_arg(args,uint32_t)) & 3;
+		mode = ((uint16_t) va_arg(args,uint32_t)) & 0xf;
 		uint16_t xor = mode ^ priv->fifo_mode;
+		if(xor==0)
+			break;
 		if (xor != 0)
 		{
 			NFC_CMD_WAIT_EMPTY();
 			priv->fifo_mode = mode;
-			if (xor & 2)
+			if (xor & 0xc)
 			{
-				clrsetbits_le32(P_NAND_CFG, 3<<20, (mode&1?3:0)<<20);
+				clrsetbits_le32(P_NAND_CFG, 3<<20, (mode&0xc)<<18);
+			}
+			if (xor & 0x3)
+			{
+				if(mode&1)
+					clrsetbits_le32(P_NAND_CFG, 3<<12, (mode&0x3)<<12);
+				else
+					clrbits_le32(P_NAND_CFG, 3<<12);
 			}
 		}
 	}
@@ -660,7 +669,19 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     uint32_t int_pos;
     int i,j;
     hw_avail=NFC_CMDFIFO_AVAIL();
-    if((priv->fifo_mode&NAND_CNTL_FIFO_SW)==0)
+    if((priv->fifo_mode&NAND_CNTL_FIFO_MASK)==NAND_CNTL_FIFO_HW_NO_WAIT)
+    {
+    	if(hw_avail<size)//mode does not match
+    	{
+    		nanddebug(1,"Hardware fifo is full");
+    		return -2;//mode does not match
+    	}
+    	write_cmd[0]=cmd_q;
+    	write_size[0]=size;
+    	goto write_fifo_raw;
+
+    }
+    if((priv->fifo_mode&NAND_CNTL_FIFO_MASK)==NAND_CNTL_FIFO_HW)
     {
     	i=0;
     	while(i<size)
@@ -807,8 +828,8 @@ write_fifo_raw:
 		priv->tail=tail;
 	sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
 	priv->nfc_ce=new_ce;
-	if((priv->fifo_mode&2)&&sizefifo)
-		setbits_le32(P_NAND_CFG,1<<12);//start fifo immediatly
+	if((priv->fifo_mode&1)&&sizefifo)
+		clrsetbits_le32(P_NAND_CFG,3<<12,(priv->fifo_mode&3)<<12);//start fifo immediatly
 	return 0;
 }
 /***
@@ -912,99 +933,72 @@ static int32_t v3_seed(cntl_t * cntl, uint16_t seed)
 		V3_FIFO_WRITE( NFC_CMD_SEED(seed));
 		return 0;
 }
-static int32_t v3_convert_cmd(cmdq_t * inq,cmdq_t* outq)
+static int32_t v3_convert_cmd(cmd_queue_t * inq, cmd_queue_t* outq)
 {
-	uint32_t cur=0;
-	cmd_t * in;
-	cmd_t * out;
-	in=inq->cmd;
-	out=outq->cmd;
-	uint32_t ce,mode,para,cmd;
-	while(*in!=0&&cur<outq->size)
+#define CMD_WRITE_SIGNLE(cmd) cmd_queue_write(outq, 1 , cmd)
+
+	uint32_t ce, mode, para, op;
+	cmd_t cmd, cmd1, cmd2, wcmd;
+	outq->cur = 0;
+	while ((cmd = cmd_queue_get_next(inq)))
 	{
-		cmd=*in>>28;
-		ce=NFC_CE((*in>>24)&0xf);
+		op = (cmd >> 28) & 0xf;
+		ce = NFC_CE((cmd>>24)&0xf);
 
-
-
-		switch(*in&(0xf<<28))
+		switch (op)
 		{
-		case 1: //cle
-			*out = NFC_CMD_CLE(ce,*in&0xff);
+		case 1: /*cle*/
+			CMD_WRITE_SIGNLE(NFC_CMD_CLE(ce,cmd&0xff));
 			break;
-		case 2: //ale
-			*out = NFC_CMD_ALE(ce,*in&0xff);
+		case 2: /*ale*/
+			CMD_WRITE_SIGNLE(NFC_CMD_ALE(ce,cmd&0xff));
 			break;
-		case 8: //nop
-			*out = NFC_CMD_CLE(ce,*in&0xffff);
+		case 8: /*nop*/
+			CMD_WRITE_SIGNLE(NFC_CMD_IDLE(ce,cmd&0xffff));
 			break;
+		case 4:/*seed*/
+			CMD_WRITE_SIGNLE(NFC_CMD_SEED(cmd));
+			break;
+
 		case 3: //wait
-			mode = (*in >> 16) & 0xff;
-			para = *in & 0xffff;
-			cur++;
-			*out++ = NFC_CMD_IDLE(ce,0);
-			ce = (*in >> 24) & 0xf;
-
-			if (NAND_RB_IS_RBIO(mode))
-			{
-				*out = NFC_CMD_RBIO_ID(NFC_CE(mode&0xf),ce, para);
-			}
-			else
-			{
-				*out = NFC_CMD_RB_ID(NFC_CE(mode&0xf),ce, para);
-			}
-			if (NAND_RB_IS_INT(mode))
-			{
-				mode = NFC_CE(mode&0xf);
-				mode ^= CE_NOT_SEL;
-				*out |= mode << 4;
-			}
+			mode = (cmd >> 16) & 0xff;
+			para = cmd & 0xffff;
+			wcmd = NAND_RB_IS_RBIO(mode) ?
+					NFC_CMD_RBIO_ID(NFC_CE(mode&0xf),ce, para) :
+					NFC_CMD_RB_ID(NFC_CE(mode&0xf),ce, para);
+			wcmd |= NAND_RB_IS_INT(mode) ?
+					(NFC_CE(mode&0xf) ^ CE_NOT_SEL) << 4 : 0;
+			cmd_queue_write(outq, 2, NFC_CMD_IDLE(ce,0), wcmd);
 			break;
-		case 4:
-			*out=NFC_CMD_SEED(*in);
+		case 5: //STS
+			mode = (cmd >> 24) & 3;
+			cmd1 = cmd_queue_get_next(inq);
+			cmd_queue_write(outq, 3, NFC_CMD_ASL(cmd1), NFC_CMD_ASH(cmd1),
+					NFC_CMD_STS(mode));
 			break;
-		case 5:
-			*out++=NFC_CMD_ASL(*(in+1));
-			*out++=NFC_CMD_ASH(*(in+1));
+		case 6: //Read
+			cmd1 = cmd_queue_get_next(inq);
+			cmd2 = cmd_queue_get_next(inq);
+			cmd_queue_write(outq, 5,
+			NFC_CMD_ADL(cmd1), NFC_CMD_ADH(cmd1), NFC_CMD_AIL(cmd2),
+					NFC_CMD_AIH(cmd2), NFC_CMD_READ(cmd));
 
-			*out=NFC_CMD_STS((*in>>24)&3);
-			in++;
-			cur+=2;
 			break;
-		case 6:
-			*out++ = NFC_CMD_ADL(*(in+1));
-			*out++ = NFC_CMD_ADH(*(in+1));
-
-			*out++ = NFC_CMD_AIL(*(in+2));
-			*out++ = NFC_CMD_AIH(*(in+2));
-			*out = NFC_CMD_READ(*in);
-			in+=2;
-			cur+=4;
+		case 7://write
+			cmd1 = cmd_queue_get_next(inq);
+			cmd2 = cmd_queue_get_next(inq);
+			cmd_queue_write(outq, 5,
+			NFC_CMD_ADL(cmd1), NFC_CMD_ADH(cmd1), NFC_CMD_AIL(cmd2),
+					NFC_CMD_AIH(cmd2), NFC_CMD_WRITE(cmd));
 			break;
-		case 7:
-			*out++ = NFC_CMD_ADL(*(in+1));
-			*out++ = NFC_CMD_ADH(*(in+1));
-
-			*out++ = NFC_CMD_AIL(*(in+2));
-			*out++ = NFC_CMD_AIH(*(in+2));
-			*out = NFC_CMD_WRITE(*in);
-			in+=2;
-			cur+=4;
-			break;
-
-
 		}
-		in++;
-		cur++;
-		out++;
 	}
-	return cur<outq->size?0:-1;
+	return outq->size;
 }
-static int32_t v3_write_cmd(cntl_t * cntl ,cmdq_t * cmdq)
+static int32_t v3_write_cmd(cntl_t * cntl ,cmd_queue_t * cmdq)
 {
 	DEFINE_CNTL_PRIV(priv,cntl);
-	uint32_t size=0;
-	cmd_t * p=cmdq->cmd;
+	cmd_t * p=cmdq->queue;
 	return v3_fifo_write(priv,p,cmdq->size);
 }
 
@@ -1283,6 +1277,6 @@ static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 
 cntl_t * get_v3(void)
 {
-	return &v3_driver;
+	return (cntl_t*)&v3_driver;
 }
 

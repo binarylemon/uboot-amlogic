@@ -28,6 +28,7 @@ struct __ecc_info_s {
 #define CNTL_CMD_STATUS(mode,addr)		((5<<28)|((mode&3)<<24)),((cmd_t)(addr))
 #define CNTL_CMD_READ(mode,data,info)	((6<<28)|(mode)),((cmd_t)(data)),((cmd_t)(info))
 #define CNTL_CMD_WRITE(mode,data,info)	((7<<28)|(mode)),((cmd_t)(data)),((cmd_t)(info))
+#define CNTL_CE_NOT_SEL					0xf
 
 #define CNTL_CMD_NOP_COUNT              1
 #define CNTL_CMD_CLE_COUNT              1
@@ -38,13 +39,21 @@ struct __ecc_info_s {
 #define CNTL_CMD_READ_COUNT				3
 #define CNTL_CMD_WRITE_COUNT			3
 
+#define NAND_CMD_STAT_START 0
+#define NAND_CMD_STAT_END 	-1
+#define DECLARE_POUT(out) cmd_queue_t * pout=out
+#define WRITE_CMD_QUEUE(a,b...) cmd_queue_write(pout,CNTL_CMD_##a##_COUNT,CNTL_CMD_##a(b))
+
 typedef uint32_t jobkey_t;
 typedef int32_t dma_t;
 typedef uint32_t cmd_t;
-typedef struct{
+typedef struct cmd_queue_s cmd_queue_t;
+struct cmd_queue_s{
+	uint32_t maxsize;
+	uint32_t cur;
 	uint32_t size;
-	cmd_t 	* cmd;
-} cmdq_t;
+	cmd_t 	* queue;
+};
 typedef struct __dma_desc_s{
     dma_t       dma;
     uint16_t    page_size;
@@ -72,9 +81,9 @@ struct __cntl_info_s{
     uint32_t (* tail)(cntl_t *);
 
     /** nand command routines*/
-    int32_t	 (* convert_cmd)(cmdq_t * in,cmdq_t* out);
+    int32_t	 (* convert_cmd)(cmd_queue_t * in,cmd_queue_t * out);
     /** This command will send to cntl directly     */
-    int32_t  (* write_cmd)(cntl_t * ,cmdq_t * cmd);
+    int32_t  (* write_cmd)(cntl_t * ,cmd_queue_t * cmd);
 #define IS_CLE(a)	((a&0x100)==0)
 #define NAND_CLE(a)	((a)&0xff)
 #define NAND_ALE(a)	(((a)&0xff)|0x100)
@@ -150,9 +159,14 @@ struct __cntl_info_s{
 */
 #define NAND_CNTL_INIT      	0   // struct aml_nand_platform *
 #define NAND_CNTL_TIME_SET      1   // t_rea,t_rhoh
-#define NAND_CNTL_FIFO_MODE     2
-	#define	NAND_CNTL_FIFO_SW		1
-	#define	NAND_CNTL_CMD_INT		2
+#define NAND_CNTL_MODE     2
+	#define	NAND_CNTL_FIFO_MASK		3
+		#define	NAND_CNTL_FIFO_HW				0
+		#define	NAND_CNTL_FIFO_CMD				1
+		#define	NAND_CNTL_FIFO_HW_NO_WAIT		2
+		#define	NAND_CNTL_FIFO_CMD_AUTO			3
+	#define	NAND_CNTL_MODE_INT_STS				0x4
+	#define NAND_CNTL_MODE_INT_RB				0x8
 #define NAND_CNTL_POWER_SET     3   //@todo
 #define NAND_CNTL_FIFO_RESET    4   //@todo
 #define NAND_CNTL_ERROR			5
@@ -164,17 +178,17 @@ struct __cntl_info_s{
  * Interface functions
  */
 
-extern uint32_t cntl_try_lock(void);
+extern int32_t cntl_try_lock(void);
 extern void cntl_unlock(void);
-extern int32_t cntl_init(struct aml_nand_platform * plat);
-extern cntl_t * cntl_get(void);
+extern int cntl_init(struct aml_nand_platform *plat);
+extern cntl_t *cntl_get(void);
 extern int32_t cntl_config(uint32_t config, ...);
 extern uint32_t cntl_size(void);
 extern uint32_t cntl_avail(void);
 extern uint32_t cntl_head(void);
 extern uint32_t cntl_tail(void);
 extern int32_t cntl_ctrl(uint16_t ce, uint16_t ctrl);
-extern int32_t cntl_wait( uint16_t ce, uint8_t mode,uint8_t cycle_log2);
+extern int32_t cntl_wait(uint16_t ce, uint8_t mode, uint8_t cycle_log2);
 extern int32_t cntl_nop(uint16_t ce, uint16_t cycles);
 extern int32_t cntl_sts(jobkey_t *job, uint16_t mode);
 extern int32_t cntl_readbytes(void *addr, dma_t dma_mode);
@@ -184,17 +198,20 @@ extern int32_t cntl_writeecc(void *addr, void *info, dma_t dma_mode);
 extern jobkey_t *cntl_job_get(uint32_t mykey);
 extern int32_t cntl_job_free(jobkey_t *job);
 extern int32_t cntl_job_lookup(jobkey_t **jobs, uint32_t size);
+extern int32_t cntl_job_status(jobkey_t *job, uint32_t key);
+extern int32_t cntl_error(void *desc);
+extern void cntl_continue(void);
+extern void cntl_reset(void);
 extern int32_t cntl_seed(uint16_t seed);
 extern int32_t cntl_ecc2dma(ecc_t *orig, dma_desc_t *dma, uint32_t size, uint32_t short_size, uint32_t seed);
 extern int32_t cntl_info2data(void *data, void *info, dma_t dma);
 extern int32_t cntl_data2info(void *info, void *data, dma_t dma);
-extern int32_t cmdq_alloc(cmdq_t *cmdq);
-extern void cmdq_free(cmdq_t *cmdq);
-extern int32_t cntl_write_cmd(cmdq_t *in, cmdq_t *out);
+extern int32_t cntl_write_cmd(cmd_queue_t *in, cmd_queue_t *out);
 extern int32_t cntl_finish_jobs(void (*cb_finish)(uint32_t key, uint32_t st));
-extern int32_t cntl_error(void * val);
-extern void cntl_continue(void);
-extern void cntl_reset(void);
-int32_t cntl_job_status(jobkey_t * job,uint32_t key);
+extern cmd_queue_t *cmd_queue_alloc(void);
+extern void cmd_queue_free(cmd_queue_t *queue);
+extern int32_t cmd_queue_write(cmd_queue_t *queue, uint32_t count, ...);
+extern cmd_t cmd_queue_get_next(cmd_queue_t *queue);
+
 
 #endif
