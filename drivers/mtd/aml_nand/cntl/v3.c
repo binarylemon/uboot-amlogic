@@ -970,7 +970,7 @@ static int32_t v3_convert_cmd(cntl_t * cntl,cmd_queue_t * inq, cmd_queue_t* outq
 					NFC_CMD_RB_ID(NFC_CE(mode&0xf),ce, para);
 			wcmd |= NAND_RB_IS_INT(mode) ?
 					(NFC_CE(mode&0xf) ^ CE_NOT_SEL) << 4 : 0;
-			cmd_queue_write(outq, 2, NFC_CMD_IDLE(ce,0), wcmd);
+			cmd_queue_write(outq, 2, NFC_CMD_IDLE(NFC_CE(ce),0), wcmd);
 			break;
 		case 5: //STS
 			mode = (cmd >> 24) & 3;
