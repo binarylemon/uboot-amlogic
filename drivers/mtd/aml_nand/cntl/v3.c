@@ -827,6 +827,8 @@ write_fifo_raw:
 	}
 	if(keep)cmd_fifo[keep_pos]=keep;
 	nfc_dmb();
+	cmd_fifo[tail]=0;
+
 	if(tail>fifo_size)
 		priv->fifo_tail=0;
 	else
@@ -1280,6 +1282,7 @@ static uint32_t v3_job_key(cntl_t * cntl, jobkey_t * job)
 static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 {
 	volatile sts_t * p=(volatile sts_t*)job;
+	dmb();
 	if(p->done<0)
 		return p->st[0];
 	return -1;
