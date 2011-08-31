@@ -123,7 +123,6 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 	uint32_t cemask=0;
 	int32_t stat[max_ce];
 	assert(p!=NULL);
-	debug_sleep();
 	for (i = 0; i < max_ce; i++)
 	{
 		stat[i]=NAND_CMD_STAT_START;
@@ -158,6 +157,7 @@ int32_t nand_reset_identy(nand_cfg_t * cfg,struct aml_nand_platform * plat,cntl_
 	};
 
 	amlogic_log_print();
+	printf("\n");
 
 
 /**

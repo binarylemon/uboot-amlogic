@@ -46,7 +46,7 @@ int cntl_init(struct aml_nand_platform * plat)
 
     cntl_config(NAND_CNTL_INIT,plat);
     //uint16_t mode(0:async,1:sync mode,2 toggle),uint16_t t_rea,uint16_t t_rhoh,uint16_t sync_adjust(optional)
-    cntl_config(NAND_CNTL_TIME_SET,0,0,0);
+    cntl_config(NAND_CNTL_TIME_SET,0,20,15);
     return 0;
 }
 cntl_t * cntl_get()
@@ -201,7 +201,7 @@ int32_t cntl_write_cmd(cmd_queue_t * in,cmd_queue_t * out)
 	//assert(in!=NULL);
 	int32_t ret=0;
 	if(in!=NULL)
-		ret = cntl->convert_cmd(in, out);
+		ret = cntl->convert_cmd(cntl,in, out);
 	if(ret>=0)
 	{
 		if(cntl_try_lock())

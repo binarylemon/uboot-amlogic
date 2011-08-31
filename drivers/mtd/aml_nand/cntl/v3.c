@@ -39,7 +39,7 @@ static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job);
 static int32_t v3_ecc2dma(ecc_t * orig,dma_desc_t* dma,uint32_t size,uint32_t short_size,uint32_t seed);
 static int32_t v3_info2data(void * data,void * info,dma_t dma);//-1,found ecc fail,>=0,ecc counter .
 static int32_t v3_data2info(void * info,void * data,dma_t dma);//-1,error found
-static int32_t v3_convert_cmd(cmd_queue_t * in,cmd_queue_t* out);
+static int32_t v3_convert_cmd(cntl_t * cntl,cmd_queue_t * in,cmd_queue_t* out);
 static int32_t v3_write_cmd(cntl_t * ,cmd_queue_t * cmd);
 static int32_t v3_seed(cntl_t *, uint16_t seed);//0 disable
 /**
@@ -933,12 +933,13 @@ static int32_t v3_seed(cntl_t * cntl, uint16_t seed)
 		V3_FIFO_WRITE( NFC_CMD_SEED(seed));
 		return 0;
 }
-static int32_t v3_convert_cmd(cmd_queue_t * inq, cmd_queue_t* outq)
+static int32_t v3_convert_cmd(cntl_t * cntl,cmd_queue_t * inq, cmd_queue_t* outq)
 {
 #define CMD_WRITE_SIGNLE(cmd) cmd_queue_write(outq, 1 , cmd)
 
 	uint32_t ce, mode, para, op;
 	cmd_t cmd, cmd1, cmd2, wcmd;
+	DEFINE_CNTL_PRIV(priv,cntl);
 	outq->cur = 0;
 	while ((cmd = cmd_queue_get_next(inq)))
 	{
@@ -961,6 +962,7 @@ static int32_t v3_convert_cmd(cmd_queue_t * inq, cmd_queue_t* outq)
 			break;
 
 		case 3: //wait
+			ce = ((cmd>>24)&0xf);
 			mode = (cmd >> 16) & 0xff;
 			para = cmd & 0xffff;
 			wcmd = NAND_RB_IS_RBIO(mode) ?
@@ -979,6 +981,7 @@ static int32_t v3_convert_cmd(cmd_queue_t * inq, cmd_queue_t* outq)
 		case 6: //Read
 			cmd1 = cmd_queue_get_next(inq);
 			cmd2 = cmd_queue_get_next(inq);
+			cmd2=cmd2?cmd2:priv->temp;
 			cmd_queue_write(outq, 5,
 			NFC_CMD_ADL(cmd1), NFC_CMD_ADH(cmd1), NFC_CMD_AIL(cmd2),
 					NFC_CMD_AIH(cmd2), NFC_CMD_READ(cmd));
@@ -987,6 +990,7 @@ static int32_t v3_convert_cmd(cmd_queue_t * inq, cmd_queue_t* outq)
 		case 7://write
 			cmd1 = cmd_queue_get_next(inq);
 			cmd2 = cmd_queue_get_next(inq);
+			cmd2=cmd2?cmd2:priv->temp;
 			cmd_queue_write(outq, 5,
 			NFC_CMD_ADL(cmd1), NFC_CMD_ADH(cmd1), NFC_CMD_AIL(cmd2),
 					NFC_CMD_AIH(cmd2), NFC_CMD_WRITE(cmd));

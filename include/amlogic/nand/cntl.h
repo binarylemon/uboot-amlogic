@@ -81,7 +81,7 @@ struct __cntl_info_s{
     uint32_t (* tail)(cntl_t *);
 
     /** nand command routines*/
-    int32_t	 (* convert_cmd)(cmd_queue_t * in,cmd_queue_t * out);
+    int32_t	 (* convert_cmd)(cntl_t * cntl,cmd_queue_t * in,cmd_queue_t * out);
     /** This command will send to cntl directly     */
     int32_t  (* write_cmd)(cntl_t * ,cmd_queue_t * cmd);
 #define IS_CLE(a)	((a&0x100)==0)
