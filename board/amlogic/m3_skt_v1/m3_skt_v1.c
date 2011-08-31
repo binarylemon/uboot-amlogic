@@ -106,6 +106,11 @@ static struct adc_info g_adc_info[] = {
     {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL},
 };
 
+struct adc_device aml_adc_devices={
+	.adc_device_info = g_adc_info,
+	.dev_num = sizeof(g_adc_info)/sizeof(struct adc_info)
+};
+
 /* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
 /* void adc_init(struct adc_info *adc_info, unsigned int len) 
      @trunk/common/sys_test.c */
@@ -270,7 +275,13 @@ static struct i2c_board_info aml_i2c_info[] = {
         .device_init = board_i2c_init,
     },
 };
+
+struct aml_i2c_device aml_i2c_devices={
+	.aml_i2c_boards = aml_i2c_info,
+	.dev_num = sizeof(aml_i2c_info)/sizeof(struct i2c_board_info)
+};
 #endif /*CONFIG_AML_I2C*/
+
 #if CONFIG_JERRY_NAND_TEST //temp test
 #include <amlogic/nand/platform.h>
 #include <asm/arch/nand.h>

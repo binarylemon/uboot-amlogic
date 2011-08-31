@@ -382,8 +382,8 @@ void board_init_f (ulong bootflag)
 	//addr &= ~(4096 - 1);
 	// relocate code include mmu table, mmu table start address need 14bits alignment 
 	// so relocate code start code align to 14bits to set correct mmu table start addr	
-	//addr &= ~(0x10000 - 1);  // round down to 64kB is ok
-	addr &= ~(1024 * 16 - 1);	
+	//addr &= ~(0x10000 - 1);  // round down to 64kB is ok	
+	addr -= ((__mmu_table + addr - _TEXT_BASE)&((1024 * 16 - 1)));	
 
 	debug ("Reserving %ldk for U-Boot at: %08lx\n", gd->mon_len >> 10, addr);
 
@@ -427,7 +427,7 @@ void board_init_f (ulong bootflag)
 
 	debug ("New Stack Pointer is: %08lx\n", addr_sp);
 
-#ifdef CONFIG_POST	
+#ifdef CONFIG_POST		
 	post_bootmode_init();
 	post_run (NULL, POST_ROM | post_bootmode_get(0));
 #endif

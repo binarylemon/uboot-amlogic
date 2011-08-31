@@ -27,6 +27,9 @@
 
 #define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0xF00000)
 #define CONFIG_SYS_TEXT_BASE    0x8F800000
+#ifdef CONFIG_POST
+#define CONFIG_SYS_POST_WORD_ADDR CONFIG_SYS_TEXT_BASE-0x4
+#endif
 #define CONFIG_SYS_MALLOC_LEN   (4<<20)
 #define CONFIG_ENV_SIZE         (16 * 1024)
 #define CONFIG_SYS_MAXARGS      16
@@ -198,7 +201,7 @@
 #define SPL_STATIC_VAR      
 #endif
 
-//#define CONFIG_AML_RTC
+#define CONFIG_AML_RTC
 
 #define CONFIG_LZMA  1
 #define CONFIG_LZO

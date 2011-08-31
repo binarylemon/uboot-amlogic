@@ -2313,6 +2313,7 @@
 #define HHI_SYS_PLL_CNTL                           0x105a
 #define HHI_AUD_PLL_CNTL                           0x105b
 #define HHI_VID_PLL_CNTL                           0x105c
+#define HHI_VID2_PLL_CNTL							0x1047
 #define HHI_MPEG_CLK_CNTL                          0x105d
 #define HHI_AUD_CLK_CNTL                           0x105e
 #define HHI_VID_CLK_CNTL                           0x105f
