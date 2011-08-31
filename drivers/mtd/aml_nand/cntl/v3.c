@@ -289,7 +289,9 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 				"cmd_fifo addr=%p,size=%d,plus=%d ", priv->cmd_fifo, priv->fifo_mask+1, CMD_FIFO_PLUS);
 		nanddebug(1, "sts_buf addr=%p,size=%d ", priv->sts_buf, priv->sts_size);
 		nanddebug(1, "temp addr=%x\n ", priv->temp);
-		writel(0xc00000ea, P_NAND_CFG);
+		writel(0xc00000ea, P_NAND_CFG);//clear init
+		writel(priv->cmd_fifo,P_NAND_CADR);
+		writel(priv->sts_buf,P_NAND_SADR);
 
 	}
 		break;
@@ -335,7 +337,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 		nanddebug(1, "P_NAND_CFG=%x\n", readl(P_NAND_CFG));
 	}
 		break;
-	case NAND_CNTL_MODE: //uint16_t start(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
+	case NAND_CNTL_MODE: //uint16_t start,(bit0 cmd fifo: 1=enable 0=disable , bit1 interrupt : 0=disable,1=enable),
 	{
 		mode = ((uint16_t) va_arg(args,uint32_t)) & 0xf;
 		uint16_t xor = mode ^ priv->fifo_mode;
@@ -699,10 +701,13 @@ static int32_t v3_fifo_write(struct v3_priv *priv, uint32_t cmd_q[],uint32_t siz
     }
     sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
     avail=v3_cmd_fifo_avail_plus(priv,CMD_FIFO_PLUS);
+
     if(sizefifo==0)
     {
     	if((avail+hw_avail)<size)//no enough space
     		return -1;//no enough space now
+    	priv->tail=0;
+    	writel((uint32_t)(priv->cmd_fifo),P_NAND_CADR);
     	if(hw_avail>=size)
     	{
     		write_cmd[0]=cmd_q;
@@ -823,11 +828,12 @@ write_fifo_raw:
 	if(keep)cmd_fifo[keep_pos]=keep;
 	nfc_dmb();
 	if(tail>fifo_size)
-		priv->tail=0;
+		priv->fifo_tail=0;
 	else
-		priv->tail=tail;
+		priv->fifo_tail=tail;
 	sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
 	priv->nfc_ce=new_ce;
+	dmb();
 	if((priv->fifo_mode&1)&&sizefifo)
 		clrsetbits_le32(P_NAND_CFG,3<<12,(priv->fifo_mode&3)<<12);//start fifo immediatly
 	return 0;

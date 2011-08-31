@@ -159,7 +159,7 @@ struct __cntl_info_s{
 */
 #define NAND_CNTL_INIT      	0   // struct aml_nand_platform *
 #define NAND_CNTL_TIME_SET      1   // t_rea,t_rhoh
-#define NAND_CNTL_MODE     2
+#define NAND_CNTL_MODE     2		//uint16_t mode
 	#define	NAND_CNTL_FIFO_MASK		3
 		#define	NAND_CNTL_FIFO_HW				0
 		#define	NAND_CNTL_FIFO_CMD				1
@@ -169,7 +169,7 @@ struct __cntl_info_s{
 	#define NAND_CNTL_MODE_INT_RB				0x8
 #define NAND_CNTL_POWER_SET     3   //@todo
 #define NAND_CNTL_FIFO_RESET    4   //@todo
-#define NAND_CNTL_ERROR			5
+#define NAND_CNTL_ERROR			5 //uint32_t * out ,
 #define NAND_CNTL_GO			6
 #define NAND_CNTL_RESET			7
 
