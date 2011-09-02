@@ -394,6 +394,7 @@ static int32_t v3_config(cntl_t * cntl, uint32_t config, va_list args)
 //	va_end(args);
 	return 0;
 }
+//#define nfc_dmb() dmb()
 #define nfc_dmb()
 #define STS_2_CMD_SIZE 	5
 
@@ -826,7 +827,6 @@ write_fifo_raw:
 		tail+=write_size[i];
 	}
 	if(keep)cmd_fifo[keep_pos]=keep;
-	nfc_dmb();
 	cmd_fifo[tail]=0;
 
 	if(tail>fifo_size)
@@ -835,7 +835,7 @@ write_fifo_raw:
 		priv->fifo_tail=tail;
 	sizefifo=v3_cmd_fifo_size(priv);//if size == 0 , this function should reset fifo
 	priv->nfc_ce=new_ce;
-	dmb();
+	nfc_dmb();
 	if((priv->fifo_mode&1)&&sizefifo)
 		clrsetbits_le32(P_NAND_CFG,3<<12,(priv->fifo_mode&3)<<12);//start fifo immediatly
 	return 0;
@@ -1282,7 +1282,7 @@ static uint32_t v3_job_key(cntl_t * cntl, jobkey_t * job)
 static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 {
 	volatile sts_t * p=(volatile sts_t*)job;
-	dmb();
+	nfc_dmb();
 	if(p->done<0)
 		return p->st[0];
 	return -1;

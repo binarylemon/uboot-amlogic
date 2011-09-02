@@ -180,7 +180,7 @@ struct __cntl_info_s{
 
 extern int32_t cntl_try_lock(void);
 extern void cntl_unlock(void);
-extern int cntl_init(struct aml_nand_platform *plat);
+extern int32_t cntl_init(struct aml_nand_platform *plat);
 extern cntl_t *cntl_get(void);
 extern int32_t cntl_config(uint32_t config, ...);
 extern uint32_t cntl_size(void);

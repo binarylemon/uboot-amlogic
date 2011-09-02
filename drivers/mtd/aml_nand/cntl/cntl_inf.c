@@ -38,7 +38,7 @@ void cntl_unlock(void)
 	return;
 }
 cntl_t * get_v3(void);
-int cntl_init(struct aml_nand_platform * plat)
+int32_t cntl_init(struct aml_nand_platform * plat)
 {
 
     cntl=get_v3();
