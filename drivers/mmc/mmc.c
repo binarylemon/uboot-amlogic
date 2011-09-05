@@ -36,6 +36,8 @@
 static struct list_head mmc_devices;
 static int cur_dev_num = -1;
 
+#define MMC_RD_WR_MAX_BLK_NUM   (256)
+
 int __board_mmc_getcd(u8 *cd, struct mmc *mmc) {
 	return -1;
 }
@@ -143,7 +145,7 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 		 * The 65535 constraint comes from some hardware has
 		 * only 16 bit width block number counter
 		 */
-		cur = (blocks_todo > 65535) ? 65535 : blocks_todo;
+		cur = (blocks_todo > MMC_RD_WR_MAX_BLK_NUM) ? MMC_RD_WR_MAX_BLK_NUM : blocks_todo;
 		if(mmc_write_blocks(mmc, start, cur, src) != cur)
 			return 0;
 		blocks_todo -= cur;
@@ -219,7 +221,7 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 		 * The 65535 constraint comes from some hardware has
 		 * only 16 bit width block number counter
 		 */
-		cur = (blocks_todo > 65535) ? 65535 : blocks_todo;
+		cur = (blocks_todo > MMC_RD_WR_MAX_BLK_NUM) ? MMC_RD_WR_MAX_BLK_NUM : blocks_todo;
 		if(mmc_read_blocks(mmc, dst, start, cur) != cur)
 			return 0;
 		blocks_todo -= cur;
