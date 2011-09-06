@@ -97,6 +97,9 @@ extern void rtl8019_get_enetaddr (uchar * addr);
 #include <i2c.h>
 #endif
 
+#ifdef CONFIG_VIDEO_AMLLCD
+extern int aml_lcd_init(void);
+#endif
 
 /************************************************************************
  * Coloured LED functionality
@@ -368,10 +371,11 @@ void board_init_f (ulong bootflag)
 	gd->fb_base = addr;
 #endif /* CONFIG_VFD */
 
-#ifdef CONFIG_LCD
+#if defined(CONFIG_LCD) || defined(CONFIG_VIDEO_AMLLCD)
 	/* reserve memory for LCD display (always full pages) */
 	addr = lcd_setmem (addr);
 	gd->fb_base = addr;
+	debug("fb_base=%x\n", gd->fb_base);
 #endif /* CONFIG_LCD */
 
 	/*
@@ -559,6 +563,11 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	/* must do this after the framebuffer is allocated */
 	drv_vfd_init();
 #endif /* CONFIG_VFD */
+
+#ifdef CONFIG_VIDEO_AMLLCD
+	puts("LCD Initialize:   \n");
+	aml_lcd_init();
+#endif
 
 	/* IP Address */
 	gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");

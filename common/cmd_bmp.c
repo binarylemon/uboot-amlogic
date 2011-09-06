@@ -119,6 +119,8 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 		break;
 	case 2:		/* use argument */
 		addr = simple_strtoul(argv[1], NULL, 16);
+		x = -1;
+		y = -1;
 		break;
 	case 4:
 		addr = simple_strtoul(argv[1], NULL, 16);
@@ -236,7 +238,7 @@ static int bmp_display(ulong addr, int x, int y)
 		return 1;
 	}
 
-#if defined(CONFIG_LCD)
+#if (defined(CONFIG_LCD) || defined(CONFIG_VIDEO_AMLLCD))
 	extern int lcd_display_bitmap (ulong, int, int);
 
 	ret = lcd_display_bitmap ((unsigned long)bmp, x, y);

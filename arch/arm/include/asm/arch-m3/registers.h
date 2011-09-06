@@ -1176,6 +1176,32 @@
 #define PREG_HGPIO_O                               0x2016
 #define PREG_HGPIO_I                               0x2017
 // ----------------------------
+// Pre-defined GPIO addresses
+// ----------------------------
+#define PREG_PAD_GPIO0_EN_N                        0x200c
+#define PREG_PAD_GPIO0_O                           0x200d
+#define PREG_PAD_GPIO0_I                           0x200e
+// ----------------------------
+#define PREG_PAD_GPIO1_EN_N                        0x200f
+#define PREG_PAD_GPIO1_O                           0x2010
+#define PREG_PAD_GPIO1_I                           0x2011
+// ----------------------------
+#define PREG_PAD_GPIO2_EN_N                        0x2012
+#define PREG_PAD_GPIO2_O                           0x2013
+#define PREG_PAD_GPIO2_I                           0x2014
+// ----------------------------
+#define PREG_PAD_GPIO3_EN_N                        0x2015
+#define PREG_PAD_GPIO3_O                           0x2016
+#define PREG_PAD_GPIO3_I                           0x2017
+// ----------------------------
+#define PREG_PAD_GPIO4_EN_N                        0x2018
+#define PREG_PAD_GPIO4_O                           0x2019
+#define PREG_PAD_GPIO4_I                           0x201a
+// ----------------------------
+#define PREG_PAD_GPIO5_EN_N                        0x201b
+#define PREG_PAD_GPIO5_O                           0x201c
+#define PREG_PAD_GPIO5_I                           0x201d
+// ----------------------------
 // unused `define PREG_IGPIO_EN_N                     8'h18
 // unused `define PREG_IGPIO_O                        8'h19
 // unused `define PREG_IGPIO_I                        8'h1a
@@ -2297,6 +2323,13 @@
 #define HASB_ARM_MB3                               0x1037
 #define HHI_TIMER90K                               0x103b
 #define HHI_AUD_DAC_CTRL                           0x1044
+#define HHI_VIID_PLL_CNTL4                         0x1046
+#define HHI_VIID_PLL_CNTL                          0x1047
+#define HHI_VIID_PLL_CNTL2                         0x1048
+#define HHI_VIID_PLL_CNTL3                         0x1049
+#define HHI_VIID_CLK_DIV                           0x104a
+#define HHI_VIID_CLK_CNTL                          0x104b
+#define HHI_VIID_DIVIDER_CNTL                      0x104c
 #define HHI_SYS_PLL_CNTL2                          0x104d
 #define HHI_AUD_PLL_CNTL2                          0x104e
 #define HHI_VID_PLL_CNTL2                          0x104f
@@ -2313,7 +2346,6 @@
 #define HHI_SYS_PLL_CNTL                           0x105a
 #define HHI_AUD_PLL_CNTL                           0x105b
 #define HHI_VID_PLL_CNTL                           0x105c
-#define HHI_VID2_PLL_CNTL							0x1047
 #define HHI_MPEG_CLK_CNTL                          0x105d
 #define HHI_AUD_CLK_CNTL                           0x105e
 #define HHI_VID_CLK_CNTL                           0x105f
@@ -2321,6 +2353,7 @@
 #define HHI_WIFI_PLL_CNTL                          0x1061
 #define HHI_WIFI_PLL_CNTL2                         0x1062
 #define HHI_WIFI_PLL_CNTL3                         0x1063
+#define HHI_VID_DIVIDER_CNTL                       0x1066
 #define HHI_A9_CLK_CNTL                            0x1067
 #define HHI_DDR_PLL_CNTL                           0x1068
 #define HHI_DDR_PLL_CNTL2                          0x1069
@@ -6627,6 +6660,31 @@
 //                                          0=Scale vfifo2vd's output vdata to y [16,235], c [16,240].
 // bit    0 cfg_vfifo_din_full_range. 1=Data from viu fifo is full range [0,1023];
 //                                    0=Data from viu fifo is y [16*4,235*4], c [16*4,240*4].
+
+//===========================================================================
+// ENCT registers
+#define ENCT_VIDEO_EN                              0x1c60
+
+//----- Video mode
+#define ENCT_VIDEO_MODE                            0x1c67
+#define ENCT_VIDEO_MODE_ADV                        0x1c68
+
+//----------- Video Advanced setting
+#define ENCT_VIDEO_MAX_PXCNT                       0x1c70
+#define ENCT_VIDEO_HAVON_END                       0x1c71
+#define ENCT_VIDEO_HAVON_BEGIN                     0x1c72
+#define ENCT_VIDEO_VAVON_ELINE                     0x1c73
+#define ENCT_VIDEO_VAVON_BLINE                     0x1c74
+#define ENCT_VIDEO_HSO_BEGIN                       0x1c75
+#define ENCT_VIDEO_HSO_END                         0x1c76
+#define ENCT_VIDEO_VSO_BEGIN                       0x1c77
+#define ENCT_VIDEO_VSO_END                         0x1c78
+#define ENCT_VIDEO_VSO_BLINE                       0x1c79
+#define ENCT_VIDEO_VSO_ELINE                       0x1c7a
+
+#define ENCT_VIDEO_MAX_LNCNT                       0x1c7b
+
+
 #define VENC_VFIFO2VD_CTL2                         0x1c80
 // bit 15:1 Reserved.
 // bit    0 cfg_int_dvi_sel_rgb. Applicable for using on-chip hdmi tx module only. This bit controls correct bit-mapping from
@@ -6635,6 +6693,7 @@
 //                               0=Default. Map data bit from Venc to hdmi_tx for YCbCr mode.
 #define VENC_DVI_SETTING_MORE                      0x1c81
 //Bit 0   filter_en
+#define ENCT_VIDEO_FILT_CTRL                       0x1c82
 #define VENC_VDAC_DAC0_FILT_CTRL0                  0x1c88
 //dout = ((din + din_d2) * coef1 + (din_d1 * coef0) + 32) >> 6
 //Bit 15:8, coef1,
@@ -6878,6 +6937,22 @@
 #define VPU_VDIN_MMC_CTRL                          0x270d
 #define VPU_DVIN_MMC_CTRL                          0x270e
 #define VPU_BT656_MMC_CTRL                         0x270f
+#define VPU_VIU_VENC_MUX_CTRL                      0x271a
+// [15:12] rd_rate. 0=A read every clk2; 1=A read every 2 clk2; ...; 15=A read every 16 clk2.
+// [11: 8] wr_rate. 0=A write every clk1; 1=A write every 2 clk1; ...; 15=A write every 16 clk1.
+// [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
+//                          0=output CrYCb(BRG);
+//                          1=output YCbCr(RGB);
+//                          2=output YCrCb(RBG);
+//                          3=output CbCrY(GBR);
+//                          4=output CbYCr(GRB);
+//                          5=output CrCbY(BGR);
+//                          6,7=Rsrv.
+// [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
+// [    3] inv_vsync. 1=Invert Vsync polarity.
+// [    2] inv_hsync. 1=Invert Hsync polarity.
+// [ 1: 0] src_sel. 0=Disable output to HDMI; 1=Select VENC_I output to HDMI; 2=Select VENC_P output.
+
 //========================================================================
 //  VLD Registers				    (12'hC00 - 12'hCff)
 //

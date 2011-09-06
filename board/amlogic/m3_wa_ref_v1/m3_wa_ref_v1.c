@@ -154,6 +154,27 @@ struct aml_i2c_device aml_i2c_devices={
 };
 #endif /*CONFIG_AML_I2C*/
 
+int logo_display(void)
+{
+    int ret = 0;
+    run_command ("nand read ${loadaddr} ${aml_logo_start} ${aml_logo_size}", 0);
+    ret = run_command ("bmp display ${loadaddr}", 0);
+    run_command ("video dev bl_on", 0);
+    return ret;
+
+}
+
+inline void display_messge(char *msg)
+{
+#ifdef ENABLE_FONT_RESOURCE    
+    run_command ("video clear", 0);
+    //AsciiPrintf(msg, 250, 200, 0x80ff80);
+    AsciiPrintf(msg, 0, 0, 0x00ff00);
+    run_command ("video dev bl_on", 0);
+#else
+	printf("%s\n",msg);
+#endif    
+}
 
 
 #if CONFIG_JERRY_NAND_TEST //temp test

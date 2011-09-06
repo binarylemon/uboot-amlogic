@@ -19,17 +19,17 @@ static void osd_layer_init(GraphicDevice gdev, int layer)
 	osd_init_hw();
     osd_setup(0,
                 0,
-                800,
-                480,
-                800,
-                480 * 2,
+                gdev.winSizeX,
+                gdev.winSizeY,
+                gdev.winSizeX,
+                gdev.winSizeY * 2,
                 0,
                 0,
-                800 - 1,
-                480 - 1,
-                0x84900000,
+                gdev.winSizeX - 1,
+                gdev.winSizeY - 1,
+                gdev.frameAdrs,
                 &default_color_format_array[COLOR_INDEX_24_RGB],
-                OSD2);
+                layer);
 }
 
 /*-----------------------------------------------------------------------------

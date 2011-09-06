@@ -6,7 +6,7 @@
  */
 #include <common.h>
 #include <video_fb.h>
-#include <aml_lcd.h>
+#include <amlogic/aml_lcd.h>
 
 /********************************************************************************************
 *
@@ -59,9 +59,10 @@ static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	}
 	printf("LCD screen clear!\n");
 	memset ((char *)gdev->frameAdrs, 0,
-		(gdev->winSizeX+gdev->winSizeY)*gdev->gdfBytesPP);
+		(gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP);
 
-	flush_cache((char *)gdev->frameAdrs, ((gdev->winSizeX+gdev->winSizeY)*gdev->gdfBytesPP));
+	flush_cache((char *)gdev->frameAdrs, ((gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP));
+	reset_console();
 	return 0;	
 }
 

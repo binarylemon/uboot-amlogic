@@ -91,7 +91,7 @@ void set_video_pll(unsigned n, unsigned m, unsigned od, unsigned xd)
 //===========================================================================
 void set_viid_pll(unsigned n, unsigned m, unsigned od, unsigned xd)
 {
-	unsigned val = READ_CBUS_REG(HHI_VID2_PLL_CNTL);		
+	unsigned val = READ_CBUS_REG(HHI_VIID_PLL_CNTL);		
 	val &= (~((0x1ff<<0)|(0x1f<<9)|(0x3<<16)));
 	val |= ((m<<0)|(n<<9)|(od<<16));
 	WRITE_CBUS_REG(HHI_VID_PLL_CNTL2, val);
@@ -390,13 +390,13 @@ int test_video_pll(void)
 //======================================================================================================
 int test_viid_pll(void)
 {
-	unsigned viid_pll_backup = READ_CBUS_REG(HHI_VID2_PLL_CNTL);
+	unsigned viid_pll_backup = READ_CBUS_REG(HHI_VIID_PLL_CNTL);
 	struct test_info min_info, max_info;	
 	
 	test_pll_max(&clk_viid_pll, vid2_pll_clk_mux, &max_info);
 	test_pll_min(&clk_viid_pll, vid2_pll_clk_mux, &min_info);
 	
-	WRITE_CBUS_REG(HHI_VID2_PLL_CNTL, viid_pll_backup);
+	WRITE_CBUS_REG(HHI_VIID_PLL_CNTL, viid_pll_backup);
 	udelay(1000);
 	
 	post_log("viid:  pll test info: \n");

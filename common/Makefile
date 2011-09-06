@@ -166,6 +166,7 @@ COBJS-$(CONFIG_MODEM_SUPPORT) += modem.o
 COBJS-$(CONFIG_UPDATE_TFTP) += update.o
 COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_EFUSE) += efuse_bch_8.o
+COBJS-$(CONFIG_VIDEO_AML) += cmd_video.o
 
 
 COBJS	:= $(sort $(COBJS-y))

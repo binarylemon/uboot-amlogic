@@ -19,7 +19,7 @@
  *
  */
 #include <common.h>
-#include <asm/arch/am_regs.h>
+#include <asm/arch/io.h>
 #include <asm/arch/canvas.h>
 
 //#define __DBG__CANVAS__

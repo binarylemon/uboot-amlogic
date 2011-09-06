@@ -42,11 +42,11 @@ COBJS-$(CONFIG_VIDEO_SM501) += sm501.o
 COBJS-$(CONFIG_VIDEO_SMI_LYNXEM) += smiLynxEM.o videomodes.o
 COBJS-$(CONFIG_VIDEO_VCXK) += bus_vcxk.o
 
-ifdef CONFIG_MESON
+ifdef CONFIG_AML_MESON
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
 	osd/osd_hw.o
-COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/tcon.o lcd/aml_lcd.o
+COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/tv_out.o \
 	tvout/hdmi_tx_m1b.o \
@@ -55,7 +55,8 @@ COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/hdmi_tx_edid.o \
 	tvout/hdmi_tx_video.o \
 	tvout/dsp.o
-COBJS-$(CONFIG_PANEL_T13) += lcd/panel_t13.o
+COBJS-$(CONFIG_PANEL_T13) +=lcd/tcon.o  lcd/panel_t13.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_M3) += lcd/tcon_m3.o  lcd/panel_m3.o
 endif
 
 COBJS	:= $(COBJS-y)
