@@ -91,11 +91,16 @@ void set_video_pll(unsigned n, unsigned m, unsigned od, unsigned xd)
 //===========================================================================
 void set_viid_pll(unsigned n, unsigned m, unsigned od, unsigned xd)
 {
-	unsigned val = READ_CBUS_REG(HHI_VIID_PLL_CNTL);		
-	val &= (~((0x1ff<<0)|(0x1f<<9)|(0x3<<16)));
-	val |= ((m<<0)|(n<<9)|(od<<16));
-	WRITE_CBUS_REG(HHI_VID_PLL_CNTL2, val);
-	udelay(100);
+		unsigned vid_div_reg = 0x0018803; //0x0018803 0x0010803
+		unsigned pll_reg = ((m<<0) | (n<<9) | (od<<16));
+	   WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<30) );
+//       WRITE_MPEG_REG( HHI_VIID_PLL_CNTL2, 0x65e31ff );
+ //       WRITE_MPEG_REG( HHI_VIID_PLL_CNTL3, 0x9649a941 );
+        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg );
+		WRITE_MPEG_REG( HHI_VIID_DIVIDER_CNTL,   vid_div_reg);
+		
+	//udelay(100);
+	mdelay(10);
 }
 //===========================================================================
 #define clk_util_clk_msr(clk) clk_util_msr(clk,64)

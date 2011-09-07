@@ -183,16 +183,17 @@ struct clk_lookup lookups[] = {
     		.pclk = &clk_audio_pll,
     		.pll_test = test_audio_pll,
     	},
+    	{
+    		.dev_id = "viid",
+    		.pclk = &clk_viid_pll,
+    		.pll_test = test_viid_pll,
+    	},
     	/*{
     		.dev_id = "video",
     		.pclk = &clk_video_pll,
     		.pll_test = test_video_pll,
     	},
-    	{
-    		.dev_id = "viid",
-    		.pclk = &clk_viid_pll,
-    		.pll_test = test_viid_pll,
-    	},*/
+    	*/
 };
 
 unsigned int clk_lookups_size = sizeof(lookups) / sizeof(struct clk_lookup);
