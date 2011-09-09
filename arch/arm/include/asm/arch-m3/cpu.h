@@ -31,14 +31,12 @@
 #define CONFIG_SYS_POST_WORD_ADDR CONFIG_SYS_TEXT_BASE-0x4
 #endif
 #define CONFIG_SYS_MALLOC_LEN   (4<<20)
-#define CONFIG_ENV_SIZE         (16 * 1024)
+#define CONFIG_ENV_SIZE         (8 * 1024)
 #define CONFIG_SYS_MAXARGS      16
 
-#define CONFIG_ENV_IS_NOWHERE    1
 #define CONFIG_SYS_LOAD_ADDR    0x82000000
 #define CONFIG_SYS_CBSIZE          1024
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
-
 
 /** Timer relative Configuration **/
 #define CONFIG_CRYSTAL_MHZ  24
@@ -66,7 +64,7 @@
 #define CONFIG_NAND_SP_BLOCK_SIZE 32
 #endif
 //#warning todo implement nand driver later
-#define CONFIG_SYS_MAX_NAND_DEVICE  1  //make uboot happy
+#define CONFIG_SYS_MAX_NAND_DEVICE  2  //make uboot happy
 #define CONFIG_SYS_NAND_BASE_LIST   {0}//make uboot happy
 //#define CONFIG_SYS_NAND_BASE 0 //make uboot happy
 #endif

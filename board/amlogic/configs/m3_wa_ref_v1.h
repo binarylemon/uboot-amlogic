@@ -75,6 +75,32 @@
   #define UBOOTPATH		  "u-boot-aml.bin"
 #endif
 
+
+//#define CONFIG_SPI_BOOT 1
+#define CONFIG_NAND_BOOT 1
+
+#ifdef CONFIG_NAND_BOOT
+#define CONFIG_AMLROM_NANDBOOT 1
+#endif
+
+#ifdef CONFIG_SPI_BOOT
+	#define CONFIG_ENV_OVERWRITE
+	#define CONFIG_ENV_IS_IN_SPI_FLASH
+	#define CONFIG_CMD_SAVEENV	
+	#define CONFIG_ENV_SECT_SIZE        0x1000
+	#define CONFIG_ENV_OFFSET           0x1f0000
+#elif defined CONFIG_NAND_BOOT
+	#define CONFIG_ENV_IS_IN_AML_NAND
+	#define CONFIG_CMD_SAVEENV
+	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OFFSET       0x400000
+	#define CONFIG_ENV_BLOCK_NUM    2
+#else
+#define CONFIG_ENV_IS_NOWHERE    1
+#endif
+/* Monitor at start of flash */
+
+
 /* config LCD output */ 
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
