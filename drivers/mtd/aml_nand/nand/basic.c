@@ -15,11 +15,7 @@
 
 #include <asm/dma-mapping.h>
 #include "nand_cmd.h"
-typedef struct __nand_command_s nand_cmd_t;
-struct __nand_command_s{
-	int32_t stat;
-	void* 	para;
-};
+
 typedef struct nand_cfg_s nand_cfg_t;
 typedef struct nand_ce_s nand_ce_t;
 struct nand_ce_s{

@@ -1290,6 +1290,7 @@ static int32_t v3_job_status(cntl_t * cntl, jobkey_t * job)
 
 cntl_t * get_v3(void)
 {
+	clrbits_le32(P_PAD_PULL_UP_REG3,(0xff<<0) | (1<<16));
 	return (cntl_t*)&v3_driver;
 }
 

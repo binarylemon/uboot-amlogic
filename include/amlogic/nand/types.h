@@ -32,6 +32,7 @@ struct __nand_flash_dev_s {
  * bad block information
  */
 	uint32_t badblocks;
+	uint32_t *badpos;
 };
 
 #endif
