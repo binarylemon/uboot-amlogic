@@ -75,13 +75,15 @@
   #define UBOOTPATH		  "u-boot-aml.bin"
 #endif
 
+#define CONFIG_UCL 1
+#define CONFIG_SELF_COMPRESS 
 
 //#define CONFIG_SPI_BOOT 1
 #define CONFIG_NAND_BOOT 1
 
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_AMLROM_NANDBOOT 1
-#endif
+#endif 
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE

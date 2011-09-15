@@ -91,13 +91,20 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
+    unsigned temp_addr;
+#if CONFIG_UCL
+    temp_addr=target-0x800000;
+#else
+    temp_addr=target;
+#endif
+
     unsigned * mem;
-    unsigned len;
+    unsigned len;    
     switch(POR_GET_1ST_CFG(por_cfg))
     {
         case POR_1ST_NAND:
-        case POR_1ST_NAND_RB:
-            rc=nf_read(target,size);
+        case POR_1ST_NAND_RB:        	
+            rc=nf_read(temp_addr,size);            
             break;
         case POR_1ST_SPI :
         case POR_1ST_SPI_RESERVED :
@@ -130,8 +137,16 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
         default:
            return 1;
     }
-    if(rc==0)
+#if CONFIG_UCL    
+    if(rc==0){
+        serial_puts("ucl decompress\n");
+        rc=uclDecompress(target,&len,temp_addr);
+        serial_puts(rc?"decompress false\n":"decompress true\n");
+    }
+#endif    
+    if(rc==0)    	
         rc=check_sum((unsigned*)target,magic_info->crc[1],size);
+              	
     return rc;
 }
 STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
@@ -147,8 +162,9 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 #else
     temp_addr=target;
 #endif
-    int rc=sdio_read(temp_addr,size,por_cfg);
+    int rc=sdio_read(temp_addr,size,por_cfg);    
 #if CONFIG_UCL
+	unsigned len;
     if(!rc){
 	    serial_puts("ucl decompress\n");
 	    rc=uclDecompress(target,&len,temp_addr);

@@ -27,6 +27,7 @@
 #include <asm/byteorder.h>
 #include <jffs2/jffs2.h>
 #include <nand.h>
+#include <asm/arch/nand.h>
 
 #if defined(CONFIG_CMD_MTDPARTS)
 
@@ -36,6 +37,8 @@ int id_parse(const char *id, const char **ret_id, u8 *dev_type, u8 *dev_num);
 int find_dev_and_part(const char *id, struct mtd_device **dev,
 		      u8 *part_num, struct part_info **part);
 #endif
+
+static int nand_protect = 1;
 
 static int nand_dump(nand_info_t *nand, ulong off, int only_oob, int repeat)
 {
@@ -177,7 +180,7 @@ static int arg_off(const char *arg, int *idx, loff_t *off, loff_t *maxsize)
 	if (!str2off(arg, off))
 		return get_part(arg, idx, off, maxsize);
 
-	if (*off >= nand_info[*idx].size) {
+	if (*off >= nand_info[*idx].size) {		
 		puts("Offset exceeds device limit\n");
 		return -1;
 	}
@@ -566,6 +569,13 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		nand = &nand_info[dev];
 		rwsize = size;
 
+#ifdef CONFIG_AMLROM_NANDBOOT
+	if((read==0) && ((off)<(1024* nand->writesize)) && (nand_curr_device == 0)){
+		printf("offset 0x%llx in aml-boot area ,abort\n", off);
+		return -1;
+	}	
+#endif
+
 		s = strchr(cmd, '.');
 		if (!s || !strcmp(s, ".jffs2") ||
 		    !strcmp(s, ".e") || !strcmp(s, ".i")) {
@@ -601,6 +611,41 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		}
 
 		printf(" %zu bytes %s: %s\n", rwsize,
+		       read ? "read" : "written", ret ? "ERROR" : "OK");
+
+		return ret == 0 ? 0 : 1;
+	}
+
+	if (( strncmp(cmd, "rom_write", 9) == 0)||(strncmp(cmd, "rom_read", 8) == 0)) {
+		int read=0;
+
+		if(strncmp(cmd, "rom_read", 8) == 0)
+			read = 1;
+		if (argc < 4)
+			goto usage;
+
+		addr = (ulong)simple_strtoul(argv[2], NULL, 16);
+		printf("\nNAND %s: ", read ? "rom_read" : "rom_write");
+		nand_curr_device = 0;
+		if (arg_off_size(argc - 3, argv + 3, &dev, &off, &size) != 0)
+			return 1;
+
+		nand = get_mtd_device_nm(NAND_BOOT_NAME);
+		s = strchr(cmd, '.');
+		if (!s ||!strcmp(s, ".e") || !strcmp(s, ".i")) {
+			if (read){
+				ret = romboot_nand_read(nand, off, &size,
+							 (u_char *)addr);
+			}
+			else
+				ret = romboot_nand_write(nand, off, (size_t * )&size,
+							  (u_char *)addr, nand_protect);
+		}else {
+			printf("Unknown nand command suffix '%s'.\n", s);
+			return 1;
+		}
+
+		printf(" %llu bytes %s: %s\n", size,
 		       read ? "read" : "written", ret ? "ERROR" : "OK");
 
 		return ret == 0 ? 0 : 1;
@@ -687,7 +732,7 @@ U_BOOT_CMD(
 	"nand read - addr off|partition size\n"
 	"nand write - addr off|partition size\n"
 	"    read/write 'size' bytes starting at offset 'off'\n"
-	"    to/from memory address 'addr', skipping bad blocks.\n"
+	"    to/from memory address 'addr', skipping bad blocks.\n"	
 #ifdef CONFIG_CMD_NAND_YAFFS
 	"nand write.yaffs - addr off|partition size\n"
 	"    write 'size' bytes starting at offset 'off' with yaffs format\n"
@@ -717,7 +762,9 @@ U_BOOT_CMD(
 	"    first device.\n"
 	"nand env.oob set off|partition - set enviromnent offset\n"
 	"nand env.oob get - get environment offset"
-#endif
+#endif	
+	"\n"	
+	"nand  rom_write  addr off|partition size.\n"	
 );
 
 static int nand_load_image(cmd_tbl_t *cmdtp, nand_info_t *nand,

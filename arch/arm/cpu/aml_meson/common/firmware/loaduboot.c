@@ -9,7 +9,7 @@
 
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
-{
+{	
    serial_put_dword(addr[15]);
    if(addr[15]!=CONFIG_AML_UBOOT_MAGIC)
         return -1;
@@ -33,13 +33,13 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	int rc=0;
     serial_puts("HHH\n");
 	size=__TEXT_SIZE;
-	boot_id = 1;
+	//boot_id = 1;
 	if(boot_id>1)
         boot_id=0;
 	if(boot_id==0)
-    {
+    {    	
        rc=fw_load_intl(por_cfg,__TEXT_BASE,size);
-	}else{
+	}else{		
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size); 
 	}
 

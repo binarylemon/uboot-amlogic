@@ -183,6 +183,7 @@ OBJS := $(addprefix $(obj),$(OBJS))
 LIBS  = lib/libgeneric.o
 LIBS += lib/lzma/liblzma.o
 LIBS += lib/lzo/liblzo.o
+LIBS += lib/ucl/libucl.o
 LIBS += $(shell if [ -f board/$(VENDOR)/common/Makefile ]; then echo \
 	"board/$(VENDOR)/common/lib$(VENDOR).o"; fi)
 LIBS += $(CPUDIR)/lib$(CPU).o
@@ -274,6 +275,9 @@ LIBS := $(addprefix $(obj),$(sort $(LIBS)))
 LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).o
 LIBBOARD := $(addprefix $(obj),$(LIBBOARD))
 
+UCL_BOOTLIBS += arch/$(ARCH)/cpu/$(CPU)/uclboot/ucl_lib_$(CPU).o
+UCL_BOOTLIBS := $(addprefix $(obj),$(UCL_BOOTLIBS))
+
 # Add GCC lib
 ifdef USE_PRIVATE_LIBGCC
 ifeq ("$(USE_PRIVATE_LIBGCC)", "yes")
@@ -308,7 +312,7 @@ endif
 
 __OBJS := $(subst $(obj),,$(OBJS))
 __LIBS := $(subst $(obj),,$(LIBS)) $(subst $(obj),,$(LIBBOARD))
-
+__UCLBOOTLIBS := $(subst $(obj),,$(UCL_BOOTLIBS))
 #########################################################################
 #########################################################################
 
@@ -350,14 +354,20 @@ $(obj)u-boot.srec:	$(obj)u-boot
 ifneq ($(CONFIG_AML_MESON),y)
 $(obj)u-boot.bin:	$(obj)u-boot
 else
+
 ifeq ($(CONFIG_SELF_COMPRESS),y)
 $(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
+ifeq ($(CONFIG_UCL),y)
+	$(obj)/tools/uclpack $< $@
+else	
 	$(obj)/pack -comp $(CONFIG_COMPRESS_METHOD) -o $@ $<
-$(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
-else
-$(obj)u-boot.bin:	$(obj)firmware.bin $(obj)u-boot-orig.bin 
 endif
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $(obj)u-boot-orig.bin -o $@
+$(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
+
+else
+$(obj)u-boot.bin:	$(obj)u-boot-orig.bin  $(obj)firmware.bin 
+endif
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 $(obj)u-boot-orig.bin:	$(obj)u-boot
 endif
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
@@ -365,8 +375,13 @@ endif
 ifeq ($(CONFIG_AML_MESON),y)
 firmware:$(obj)firmware.bin
 .PHONY :	$(obj)firmware.bin
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE)
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware FIRMWARE=$@
+ifeq ($(CONFIG_M3),y)
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+else
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk 
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+endif	
 endif
 
 $(obj)u-boot.ldr:	$(obj)u-boot
@@ -422,6 +437,9 @@ $(OBJS):	depend
 		$(MAKE) -C $(CPUDIR) $(if $(REMOTE_BUILD),$@,$(notdir $@))
 
 $(LIBS):	depend $(SUBDIRS)
+		$(MAKE) -C $(dir $(subst $(obj),,$@))
+		
+$(UCL_BOOTLIBS):	depend $(SUBDIRS)
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 
 $(LIBBOARD):	depend $(LIBS)

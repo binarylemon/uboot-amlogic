@@ -148,13 +148,15 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
     data_size = page_size * 8 * pages;
     
     page_base = ((area<<8)+1)+(src/data_size);
+    mem-=src%data_size;
+    count+=src%data_size;
 
     for(i=0,read_size=0; i<total_page && read_size<count; i++, read_size+=data_size)
     {
        // do{
-	        ret = nfio_page_read(i+page_base, mem+read_size, ext);
+       		ret = nfio_page_read(i+page_base, mem+read_size, ext);
 	        if (ret) 
-	        {
+	        {	        	
 	        	page_base += pages_in_block;
 	        	i--;
 	        	total_page -= pages_in_block;
@@ -202,12 +204,12 @@ STATIC_PREFIX short
     // and init should be Okay 
     if(romboot_info->boot_id||romboot_info->init[0])
         return -20;
-    
+        
     nfio_page_read(0,temp_addr,DEFAULT_ECC_MODE|(ext&(3<<22)));
 //    for(area=0;area<4;area++)
 //    {
 //        if(romboot_info->load[0][area]==0&&romboot_info->dchk[0][area]==0)
 //            break;
-//    }
+//    }	
     return nfio_read(READ_SIZE, target, size,ext,0);
 }

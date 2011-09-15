@@ -43,10 +43,15 @@
 #include <div64.h>
 
 #include <asm/errno.h>
+#include <linux/err.h>
 #include <linux/mtd/mtd.h>
 #include <nand.h>
 #include <jffs2/jffs2.h>
-
+#ifdef NAND_DEBUG
+#define aml_nand_debug(a...) printk(a)
+#else
+#define aml_nand_debug(a...) 
+#endif
 typedef struct erase_info erase_info_t;
 typedef struct mtd_info	  mtd_info_t;
 
@@ -653,3 +658,468 @@ int nand_read_skip_bad(nand_info_t *nand, loff_t offset, size_t *length,
 
 	return 0;
 }
+
+#include <asm/arch/nand.h>
+#if CONFIG_NAND_AML_M3 || CONFIG_NAND_AML_A3
+#include <asm/arch/romboot.h>
+#define SKIP_HOLE 1
+//const char default_boot_name[]="nandboot";
+int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf, int protect_flag)
+{
+	unsigned int area_size,i,cur,area_loop;
+	unsigned ret=0,err_flag=0;
+	unsigned int w_size,total_size;
+	unsigned w_offset = 0;
+	size_t len=*plen;
+	u_char * in_buf=(u_char*)buf;
+	unsigned char * rom_inter_buff=NULL;
+
+	nand_erase_options_t opts;
+	struct mtd_oob_ops ops=	{.retlen=0 ,
+							.mode=MTD_OOB_PLACE};
+	u16    oob[]={0xaa55,0xaa55,0xaa55,0xaa55};	
+	struct mtd_info * mtd=get_mtd_device_nm(NAND_BOOT_NAME);
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	
+	if (IS_ERR(mtd)) {
+		printk("NO nand romboot device , pls config it\n");
+		return  1;	
+	}	
+
+#if 0
+		if(offset!=0) 
+		{
+			printk("Wrong addr begin\n");
+			return	1;
+		}
+#endif
+
+
+	if(mtd->writesize<=512)
+	{
+		area_size=mtd->erasesize;
+		w_size=512;
+		ops.ooblen=2;
+		total_size=512*1024;
+	}
+	else
+	{
+		area_size=mtd->writesize*256;
+		w_size=3*512;
+		total_size=mtd->writesize*1024;
+		ops.ooblen=8;
+		if(len>w_size*255)
+		{
+			printk("Wrong Length bigger than 255*3*512 ,sub it \n");
+			len=w_size*255;
+		}
+//		if(len%w_size)
+//		{
+//			printk("Wrong Length NOt 3*512 times \n");
+//			return  1;	
+//		}
+	}
+
+	if(protect_flag)
+	{
+		printk("ERASE  BOOT DEVICE\n");
+		printk("INPUT y for sure this \n");
+		if (getc() != 'y') {
+			printk("ABORT \n");
+			return 1 ;
+		}
+	}
+
+	opts.offset = 0;
+	opts.length =total_size;
+	opts.jffs2=0;
+	opts.scrub=0;
+	opts.quiet= 0;
+	ret = nand_erase_opts(mtd, &opts);
+	printf(" erase %s\n", ret ? "ERROR" : "OK");
+	if(ret)
+		return 1;	
+	
+	ops.retlen=0;
+	ops.oobbuf=(uint8_t*)&oob[0];
+//	ops.len=w_size;
+	ops.len=mtd->writesize;
+
+	unsigned short_mode=0,pg_num=0;
+	unsigned pages_in_block = mtd->erasesize/mtd->writesize;
+	struct nand_chip * chip=(struct nand_chip *)(mtd->priv);
+	struct aml_nand_platform * plat_info = aml_chip->platform;
+
+
+	if(plat_info->short_pgsz!=0)
+	{
+		short_mode=1;
+		pg_num=w_size/plat_info->short_pgsz;
+			
+	}else
+	{
+		BUG();			// 1024 mode 1536
+		pg_num=w_size/((aml_chip->bch_mode&NAND_ECC_BCH8_512)?512:1024);
+	}
+
+	rom_inter_buff=(unsigned char *)malloc(mtd->writesize);
+	if(rom_inter_buff==NULL)
+		BUG();
+
+	unsigned int ext=N2M_NORAN|((aml_chip->bch_mode&NAND_ECC_OPTIONS_MASK)<<14)|(short_mode<<13)|((plat_info->short_pgsz>>3)<<6)|pg_num;	
+	//bit 23-25
+	memset(rom_inter_buff,0xff,mtd->writesize);
+	memset(rom_inter_buff,0xbb,w_size);		//quer bad share 
+	memcpy((void*)rom_inter_buff, (void*)&ext,sizeof(unsigned));
+	memcpy((void*)((unsigned)rom_inter_buff+sizeof(unsigned)), (void*)&pages_in_block,sizeof(unsigned)); //add block size 
+    ops.datbuf=rom_inter_buff;
+    printk("ext=%x\n",ext);
+    w_offset=0;
+	for(area_loop=0;area_loop<4;area_loop++)
+	{
+		if(err_flag&(1<<area_loop))
+		    continue;
+		ret=mtd->write_oob(mtd,area_loop*area_size+w_offset,&ops);						//that is a recursion , need 384 , but write 1536 , use bch 60 no ran 	
+		if(ret)
+		{
+			err_flag|=1<<area_loop;
+			printk("mtd->writeoob err at area %d first pg %lld \n",area_loop,area_loop*area_size);	
+		}
+    }
+    if(err_flag==0xf)
+    {
+        printk("%s!%d:All of four backup areas are bad",__func__,__LINE__);	
+        return -1;
+    }
+	for(cur=0,w_offset=mtd->writesize;cur<(len)&&w_offset<area_size;cur+=w_size,w_offset += mtd->writesize)
+	{
+		ops.datbuf=(uint8_t*)&in_buf[cur];
+        aml_nand_debug("w_offset=%08x\n",w_offset);
+		for(area_loop=0;area_loop<4;area_loop++)
+    	{
+    		if(err_flag&(1<<area_loop))
+    		    continue;
+    		ret=mtd->write_oob(mtd,area_loop*area_size+w_offset,&ops);						//that is a recursion , need 384 , but write 1536 , use bch 60 no ran 	
+    		if(ret)
+    		{
+    			err_flag|=1<<area_loop;
+    			aml_nand_debug("mtd->writeoob err at area %d first offset %lld \n",area_loop,area_loop*area_size+w_offset);	
+    		}
+        }	
+        if(err_flag==0xf)
+        {
+            printk("%s!%d:All of four backup areas are bad",__func__,__LINE__);	
+            return -1;
+        }	
+		
+	}	
+	free(rom_inter_buff);
+	return 0;
+}
+int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf)
+{
+	unsigned int i,cur;
+	unsigned ret=0,err_flag=0;
+	unsigned int w_size;
+	unsigned r_offset = 0;
+	size_t len=*plen;
+	unsigned  * rom_inter_buff=NULL;
+
+	nand_erase_options_t opts;
+	struct mtd_oob_ops ops=	{.retlen=0 ,
+							.mode=MTD_OOB_PLACE};
+    unsigned short oob[8];							
+	struct mtd_info * mtd=get_mtd_device_nm(NAND_BOOT_NAME);
+	if (IS_ERR(mtd)) {
+		printk("NO nand romboot device , pls config it\n");
+		return  1;	
+	}	
+
+#if 0
+	if(offset!=0) 
+	{
+		printk("Wrong addr begin\n");
+		return  1;
+	}
+#endif
+    printk("The writesize=%x,erasesize=%x\n",mtd->writesize,mtd->erasesize);
+	rom_inter_buff = (unsigned char *)malloc(mtd->writesize);
+	if(rom_inter_buff==NULL)
+		BUG();
+
+	if(mtd->writesize<=512)
+	{
+		w_size=512;
+	}
+	else
+	{
+		w_size=3*512;
+	}	
+	
+	ops.retlen=0;
+	ops.oobbuf= &oob[0];
+	ops.ooblen=8;
+	ops.len=mtd->writesize;
+	ops.datbuf=rom_inter_buff;
+	
+	int area;
+	unsigned  mem[4];
+	unsigned  info[4];
+	err_flag=0;
+	for(area=0;area<4;area++)
+	{
+	    mem[area]=((unsigned)buf)+0x100000*area;
+	    info[area]=((unsigned)buf)+0x100000*area+0x100000-0x100000/256;
+	    ret=mtd->read_oob(mtd,area*(mtd->writesize*256),&ops);
+	    
+	    printk("area %x read to %08x info is in %08x , ecc mode %08x ,oob=%04x,",area,mem[area],info[area],*rom_inter_buff,oob[0]);
+	    if(ret&&ret!=-EUCLEAN)
+		{
+			err_flag|=(1<<area);
+			aml_nand_debug("mtd->read err at  %x %d",area*(mtd->writesize*256),ret);	
+		}
+		printk("\n");
+	        
+	}
+	unsigned  databuf,oobbuf;
+	for(area=0;area<4;area++)
+	{
+	    for(r_offset=(area*256*mtd->writesize+mtd->writesize),databuf=mem[area],oobbuf=info[area];
+	        r_offset<((area+1)*256*mtd->writesize);
+	        databuf+=w_size,oobbuf+=w_size/(384/2),r_offset+=mtd->writesize
+	        )
+	    {
+	        aml_nand_debug("read %x to %x",r_offset,databuf);	
+	        ret=mtd->read_oob(mtd, r_offset,&ops);
+	        if(ret&&ret!=-EUCLEAN)
+    		{
+    			err_flag|=(1<<area);
+    			aml_nand_debug("mtd->read err at  %x %d mem_addr=%x",r_offset,ret,databuf);	
+    		}
+    		aml_nand_debug("\n");
+	        memcpy(databuf,rom_inter_buff,w_size);
+	        memcpy(oobbuf,&oob[0],w_size/(384/2));
+	    }
+	}
+	
+
+	if((err_flag&0xf)==0xf)
+	{
+		printk("romboot_nand_read  err happen , for safe you can use cmd : nand device 1 ; nand erase ; nand device 0  \n");
+		free(rom_inter_buff);
+		return 1;
+	}	
+	free(rom_inter_buff);
+	return 0;
+}
+
+#else
+int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf, int protect_flag)
+{
+	unsigned int area_size,i,cur;
+	unsigned ret=0,err_flag=0;
+	unsigned int w_size,total_size;
+	size_t len=*plen;
+	u_char * p=(u_char*)buf;
+	unsigned char *tmp_buf;
+	nand_erase_options_t opts;
+
+	struct mtd_oob_ops ops=	{.retlen=0 ,
+							.mode=MTD_OOB_PLACE};
+	u16    oob[]={0x55aa,0x55aa,0x55aa};
+	struct mtd_info * mtd = nand;//get_mtd_device_nm(default_boot_name);
+
+	tmp_buf = kzalloc((mtd->writesize), GFP_KERNEL);
+	if (!tmp_buf)
+		return 1;
+
+	if (IS_ERR(mtd)) {
+		printk("NO nand romboot device , pls config it\n");
+		printk("ABORT \n");
+		return  1;	
+	}	
+
+	if(offset!=0) 
+	{
+		printk("Wrong addr begin\n");
+		printk("ABORT \n");
+		return  1;
+	}
+
+	if(mtd!=nand)
+	{	
+		printk("AUTO SWITCH TO BOOT DEVICE\n");
+	}
+	
+	if(mtd->writesize<=512)
+	{
+		area_size=mtd->erasesize;
+		w_size=512;
+		ops.ooblen=2;
+		total_size=512*1024;
+	}else
+	{
+		area_size=mtd->writesize*256;
+		w_size=3*512;
+		total_size=mtd->writesize*1024;
+		ops.ooblen=6;
+		if(len>w_size*256)
+		{
+			printk("Wrong Length bigger\n");
+			printk("ABORT \n");
+			return  1;
+		}
+		if(len%w_size)
+		{
+		
+			printk("Wrong Length NOt 3*512 \n");
+			printk("ABORT \n");
+			return  1;	
+		}
+	}
+
+	if(protect_flag)
+	{
+		printk("^^^^^^^MUST ERASE THIS BOOT DEVICE FIRST^^^^^^^^^\n");
+		printk("INPUT y for sure this \n");
+		if (getc() != 'y') {
+			printk("ABORT \n");
+			return 1 ;
+		}
+	}
+
+	opts.offset = 0;
+	opts.length =total_size;
+	opts.jffs2=0;
+	opts.quiet  = 0;
+	opts.scrub  = 0;
+	ret = nand_erase_opts(nand, &opts);
+	printf(" erase %s\n", ret ? "ERROR" : "OK");
+	if(ret)
+		return 1;	
+	
+	ops.retlen=0;
+	ops.oobbuf=(uint8_t*)&oob[0];
+	ops.len=mtd->writesize;
+
+	
+	for(cur=0,i=0;cur<len;i++)
+	{
+			memset(tmp_buf, 0xff, mtd->writesize);
+			memcpy(tmp_buf, (uint8_t*)&p[cur], 3*512);
+			ops.datbuf=tmp_buf;//(uint8_t*)&p[cur];
+			ret=mtd->write_oob(mtd,offset+i*(mtd->writesize),&ops);
+			if(ret)
+			{
+				err_flag=1;
+				printk("mtd->writeoob err at 0Aoff %lld \n",offset+i*(mtd->writesize));	
+			}
+			ret=mtd->write_oob(mtd,offset+area_size+i*(mtd->writesize),&ops);
+			if(ret)
+			{
+				err_flag=1;
+				printk("mtd->writeoob err at 1Aoff %lld \n",offset+area_size+i*(mtd->writesize));	
+			}
+			ret=mtd->write_oob(mtd,offset+2*area_size+i*(mtd->writesize),&ops);
+			if(ret)
+			{
+				err_flag=1;
+				printk("mtd->writeoob err at 2Aoff %lld \n",offset+2*area_size+i*(mtd->writesize));	
+			}
+			ret=mtd->write_oob(mtd,offset+3*area_size+i*(mtd->writesize),&ops);
+			if(ret)
+			{
+				err_flag=1;
+				printk("mtd->writeoob err at 3Aoff %lld \n",offset+3*area_size+i*(mtd->writesize));	
+			}	
+
+			cur	+=3*512;
+	}
+
+	if(err_flag)
+	{
+		printk("romboot_nand_write  err happen , for safe you can use cmd : nand device 1 ; nand erase ; nand device 0  \n");
+		return 1;
+	}	
+
+	return 0;
+}
+
+int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf)
+{
+	int area_size,i,cur,temp,j,k,ret=0;
+	int w_size,total_size;
+	size_t len=*plen;
+	u_char * p=(u_char*)buf;
+	struct mtd_info * mtd=get_mtd_device_nm(NAND_BOOT_NAME);
+	struct mtd_oob_ops ops={.retlen=0 ,
+							.mode=MTD_OOB_PLACE};
+	u16    oob[]={0,0,0};
+	ops.retlen=0;
+	ops.oobbuf=(uint8_t*)&oob[0];
+	if(mtd->writesize<=512)
+	{
+		area_size=mtd->erasesize;
+		w_size=512;
+		ops.ooblen=2;
+		total_size=512*1024;
+	}else{
+		area_size=mtd->writesize*256;
+		w_size=3*512;
+		total_size=mtd->writesize*1024;
+		ops.ooblen=6;
+		if(len>w_size*256)
+		{
+			printk("Wrong Length\n");
+			BUG();
+		}
+	}
+	ops.len=w_size;
+	for(i=0,cur=0;i<total_size&&cur<len;i+=area_size)
+	{
+		temp=cur;
+		for(j=0;j<area_size;j+=mtd->erasesize)
+		{
+			for(k=0;k<mtd->erasesize;k+=mtd->writesize)
+			{
+				ops.datbuf=&p[temp];
+				ret=mtd->read_oob(mtd,i+j+k,&ops);
+				if(ret)
+					break;
+				temp+=w_size;
+				if(oob[0]!=0x55aa){
+					ret=1;
+					break;
+				}
+				if(ops.ooblen==6&&oob[1]!=0x55aa&&oob[2]!=0x55aa)
+				{
+					ret=1;
+					break;
+				}
+			}
+			if(ret)
+				break;
+
+
+
+		}
+		if(ret)
+			continue;
+		cur=temp;
+	}
+	if(i>total_size&&cur<len)
+	{
+		printk("Error \n");
+		return -1;
+	}
+	return 0;
+}
+
+
+
+
+#endif
