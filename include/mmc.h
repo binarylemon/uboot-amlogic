@@ -157,6 +157,9 @@
 #define MMC_RSP_CRC     (1 << 2)                /* expect valid crc */
 #define MMC_RSP_BUSY    (1 << 3)                /* card may send busy */
 #define MMC_RSP_OPCODE  (1 << 4)                /* response contains opcode */
+#define MMC_RSP_R5_FLAG  (1 << 5)
+#define MMC_RSP_R6_FLAG  (1 << 6)
+#define MMC_RSP_R7_FLAG  (1 << 7)
 
 #define MMC_RSP_NONE    (0)
 #define MMC_RSP_R1      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
@@ -165,9 +168,9 @@
 #define MMC_RSP_R2      (MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC)
 #define MMC_RSP_R3      (MMC_RSP_PRESENT)
 #define MMC_RSP_R4      (MMC_RSP_PRESENT)
-#define MMC_RSP_R5      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
-#define MMC_RSP_R6      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
-#define MMC_RSP_R7      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
+#define MMC_RSP_R5      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE|MMC_RSP_R5_FLAG)
+#define MMC_RSP_R6      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE|MMC_RSP_R6_FLAG)
+#define MMC_RSP_R7      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE|MMC_RSP_R7_FLAG)
 
 
 struct mmc_cid {
@@ -233,7 +236,7 @@ struct mmc_cmd {
 	ushort cmdidx;
 	uint resp_type;
 	uint cmdarg;
-	uint response[4];
+	char response[18];
 	uint flags;
 };
 
@@ -264,7 +267,7 @@ struct mmc {
 	uint ocr;
 	uint scr[2];
 	uint csd[4];
-	uint cid[4];
+	char cid[16];
 	ushort rca;
 	uint tran_speed;
 	uint read_bl_len;

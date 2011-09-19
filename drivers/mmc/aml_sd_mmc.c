@@ -156,9 +156,9 @@ int aml_sdio_io_init(struct mmc *mmc, ulong flag)
 void aml_sd_cfg_swth(struct mmc *mmc)
 {
 	//DECLARE_GLOBAL_DATA_PTR;
-
-	struct aml_card_sd_info *aml_priv = mmc->priv;
 	
+	struct aml_card_sd_info *aml_priv = mmc->priv;
+    
     
 	unsigned long sdio_config =	0;
 	
@@ -245,7 +245,6 @@ static int sd_inand_check_insert(struct	mmc	*mmc)
 }
 
 //Clear response data buffer
-static char response_buf[MAX_RESPONSE_BYTES];
 static void sd_inand_clear_response(char * res_buf)
 {
 	int i;
@@ -256,11 +255,11 @@ static void sd_inand_clear_response(char * res_buf)
 		res_buf[i]=0;
 }
 
-static int sd_inand_check_response(char * res_buf,unsigned resp_type)
+static int sd_inand_check_response(struct mmc_cmd *cmd)
 {
 	int ret = SD_NO_ERROR;
-	SD_Response_R1_t *r1 = (SD_Response_R1_t *)res_buf;
-	switch (resp_type) {
+	SD_Response_R1_t *r1 = (SD_Response_R1_t *)cmd->response;
+	switch (cmd->resp_type) {
 	case MMC_RSP_R1:
 	case MMC_RSP_R1b:
 		if (r1->card_status.OUT_OF_RANGE)
@@ -364,15 +363,13 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 			break;
 	}
 	
-	sd_inand_clear_response(response_buf);
+	sd_inand_clear_response(cmd->response);
 	switch (cmd->resp_type) {
 	case MMC_RSP_R1:
 	case MMC_RSP_R1b:
 	case MMC_RSP_R3:
-#if 0	    
 	case MMC_RSP_R6:
 	case MMC_RSP_R7:
-#endif	    
 		cmd_send_reg->cmd_res_bits = 45;		// RESPONSE	have 7(cmd)+32(respnse)+7(crc)-1 data
 		break;
 	case MMC_RSP_R2:
@@ -389,7 +386,6 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 	case MMC_CMD_READ_MULTIPLE_BLOCK:
 	case MMC_CMD_SEND_EXT_CSD:					//same as: SD_CMD_SEND_IF_COND
 	case SD_CMD_SWITCH_FUNC:					//same as: MMC_CMD_SWITCH
-	case SD_CMD_APP_SEND_SCR:
 		if(!data)
 			break;
 //        dcache_flush();
@@ -399,8 +395,9 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 		if(mmc->bus_width == SD_BUS_WIDE)
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + (16 - 1) * 4;
 		else
-			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;
+			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;		
 		buffer = dma_map_single((void*)data->dest,data->blocks*data->blocksize,DMA_FROM_DEVICE);
+		//buffer = data->dest;
 		//dcache_invalid_range(buffer,data->blocks<<9);
 		break;
 	case MMC_CMD_WRITE_SINGLE_BLOCK:
@@ -416,17 +413,16 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
 //        dcache_clean_range(buffer,data->blocks<<9);
 //        dcache_flush();
 		break;
-#if 0
 	case SD_CMD_APP_SEND_SCR:
 		cmd_send_reg->res_with_data = 1;
 		if(mmc->bus_width == SD_BUS_WIDE)
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + (16 - 1) * 4;
 		else
 			cmd_ext_reg->data_rw_number = data->blocksize * 8 + 16 - 1;
-		buffer = dma_map_single(data->dest,cmd_ext_reg->data_rw_number,DMA_FROM_DEVICE);//(char *)data->src;
+		//buffer = (char *)data->src;
 		//dcache_flush();
-		break;		
-#endif
+		buffer = dma_map_single(data->dest,cmd_ext_reg->data_rw_number,DMA_BIDIRECTIONAL);//(char *)data->src;
+		break;
 	default:
 		break;
 	}
@@ -520,10 +516,8 @@ CMD_RETRY:
 	case MMC_RSP_R1:
 	case MMC_RSP_R1b:
 	case MMC_RSP_R3:
-#if 0	    
 	case MMC_RSP_R6:
 	case MMC_RSP_R7:
-#endif	    
 		num_res = RESPONSE_R1_R3_R6_R7_LENGTH;
 		break;
 	case MMC_RSP_R2:
@@ -533,7 +527,8 @@ CMD_RETRY:
 		num_res = RESPONSE_R4_R5_NONE_LENGTH;
 		break;
 	 }
-	 switch (cmd->cmdidx) {
+	 
+/*	switch (cmd->cmdidx) {
 	case MMC_CMD_READ_SINGLE_BLOCK:
 	case MMC_CMD_READ_MULTIPLE_BLOCK:
 	case MMC_CMD_SEND_EXT_CSD:					//same as: SD_CMD_SEND_IF_COND
@@ -549,9 +544,8 @@ CMD_RETRY:
 		break;
 	default:
 		break;
-	}
-	 
-   // dcache_flush();
+	}*/
+    dcache_flush();
 	if (num_res > 0) {
 		unsigned int multi_config = 0;
 		SDIO_Multi_Config_Reg_t *multi_config_reg = (void *)&multi_config;
@@ -565,30 +559,25 @@ CMD_RETRY:
 		data_temp = readl(PREG_SDIO_CMD_ARG);
 		if(num_res <= 1)
 			break;
-		response_buf[--num_res - 1] = data_temp & 0xFF;
+		cmd->response[--num_res - 1] = data_temp & 0xFF;
 		if(num_res <= 1)
 			break;
-		response_buf[--num_res - 1] = (data_temp >> 8) & 0xFF;
+		cmd->response[--num_res - 1] = (data_temp >> 8) & 0xFF;
 		if(num_res <= 1)
 			break;
-		response_buf[--num_res - 1] = (data_temp >> 16) & 0xFF;
+		cmd->response[--num_res - 1] = (data_temp >> 16) & 0xFF;
 		if(num_res <= 1)
 			break;
-		response_buf[--num_res - 1] = (data_temp >> 24) & 0xFF;
+		cmd->response[--num_res - 1] = (data_temp >> 24) & 0xFF;
 	}
 	while (loop_num--) {
-		((uint *)cmd->response)[loop_num] = __be32_to_cpu(((uint *)response_buf)[loop_num]);
-		((uint *)response_buf)[loop_num] = ((uint *)cmd->response)[loop_num];
+		((uint *)cmd->response)[loop_num] = __be32_to_cpu(((uint *)cmd->response)[loop_num]);
 	}
 	
 	//check_response
-	/* for resp_type 'MMC_RSP_R6''MMC_RSP_R7' is changed in mmc.h*/
-	if(cmd->cmdidx != SD_CMD_SEND_RELATIVE_ADDR 
-		&& cmd->cmdidx != SD_CMD_SEND_IF_COND){
-	ret = sd_inand_check_response(response_buf,cmd->resp_type);
+	ret = sd_inand_check_response(cmd);
 	if(ret)
-			return ret;
-	}
+		return ret;
 
 	//cmd with adtc
 	switch (cmd->cmdidx) {
@@ -665,5 +654,6 @@ void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 	mmc->clock = 300000;
 	mmc->f_min = 200000;
 	mmc->f_max = 50000000;
+	mmc->has_init = 0;
 	mmc_register(mmc);
 }

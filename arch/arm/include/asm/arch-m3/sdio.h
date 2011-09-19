@@ -210,7 +210,6 @@ typedef enum _SD_Bus_Width
 } SD_Bus_Width_t;
 
 
-
 //Misc definitions
 #define MAX_RESPONSE_BYTES              18
 
@@ -296,11 +295,13 @@ typedef enum _SD_Bus_Width
 // CPU relative configuration
 #include "clock.h" 
 #define SDIO_CLKSRC CLK_CLK81
-#define SDIO_PORT_MAX   5
+#define SDIO_PORT_MAX   (4+2)
 #define SDIO_PORT_A    0
 #define SDIO_PORT_B    1
 #define SDIO_PORT_C    2
-#define SDIO_PORT_B1   5
+#define SDIO_PORT_XC_A   3
+#define SDIO_PORT_XC_B   4
+#define SDIO_PORT_XC_C   5
 
 struct aml_card_sd_info
 {
