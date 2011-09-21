@@ -737,15 +737,15 @@ int mmc_startup(struct mmc *mmc)
 	if (err)
 		return err;
 
-	if (!IS_SD(mmc) && (mmc->version >= MMC_VERSION_4)) {
+//	if (!IS_SD(mmc) && (mmc->version >= MMC_VERSION_4)) {
 		/* check  ext_csd version and capacity */
-		err = mmc_send_ext_csd(mmc, ext_csd);
+/*		err = mmc_send_ext_csd(mmc, ext_csd);
 		if (!err & (ext_csd[192] >= 2)) {
 			mmc->capacity = ext_csd[212] << 0 | ext_csd[213] << 8 |
 					ext_csd[214] << 16 | ext_csd[215] << 24;
 			mmc->capacity *= 512;
 		}
-	}
+	}*/
 	
 	if (IS_SD(mmc))
 		err = sd_change_freq(mmc);
@@ -888,27 +888,30 @@ int mmc_init(struct mmc *mmc)
 {
 	int err;
 	
-	if (mmc->has_init)
-		return 0;
+//	if (mmc->has_init)
+//		return 0;
 
 	err = mmc->init(mmc);
-
 	if (err)
 		return err;
 
-	mmc_set_bus_width(mmc, 1);
-	mmc_set_clock(mmc, 1);
+    if(mmc->bus_width == 4)
+        return 0;
+	//mmc_set_bus_width(mmc, 1);
+	//mmc_set_clock(mmc, 1);
 
 	/* Reset the Card */
 	err = mmc_go_idle(mmc);
-
 	if (err)
 		return err;
 
 	/* Test for SD version 2 */
 	err = mmc_send_if_cond(mmc);
-	if (err)
-		err = mmc_go_idle(mmc);
+	/* If we got an error other than timeout, we bail */
+	if (err && err != TIMEOUT)
+		return err;
+       else if(err)
+            err = mmc_go_idle(mmc);
 
 	/* Now try to get the SD card's operating condition */
 	err = sd_send_op_cond(mmc);
@@ -923,12 +926,12 @@ int mmc_init(struct mmc *mmc)
 		}
 	}
 
-	err = mmc_startup(mmc);
-	if (err)
+	return(mmc_startup(mmc));
+	/*if (err)
 		mmc->has_init = 0;
 	else
 		mmc->has_init = 1;
-	return err;
+	return err;*/
 }
 
 /*

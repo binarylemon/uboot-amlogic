@@ -653,7 +653,6 @@ void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 	mmc->bus_width = 1;
 	mmc->clock = 300000;
 	mmc->f_min = 200000;
-	mmc->f_max = 50000000;
-	mmc->has_init = 0;
+	mmc->f_max = 50000000;	
 	mmc_register(mmc);
 }

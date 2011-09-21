@@ -256,7 +256,7 @@ struct mmc {
 	void *priv;
 	uint voltages;
 	uint version;
-	uint has_init;
+	//uint has_init;
 	uint f_min;
 	uint f_max;
 	int high_capacity;

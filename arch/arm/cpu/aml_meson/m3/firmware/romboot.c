@@ -130,9 +130,13 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             }
             break;
         case POR_1ST_SDIO_C:
+        	serial_puts("Boot From SDIO C\n");
+        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<3);
+        	break;
         case POR_1ST_SDIO_B:
+        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<3);break;
         case POR_1ST_SDIO_A:
-           rc=sdio_read(target,size,0);
+           rc=sdio_read(temp_addr,size,POR_2ND_SDIO_A<<3);break;
            break;
         default:
            return 1;
