@@ -79,6 +79,7 @@
 #define CONFIG_SELF_COMPRESS 
 
 //#define CONFIG_SPI_BOOT 1
+//#define CONFIG_MMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
 #define CONFIG_NAND_BOOT 1
 #endif
@@ -99,6 +100,11 @@
 	#define CONFIG_ENV_OVERWRITE	
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
+#elif defined CONFIG_MMC_BOOT
+	#define CONFIG_ENV_IS_IN_MMC
+	#define CONFIG_CMD_SAVEENV
+    #define CONFIG_SYS_MMC_ENV_DEV        0	
+	#define CONFIG_ENV_OFFSET       0x1000000		
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif

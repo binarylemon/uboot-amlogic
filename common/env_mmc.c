@@ -23,14 +23,13 @@
 /* #define DEBUG */
 
 #include <common.h>
-
-#include <command.h>
 #include <environment.h>
-#include <linux/stddef.h>
-#include <malloc.h>
 #include <mmc.h>
 #include <search.h>
+#include <malloc.h>
 #include <errno.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /* references to names in env_common.c */
 extern uchar default_environment[];
@@ -43,11 +42,6 @@ env_t *env_ptr = (env_t *)(&environment[0]);
 #else /* ! ENV_IS_EMBEDDED */
 env_t *env_ptr = NULL;
 #endif /* ENV_IS_EMBEDDED */
-
-/* local functions */
-#if !defined(ENV_IS_EMBEDDED)
-static void use_default(void);
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -65,103 +59,94 @@ int env_init(void)
 	return 0;
 }
 
-int init_mmc_for_env(struct mmc *mmc)
+void env_relocate_spec(void)
 {
+#if !defined(ENV_IS_EMBEDDED)    	    	
+    int dev_num;
+    int ret;
+    env_t env_buf;
+	u64 cnt = CONFIG_ENV_SIZE;
+	u64 blk = CONFIG_ENV_OFFSET;
+
+    dev_num = CONFIG_SYS_MMC_ENV_DEV;
+    
+	struct mmc *mmc = find_mmc_device(dev_num);
 	if (!mmc) {
-		puts("No MMC card found\n");
-		return -1;
+		set_default_env("!No MMC device");		
+		return;
 	}
-
+	if ((cnt % 512) || (blk % 512)) {	    
+	    set_default_env("!addr or blk count notalign");		
+	    return ;
+	}
 	if (mmc_init(mmc)) {
-		puts("MMC init failed\n");
-		return  -1;
+		set_default_env("!MMC init failed");
+		return ;
 	}
 
-	return 0;
+	blk >>= 9;
+    cnt >>= 9;
+	ret =(cnt == mmc->block_dev.block_read(dev_num, blk, cnt, (const void *)&env_buf));
+	if(!ret){		
+		set_default_env("!readenv() failed");		
+		return;
+	}						
+
+	env_import(&env_buf, 1);
+#endif
 }
+
 
 #ifdef CONFIG_CMD_SAVEENV
 
-inline int write_env(struct mmc *mmc, unsigned long size,
-			unsigned long offset, const void *buffer)
-{
-	uint blk_start, blk_cnt, n;
-
-	blk_start = ALIGN(offset, mmc->write_bl_len) / mmc->write_bl_len;
-	blk_cnt   = ALIGN(size, mmc->write_bl_len) / mmc->write_bl_len;
-
-	n = mmc->block_dev.block_write(CONFIG_SYS_MMC_ENV_DEV, blk_start,
-					blk_cnt, (u_char *)buffer);
-
-	return (n == blk_cnt) ? 0 : -1;
-}
-
 int saveenv(void)
 {
-	env_t	env_new;
-	ssize_t	len;
-	char	*res;
-	struct mmc *mmc = find_mmc_device(CONFIG_SYS_MMC_ENV_DEV);
-
-	if (init_mmc_for_env(mmc))
-		return 1;
-
-	res = (char *)&env_new.data;
+    struct mmc *mmc;
+    int dev_num;
+	unsigned cnt = CONFIG_ENV_SIZE;	
+	u64 blk = CONFIG_ENV_OFFSET;
+    dev_num = CONFIG_SYS_MMC_ENV_DEV;
+    env_t *env_new_p = NULL;
+    ssize_t	len;	
+    char	*res;
+    mmc = find_mmc_device(dev_num);
+	if (!mmc)
+	{
+		puts("No MMC device! Environment MMC not initialized!\n");
+		return -1;
+	}	
+	if ((cnt % 512) || (blk % 512)) {
+	    printf("addr notalign 0x%llx or byte notalign 0x%llx",blk,cnt);
+		return -1;
+	}	
+	env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);			
+	// get env data from hash table	
+	memset(env_new_p->data, 0, ENV_SIZE);
+	res = (char *)&(env_new_p->data);
 	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE);
 	if (len < 0) {
-		error("Cannot export environment: errno = %d\n", errno);
+		error("Cannot export environment: errno = %d\n", errno);		
+		free(env_new_p);
 		return 1;
-	}
-	env_new.crc   = crc32(0, env_new.data, ENV_SIZE);
-	printf("Writing to MMC(%d)... ", CONFIG_SYS_MMC_ENV_DEV);
-	if (write_env(mmc, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, (u_char *)&env_new)) {
-		puts("failed\n");
-		return 1;
-	}
-
-	puts("done\n");
+	}	
+	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);		
+	mmc_init(mmc);	
+    blk >>= 9;
+    cnt >>= 9;           
+	if(cnt == mmc->block_dev.block_write(dev_num, blk, cnt, (const void *)env_new_p))
+    {
+        printf("mmc save env ok\n");
+    }
+    else
+    {
+        printf("mmc save env fail\n");
+       free(env_new_p);
+		return -1;
+    }
+    free(env_new_p);
 	return 0;
 }
 #endif /* CONFIG_CMD_SAVEENV */
 
-inline int read_env(struct mmc *mmc, unsigned long size,
-			unsigned long offset, const void *buffer)
-{
-	uint blk_start, blk_cnt, n;
 
-	blk_start = ALIGN(offset, mmc->read_bl_len) / mmc->read_bl_len;
-	blk_cnt   = ALIGN(size, mmc->read_bl_len) / mmc->read_bl_len;
 
-	n = mmc->block_dev.block_read(CONFIG_SYS_MMC_ENV_DEV, blk_start,
-					blk_cnt, (uchar *)buffer);
-
-	return (n == blk_cnt) ? 0 : -1;
-}
-
-void env_relocate_spec(void)
-{
-#if !defined(ENV_IS_EMBEDDED)
-       char buf[CONFIG_ENV_SIZE];
-
-	struct mmc *mmc = find_mmc_device(CONFIG_SYS_MMC_ENV_DEV);
-
-	if (init_mmc_for_env(mmc)) {
-		use_default();
-		return;
-	}
-
-	if (read_env(mmc, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, buf)) {
-		use_default();
-		return;
-	}
-
-	env_import(buf, 1);
-#endif
-}
-
-#if !defined(ENV_IS_EMBEDDED)
-static void use_default()
-{
-	set_default_env(NULL);
-}
-#endif
