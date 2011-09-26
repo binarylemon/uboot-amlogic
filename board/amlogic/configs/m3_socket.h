@@ -62,6 +62,37 @@
 #define UBOOTPATH		"u-boot-aml.bin"
 #endif
 
+//#define CONFIG_SPI_BOOT 1
+//#define CONFIG_MMC_BOOT
+//#ifndef CONFIG_JERRY_NAND_TEST
+//#define CONFIG_NAND_BOOT 1
+//#endif
+
+#ifdef CONFIG_NAND_BOOT
+#define CONFIG_AMLROM_NANDBOOT 1
+#endif 
+
+#ifdef CONFIG_SPI_BOOT
+	#define CONFIG_ENV_OVERWRITE
+	#define CONFIG_ENV_IS_IN_SPI_FLASH
+	#define CONFIG_CMD_SAVEENV	
+	#define CONFIG_ENV_SECT_SIZE        0x1000
+	#define CONFIG_ENV_OFFSET           0x1f0000
+#elif defined CONFIG_NAND_BOOT
+	#define CONFIG_ENV_IS_IN_AML_NAND
+	#define CONFIG_CMD_SAVEENV
+	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OFFSET       0x400000
+	#define CONFIG_ENV_BLOCK_NUM    2
+#elif defined CONFIG_MMC_BOOT
+	#define CONFIG_ENV_IS_IN_MMC
+	#define CONFIG_CMD_SAVEENV
+    #define CONFIG_SYS_MMC_ENV_DEV        0	
+	#define CONFIG_ENV_OFFSET       0x1000000		
+#else
+#define CONFIG_ENV_IS_NOWHERE    1
+#endif
+
 /*POST support*/
 #define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
 										CONFIG_SYS_POST_BSPEC2 | CONFIG_SYS_POST_RTC | CONFIG_SYS_POST_ADC | \
