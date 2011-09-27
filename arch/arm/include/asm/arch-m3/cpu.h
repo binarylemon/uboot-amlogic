@@ -120,18 +120,20 @@
 	"chipname=8726m\0" \
 	"machid=B8E\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
-	"partnum=2\0" \
-	"p0start=1000000\0" \
-	"p0size=400000\0" \
-	"p0path=uImage\0" \
-	"p1start=1400000\0" \
-	"p1size=8000000\0" \
-	"p1path=android.rootfs\0" \
-	"bootstart=0\0" \
-	"bootsize=60000\0" \
-	"bootpath=u-boot-512M-UartB.bin\0" \
-	"normalstart=1000000\0" \
-	"normalsize=400000\0" \
+	"mtdids=" MTDIDS_DEFAULT \
+	"mtdparts="MTDPARTS_DEFAULT \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=u-boot-aml-ucl.bin\0" \
+	"normal_start=0x8800000\0" \
+	"normal_size=0x800000\0" \
+	"recovery_start=0x6800000\0" \
+	"recovery_size=0x800000\0" \
+	"recovery_path=uImage_recovery\0" \
+	"logo_start=0x4800000\0" \
+	"logo_size=0x400000\0" \
+	"aml_logo_start=0x5800000\0" \
+	"aml_logo_size=0x400000\0"
 	
 //#define CONFIG_BOOTCOMMAND  "nand read 84100000 ${logo_start} ${logo_size};nand read ${loadaddr} ${normal_start} ${normal_size};lcd bl off;bootm"
 #define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uImage-m3;bootm"
