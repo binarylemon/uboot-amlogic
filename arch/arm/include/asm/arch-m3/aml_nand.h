@@ -66,6 +66,10 @@
 #define RB  		(1<<20) 
 #define STANDBY     (0xf<<10)
 
+//#define DWR_SYNC         (0x7<<14)
+//#define DRD_SYNC         (0x3<<14)
+#define DWR_SYNC         DWR
+#define DRD_SYNC         DRD
 
 #define PER_INFO_BYTE 8       //64 bit  P_NAND_INFO now 
 #define SIZE_INT	  (sizeof(unsigned int))	
@@ -93,12 +97,15 @@
 /**
    Config Group
 */
+#define NAND_SYNC_MODE  0x01
+#define NAND_TOGGLE_MODE  0x02
+
 #define NFC_SET_CMD_START()						   		SET_CBUS_REG_MASK(NAND_CFG,1<<12) 
 #define NFC_SET_CMD_AUTO()						   		SET_CBUS_REG_MASK(NAND_CFG,1<<13) 
 #define NFC_SET_STS_IRQ(en)					       		WRITE_CBUS_REG_BITS(NAND_CFG,en,20,1) 
 #define NFC_SET_CMD_IRQ(en)					       		WRITE_CBUS_REG_BITS(NAND_CFG,en,21,1) 
 #define NFC_SET_TIMING_ASYC(bus_tim,bus_cyc)       		WRITE_CBUS_REG_BITS(NAND_CFG,((bus_cyc&31)|((bus_tim&31)<<5)|(0<<10)),0,12)
-#define NFC_SET_TIMING_SYNC(bus_tim,bus_cyc,sync_mode)  WRITE_CBUS_REG_BITS(NAND_CFG,(bus_cyc&31)|((bus_tim&31)<<5)|((sync_mode&2)<<10),0,12)
+#define NFC_SET_TIMING_SYNC(bus_tim,bus_cyc,sync_mode)  WRITE_CBUS_REG_BITS(NAND_CFG,(bus_cyc&31)|((bus_tim&31)<<5)|((sync_mode&3)<<10),0,12)
 #define NFC_SET_TIMING_SYNC_ADJUST() 
 #define NFC_SET_DMA_MODE(is_apb,spare_only)        WRITE_CBUS_REG_BITS(NAND_CFG,((spare_only<<1)|(is_apb)),14,2)
 
@@ -226,6 +233,7 @@
 #define AML_MULTI_CHIP					1
 #define AML_MULTI_CHIP_SHARE_RB			2
 #define AML_INTERLEAVING_MODE			4
+#define AML_SYNC_MODE			8
 
 #define AML_NAND_CE0         			0xe
 #define AML_NAND_CE1         			0xd
@@ -250,6 +258,7 @@
 #define NAND_TIMING_OPTIONS_MASK		0x00000f00
 #define NAND_BUSW_OPTIONS_MASK			0x0000f000
 #define NAND_INTERLEAVING_OPTIONS_MASK	0x000f0000
+#define NAND_SYNC_OPTIONS_MASK	0x80000000
 
 #define NAND_ECC_SOFT_MODE				0x00000000
 #define NAND_ECC_BCH8_512_MODE			0x00000001
@@ -271,6 +280,8 @@
 #define NAND_TIMING_MODE4				0x00000400
 #define NAND_TIMING_MODE5				0x00000500
 
+#define NAND_SYNCIF				0x80000000
+
 /*#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE)*/
 
 #define AML_NAND_BUSY_TIMEOUT			0x40000
@@ -286,8 +297,10 @@
 #define NAND_CMD_DUMMY_PROGRAM			0x11
 #define NAND_CMD_ERASE1_END				0xd1
 #define NAND_CMD_MULTI_CHIP_STATUS		0x78
-#define NAND_CMD_SetFeature		0xef
-#define NAND_CMD_GetFeature		0xee
+#define NAND_CMD_SET_FEATURES			0xEF
+#define NAND_CMD_GET_FEATURES			0xEE
+#define ONFI_TIMING_ADDR				0x01
+
 
 
 #define MAX_CHIP_NUM		4
@@ -304,6 +317,7 @@ struct aml_nand_flash_dev {
 	unsigned oobsize;
 	unsigned internal_chipnr;
 	unsigned options;
+//	u8 onfi_mode;
 };
 struct ecc_desc_s{
     char * name;
@@ -345,7 +359,7 @@ struct aml_nand_chip {
 	unsigned char *aml_nand_data_buf;
 	unsigned int *user_info_buf;
 
-	struct mtd_info			*mtd;
+	struct mtd_info			*mtd; 
 	struct nand_chip		chip;
 
 	/* platform info */
@@ -356,11 +370,14 @@ struct aml_nand_chip {
 
 	unsigned max_ecc;
     struct ecc_desc_s * ecc;
+//	unsigned onfi_mode;
+
 	//plateform operation function
 	void	(*aml_nand_hw_init)(struct aml_nand_chip *aml_chip);
 	int		(*aml_nand_options_confirm)(struct aml_nand_chip *aml_chip);
 	void 	(*aml_nand_cmd_ctrl)(struct aml_nand_chip *aml_chip, int cmd,  unsigned int ctrl);
 	void	(*aml_nand_select_chip)(struct aml_nand_chip *aml_chip, int chipnr);
+	void (*aml_nand_write_byte)(struct aml_nand_chip *aml_chip, uint8_t data); 
 	void	(*aml_nand_get_user_byte)(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num);
 	void	(*aml_nand_set_user_byte)(struct aml_nand_chip *aml_chip, unsigned char *oob_buf, int byte_num);
 	void	(*aml_nand_command)(struct aml_nand_chip *aml_chip, unsigned command, int column, int page_addr, int chipnr);
@@ -396,7 +413,7 @@ struct aml_nand_device {
 
 static void inline  nand_get_chip(void )
 {
-	setbits_le32(P_PREG_PAD_GPIO3_EN_N,0x3ffff);	//enable gpio output
+	setbits_le32(P_PREG_PAD_GPIO3_EN_N,0x3ffff);	//disable gpio output
 	SET_CBUS_REG_MASK(PAD_PULL_UP_REG3,(0xff<<0) | (1<<16));
 	setbits_le32(P_PERIPHS_PIN_MUX_5,0x7<<7);
 #if CONFIG_AM_NAND_RBPIN	
@@ -441,5 +458,5 @@ extern int aml_nand_init(struct aml_nand_chip *aml_chip);
 
 
 
-#endif // AML_NAND_H_INCLUDED
+#endif // NAND_H_INCLUDED
 
