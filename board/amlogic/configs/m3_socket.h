@@ -10,7 +10,9 @@
 //#define CONFIG_AML_I2C      1
 
 //Enable storage devices
-//#define CONFIG_CMD_NAND  1
+#ifndef CONFIG_JERRY_NAND_TEST
+#define CONFIG_CMD_NAND  1
+#endif
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
@@ -48,7 +50,6 @@
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 
-
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
 #define CONFIG_SYS_LONGHELP	1
@@ -61,6 +62,9 @@
 #define BOARD_INFO_ENV ""
 #define UBOOTPATH		"u-boot-aml.bin"
 #endif
+
+#define CONFIG_UCL 1
+#define CONFIG_SELF_COMPRESS 
 
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT

@@ -6,17 +6,17 @@
   * Comment: headder file for board WA-AML8726-M3_REF_V1.0.pdf
   *
   *
-  * Remark: copy from m3_socket.h by Hisun Bao 2011.08.05
+  * Remark: copy from m3_wa_ref_v1.h by Ada Wang 2011.08.05
   * 
   ***************************************************************************
   */
 
-#ifndef __M3_WA_REF_V1_H__
-#define __M3_WA_REF_V1_H__
+#ifndef __M3_SHUTTLE_MID_V1_H__
+#define __M3_SHUTTLE_MID_V1_H__
 
 /*board ID*/
 /*@WA-AML8726-M3_REF_V1.0.pdf*/
-#define WA_AML8726_M3_REF_V10 1
+#define SHUTTLE_M3_MID_V1 1
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -188,4 +188,4 @@
 #define CONFIG_SYS_MEMTEST_START	0x80000000  /* memtest works on	*/      
 #define CONFIG_SYS_MEMTEST_END		0x87000000  /* 0 ... 120 MB in DRAM	*/  
 
-#endif /*__M3_WA_REF_V1_H__*/
+#endif /*__M3_SHUTTLE_MID_V1_H__*/
