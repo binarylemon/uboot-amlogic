@@ -3,7 +3,7 @@
   *  Author:  Wenwu Zhang <wenwu.zhang@amlogic.com>
   *
   *
-  * Comment: headder file for board WA-AML8726-M3_REF_V1.0.pdf
+  * Comment: headder file for board Q07CL_DSN_RB_0922A.pdf
   *
   *
   * Remark: copy from m3_wa_ref_v1.h by Ada Wang 2011.08.05
@@ -15,15 +15,15 @@
 #define __M3_SHUTTLE_MID_V1_H__
 
 /*board ID*/
-/*@WA-AML8726-M3_REF_V1.0.pdf*/
+/*@Q07CL_DSN_RB_0922A.pdf*/
 #define SHUTTLE_M3_MID_V1 1
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
 
-/*@WA-AML8726-M3_REF_V1.0.pdf*/
-//#define CONFIG_AML_I2C      1
+/*@Q07CL_DSN_RB_0922A.pdf*/
+#define CONFIG_AML_I2C      1
 
 
 /*use AO I2C to access ACT8942 for verify*/

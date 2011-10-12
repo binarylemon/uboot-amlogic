@@ -17,7 +17,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #ifdef CONFIG_AML_I2C
 static void board_i2c_set_pinmux(void)
 {
-    //refer to WA-AML8726-M3_REF_V1.0.pdf & AppNote-M3-CorePinMux.xlsx
+    //refer to Q07CL_DSN_RB_0922A.pdf & AppNote-M3-CorePinMux.xlsx
     /*********************************************/
     /*          | AO I2C_Master | AO I2C_Slave |                 */
     /*********************************************/
@@ -35,7 +35,7 @@ static void board_i2c_set_pinmux(void)
     udelay(10000);
 }
 
-#define I2C_ACT8942QJ233_ADDR   (0x5B)
+#define I2C_ACT8942QJ133_ADDR   (0x5B)
 
 void i2c_act8942_write(unsigned char reg, unsigned char val)
 {
@@ -45,7 +45,7 @@ void i2c_act8942_write(unsigned char reg, unsigned char val)
 
 	struct i2c_msg msg[] = {
         {
-        .addr  = I2C_ACT8942QJ233_ADDR,
+        .addr  = I2C_ACT8942QJ133_ADDR,
         .flags = 0,
         .len   = 2,
         .buf   = buff,
@@ -62,13 +62,13 @@ unsigned char i2c_act8942_read(unsigned char reg)
     unsigned char val = 0;
     struct i2c_msg msgs[] = {
         {
-            .addr = I2C_ACT8942QJ233_ADDR,
+            .addr = I2C_ACT8942QJ133_ADDR,
             .flags = 0,
             .len = 1,
             .buf = &reg,
         },
         {
-            .addr = I2C_ACT8942QJ233_ADDR,
+            .addr = I2C_ACT8942QJ133_ADDR,
             .flags = I2C_M_RD,
             .len = 1,
             .buf = &val,
@@ -81,9 +81,9 @@ unsigned char i2c_act8942_read(unsigned char reg)
 
     return val;
 }
-void board_wa_aml8726_m3_ref_v10_i2c_test(void)
+void board_Q07CL_DSN_RB_0922A_i2c_test(void)
 {
-	/*@WA-AML8726-M3_REF_V1.0.pdf*/
+	/*@Q07CL_DSN_RB_0922A.pdf*/
 	/*@DS_ACT8942_PrA_22Jun11_M.pdf*/
 	unsigned char act8942_reg_id_lst[] = {
 	0x00,0x01,0x20,0x21,0x22,0x30,
@@ -92,19 +92,19 @@ void board_wa_aml8726_m3_ref_v10_i2c_test(void)
 	0x65,0x70,0x71,0x78,0x79,0x7A,
 	};
 	int nIdx = 0;
-	printf("[M3 board]-[WA-AML8726-M3_REF_V1.0]-[AO-I2C]-[ACT8942QJ233-T] dump begin:\n");
+	printf("[M3 shuttle MID]-[Q07CL_DSN_RB_0922A]-[AO-I2C]-[ACT8942QJ133-T] dump begin:\n");
 	for(nIdx = 0;nIdx < sizeof(act8942_reg_id_lst)/sizeof(act8942_reg_id_lst[0]);++nIdx)
 		printf("Reg addr=0x%02x Val=0x%02x\n",
 		act8942_reg_id_lst[nIdx],
 		i2c_act8942_read(act8942_reg_id_lst[nIdx]));
 
-	printf("[M3 board]-[WA-AML8726-M3_REF_V1.0]-[AO-I2C]-[ACT8942QJ233-T] dump end.\n\n");
+	printf("[M3 shuttle MID]-[Q07CL_DSN_RB_0922A]-[AO-I2C]-[ACT8942QJ133-T] dump end.\n\n");
 }
 
-//Amlogic I2C param setting for board "WA-AML8726-M3_REF_V1.0.pdf"
+//Amlogic I2C param setting for board "Q07CL_DSN_RB_0922A.pdf"
 //will be used by function:  int aml_i2c_init(void) @ drivers\i2c\aml_i2c.c
 //refer following doc for detail:
-//board schematic: WA-AML8726-M3_REF_V1.0.pdf.pdf
+//board schematic: Q07CL_DSN_RB_0922A.pdf
 //pinmux setting: AppNote-M3-CorePinMux.xlsx
 struct aml_i2c_platform g_aml_i2c_plat = {
     .wait_count         = 1000000,
@@ -115,17 +115,17 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     .use_pio            = 0,
     .master_i2c_speed   = AML_I2C_SPPED_400K,
     .master_ao_pinmux = {
-        .scl_reg    = P_AO_RTI_PIN_MUX_REG,
-        .scl_bit    = (1<<6),
-        .sda_reg    = P_AO_RTI_PIN_MUX_REG,
-        .sda_bit    = (1<<5),
+        .scl_reg    = MESON_I2C_MASTER_AO_GPIOAO_4_REG,
+        .scl_bit    = MESON_I2C_MASTER_AO_GPIOAO_4_BIT,
+        .sda_reg    = MESON_I2C_MASTER_AO_GPIOAO_5_REG,
+        .sda_bit    = MESON_I2C_MASTER_AO_GPIOAO_5_BIT,
     }
 };
 
 static void board_i2c_init(void)
 {		
 	//set I2C pinmux with PCB board layout
-	//refer AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf
+	//refer Q07CL_DSN_RB_0922A.pdf
 	board_i2c_set_pinmux();
 
 	//Amlogic I2C controller initialized
@@ -134,8 +134,8 @@ static void board_i2c_init(void)
 
 	//must call aml_i2c_init(); before any I2C operation	
 
-	/*M3 MID board*/
-//	board_wa_aml8726_m3_ref_v10_i2c_test();	
+	/*M3 shuttle MID board*/
+	board_Q07CL_DSN_RB_0922A_i2c_test();	
 
 	udelay(10000);	
 	
@@ -143,7 +143,7 @@ static void board_i2c_init(void)
 //for sys_test only, not check yet
 static struct i2c_board_info aml_i2c_info[] = {
     {
-        I2C_BOARD_INFO("I2C PMU(ACT8942)", I2C_ACT8942QJ233_ADDR),
+        I2C_BOARD_INFO("I2C PMU(ACT8942)", I2C_ACT8942QJ133_ADDR),
         .device_init = board_i2c_init,
     },
 };
@@ -282,7 +282,7 @@ int board_init(void)
 /*following key value are test with board 
   [M3_SKT_V1 20110622]
   ref doc:
-  1. m3_skt_v1.pdf(2011.06.22)
+  1. Q07CL_DSN_RB_0922A.pdf
   2. M3-Periphs-Registers.docx (Pg43-47)
 */
 static struct adckey_info g_key_K1_info[] = {
