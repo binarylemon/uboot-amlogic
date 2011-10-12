@@ -280,34 +280,22 @@ int board_init(void)
 
 #ifdef CONFIG_SARADC
 /*following key value are test with board 
-  [M3_SKT_V1 20110622]
+  [M3 Shuttle MID project]
   ref doc:
   1. Q07CL_DSN_RB_0922A.pdf
   2. M3-Periphs-Registers.docx (Pg43-47)
 */
 static struct adckey_info g_key_K1_info[] = {
-    {"K1", 0, 60},
+    {"SW1", 180, 60},
 };
 static struct adckey_info g_key_K2_info[] = {
-    {"K2", 180, 60},
-};
-static struct adckey_info g_key_K3_info[] = {
-    {"K3", 400, 60},
-};
-static struct adckey_info g_key_K4_info[] = {
-    {"K4", 620, 60},
-};
-static struct adckey_info g_key_K5_info[] = {
-    {"K5", 850, 60},
+    {"SW2", 400, 60},
 };
 
 static struct adc_info g_adc_info[] = {
-    {"Press Key K1", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
-    {"Press Key K2", AML_ADC_CHAN_4, ADC_KEY,&g_key_K2_info},
-    {"Press Key K3", AML_ADC_CHAN_4, ADC_KEY,&g_key_K3_info},
-    {"Press Key K4", AML_ADC_CHAN_4, ADC_KEY,&g_key_K4_info},
-    {"Press Key K5", AML_ADC_CHAN_4, ADC_KEY,&g_key_K5_info},
-    {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL},
+    {"Press Key SW1", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
+    {"Press Key SW2", AML_ADC_CHAN_4, ADC_KEY,&g_key_K2_info},
+    {"Press Key N/A", AML_ADC_CHAN_5, ADC_OTHER, NULL},
 };
 
 struct adc_device aml_adc_devices={
@@ -320,25 +308,68 @@ struct adc_device aml_adc_devices={
      @trunk/common/sys_test.c */
 
 /*following is test code to test ADC & key pad*/
+/*SW1: 180; SW2:400*/
 /*
-#ifdef CONFIG_SARADC
 #include <asm/saradc.h>
+static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{	
 	saradc_enable();	
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
-	while(nCnt < 3)
+	#define ADC_CHECK_MAX 3
+	printf("\nM3 shuttle MID ADC check begin!\nTotal %d times to check, press key to start...\n",ADC_CHECK_MAX);
+	while(nCnt < ADC_CHECK_MAX)
 	{
 		udelay(nDelay);
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
 		
-		printf("get_key(): %d\n", nKeyVal);
+		printf("%d : get_key(): %d",(nCnt+1), nKeyVal);
+		int nKeyIndex;
+		int nKeyMax = aml_adc_devices.dev_num;
+		char *pInfo="";
+		for(nKeyIndex = 0;nKeyIndex<nKeyMax;++nKeyIndex)
+		{
+
+			if(ADC_OTHER == aml_adc_devices.adc_device_info[nKeyIndex].adc_type)
+			{
+				pInfo = aml_adc_devices.adc_device_info[nKeyIndex].tint;
+				break;
+			}
+			else
+			{
+			adckey_info_t * pKeyInfo = (adckey_info_t*)aml_adc_devices.adc_device_info[nKeyIndex].adc_data;
+			if(pKeyInfo)
+			{
+				if(nKeyVal > (pKeyInfo->value - pKeyInfo->tolerance) && 
+					nKeyVal < (pKeyInfo->value + pKeyInfo->tolerance))
+					{
+						pInfo = aml_adc_devices.adc_device_info[nKeyIndex].tint;
+						break;
+					}
+			}
+			else{
+				pInfo = aml_adc_devices.adc_device_info[nKeyMax-1].tint;
+				break;
+				}
+			}
+		}
+		printf("  -> %s!\n",pInfo);
 		nCnt++;
 	}
+	
 	saradc_disable();
-#endif
+
+	printf("M3 shuttle MID ADC check end!\n\n");
+}
+
+U_BOOT_CMD(
+	adc,1,	1,	do_adc,
+	"M3 ADC check",
+	"\n"
+);
 */
 #endif
 
