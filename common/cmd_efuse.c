@@ -87,18 +87,11 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		}
 		else if(strcmp(argv[2],"mac")==0){
 			s = argv[3];			
-			for (i = 0; i < 6; i++) {
-				printf("s=%s\n", s);
-				if(s)
-					addr[i] = simple_strtoul(s, &end, 16);
-				else
-					addr[i] = 0;
-				//addr[i] = s ? simple_strtoul(s, &end, 16) : 0;				
-				printf("addr[%d]=%x ", i, addr[i]);				
+			for (i = 0; i < 6; i++) {								
+				addr[i] = s ? simple_strtoul(s, &end, 16) : 0;								
 				if (s)
 					s = (*end) ? end+1 : end;
-			}			
-			printf("\n");
+			}						
 			if(efuse_write_usr(2, addr)){
 				printf("error:efuse had written.");
 				return -1;

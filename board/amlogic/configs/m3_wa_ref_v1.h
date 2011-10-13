@@ -50,6 +50,7 @@
 
 //Amlogic SARADC support
 #define CONFIG_SARADC    1
+#define CONFIG_EFUSE 1
 
 /*board WA_AML8726_M3_REF_V1.0 NOT support Ethernet*/
 
