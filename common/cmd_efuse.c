@@ -9,11 +9,8 @@
 int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	int ret = 0 ;
-	unsigned char ch;
-	char title[16];
-	unsigned char value[128];
 	unsigned char addr[384];
-	int i, j, k, tag, count;
+	int i;
 	char *op;
 	char *s;
 	char *end ;
@@ -23,62 +20,41 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		return -1;
 	}
 	
-	if(strcmp(argv[1],"r")==0){
-		if(strcmp(argv[2],"l")==0){
+	if(strcmp(argv[1],"read")==0){
+		if(strcmp(argv[2],"licence")==0){
 			op = efuse_read_usr(1);
 			printf("licence is ");
 			for(i=0;i<3;i++)
 				printf(":%02x",op[i]);
 			printf("\n");
 		}
-		else if(strcmp(argv[2],"m")==0){
+		else if(strcmp(argv[2],"mac")==0){
 			op = efuse_read_usr(2);
 			printf("mac is ");
 			for(i=0;i<6;i++)
 				printf(":%02x",op[i]);
 			printf("\n");
 		}
-		else if(strcmp(argv[2],"h")==0){
+		else if(strcmp(argv[2],"hdcp")==0){
 			op = efuse_read_usr(3);
 			printf("hdcp is ");
 			for(i=0;i<300;i++)
 				printf(":%02x",op[i]);
 			printf("\n");
 		}
-		else if(strcmp(argv[2],"u")==0){
+		else if(strcmp(argv[2],"usid")==0){
 			op = efuse_read_usr(4);
-
-			if((op[0]==7)&&(op[1]==0)&&(op[2]==1)&&(op[3]==3)&&(op[4]==0)&&(op[5]==2)){
-				printf("usid is ");
-				for(i=0;i<20;i++)
-					printf(":%x",op[i]);
-				printf("\n");
-				}
-			else{
-				op=efuse_read_usr_workaround(4);
-				if((op[0]==7)&&(op[1]==0)&&(op[2]==1)&&(op[3]==3)&&(op[4]==0)&&(op[5]==2)){
 			printf("usid is ");
-			for(i=0;i<20;i++)
-				printf(":%x",op[i]);
+			for(i=0;i<60;i++)
+				printf(":%02x",op[i]);
 			printf("\n");
-		}
-		else {
-					printf("read usid error\n");
-					printf("error usid is ");
-					for(i=0;i<20;i++)
-						printf(":%x",op[i]);
-					printf("\n");
-					return -1;
-				}
-				}
-			
 		}
 		else {
 			printf("arg error.");
 			return -1;
 		}
 	}
-	else if(strcmp(argv[1],"w")==0){
+	else if(strcmp(argv[1],"write")==0){
 		if(argc<4){
 			printf("arg error");
 			return -1;
@@ -109,215 +85,34 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 //				printf("licence written done.");
 			printf("licence write unsupport now.");
 		}
-		else if(strcmp(argv[2],"m")==0){
-			int lenth;
-			char char_tmp_buf[3];
-			
-			s = argv[3];
-			#if 1
-			lenth = strlen(s);
-			
-			if(lenth != 12)
-			{
-				printf("mac lenth is not right curlen=%d\n", lenth);
-				printf("mac written failed.\n");
-			}
-			else
-			{
-				int error_flag = 0;
-				for (i = 0; i <lenth; i++)
-				{
-					if(s[i]<'0' || s[i]>'f')
-					{
-						printf("invalid charactor\n");
-						error_flag = 1;
-						break;
-					}
-				}
-				if(error_flag == 0)
-				{
-					for (i = 0; i < 6; i++) {
-						char_tmp_buf[0] = s[2*i];
-						char_tmp_buf[1] = s[2*i+1];
-						char_tmp_buf[2] = 0;
-						addr[i] = simple_strtoul(char_tmp_buf, &end, 16);
-						printf("mac burn%02d %02x\n", i, addr[i]);
-					}
-					
-					if(efuse_write_usr(2, addr)){
-						printf("error:efuse had written.");
-						return -1;
-					}
-					else 
-						printf("mac written done.");
-					
-				}
-			}
-			#else
+		else if(strcmp(argv[2],"mac")==0){
+			s = argv[3];			
 			for (i = 0; i < 6; i++) {
-				addr[i] = s ? simple_strtoul(s, &end, 16) : 0;
-				printf("mac burn%02d %d\n", i, addr[i]);
+				printf("s=%s\n", s);
+				if(s)
+					addr[i] = simple_strtoul(s, &end, 16);
+				else
+					addr[i] = 0;
+				//addr[i] = s ? simple_strtoul(s, &end, 16) : 0;				
+				printf("addr[%d]=%x ", i, addr[i]);				
 				if (s)
 					s = (*end) ? end+1 : end;
-			}
+			}			
+			printf("\n");
 			if(efuse_write_usr(2, addr)){
 				printf("error:efuse had written.");
 				return -1;
 			}
 			else 
 				printf("mac written done.");
-			#endif
-			
 		}
 		else if(strcmp(argv[2],"hdcp")==0){
 			printf("hdcp write unsupport now.");
 //			printf("hdcp written done.");
 		}
-		else if(strcmp(argv[2],"U")==0){
-			int lenth;
-			char tmp_buf[2];
-			
-			s = argv[3];
-			lenth = strlen(s);
-			
-			if(lenth>20 || lenth<=0)
-			{
-				printf("usid lenth is not right curlen=%d\n", lenth);
-				printf("usid written failed.\n");
-			}
-			else
-			{
-				int error_flag = 0;
-				for (i = 0; i <lenth; i++)
-				{
-					if(s[i]<'0' || s[i]>'f')
-					{
-						printf("invalid charactor\n");
-						error_flag = 1;
-						break;
-					}
-				}
-				if (error_flag == 0)
-				{
-					for (i = 0; i < 20; i++) {
-						tmp_buf[0] = s[i];
-						tmp_buf[1] = 0;
-						addr[i] = simple_strtoul(tmp_buf, &end, 16);
-						printf("usid burn%02d %x\n", i, addr[i]);
-					}
-					if(efuse_write_usr(4, addr)){
-						printf("error:efuse had written.");
-						return -1;
-					}
-					else {
-						printf("usid written done.");
-					}
-				}
-			}
-		}
-		else if(strcmp(argv[2],"custom")==0){
-			s = argv[3];
-			printf("string is %s\n", s);
-			if(s) {				
-				i = 0;
-				j = 0;
-				tag = 0;
-				count = 0;
-				ch = s[i];
-				memset(title,0,sizeof(title));
-				memset(value,0,sizeof(value));
-				while(ch != 0) {
-					if((ch != ':') && (tag == 0)) {
-						title[j] = ch;
-						i++;
-						j++;
-						ch = s[i];
-					}
-					else if(ch == ':') {
-						printf("title is %s\n", title);
-						tag = 1;
-						i++;
-						j = 0;
-						ch = s[i];
-					}
-					else if(ch == ';'){
-						if(strcmp(title,"sn")==0){
-							if(efuse_write_usr(4, value)){
-								printf("error:efuse had written.");
-								puts("ERROR -");
-								return -1;
-							}
-							else {
-								printf("usid written done.");
-							}
-							printf("sn:%s\n", value);
-						}
-						else if(strcmp(title,"mac")==0){
-							printf("value:%s\n", value);
-							printf("mac:");
-							op = value;
-							for (k = 0; k < 6; k++) {
-								addr[k] = op ? simple_strtoul(op, &end, 16) : 0;
-								printf("%02x", addr[k]);
-								if (op)
-									op = (*end) ? end+1 : end;
-							}
-							printf("\n");
-							if(efuse_write_usr(2, addr)){
-								printf("error:efuse had written.");
-								puts("ERROR -");
-								return -1;
-							}
-							else {
-								printf("mac written done.");
-							}
-						}
-						memset(title,0,sizeof(title));
-						memset(value,0,sizeof(value));
-						tag = 0;
-						i++;
-						j = 0;
-						ch = s[i];
-					}
-					else {
-						if(strcmp(title,"sn")==0){
-							value[j] = ch;
-							i++;
-							j++;
-							ch = s[i];
-						}
-						else if(strcmp(title,"mac")==0){
-							value[j] = ch;
-							i++;
-							j++;
-							ch = s[i];
-							count++;
-							if(count >= 2) {
-								count = 0;
-								value[j] = ':';
-								j++;
-							}
-						}
-						else{   // errror
-							ch=s[i];
-							while((ch!=0) && (ch!=';')){
-								i++;
-								ch=s[i];
-							}
-							memset(title,0,sizeof(title));
-							memset(value,0,sizeof(value));
-							tag = 0;
-							i--;
-							j = 0;
-							ch = s[i];
-						}
-					}
-				}
-				puts("PASS");
-			}
-			else {
-				puts("ERROR -");
-			}
+		else if(strcmp(argv[2],"usid")==0){
+			printf("usid write unsupport now.");
+//			printf("usid written done.");
 		}
 		else 
 			printf("arg error.");
@@ -335,8 +130,8 @@ usage:
 U_BOOT_CMD(
 	efuse,	4,	1,	do_efuse,
 	"efuse licence/mac/hdcp/usid read/write commands",
-	"efuse [r/w] [l-licence/m-mac/h-hdcp/u-usid] [mem_addr]\n"
-	"	   [r/w] para read ; write ;\n"
+	"efuse [read/write] [licence/mac/hdc/usid] [mem_addr]\n"
+	"	   [read/wirte] para read ; write ;\n"
 	"				read need not mem_addr;write need\n"
 	"				read to get efuse context\n"
 	"				write to write efuse\n"

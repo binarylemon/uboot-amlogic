@@ -113,21 +113,14 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             else
                 mem=(unsigned *)(NOR_START_ADDR+READ_SIZE+ROM_SIZE);
             spi_init();
-#if CONFIG_UCL
-
-            if(!rc){
-	            serial_puts("ucl decompress\n");
-	            rc=uclDecompress(target,&len,mem);
-                serial_puts("decompress finished\n");
-            }
-#endif
-            if((rc=check_sum(target,0,0))==0)
-            {
-            	serial_puts("Boot From SPI");
 #if CONFIG_UCL==0
-                ipl_memcpy((unsigned*)target,mem,size);
-#endif
+            if((rc=check_sum(target,0,0))!=0)
+            {
+                return rc;
             }
+#endif
+            serial_puts("Boot From SPI");
+            memcpy((unsigned*)temp_addr,mem,size);
             break;
         case POR_1ST_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
