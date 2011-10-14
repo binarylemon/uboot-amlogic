@@ -154,6 +154,7 @@ COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o
 COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_VFD) += cmd_vfd.o
 COBJS-$(CONFIG_EFUSE) += cmd_efuse.o
+COBJS-$(CONFIG_EFUSE) += cmd_efuse_new.o
 
 # others
 COBJS-$(CONFIG_DDR_SPD) += ddr_spd.o

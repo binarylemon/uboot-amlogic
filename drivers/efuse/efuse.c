@@ -40,9 +40,11 @@ unsigned char re_usid[EFUSE_USERIDF_BYTES+2] = {0};		//64
 static void __efuse_write_byte( unsigned long addr, unsigned long data );
 static void __efuse_read_dword( unsigned long addr, unsigned long *data);
 
+//int base=121;  just for verify 
 
 static void __efuse_write_byte( unsigned long addr, unsigned long data )
 {
+	//printf("addr=%d, data=%x\n", addr, data);
     unsigned long auto_wr_is_enabled = 0;
 
     if ( READ_CBUS_REG( EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_WR_ENABLE_BIT ) )
@@ -155,11 +157,22 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 
     memset(contents, 0, sizeof(contents));
 
-	for (pdw = contents; dwsize-- > 0 && pos < EFUSE_BYTES; pos += 4, ++pdw)
-		__efuse_read_dword(pos, pdw);
-	
-    memcpy(buf, contents, count);
+#ifdef CONFIG_M3
+	// Enabel auto-read mode
+    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
+            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+#endif
+    
+    for (pdw = contents; dwsize-- > 0 && pos < EFUSE_BYTES; pos += 4, ++pdw)
+		__efuse_read_dword(pos, pdw);	    
 
+#ifdef CONFIG_M3
+    // Disable auto-read mode    
+    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
+            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+#endif
+            
+	memcpy(buf, contents, count);	
     *ppos += count;
     return count;
 }
@@ -180,10 +193,15 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 
 	memcpy(contents, buf, count);
 
-	for (pc = contents; count--; ++pos, ++pc)
+    //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) |  (1 << 12) );
+    
+    for (pc = contents; count--; ++pos, ++pc)
 		__efuse_write_byte(pos, *pc);
-
+		
 	*ppos = pos;
+	
+	   // Disable the Write mode
+    //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) & ~(1 << 12) );
 
 	return pc - contents;
 }
@@ -208,7 +226,7 @@ int efuse_chk_written(int usr_type)
 	memset(op,0,count);
 	memset(buf,0,sizeof(buf));
 	efuse_read(buf, count, &ppos);	
-	
+	//ppos = base;	// just for verify	
 	unsigned char ckbit=0x0;
 	for(i=0;i<count;i++){
 		if(buf[i]|ckbit){
@@ -320,7 +338,7 @@ int efuse_write_usr(int usr_type, unsigned char *data)
 	memset(ip,0,count);
 	memset(buf,0,sizeof(buf));
 	memcpy(buf,data,data_len);
-	
+		
 	if(enc_len>=30)
 		for(i=0;i*30<data_len;i++)
 			efuse_bch_enc(buf+i*30, 30, ip+i*31);
@@ -331,9 +349,8 @@ int efuse_write_usr(int usr_type, unsigned char *data)
 	
 	return 0 ;
 }
-
 int efuse_init(void)
-{
+{	
     /* disable efuse encryption */
     WRITE_CBUS_REG_BITS( EFUSE_CNTL4, CNTL1_AUTO_WR_ENABLE_OFF,
         CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );

@@ -23,6 +23,7 @@
 
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
+#define CONFIG_EFUSE 1
 
 #define CONFIG_CMD_NET   1
 
