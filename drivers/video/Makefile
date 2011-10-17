@@ -56,7 +56,7 @@ COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/hdmi_tx_video.o \
 	tvout/dsp.o
 COBJS-$(CONFIG_PANEL_T13) +=lcd/tcon.o  lcd/panel_t13.o
-COBJS-$(CONFIG_VIDEO_AMLLCD_M3) += lcd/tcon_m3.o  lcd/panel_m3.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_M3) += lcd/tcon_m3.o  
 endif
 
 COBJS	:= $(COBJS-y)
