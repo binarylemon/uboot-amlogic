@@ -55,6 +55,17 @@
 #define CONFIG_PAGE_OFFSET 	0xc0000000
 #define CONFIG_SYS_LONGHELP	1
 
+/* USB
+ * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
+ * Enable CONFIG_MUSB_UDD for Device functionalities.
+ */
+/* #define CONFIG_MUSB_UDC		1 */
+#define CONFIG_M3_USBPORT_BASE	0xC90C0000
+#define CONFIG_USB_STORAGE      1
+#define CONFIG_USB_DWC_OTG_HCD  1
+#define CONFIG_CMD_USB 1
+
+
 #define CONFIG_MEMSIZE	512	/*unit is MB*/ 
 #if(CONFIG_MEMSIZE == 512)
 #define BOARD_INFO_ENV  " mem=512M"

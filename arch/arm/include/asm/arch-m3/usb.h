@@ -95,16 +95,16 @@
     6 = VID pll clock
     7 = VID2 pll clock
   */
-#define	USB_PHY_CLOCK_SEL_M3_XTAL       (0)
-#define	USB_PHY_CLOCK_SEL_M3_XTAL_DIV2  (1)
+#define	USB_PHY_CLOCK_SEL_M3_XTAL       (0)  //when 24MHz, divider set to 1 will work
+#define	USB_PHY_CLOCK_SEL_M3_XTAL_DIV2  (1)  //when 24MHz, divider set to 0 will work
 #define	USB_PHY_CLOCK_SEL_M3_SYS_PLL    (2)  //when 800MHz, divider set to 65,66 all fail
 #define	USB_PHY_CLOCK_SEL_M3_MISC_PLL   (3)  //when 800MHz, divider set to 65,66 all fail
-#define	USB_PHY_CLOCK_SEL_M3_DDR_PLL    (4)
+#define	USB_PHY_CLOCK_SEL_M3_DDR_PLL    (4)  //when 528MHz, divider set to 43 will work
 //following not support yet
 /*
-#define	USB_PHY_CLOCK_SEL_M3_AUD_PLL    (5)
+#define	USB_PHY_CLOCK_SEL_M3_AUD_PLL   (5)
 #define	USB_PHY_CLOCK_SEL_M3_VID_PLL    (6)
-#define	USB_PHY_CLOCK_SEL_M3_VID2_PLL   (7)
+#define	USB_PHY_CLOCK_SEL_M3_VID2_PLL  (7)
 */
 
 
