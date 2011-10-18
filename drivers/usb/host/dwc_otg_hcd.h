@@ -3,18 +3,16 @@
  *  Copyright (C) 2011 AMLOGIC, INC.
  *
  *
- * remark: copy from @ trunk/drivers/usb/host  by Haixiang.Bao 2011.08.12
+ * remark: copy from @ trunk/drivers/usb/host  by Haixiang.Bao 2011.10.17
  *              haixiang.bao@amlogic.com
  *
  *
  ****************************************************************************/
-
-
 #ifndef __DWC_OTG_HCD_H__
 #define __DWC_OTG_HCD_H__
-#include <asm/arch/reg_addr.h>
+#include <asm/arch/registers.h>
 
-
+#define DWC_DRIVER_VERSION	"2011-OCT-11"
 //#define DEBUG
 
 /** When debug level has the DBG_CIL bit set, display CIL Debug messages. */
@@ -42,7 +40,7 @@
 
 /** All debug messages off */
 #define DBG_OFF		0
-#define DEBUG
+//#define DEBUG
 #undef DEBUG
 #ifdef DEBUG
 #define DBG(fmt, args...)	\

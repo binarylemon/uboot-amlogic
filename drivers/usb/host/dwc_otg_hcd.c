@@ -3,7 +3,7 @@
  *  Copyright (C) 2011 AMLOGIC, INC.
  *
  *
- * remark: copy from @ trunk/drivers/usb/host  by Haixiang.Bao 2011.08.12
+ * remark: copy from @ trunk/drivers/usb/host  by Haixiang.Bao 2011.10.17
  *              haixiang.bao@amlogic.com
  *
  *
@@ -29,14 +29,24 @@
 
 #define flush_cpu_cache()  do{ dcache_flush();}while(0)//flush_cache //do{_invalidate_dcache();AV_AHB_bus_invalidate();}while(0)	//for porting
 
+/* ------------------------------------------------------- */
+#define get_unaligned_16(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8))
+#define get_unaligned_32(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
+#define get_unaligned(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
+
 static dwc_otg_device_t dwc_otg_dev;
-
-
+static int dwc_otg_port_init(dwc_otg_core_if_t * _core_if);
+static int is_insert = 0;
+/* The bits respond the channel buy_state. */
+//static unsigned int chn_busy;
+/*
 void dwc_udelay(int dly)
 {
 	int i;
 	for(i = 0;i<4000;i++);
 }
+*/
+#define dwc_udelay(dly) udelay(dly)
 /*
  * Host module config 
  */
@@ -89,7 +99,7 @@ static void
 dwc_otg_disable_global_interrupts(dwc_otg_core_if_t * _core_if)
 {
     gahbcfg_data_t  ahbcfg = {.d32 = 0 };
-    ahbcfg.b.glblintrmsk = 1;   /* Enable interrupts */
+    ahbcfg.b.glblintrmsk = 0;   /* disable interrupts */
     dwc_modify_reg32(&_core_if->core_global_regs->gahbcfg, ahbcfg.d32, 0);
 }
 /**
@@ -359,7 +369,8 @@ init_devspd(dwc_otg_core_if_t * _core_if)
  * @param _core_if Programming view of the DWC_otg controller
  *
  */
-void
+
+int
 dwc_otg_core_init(dwc_otg_core_if_t * _core_if)
 {
     dwc_otg_core_global_regs_t *global_regs = _core_if->core_global_regs;
@@ -575,12 +586,14 @@ dwc_otg_core_init(dwc_otg_core_if_t * _core_if)
         DWC_DEBUGPL(DBG_ANY, "Host Mode\n");
         _core_if->op_state = A_HOST;
     } else {
-        DWC_DEBUGPL(DBG_ANY, "Device Mode\n");
+        ERR("Device Mode\n");
         _core_if->op_state = B_PERIPHERAL;
 #ifdef DWC_DEVICE_ONLY
         dwc_otg_core_dev_init(_core_if);
 #endif
+    return -1;
     }
+     return 0;
 
 }
 /** 
@@ -693,8 +706,96 @@ dwc_otg_hc_cleanup(dwc_otg_core_if_t * _core_if, int hc_num)
 
 }
 
+void dwc_otg_read_packet(dwc_otg_core_if_t * core_if, uint8_t * _dest, uint16_t _bytes,int hcnum)
+{
+	int i;
+	int word_count = (_bytes + 3) / 4;
+	volatile uint32_t *fifo = core_if->data_fifo[hcnum];
+	uint32_t *data_buff = (uint32_t *) _dest;
+	for (i = 0; i < word_count; i++, data_buff++) {
+		*data_buff = dwc_read_reg32(fifo);
+	}
+	return;
+}
+
+static void dwc_otg_hcd_handle_rx_status_q_level_intr(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum, void *buffer)
+{
+	host_grxsts_data_t grxsts;
+
+	grxsts.d32 = dwc_read_reg32(&_core_if->core_global_regs->grxstsp);
+	//printf("RxStsQ:ch%d,cnt=%d,pid=%d,PStatus=%d\n",grxsts.b.chnum,grxsts.b.bcnt,grxsts.b.dpid,grxsts.b.pktsts);
+
+	switch (grxsts.b.pktsts) {
+	case DWC_GRXSTS_PKTSTS_IN:
+		/* Read the data into the host buffer. */
+		if (grxsts.b.bcnt > 0) {
+			dwc_otg_read_packet(_core_if, buffer, grxsts.b.bcnt, hcnum);
+			/* Update the HC fields for the next packet received. */
+			buffer += grxsts.b.bcnt;
+		}
+	case DWC_GRXSTS_PKTSTS_IN_XFER_COMP:
+	case DWC_GRXSTS_PKTSTS_DATA_TOGGLE_ERR:
+	case DWC_GRXSTS_PKTSTS_CH_HALTED:
+		/* Handled in interrupt, just ignore data */
+		break;
+	default:
+		ERR("RX_STS_Q Interrupt: Unknown status %d\n",
+			  grxsts.b.pktsts);
+		break;
+	}
+
+	return;
+}
+
+void dwc_otg_hc_write_packet(dwc_otg_core_if_t * _core_if, void *buffer,int len, int chn_num)
+{
+	uint32_t i;
+	uint32_t byte_count;
+	uint32_t dword_count;
+
+	uint32_t *data_buff = (uint32_t *)buffer;
+	uint32_t *data_fifo = _core_if->data_fifo[chn_num];//just used channel0
+
+	byte_count = len ;
+
+	dword_count = (byte_count + 3) / 4;
+
+	if ((((unsigned long)data_buff) & 0x3) == 0) {
+		/* xfer_buff is DWORD aligned. */
+		for (i = 0; i < dword_count; i++, data_buff++) {
+			dwc_write_reg32(data_fifo, *data_buff);
+		}
+	} else {
+		/* xfer_buff is not DWORD aligned. */
+
+		for (i = 0; i < dword_count; i++, data_buff++) {
+			dwc_write_reg32(data_fifo, get_unaligned(data_buff));
+		}
+	}
+	//printf("dwc_otg_hc_write_packet finished  %d  %d chn%d\n", dword_count, len,chn_num);
+}
+
+static void dwc_otg_hc_do_ping(dwc_otg_core_if_t *_core_if, int hc_num)
+{
+	hcchar_data_t hcchar;
+	hctsiz_data_t hctsiz;
+	dwc_otg_hc_regs_t *hc_regs = _core_if->host_if->hc_regs[hc_num];
+
+	DWC_DEBUGPL(DBG_HCDV, "%s: Channel %d\n", __func__, hc_num);
+
+	hctsiz.d32 = 0;
+	hctsiz.b.dopng = 1;
+	hctsiz.b.pktcnt = 1;
+	dwc_write_reg32(&hc_regs->hctsiz, hctsiz.d32);
+
+	hcchar.d32 = dwc_read_reg32(&hc_regs->hcchar);
+	hcchar.b.chen = 1;
+	hcchar.b.chdis = 0;
+	dwc_write_reg32(&hc_regs->hcchar, hcchar.d32);
+}
+
 static int
-dwc_otg_interrupt(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum)
+dwc_otg_interrupt(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum,void * buffer)
 {
     gintsts_data_t  gintsts;
     dwc_otg_hc_regs_t *hc_regs;
@@ -703,24 +804,32 @@ dwc_otg_interrupt(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum)
     hcchar_data_t   hcchar;
     hcintmsk_data_t hcintmsk;
     // dwc_otg_host_if_t *host_if ;
-//    int             hcnum = 0;
+    int             handled;
     dwc_otg_host_if_t *host_if = _core_if->host_if;
 
+  do{
     gintsts.d32 = dwc_read_reg32(&_core_if->core_global_regs->gintsts);
     hc_regs = host_if->hc_regs[hcnum];
     hcint.d32 = dwc_read_reg32(&hc_regs->hcint);
+    handled = 0;
 
+    if (gintsts.b.rxstsqlvl && (!_core_if->dma_enable)){
+	    dwc_otg_hcd_handle_rx_status_q_level_intr(_core_if,is_setup,hcnum,buffer);
+        DBG("rxstsqlvl interrupt!\n");
+        _core_if->host_if->do_ping = 0;	
+        handled = 1;
+    }
     if (gintsts.b.hcintr) {
         //DBG("dwc_otg_interrupt: hcintr interrupt!\n");
         if (hcint.b.xfercomp) {
             hctsiz.d32 = dwc_read_reg32(&hc_regs->hctsiz);
-            dwc_otg_hc_cleanup(_core_if, 0);
+            dwc_otg_hc_cleanup(_core_if, hcnum);	    
             if(is_setup)
                 return 8;
             return (_core_if->transfer_size);// - hctsiz.b.xfersize);
         }
         if (hcint.b.ahberr) {
-            ERR("dwc_otg_interrupt: ahberr interrupt!\n");
+            ERR("ahberr interrupt!\n");
             hcintmsk.d32 = 0;
             hcintmsk.b.chhltd = 1;
             dwc_write_reg32(&hc_regs->hcintmsk, hcintmsk.d32);
@@ -738,33 +847,42 @@ dwc_otg_interrupt(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum)
 
         }
         if (hcint.b.nyet) {
-            DBG("dwc_otg_interrupt: nyet interrupt!\n");
+            DBG("nyet interrupt!\n");
             _core_if->host_if->do_ping = 1;	
-            return -1;
+            //return -1;
 
         }
         if (hcint.b.ack) {
-            DBG("dwc_otg_interrupt: ack interrupt!\n");
+            DBG("ack interrupt!\n");
             _core_if->host_if->do_ping = 0;	
-            return -1;
+            //return -1;
 
         }	
         if (hcint.b.xacterr) {
-            ERR("dwc_otg_interrupt: xacterr interrupt!\n");
+            ERR("xacterr interrupt!\n");
             return -1;
 
         }
         if (hcint.b.bblerr) {
-            ERR("dwc_otg_interrupt: bblerr interrupt!\n");
+            ERR("bblerr interrupt!\n");
             return -1;
         }
         if (hcint.b.datatglerr) {
-            ERR("dwc_otg_interrupt: datatglerr interrupt!\n");
+            ERR("datatglerr interrupt!\n");
             return -1;
         }
+
     }
+    if(gintsts.b.portintr){
+        ERR("hprt0:0x%08x\n",dwc_read_reg32(_core_if->host_if->hprt0));
+        dwc_otg_port_init(_core_if);
+        return -2;
+    }
+
+  }while(handled);
+
     if (gintsts.b.ptxfempty) {
-        //DBG("dwc_otg_interrupt: ptxfempty interrupt!\n");
+        //DBG("ptxfempty interrupt!\n");
         return -1;
     }
     return -1;
@@ -774,6 +892,7 @@ dwc_otg_interrupt(dwc_otg_core_if_t * _core_if, int is_setup,int hcnum)
 /*
  * Do an USB transfer , dir = 0, out ;  dir = 1 , in
  */
+
 static int
 dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *buffer, int len,
                    int is_setup)
@@ -796,7 +915,17 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
     hcint_data_t    hcint;
     dwc_otg_host_global_regs_t *host_global_regs = host_if->host_global_regs;
 
+//    printf("dwc_otg_submit_job: dev: %d ,dev->parent: %x, dev->speed: %d\n",
+//		dev->devnum,dev->parent,dev->speed);
 
+//	struct usb_device * hub1 = usb_get_dev_index(1);
+
+//	if(hub1)
+//	    printf("root_hub speed %d\n",hub1->speed);
+//	if(dev->parent != NULL) //not roothub
+//		if(dev->parent->speed ==2 && dev->speed != 2 )
+//			return -EOPNOTSUPP;
+	
     int             type = usb_pipetype(pipe);
     if (len >= 4096) {
         ERR("Too big job!\n");
@@ -812,10 +941,22 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
 
     //hcnum++;
     if(hcnum > 6) hcnum = 0;
+
     hc_regs = host_if->hc_regs[hcnum];
-    
+  /*  
+	if(!is_insert && (!core_if->dma_enable)){
+		wait_ms(10);
+		if(dwc_otg_interrupt(core_if, is_setup,hcnum,buffer) == -2)
+			is_insert = 1;
+		else{
+			DBG("wait insert failed");
+			return -1;
+		}
+
+	}	*/
+    //chn_busy = chn_busy | 1<<hcnum ;
     /*
-     * init hc char 
+     * init hc char (corresponding devaddr and epnum)
      */
     hcchar.d32 = 0;
     hcchar.b.devaddr = devnum;
@@ -826,7 +967,7 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
     /* set hc interrupt mask */
     hcintmsk.d32 = dwc_read_reg32(&hc_regs->hcintmsk);
     //hcintmsk.b.xfercompl = 1;
-    hcintmsk.d32 = 6;
+    hcintmsk.d32 = 7;
     dwc_write_reg32(&hc_regs->hcintmsk, hcintmsk.d32 );
     
     /* clear int status*/
@@ -867,7 +1008,7 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
     if(hctsiz.b.pktcnt < 1)
         hctsiz.b.pktcnt = 1;
     if(hctsiz.b.pktcnt & 0x1)
-	chg_flag = 1;
+        chg_flag = 1;
     toggle = usb_gettoggle(dev, epnum, dir);
     DBG("packet is :%d, max packet size = %d,toggle %d\n", 
 		hctsiz.b.pktcnt, usb_maxpacket(dev, pipe), toggle);
@@ -889,10 +1030,18 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
     core_if->transfer_size = len;
     hctsiz.b.xfersize = len;
 
-    if(!is_setup && dir == 0 && core_if->host_if->do_ping)
+    if(!is_setup && dir == 0 && core_if->host_if->do_ping){
+    	if (!core_if->dma_enable) {
+		dwc_otg_hc_do_ping(core_if, 0);		
+		return -10;//It's ping state,pls do it again!
+	}
         hctsiz.b.dopng = 1;
+    }
     else
         hctsiz.b.dopng = 0;
+
+    DBG("ep%d packet is :%d, max packet size = %d = %d,b.len %d\n", hcchar.b.epnum,\
+		hctsiz.b.pktcnt, usb_maxpacket(dev, pipe), hcchar.b.mps,hctsiz.b.xfersize);
 
     dwc_write_reg32(&hc_regs->hctsiz, hctsiz.d32);
 
@@ -908,39 +1057,44 @@ dwc_otg_submit_job(struct usb_device *dev, unsigned long pipe, int dir, void *bu
 
     dwc_write_reg32(&hc_regs->hcchar, hcchar.d32);
 
-    if (usb_pipebulk(pipe))
-        timeout = 10000;
+    if (!core_if->dma_enable && !dir && len > 0) {
+        /* Load OUT packet into the appropriate Tx FIFO. */
+        dwc_otg_hc_write_packet(core_if, buffer,len,hcnum);
+    }
     else
-        timeout = 1000;
+        ;//printf("dmaable:%d, %s,len=%d\n",core_if->dma_enable,dir?"IN":"OUT",len);
 
+    if (usb_pipebulk(pipe))
+        timeout = 1000;
+    else
+        timeout = 100;
     /*
      * Wait for it to complete 
      */
-    for (;;) {
-        dwc_udelay(20);
+    while(1) {
+        udelay(20);
         /*
          * Check whether the controller is done 
          */
-        stat = dwc_otg_interrupt(core_if, is_setup,hcnum);
+        stat = dwc_otg_interrupt(core_if, is_setup,hcnum,buffer);
 
         if (stat >= 0){
-    		if(chg_flag) usb_dotoggle(dev, epnum, dir);
-		break;
+    	    if(chg_flag) 
+			      usb_dotoggle(dev, epnum, dir);
+		      break;
         }
             
-
         /*
          * Check the timeout 
          */
         if (--timeout)
-            udelay(100);//dwc_udelay(100);
+       	    udelay(10);
         else {
-            DBG("CTL:TIMEOUT ");
-            stat = -ETIME;
+	    hctsiz.d32 = dwc_read_reg32(&hc_regs->hctsiz);
+            DBG("TIMEOUT-%s-%d-%d-%d\n",dir?"IN":"OUT",len,hctsiz.b.pktcnt,usb_pipetype(pipe));
             break;
         }
     }
-
     return stat;
 }
 #define CTL_RETRY 5
@@ -969,8 +1123,8 @@ SETUP_RETRY:
     if (ret < 0) {
        if(retry++ < CTL_RETRY)
             goto SETUP_RETRY;
-	else{
-           DBG("control setup phase error (ret = %d)", ret);
+    else{ is_insert = 0;
+           ERR("control setup phase error (ret = %d)", ret);
            return -1;
        }
     }
@@ -987,7 +1141,7 @@ DATA_RETRY:
     usb_settoggle(dev, epnum, dir_in, 1);
     if (done < len) {
 
-       wait_ms(10);
+       dwc_udelay(100);
 	 
         ret = dwc_otg_submit_job(dev, pipe,
                                  dir_in,
@@ -996,8 +1150,8 @@ DATA_RETRY:
         if (ret < 0) {
                 if(retry++ < CTL_RETRY)
                         goto DATA_RETRY;
-                else{
-                        DBG("control data phase error (ret = %d)", ret);
+                else{ is_insert = 0;
+                        ERR("control data phase error (ret = %d)", ret);
                         return -1;
                 }
         }
@@ -1013,15 +1167,15 @@ DATA_RETRY:
     retry = 0;
 STATUS_RETRY:
     DBG("--- STATUS PHASE -------------------try: %d\n",retry);
-    wait_ms(10);
+    dwc_udelay(100);
 
     usb_settoggle(dev, epnum, !dir_in, 1);
     ret = dwc_otg_submit_job(dev, pipe, !dir_in, NULL, 0, 0);
     if (ret < 0) {
           if(retry++ < CTL_RETRY)
                goto STATUS_RETRY;
-          else{
-               DBG("control status phase error (ret = %d)", ret);
+          else{ is_insert = 0;
+               ERR("control status phase error (ret = %d)", ret);
                return -1;
           }
     }
@@ -1071,7 +1225,8 @@ RETRY:
             if(retry--){
                 DBG("error on bulk message, retry: %d",retry);
                 goto RETRY;
-            }else{
+            }else{ 
+                is_insert = 0;
                 ERR("error on bulk message (ret = %d)", ret);
                 return -1;
             }
@@ -1216,7 +1371,7 @@ dwc_otg_enable_host_interrupts(dwc_otg_core_if_t * _core_if)
 #ifndef NO_HOST_SOF
     intr_mask.b.sofintr = 1;
 #endif
-    intr_mask.b.portintr = 1;
+    intr_mask.b.portintr = 1;//6.1.1
     intr_mask.b.hcintr = 1;
 
     dwc_modify_reg32(&global_regs->gintmsk, intr_mask.d32, intr_mask.d32);
@@ -1267,7 +1422,7 @@ dwc_otg_core_host_init(dwc_otg_core_if_t * _core_if)
     }
 
     /*
-     * Configure data FIFO sizes 
+     * Configure data FIFO sizes 6.1.1.11----6.1.1.13
      */
     if (_core_if->hwcfg2.b.dynamic_fifo && params->enable_dynamic_fifo) {
         DWC_DEBUGPL(DBG_CIL, "Total FIFO Size=%d\n", _core_if->total_fifo_size);
@@ -1355,7 +1510,7 @@ dwc_otg_core_host_init(dwc_otg_core_if_t * _core_if)
         hprt0.d32 = dwc_otg_read_hprt0(_core_if);
         DBG("Init: Power Port (%d)\n", hprt0.b.prtpwr);
         if (hprt0.b.prtpwr == 0) {
-            hprt0.b.prtpwr = 1;
+            hprt0.b.prtpwr = 1;//6.1.1.3
             dwc_write_reg32(host_if->hprt0, hprt0.d32);
             /*
              * pull gpio to switch power 
@@ -1371,7 +1526,7 @@ dwc_otg_core_host_init(dwc_otg_core_if_t * _core_if)
 
 static int      dwc_otg_hcd_enable = 0;
 
-
+/* wait at least 10ms for the reset process to complete 6.1.1.6 */
 static void
 dwc_otg_reset_port(dwc_otg_core_if_t * _core_if)
 {
@@ -1387,21 +1542,16 @@ dwc_otg_reset_port(dwc_otg_core_if_t * _core_if)
     wait_ms(20);
 
 }
-static void
+static int
 dwc_otg_port_init(dwc_otg_core_if_t * _core_if)
 {
-    hprt0_data_t    hprt0;
+		int retry = 10;
+    hprt0_data_t    hprt0,hprt0_modify;
     hprt0.d32 = 0;
-
+/*
     hprt0.d32 = dwc_otg_read_hprt0(_core_if);
 
     hprt0_data_t    hprt0_modify;
-
-    /*
-     * set port power
-     */
-    hprt0.b.prtpwr = 1;
-    dwc_write_reg32(_core_if->host_if->hprt0, hprt0.d32);
 
     hprt0_modify.b.prtena = 0;
     hprt0_modify.b.prtconndet = 0;
@@ -1409,14 +1559,14 @@ dwc_otg_port_init(dwc_otg_core_if_t * _core_if)
     hprt0_modify.b.prtovrcurrchng = 0;
 
     wait_ms(30);
-
-
+*/
+next:
     hprt0.d32 = dwc_read_reg32(_core_if->host_if->hprt0);
-    DBG("%s port data is %d\n", __func__, hprt0.d32);
+    DBG("%s port data is 0x%X", __func__, hprt0.d32);
 
     hprt0_modify.d32 = dwc_read_reg32(_core_if->host_if->hprt0);
 
-    if (hprt0.b.prtconndet) {
+    if (hprt0.b.prtconndet) {//wait prtconndet interrupt
         /*
          * clear detect intr
          */
@@ -1424,19 +1574,24 @@ dwc_otg_port_init(dwc_otg_core_if_t * _core_if)
         dwc_write_reg32(_core_if->host_if->hprt0, hprt0_modify.d32);
         wait_ms(30);
         /*
-         * reset port
+         * reset port  6.1.1.6
          */
         dwc_otg_reset_port(_core_if);
         hprt0_modify.b.prtconndet = 1;
 
-
+    }else{
+    	wait_ms(100);
+    	if(retry--)
+    		goto next;
+    	INFO("No USB device found !");
+    	return 0;
     }
     /*
      * Determine if the connected device is a high/full/low speed device 
      */
     hprt0.d32 = dwc_read_reg32(_core_if->host_if->hprt0);
 
-    if (hprt0.b.prtenchng) {
+    if (hprt0.b.prtenchng) {//6.1.1.8
         hprt0.d32 = dwc_read_reg32(_core_if->host_if->hprt0);
 
         hprt0_modify.b.prtena = 0;
@@ -1447,11 +1602,11 @@ dwc_otg_port_init(dwc_otg_core_if_t * _core_if)
         dwc_write_reg32(_core_if->host_if->hprt0, hprt0_modify.d32);
 
     }
-
+  
 //    _core_if->host_if->do_ping = 1; // init value
     _core_if->host_if->do_ping = 0; // init value
 
-    if (hprt0.b.prtspd == DWC_HPRT0_PRTSPD_LOW_SPEED) {
+    if (hprt0.b.prtspd == DWC_HPRT0_PRTSPD_LOW_SPEED) {//6.1.1.9
         INFO("Lowspeed device found !\n");
     } else if (hprt0.b.prtspd == DWC_HPRT0_PRTSPD_FULL_SPEED) {
         INFO("Fullspeed device found !\n");
@@ -1459,9 +1614,7 @@ dwc_otg_port_init(dwc_otg_core_if_t * _core_if)
         INFO("Highspeed device found !\n");
     }
 
-    /*
-     * enable port
-     */
+		return 1;
 }
 /*
  * --- Init functions ------------------------------------------------------ 
@@ -1475,9 +1628,12 @@ usb_lowlevel_init(void)
     int             i;
     amlogic_usb_config_t * usb_config;
     
+    printf("dwc_usb driver version: %s\n",DWC_DRIVER_VERSION);
+    
     usb_config = board_usb_start();
-    if(!usb_config && !usb_config->base_addr){
-    	ERR("Bad usb config or base addr!\n");
+
+    if(!usb_config || !usb_config->base_addr){
+    	ERR("Bad usb config or base addr! Need call board_usb_init() in board init\n");
     	retval = -1;
       goto fail;
 		}
@@ -1494,7 +1650,7 @@ usb_lowlevel_init(void)
         retval = -1;
         goto fail;
     }
-    dwc_otg_module_params_host.dma_enable = 1;
+    //dwc_otg_module_params_host.dma_enable = 1;
 
     dwc_otg_device->core_if = dwc_otg_cil_init(dwc_otg_device->base, &dwc_otg_module_params_host);
     if (dwc_otg_device->core_if == 0) {
@@ -1512,7 +1668,8 @@ usb_lowlevel_init(void)
     /*
      * Initialize the DWC_otg core.
      */
-    dwc_otg_core_init(dwc_otg_device->core_if);
+    if(dwc_otg_core_init(dwc_otg_device->core_if))
+	goto fail;
     for (i = 0; i < 2; i++) {
         dwc_otg_hc_cleanup(dwc_otg_device->core_if, i);
     }
@@ -1525,8 +1682,9 @@ usb_lowlevel_init(void)
      */
     dwc_otg_enable_global_interrupts(dwc_otg_device->core_if);
 
-    dwc_otg_port_init(dwc_otg_device->core_if);
-
+    if(!dwc_otg_port_init(dwc_otg_device->core_if))/* host initialization 6.1.1.3----6.1.1.9*/
+				goto fail;
+				
     dwc_otg_hcd_enable = 1;
     dwc_otg_device->disabled = 0;
     return 0;

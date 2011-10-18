@@ -265,6 +265,23 @@ struct aml_nand_device aml_nand_mid_device = {
 };
 #endif
 
+
+#ifdef CONFIG_USB_DWC_OTG_HCD
+#include <asm/arch/usb.h>
+//note: try with some M3 pll but only following can work
+//USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
+//USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
+//USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 43 (528MHz)
+struct amlogic_usb_config g_usb_config_m3_shuttle={
+	USB_PHY_CLOCK_SEL_M3_XTAL,
+	1, //PLL divider: (clock/12 -1)
+	CONFIG_M3_USBPORT_BASE,
+	USB_ID_MODE_M3_SW_HOST,
+	0, //set_vbus_power
+};
+#endif
+
+
 int board_init(void)
 {
 	gd->bd->bi_arch_number=2958; //MACH_TYPE_MESON_8626M;
@@ -274,6 +291,9 @@ int board_init(void)
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_USB_DWC_OTG_HCD
+	board_usb_init(&g_usb_config_m3_shuttle);
+#endif
 	
 	return 0;
 }
