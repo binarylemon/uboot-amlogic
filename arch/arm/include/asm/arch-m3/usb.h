@@ -29,7 +29,6 @@
 #define __ARCH_ARM_MESON_USB_H_U_BOOT__
 
 #include <common.h>
-//#include <asm/io.h>
 #include <asm/types.h>
 #include <asm/arch/io.h>
 
@@ -47,6 +46,7 @@
 #define PREI_USB_PHY_B_POR          (1 << 1)
 //#define PREI_USB_PHY_CLK_EN			(1 << 6) no CLK_EN in A1H
 #define PREI_USB_PHY_CLK_SEL        (7 << 5) 
+#define MAKE_USB_PHY_CLK_SEL(clk_sel) ((clk_sel&7) << 5) 
 #define PREI_USB_PHY_CLK_GATE 	    (1 << 8) 
 #define PREI_USB_PHY_B_AHB_RSET     (1 << 11)
 #define PREI_USB_PHY_B_CLK_RSET     (1 << 12)
@@ -58,12 +58,13 @@
 #define PREI_USB_PHY_B_DRV_VBUS		(1 << 21)
 #define PREI_USB_PHY_B_CLK_DETECT   (1 << 22)
 #define PREI_USB_PHY_CLK_DIV        (0x7f << 24)
+#define MAKE_USB_PHY_CLK_DIV(pll_div) ((pll_div&0x7F)<<24)
 #define PREI_USB_PHY_A_CLK_DETECT   (1 << 31)
 
 #define PREI_USB_PHY_MODE_MASK      (3 << 22)
 
-#define PREI_USB_PHY_MODE_HW        (0<<22)
-#define PREI_USB_PHY_MODE_SW_HOST   (2<<22)
+#define PREI_USB_PHY_MODE_HW        (0 << 22)
+#define PREI_USB_PHY_MODE_SW_HOST   (2 << 22)
 #define PREI_USB_PHY_MODE_SW_SLAVE  (3 << 22)
 
 #define USB_PHY_TUNE_MASK_REFCLKDIV  (3 << 29)
@@ -86,7 +87,7 @@
 #define USB_PHY_B_INTR_BIT	(1 << 31)
 
 /* M3 usb clock cfg
-    0 = XTAL input (24, 25, 27Mhz)
+    0 = XTAL input
     1 = XTAL input divided by 2
     2 = SYS PLL output
     3 = MISC pll clock
@@ -113,9 +114,9 @@
 	 mode = 1 : SW_HOST
 	 mode = 2 : SW_DEVICE
  */
-#define USB_ID_MODE_M3_HARDWARE	    (1)
-#define USB_ID_MODE_M3_SW_HOST		(2)
-#define USB_ID_MODE_M3_SW_DEVICE	(3) 
+#define USB_ID_MODE_HARDWARE    (1)
+#define USB_ID_MODE_SW_HOST     (2)
+#define USB_ID_MODE_SW_DEVICE   (3) 
 
 typedef struct amlogic_usb_config{
 	/* clock info */

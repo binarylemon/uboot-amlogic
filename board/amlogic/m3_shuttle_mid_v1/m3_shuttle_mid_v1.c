@@ -276,7 +276,7 @@ struct amlogic_usb_config g_usb_config_m3_shuttle={
 	USB_PHY_CLOCK_SEL_M3_XTAL,
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M3_USBPORT_BASE,
-	USB_ID_MODE_M3_SW_HOST,
+	USB_ID_MODE_SW_HOST,
 	0, //set_vbus_power
 };
 #endif

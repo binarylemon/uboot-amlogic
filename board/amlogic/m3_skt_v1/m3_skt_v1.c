@@ -388,12 +388,13 @@ static void gpio_set_vbus_power(char is_power_on)
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
-//USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 43 (528MHz)
+//USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 27(336MHz); @Rev2663 M3 SKT board DDR is 336MHz
+//                                                            43 (528MHz); M3 SKT board DDR not stable for 528MHz
 struct amlogic_usb_config g_usb_config_m3_skt={
 	USB_PHY_CLOCK_SEL_M3_XTAL,
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M3_USBPORT_BASE,
-	USB_ID_MODE_M3_SW_HOST,
+	USB_ID_MODE_SW_HOST,
 	gpio_set_vbus_power, //set_vbus_power
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/

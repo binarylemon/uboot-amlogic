@@ -23,15 +23,15 @@
  *
  *
  *********************************************************************************/
-#include <common.h>
-#include <asm/cache.h>
+//#include <common.h>
+//#include <asm/cache.h>
 #include <asm/arch/usb.h>
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
 static amlogic_usb_config_t * g_usb_cfg = 0;
 static char * g_clock_src_name_m3[]={
-		"XTAL input 24MHz",
-		"XTAL input divided by 2,12MHz",
+		"XTAL input",
+		"XTAL input divided by 2",
 		"SYS PLL clock",
 		"MISC PLL clock",
 		"DDR PLL clock",
@@ -40,10 +40,11 @@ static char * g_clock_src_name_m3[]={
 		"VID2 pll clock"
 };
 
+extern void udelay(unsigned long usec);
+
 int set_usb_phy_id_mode(amlogic_usb_config_t * usb_cfg)
 {
-    int i;
-    int time_dly = 50000;
+    unsigned long delay = 100;
     unsigned int reg;
     unsigned int port;
     unsigned int mode;
@@ -66,30 +67,28 @@ int set_usb_phy_id_mode(amlogic_usb_config_t * usb_cfg)
     }
 
     CLEAR_CBUS_REG_MASK(reg, PREI_USB_PHY_MODE_MASK);
-    i=0;
-    while(i++<time_dly){};
+    udelay(delay);
     
     switch(mode)
     {
-        case USB_ID_MODE_M3_SW_HOST:
-        		printf("usb id mode: SW_HOST\n");
+        case USB_ID_MODE_SW_HOST:
+        	printf("usb id mode: SW_HOST\n");
             SET_CBUS_REG_MASK(reg, PREI_USB_PHY_MODE_SW_HOST);
             break;
 			
-        case USB_ID_MODE_M3_SW_DEVICE:
-        		printf("usb id mode: SW_DEVICE\n");
+        case USB_ID_MODE_SW_DEVICE:
+        	printf("usb id mode: SW_DEVICE\n");
             SET_CBUS_REG_MASK(reg, PREI_USB_PHY_MODE_SW_SLAVE);
             break;
 			
-        case USB_ID_MODE_M3_HARDWARE:
+        case USB_ID_MODE_HARDWARE:
         default:
-        		printf("usb id mode: HARDWARE\n");
+        	printf("usb id mode: HARDWARE\n");
             SET_CBUS_REG_MASK(reg, PREI_USB_PHY_MODE_HW);
             break;
     }
     
-    i=0;
-    while(i++<time_dly){};
+    udelay(delay);
 
     return 0;
 }
@@ -99,76 +98,49 @@ void set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
     int clk_sel = usb_cfg->clk_selecter;
 	int pll_div = usb_cfg->pll_divider;
 
-	// ------------------------------------------------------------
-	//  CLK_SEL: These bits select the source for the 12Mhz: 
-	// 0 = XTAL input (24Mhz)
-	// 1 = XTAL input divided by 2 (12MHz)
-	// 2 = SYS PLL output (800MHz)
-	// 3 = MISC pll clock(800MHz)
-	// 4 = DDR pll clock (528MHz)
+	//need check data?
+	if(clk_sel < 0 || 
+		clk_sel >= (sizeof(g_clock_src_name_m3)/sizeof(g_clock_src_name_m3[0])))
+	{
+		printf("Error! Not support the clock source [%d] for USB PHY!\n",clk_sel);
+		return;
+	}
+		
 
-	//following not support yet
-	// 5 = AUD pll clock ()
-	// 6 = VID pll clock()
-	// 7 = VID2 pll clock()
-	
-	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_CLK_SEL);
-	//clk_sel = 0; // 24M CLK 
-	//clk_sel = 1; // 12M, Phy default setting is 12Mhz
-	//clk_sel = 2; // SYS pll, 800M
-	//clk_sel = 3; // MISC pll, 800M
-	//clk_sel = 4; // DDR pll, 528M
-	
-	//following not support yet
-	//clk_sel = 5; // AUD pll
-	//clk_sel = 6; // VID pll 
-	//clk_sel = 6; // VID2 pll
-	
+	//show USB 12MHz clock input source
 	printf("usb clk_sel: %s\n",g_clock_src_name_m3[clk_sel]);
-	
-	SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (clk_sel<<5 ));
 
+	//clear clock select setting	
+	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_CLK_SEL);
+
+	//set clock select setting
+	SET_CBUS_REG_MASK(PREI_USB_PHY_REG, MAKE_USB_PHY_CLK_SEL(clk_sel));
+
+	//clear clock divider setting
 	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG,PREI_USB_PHY_CLK_DIV);
+
+	//set clock divider setting
 	switch(clk_sel)
 	{
-		case USB_PHY_CLOCK_SEL_M3_XTAL://24M
-			//XTAL 24M, Divide by 2
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-			
-		case USB_PHY_CLOCK_SEL_M3_XTAL_DIV2://12M
-			//XTAL 24M, Divide by 1
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
+		case USB_PHY_CLOCK_SEL_M3_XTAL:
+		case USB_PHY_CLOCK_SEL_M3_XTAL_DIV2:
 		/*	
 		//when 800MHz, divider set to 65,66 all fail
-		case USB_PHY_CLOCK_SEL_M3_SYS_PLL://800M
-			//SYS PLL running at 800M (800/(65+1)=12)
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-			
-		case USB_PHY_CLOCK_SEL_M3_MISC_PLL://800M
-			//MISC runing 800MHz (800/(65+1)=12)
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-		*/	
-		case USB_PHY_CLOCK_SEL_M3_DDR_PLL:
-			//DDR 528M (528/(43+1) = 12)
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-		/*	
-		case USB_PHY_CLOCK_SEL_M3_AUD_PLL: 
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-			
-		case USB_PHY_CLOCK_SEL_M3_VID_PLL: 
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
-			
-		case USB_PHY_CLOCK_SEL_M3_VID2_PLL:
-			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, (pll_div << 24));
-			break;
+		case USB_PHY_CLOCK_SEL_M3_SYS_PLL://SYS PLL running at 800M (800/(65+1)=12)
+		case USB_PHY_CLOCK_SEL_M3_MISC_PLL://MISC runing 800MHz (800/(65+1)=12)
 		*/
+		/*
+		//following PLL not support yet
+		case USB_PHY_CLOCK_SEL_M3_AUD_PLL: 			
+		case USB_PHY_CLOCK_SEL_M3_VID_PLL: 
+		case USB_PHY_CLOCK_SEL_M3_VID2_PLL:
+		*/
+		case USB_PHY_CLOCK_SEL_M3_DDR_PLL:
+			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, MAKE_USB_PHY_CLK_DIV(pll_div));
+			break;		
+		default:
+			printf("Not support the clock source [%d] for USB PHY!\n",clk_sel);
+			break;
 	}
 
 	// Open clock gate, to enable CLOCK to usb phy 
@@ -177,78 +149,75 @@ void set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 }
 void set_usb_phy_reset(amlogic_usb_config_t * usb_cfg,int is_on)
 {
-	int i;
-    int time_dly = 50000;
+	unsigned long delay = 100;
     unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;;
 
-		if(port == USB_PHY_PORT_A){   
-      if(is_on){
-      	    /*  Reset USB PHY A  */
-          SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_AHB_RSET);
-          i=0;
-          while(i++<time_dly){};  
-          CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_AHB_RSET);
-          i=0;
-          while(i++<time_dly){};
-          SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_CLK_RSET);
-          i=0;
-          while(i++<time_dly){};      
-          CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_CLK_RSET);
-          i=0;
-          while(i++<time_dly){};
-          SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_PLL_RSET);
-          i=0;
-          while(i++<time_dly){};
-          CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_PLL_RSET);
-          i=0;
-          while(i++<time_dly){};
+	if(port == USB_PHY_PORT_A){
+		if(is_on){
+			/*  Reset USB PHY A  */
+			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_AHB_RSET);
+			udelay(delay);
+
+		  	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_AHB_RSET);
+			udelay(delay);
+
+			SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_CLK_RSET);
+			udelay(delay);
+		  
+	        CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_CLK_RSET);
+	        udelay(delay);
+			  
+	        SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_PLL_RSET);
+	        udelay(delay);
+			 
+	        CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_PLL_RSET);
+	        udelay(delay);
   		}
-      // ------------------------------------------------------------ 
+
+	  // ------------------------------------------------------------ 
       // Reset the PHY A by setting POR high for 10uS.
       SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_POR);
-      i=0;
-      while(i++<time_dly){};
-      // Set POR to the PHY high
-      if(is_on){
+      udelay(delay);
+	  
+      	// Set POR to the PHY high
+      	if(is_on){
         	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_A_POR);
-        	i=0;
-        	while(i++<time_dly){};
-    	}  
-		}
+        	udelay(delay);
+    	}
+	}
 
-		if(port == USB_PHY_PORT_B){		    
-    		if(is_on){
+	if(port == USB_PHY_PORT_B){		    
+    	if(is_on){
             /* Reset USB PHY B */
             SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_AHB_RSET);
-            i=0;
-            while(i++<time_dly){};
+            udelay(delay);
+			
             CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_AHB_RSET);
-            i=0;
-            while(i++<time_dly){};
+            udelay(delay);
+			
             SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_CLK_RSET);
-            i=0;
-            while(i++<time_dly){};
+            udelay(delay);
+			
             CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_CLK_RSET);
-            i=0;
-            while(i++<time_dly){};
+            udelay(delay);
+			
             SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_PLL_RSET);
-            i=0;
-            while(i++<time_dly){};
+            udelay(delay);
+			
             CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_PLL_RSET);
-            i=0;
-            while(i++<time_dly){};
-    		}
-        // ------------------------------------------------------------ 
+            udelay(delay);
+			
+    	}
+
+		// ------------------------------------------------------------ 
         // Reset the PHY B by setting POR high for 10uS.
         SET_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_POR);
-        i=0;
-        while(i++<time_dly){};
+        udelay(delay);
     
         // Set POR to the PHY high
         if(is_on){
         	CLEAR_CBUS_REG_MASK(PREI_USB_PHY_REG, PREI_USB_PHY_B_POR);
-        	i=0;
-        	while(i++<time_dly){};
+        	udelay(delay);
         }
   	}
 }
