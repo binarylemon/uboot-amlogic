@@ -48,6 +48,17 @@
   #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
+/* USB
+ * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
+ * Enable CONFIG_MUSB_UDD for Device functionalities.
+ */
+/* #define CONFIG_MUSB_UDC		1 */
+#define CONFIG_M3_USBPORT_BASE	0xC9040000
+#define CONFIG_USB_STORAGE
+#define CONFIG_USB_DWC_OTG_HCD
+#define CONFIG_CMD_USB 1
+
+
 //Amlogic SARADC support
 #define CONFIG_SARADC    1
 #define CONFIG_EFUSE 1
