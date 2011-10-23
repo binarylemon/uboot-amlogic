@@ -185,6 +185,30 @@
 
 #define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
 
+
+//support "arc"
+//#define CONFIG_ENABLE_ARC //trunk def
+#define CONFIG_CMD_RUNARC
+
+//support "bdinfo" 
+#define CONFIG_CMD_BDI 1
+
+//support "boot,bootd"
+#define CONFIG_CMD_BOOTD 1
+
+//support "coninfo"
+#define CONFIG_CMD_CONSOLE 1
+
+//support "echo"
+#define CONFIG_CMD_ECHO 1
+
+//support "loadb,loads,loady"
+#define CONFIG_CMD_LOADS 1
+#define CONFIG_CMD_LOADB 1
+
+//support "run"
+#define CONFIG_CMD_RUN 1
+
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
