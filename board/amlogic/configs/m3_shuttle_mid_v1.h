@@ -209,6 +209,25 @@
 //support "run"
 #define CONFIG_CMD_RUN 1
 
+//support "true,false,test"
+//#define CONFIG_SYS_LONGHELP		/* undef to save memory */
+#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
+#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+//#define CONFIG_SYS_PROMPT		"8726M_ref # "
+//#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
+
+//support "imxtract"
+#define CONFIG_CMD_XIMG 1
+
+//support "itest"
+#define CONFIG_CMD_ITEST 1
+
+//support "sleep"
+#define CONFIG_CMD_MISC 1
+
+//support "source"
+#define CONFIG_SOURCE 1
+#define CONFIG_CMD_SOURCE 1
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
