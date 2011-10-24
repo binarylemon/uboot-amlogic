@@ -228,6 +228,9 @@
 //support "source"
 #define CONFIG_SOURCE 1
 #define CONFIG_CMD_SOURCE 1
+
+//support "editenv"
+#define CONFIG_CMD_EDITENV 1
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

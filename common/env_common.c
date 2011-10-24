@@ -131,6 +131,11 @@ uchar default_environment[] = {
 
 struct hsearch_data env_htab={NULL,0,0};
 
+void env_crc_update (void)
+{
+	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
+}
+
 static uchar env_get_char_init (int index)
 {
 	uchar c;

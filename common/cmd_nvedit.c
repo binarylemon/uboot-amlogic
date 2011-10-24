@@ -942,3 +942,40 @@ U_BOOT_CMD_COMPLETE(
 	var_complete
 );
 #endif
+
+
+int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	void    *addr;
+
+	if (argc < 2) {
+		cmd_usage(cmdtp);
+		return 1;
+	}
+
+	addr = (void    *)simple_strtoul(argv[1], NULL, 16);
+	printf("gd->env_addr=0x%08x;	addr=0x%08x;	ENV_SIZE=0x%08x\n", gd->env_addr, addr, ENV_SIZE);
+	memcpy(gd->env_addr, addr, ENV_SIZE);
+	env_crc_update();
+}
+
+int do_defenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	set_default_env(NULL);
+	return 0;
+}
+
+U_BOOT_CMD(
+	loadenv, CONFIG_SYS_MAXARGS, 1,	do_loadenv,
+	"load environment at address 'addr'",
+	"addr [arg ...]\n    - load environment at address 'addr'\n"
+	"      passing 'arg' as arguments"
+);
+
+U_BOOT_CMD(
+	defenv, CONFIG_SYS_MAXARGS, 1,	do_defenv,
+	"default environment",
+	"\n    - set u-boot default environment\n"
+);
+
+
