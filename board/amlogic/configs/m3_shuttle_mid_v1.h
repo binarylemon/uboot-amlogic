@@ -62,7 +62,6 @@
 #define CONFIG_CMD_USB 1
 
 
-
 //Amlogic SARADC support
 #define CONFIG_SARADC    1
 #define CONFIG_EFUSE 1
@@ -241,6 +240,7 @@
 
 //support "editenv"
 #define CONFIG_CMD_EDITENV 1
+#define CONFIG_SWITCH_BOOT_MODE 1
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

@@ -365,6 +365,11 @@ void main_loop (void)
 	update_tftp ();
 #endif /* CONFIG_UPDATE_TFTP */
 
+
+#ifdef CONFIG_SWITCH_BOOT_MODE
+	switch_boot_mode();
+#endif
+
 #ifdef CONFIG_EFUSE
 	r_addr = getenv ("ethaddr");
 	if(efuse_chk_written(2)){

@@ -110,6 +110,36 @@
 #define MTDIDS_DEFAULT		"nand1=nandflash1\0"
 #define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
 
+#ifdef SHUTTLE_M3_MID_V1
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m1_mbox\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
+	"mtdids=" MTDIDS_DEFAULT \
+	"mtdparts="MTDPARTS_DEFAULT \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=u-boot-aml-ucl.bin\0" \
+	"normal_start=0x8800000\0" \
+	"normal_size=0x800000\0" \
+	"recovery_start=0x6800000\0" \
+	"recovery_size=0x800000\0" \
+	"recovery_path=uImage_recovery\0" \
+	"logo_start=0x4800000\0" \
+	"logo_size=0x400000\0" \
+	"aml_logo_start=0x2000\0" \
+	"aml_logo_size=0x1800\0"
+	
+
+#else //SHUTTLE_M3_MID_V1
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
@@ -135,9 +165,56 @@
 	"aml_logo_start=0x5800000\0" \
 	"aml_logo_size=0x400000\0"
 	
+#endif //SHUTTLE_M3_MID_V1
+
 //#define CONFIG_BOOTCOMMAND  "nand read 84100000 ${logo_start} ${logo_size};nand read ${loadaddr} ${normal_start} ${normal_size};lcd bl off;bootm"
 #define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uImage-m3;bootm"
 #else
+
+#ifdef SHUTTLE_M3_MID_V1
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m1_mid\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=init=/init console=ttyS0,115200"  BOARD_INFO_ENV  " board_ver=v2 clk81=187500k hdmitx=vdacoff,powermode1,unplug_powerdown rootwait logo=osd1,0x84100000,lcd,full,root=/dev/cardblksd2\0" \
+	"partnum=4\0" \
+	"p0start=0x4800000\0" \
+	"p0size=0x800000\0" \
+	"p0path=logo\0" \
+	"p1start=0x5800000\0" \
+	"p1size=0x800000\0" \
+	"p1path=aml_logo\0" \
+	"p2start=0x6800000\0" \
+	"p2size=0x1000000\0" \
+	"p2path=uImage_recovery\0" \
+	"p3start=0x8800000 \0" \
+	"p3size=1000000\0" \
+	"p3path=uImage\0" \
+	"logo_start=0x4800000\0" \
+	"logo_size=0x200000\0" \
+	"aml_logo_start=0x2000\0" \
+	"aml_logo_size=0x1800\0" \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=" UBOOTPATH "\0" \
+	"normal_start=0x8800000\0" \
+	"normal_size=0x800000\0" \
+	"recovery_start=0x6800000\0" \
+	"recovery_size=0x800000\0" \
+	"recovery_path=uImage_recovery\0" \
+	"envpath=u-boot-env\0" \
+	"bootstart=0\0" \
+	"bootsize=60000\0"
+
+
+#else //SHUTTLE_M3_MID_V1
+ 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
@@ -176,6 +253,8 @@
 	"envpath=u-boot-env\0" \
 	"bootstart=0\0" \
 	"bootsize=60000\0"
+
+#endif //SHUTTLE_M3_MID_V1
 
 #define CONFIG_BOOTCOMMAND  "nand read 84100000 ${p0start} ${p0size};nand read ${loadaddr} ${normalstart} ${normalsize};lcd bl off;bootm"
 #endif

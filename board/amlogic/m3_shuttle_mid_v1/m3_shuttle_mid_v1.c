@@ -157,11 +157,10 @@ struct aml_i2c_device aml_i2c_devices={
 int logo_display(void)
 {
     int ret = 0;
-    run_command ("nand read ${loadaddr} ${aml_logo_start} ${aml_logo_size}", 0);
+    run_command ("mmc read 1 ${loadaddr} ${aml_logo_start} ${aml_logo_size}", 0);
     ret = run_command ("bmp display ${loadaddr}", 0);
     run_command ("video dev bl_on", 0);
     return ret;
-
 }
 
 inline void display_messge(char *msg)
@@ -559,3 +558,10 @@ int board_mmc_init(bd_t	*bis)
 	return 0;
 }
 #endif
+
+int switch_boot_mode(void)
+{
+	logo_display();
+}
+
+
