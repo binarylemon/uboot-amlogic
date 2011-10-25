@@ -98,6 +98,60 @@ U_BOOT_CMD(
 	"      to address 'addr' from dos filesystem"
 );
 
+int do_fat_exist (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	long size;
+	char buf [12];
+	block_dev_desc_t *dev_desc=NULL;
+	int dev=0;
+	int part=1;
+	char *ep;
+
+	if (argc < 4) {
+		printf ("usage: fatexist <interface> <dev[:part]> <filepath>\n");
+		return 1;
+	}
+	dev = (int)simple_strtoul (argv[2], &ep, 16);
+	dev_desc=get_dev(argv[1],dev);
+	if (dev_desc==NULL) {
+		puts ("\n** Invalid boot device **\n");
+		return 1;
+	}
+	if (*ep) {
+		if (*ep != ':') {
+			puts ("\n** Invalid boot device, use `dev[:part]' **\n");
+			return 1;
+		}
+		part = (int)simple_strtoul(++ep, NULL, 16);
+	}
+	if (fat_register_device(dev_desc,part)!=0) {
+		printf ("\n** Unable to use %s %d:%d for fatload **\n",argv[1],dev,part);
+		return 1;
+	}
+
+	size = do_fat_read(argv[3], NULL, 0, LS_NO);
+
+	if(size==-1) {
+		printf("\n** Unable to open \"%s\" from %s %d:%d --- file not exist**\n",argv[3],argv[1],dev,part);
+		return 1;
+	}
+	
+	printf("	%s is exist\n", argv[3]);
+	sprintf(buf, "%lX", size);
+	setenv("filesize", buf);
+
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	fatexist,	4,	0,	do_fat_exist,
+	"find the file from a dos filesystem",
+	"<interface> <dev[:part]> <filepath>\n"
+	"    - find file 'filepath' from 'dev' on 'interface'\n"
+);
+
+
 int do_fat_ls (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *filename = "/";
