@@ -139,6 +139,16 @@
 #endif
 /*end config LCD output*/
 
+#define OSD_WIDTH   800
+#define OSD_HEIGHT  480
+#define OSD_BPP     OSD_COLOR24
+
+#define CONFIG_AML_FONT
+#define ENABLE_FONT_RESOURCE
+#ifdef ENABLE_FONT_RESOURCE
+#define DEFAULT_FONT &ISO_88591_32Font
+#endif
+
 
 /*POST support*/
 #define CONFIG_POST (CONFIG_SYS_POST_MEMORY | CONFIG_SYS_POST_CACHE | \

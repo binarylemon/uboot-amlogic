@@ -9,20 +9,17 @@
 #define SYSTEST_CASES_NUM 10
 
 #ifdef ENABLE_FONT_RESOURCE
+#include <amlogic/aml_lcd.h>
 extern vidinfo_t panel_info;
+#define DISPLAY_WHITE_COLOR   0xffffff
+#define DISPLAY_BLACK_COLOR   0x0
+#define DISPLAY_BLUE_COLOR    0x80ff80
+#define DISPLAY_RED_COLOR    0xfa0c12
 #endif
 
 extern struct adc_device aml_adc_devices;
 #define IS_KEY(adc_val, value, tolerance) ((adc_val >= (value-tolerance))&&(adc_val <= (value+tolerance)))?1:0
 
-//====================================================================
-int adc_systest_init()
-{
-#ifdef ENABLE_FONT_RESOURCE
-	InitFont();	
-#endif
-	return 1;
-}
 //====================================================================
 static void display_adc_title(char *s, int pos)
 {

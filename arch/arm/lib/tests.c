@@ -40,7 +40,6 @@ extern int pll_post_test(int flags);
 extern int nand_post_test(int flags);
 extern int sdcard_post_test(int flags);
 extern int adc_post_test(int flags);
-extern int adc_systest_init(void);
 
 struct post_test post_list[] = {		
 #if CONFIG_POST & CONFIG_SYS_POST_MEMORY
@@ -153,7 +152,7 @@ struct post_test post_list[] = {
 		"This test verifies the SARADC operation",
 		POST_RAM | POST_MANUAL,
 		&adc_post_test,
-		&adc_systest_init, 
+		NULL, 
 		NULL,
 		CONFIG_SYS_POST_ADC
 	},
