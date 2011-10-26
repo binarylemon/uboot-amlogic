@@ -15,3 +15,9 @@ help:
 	@echo =======================================================================
 	@echo The mark in board is "SHUTTLE_M3_MID_V1"
 	@echo config command: \"make m3_shuttle_mid_v1_config\"
+	
+	@echo =======================================================================
+	@echo The mark in board is "OPLAY_AML8726_M_R100 (ASUS:M3)"
+	@echo config command: \"make m3_oplay_config\"
+	
+	@echo
