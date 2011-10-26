@@ -6,6 +6,40 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//support "bdinfo" 
+#define CONFIG_CMD_BDI 1
+
+//support "boot,bootd"
+#define CONFIG_CMD_BOOTD 1
+
+//support "coninfo"
+#define CONFIG_CMD_CONSOLE 1
+
+//support "echo"
+#define CONFIG_CMD_ECHO 1
+
+//support "run"
+#define CONFIG_CMD_RUN 1
+
+//support "true,false,test"
+#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
+#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+   
+//support "imxtract"
+#define CONFIG_CMD_XIMG 1
+   
+//support "itest"
+#define CONFIG_CMD_ITEST 1
+   
+//support "sleep"
+#define CONFIG_CMD_MISC 1
+   
+//support "source"
+#define CONFIG_SOURCE 1
+#define CONFIG_CMD_SOURCE 1
+   
+//support "editenv"
+#define CONFIG_CMD_EDITENV 1
 
 //#define CONFIG_AML_I2C      1
 
@@ -81,7 +115,7 @@
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
 //#ifndef CONFIG_JERRY_NAND_TEST
-//#define CONFIG_NAND_BOOT 1
+#define CONFIG_NAND_BOOT 1
 //#endif
 
 #ifdef CONFIG_NAND_BOOT
