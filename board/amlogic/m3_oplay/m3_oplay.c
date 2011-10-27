@@ -74,69 +74,73 @@ extern int aml_eth_init(bd_t *bis);
 }
 #endif /* (CONFIG_CMD_NET) */
 
+
 #ifdef CONFIG_SARADC
 /*following key value are test with board 
-  [M3_SKT_V1 20110622]
+  [OPLAY_AML8726_M_R100 : ASUS]
   ref doc:
-  1. m3_skt_v1.pdf(2011.06.22)
+  1. OPLAY_AML8726_M_R100_0817.pdf
   2. M3-Periphs-Registers.docx (Pg43-47)
 */
 static struct adckey_info g_key_K1_info[] = {
-    {"K1", 6, 60},
-};
-static struct adckey_info g_key_K2_info[] = {
-    {"K2", 180, 60},
-};
-static struct adckey_info g_key_K3_info[] = {
-    {"K3", 400, 60},
-};
-static struct adckey_info g_key_K4_info[] = {
-    {"K4", 620, 60},
-};
-static struct adckey_info g_key_K5_info[] = {
-    {"K5", 850, 60},
+    {"sw3", 0, 60}
 };
 
 static struct adc_info g_adc_info[] = {
-    {"Press Key K1", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
-    {"Press Key K2", AML_ADC_CHAN_4, ADC_KEY,&g_key_K2_info},
-    {"Press Key K3", AML_ADC_CHAN_4, ADC_KEY,&g_key_K3_info},
-    {"Press Key K4", AML_ADC_CHAN_4, ADC_KEY,&g_key_K4_info},
-    {"Press Key K5", AML_ADC_CHAN_4, ADC_KEY,&g_key_K5_info},
-    {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL},
+    {"Press Key sw3", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
+    {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL}
 };
+
+#ifdef CONFIG_KEYPRESS_TEST
+#define KEY_DELAY_US 2000
+void keypress_test(void)
+{
+  /*following is test code to test ADC & key pad*/
+  int i;
+	int count = sizeof(g_key_K1_info)/sizeof(struct adckey_info);
+	int nKeyVal = 0;
+	int nCnt = 0;
+  printf("waiting for keypress test..\npress key \'sw3\' 3 times please...\n");
+	saradc_enable();	
+	while(nCnt < 3)
+	{
+		udelay(KEY_DELAY_US);
+		nKeyVal = get_adc_sample(4);
+		if(nKeyVal > 1000)
+			continue;
+		for(i = 0; i < count; i++){
+			int v = g_key_K1_info[i].value;
+			if(nKeyVal >= v && nKeyVal <= (v + g_key_K1_info[i].tolerance)){
+				printf("key:%s pressed.\n",g_key_K1_info[i].key);
+				break;
+			}
+		}
+		if(i >= count)
+			printf("unknown key pressed. keyvalue=%d\n",nKeyVal);
+		nCnt++;
+		for(i = 0; i < 100; i++)
+			udelay(KEY_DELAY_US);
+	}
+	saradc_disable();
+}
+int do_keytest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	keypress_test();
+	return 0;
+}
+
+U_BOOT_CMD(
+	keytest,	1,	1,	do_keytest,
+	"test key press", 
+	""
+);
+#endif /*CONFIG_KEYPRESS_TEST*/
 
 struct adc_device aml_adc_devices={
 	.adc_device_info = g_adc_info,
 	.dev_num = sizeof(g_adc_info)/sizeof(struct adc_info)
 };
-
-/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
-/* void adc_init(struct adc_info *adc_info, unsigned int len) 
-     @trunk/common/sys_test.c */
-
-/*following is test code to test ADC & key pad*/
-/*
-#ifdef CONFIG_SARADC
-#include <asm/saradc.h>
-	saradc_enable();	
-	u32 nDelay = 0xffff;
-	int nKeyVal = 0;
-	int nCnt = 0;
-	while(nCnt < 3)
-	{
-		udelay(nDelay);
-		nKeyVal = get_adc_sample(4);
-		if(nKeyVal > 1000)
-			continue;
-		
-		printf("get_key(): %d\n", nKeyVal);
-		nCnt++;
-	}
-	saradc_disable();
-#endif
-*/
-#endif
+#endif /*CONFIG_SARADC*/
 
 u32 get_board_rev(void)
 {

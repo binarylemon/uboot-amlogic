@@ -55,12 +55,33 @@
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
-//Amlogic SARADC support
-#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 
-#define CONFIG_CMD_NET   1
+//Amlogic SARADC support
+#define CONFIG_SARADC 1
+/*for key scan*/
+#ifdef CONFIG_SARADC
+#define CONFIG_KEYPRESS_TEST
+#else
+#undef CONFIG_KEYPRESS_TEST
+#endif
 
+/*//tv
+#define CONFIG_AMLOSD
+#define CONFIG_VIDEO_AML
+#define CONFIG_VIDEO_AMLTVOUT
+#define CONFIG_CMD_BMP
+#define CONFIG_CMD_TV
+#define CONFIG_CMD_OSD
+#define CONFIG_AMLHDMI
+#define CONFIG_LOGDISPLAY*/
+/*osd*/
+/*#define OSD_WIDTH      720
+#define OSD_HEIGHT     576
+#define OSD_BPP     OSD_COLOR24
+*/
+
+#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 #define CONFIG_AML_ETHERNET 1
 #define CONFIG_NET_MULTI 1
