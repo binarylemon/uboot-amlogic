@@ -67,6 +67,7 @@ COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
 
 # command
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
+COBJS-$(CONFIG_CMD_AUTOSCRIPT) += cmd_autoscript.o
 COBJS-$(CONFIG_SOURCE) += cmd_source.o
 COBJS-$(CONFIG_CMD_SOURCE) += cmd_source.o
 COBJS-$(CONFIG_CMD_BDI) += cmd_bdinfo.o

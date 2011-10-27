@@ -41,6 +41,9 @@
 //support "editenv"
 #define CONFIG_CMD_EDITENV 1
 
+//support "autoscript"
+#define CONFIG_CMD_AUTOSCRIPT 1
+
 //#define CONFIG_AML_I2C      1
 
 //Enable storage devices
