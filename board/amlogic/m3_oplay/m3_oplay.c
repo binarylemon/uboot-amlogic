@@ -153,17 +153,20 @@ u32 get_board_rev(void)
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>
+/*
+@OPLAY_AML8726_M_R100_0817.pdf
+*/
 static int  sdio_init(unsigned port)
-{
-	//setbits_le32(P_PREG_CGPIO_EN_N,1<<5);
-	setbits_le32(P_PREG_GGPIO_EN_N,1<<11);//GPIOD13
+{	
+    //todo add card detect 	
+	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
 
     return cpu_sdio_init(port);
 }
 static int  sdio_detect(unsigned port)
 {
-	//return (readl(P_PREG_CGPIO_I)&(1<<5))?1:0;
-	return (readl(P_PREG_GGPIO_I)&(1<<11))?1:0;//GPIOD13
+	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+	return readl(P_PREG_PAD_GPIO5_I)&(1<<29)?1:0;
 }
 static void sdio_pwr_prepare(unsigned port)
 {
@@ -172,19 +175,14 @@ static void sdio_pwr_prepare(unsigned port)
 }
 static void sdio_pwr_on(unsigned port)
 {
-//	clrbits_le32(P_PREG_CGPIO_O,(1<<5));
-//	clrbits_le32(P_PREG_CGPIO_EN_N,(1<<5));//test_n
-	clrbits_le32(P_PREG_GGPIO_O,(1<<11));
-	clrbits_le32(P_PREG_GGPIO_EN_N,(1<<11));//GPIOD13
+	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
     /// @todo NOT FINISH
 }
 static void sdio_pwr_off(unsigned port)
 {
-//	setbits_le32(P_PREG_CGPIO_O,(1<<5));
-//	clrbits_le32(P_PREG_CGPIO_EN_N,(1<<5));//test_n
-	setbits_le32(P_PREG_GGPIO_O,(1<<11));
-	clrbits_le32(P_PREG_GGPIO_EN_N,(1<<11));//GPIOD13
-
+	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
 	/// @todo NOT FINISH
 }
 static void board_mmc_register(unsigned port)
