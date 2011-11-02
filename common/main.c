@@ -380,6 +380,11 @@ void main_loop (void)
 	}
 #endif
 
+#ifdef CONFIG_AML_SUSPEND
+extern void init_suspend_firmware();
+	  init_suspend_firmware();
+#endif
+
 #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
 	s = getenv ("bootdelay");
 	bootdelay = s ? (int)simple_strtol(s, NULL, 10) : CONFIG_BOOTDELAY;

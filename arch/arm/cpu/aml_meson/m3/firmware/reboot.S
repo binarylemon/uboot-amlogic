@@ -21,13 +21,8 @@ pwr_restart:
     dmb
     isb
     /* for debug */
-    // wfi 
+    //wfi
      
-		/********************************************/
-		/* restore reboot enviroment                */    
-    ldr r0, =CONFIG_RST_ENV_BASE
-    ldr sp,[r0]
-    
 		/********************************************/
 		/* restore reboot enviroment                */    
     ldr r0, =CONFIG_RST_ENV_BASE
@@ -60,6 +55,7 @@ pwr_restart:
     ldr r1,[r0,#4]
     mcr p15,0,r1,c1,c0,0
     
+
  		/* return to powerdown location*/
     mov pc,lr
     wfi
@@ -87,7 +83,7 @@ pwr_fiq:
 	mov r0,#7
 	b pwr_fail_sleep	
 pwr_fail_sleep:
-  /* setup stack pointer (relocated 0x49002000) */
+  // setup stack pointer (relocated 0x49002000) 			
 	mov r1 , pc
 	ldr r2 , =0xFFFF0000
 	and r1, r1, r2

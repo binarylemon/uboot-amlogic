@@ -218,7 +218,7 @@ int do_testpd (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	rbt_save_sp();
 #ifndef CONFIG_DCACHE_OFF
 	  dcache_disable();
-		cache_flush();
+	  asm volatile ("mcr p15, 0, %0, c7, c5, 0": :"r" (0));
 #endif	  
 
 	addr = simple_strtoul(argv[1], NULL, 16);

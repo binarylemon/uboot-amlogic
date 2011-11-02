@@ -21,13 +21,33 @@ COBJS-$(CONFIG_AML_RTC)+=aml_rtc_setting.o
 
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 
+ifdef CONFIG_AML_SUSPEND
+COBJS += firmwareld.o
+endif
+
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-all:	$(obj).depend $(LIB)
+all:	power_firmware $(obj).depend $(LIB)
 
 $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+
+ifdef CONFIG_AML_SUSPEND
+FIRMWARE_AUTO_UPDATE=y
+export FIRMWARE_AUTO_UPDATE
+power_firmware:
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
+ifdef CONFIG_CMD_RUNARC
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+endif
+else
+power_firmware:
+ifdef CONFIG_CMD_RUNARC
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+endif
+endif
 
 #########################################################################
 

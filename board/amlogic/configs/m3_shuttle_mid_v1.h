@@ -261,4 +261,11 @@
 #define CONFIG_SYS_MEMTEST_START	0x80000000  /* memtest works on	*/      
 #define CONFIG_SYS_MEMTEST_END		0x87000000  /* 0 ... 120 MB in DRAM	*/  
 
+#define CONFIG_CMD_LOADB	1 /* loadb			*/
+#define CONFIG_CMD_LOADS	1 /* loads			*/
+#define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
+
+#define CONFIG_CMD_RUNARC 1 /* runarc */
+#define CONFIG_AML_SUSPEND 1
+
 #endif /*__M3_SHUTTLE_MID_V1_H__*/
