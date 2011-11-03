@@ -21,6 +21,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//support "boot,bootd"
+//#define CONFIG_CMD_BOOTD 1
+//#define CONFIG_SWITCH_BOOT_MODE
 
 /*@Q07CL_DSN_RB_0922A.pdf*/
 #define CONFIG_AML_I2C      1
@@ -91,6 +94,50 @@
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
+
+//#define CONFIG_UBI_SUPPORT
+#ifdef	CONFIG_UBI_SUPPORT
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
+#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+#endif
+
+/* Environment information */
+#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTFILE		uImage
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m1_mbox\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=192M hdmitx=vdacoff,powermode1,unplug_powerdown mem=512m logo=osd1,0x84100000,lcd,full\0" \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=u-boot.bin\0" \
+	"normal_name=boot\0" \
+	"normal_start=0x6000\0" \
+	"normal_size=0x2000\0" \
+	"recovery_name=recovery\0" \
+	"recovery_start=0x3800\0" \
+	"recovery_size=0x2800\0" \
+	"recovery_path=uImage_recovery\0" \
+	"logo_name=logo\0" \
+	"logo_start=0x800\0" \
+	"logo_size=0x1800\0" \
+	"aml_logo_name=aml_logo\0" \
+	"aml_logo_start=0x2000\0" \
+	"aml_logo_size=0xc00\0"	
+
+#define CONFIG_BOOTCOMMAND  "mmc read 1 84100000 ${logo_start} ${logo_size};mmc read 1 ${loadaddr} ${normal_start} ${normal_size};bootm"
+
+#define CONFIG_AUTO_COMPLETE	1
 
 //#define CONFIG_SPI_BOOT 1
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -191,56 +238,11 @@
 	}	
 #endif   /*end ifdef CONFIG_POST*/
 
-
-#define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
-
-
-//support "arc"
+//power down
 //#define CONFIG_ENABLE_ARC //trunk def
-#define CONFIG_CMD_RUNARC
+#define CONFIG_CMD_RUNARC 1 /* runarc */
+#define CONFIG_AML_SUSPEND 1
 
-//support "bdinfo" 
-#define CONFIG_CMD_BDI 1
-
-//support "boot,bootd"
-#define CONFIG_CMD_BOOTD 1
-
-//support "coninfo"
-#define CONFIG_CMD_CONSOLE 1
-
-//support "echo"
-#define CONFIG_CMD_ECHO 1
-
-//support "loadb,loads,loady"
-#define CONFIG_CMD_LOADS 1
-#define CONFIG_CMD_LOADB 1
-
-//support "run"
-#define CONFIG_CMD_RUN 1
-
-//support "true,false,test"
-//#define CONFIG_SYS_LONGHELP		/* undef to save memory */
-#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
-//#define CONFIG_SYS_PROMPT		"8726M_ref # "
-//#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
-
-//support "imxtract"
-#define CONFIG_CMD_XIMG 1
-
-//support "itest"
-#define CONFIG_CMD_ITEST 1
-
-//support "sleep"
-#define CONFIG_CMD_MISC 1
-
-//support "source"
-#define CONFIG_SOURCE 1
-#define CONFIG_CMD_SOURCE 1
-
-//support "editenv"
-#define CONFIG_CMD_EDITENV 1
-#define CONFIG_SWITCH_BOOT_MODE 1
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
@@ -260,12 +262,5 @@
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000  /* memtest works on	*/      
 #define CONFIG_SYS_MEMTEST_END		0x87000000  /* 0 ... 120 MB in DRAM	*/  
-
-#define CONFIG_CMD_LOADB	1 /* loadb			*/
-#define CONFIG_CMD_LOADS	1 /* loads			*/
-#define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
-
-#define CONFIG_CMD_RUNARC 1 /* runarc */
-#define CONFIG_AML_SUSPEND 1
 
 #endif /*__M3_SHUTTLE_MID_V1_H__*/

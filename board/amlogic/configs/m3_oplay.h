@@ -6,41 +6,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-//support "bdinfo" 
-#define CONFIG_CMD_BDI 1
-
 //support "boot,bootd"
-#define CONFIG_CMD_BOOTD 1
-
-//support "coninfo"
-#define CONFIG_CMD_CONSOLE 1
-
-//support "echo"
-#define CONFIG_CMD_ECHO 1
-
-//support "run"
-#define CONFIG_CMD_RUN 1
-
-//support "true,false,test"
-#define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
-   
-//support "imxtract"
-#define CONFIG_CMD_XIMG 1
-   
-//support "itest"
-#define CONFIG_CMD_ITEST 1
-   
-//support "sleep"
-#define CONFIG_CMD_MISC 1
-   
-//support "source"
-#define CONFIG_SOURCE 1
-#define CONFIG_CMD_SOURCE 1
-   
-//support "editenv"
-#define CONFIG_CMD_EDITENV 1
-
+//#define CONFIG_CMD_BOOTD 1
+/*#define CONFIG_SWITCH_BOOT_MODE*/ /*disable switch boot mode for test*/
 //support "autoscript"
 #define CONFIG_CMD_AUTOSCRIPT 1
 
@@ -135,6 +103,52 @@
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
+
+#define CONFIG_UBI_SUPPORT
+#ifdef	CONFIG_UBI_SUPPORT
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
+#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+#endif
+
+/* Environment information */
+#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTFILE		uImage
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m3-oplay\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
+	"mtdids=" MTDIDS_DEFAULT \
+	"mtdparts="MTDPARTS_DEFAULT \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=u-boot.bin\0" \
+	"normal_name=boot\0" \
+	"normal_start=0x8800000\0" \
+	"normal_size=0x800000\0" \
+	"recovery_name=recovery\0" \
+	"recovery_start=0x6800000\0" \
+	"recovery_size=0x800000\0" \
+	"recovery_path=uImage_recovery\0" \
+	"logo_name=logo\0" \
+	"logo_start=0x4800000\0" \
+	"logo_size=0x400000\0" \
+	"aml_logo_name=aml_logo\0" \
+	"aml_logo_start=0x5800000\0" \
+	"aml_logo_size=0x400000\0"
+	
+#define CONFIG_BOOTCOMMAND  "nand read ${logo_name} 84100000 0 ${logo_size};nand read ${normal_name} ${loadaddr} 0 ${normal_size};bootm"
+
+#define CONFIG_AUTO_COMPLETE	1
 
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT

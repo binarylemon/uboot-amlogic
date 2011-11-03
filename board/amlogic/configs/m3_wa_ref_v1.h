@@ -21,6 +21,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//support "boot,bootd"
+//#define CONFIG_CMD_BOOTD 1
+//#define CONFIG_SWITCH_BOOT_MODE 
 
 /*@WA-AML8726-M3_REF_V1.0.pdf*/
 #define CONFIG_AML_I2C      1
@@ -89,6 +92,52 @@
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
+
+#define CONFIG_UBI_SUPPORT
+#ifdef	CONFIG_UBI_SUPPORT
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
+#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"	
+#endif
+
+/* Environment information */
+#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTFILE		uImage
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m1_mbox\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=192M hdmitx=vdacoff,powermode1,unplug_powerdown mem=512m logo=osd1,0x84100000,lcd,full\0" \
+	"mtdids=" MTDIDS_DEFAULT \
+	"mtdparts="MTDPARTS_DEFAULT \
+	"bootloader_start=0\0" \
+	"bootloader_size=60000\0" \
+	"bootloader_path=u-boot.bin\0" \
+	"normal_name=boot\0" \
+	"normal_start=0x8800000\0" \
+	"normal_size=0x800000\0" \
+	"recovery_name=recovery\0" \
+	"recovery_start=0x6800000\0" \
+	"recovery_size=0x800000\0" \
+	"recovery_path=uImage_recovery\0" \
+	"logo_name=logo\0" \
+	"logo_start=0x4800000\0" \
+	"logo_size=0x400000\0" \
+	"aml_logo_name=aml_logo\0" \
+	"aml_logo_start=0x5800000\0" \
+	"aml_logo_size=0x400000\0"
+	
+#define CONFIG_BOOTCOMMAND  "nand read ${logo_name} 84100000 0 ${logo_size};nand read ${normal_name} ${loadaddr} 0 ${normal_size};bootm"
+
+#define CONFIG_AUTO_COMPLETE	1
 
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT

@@ -6,7 +6,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-
+//support "boot,bootd"
+#define CONFIG_CMD_BOOTD 1
+//#define CONFIG_SWITCH_BOOT_MODE 1
 //#define CONFIG_AML_I2C      1
 
 //Enable storage devices
@@ -77,6 +79,46 @@
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
+
+//#define CONFIG_UBI_SUPPORT
+#ifdef	CONFIG_UBI_SUPPORT
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
+#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+#endif
+
+/* Environment information */
+#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTFILE		uImage
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m1_mbox\0" \
+	"chipname=8726m\0" \
+	"machid=B8E\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
+	"partnum=2\0" \
+	"p0start=1000000\0" \
+	"p0size=400000\0" \
+	"p0path=uImage\0" \
+	"p1start=1400000\0" \
+	"p1size=8000000\0" \
+	"p1path=android.rootfs\0" \
+	"bootstart=0\0" \
+	"bootsize=60000\0" \
+	"bootpath=u-boot-512M-UartB.bin\0" \
+	"normalstart=1000000\0" \
+	"normalsize=400000\0" \
+
+#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage-m3;bootm"
+
+#define CONFIG_AUTO_COMPLETE	1
 
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
@@ -169,13 +211,9 @@
 #define CONFIG_SYS_MEMTEST_END		0x87000000	/* 0 ... 120 MB in DRAM	*/  
 
 /*-----------------------------------------------------------------------
- * define commands 
+ * power down
  */
-#define CONFIG_CMD_LOADB	1 /* loadb			*/
-#define CONFIG_CMD_LOADS	1 /* loads			*/
-#define CONFIG_CMD_MEMORY	1 /* md mm nm mw cp cmp crc base loop mtest */
-
 #define CONFIG_CMD_RUNARC 1 /* runarc */
 
-#define CONFIG_AML_RTC
+
 #endif
