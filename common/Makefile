@@ -172,7 +172,7 @@ COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_EFUSE) += efuse_bch_8.o
 COBJS-$(CONFIG_VIDEO_AML) += cmd_video.o
 COBJS-$(CONFIG_AML_FONT) += devfont.o
-
+COBJS-$(CONFIG_AML_AUTOSCRIPT) += aml_autoscript.o
 
 COBJS	:= $(sort $(COBJS-y))
 XCOBJS	:= $(sort $(XCOBJS-y))

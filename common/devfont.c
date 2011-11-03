@@ -2,11 +2,6 @@
 #include <command.h>
 #include <devfont.h>
 #include <amlogic/aml_lcd.h>
-#include <font/ISO_88591_18.h>
-#include <font/ISO_88591_20.h>
-#include <font/ISO_88591_24.h>
-#include <font/ISO_88591_32.h>
-#include <font/ISO_88591_40.h>
 
 #define MAX_FONT_NUM		16
 
@@ -145,13 +140,10 @@ int GetTextSize(const void *str, unsigned short cc, int *pwidth, int *pheight, i
     unsigned short ch_width, width = 0;
     unsigned char *pFont;
 
-	if(gpCurFont == NULL) {		
-#ifdef ENABLE_FONT_RESOURCE
-	RegisterFont(DEFAULT_FONT);
-#else	
-	return;
-#endif
-	}
+	if(gpCurFont == NULL) 		
+		return;
+
+
 	
     if(cc == 0) {
         cc = strlen((char *)str);
@@ -184,13 +176,9 @@ void DrawText(const void *str, unsigned short cc, unsigned short x, unsigned sho
     unsigned short draw_x;
     unsigned char *pFont;
 
-	if(gpCurFont == NULL) {
-#ifdef ENABLE_FONT_RESOURCE
-	RegisterFont(DEFAULT_FONT);
-#else	
-	return;
-#endif
-	}
+	if(gpCurFont == NULL)
+	 	return;
+
 	
     if(cc == 0) {
         cc = strlen((char *)str);
@@ -220,13 +208,9 @@ void AsciiPrintf(const char * print_strings, unsigned short x, unsigned short y,
     int pix_width,pix_height;
     unsigned char str_length = strlen(print_strings);
 
-	if(gpCurFont == NULL) {
-#ifdef ENABLE_FONT_RESOURCE
-	RegisterFont(DEFAULT_FONT);
-#else	
-	return;
-#endif
-	}
+	if(gpCurFont == NULL)
+		return;
+
     DrawText(print_strings, str_length, x, y, &pix_width,&pix_height, font_color);
 }
 

@@ -23,11 +23,17 @@
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-//#define CONFIG_SWITCH_BOOT_MODE
+#define CONFIG_SWITCH_BOOT_MODE
+#define AMLOGIC_REBOOT_MODE
+
+#define CONFIG_CMD_AUTOSCRIPT
+#define CONFIG_AML_AUTOSCRIPT
+#define AML_AUTOSCRIPT  "aml_autoscript"
+#define SCAN_MMC_PARTITION  4
 
 /*@Q07CL_DSN_RB_0922A.pdf*/
 #define CONFIG_AML_I2C      1
-
+#define CONFIG_PMU_ACT8942
 
 /*use AO I2C to access ACT8942 for verify*/
 #ifdef CONFIG_AML_I2C
@@ -68,6 +74,7 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC    1
 #define CONFIG_EFUSE 1
+#define SCAN_DEVICE_PARTITION	4
 
 /*board WA_AML8726_M3_REF_V1.0 NOT support Ethernet*/
 
@@ -165,7 +172,7 @@
 	#define CONFIG_ENV_IS_IN_EMMC
 	#define CONFIG_CMD_SAVEENV
     #define CONFIG_ENV_DEVICE_ID        1	
-	#define CONFIG_ENV_OFFSET       0x1f00000	
+	#define CONFIG_ENV_OFFSET       0x60000	
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
