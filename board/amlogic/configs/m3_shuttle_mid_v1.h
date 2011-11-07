@@ -45,9 +45,10 @@
 
 
 //Enable storage devices
-#ifndef CONFIG_JERRY_NAND_TEST
-#define CONFIG_CMD_NAND  1
-#endif
+// M3_shuttle not support NAND
+//#ifndef CONFIG_JERRY_NAND_TEST
+//#define CONFIG_CMD_NAND  1
+//#endif
 
 //M3 shuttle MID not support SPI nor flash
 //#define CONFIG_CMD_SF        1
