@@ -32,7 +32,7 @@ fi
 
 # Check for svn and a svn repo.
 if rev=`svn info 2>/dev/null` ; then
-	rev=`echo "${rev}" | grep '^Revision' | awk '{print $NF}'`
+	rev=`echo "${rev}" | grep '^Last Changed Rev' | awk '{print $NF}'`
 	printf -- '-svn%s' $rev
 fi
 
