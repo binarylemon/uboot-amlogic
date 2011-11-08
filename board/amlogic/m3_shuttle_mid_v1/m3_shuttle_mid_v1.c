@@ -941,18 +941,18 @@ int switch_boot_mode(void)
 	act8942_init(&act8942_pdata);
 //	//act8942_dump();
 //
-//	int pmu=0;	
-//
-//	act8942_init(&act8942_pdata);
+	int pmu=0;	
+
+	act8942_init(&act8942_pdata);
 //	//act8942_dump();
 //	 //REG1 => 1.3V
-//	act8942_i2c_write(0x20, 0x1a);
+	act8942_i2c_write(0x20, 0x1a);
 // 	//REG1 => 1.35V
 //	//act8942_i2c_write(0x20, 0x1b);
 //	//REG3 => 3.3V
-//	act8942_i2c_write(0x40, 0x39);	
-//	pmu = act8942_i2c_read(0x20);
-//	printf("ACT8942_REG1_ADDR: %x \n\n",pmu);
+	act8942_i2c_write(0x40, 0x39);	
+	pmu = act8942_i2c_read(0x20);
+	printf("ACT8942_REG1_ADDR: %x \n\n",pmu);
 	upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
 	printf("upgrade_step = %d\n", upgrade_step);
 	
