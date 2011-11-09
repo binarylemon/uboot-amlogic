@@ -215,14 +215,8 @@ STATIC_PREFIX short sdio_init(unsigned dev)
     unsigned SD_boot_type, temp;  // bits [9:8]
     unsigned card_type = CARD_TYPE_SD;
     short error;
-    disable_sdio(dev);
-    __udelay(200000);
-
     SD_boot_type=enable_sdio(dev);
     
-    if(SD_boot_type<0)
-    	return -1;
-    __udelay(200000);
     setbits_le32(P_SDIO_IRQ_CONFIG,1<<soft_reset_bit);
     
     writel(  (2 << sdio_write_CRC_ok_status_bit) |
