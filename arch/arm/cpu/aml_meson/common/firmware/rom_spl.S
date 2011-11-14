@@ -58,14 +58,22 @@ clr_bss_end:
     mcr p15,0,r0,c12,c0,0
     ldr r0,__TEXT_BASE
     ldr r1,__TEXT_SIZE
-    bl	main
+    bl	main    
+#ifndef CONFIG_IMPROVE_UCL_DEC    
     ldr pc,__TEXT_BASE
+#else
+	ldr pc,__TEXT_BASE_UCL_DEC
+#endif    
 _AHB_SRAM_BASE:
     .word AHB_SRAM_BASE
 _READ_SIZE:
 	.word READ_SIZE
 __TEXT_BASE:
     .word TEXT_BASE
+#ifdef CONFIG_IMPROVE_UCL_DEC        
+__TEXT_BASE_UCL_DEC:
+    .word TEXT_BASE - 0x800000
+#endif    
 __TEXT_SIZE:
 #ifdef CONFIG_BOARD_SIZE_LIMIT
     .word CONFIG_BOARD_SIZE_LIMIT

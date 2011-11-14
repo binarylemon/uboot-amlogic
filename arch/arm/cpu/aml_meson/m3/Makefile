@@ -30,8 +30,8 @@ OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
 all:	power_firmware $(obj).depend $(LIB)
 
-$(LIB):	$(OBJS)
-	$(call cmd_link_o_target, $(OBJS))
+$(LIB):	$(OBJS)	
+	$(call cmd_link_o_target, $(OBJS))	
 
 ifdef CONFIG_AML_SUSPEND
 FIRMWARE_AUTO_UPDATE=y

@@ -111,7 +111,7 @@ reset:
 
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-/*	bl	cpu_init_crit*/
+	bl	cpu_init_crit
 #endif
 
 #ifndef CONFIG_SKIP_RELOCATE_UBOOT
@@ -201,7 +201,30 @@ cpu_init_crit:
 	 * bl	cache_init		@ go setup pll,mux,memory
 	 * mov	lr, ip			@ restore link
 	 */
+#if !(CONFIG_ICACHE_OFF && CONFIG_DCACHE_OFF)
+	mov ip, lr
+	ldr r0,__mmu_table
+	bl	cache_init		@go setup pll,mux,memory
+	mov lr, ip			@ restore link
+#endif	 
 	mov	pc, lr			@ back to my caller
+	
+    .global   mmu_disable
+@void mmu_disable(void)
+mmu_disable:
+    push    {r4,r5,r6,lr}
+#ifdef UCL_DEC_EN_IDCACHE
+	mov	r0, #0			@ set up for MCR
+	mcr p15, 0, r0, c7, c5, 6  // invalidate BTAC    				   	
+ 	mcr p15, 0, r0, c7, c5, 0  // invalidate ICache
+   dsb
+   mcr p15, 0, r0, c8, c7, 0    // invalidate TLBs
+   dsb
+   isb
+#endif
+    pop {r4, r5,r6, pc}	
+	
+	
 /*
  *************************************************************************
  *

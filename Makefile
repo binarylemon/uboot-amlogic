@@ -352,33 +352,77 @@ $(obj)u-boot.hex:	$(obj)u-boot
 
 $(obj)u-boot.srec:	$(obj)u-boot
 		$(OBJCOPY) -O srec $< $@
+		
+		
 ifneq ($(CONFIG_AML_MESON),y)
 $(obj)u-boot.bin:	$(obj)u-boot
-else
+		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+		$(BOARD_SIZE_CHECK)		
+else   #ELSE CONFIG_AML_MESON
 
-ifeq ($(CONFIG_SELF_COMPRESS),y)
-$(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
-ifeq ($(CONFIG_UCL),y)
-	$(obj)/tools/uclpack $< $@
-else	
-	$(obj)/pack -comp $(CONFIG_COMPRESS_METHOD) -o $@ $<
-endif
-$(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
-
-else
+#################
+ifneq ($(CONFIG_SELF_COMPRESS),y)
 $(obj)u-boot.bin:	$(obj)u-boot-orig.bin  $(obj)firmware.bin 
-endif
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 $(obj)u-boot-orig.bin:	$(obj)u-boot
-endif
-		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-		$(BOARD_SIZE_CHECK)
+	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+	$(BOARD_SIZE_CHECK)			
+else  
+###################
+ifneq ($(CONFIG_UCL),y)
+$(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
+	$(obj)/pack -comp $(CONFIG_COMPRESS_METHOD) -o $@ $<
+
+
+else	 # start aml compress
+##################################################
+$(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
+	$(obj)/tools/uclpack $< $@
+endif   # end CONFIG_UCL
+
+$(obj)u-boot-orig.bin:	$(obj)u-boot
+	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+	$(BOARD_SIZE_CHECK)			
+
+ifneq ($(CONFIG_IMPROVE_UCL_DEC),y)
+$(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+else
+$(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+	
+$(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp
+	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+
+$(obj)u-boot-comp-comp: $(obj)u-boot-comp.bin $(UCL_BOOTLIBS) $(LIBS)  firmware
+	$(LD) -Bstatic -T $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/uclboot/u-boot.lds \
+			-Ttext $(UCL_TEXT_BASE) $(PLATFORM_LDFLAGS) --cref $(obj)arch/$(ARCH)/cpu/$(CPU)/uclboot/start.o \
+			--start-group $(UCL_BOOTLIBS)  $(obj)arch/$(ARCH)/cpu/$(CPU)/common/firmware/serial.o \
+			 $(obj)arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmutable.o \
+			 $(obj)arch/$(ARCH)/lib/cache.o $(obj)arch/$(ARCH)/lib/cache_init.o \
+			 $(obj)arch/$(ARCH)/lib/cache-cp15.o $(obj)arch/$(ARCH)/lib/cache_v7.o \
+			 $(obj)lib/ucl/libucl.o \
+			--end-group  $(PLATFORM_LIBGCC) \
+			-Map $(obj)u-boot-ucl_a.map -o $@
+	
+endif #end CONFIG_IMPROVE_UCL_DEC	
+
+endif  #END CONFIG_SELF_COMPRESS
+endif #end CONFIG_AML_MESON		
+		
+		
 ifeq ($(CONFIG_AML_MESON),y)
 firmware:$(obj)firmware.bin
 .PHONY :	$(obj)firmware.bin
 ifeq ($(CONFIG_M3),y)
+ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+else 
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+endif	
 else
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk 
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
@@ -440,7 +484,7 @@ $(OBJS):	depend
 $(LIBS):	depend $(SUBDIRS)
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 		
-$(UCL_BOOTLIBS):	depend $(SUBDIRS)
+$(UCL_BOOTLIBS):	$(obj)u-boot-comp.bin depend $(SUBDIRS)
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 
 $(LIBBOARD):	depend $(LIBS)

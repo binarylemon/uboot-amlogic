@@ -103,6 +103,12 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
 
+#define CONFIG_IMPROVE_UCL_DEC    1
+#if CONFIG_IMPROVE_UCL_DEC
+#define UCL_DEC_EN_IDCACHE        1
+#define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
+#endif
+
 //#define CONFIG_UBI_SUPPORT
 #ifdef	CONFIG_UBI_SUPPORT
 #define CONFIG_CMD_UBI

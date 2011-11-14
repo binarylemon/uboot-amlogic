@@ -41,7 +41,7 @@ void serial_putc(const char c)
     /* Wait till dataTx register is empty */
 }
 
-SPL_STATIC_FUNC 
+//SPL_STATIC_FUNC 
 void serial_wait_tx_empty()
 {
     while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY)==0);

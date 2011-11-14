@@ -135,15 +135,22 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
            return 1;
     }
 #if CONFIG_UCL    
+#ifndef CONFIG_IMPROVE_UCL_DEC
     if(rc==0){
         serial_puts("ucl decompress\n");
         rc=uclDecompress(target,&len,temp_addr);
         serial_puts(rc?"decompress false\n":"decompress true\n");
     }
 #endif    
+#endif    
+
+#ifndef CONFIG_IMPROVE_UCL_DEC
     if(rc==0)    	
         rc=check_sum((unsigned*)target,magic_info->crc[1],size);
-              	
+#else
+    if(rc==0)    	
+        rc=check_sum((unsigned*)temp_addr,magic_info->crc[1],size);
+#endif              	
     return rc;
 }
 STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
@@ -161,16 +168,23 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 #endif
     int rc=sdio_read(temp_addr,size,por_cfg);    
 #if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;
     if(!rc){
 	    serial_puts("ucl decompress\n");
 	    rc=uclDecompress(target,&len,temp_addr);
         serial_puts("decompress finished\n");
     }
+#endif    
 #endif
 
+#ifndef CONFIG_IMPROVE_UCL_DEC
     if(!rc)
         rc=check_sum((unsigned*)target,magic_info->crc[1],size);
+#else
+    if(!rc)
+        rc=check_sum((unsigned*)temp_addr,magic_info->crc[1],size);
+#endif        
     return rc;
 }
 struct load_tbl_s{
@@ -205,6 +219,7 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
         if(__load_table[i].size==0)
             continue;
 #if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
         if( __load_table[i].size&(~0x3fffff))
         {
             rc=uclDecompress(__load_table[i].dest,&len,temp_addr+__load_table[i].src);
@@ -214,7 +229,7 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
                 serial_puts("decompress Fail\n");
             }
         }else
-        
+#endif        
 #endif  
         memcpy(__load_table[i].dest,__load_table[i].src+temp_addr,__load_table[i].size&0x3fffff);      
     }
