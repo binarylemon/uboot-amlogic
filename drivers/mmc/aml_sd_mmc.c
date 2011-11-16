@@ -170,6 +170,11 @@ void aml_sd_cfg_swth(struct mmc *mmc)
 	
 	int clk=clk_get_rate(SDIO_CLKSRC);
 	unsigned clk_div=(clk / (2*mmc->clock));
+		
+    writel(1<<soft_reset_bit, PREG_SDIO_IRQ_CFG);
+    mdelay(3);
+    //printf("test get_clk81:%d,sdio clk_div:0x%x,clock:%d\n",clk,clk_div,mmc->clock);
+
 	sdio_config = ((2 << sdio_write_CRC_ok_status_bit) |
                       (2 << sdio_write_Nwr_bit) |
                       (3 << m_endian_bit) |
@@ -224,17 +229,29 @@ static int sd_inand_check_insert(struct	mmc	*mmc)
 {
 	int level;
 	struct aml_card_sd_info *sd_inand_info = mmc->priv;
-
+	
+#ifdef AML_CARD_SD_INFO_DETAILED
+	level = sd_inand_info->sdio_detect(sd_inand_info->sdio_port,sd_inand_info);
+#else
 	level = sd_inand_info->sdio_detect(sd_inand_info->sdio_port);
+#endif
 
 	if (level) {
 		
 		if (sd_inand_info->init_retry) {
+			#ifdef AML_CARD_SD_INFO_DETAILED
+			sd_inand_info->sdio_pwr_off(sd_inand_info->sdio_port,sd_inand_info);
+		    #else
 			sd_inand_info->sdio_pwr_off(sd_inand_info->sdio_port);
+			#endif
 			sd_inand_info->init_retry = 0;
 		}
 		if (sd_inand_info->inited_flag) {
+			 #ifdef AML_CARD_SD_INFO_DETAILED
+			sd_inand_info->sdio_pwr_off(sd_inand_info->sdio_port,sd_inand_info);
+		    #else
 			sd_inand_info->sdio_pwr_off(sd_inand_info->sdio_port);
+			#endif
 			sd_inand_info->removed_flag = 1;
 			sd_inand_info->inited_flag = 0;
 		}
@@ -299,11 +316,48 @@ static int sd_inand_check_response(struct mmc_cmd *cmd)
 	return ret;
 }
 
+#ifdef AML_CARD_SD_INFO_DETAILED
 static int sd_inand_staff_init(struct mmc *mmc)
 {
 	struct aml_card_sd_info * sdio=mmc->priv;
     unsigned base;
 	
+	sd_debug("");
+    sdio->sdio_pwr_prepare(sdio->sdio_port,sdio);
+	sd_debug("power off");
+	sdio->sdio_pwr_off(sdio->sdio_port,sdio);
+		
+	if(sdio->sdio_pwr_flag&CARD_SD_SDIO_PWR_OFF)
+	{	
+	    sdio->sdio_pwr_flag &=~CARD_SD_SDIO_PWR_OFF;
+        base=get_timer(0);
+        while(get_timer(base)<200);
+    }
+    sd_debug("pre power on");
+    sdio->sdio_pwr_on(sdio->sdio_port,sdio);
+    sdio->sdio_init(sdio->sdio_port,sdio);
+    sd_debug("post power on");
+        
+    if(sdio->sdio_pwr_flag&CARD_SD_SDIO_PWR_ON)
+    {    	
+        sdio->sdio_pwr_flag &=~CARD_SD_SDIO_PWR_ON;
+        base=get_timer(0);
+        while(get_timer(base)<200);
+    }
+    aml_sd_cfg_swth(mmc);
+    if(!sdio->inited_flag)
+        sdio->inited_flag = 1;
+//    int ret=rom_c();
+//    sd_debug("rom_c==%d",rom_c());
+//    return ret;
+	return SD_NO_ERROR;
+}
+#else
+static int sd_inand_staff_init(struct mmc *mmc)
+{
+	struct aml_card_sd_info * sdio=mmc->priv;
+    unsigned base;
+		
 	sd_debug("");
     sdio->sdio_pwr_prepare(sdio->sdio_port);
 	sd_debug("power off");
@@ -324,6 +378,7 @@ static int sd_inand_staff_init(struct mmc *mmc)
 //    return ret;
 	return SD_NO_ERROR;
 }
+#endif
 
 
 /*
@@ -622,12 +677,16 @@ int aml_sd_init(struct mmc *mmc)
 #endif
 
     if(sdio->inited_flag)
-    {     
-        sdio->sdio_init(sdio->sdio_port);      
+    {       	
+        #ifdef AML_CARD_SD_INFO_DETAILED      
+        sdio->sdio_init(sdio->sdio_port,sdio);
+        #else
+        sdio->sdio_init(sdio->sdio_port);
+        #endif 
        mmc->set_ios(mmc);
         return 0;
     }
-    
+        
 	if (sd_inand_check_insert(mmc)) {
 		sd_inand_staff_init(mmc);
 		return 0;

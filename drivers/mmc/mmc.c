@@ -401,6 +401,7 @@ int mmc_change_freq(struct mmc *mmc)
 	mmc->card_caps |= MMC_MODE_4BIT;
 
 	err = mmc_send_ext_csd(mmc, ext_csd);
+	mdelay(1);
 	if (err)
 		return err;
 
@@ -413,7 +414,7 @@ int mmc_change_freq(struct mmc *mmc)
 	cardtype = ext_csd[196] & 0xf;
 
 	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_HS_TIMING, 1);
-
+	mdelay(1);
 	if (err)
 		return err;
 

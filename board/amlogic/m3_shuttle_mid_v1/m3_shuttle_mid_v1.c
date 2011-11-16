@@ -526,7 +526,11 @@ u32 get_board_rev(void)
 #include <asm/arch/sdio.h>
 static int inand_reset_flag;
 
+#ifdef AML_CARD_SD_INFO_DETAILED
+static int  sdio_init(unsigned port,struct aml_card_sd_info *sdio)
+#else
 static int  sdio_init(unsigned port)
+#endif
 {
 	//setbits_le32(P_PREG_CGPIO_EN_N,1<<5);
     //todo add card detect 	
@@ -537,8 +541,7 @@ static int  sdio_init(unsigned port)
         break;
     case SDIO_PORT_B:
         break;
-    case SDIO_PORT_C:
-    	printf("start flag=%x\n", inand_reset_flag);
+    case SDIO_PORT_C:    	
          if(inand_reset_flag)
         {
             inand_reset_flag = 0;
@@ -549,8 +552,7 @@ static int  sdio_init(unsigned port)
             mdelay(5);
         //mdelay(50);
             setbits_le32(P_PREG_PAD_GPIO3_O,1<<9);
-        }        
-        printf("end flag=%x\n", inand_reset_flag);
+        }                
         break;
     case SDIO_PORT_XC_A:
         break;
@@ -564,7 +566,11 @@ static int  sdio_init(unsigned port)
     return cpu_sdio_init(port);
 }
 
+#ifdef AML_CARD_SD_INFO_DETAILED
+static int  sdio_detect(unsigned port,struct aml_card_sd_info *sdio)
+#else
 static int  sdio_detect(unsigned port)
+#endif
 {
     switch(port)
     {
@@ -589,7 +595,11 @@ static int  sdio_detect(unsigned port)
     }
     return -1;//error 
 }
+#ifdef AML_CARD_SD_INFO_DETAILED
+static void sdio_pwr_prepare(unsigned port,struct aml_card_sd_info *sdio)
+#else
 static void sdio_pwr_prepare(unsigned port)
+#endif
 {
     /// @todo NOT FINISH
 	///do nothing here
@@ -605,7 +615,11 @@ static void sdio_pwr_prepare(unsigned port)
             break;
     }
 }
+#ifdef AML_CARD_SD_INFO_DETAILED
+static void sdio_pwr_on(unsigned port,struct aml_card_sd_info *sdio)
+#else
 static void sdio_pwr_on(unsigned port)
+#endif
 {
     switch(port)
     {
@@ -615,6 +629,9 @@ static void sdio_pwr_on(unsigned port)
         	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31));
         	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
             /// @todo NOT FINISH
+            #ifdef AML_CARD_SD_INFO_DETAILED
+        	sdio->sdio_pwr_flag |= CARD_SD_SDIO_PWR_ON;
+        	#endif
             break;
         case SDIO_PORT_C:
         	inand_reset_flag = 1;
@@ -623,7 +640,11 @@ static void sdio_pwr_on(unsigned port)
             break;
     }
 }
+#ifdef AML_CARD_SD_INFO_DETAILED
+static void sdio_pwr_off(unsigned port,struct aml_card_sd_info *sdio)
+#else
 static void sdio_pwr_off(unsigned port)
+#endif
 {
     switch(port)
     {
@@ -635,6 +656,9 @@ static void sdio_pwr_off(unsigned port)
         	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31));
         	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));//GPIOD13
         	/// @todo NOT FINISH
+        	#ifdef AML_CARD_SD_INFO_DETAILED
+        	sdio->sdio_pwr_flag |= CARD_SD_SDIO_PWR_OFF;
+        	#endif
 	        break;
 	    case SDIO_PORT_C:
 	        inand_reset_flag = 0;	    	
@@ -655,6 +679,9 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
+	#ifdef AML_CARD_SD_INFO_DETAILED
+    aml_priv->sdio_pwr_flag = 0;
+	#endif
 	if(port == SDIO_PORT_C)
 	{
 	    inand_reset_flag = 1;

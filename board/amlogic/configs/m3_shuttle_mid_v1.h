@@ -108,6 +108,7 @@
 #define UCL_DEC_EN_IDCACHE        1
 #define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
 #endif
+#define AML_CARD_SD_INFO_DETAILED
 
 //#define CONFIG_UBI_SUPPORT
 #ifdef	CONFIG_UBI_SUPPORT
