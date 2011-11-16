@@ -132,6 +132,7 @@ static void vclk_set_lcd(tcon_conf_t *ptcon_conf)
 	unsigned long pll_reg = ptcon_conf->pll_ctrl;
 	unsigned long vid_div_reg = ptcon_conf->div_ctrl;
 	unsigned int xd = ptcon_conf->clk_div;	
+	unsigned delaybase;
 	
     vid_div_reg |= (1 << 16) ; // turn clock gate on
     vid_div_reg |= (pll_sel << 15); // vid_div_clk_sel
@@ -146,8 +147,11 @@ static void vclk_set_lcd(tcon_conf_t *ptcon_conf)
     } 
 
     // delay 2uS to allow the sync mux to switch over
-    WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 2 ) {}    
-
+    // make easy for time calculation
+    //WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 2 ) {}        
+    delaybase = 2+READ_MPEG_REG(ISA_TIMERE);
+    while( READ_MPEG_REG(ISA_TIMERE) < delaybase ) {}    
+    
 
     if(pll_sel){
         WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<30) );
@@ -168,7 +172,10 @@ static void vclk_set_lcd(tcon_conf_t *ptcon_conf)
     else WRITE_MPEG_REG( HHI_VID_CLK_DIV, (READ_MPEG_REG(HHI_VID_CLK_DIV) & ~(0xFF << 0)) | (xd-1) );   // setup the XD divider value
 
     // delay 5uS
-    WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 5 ) {}    
+    // make easy for time calculation    
+    //WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 5 ) {}    
+    delaybase = 5+READ_MPEG_REG(ISA_TIMERE);
+    while( READ_MPEG_REG(ISA_TIMERE) < delaybase ) {}    
 
     if(vclk_sel) {
       if(pll_div_sel) WRITE_MPEG_REG_BITS (HHI_VIID_CLK_CNTL, 4, 16, 3);  // Bit[18:16] - v2_cntl_clk_in_sel
@@ -181,9 +188,12 @@ static void vclk_set_lcd(tcon_conf_t *ptcon_conf)
       WRITE_MPEG_REG( HHI_VID_CLK_CNTL, READ_MPEG_REG(HHI_VID_CLK_CNTL) |  (1 << 19) );     //enable clk_div0 
       WRITE_MPEG_REG( HHI_VID_CLK_CNTL, READ_MPEG_REG(HHI_VID_CLK_CNTL) |  (1 << 20) );     //enable clk_div1 
     }
+    
     // delay 2uS
-
-    WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 2 ) {}    
+    // make easy for time calculation
+    //WRITE_MPEG_REG( ISA_TIMERE, 0); while( READ_MPEG_REG(ISA_TIMERE) < 2 ) {}    
+	delaybase = 2+READ_MPEG_REG(ISA_TIMERE);
+	while( READ_MPEG_REG(ISA_TIMERE) < delaybase ) {}  
 
     // set tcon_clko setting
     WRITE_MPEG_REG_BITS (HHI_VID_CLK_CNTL, 

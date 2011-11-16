@@ -570,11 +570,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	drv_vfd_init();
 #endif /* CONFIG_VFD */
 
-#ifdef CONFIG_VIDEO_AMLLCD
-	puts("LCD Initialize:   \n");
-	aml_lcd_init();
-#endif
-
 	/* IP Address */
 	gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");
 
@@ -639,6 +634,11 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	debug ("Reset Ethernet PHY\n");
 	reset_phy();
 #endif
+#endif
+
+#ifdef CONFIG_VIDEO_AMLLCD
+	puts("LCD Initialize:   \n");
+	aml_lcd_init();
 #endif
 
 #ifdef CONFIG_POST
