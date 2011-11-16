@@ -317,6 +317,8 @@ static int sd_inand_staff_init(struct mmc *mmc)
     base=get_timer(0);
     while(get_timer(base)<200);
     aml_sd_cfg_swth(mmc);
+    if(!sdio->inited_flag)
+        sdio->inited_flag = 1;
 //    int ret=rom_c();
 //    sd_debug("rom_c==%d",rom_c());
 //    return ret;
@@ -618,11 +620,14 @@ int aml_sd_init(struct mmc *mmc)
 	CLEAR_CBUS_REG_MASK(PREG_EGPIO_EN_N,(0x1<<8));
 	CLEAR_CBUS_REG_MASK(PREG_EGPIO_O,(0x1<<8));
 #endif
-	ret = sdio->sdio_init(sdio->sdio_port);
-	if(ret)
-		return -1;
-	mmc->set_ios(mmc);
-	//aml_sd_cfg_swth(mmc);
+
+    if(sdio->inited_flag)
+    {     
+        sdio->sdio_init(sdio->sdio_port);      
+       mmc->set_ios(mmc);
+        return 0;
+    }
+    
 	if (sd_inand_check_insert(mmc)) {
 		sd_inand_staff_init(mmc);
 		return 0;

@@ -175,7 +175,7 @@ static void board_i2c_set_pinmux(void)
     //enable I2C MASTER B pins
 	setbits_le32(P_AO_RTI_PIN_MUX_REG,((1<<5)|(1<<6)));
 	
-    udelay(10000);
+    //udelay(10000);
 }
 
 #define I2C_ACT8942QJ133_ADDR   (0x5B)
@@ -278,9 +278,9 @@ static void board_i2c_init(void)
 	//must call aml_i2c_init(); before any I2C operation	
 
 	/*M3 shuttle MID board*/
-	board_Q07CL_DSN_RB_0922A_i2c_test();	
+	//board_Q07CL_DSN_RB_0922A_i2c_test();	
 
-	udelay(10000);	
+	//udelay(10000);	
 	
 }
 //for sys_test only, not check yet
@@ -524,6 +524,8 @@ u32 get_board_rev(void)
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>
+static int inand_reset_flag;
+
 static int  sdio_init(unsigned port)
 {
 	//setbits_le32(P_PREG_CGPIO_EN_N,1<<5);
@@ -536,13 +538,19 @@ static int  sdio_init(unsigned port)
     case SDIO_PORT_B:
         break;
     case SDIO_PORT_C:
-        printf("inand reset\n");
-        //clrbits_le32(P_PERIPHS_PIN_MUX_2,(1<<24));
-        clrbits_le32(P_PREG_PAD_GPIO3_EN_N,(1<<9));
-        clrbits_le32(P_PREG_PAD_GPIO3_O,(1<<9));
-        mdelay(150);
-        setbits_le32(P_PREG_PAD_GPIO3_O,1<<9);
-        mdelay(50);
+    	printf("start flag=%x\n", inand_reset_flag);
+         if(inand_reset_flag)
+        {
+            inand_reset_flag = 0;
+            printf("inand reset\n");
+            //clrbits_le32(P_PERIPHS_PIN_MUX_2,(1<<24));
+            clrbits_le32(P_PREG_PAD_GPIO3_EN_N,(1<<9));
+            clrbits_le32(P_PREG_PAD_GPIO3_O,(1<<9));
+            mdelay(5);
+        //mdelay(50);
+            setbits_le32(P_PREG_PAD_GPIO3_O,1<<9);
+        }        
+        printf("end flag=%x\n", inand_reset_flag);
         break;
     case SDIO_PORT_XC_A:
         break;
@@ -609,6 +617,7 @@ static void sdio_pwr_on(unsigned port)
             /// @todo NOT FINISH
             break;
         case SDIO_PORT_C:
+        	inand_reset_flag = 1;
             break;
         default:
             break;
@@ -628,6 +637,7 @@ static void sdio_pwr_off(unsigned port)
         	/// @todo NOT FINISH
 	        break;
 	    case SDIO_PORT_C:
+	        inand_reset_flag = 0;	    	
 	        break;
 	    default:
 	        break;
@@ -645,6 +655,10 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
+	if(port == SDIO_PORT_C)
+	{
+	    inand_reset_flag = 1;
+	}
 	sdio_register(mmc,aml_priv);
 #if 0    
     strncpy(mmc->name,aml_priv->name,31);

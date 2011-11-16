@@ -237,7 +237,7 @@ int mmc_go_idle(struct mmc* mmc)
 	struct mmc_cmd cmd;
 	int err;
 
-	udelay(1000);
+	//udelay(1000);
 
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
@@ -884,54 +884,67 @@ block_dev_desc_t *mmc_get_dev(int dev)
 	return mmc ? &mmc->block_dev : NULL;
 }
 
+#define SD_CARD_DEV     0
+#define EMMC_INAND_DEV  1
+
 int mmc_init(struct mmc *mmc)
 {
 	int err;
 	
-//	if (mmc->has_init)
-//		return 0;
-
 	err = mmc->init(mmc);
 	if (err)
 		return err;
-
-    if(mmc->bus_width == 4)
-        return 0;
-	//mmc_set_bus_width(mmc, 1);
-	//mmc_set_clock(mmc, 1);
-
+	
+	if(mmc->bus_width == 4)
+        return 0;       
 	/* Reset the Card */
 	err = mmc_go_idle(mmc);
 	if (err)
 		return err;
-
-	/* Test for SD version 2 */
-	err = mmc_send_if_cond(mmc);
-	/* If we got an error other than timeout, we bail */
-	if (err && err != TIMEOUT)
-		return err;
-       else if(err)
-            err = mmc_go_idle(mmc);
-
-	/* Now try to get the SD card's operating condition */
-	err = sd_send_op_cond(mmc);
-
-	/* If the command timed out, we check for an MMC card */
-	if (err == TIMEOUT) {
-		err = mmc_send_op_cond(mmc);
-
-		if (err) {
-			printf("Card did not respond to voltage select!\n");
-			return UNUSABLE_ERR;
+	
+	
+	// check SDCARD/EMMC to reduce EMMC load env data cycles	
+	if(mmc->block_dev.dev == SD_CARD_DEV) //sd card
+	{
+		/* Test for SD version 2 */
+		err = mmc_send_if_cond(mmc);
+		/* If we got an error other than timeout, we bail */
+		if (err && err != TIMEOUT)
+			return err;
+	       else if(err)
+	            err = mmc_go_idle(mmc);
+	
+		/* Now try to get the SD card's operating condition */
+		err = sd_send_op_cond(mmc);
+	
+		/* If the command timed out, we check for an MMC card */
+		if (err == TIMEOUT) {
+			err = mmc_send_op_cond(mmc);
+	
+			if (err) {
+				printf("Card did not respond to voltage select!\n");
+				return UNUSABLE_ERR;
+			}
 		}
 	}
-
-	return(mmc_startup(mmc));
-	/*if (err)
-		mmc->has_init = 0;
+	else if(mmc->block_dev.dev == EMMC_INAND_DEV)//emmc
+	{
+		err = mmc_send_op_cond(mmc);
+		if (err) {
+		   printf("Card did not respond to voltage select!\n");
+		   return UNUSABLE_ERR;
+		   
+		}	    
+	}
 	else
-		mmc->has_init = 1;
-	return err;*/
+    {
+        printf("card device NO. is error\n");
+        return -1;
+    }
+	
+	
+	return(mmc_startup(mmc));	
+	
 }
 
 /*
