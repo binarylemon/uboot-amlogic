@@ -121,6 +121,13 @@
    #define LCD_PACK_RVS             1
    #define LCD_PACK_LITTLE          0
 
+// lcd config flags
+#define LCD_ANALOG              0
+#define LCD_DIGITAL_TTL         1
+#define LCD_SWAP_PbPr           2
+#define LCD_DIGITAL_LVDS        4
+#define LCD_DIGITAL_MLVDS       8
+
 typedef struct {
 	u16	width;			/* screen width in pixel unit */
 	u16 height;			/* screen height in pixel unit */

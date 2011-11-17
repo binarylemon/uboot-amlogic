@@ -728,10 +728,10 @@ static int is_ac_connected(void)
 
 int logo_display(void)
 {
-    int ret = 0;
+    int ret = 0;    
     run_command ("mmc read 1 ${loadaddr} ${aml_logo_start} ${aml_logo_size}", 0);
-    ret = run_command ("bmp display ${loadaddr}", 0);
-    run_command ("video dev bl_on", 0);
+    ret = run_command ("bmp display ${loadaddr}", 0);    
+    run_command ("video dev bl_on", 0);    
     return ret;
 }
 
@@ -974,17 +974,32 @@ inline int get_key()
     return(((adc_val >= 0x0) && (adc_val < 0x200)) ? 1 : 0);
 }
 
+#ifdef CONFIG_VOLTAGE_AO12
+void vccao_1_2v()
+{	//change vcc ao from 1.25v to 1.2v
+	act8942_i2c_write(0x20,0x18);
+	act8942_i2c_write(0x21,0x18);
+}
+#endif
+
+#ifdef CONFIG_VOLTAGE_DDR15
+void ddr_1_5_v()
+{ //change ddr from 1.55v to 1.5v
+	act8942_i2c_write(0x30,0x1E);
+	act8942_i2c_write(0x31,0x1E);	
+}
+#endif
+
 int switch_boot_mode(void)
 {
-	   unsigned long hold_time = 50000, polling_time = 10000, tmp;
+	unsigned long hold_time = 50000, polling_time = 10000, tmp;
     unsigned long upgrade_step;
-
 	act8942_init(&act8942_pdata);
-//	//act8942_dump();
+	
+ //	//act8942_dump();
 //
 	int pmu=0;	
-
-	act8942_init(&act8942_pdata);
+	//act8942_init(&act8942_pdata);
 //	//act8942_dump();
 //	 //REG1 => 1.3V
 	act8942_i2c_write(0x20, 0x1a);
@@ -994,9 +1009,17 @@ int switch_boot_mode(void)
 	act8942_i2c_write(0x40, 0x39);	
 	pmu = act8942_i2c_read(0x20);
 	printf("ACT8942_REG1_ADDR: %x \n\n",pmu);
+		
+/*#ifdef CONFIG_VOLTAGE_AO12
+	vccao_1_2v();
+#endif
+#ifdef CONFIG_VOLTAGE_DDR15
+	ddr_1_5_v();
+#endif*/
+	
 	upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
 	printf("upgrade_step = %d\n", upgrade_step);
-	
+		
 	saradc_enable();
 	
 #ifdef ENABLE_FONT_RESOURCE

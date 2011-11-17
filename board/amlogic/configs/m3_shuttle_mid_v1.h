@@ -258,6 +258,9 @@
 #define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+#define CONFIG_VOLTAGE_AO12  1
+#define CONFIG_VOLTAGE_DDR15 1
+
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */

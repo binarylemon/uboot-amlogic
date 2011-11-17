@@ -107,38 +107,22 @@ tcon_conf_t tcon_config =
     .cpv1_he_addr = 0,
     .cpv1_vs_addr = 0,
     .cpv1_ve_addr = 0,
-    .cpv2_hs_addr = 0,
-    .cpv2_he_addr = 0,
-    .cpv2_vs_addr = 0,
-    .cpv2_ve_addr = 0,
     .stv1_hs_addr = 0,
     .stv1_he_addr = 0,
     .stv1_vs_addr = 5,
-    .stv1_ve_addr = 3,
-    .stv2_hs_addr = 0,
-    .stv2_he_addr = 0,
-    .stv2_vs_addr = 0,
-    .stv2_ve_addr = 0,
+    .stv1_ve_addr = 3, 
     .oev1_hs_addr = 0,
     .oev1_he_addr = 0,
     .oev1_vs_addr = 0,
-    .oev1_ve_addr = 0,
-    .oev2_hs_addr = 0,
-    .oev2_he_addr = 0,
-    .oev2_vs_addr = 0,
-    .oev2_ve_addr = 0,
-    .oev3_hs_addr = 0,
-    .oev3_he_addr = 0,
-    .oev3_vs_addr = 0,
-    .oev3_ve_addr = 0,
+    .oev1_ve_addr = 0,  
     .inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
     .tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
     .dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL),
-    .flags = 0,
+    .flags = LCD_DIGITAL_TTL,
     .screen_width = 4,
     .screen_height = 3,
-    .sync_duration_num = 821,
-    .sync_duration_den = 10,
+    .sync_duration_num = 493,
+    .sync_duration_den = 8,
     .power_on=lcd_power_on,
     .power_off=lcd_power_off,
 };
@@ -170,7 +154,7 @@ static void lcd_setup_gama_table(tcon_conf_t *pConf)
     int i;
 	debug("%s\n", __FUNCTION__);
 	 const unsigned short gamma_adjust[256] = {
-        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,18,19,20,20,21,22,23,23,24,25,25,26,27,28,
+         0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,18,19,20,20,21,22,23,23,24,25,25,26,27,28,
         28,29,30,30,31,32,33,33,34,35,36,37,37,38,38,39,40,41,42,42,43,44,45,45,46,47,48,49,49,50,51,52,
         53,54,55,56,57,58,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,74,75,76,77,77,78,79,79,80,
         81,81,82,82,83,84,84,85,85,86,86,87,88,88,89,89,90,91,91,92,93,93,94,95,96,96,97,98,99,100,100,101,
@@ -187,49 +171,24 @@ static void lcd_setup_gama_table(tcon_conf_t *pConf)
     }
 }
 
-static void set_tcon_pinmux(void)
-{
-	debug("%s\n", __FUNCTION__);
-	/* TCON control pins pinmux */
-      clear_mio_mux(1, ((1<<11) | (1<<12) | (1<<13))); // disable cph50(11),cph2(13),cph3(12)
-  		clear_mio_mux(0,((1<<24) | (1<<27))); //disable mLVDS
-
-      set_mio_mux(1, 1<<14); // enable cph1
-      set_mio_mux(1, 1<<17); // enable oeh
-      //set_mio_mux(0, 0x3f<<0);//For 8bits RGB
-	  set_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
-}
-
-static void clear_tcon_pinmux(void)
-{
-    debug("%s\n", __FUNCTION__);
-	/* TCON control pins pinmux */   
-    clear_mio_mux(1, 1<<14); // disable cph1
-    clear_mio_mux(1, 1<<17); // disable oeh
-    //clear_mio_mux(0, 0x3f<<0);//For 8bits RGB
-	clear_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
-	
-	WRITE_MPEG_REG(0x2012, READ_MPEG_REG(0x2012) | ((1<<20)|(1<<23)));
-	//WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | (0xffffff<<0));  //For RGB 8bit	
-	WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | ((0x3f<<2)|(0x3f<<10)|(0x3f<<18)));  //For RGB 6bit
-}
-
 #define PWM_MAX			60000   //set pwm_freq=24MHz/PWM_MAX (Base on XTAL frequence: 24MHz, 0<PWM_MAX<65535)
 #define BL_MAX_LEVEL	255
-#define BL_MIN_LEVEL	25		
+#define BL_MIN_LEVEL	0		
 void power_on_backlight(void)
 {
 	debug("%s\n", __FUNCTION__);
-    mdelay(20);
-	set_tcon_pinmux();
-	mdelay(50);
+    //mdelay(20);
+	//set_tcon_pinmux();
+	//mdelay(50);
 	
 	//BL_EN -> GPIOD_1: 1
 #if (BL_CTL==BL_CTL_GPIO)		
   	clear_mio_mux(1,(1<<28));
   	clear_mio_mux(2,(1<<3));
+  	
+  	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
   	set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE); 
-	  set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
+	set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
 #elif (BL_CTL==BL_CTL_PWM)
 	int pwm_div=0;  //pwm_freq=24M/(pwm_div+1)/PWM_MAX	
 	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
@@ -241,7 +200,7 @@ void power_on_backlight(void)
 	SET_CBUS_REG_MASK(PWM_MISC_REG_CD, ((1 << 23) | (pwm_div<<16) | (1<<1)));  //enable pwm clk & pwm output
     SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1<<3));  //enable pwm pinmux
 #endif
-	mdelay(100);
+	//mdelay(100);
 }
 
 void power_off_backlight(void)
@@ -263,11 +222,11 @@ void power_off_backlight(void)
   WRITE_CBUS_REG_BITS(PWM_PWM_D, 0, 16, 16);  //pwm high
   CLEAR_CBUS_REG_MASK(PWM_MISC_REG_CD, ((1 << 23) | (1<<1)));  //disable pwm clk & pwm output
 #endif		
-	mdelay(20);
-	
-	clear_tcon_pinmux();
-	mdelay(20);	
+	//mdelay(20);	
+	//clear_tcon_pinmux();
+	//mdelay(20);	
 }
+
 
 static unsigned bl_level;
 unsigned get_backlight_level(void)
@@ -296,46 +255,68 @@ static void power_on_lcd(void)
 	//GPIOA_27 -> EN_VDD_BL#: 1  LCD_+10V,VGH_+16V,VGL_-7V  	
   	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
   	clear_mio_mux(0,(1<<17));
-    set_gpio_mode(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), GPIO_OUTPUT_MODE); 
-	  set_gpio_val(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), 1);
-	  mdelay(30);
-
-	
-	//GPIOC_7 -> EN_VDD_PNL#: 1  LCD7_+3.3V
-	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
-  clear_mio_mux(0,(1<<17));
-  set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE); 
+	set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE); 
 	set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);	
-    mdelay(30);
+
+	//GPIOC_7 -> EN_VDD_PNL#: 1  LCD7_+3.3V
+    clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
+  	clear_mio_mux(0,(1<<17));
+    set_gpio_mode(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), GPIO_OUTPUT_MODE); 
+	 set_gpio_val(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), 1);
 }
 
 static void power_off_lcd(void)
 {
 	debug("%s\n", __FUNCTION__);
 	power_off_backlight();
-    mdelay(50);	
+    //mdelay(50);	
     
 	//GPIOA_27 -> EN_VDD_BL#: 0  LCD_+10V,VGH_+16V,VGL_-7V	
   	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
   	clear_mio_mux(0,(1<<17));
     set_gpio_mode(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), GPIO_OUTPUT_MODE); 
 	  set_gpio_val(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), 0);
-    mdelay(30);
+    //mdelay(30);
     
 	//GPIOC_7 -> EN_VDD_PNL#: 0  LCD7_+3.3V
 	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
   clear_mio_mux(0,(1<<17));
   set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE); 
 	set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);	
-    mdelay(10);
+    //mdelay(10);
 }
 
+static void set_tcon_pinmux(void)
+{
+	debug("%s\n", __FUNCTION__);
+	/* TCON control pins pinmux */
+      clear_mio_mux(1, ((1<<11) | (1<<12) | (1<<13))); // disable cph50(11),cph2(13),cph3(12)
+  		clear_mio_mux(0,((1<<24) | (1<<27))); //disable mLVDS
 
+      set_mio_mux(1, 1<<14); // enable cph1
+      set_mio_mux(1, 1<<17); // enable oeh
+      //set_mio_mux(0, 0x3f<<0);//For 8bits RGB
+	  set_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
+}
+
+static void clear_tcon_pinmux(void)
+{
+    debug("%s\n", __FUNCTION__);
+	/* TCON control pins pinmux */   
+    clear_mio_mux(1, 1<<14); // disable cph1
+    clear_mio_mux(1, 1<<17); // disable oeh
+    //clear_mio_mux(0, 0x3f<<0);//For 8bits RGB
+	clear_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
+	
+	WRITE_MPEG_REG(0x2012, READ_MPEG_REG(0x2012) | ((1<<20)|(1<<23)));
+	//WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | (0xffffff<<0));  //For RGB 8bit	
+	WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | ((0x3f<<2)|(0x3f<<10)|(0x3f<<18)));  //For RGB 6bit
+}
 static void lcd_power_on(void)
 {
 	debug("%s\n", __FUNCTION__);
 	video_dac_disable();
-   // set_tcon_pinmux();
+    set_tcon_pinmux();
     power_on_lcd();        
 }
 static void lcd_power_off(void)
@@ -348,10 +329,9 @@ static void lcd_power_off(void)
 static void lcd_io_init(void)
 {
     debug("\n\nT13 LCD Init.\n\n");
-
-    //set_tcon_pinmux();
+    set_tcon_pinmux();
     power_on_lcd();
-    //aml_8726m_set_bl_level(DEFAULT_BL_LEVEL);
+    set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
 static int lcd_enable(void)
