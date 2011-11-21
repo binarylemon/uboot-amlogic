@@ -25,7 +25,7 @@ For Ramos MID use 8726M */
 #include <asm/arch/io.h>
 #include <asm/arch/pinmux.h>
 #include <asm/arch/gpio.h>
-#include <asm/arch/tcon.h>
+#include <asm/arch/lcd.h>
 #include <asm/arch/osd.h>
 #include <asm/arch/osd_hw.h>
 #include <aml_i2c.h>
@@ -36,6 +36,7 @@ For Ramos MID use 8726M */
 #define DEBUG
 
 extern GraphicDevice aml_gdev;
+vidinfo_t panel_info;
 
 /*
 For 8726M, cpt CLAA070MA22BW panel 7" */ 
@@ -43,6 +44,7 @@ For 8726M, cpt CLAA070MA22BW panel 7" */
 #define LCD_HEIGHT      480
 #define MAX_WIDTH       928
 #define MAX_HEIGHT      525
+#define VIDEO_ON_PIXEL  48
 #define VIDEO_ON_LINE   22 //17
 #define DEFAULT_BL_LEVEL	128
 
@@ -55,6 +57,9 @@ static void lcd_power_on(void);
 static void lcd_power_off(void);
 void power_on_backlight(void);
 void power_off_backlight(void);
+unsigned get_backlight_level(void);
+void set_backlight_level(unsigned level);
+
 int  video_dac_enable(unsigned char enable_mask)
 {
 	debug("%s\n", __FUNCTION__);
@@ -69,19 +74,16 @@ int  video_dac_disable(void)
     return 0;    
 }   
 
-tcon_conf_t tcon_config =
+lcdConfig_t lcd_config =
 {
     .width      = LCD_WIDTH,
     .height     = LCD_HEIGHT,
     .max_width  = MAX_WIDTH,
     .max_height = MAX_HEIGHT,
     .video_on_line = VIDEO_ON_LINE,
-    .pll_ctrl = 0x1021e,          
-    .div_ctrl = 0x0018803,    
-    .clk_div = 9,
-    .pll_sel = 1,
-    .pll_div_sel = 0,
-    .clk_sel = 0,
+    .pll_ctrl = 0x10228,
+	.div_ctrl = 0x18803,
+    .clk_ctrl = 0x100c,	//pll_sel,div_sel,vclk_sel,xd
     .gamma_cntl_port = (1 << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
     .gamma_vcom_hswitch_addr = 0,
     .rgb_base_addr = 0xf0,
@@ -92,10 +94,6 @@ tcon_conf_t tcon_config =
     .sth1_he_addr = 0,
     .sth1_vs_addr = 0,
     .sth1_ve_addr = 0,
-    .sth2_hs_addr = 0,
-    .sth2_he_addr = 0,
-    .sth2_vs_addr = 0,
-    .sth2_ve_addr = 0,
     .oeh_hs_addr = 67,
     .oeh_he_addr = 67+LCD_WIDTH,
     .oeh_vs_addr = VIDEO_ON_LINE,
@@ -117,44 +115,21 @@ tcon_conf_t tcon_config =
     .oev1_ve_addr = 0,  
     .inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
     .tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
-    .dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL),
+    .dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL) | (0<<RGB_SWP) | (0<<BIT_SWP),
     .flags = LCD_DIGITAL_TTL,
     .screen_width = 4,
     .screen_height = 3,
     .sync_duration_num = 493,
     .sync_duration_den = 8,
-    .power_on=lcd_power_on,
-    .power_off=lcd_power_off,
 };
 
-vidinfo_t panel_info = 
-{
-	.vl_col	=	LCD_WIDTH,		/* Number of columns (i.e. 160) */
-	.vl_row	=	LCD_HEIGHT,		/* Number of rows (i.e. 100) */
 
-	.vl_bpix	=	COLOR_INDEX_24_RGB,				/* Bits per pixel, 24bpp */
-
-	.lcd_base	=	0, //FB_ADDR,		/* Start of framebuffer memory	*/
-
-	.lcd_console_address	=	NULL,	/* Start of console buffer	*/
-	.console_col	=	0,
-	.console_row	=	0,
-	
-	.lcd_color_fg	=	0xffffff,
-	.lcd_color_bg	=	0,
-	.max_bl_level	=	255,
-
-	.cmap	=	NULL,		/* Pointer to the colormap */
-
-	.priv		=	NULL,			/* Pointer to driver-specific data */
-};
-
-static void lcd_setup_gama_table(tcon_conf_t *pConf)
+static void lcd_setup_gama_table(lcdConfig_t *pConf)
 {
     int i;
 	debug("%s\n", __FUNCTION__);
 	 const unsigned short gamma_adjust[256] = {
-         0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,18,19,20,20,21,22,23,23,24,25,25,26,27,28,
+        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,18,19,20,20,21,22,23,23,24,25,25,26,27,28,
         28,29,30,30,31,32,33,33,34,35,36,37,37,38,38,39,40,41,42,42,43,44,45,45,46,47,48,49,49,50,51,52,
         53,54,55,56,57,58,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,74,75,76,77,77,78,79,79,80,
         81,81,82,82,83,84,84,85,85,86,86,87,88,88,89,89,90,91,91,92,93,93,94,95,96,96,97,98,99,100,100,101,
@@ -187,8 +162,11 @@ void power_on_backlight(void)
   	clear_mio_mux(2,(1<<3));
   	
   	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
+  set_gpio_mode(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), GPIO_OUTPUT_MODE); 
+	set_gpio_val(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), 1);	
+
   	set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
+	  set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
 #elif (BL_CTL==BL_CTL_PWM)
 	int pwm_div=0;  //pwm_freq=24M/(pwm_div+1)/PWM_MAX	
 	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
@@ -212,6 +190,11 @@ void power_off_backlight(void)
   	clear_mio_mux(2,(1<<3));
     set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE); 
 	  set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
+	  
+	  clear_mio_mux(6,(1<<13));  //5VA_BST_AML L:
+    set_gpio_mode(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), GPIO_OUTPUT_MODE); 
+	  set_gpio_val(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), 0);		  
+	  
 #elif (BL_CTL==BL_CTL_PWM)	  
 
 	clear_mio_mux(6,(1<<13));  //5VA_BST_AML L:
@@ -339,9 +322,10 @@ static int lcd_enable(void)
 	debug("%s\n", __FUNCTION__);
 	char envstr[20];
 	
-	//lcd_setup_gama_table(&tcon_config);	
+	lcd_setup_gama_table(&lcd_config);
     //aml_8726m_bl_init();
     lcd_io_init();
+	tcon_probe();
 	
 	setenv("video_dev", "panel");
 	sprintf(envstr, "%x", panel_info.lcd_base);
@@ -361,8 +345,8 @@ static int lcd_enable(void)
 	setenv("panel", "panel_m3");
 	aml_gdev.fg	=	panel_info.lcd_color_fg;
 	aml_gdev.bg	=	panel_info.lcd_color_fg;
-		
-    //tcon_probe();
+	
+	video_hw_init();    
     //osd_init_hw();
     //osd_hw_setup();
 
@@ -377,20 +361,37 @@ void lcd_disable(void)
     tcon_remove();
 }
 
-struct panel_dev panel_m3 =
+vidinfo_t panel_info = 
 {
-    .name		=	"panel_m3",
-	.tcon_cfg	=	&tcon_config,
-	.panel_setup_gama_table	=	lcd_setup_gama_table,
+	.vl_col	=	LCD_WIDTH,		/* Number of columns (i.e. 160) */
+	.vl_row	=	LCD_HEIGHT,		/* Number of rows (i.e. 100) */
+
+	.vl_bpix	=	COLOR_INDEX_24_RGB,				/* Bits per pixel, 24bpp */
+
+	.lcd_base	=	0, //FB_ADDR,		/* Start of framebuffer memory	*/
+
+	.lcd_console_address	=	NULL,	/* Start of console buffer	*/
+	.console_col	=	0,
+	.console_row	=	0,
+	
+	.lcd_color_fg	=	0xffffff,
+	.lcd_color_bg	=	0,
+	.max_bl_level	=	255,
+
+	.cmap	=	NULL,		/* Pointer to the colormap */
+
+	.priv		=	NULL,			/* Pointer to driver-specific data */
 };
 
-
-struct panel_operations panel_opt =
+struct panel_operations panel_oper =
 {
 	.enable	=	lcd_enable,
 	.disable	=	lcd_disable,
 	.bl_on	=	power_on_backlight,
 	.bl_off	=	power_off_backlight,
 	.set_bl_level	=	set_backlight_level,
+	.get_bl_level = get_backlight_level,	
+	.power_on=lcd_power_on,
+    .power_off=lcd_power_off,
 };
 

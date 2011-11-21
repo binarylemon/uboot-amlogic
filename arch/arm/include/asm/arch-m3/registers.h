@@ -6723,15 +6723,99 @@
 //
 // Reading file:  lcd_regs.h
 //
-//========================================================================
-//LCD DRV     12'h480~12'h4ef
-//=======================================================================
-//**************************************************************************
-//*  NOTE::    When Programming the Gamma, please turn off the IRQ service *
-//**************************************************************************
 // -----------------------------------------------
 // CBUS_BASE:  LCD_CBUS_BASE = 0x14
 // -----------------------------------------------
+//========================================================================
+//LCD DRV     12'h480~12'h4ef
+//=======================================================================
+#define L_GAMMA_CNTL_PORT                          0x1400
+#define L_GAMMA_DATA_PORT                          0x1401
+#define L_GAMMA_ADDR_PORT                          0x1402
+#define L_GAMMA_VCOM_HSWITCH_ADDR                  0x1403
+#define L_RGB_BASE_ADDR                            0x1405
+#define L_RGB_COEFF_ADDR                           0x1406
+#define L_POL_CNTL_ADDR                            0x1407
+#define L_DITH_CNTL_ADDR                           0x1408
+#define L_STH1_HS_ADDR                             0x1410
+#define L_STH1_HE_ADDR                             0x1411
+#define L_STH1_VS_ADDR                             0x1412
+#define L_STH1_VE_ADDR                             0x1413
+#define L_STH2_HS_ADDR                             0x1414
+#define L_STH2_HE_ADDR                             0x1415
+#define L_STH2_VS_ADDR                             0x1416
+#define L_STH2_VE_ADDR                             0x1417
+#define L_OEH_HS_ADDR                              0x1418
+#define L_OEH_HE_ADDR                              0x1419
+#define L_OEH_VS_ADDR                              0x141a
+#define L_OEH_VE_ADDR                              0x141b
+#define L_VCOM_HSWITCH_ADDR                        0x141c
+#define L_VCOM_VS_ADDR                             0x141d
+#define L_VCOM_VE_ADDR                             0x141e
+#define L_CPV1_HS_ADDR                             0x141f
+#define L_CPV1_HE_ADDR                             0x1420
+#define L_CPV1_VS_ADDR                             0x1421
+#define L_CPV1_VE_ADDR                             0x1422
+#define L_CPV2_HS_ADDR                             0x1423
+#define L_CPV2_HE_ADDR                             0x1424
+#define L_CPV2_VS_ADDR                             0x1425
+#define L_CPV2_VE_ADDR                             0x1426
+#define L_STV1_HS_ADDR                             0x1427
+#define L_STV1_HE_ADDR                             0x1428
+#define L_STV1_VS_ADDR                             0x1429
+#define L_STV1_VE_ADDR                             0x142a
+#define L_STV2_HS_ADDR                             0x142b
+#define L_STV2_HE_ADDR                             0x142c
+#define L_STV2_VS_ADDR                             0x142d
+#define L_STV2_VE_ADDR                             0x142e
+#define L_OEV1_HS_ADDR                             0x142f
+#define L_OEV1_HE_ADDR                             0x1430
+#define L_OEV1_VS_ADDR                             0x1431
+#define L_OEV1_VE_ADDR                             0x1432
+#define L_OEV2_HS_ADDR                             0x1433
+#define L_OEV2_HE_ADDR                             0x1434
+#define L_OEV2_VS_ADDR                             0x1435
+#define L_OEV2_VE_ADDR                             0x1436
+#define L_OEV3_HS_ADDR                             0x1437
+#define L_OEV3_HE_ADDR                             0x1438
+#define L_OEV3_VS_ADDR                             0x1439
+#define L_OEV3_VE_ADDR                             0x143a
+#define L_LCD_PWR_ADDR                             0x143b
+#define L_LCD_PWM0_LO_ADDR                         0x143c
+#define L_LCD_PWM0_HI_ADDR                         0x143d
+#define L_LCD_PWM1_LO_ADDR                         0x143e
+#define L_LCD_PWM1_HI_ADDR                         0x143f
+#define L_INV_CNT_ADDR                             0x1440
+#define L_TCON_MISC_SEL_ADDR                       0x1441
+#define L_DUAL_PORT_CNTL_ADDR                      0x1442
+#define L_TCON_DOUBLE_CTL                          0x1449
+#define L_TCON_PATTERN_HI                          0x144a
+#define L_TCON_PATTERN_LO                          0x144b
+#define L_DE_HS_ADDR                               0x1451
+#define L_DE_HE_ADDR                               0x1452
+#define L_DE_VS_ADDR                               0x1453
+#define L_DE_VE_ADDR                               0x1454
+#define L_HSYNC_HS_ADDR                            0x1455
+#define L_HSYNC_HE_ADDR                            0x1456
+#define L_HSYNC_VS_ADDR                            0x1457
+#define L_HSYNC_VE_ADDR                            0x1458
+#define L_VSYNC_HS_ADDR                            0x1459
+#define L_VSYNC_HE_ADDR                            0x145a
+#define L_VSYNC_VS_ADDR                            0x145b
+#define L_VSYNC_VE_ADDR                            0x145c
+// bit 8 -- vfifo_mcu_enable
+// bit 7 -- halt_vs_de
+// bit 6 -- R8G8B8_format
+// bit 5 -- R6G6B6_format (round to 6 bits)
+// bit 4 -- R5G6B5_format
+// bit 3 -- dac_dith_sel
+// bit 2 -- lcd_mcu_enable_de     -- ReadOnly
+// bit 1 -- lcd_mcu_enable_vsync  -- ReadOnly
+// bit 0 -- lcd_mcu_enable
+#define L_LCD_MCU_CTL                              0x145d
+//**************************************************************************
+//*  NOTE::    When Programming the Gamma, please turn off the IRQ service *
+//**************************************************************************
 #define GAMMA_CNTL_PORT                            0x1480
    #define  GAMMA_VCOM_POL    7     //RW
    #define  GAMMA_RVS_OUT     6     //RW

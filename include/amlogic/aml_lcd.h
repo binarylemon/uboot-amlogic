@@ -3,21 +3,9 @@
 #define __AMLOGIC_LCD_H_
 #include <common.h>
 #include <linux/list.h>
-#include <asm/arch/tcon.h>
 
 extern int aml_lcd_init(void);
-
-//extern void lcd_power_on(void);
-//extern void lcd_power_off(void);
-
-/* Panel device information */
-struct panel_dev {
-	char	name[16];		/* Device name				*/
-	tcon_conf_t *tcon_cfg;
-	void (*panel_setup_gama_table)(tcon_conf_t *pConf);
-
-	struct list_head list;
-};
+extern int lcd_opt_cmd(int argc, char *argv[]);
 
 typedef struct vidinfo {
 	ushort	vl_col;		/* Number of columns (i.e. 160) */
@@ -47,19 +35,12 @@ typedef struct panel_operations {
 	void  (*bl_on)(void);
 	void  (*bl_off)(void);
 	void  (*set_bl_level)(unsigned level);
+	unsigned (*get_bl_level)(void);
+	void  (*power_on)(void);
+	void  (*power_off)(void);
 } panel_operations_t;
 
-extern panel_operations_t panel_opt;
-extern int lcd_opt_cmd(int argc, char *argv[]);
-
-#ifdef CONFIG_PANEL_T13
-extern struct panel_dev panel_t13;
-#endif
-
-#ifdef CONFIG_VIDEO_AMLLCD_M3
-extern struct panel_dev panel_m3;
-#endif
-
+extern panel_operations_t panel_oper;
 
 /************************************************************************/
 /* ** BITMAP DISPLAY SUPPORT						*/

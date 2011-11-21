@@ -175,7 +175,7 @@
 /* config LCD output */ 
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
-#define CONFIG_VIDEO_AMLLCD_M3
+//#define CONFIG_VIDEO_AMLLCD_M3
 #define CONFIG_CMD_BMP
 #define LCD_BPP LCD_COLOR24
 #define CURRENT_OSD OSD2
