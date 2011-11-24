@@ -85,6 +85,10 @@ _bss_end_ofs:
 _end_ofs:
 	.word _end - _start
 
+.globl _uboot_end_ofs
+_uboot_end_ofs:
+	.word __u_boot_end__ - _start
+
 #ifdef CONFIG_USE_IRQ
 /* IRQ stack memory (calculated at run-time) */
 .globl IRQ_STACK_START

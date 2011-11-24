@@ -298,7 +298,8 @@ void board_init_f (ulong bootflag)
 
 	memset ((void*)gd, 0, sizeof (gd_t));
 
-	gd->mon_len = _bss_end_ofs;
+	//gd->mon_len = _bss_end_ofs;
+	gd->mon_len = _uboot_end_ofs;
 
 	for (init_fnc_ptr = init_sequence; *init_fnc_ptr; ++init_fnc_ptr) {
 		if ((*init_fnc_ptr)() != 0) {

@@ -75,6 +75,11 @@ SECTIONS
 		__bss_end__ = .;
 	}
 
+	
+	COMMON : {
+	*(COMMON)	
+	}
+	
 	.net ALIGN(0x2000):
 	{
 		__net_dma_start	=	.;
@@ -82,6 +87,8 @@ SECTIONS
 		__net_dma_end = .;
 	}
 
+	__u_boot_end__ = .;
+	
 	/DISCARD/ : { *(.dynstr*) }
 	/DISCARD/ : { *(.dynamic*) }
 	/DISCARD/ : { *(.plt*) }
