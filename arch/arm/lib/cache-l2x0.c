@@ -156,7 +156,8 @@ void l2x0_enable()
 
 		aux = readl(L2X0_AUX_CTRL);
 		aux &= 0xff800fff;
-		aux |= 0x00020000;
+		//aux |= 0x00020000;
+		aux |= 0x7c420001;
 		writel(aux,L2X0_AUX_CTRL);
 
 		l2x0_inv_all();

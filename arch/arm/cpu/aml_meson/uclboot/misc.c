@@ -23,10 +23,25 @@ void start_arcboot_ucl(void)
     serial_puts("decompress finished\n");
     serial_wait_tx_empty();
         
+#ifndef CONFIG_DCACHE_OFF       
     mmu_disable();
     dcache_disable();    
+#endif    
+#ifndef CONFIG_ICACHE_OFF
     icache_disable();
-    
+    icache_invalid();
+#endif    
+#ifndef CONFIG_L2_OFF
+	l2_cache_disable();
+	l2x0_clean_inv_all();
+#endif
+    unsigned int i;
+
+	/* mem barrier to sync up things */
+	asm("mcr p15, 0, %0, c7, c10, 4": :"r"(i));
+	asm("dsb");
+	asm("isb");	
+
     JumpAddr target=(JumpAddr)(CONFIG_SYS_TEXT_BASE);
     target();
 		

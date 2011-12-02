@@ -27,6 +27,8 @@
 #define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 
+#define CONFIG_L2_OFF			1
+
 #define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)

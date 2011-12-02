@@ -49,7 +49,6 @@
 #define CONFIG_SYS_CACHE_LINE_SIZE 32
 #define CONFIG_CMD_CACHE	1
 //#define CONFIG_SYS_NO_CP15_CACHE	1
-#define CONFIG_L2_OFF			1
 //#define CONFIG_DCACHE_OFF    		1
 //#define CONFIG_ICACHE_OFF    		1
 

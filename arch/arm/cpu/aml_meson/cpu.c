@@ -49,38 +49,51 @@ int cleanup_before_linux(void)
 	 * it prepares the processor for linux
 	 *
 	 * we turn off caches etc ...
-	 */
+	 */	 
+	 
 	disable_interrupts();
 #ifndef CONFIG_ICACHE_OFF
 	/* turn off I/D-cache */
 	icache_disable();
+	icache_invalid();
+	asm("isb");	
 #endif
+	
 #ifndef CONFIG_DCACHE_OFF
 	dcache_disable();
+	asm("dsb");
 #endif
-#ifndef CONFIG_ICAHCE_OFF
-	/* invalidate I-cache */
-	cache_flush();
-#else
-#ifndef CONFIG_DCACHE_OFF
-	cache_flush();
-#endif
-#endif
+		
+//#ifndef CONFIG_ICAHCE_OFF
+//	/* invalidate I-cache */
+//	cache_flush();
+//#else
+//#ifndef CONFIG_DCACHE_OFF
+//	cache_flush();
+//#endif
+//#endif
 
+//#ifndef CONFIG_L2_OFF
+//	/* turn off L2 cache */
+//	l2_cache_disable();
+//	/* invalidate L2 cache also */
+//	invalidate_l2_cache();
+//#endif
 #ifndef CONFIG_L2_OFF
-	/* turn off L2 cache */
 	l2_cache_disable();
-	/* invalidate L2 cache also */
-	invalidate_l2_cache();
+	l2x0_clean_inv_all();
 #endif
+	
 	i = 0;
 	/* mem barrier to sync up things */
 	asm("mcr p15, 0, %0, c7, c10, 4": :"r"(i));
-
-#ifndef CONFIG_L2_OFF
+	
+/*#ifndef CONFIG_L2_OFF
 	l2_cache_enable();
 #endif
-
+*/
+	asm("dsb");
+	asm("isb");	
 	return 0;
 }
 /*

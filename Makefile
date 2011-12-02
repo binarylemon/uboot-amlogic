@@ -394,17 +394,24 @@ $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
 $(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 
+UCL_LIBS = $(obj)arch/$(ARCH)/cpu/$(CPU)/common/firmware/serial.o
+UCL_LIBS += $(obj)arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmutable.o
+UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache.o
+UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache_init.o
+UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache-cp15.o
+UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache_v7.o
+UCL_LIBS += $(obj)lib/ucl/libucl.o
+ifneq ($(CONFIG_L2_OFF), y)
+UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache-l2x0.o
+endif
+
 $(obj)u-boot-comp-comp: $(obj)u-boot-comp.bin $(UCL_BOOTLIBS) $(LIBS)  firmware
 	$(LD) -Bstatic -T $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/uclboot/u-boot.lds \
 			-Ttext $(UCL_TEXT_BASE) $(PLATFORM_LDFLAGS) --cref $(obj)arch/$(ARCH)/cpu/$(CPU)/uclboot/start.o \
-			--start-group $(UCL_BOOTLIBS)  $(obj)arch/$(ARCH)/cpu/$(CPU)/common/firmware/serial.o \
-			 $(obj)arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmutable.o \
-			 $(obj)arch/$(ARCH)/lib/cache.o $(obj)arch/$(ARCH)/lib/cache_init.o \
-			 $(obj)arch/$(ARCH)/lib/cache-cp15.o $(obj)arch/$(ARCH)/lib/cache_v7.o \
-			 $(obj)lib/ucl/libucl.o \
+			--start-group $(UCL_BOOTLIBS)  $(UCL_LIBS) \
 			--end-group  $(PLATFORM_LIBGCC) \
 			-Map $(obj)u-boot-ucl_a.map -o $@
-	
+			
 endif #end CONFIG_IMPROVE_UCL_DEC	
 
 endif  #END CONFIG_SELF_COMPRESS
@@ -465,7 +472,7 @@ GEN_UBOOT = \
 		UNDEF_SYM=`$(OBJDUMP) -x $(LIBBOARD) $(LIBS) | \
 		sed  -n -e 's/.*\($(SYM_PREFIX)__u_boot_cmd_.*\)/-u\1/p'|sort|uniq`;\
 		cd $(LNDIR) && $(LD) $(LDFLAGS) $(LDFLAGS_$(@F)) $$UNDEF_SYM $(__OBJS) \
-			--start-group $(__LIBS) --end-group $(PLATFORM_LIBS) \
+			--start-group $(__LIBS)  	--end-group $(PLATFORM_LIBS) \
 			-Map $(obj)u-boot.map -o u-boot
 $(obj)u-boot:	depend \
 		$(SUBDIRS) $(OBJS) $(LIBBOARD) $(LIBS) $(LDSCRIPT) $(obj)u-boot.lds
