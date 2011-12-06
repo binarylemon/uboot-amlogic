@@ -147,7 +147,7 @@ void efuse_bch_enc(const char *ibuf, int isize, char *obuf)
     for (i = 0; i < isize; ++i)
     {
         info = ibuf[i];
-        info = ~info;
+        //info = ~info;
         for (j = 0; j < 8; ++j)
         {
             c[i*8 + j] = info >> (7 - j)&1;
@@ -174,8 +174,8 @@ void efuse_bch_enc(const char *ibuf, int isize, char *obuf)
         {
             tmp += c[i*8 + j]<<(7-j);
         }
-
-        obuf[i] = ~tmp;
+ 		obuf[i] = tmp;
+        //obuf[i] = ~tmp;
     }
 }
 
@@ -193,7 +193,7 @@ void efuse_bch_dec(const char *ibuf, int isize, char *obuf)
     for (i = 0; i < isize; ++i)
     {
         info = ibuf[i];
-        info = ~info;
+        //info = ~info;
         for (j = 0; j < 8; ++j)
         {
             c[i*8 + j] = info >> (7 - j)&1;
@@ -209,8 +209,8 @@ void efuse_bch_dec(const char *ibuf, int isize, char *obuf)
         {
             tmp += c[i*8 + j]<<(7-j);
         }
-
-        obuf[i] = ~tmp;
+ 		obuf[i] = tmp;
+       // obuf[i] = ~tmp;
     }
 }
 
