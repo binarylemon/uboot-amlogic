@@ -75,6 +75,7 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC    1
 #define CONFIG_EFUSE 1
+//#define CONFIG_EFUSE_DUMP 
 //#define CONFIG_L2_OFF			1
 #define SCAN_DEVICE_PARTITION	4
 

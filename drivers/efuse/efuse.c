@@ -1,46 +1,108 @@
-/*
- * E-FUSE char device driver.
- *
- * Author: Bo Yang <bo.yang@amlogic.com>
- *
- * Copyright (c) 2010 Amlogic Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the smems of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- */
- 
 #include <config.h>
 #include <common.h>
 #include <asm/arch/io.h>
 #include <command.h>
 #include <malloc.h>
-#include "efuse.h"
+#include <amlogic/efuse.h>
 #include "efuse_regs.h"
 
-#define EFUSE_MODULE_NAME   "efuse"
-#define EFUSE_DRIVER_NAME   "efuse"
-#define EFUSE_DEVICE_NAME   "efuse"
-#define EFUSE_CLASS_NAME    "efuse"
+/* efuse layout
+http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
+0~3			licence				1 check byte			4 bytes(in total)
+4~10			mac				1 check byte			7 bytes(in total)
+12~322			hdcp				10 check byte			310 bytes(in total)
+322~384  		usid				2 check byte		 	62 bytes(in total)
+*/
+#define USR_LICENCE		0
+#define USR_MACADDR		1
+#define USR_HDMIHDCP		2
+#define USR_USERIDF		3
+#ifdef CONFIG_REFB09_NEW
+#define USR_USERIDF_REFB09_NEW USR_USERIDF+1
+#else	
+#define USR_USERIDF_REFB09_NEW USR_USERIDF
+#endif
+// next item definition need use the following format because the ID is used as index
+//#ifdef xxx
+//#define USR_XXX USR_USERIDF_REFB09+1
+//#else
+//#define USR_XXX USR_USERIDF_REFB09
+//#endif
 
-#define EFUSE_BITS             3072
-#define EFUSE_BYTES            384  //(EFUSE_BITS/8)
-#define EFUSE_DWORDS            96  //(EFUSE_BITS/32)
+#define EFUSE_LICENCE_OFFSET 				0
+#define EFUSE_LICENCE_DATA_BYTES 		3
+#define EFUSE_LICENCE_ENC_BYTES		4
 
-#define DOUBLE_WORD_BYTES        4
-#define EFUSE_IS_OPEN           (0x01)
+#define EFUSE_MACADDR_OFFSET			4
+#define EFUSE_MACADDR_DATA_BYTES	6
+#define EFUSE_MACADDR_ENC_BYTES 	7
 
+#define EFUSE_HDMHDCP_OFFSET		12
+#define EFUSE_HDMHDCP_DATA_BYTES 300
+#define EFUSE_HDMHDCP_ENC_BYTES 310
 
-unsigned char re_licence[EFUSE_LICENSE_BYTES] = {0};	//4
-unsigned char re_mac[EFUSE_MACADDR_BYTES+1] = {0};		//8
-unsigned char re_hdcp[EFUSE_HDMHDCP_BYTES+2] = {0};		//312
-unsigned char re_usid[EFUSE_USERIDF_BYTES+2] = {0};		//64
+#define EFUSE_USERIDF_OFFSET 322
+#define EFUSE_USERIDF_DATA_BYTES 60
+#define EFUSE_USERIDF_ENC_BYTES 62
+
+#ifdef CONFIG_REFB09_NEW
+//for m1 refb09 new
+#define EFUSE_USERIDF_REFB09_NEW_OFFSET 324
+#define EFUSE_USERIDF_REFB09_NEW_DATA_BYTES 20
+#define EFUSE_USERIDF_REFB09_NEW_ENC_BYTES 21
+#endif
+
+unsigned char efuse_buf[EFUSE_BYTES] = {0};
+efuseinfo_t efuse_info[] = 
+{
+	{
+		.title = "licence",
+		.nID = USR_LICENCE,
+		.offset = EFUSE_LICENCE_OFFSET,
+		.enc_len = EFUSE_LICENCE_ENC_BYTES,
+		.data_len = EFUSE_LICENCE_DATA_BYTES,
+		.we = 0,
+	},
+	{
+		.title = "mac",
+		.nID = USR_MACADDR,
+		.offset = EFUSE_MACADDR_OFFSET,
+		.enc_len = EFUSE_MACADDR_ENC_BYTES,
+		.data_len = EFUSE_MACADDR_DATA_BYTES,
+		.we = 1,
+	},
+	{
+		.title = "hdcp",
+		.nID = USR_HDMIHDCP,
+		.offset = EFUSE_HDMHDCP_OFFSET,
+		.enc_len = EFUSE_HDMHDCP_ENC_BYTES,
+		.data_len = EFUSE_HDMHDCP_DATA_BYTES,
+		.we = 0,
+	},
+	{
+		.title = "usid",
+		.nID = USR_USERIDF,
+		.offset = EFUSE_USERIDF_OFFSET,
+		.enc_len = EFUSE_USERIDF_ENC_BYTES,
+		.data_len = EFUSE_USERIDF_DATA_BYTES,
+		.we = 0,
+	},	
+#ifdef CONFIG_REFB09_NEW	
+	// for refb09 new
+	{
+		.title = "USID",
+		.nID = USR_USERIDF_REFB09_NEW,
+		.offset = EFUSE_USERIDF_REFB09_NEW_OFFSET,
+		.enc_len = EFUSE_USERIDF_REFB09_NEW_ENC_BYTES,
+		.data_len = EFUSE_USERIDF_REFB09_NEW_DATA_BYTES,
+		.we = 0,		
+	},
+#endif	
+};
+unsigned efuse_info_cnt = sizeof(efuse_info)/sizeof(efuseinfo_t);
 
 static void __efuse_write_byte( unsigned long addr, unsigned long data );
 static void __efuse_read_dword( unsigned long addr, unsigned long *data);
-
-//int base=121;  just for verify 
 
 static void __efuse_write_byte( unsigned long addr, unsigned long data )
 {
@@ -140,16 +202,25 @@ static void __efuse_read_dword( unsigned long addr, unsigned long *data )
     //printf("__efuse_read_dword: addr=%ld, data=0x%lx\n", addr, *data);
 }
 
+int efuse_init(void)
+{	
+    /* disable efuse encryption */
+    WRITE_CBUS_REG_BITS( EFUSE_CNTL4, CNTL1_AUTO_WR_ENABLE_OFF,
+        CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );
+
+    return 0;
+}
+
 ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 {
     unsigned long contents[EFUSE_DWORDS];
 	unsigned pos = *ppos;
     unsigned long *pdw;
-    unsigned int dwsize = (count + 3)/4;
-
+    unsigned residunt = pos - (pos/4)*4;
+    unsigned int dwsize = (count+residunt+3)/4;
+    
 	if (pos >= EFUSE_BYTES)
 		return 0;
-
 	if (count > EFUSE_BYTES - pos)
 		count = EFUSE_BYTES - pos;
 	if (count > EFUSE_BYTES)
@@ -162,7 +233,8 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
     WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
 #endif
-    
+
+    pos = (pos/4)*4;
     for (pdw = contents; dwsize-- > 0 && pos < EFUSE_BYTES; pos += 4, ++pdw)
 		__efuse_read_dword(pos, pdw);	    
 
@@ -172,30 +244,27 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
 #endif
             
-	memcpy(buf, contents, count);	
+	memcpy(buf, (char*)contents+residunt, count);	
+	
     *ppos += count;
     return count;
 }
 
 ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
-{
- 	unsigned char contents[EFUSE_BYTES];
+{ 	
 	unsigned pos = *ppos;
 	unsigned char *pc;
 
 	if (pos >= EFUSE_BYTES)
 		return 0;	/* Past EOF */
-
 	if (count > EFUSE_BYTES - pos)
 		count = EFUSE_BYTES - pos;
 	if (count > EFUSE_BYTES)
 		return -1;
 
-	memcpy(contents, buf, count);
-
-    //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) |  (1 << 12) );
+	//Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) |  (1 << 12) );
     
-    for (pc = contents; count--; ++pos, ++pc)
+    for (pc = buf; count--; ++pos, ++pc)
 		__efuse_write_byte(pos, *pc);
 		
 	*ppos = pos;
@@ -203,158 +272,109 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 	   // Disable the Write mode
     //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) & ~(1 << 12) );
 
-	return pc - contents;
+	return count;
 }
 
 int efuse_chk_written(int usr_type)
 {
 	int ret = 0;
 	unsigned char buf[EFUSE_BYTES];
-	loff_t ppos;
-	size_t count;
-	int dec_len,i;
-	char *op;
-	
-	switch(usr_type){
-		case USR_LICENCE: ppos =0; count=4;op=re_licence;break;
-		case USR_MACADDR: ppos =4; count=8;op=re_mac;break;
-		case USR_HDMIHDCP: ppos =12; count=312;op=re_hdcp;break;
-		case USR_USERIDF: ppos =320; count=64;op=re_usid;break;
-	}	
+
+	loff_t ppos = efuse_info[usr_type].offset;
+	size_t count = efuse_info[usr_type].enc_len;	
 	
 	efuse_init();
-	memset(op,0,count);
-	memset(buf,0,sizeof(buf));
-	efuse_read(buf, count, &ppos);	
-	//ppos = base;	// just for verify	
+	memset(buf,0,sizeof(buf));	
+	if(efuse_read(buf, count, &ppos)<=0)
+		return -1;
+		
 	unsigned char ckbit=0x0;
+	int i;
 	for(i=0;i<count;i++){
 		if(buf[i]|ckbit){
 			ret = -1;
 			break ;
 		}
 	}
-	
-	return ret ;
+	return ret;	
 }
 
 unsigned char *efuse_read_usr(int usr_type)
 {
-	unsigned char buf[EFUSE_BYTES];
-	unsigned char buf_dec[EFUSE_BYTES];
-	loff_t ppos;
-	size_t count;
-	int dec_len,i;
-	char *op;
-	
-	switch(usr_type){
-		case USR_LICENCE: ppos =0; count=4;dec_len=4;op=re_licence;break;
-		case USR_MACADDR: ppos =4; count=8;dec_len=7;op=re_mac;break;
-		case USR_HDMIHDCP: ppos =12; count=312;dec_len=310;op=re_hdcp;break;
-		case USR_USERIDF: ppos =320; count=64;dec_len=62;op=re_usid;break;
-	}
+	unsigned char enc_buf[EFUSE_BYTES];
+	loff_t ppos = efuse_info[usr_type].offset;
+	unsigned enc_len = efuse_info[usr_type].enc_len;
+	unsigned data_len = efuse_info[usr_type].data_len;
+	unsigned char *pdata = efuse_buf;
+	unsigned char *penc = enc_buf;
 	
 	efuse_init();
-	memset(op,0,count);
-	memset(buf,0,sizeof(buf));
-	memset(buf_dec,0,sizeof(buf_dec));
-	efuse_read(buf, count, &ppos);
+	memset(efuse_buf, 0, sizeof(efuse_buf));
+	memset(enc_buf, 0, sizeof(enc_buf));
+	efuse_read(enc_buf, enc_len, &ppos);
 	
-	if(usr_type==USR_USERIDF)
-		memcpy(buf_dec,buf+2,dec_len);
-	else
-		memcpy(buf_dec,buf,dec_len);
-	
-	if(dec_len>30)
-		for(i=0;i*31<dec_len;i++)
-			efuse_bch_dec(buf_dec+i*31, 31, op+i*30);
-	else 
-		efuse_bch_dec(buf_dec, dec_len, op);
-	
-	return op;
-	
-}
-unsigned char *efuse_read_usr_workaround(int usr_type)
-{
-	
-	unsigned char buf[EFUSE_BYTES];
-	unsigned char buf_dec[EFUSE_BYTES];
-	loff_t ppos;
-	size_t count;
-	int dec_len,i;
-	char *op;
-	
-	switch(usr_type){
-		case USR_LICENCE: ppos =0; count=4;dec_len=4;op=re_licence;break;
-		case USR_MACADDR: ppos =4; count=8;dec_len=7;op=re_mac;break;
-		case USR_HDMIHDCP: ppos =12; count=312;dec_len=310;op=re_hdcp;break;
-		case USR_USERIDF: ppos =324; count=24;dec_len=21;op=re_usid;break;
+	while(enc_len >= 31){
+		efuse_bch_dec(penc, 31, pdata);
+		penc += 31;
+		pdata += 30;
+		enc_len -= 31;
 	}
-	
-	efuse_init();
-	memset(op,0,count);
-	memset(buf,0,sizeof(buf));
-	memset(buf_dec,0,sizeof(buf_dec));
-	efuse_read(buf, count, &ppos);
-	
-	/*
-	if(usr_type==USR_USERIDF)
-		memcpy(buf_dec,buf+2,dec_len);
-	else*/
-		memcpy(buf_dec,buf,dec_len);
-	
-	if(dec_len>30)
-		for(i=0;i*31<dec_len;i++)
-			efuse_bch_dec(buf_dec+i*31, 31, op+i*30);
-	else 
-		efuse_bch_dec(buf_dec, dec_len, op);
-	
-	return op;
-	
-	
+	if(enc_len > 0)
+		efuse_bch_dec(penc, enc_len, pdata);
+		
+	return (char*)efuse_buf;	
 }
-
 
 int efuse_write_usr(int usr_type, unsigned char *data)
 {
-	int ret = 0;
-	unsigned char buf[EFUSE_BYTES];
-	int count,enc_len,data_len,i;
-	loff_t ppos;
-	char *ip;
-	
-	switch(usr_type){
-		case USR_LICENCE: ppos =0; 		count=4;	enc_len=4;	data_len=3;		ip=re_licence;	break;
-		case USR_MACADDR: ppos =4; 		count=8;	enc_len=7;	data_len=6;		ip=re_mac;break;
-		case USR_HDMIHDCP: ppos =12; 	count=312;	enc_len=310;data_len=300;	ip=re_hdcp;break;
-		case USR_USERIDF: ppos =322; 	count=64;	enc_len=62;	data_len=60;	ip=re_usid;break;
-	}
-	
-	efuse_init();
-
+	int ret = 0;		
 	if(efuse_chk_written(usr_type))
 		return -1;
 	
-	memset(ip,0,count);
-	memset(buf,0,sizeof(buf));
-	memcpy(buf,data,data_len);
+	loff_t ppos = efuse_info[usr_type].offset;
+	unsigned enc_len = efuse_info[usr_type].enc_len;
+	unsigned data_len = efuse_info[usr_type].data_len;
+	unsigned char *pdata = data;
+	unsigned char *penc = efuse_buf;	
+	memset(efuse_buf, 0, sizeof(efuse_buf));
 		
-	if(enc_len>=30)
-		for(i=0;i*30<data_len;i++)
-			efuse_bch_enc(buf+i*30, 30, ip+i*31);
-	else 
-		efuse_bch_enc(buf, data_len, ip);
-	
-	efuse_write(ip, enc_len, &ppos);
+	while(data_len >= 30){
+		efuse_bch_enc(pdata, 30, penc);
+		data_len -= 30;
+		pdata += 30;
+		penc += 31;		
+	}
+	if(data_len > 0)
+		efuse_bch_enc(pdata, data_len, penc);
+
+	efuse_write(efuse_buf, enc_len, &ppos);
 	
 	return 0 ;
 }
-int efuse_init(void)
-{	
-    /* disable efuse encryption */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL4, CNTL1_AUTO_WR_ENABLE_OFF,
-        CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );
 
-    return 0;
+
+#ifdef CONFIG_EFUSE_DUMP
+unsigned char* efuse_dump()
+{
+	  int i=0;
+    unsigned pos;
+    memset(efuse_buf, 0, sizeof(efuse_buf));
+
+#ifdef CONFIG_AML_MESION_3		
+	// Enabel auto-read mode
+    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
+            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+#endif            
+
+	for(i=0; i<EFUSE_BYTES; i+=4)
+		__efuse_read_dword(i,  &(efuse_buf[i]));	    
+		
+#ifdef CONFIG_AML_MESION_3		
+    // Disable auto-read mode    
+    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
+            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+#endif
+     
+     return (char*)efuse_buf;
 }
-
+#endif
