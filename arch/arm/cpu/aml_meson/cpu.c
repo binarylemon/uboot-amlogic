@@ -37,6 +37,7 @@
 #include <asm/cache.h>
 #ifndef CONFIG_L2_OFF
 #include <asm/arch/sys_proto.h>
+#include <asm/cache-l2x0.h>
 #endif
 
 

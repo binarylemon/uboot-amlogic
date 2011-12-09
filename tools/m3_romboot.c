@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include "romfuns.h"
 #define READ_SIZE       32*1024     // Size for data reading
 #define CHECK_SIZE      8*1024      // Size for data checking
@@ -28,7 +29,7 @@ static void m3_caculate(void)
 {
 	int i;
 	unsigned short sum=0;
-	unsigned * magic;
+	//unsigned * magic;
 	// Calculate sum
 	for(i=0;i<0x1b0/2;i++)
 	{
@@ -44,8 +45,9 @@ static void m3_caculate(void)
 int m3_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 {
     int count;
+    int num;
     memset(buf,0,sizeof(buf));
-	fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
+	num=fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	m3_caculate();
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))
@@ -64,8 +66,9 @@ int m3_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 int m3_write_ex(FILE * fp_spl,FILE * fp_in ,FILE * fp_out,unsigned addr)
 {
     int count;
+    int num;
     memset(buf,0,sizeof(buf));
-	fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
+	num = fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);   // add num assignment to avoid compile warning
 	m3_caculate();
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))

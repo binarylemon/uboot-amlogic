@@ -8,6 +8,8 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
+extern void delay_ms(int ms);
+
 #define AML_I2C_CTRL_CLK_DELAY_MASK			0x3ff
 #define AML_I2C_SLAVE_ADDR_MASK				0xff
 #define AML_I2C_SLAVE_ADDR_MASK_7BIT   (0x7F)
@@ -343,7 +345,7 @@ unsigned char i2c_act8942_read(unsigned char reg)
     return val;
 }
 
-void vddio_off()
+void vddio_off(void)
 {
 	unsigned char reg3;
 	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
@@ -355,7 +357,7 @@ void vddio_off()
 	i2c_act8942_write(0x42,reg3);
 }
 
-void vddio_on()
+void vddio_on(void)
 {
 	unsigned char reg3;
 	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
@@ -368,7 +370,7 @@ void vddio_on()
 }
 
 //Regulator7 Disable for cut down HDMI_VCC
-void reg7_off()
+void reg7_off(void)
 {
 	unsigned char data;
 	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
@@ -381,7 +383,7 @@ void reg7_off()
 }
 
 //Regulator7 Enable for power on HDMI_VCC
-void reg7_on()
+void reg7_on(void)
 {
 	unsigned char data;
 	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
@@ -393,10 +395,9 @@ void reg7_on()
 	i2c_act8942_write(0x65,data);
 }
 
-void init_I2C()
+void init_I2C(void)
 {
-	unsigned v,speed,reg;
-	struct aml_i2c_reg_ctrl* ctrl;
+	unsigned v,reg;	
 
 	//1. set pinmux
 	v = readl(P_AO_RTI_PIN_MUX_REG);
