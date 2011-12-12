@@ -760,7 +760,7 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 	}else
 	{
 		BUG();			// 1024 mode 1536
-		pg_num=w_size/((aml_chip->bch_mode&NAND_ECC_BCH8_MODE)?512:1024);
+		pg_num=w_size/((aml_chip->bch_mode&NAND_ECC_BCH8_512)?512:1024);
 	}
 
 	rom_inter_buff=(unsigned char *)malloc(mtd->writesize);

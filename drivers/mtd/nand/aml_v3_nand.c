@@ -193,7 +193,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"B revision NAND 4GiB MT29F32G-B", {NAND_MFR_MICRON, 0x68, 0x04, 0x46, 0x89}, 4096, 4096, 0x100000, 224, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE)},
 	{"B revision NAND 16GiB MT29F128G-B", {NAND_MFR_MICRON, 0x88, 0x05, 0xc6, 0x89}, 4096, 16384, 0x100000, 224, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE)},
 	{"C revision NAND 4GiB MT29F32G-C", {NAND_MFR_MICRON, 0x68, 0x04, 0x4a, 0xa9}, 4096, 4096, 0x100000, 224, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE)},
-	{"4GiB MT29F32G08QAA", {NAND_MFR_MICRON, 0xd5, 0x94, 0x3e, 0x74}, 4096, 4096, 0x100000, 224, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE )},
+	{"4GiB MT29F32G08QAA", {NAND_MFR_MICRON, 0xd5, 0x94, 0x3e, 0x74}, 4096, 4096, 0x100000, 224, 1, (NAND_SYNCIF|NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE )},
 	{"C revision NAND 8GiB MT29F64G-C", {NAND_MFR_MICRON, 0x88, 0x04, 0x4b, 0xa9}, 8192, 8192, 0x200000, 448, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE)},
 	{"C revision NAND 32GiB MT29F256G-C", {NAND_MFR_MICRON, 0xa8, 0x05, 0xcb, 0xa9}, 8192, 32768, 0x200000, 448, 2, (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
 
@@ -209,7 +209,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"6 Generation NAND 4GiB K9LBG08U0E", {NAND_MFR_SAMSUNG, 0xD7, 0xC5, 0x72, 0x54, 0x42}, 8192, 4096, 0x100000, 436, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH24_MODE | NAND_TWO_PLANE_MODE)},
 	{"6 Generation NAND 8GiB K9HCG08U0E", {NAND_MFR_SAMSUNG, 0xDE, 0xC5, 0x72, 0x54, 0x42}, 8192, 8192, 0x100000, 436, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH24_MODE | NAND_TWO_PLANE_MODE)},
 	{"2 Generation NAND 4GiB K9GBG08U0A", {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7a, 0x54, 0x43}, 8192, 4152, 0x100000, 640, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH40_MODE | NAND_TWO_PLANE_MODE)},
-	{"B-die Toggle NAND  4GiB K9GBG08U0B", {NAND_MFR_SAMSUNG, 0xec, 0xD7, 0x94, 0x7a, 0x54}, 8192, 4096, 0x100000, 1024, 1, (NAND_TIMING_MODE5 | NAND_ECC_BCH40_MODE | NAND_TWO_PLANE_MODE)},
+	{"B-die Toggle NAND  4GiB K9GBG08U0B", {NAND_MFR_SAMSUNG, 0xec, 0xD7, 0x94, 0x7a, 0x54}, 8192, 4096, 0x100000, 1024, 1, (NAND_SYNCIF|NAND_TIMING_MODE5 | NAND_ECC_BCH40_MODE | NAND_TWO_PLANE_MODE)},
 //	{"B-die Toggle NAND  4GiB K9GBG08U0A", {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x76, 0x64,0x43 }, 8192, 4096, 0x100000, 1024, 1, (NAND_SYNCIF|NAND_TIMING_MODE5 | NAND_ECC_BCH40_MODE | NAND_TWO_PLANE_MODE)},
 	{"2 Generation NAND 8GiB K9LCG08U0A", {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7a, 0x58, 0x43}, 8192, 8304, 0x100000, 640, 2, (NAND_TIMING_MODE5 | NAND_ECC_BCH40_MODE | NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
 
@@ -274,49 +274,6 @@ static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 		time_mode, bus_cycle, plat->T_REA, plat->T_RHOH, tmp, (sys_time/10));
 }
 
-static void m3_nand_adjust_timing(struct aml_nand_chip *aml_chip)
-{
-	int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, bus_timing, Tcycle;
-	struct aml_nand_platform *plat = aml_chip->platform;
-	int comm_mode =  (plat->platform_nand_data.chip.options & NAND_SYNC_OPTIONS_MASK)>>30 ;
-
-	if (!aml_chip->T_REA)
-		aml_chip->T_REA = 20;
-	if (!aml_chip->T_RHOH)
-		aml_chip->T_RHOH = 15;
-
-	sys_clk_rate = get_clk81();
-
-	sys_time = (10000 / (sys_clk_rate / 1000000));
-	start_cycle = (((NAND_CYCLE_DELAY + aml_chip->T_REA * 10) * 10) / sys_time);
-	start_cycle = (start_cycle + 9) / 10;
-
-	for (bus_cycle = 4; bus_cycle <= MAX_CYCLE_NUM; bus_cycle++) {
-		Tcycle = bus_cycle * sys_time;
-		end_cycle = (((NAND_CYCLE_DELAY + Tcycle / 2 + aml_chip->T_RHOH * 10) * 10) / sys_time);
-		end_cycle = end_cycle / 10;
-		if ((((start_cycle >= 3) && (start_cycle <= ( bus_cycle + 1)))
-			|| ((end_cycle >= 3) && (end_cycle <= (bus_cycle + 1))))
-			&& (start_cycle <= end_cycle)) {
-			break;
-		}			
-	}
-	if (bus_cycle > MAX_CYCLE_NUM)
-		return;
-
-	bus_timing = (start_cycle + end_cycle) / 2;
-
-	if(comm_mode==(NAND_ONFISYNC_MODE>>30)){
-		bus_cycle = 8;
-		bus_timing = 6;
-			
-	}
-	WRITE_CBUS_REG_BITS(NAND_CFG, (bus_cycle-1)|((bus_timing&0x1f)<<5), 0,10);	
-	NFC_SEND_CMD(1<<31);
-	printk("m3_nand_adjust_timing:bus_cycle=%d, bus_timing=%d, start_cycle=%d, end_cycle=%d,system=%d.%dns\n",
-		bus_cycle, bus_timing, start_cycle, end_cycle, sys_time/10, sys_time%10);
-}
-
 static int aml_platform_options_confirm(struct aml_nand_chip *aml_chip)
 {
 	struct mtd_info *mtd = aml_chip->mtd;
@@ -324,8 +281,6 @@ static int aml_platform_options_confirm(struct aml_nand_chip *aml_chip)
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct ecc_desc_s * ecc_supports=aml_chip->ecc;
 	unsigned max_ecc=aml_chip->max_ecc;
-	struct aml_nand_platform *plat = aml_chip->platform;
-	int comm_mode =  (plat->platform_nand_data.chip.options & NAND_SYNC_OPTIONS_MASK)>>30 ;
 	
 	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define;
 	int error = 0,i;
@@ -2353,35 +2308,6 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	return type;
 }
 
-static uint8_t buf[1024];
-static uint8_t aml_nand_read_parameter(struct aml_nand_chip *aml_chip)
-{
-	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
-	int i, j;
-
-	for (i=0; i<aml_chip->chip_num; i++) {
-
-		if (aml_chip->valid_chip[i]) {
-			udelay(1);
-			aml_chip->aml_nand_select_chip(aml_chip, i);
-			aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ_PARAMETER, 00, -1, i);
-			aml_chip->aml_nand_wait_devready(aml_chip, i);
-
-			for (j=0; j<256*4; j++)
-				buf[j] = chip->read_byte(mtd);
-		}
-	}
-
-	for (i=0;i<256*4;i++){
-		if(i%16==0)
-			printk("\n"); 			
-		printk("%02x ",buf[i]); 
-	}
-	return 0;
-}
-
-
 static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 {
 	int i, busw, nand_maf_id, valid_chip_num = 1;
@@ -2389,7 +2315,6 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_flash_dev *aml_type;
 	unsigned temp_chip_shift;
-	u8 dev_id[MAX_ID_LEN], onfi_features[4];
 
 	/* Get buswidth to select the correct functions */
 	busw = chip->options & NAND_BUSWIDTH_16;
@@ -2433,62 +2358,6 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 			aml_chip->chip_enable[2] = (aml_chip->chip_enable[1] & aml_chip->chip_enable[2]);
 		}*/
 	}
-
-	chip->cmdfunc(mtd, NAND_CMD_READID, 0x20, -1);
-	for (i=0; i<MAX_ID_LEN; i++) {
-		dev_id[i] = chip->read_byte(mtd);
-	}
-	if(!memcmp((char*)dev_id, "ONFI", 4)){
-		aml_chip->onfi_mode = aml_type->onfi_mode;
-		printk(KERN_INFO "exist ONFI id\n");
-	}
-	else{
-		printk(KERN_INFO "not exist ONFI id\n");
-	}	
-
-	aml_nand_read_parameter(aml_chip);
-	if (aml_chip->onfi_mode) {
-		struct aml_nand_platform *plat = aml_chip->platform;
-		unsigned comm_mode =  (plat->platform_nand_data.chip.options & NAND_SYNC_OPTIONS_MASK)>>30 ;		
-		u32  reg;	
-
-		if( !comm_mode )   //async 
-			aml_chip->onfi_mode &=~0x10;   
-
-		reg = READ_CBUS_REG(NAND_CFG);
-		printk("NAND_CFG= 0x%x \n", reg);
-			
-//		comm_mode =  1;
-		aml_chip->onfi_mode=0x11;	
-		aml_nand_set_onfi_features(aml_chip, (uint8_t *)(&aml_chip->onfi_mode), ONFI_TIMING_ADDR);
-		udelay(2);
-		if(comm_mode){
-			chip->select_chip(mtd, -1);
-			WRITE_CBUS_REG_BITS(NAND_CFG, comm_mode,10,2);	//host to sync		
-			reg = READ_CBUS_REG(NAND_CFG);
-			chip->select_chip(mtd, -1);
-
-			aml_chip ->if_type =1;
-			if (aml_chip->aml_nand_adjust_timing)
-				aml_chip->aml_nand_adjust_timing(aml_chip);
-			chip->select_chip(mtd, 0);
-
-			printk("NAND_CFG= 0x%x \n", reg);
-		}
-
-		aml_nand_get_onfi_features(aml_chip, onfi_features, ONFI_TIMING_ADDR);
-		if (onfi_features[0] != aml_chip->onfi_mode) {
-			aml_chip->T_REA = DEFAULT_T_REA;
-			aml_chip->T_RHOH = DEFAULT_T_RHOH;
-			printk("onfi timing mode set failed: %x ->%x\n", aml_chip->onfi_mode,onfi_features[0]);
-			if(comm_mode){
-				udelay(2);
-			}
-		}
-		else{
-			printk("onfi timing mode set ok: %x \n", onfi_features[0]);
-		}		
-	}	
 
 	/* Store the number of chips and calc total size for mtd */
 	chip->numchips = 1;
@@ -2871,9 +2740,6 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 
 	if (!aml_chip->aml_nand_hw_init)
 		aml_chip->aml_nand_hw_init = aml_platform_hw_init;
-	if (!aml_chip->aml_nand_adjust_timing)
-		aml_chip->aml_nand_adjust_timing = m3_nand_adjust_timing;
-	
 	if (!aml_chip->aml_nand_options_confirm)
 		aml_chip->aml_nand_options_confirm = aml_platform_options_confirm;
 	if (!aml_chip->aml_nand_cmd_ctrl)

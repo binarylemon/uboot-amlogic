@@ -30,7 +30,8 @@ BURNOBJS:= $(addprefix $(obj),$(SOBJS) $(COBJS) burn.o )
 VPATH_LIST=	$(TOPDIR)/board/$(BOARDDIR) \
 						$(SRCTREE)/$(CPUDIR)/$(SOC) \
 						$(SRCTREE)/$(CPUDIR)/common	\
-						$(SRCTREE)/$(CPUDIR)  			
+						$(SRCTREE)/$(CPUDIR)  			\
+						$(SRCTREE)/common
 VPATH_LIST:=$(VPATH_LIST:%=%/firmware)											
 CFLAGS+=$(VPATH_LIST:%=-I%)					
 vpath %.c $(VPATH_LIST)
