@@ -4,7 +4,9 @@
 #include <command.h>
 #include <malloc.h>
 #include <amlogic/efuse.h>
+#include <efuse_bch_8.h>
 #include "efuse_regs.h"
+
 
 /* efuse layout
 http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
@@ -13,21 +15,6 @@ http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
 12~322			hdcp				10 check byte			310 bytes(in total)
 322~384  		usid				2 check byte		 	62 bytes(in total)
 */
-#define USR_LICENCE		0
-#define USR_MACADDR		1
-#define USR_HDMIHDCP		2
-#define USR_USERIDF		3
-#ifdef CONFIG_REFB09_NEW
-#define USR_USERIDF_REFB09_NEW USR_USERIDF+1
-#else	
-#define USR_USERIDF_REFB09_NEW USR_USERIDF
-#endif
-// next item definition need use the following format because the ID is used as index
-//#ifdef xxx
-//#define USR_XXX USR_USERIDF_REFB09+1
-//#else
-//#define USR_XXX USR_USERIDF_REFB09
-//#endif
 
 #define EFUSE_LICENCE_OFFSET 				0
 #define EFUSE_LICENCE_DATA_BYTES 		3
@@ -52,7 +39,7 @@ http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
 #define EFUSE_USERIDF_REFB09_NEW_ENC_BYTES 21
 #endif
 
-unsigned char efuse_buf[EFUSE_BYTES] = {0};
+char efuse_buf[EFUSE_BYTES] = {0};
 efuseinfo_t efuse_info[] = 
 {
 	{
@@ -253,7 +240,7 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 { 	
 	unsigned pos = *ppos;
-	unsigned char *pc;
+	const char *pc;
 
 	if (pos >= EFUSE_BYTES)
 		return 0;	/* Past EOF */
@@ -278,7 +265,7 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 int efuse_chk_written(int usr_type)
 {
 	int ret = 0;
-	unsigned char buf[EFUSE_BYTES];
+	char buf[EFUSE_BYTES];
 
 	loff_t ppos = efuse_info[usr_type].offset;
 	size_t count = efuse_info[usr_type].enc_len;	
@@ -288,7 +275,7 @@ int efuse_chk_written(int usr_type)
 	if(efuse_read(buf, count, &ppos)<=0)
 		return -1;
 		
-	unsigned char ckbit=0x0;
+	char ckbit=0x0;
 	int i;
 	for(i=0;i<count;i++){
 		if(buf[i]|ckbit){
@@ -299,14 +286,14 @@ int efuse_chk_written(int usr_type)
 	return ret;	
 }
 
-unsigned char *efuse_read_usr(int usr_type)
+char *efuse_read_usr(int usr_type)
 {
-	unsigned char enc_buf[EFUSE_BYTES];
+	char enc_buf[EFUSE_BYTES];
 	loff_t ppos = efuse_info[usr_type].offset;
 	unsigned enc_len = efuse_info[usr_type].enc_len;
-	unsigned data_len = efuse_info[usr_type].data_len;
-	unsigned char *pdata = efuse_buf;
-	unsigned char *penc = enc_buf;
+	//unsigned data_len = efuse_info[usr_type].data_len;
+	char *pdata = efuse_buf;
+	char *penc = enc_buf;
 	
 	efuse_init();
 	memset(efuse_buf, 0, sizeof(efuse_buf));
@@ -325,17 +312,17 @@ unsigned char *efuse_read_usr(int usr_type)
 	return (char*)efuse_buf;	
 }
 
-int efuse_write_usr(int usr_type, unsigned char *data)
+int efuse_write_usr(int usr_type, char *data)
 {
-	int ret = 0;		
+	//int ret = 0;		
 	if(efuse_chk_written(usr_type))
 		return -1;
 	
 	loff_t ppos = efuse_info[usr_type].offset;
 	unsigned enc_len = efuse_info[usr_type].enc_len;
 	unsigned data_len = efuse_info[usr_type].data_len;
-	unsigned char *pdata = data;
-	unsigned char *penc = efuse_buf;	
+	char *pdata = data;
+	char *penc = efuse_buf;	
 	memset(efuse_buf, 0, sizeof(efuse_buf));
 		
 	while(data_len >= 30){
@@ -354,7 +341,7 @@ int efuse_write_usr(int usr_type, unsigned char *data)
 
 
 #ifdef CONFIG_EFUSE_DUMP
-unsigned char* efuse_dump()
+char* efuse_dump()
 {
 	  int i=0;
     unsigned pos;

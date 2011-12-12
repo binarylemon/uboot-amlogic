@@ -653,7 +653,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	 */
 	{
 		ulong pram;
+#ifndef CONFIG_POST_AML		
 		uchar memsz[32];
+#endif	
 #ifdef CONFIG_PRAM
 		char *s;
 

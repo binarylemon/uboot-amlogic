@@ -48,7 +48,7 @@ static void cp_delay (void)
 static inline void mmu_setup(void)
 {
 	u32 *page_table = (u32 *)gd->tlb_addr;
-	int i;
+	//int i;
 	u32 reg;
 
 	/* Copy the page table address to cp15 */

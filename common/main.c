@@ -38,6 +38,10 @@
 #include <hush.h>
 #endif
 
+#ifdef CONFIG_EFUSE
+#include <amlogic/efuse.h>
+#endif
+
 #include <post.h>
 
 #if defined(CONFIG_SILENT_CONSOLE) || defined(CONFIG_POST) || defined(CONFIG_CMDLINE_EDITING)
@@ -367,13 +371,14 @@ void main_loop (void)
 
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
+extern int switch_boot_mode(void);
 	switch_boot_mode();
 #endif
 
 #ifdef CONFIG_EFUSE
 	r_addr = getenv ("ethaddr");
-	if(efuse_chk_written(2)){
-		r_efus = efuse_read_usr(2);
+	if(efuse_chk_written(USR_MACADDR)){
+		r_efus = efuse_read_usr(USR_MACADDR);
 		memset(addr,0,sizeof(addr));
 		sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",r_efus[0],r_efus[1],r_efus[2],r_efus[3],r_efus[4],r_efus[5]);
 		setenv ("ethaddr", addr);
@@ -381,7 +386,7 @@ void main_loop (void)
 #endif
 
 #ifdef CONFIG_AML_SUSPEND
-extern void init_suspend_firmware();
+extern void init_suspend_firmware(void);
 	  init_suspend_firmware();
 #endif
 

@@ -58,12 +58,12 @@ void env_relocate_spec(void)
 	mmc_init(mmc);
     blk >>= 9;
     cnt >>= 9;
-	ret =(cnt == mmc->block_dev.block_read(dev_num, blk, cnt, (const void *)&env_buf));
+	ret =(cnt == mmc->block_dev.block_read(dev_num, blk, cnt, (void *)&env_buf));
 	if(!ret){		
 		set_default_env("!readenv() failed");		
 		return;
 	}						
-	env_import(&env_buf, 1);
+	env_import((const char*)(&env_buf), 1);
 	
 #endif    
 }
@@ -85,7 +85,7 @@ int saveenv(void)
 		return -1;
 	}	
 	if ((cnt % 512) || (blk % 512)) {
-	    printf("addr notalign 0x%llx or byte notalign 0x%llx",blk,cnt);
+	    printf("addr notalign 0x%llx or byte notalign 0x%x",blk,cnt);
 		return -1;
 	}	
 	env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);			

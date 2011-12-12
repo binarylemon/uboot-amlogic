@@ -1,4 +1,4 @@
-static unsigned arm_reboot[]={
+unsigned arm_reboot[]={
 	0xea000006 , 0xea00001f , 0xea000020 , 0xea000021,
 	0xea000022 , 0xea000023 , 0xea000024 , 0xea000025,
 	0xf57ff05f , 0xf57ff06f , 0xe3a00cef , 0xe590d000,
@@ -41,3 +41,5 @@ static unsigned arm_reboot[]={
 	0x0314f240 , 0x0310f6cc , 0xf442681a , 0x601a52c0,
 	0xbf004770 , 0x00000000 , 0x00000000 , 0x00000000
 };
+
+int arm_reboot_size = sizeof(arm_reboot);

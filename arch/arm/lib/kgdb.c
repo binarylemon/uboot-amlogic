@@ -86,7 +86,7 @@ int kgdb_getregs(struct pt_regs *regs, char *buf, int max)
 
 void kgdb_putreg(struct pt_regs *regs, int regno, char *buf, int length)
 {
-	unsigned long val, *ptr = (unsigned long *)buf;
+	unsigned long val=0, *ptr = (unsigned long *)buf;
 
 	if (regno < 0 || GDB_MAX_REGS <= regno)
 		kgdb_error(KGDBERR_BADPARAMS);

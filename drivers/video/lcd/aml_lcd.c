@@ -400,7 +400,7 @@ static void opt_cmd_help(void)
 	printf("test	-test lcd display\n");
 }
 
-int lcd_opt_cmd(int argc, char *argv[])
+int lcd_opt_cmd(int argc, char * const argv[])
 {
 	if(strcmp(argv[0], "enable") == 0)
 	{

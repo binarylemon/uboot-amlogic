@@ -19,6 +19,7 @@
  *
  */
  #include <common.h>
+ #include <malloc.h>
 #include <asm/arch/io.h>
 #include <asm/arch/vinfo.h>
 #include <asm/arch/lcd.h>
@@ -370,11 +371,11 @@ static void _enable_backlight(u32 brightness_level)
     //pDev->conf.backlight_on?pDev->conf.backlight_on():0;
     panel_oper.bl_on();
 }
-static void _disable_backlight(void)
+/*static void _disable_backlight(void)
 {
     //pDev->conf.backlight_off?pDev->conf.backlight_off():0;
     panel_oper.bl_off();
-}
+}*/
 static void _lcd_module_enable(void)
 {
     BUG_ON(pDev==NULL);
@@ -386,10 +387,10 @@ static void _lcd_module_enable(void)
     _enable_vsync_interrupt();
 }
 
-static const vinfo_t *lcd_get_current_info(void)
-{
-	return &pDev->lcd_info;
-}
+//static const vinfo_t *lcd_get_current_info(void)
+//{
+//	return &pDev->lcd_info;
+//}
 
 static int lcd_set_current_vmode(vmode_t mode)	//ÉèÖÃÆÁ¿í
 {
@@ -404,7 +405,7 @@ static int lcd_set_current_vmode(vmode_t mode)	//ÉèÖÃÆÁ¿í
 	return 0;
 }
 
-static vmode_t lcd_validate_vmode(char *mode)
+/*static vmode_t lcd_validate_vmode(char *mode)
 {
 	if ((strncmp(mode, PANEL_NAME, strlen(PANEL_NAME))) == 0)
 		return VMODE_LCD;
@@ -425,7 +426,7 @@ static int lcd_module_disable(vmode_t cur_vmod)
     //pDev->conf.power_off?pDev->conf.power_off():0;
     panel_oper.power_off();
     return 0;
-}
+}*/
 
 static void _init_vout(tcon_dev_t *pDev)
 {

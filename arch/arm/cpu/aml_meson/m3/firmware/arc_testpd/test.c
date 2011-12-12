@@ -7,7 +7,10 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
-#include "boot_code.c"
+//#include "boot_code.c"
+extern unsigned arm_reboot[];
+extern int arm_reboot_size;
+
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));
@@ -15,6 +18,8 @@ unsigned UART_CONFIG= (32*1000/(300*4));
 //----------------------------------------------------
 //functions declare
 void store_restore_plls(int flag);
+void init_ddr_pll(void);
+
 #define clkoff_a9()
 
 #define ISOLATE_RESET_N_TO_EE       clrbits_le32(P_AO_RTI_PWR_CNTL_REG0 ,(1 << 5))
@@ -72,7 +77,8 @@ void copy_reboot_code()
 	int code_size;
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
   volatile unsigned char * arm_base = (volatile unsigned char *)0x8000;
-	code_size = sizeof(arm_reboot);
+	//code_size = sizeof(arm_reboot);
+	code_size = arm_reboot_size;
 	//copy new code for ARM restart
 	for(i = 0; i < code_size; i++)
 	{
@@ -95,8 +101,8 @@ void power_off_vddio();
 //#define POWER_OFF_EE
 void enter_power_down()
 {
-	int i;
-	unsigned v1,v2,v;
+	//int i;
+	unsigned v;
 	unsigned rtc_ctrl;
 	unsigned power_key;
  
@@ -270,7 +276,7 @@ int main(void)
 {
 	unsigned cmd;
 	char c;
-	int i = 0,j;
+	//int i = 0,j;
 	timer_init();
 /*#ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");
@@ -322,7 +328,7 @@ unsigned clk_settings[2]={0,0};
 unsigned pll_settings[2][3]={{0,0,0},{0,0,0}};
 void store_restore_plls(int flag)
 {
-    int i;
+    //int i;
     if(flag)
     {
 #ifdef POWER_OFF_EE 

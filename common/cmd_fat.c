@@ -32,6 +32,7 @@
 #include <part.h>
 #include <fat.h>
 
+extern long do_fat_read (const char *filename, void *buffer, unsigned long maxsize, int dols);
 
 int do_fat_fsload (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -98,7 +99,7 @@ U_BOOT_CMD(
 	"      to address 'addr' from dos filesystem"
 );
 
-int do_fat_exist (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_fat_exist (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	long size;
 	char buf [12];

@@ -22,7 +22,7 @@ unsigned char is_rect_invalid(const RECT *rect)
 		return 0;
 }
 
-static unsigned char get_font_bit_value(unsigned char* pData, int iPos)
+/*static unsigned char get_font_bit_value(unsigned char* pData, int iPos)
 {
     int iCurByte;
     int iCurBit;
@@ -38,7 +38,7 @@ static unsigned char get_font_bit_value(unsigned char* pData, int iPos)
     else
 		return 0;
 }
-
+*/
 int DrawPixel(unsigned short x, unsigned short y, int color)
 {
     unsigned char *dest;
@@ -55,7 +55,7 @@ int DrawPixel(unsigned short x, unsigned short y, int color)
     *dest = (color >> 16) & 0xff;
 #endif
     
-    flush_cache(panel_info.lcd_base, OSD_WIDTH * OSD_HEIGHT * OSD_BPP/8);
+    flush_cache((unsigned long)(panel_info.lcd_base), OSD_WIDTH * OSD_HEIGHT * OSD_BPP/8);
     return 0;
 }
 
@@ -84,7 +84,7 @@ int DrawRect(unsigned short x, unsigned short y, unsigned short w, unsigned shor
     	}
     	dest = (unsigned char *)(panel_info.lcd_base + (y + row) * lcd_line_length + x * (OSD_BPP / 8));
     }
-    flush_cache(panel_info.lcd_base, OSD_WIDTH * OSD_HEIGHT * OSD_BPP / 8);
+    flush_cache((unsigned long)(panel_info.lcd_base), OSD_WIDTH * OSD_HEIGHT * OSD_BPP / 8);
     return 0;
 }
 
@@ -141,7 +141,7 @@ int GetTextSize(const void *str, unsigned short cc, int *pwidth, int *pheight, i
     unsigned char *pFont;
 
 	if(gpCurFont == NULL) 		
-		return;
+		return -1;
 
 
 	
@@ -280,12 +280,12 @@ unsigned short GetCharWidth(char ch)
      return ch_width;
 }
 
-unsigned short GetCharHeight()
+unsigned short GetCharHeight(void)
 {
      return gpCurFont->font_height;
 }
 
-int draw_string (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int draw_string (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned short x, y;
 	int font_color;

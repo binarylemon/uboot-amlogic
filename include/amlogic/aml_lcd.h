@@ -5,7 +5,7 @@
 #include <linux/list.h>
 
 extern int aml_lcd_init(void);
-extern int lcd_opt_cmd(int argc, char *argv[]);
+extern int lcd_opt_cmd(int argc, char * const argv[]);
 
 typedef struct vidinfo {
 	ushort	vl_col;		/* Number of columns (i.e. 160) */

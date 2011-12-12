@@ -13,10 +13,11 @@
 *										Video
 *
 *********************************************************************************************/
+extern void reset_console(void);
 
 static GraphicDevice *gdev = NULL;	/* Graphic Device */
 
-static int dump_video_info()
+static int dump_video_info(void)
 {
 	if(gdev == NULL)
 	{
@@ -30,7 +31,7 @@ static int dump_video_info()
 
 	return 0;
 }
-static int do_video_open(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+static int do_video_open(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("Video initializing...\n");
 	gdev = video_hw_init();
@@ -43,14 +44,14 @@ static int do_video_open(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	return dump_video_info();
 }
 
-static int do_video_close(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+static int do_video_close(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])										  
 {
 	printf("Unuse!\n");
 	gdev = NULL;
 	return 0;
 }
 
-static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	if(gdev == NULL)
 	{
@@ -61,14 +62,14 @@ static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	memset ((char *)gdev->frameAdrs, 0,
 		(gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP);
 
-	flush_cache((char *)gdev->frameAdrs, ((gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP));
+	flush_cache(gdev->frameAdrs, ((gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP));
 	reset_console();
 	return 0;	
 }
 
-static int do_video_dev(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+static int do_video_dev(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int i;
+	//int i;
 	char *video_dev;
 
 	video_dev = getenv ("video_dev");
@@ -97,7 +98,7 @@ static cmd_tbl_t cmd_video_sub[] = {
 };
 
 
-static int do_video(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+static int do_video(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	cmd_tbl_t *c;
 

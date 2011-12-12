@@ -473,12 +473,12 @@ int aml_i2c_xfer(struct i2c_msg *msgs,
 }
 
 /*General i2c master transfer 100k*/
-static int aml_i2c_xfer_slow(struct i2c_msg *msgs, 
+int aml_i2c_xfer_slow(struct i2c_msg *msgs, 
 							int num)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	struct aml_i2c *i2c = &g_aml_i2c_data;
-	struct i2c_msg * p;
+	struct i2c_msg * p=0;
 	unsigned int i;
 	unsigned int ret=0;
 	unsigned int last_speed = i2c->master_i2c_speed;
@@ -533,14 +533,14 @@ static int aml_i2c_xfer_slow(struct i2c_msg *msgs,
 
 /***************i2c class****************/
 
-static ssize_t show_i2c_debug(void)
+__attribute__((unused))  static ssize_t show_i2c_debug(void)
 {
 	struct aml_i2c *i2c = &g_aml_i2c_data;
 	printf("i2c debug is 0x%x\n", i2c->i2c_debug);
 	return 0;
 }
 
-static ssize_t show_i2c_info(void)
+__attribute__((unused))  static ssize_t show_i2c_info(void)
 {
 	struct aml_i2c *i2c = &g_aml_i2c_data;
 	struct aml_i2c_reg_ctrl* ctrl;
@@ -591,7 +591,7 @@ static ssize_t show_i2c_info(void)
 	return 0;
 }
 
-static unsigned int aml_clock81_reading(void)
+__attribute__((unused))  static unsigned int aml_clock81_reading(void)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	int val;

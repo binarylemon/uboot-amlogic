@@ -1,4 +1,5 @@
 
+#include <linux/string.h>
 #include "efuse_bch_8.h"
 
 static inline int cm(int p, int x)
@@ -135,8 +136,10 @@ static int bch_dec(int c[255], int n, int t)
 void efuse_bch_enc(const char *ibuf, int isize, char *obuf)
 {
     int i, j;
-    int cnt, tmp;
+    int tmp;
+#ifdef __ADDERR    
     int errnum, errbit;
+#endif    
     char info;
     int c[255];
 
@@ -182,7 +185,7 @@ void efuse_bch_enc(const char *ibuf, int isize, char *obuf)
 void efuse_bch_dec(const char *ibuf, int isize, char *obuf)
 {
     int i, j;
-    int cnt, tmp;
+    int tmp;
     char info;
     int c[255];
 

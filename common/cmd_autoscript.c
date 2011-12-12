@@ -202,8 +202,7 @@ autoscript (ulong addr, const char *fit_uname)
 
 /**************************************************/
 #if defined(CONFIG_CMD_AUTOSCRIPT)
-int
-do_autoscript (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_autoscript (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong addr;
 	int rcode;

@@ -8,6 +8,8 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
+extern void delay_ms(int ms);
+
 #define AML_I2C_CTRL_CLK_DELAY_MASK			0x3ff
 #define AML_I2C_SLAVE_ADDR_MASK				0xff
 #define AML_I2C_SLAVE_ADDR_MASK_7BIT   (0x7F)
@@ -395,8 +397,8 @@ void reg7_on()
 
 void init_I2C()
 {
-	unsigned v,speed,reg;
-	struct aml_i2c_reg_ctrl* ctrl;
+	unsigned v,reg;
+	//struct aml_i2c_reg_ctrl* ctrl;
 
 	//1. set pinmux
 	v = readl(P_AO_RTI_PIN_MUX_REG);

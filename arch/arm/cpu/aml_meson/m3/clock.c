@@ -131,7 +131,7 @@ struct __clk_rate clkrate[]={
 int clk_get_rate(unsigned clksrc)
 {
 	int i;
-	for(i = 0; i < clksrc < sizeof(clkrate)/sizeof(clkrate[0]); i++)
+	for(i = 0; i < sizeof(clkrate)/sizeof(clkrate[0]); i++)
 	{
 		  if(clksrc == clkrate[i].clksrc)
 	 	    return clkrate[i].get_rate();

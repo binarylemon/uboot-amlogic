@@ -31,15 +31,15 @@
 #include <asm/cache.h>
 int run_arc(unsigned addr)
 {
-	char c;
+	//char c;
     /** copy ARM code*/
     //change arm mapping
-    memcpy(0x49008000,0x49000000,16*1024);
+    memcpy((void*)0x49008000,(void*)0x49000000,16*1024);
  		//remap arm memory
     writel((0x49008000>>14)&0xf,P_AO_REMAP_REG0);
     /** copy ARC code*/
     //copy code to 49000000 and remap to zero
-    memcpy(0x49008000,addr,16*1024);
+    memcpy((void*)0x49008000,(void*)addr,16*1024);
     writel(0x1<<4,P_AO_REMAP_REG1);
     
     writel(0x7fffffff,P_AO_RTI_STATUS_REG0);
@@ -85,7 +85,7 @@ int run_arc(unsigned addr)
 
 int do_arc (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned	addr, rc;
+	long unsigned	addr, rc;
 	int     rcode = 0;
 
 	if (argc < 2)
@@ -112,7 +112,7 @@ U_BOOT_CMD(
 
 
 /* --------------------------------------------------------------------- */
-inline static void rbt_save_env()
+inline static void rbt_save_env(void)
 {		
 	  /* save return pc */
 	  asm volatile ("ldr r0,=0x4900EF38");
@@ -125,7 +125,7 @@ inline static void rbt_save_env()
 	  asm volatile ("str r1,[r0,#8]");
 }
 
-inline static void rbt_save_sp()
+inline static void rbt_save_sp(void)
 {
  	asm volatile ("ldr r0,=0x4900EF00");
 	asm volatile ("str sp, [r0]");
@@ -139,7 +139,7 @@ inline static void rbt_save_sp()
 	asm volatile ("str r1,[r0,#8]");
 }
 
-inline static void rbt_save_regs()
+inline static void rbt_save_regs(void)
 {	/* save general registers */
 	asm volatile ("ldr r0,=0x4900EF0c");
 	asm volatile ("str r2, [r0]");
@@ -163,14 +163,14 @@ int run_testpd(unsigned addr)
 		
     /** copy ARM code*/
     //change arm mapping
-    memcpy(0x49008000,0x49000000,16*1024);
+    memcpy((void*)0x49008000,(void*)0x49000000,16*1024);
     
  		//remap arm memory
     writel((0x49008000>>14)&0xf,P_AO_REMAP_REG0);
     
     /** copy ARC code*/
     //copy code to 49000000 and remap to zero
-    memcpy(0x49008000,addr,16*1024);
+    memcpy((void*)0x49008000,(void*)addr,16*1024);
     writel(0x1<<4,P_AO_REMAP_REG1);
     
     printf("start up ARC\n");
@@ -207,7 +207,7 @@ int run_testpd(unsigned addr)
 
 int do_testpd (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned	addr, rc;
+	long unsigned	addr, rc;
 	int     rcode = 0;
 	int i = 0;
 	

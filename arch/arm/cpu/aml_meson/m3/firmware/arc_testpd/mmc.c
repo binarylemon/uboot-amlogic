@@ -8,6 +8,8 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
+extern void delay_ms(int ms);
+
 #define dbg_out(s,v) serial_puts(s);serial_put_hex(v,32);serial_putc('\n');
 #define dbg_puts serial_puts
 
@@ -317,10 +319,10 @@ void init_ddr_pll(void)
 
 void init_pctl(void)
 {
-	int i;
+	//int i;
 	int mrs0_value;
 	int mrs1_value;
-	int mrs2_value;
+	//int mrs2_value;
 	int mrs3_value = 0;
     
  	APB_Wr(MMC_DDR_CTRL, v_mmc_ddr_ctrl);
@@ -401,3 +403,4 @@ void disable_retention(void)
 {
   writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
 }
+

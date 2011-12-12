@@ -63,7 +63,7 @@ DECLARE_GLOBAL_DATA_PTR;
     !defined(CONFIG_ENV_IS_IN_NVRAM)	&& \
     !defined(CONFIG_ENV_IS_IN_ONENAND)	&& \
     !defined(CONFIG_ENV_IS_IN_SPI_FLASH)	&& \
-    !defined(CONFIG_ENV_IS_IN_AML_NAND)  && \    
+    !defined(CONFIG_ENV_IS_IN_AML_NAND)  && \
     !defined(CONFIG_ENV_IS_IN_EMMC)	&& \
     !defined(CONFIG_ENV_IS_NOWHERE)
 # error Define one of CONFIG_ENV_IS_IN_{EEPROM|FLASH|DATAFLASH|ONENAND|\
@@ -944,7 +944,7 @@ U_BOOT_CMD_COMPLETE(
 #endif
 
 
-int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	void    *addr;
 
@@ -954,12 +954,13 @@ int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	}
 
 	addr = (void    *)simple_strtoul(argv[1], NULL, 16);
-	printf("gd->env_addr=0x%08x;	addr=0x%08x;	ENV_SIZE=0x%08x\n", gd->env_addr, addr, ENV_SIZE);
-	memcpy(gd->env_addr, addr, ENV_SIZE);
+	printf("gd->env_addr=0x%08x;	addr=0x%08x;	ENV_SIZE=0x%08x\n", (unsigned int)(gd->env_addr), (unsigned int)addr, ENV_SIZE);
+	memcpy((void*)(gd->env_addr), addr, ENV_SIZE);
 	env_crc_update();
+	return 0;
 }
 
-int do_defenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_defenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	set_default_env(NULL);
 	return 0;

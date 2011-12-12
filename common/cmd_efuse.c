@@ -13,11 +13,11 @@ extern unsigned efuse_info_cnt;
 #define EFUSE_READ 1
 #define EFUSE_DUMP 2
 
-int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0 ;
 	int i, j;
-	unsigned char addr[EFUSE_BYTES];
+	char addr[EFUSE_BYTES];
 	char *title;
 	char *op;	
 	char *s;
@@ -55,7 +55,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 					
 		// efuse read
 		if(action == EFUSE_READ){
-			op = efuse_read_usr(i);
+			op = (char*)efuse_read_usr(i);
 			printf("%s is: ", title);
 			for(j=0; j<efuse_info[i].data_len; j++)
 				printf(":%02x", op[j]);
