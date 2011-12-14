@@ -19,6 +19,10 @@
 
 #define printk printf
 
+extern void rtc_time_to_tm(unsigned long time, struct rtc_time *tm);
+extern unsigned long get_rtc_static_reg_init_val(void);
+extern int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time);
+
 int c_dbg_lvl = 0;
 #define RTC_DBG(lvl, x...) do{ if(c_dbg_lvl & lvl) printk(x);} while(0)
 #define RTC_DBG_VAL 1 << 0
@@ -417,7 +421,7 @@ int aml_rtc_write_time(struct rtc_time *tm)
       rtc_tm_to_time(tm, &time_t);
      
       //spin_lock(&priv->lock);  
-      RTC_DBG(RTC_DBG_VAL, "aml_rtc : write the rtc time, time is %d\n", time_t);
+      RTC_DBG(RTC_DBG_VAL, "aml_rtc : write the rtc time, time is %ld\n", time_t);
       ser_access_write(RTC_COUNTER_ADDR, time_t);
       RTC_DBG(RTC_DBG_VAL, "aml_rtc : the time has been written\n");
       //spin_unlock(&priv->lock);  

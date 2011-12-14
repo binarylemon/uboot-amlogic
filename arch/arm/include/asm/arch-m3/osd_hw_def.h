@@ -68,21 +68,21 @@ typedef  struct {
 
 static  void  osd2_update_color_mode(void);
 static  void  osd2_update_enable(void);
-static  void  osd2_update_color_key_enable(void);
-static  void  osd2_update_color_key(void);
-static  void  osd2_update_gbl_alpha(void);
+//static  void  osd2_update_color_key_enable(void);
+//static  void  osd2_update_color_key(void);
+//static  void  osd2_update_gbl_alpha(void);
 static  void  osd2_update_disp_geometry(void);
-static  void  osd2_update_disp_scale_enable(void);
-static  void  osd2_update_disp_3d_mode(void);
+//static  void  osd2_update_disp_scale_enable(void);
+//static  void  osd2_update_disp_3d_mode(void);
 
 static  void  osd1_update_color_mode(void);
 static  void  osd1_update_enable(void);
-static  void  osd1_update_color_key(void);
-static  void  osd1_update_color_key_enable(void);
-static  void  osd1_update_gbl_alpha(void);
+//static  void  osd1_update_color_key(void);
+//static  void  osd1_update_color_key_enable(void);
+//static  void  osd1_update_gbl_alpha(void);
 static  void  osd1_update_disp_geometry(void);
-static  void  osd1_update_disp_scale_enable(void);
-static  void  osd1_update_disp_3d_mode(void);
+//static  void  osd1_update_disp_scale_enable(void);
+//static  void  osd1_update_disp_3d_mode(void);
 
 
 /************************************************************************
@@ -91,7 +91,7 @@ static  void  osd1_update_disp_3d_mode(void);
 **
 **************************************************************************/
 static hw_para_t  osd_hw;
-static unsigned long 	lock_flags;
+//static unsigned long 	lock_flags;
 static update_func_t     hw_func_array[HW_OSD_COUNT][HW_REG_INDEX_MAX]={
 	{
 		osd1_update_color_mode,
@@ -113,6 +113,7 @@ static update_func_t     hw_func_array[HW_OSD_COUNT][HW_REG_INDEX_MAX]={
 	},
 };
 
+#if 0
 static  int reg_index[]={
 	VIU_OSD1_TCOLOR_AG0,
 	VIU_OSD1_BLK0_CFG_W0,
@@ -125,4 +126,5 @@ static  int reg_index[]={
 	VPP_MISC,
 	VIU_OSD1_COLOR_ADDR,
 };
+#endif
 #endif

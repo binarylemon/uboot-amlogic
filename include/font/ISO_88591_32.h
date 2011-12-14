@@ -497,7 +497,7 @@ static unsigned char ISO_88591_32_osdfont_dat[] = {
 static unsigned char * ISO_88591_32GetCharacterFontBit(unsigned short ch, unsigned short *font_width)
 {
     int iIndex, iUpPos = 0, iDownPos = TOTAL_CHARACTER_NUM;
-    unsigned char *font_dat = NULL;
+//    unsigned char *font_dat = NULL;
     
     while(iUpPos <= iDownPos){
         iIndex = (iUpPos + iDownPos) >> 1 ;

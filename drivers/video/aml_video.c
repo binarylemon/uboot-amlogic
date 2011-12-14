@@ -96,7 +96,7 @@ void *video_hw_init (void)
 	}
 	else
 	{
-		printf("ERROR:env display_layer invalid! display_layer is %s\n", display_bpp);
+		printf("ERROR:env display_layer invalid! display_layer is %d\n", display_bpp);
 		return NULL;
 	}
 

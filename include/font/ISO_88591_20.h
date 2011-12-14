@@ -565,4 +565,6 @@ FONT ISO_88591_20Font = {
     TOTAL_CHARACTER_NUM,
     ISO_88591_20GetCharacterFontBit
 } ;
+
+#undef TOTAL_CHARACTER_NUM
 #endif

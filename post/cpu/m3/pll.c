@@ -17,6 +17,7 @@ extern struct clk clk_viid_pll;
 extern struct clk_lookup lookups[];
 extern unsigned int clk_lookups_size;
 
+extern void mdelay(unsigned long msec);
 
 #define freq_resolution 10   // 10MHz
 #define sys_pll_clk_mux  2
@@ -106,6 +107,7 @@ void set_viid_pll(unsigned n, unsigned m, unsigned od, unsigned xd)
 #define clk_util_clk_msr(clk) clk_util_msr(clk,64)
 unsigned    clk_util_msr( unsigned  clk_mux,unsigned time )
 {
+	unsigned long dummy_rd;
 	writel(0,P_MSR_CLK_REG0);
     // Set the measurement gate to 64uS
 	clrsetbits_le32(P_MSR_CLK_REG0,0xffff,time-1);
@@ -115,7 +117,7 @@ unsigned    clk_util_msr( unsigned  clk_mux,unsigned time )
 	clrsetbits_le32(P_MSR_CLK_REG0,
     				    (0xf << 20)|(1<<19)|(1<<16),
         				(clk_mux<<20) |(1<<19)|(1<<16));
-	{ unsigned long dummy_rd = readl(P_MSR_CLK_REG0); }
+	{ dummy_rd = readl(P_MSR_CLK_REG0); }
     // Wait for the measurement to be done
     while( readl(P_MSR_CLK_REG0) & (1 << 31))  {};
     // disable measuring

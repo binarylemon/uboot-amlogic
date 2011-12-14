@@ -38,6 +38,9 @@ For Ramos MID use 8726M */
 extern GraphicDevice aml_gdev;
 vidinfo_t panel_info;
 
+extern int tcon_probe(void);
+extern int tcon_remove(void);
+
 /*
 For 8726M, cpt CLAA070MA22BW panel 7" */ 
 #define LCD_WIDTH       800 
@@ -282,19 +285,20 @@ static void set_tcon_pinmux(void)
 	  set_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
 }
 
-static void clear_tcon_pinmux(void)
-{
-    debug("%s\n", __FUNCTION__);
-	/* TCON control pins pinmux */   
-    clear_mio_mux(1, 1<<14); // disable cph1
-    clear_mio_mux(1, 1<<17); // disable oeh
-    //clear_mio_mux(0, 0x3f<<0);//For 8bits RGB
-	clear_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
+//static void clear_tcon_pinmux(void)
+//{
+//    debug("%s\n", __FUNCTION__);
+//	/* TCON control pins pinmux */   
+//    clear_mio_mux(1, 1<<14); // disable cph1
+//    clear_mio_mux(1, 1<<17); // disable oeh
+//    //clear_mio_mux(0, 0x3f<<0);//For 8bits RGB
+//	clear_mio_mux(0,(1<<0)|(1<<2)|(1<<4));   //For 6bits
 	
-	WRITE_MPEG_REG(0x2012, READ_MPEG_REG(0x2012) | ((1<<20)|(1<<23)));
-	//WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | (0xffffff<<0));  //For RGB 8bit	
-	WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | ((0x3f<<2)|(0x3f<<10)|(0x3f<<18)));  //For RGB 6bit
-}
+//	WRITE_MPEG_REG(0x2012, READ_MPEG_REG(0x2012) | ((1<<20)|(1<<23)));
+//	//WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | (0xffffff<<0));  //For RGB 8bit	
+//	WRITE_MPEG_REG(0x200f, READ_MPEG_REG(0x200f) | ((0x3f<<2)|(0x3f<<10)|(0x3f<<18)));  //For RGB 6bit
+//}
+
 static void lcd_power_on(void)
 {
 	debug("%s\n", __FUNCTION__);
@@ -317,7 +321,7 @@ static void lcd_io_init(void)
     set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
-static int lcd_enable(void)
+static void lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
 	char envstr[20];
@@ -328,7 +332,7 @@ static int lcd_enable(void)
 	tcon_probe();
 	
 	setenv("video_dev", "panel");
-	sprintf(envstr, "%x", panel_info.lcd_base);
+	sprintf(envstr, "%x", (unsigned)(panel_info.lcd_base));
 	setenv("fb_addr", envstr);		
 	sprintf(envstr, "%d", LCD_WIDTH);
 	setenv("display_width", envstr);
@@ -348,9 +352,7 @@ static int lcd_enable(void)
 	
 	video_hw_init();    
     //osd_init_hw();
-    //osd_hw_setup();
-
-    return 0;
+    //osd_hw_setup();    
 }
 
 void lcd_disable(void)

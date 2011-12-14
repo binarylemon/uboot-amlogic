@@ -38,7 +38,7 @@ static canvas_t canvasPool[CANVAS_NUM];
 void canvas_config(u32 index, ulong addr, u32 width,
 				  u32 height, u32 wrap, u32 blkmode)
 {
-    ulong flags;
+    //ulong flags;
     canvas_t *canvasP = &canvasPool[index];
 
     if (index >= CANVAS_NUM)
@@ -80,7 +80,7 @@ void canvas_copy(u32 src, u32 dst)
 {
     unsigned long addr;
     unsigned width, height, wrap, blkmode;
-    ulong flags;
+    //ulong flags;
 
     if ((src >= CANVAS_NUM) || (dst >= CANVAS_NUM))
         return;
@@ -118,7 +118,7 @@ void canvas_copy(u32 src, u32 dst)
 
 void canvas_update_addr(u32 index, u32 addr)
 {
-    ulong flags;
+    //ulong flags;
     
     if (index >= CANVAS_NUM)
         return;

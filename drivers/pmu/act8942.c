@@ -178,13 +178,13 @@ static int act8942_operations_init(struct act8942_operations* pdata)
 	return 0;
 }
 
-static void act8942_suspend()
+void act8942_suspend(void)
 {
 	set_charge_current(1);
 	debug("fast charger on early_suspend\n\n");    
 }
 
-static void act8942_resume()
+void act8942_resume(void)
 {
     set_charge_current(0);
 	debug("slow charger on resume\n\n");
@@ -242,6 +242,7 @@ int pmu_is_ac_online(void)
 	else
 	{
 		printf("is_ac_online is NULL!\n");	
+		return 0;
 	}
 }
 
@@ -254,6 +255,7 @@ int pmu_is_usb_online(void)
 	else
 	{
 		printf("is_usb_onlineis NULL!\n");	
+		return 0;
 	}
 }
 
@@ -278,6 +280,7 @@ int pmu_get_charge_status(void)
 	else
 	{
 		printf("get_charge_status is NULL!\n");
+		return 0;
 	}
 }
 
@@ -294,6 +297,7 @@ int pmu_set_charge_current(int level)
 	else
 	{
 		printf("set_charge_current is NULL!\n");
+		return -1;
 	}
 }
 
@@ -306,6 +310,7 @@ int pmu_measure_voltage(void)
 	else
 	{
 		printf("measure_voltage is NULL!\n");
+		return -1;
 	}
 }
 
@@ -324,6 +329,7 @@ int pmu_measure_current(void)
 	else
 	{
 		printf("measure_current is NULL!\n");
+		return -1;
 	}
 }
 
@@ -336,6 +342,7 @@ int pmu_measure_capacity_charging(void)
 	else
 	{
 		printf("measure_capacity_charging is NULL!\n");
+		return -1;
 	}
 }
 
@@ -348,10 +355,11 @@ int pmu_measure_capacity_battery(void)
 	else
 	{
 		printf("measure_capacity_battery is NULL!\n");
+		return -1;
 	}
 }
 
-int pmu_set_bat_off(void)
+void pmu_set_bat_off(void)
 {
 	if (act8942_opts->set_bat_off)
 	{

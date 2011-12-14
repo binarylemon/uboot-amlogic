@@ -15,9 +15,9 @@ DECLARE_GLOBAL_DATA_PTR;
 static unsigned long lcd_line_length = 0;
 char lcd_is_enabled = 0;
 
-static int lcd_getbgcolor (void);
-static void lcd_setfgcolor (int color);
-static void lcd_setbgcolor (int color);
+int lcd_getbgcolor (void);
+void lcd_setfgcolor (int color);
+void lcd_setbgcolor (int color);
 #ifdef LCD_TEST_PATTERN
 static void test_pattern(void);
 #endif
@@ -38,9 +38,9 @@ static inline void lcd_puts_xy (ushort x, ushort y, uchar *s);
 static inline void lcd_putc_xy (ushort x, ushort y, uchar  c);
 
 
-static void *lcd_logo (void);
+void *lcd_logo (void);
 
-/***************************************************************************************
+/***************************************************************************************/
 /* LCD display driver */
 /****************************************************************************************/
 #if 0
@@ -181,7 +181,7 @@ int lcd_draw_point (ushort x, ushort y, int color)
 	*dest++ = (color >> 8) & 0xff;
 	*dest = (color >> 16) & 0xff;
 #endif
-	flush_cache(panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
 	return	0;
 }
 int lcd_draw_rect (ushort x, ushort y, ushort w, ushort h, int color)
@@ -207,7 +207,7 @@ int lcd_draw_rect (ushort x, ushort y, ushort w, ushort h, int color)
 		}
 		dest = (uchar *)(panel_info.lcd_base + (y + row) * lcd_line_length + x * (LCD_BPP / 8));
 	}
-	flush_cache(panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
 	return	0;
 }
 #endif
@@ -287,7 +287,7 @@ int lcd_drawchars (ushort x, ushort y, uchar *str, int count)
 #if LCD_BPP == LCD_MONOCHROME
 		*d  = rest | (*d & ((1 << (8-off)) - 1));
 #endif
-	flush_cache(panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
 	}
 	return 0;
 }
@@ -456,7 +456,7 @@ int aml_lcd_init(void)
 		/* lcd clear*/
 		memset ((char *)panel_info.lcd_base,	COLOR_MASK(lcd_getbgcolor()),
 									lcd_line_length*panel_info.vl_row);
-		flush_cache((char *)panel_info.lcd_base, lcd_line_length*panel_info.vl_row);					
+		flush_cache((unsigned long)panel_info.lcd_base, lcd_line_length*panel_info.vl_row);					
 					
 		/* Initialize the console */
 	panel_info.console_col = 0;
@@ -505,36 +505,36 @@ ulong lcd_setmem (ulong addr)
 	addr -= size;
 
 	debug ("Reserving %ldk for LCD Framebuffer at: %08lx\n", size>>10, addr);
-	panel_info.lcd_base = addr;
-	panel_info.lcd_console_address=addr;
+	panel_info.lcd_base = (void*)addr;
+	panel_info.lcd_console_address=(void*)addr;
 	
 	return (addr);
 }
 
 /*----------------------------------------------------------------------*/
 
-static void lcd_setfgcolor (int color)
+void lcd_setfgcolor (int color)
 {
 	panel_info.lcd_color_fg = color;
 }
 
 /*----------------------------------------------------------------------*/
 
-static void lcd_setbgcolor (int color)
+void lcd_setbgcolor (int color)
 {
 	panel_info.lcd_color_bg = color;
 }
 
 /*----------------------------------------------------------------------*/
 
-static int lcd_getfgcolor (void)
+int lcd_getfgcolor (void)
 {
 	return panel_info.lcd_color_fg;
 }
 
 /*----------------------------------------------------------------------*/
 
-static int lcd_getbgcolor (void)
+int lcd_getbgcolor (void)
 {
 	return panel_info.lcd_color_bg;
 }
@@ -655,13 +655,16 @@ void bitmap_plot (int x, int y)
 
 int lcd_display_bitmap(ulong bmp_image, int x, int y)
 {
+#if(LCD_BPP ==LCD_COLOR8)	
 	ushort *cmap_base = NULL;
+	unsigned long byte_width;
+#endif	
 	ushort i, j;
 	uchar *fb;
 	bmp_image_t *bmp=(bmp_image_t *)bmp_image;
 	uchar *bmap;
 	ushort padded_line;
-	unsigned long width, height, byte_width;
+	unsigned long width, height; 
 	unsigned long pwidth = panel_info.vl_col;
 	unsigned colors, bpix, bmp_bpix;
 	unsigned long compression;
@@ -803,11 +806,11 @@ int lcd_display_bitmap(ulong bmp_image, int x, int y)
 		printf("ERROR LCD_BPP is %d\n", LCD_BPP);
 		return (-1);
 	};
-	flush_cache(panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
 	return (0);
 }
 
-static void *lcd_logo (void)
+void *lcd_logo (void)
 {
 #ifdef CONFIG_SPLASH_SCREEN
 	char *s;

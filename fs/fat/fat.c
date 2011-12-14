@@ -833,7 +833,7 @@ do_fat_read (const char *filename, void *buffer, unsigned long maxsize,
 	    l_name[0] = '\0';
 	    if ((dentptr->attr & ATTR_VOLUME)) {
 #ifdef CONFIG_SUPPORT_VFAT
-		if ((dentptr->attr & ATTR_VFAT == ATTR_VFAT) &&
+		if (((dentptr->attr & ATTR_VFAT) == ATTR_VFAT) &&
 		    (dentptr->name[0] & LAST_LONG_ENTRY_MASK)) {
 		    prevcksum = ((dir_slot *) dentptr)->alias_checksum;
 		    get_vfatname (mydata, 0, do_fat_read_block, dentptr, l_name);
@@ -981,7 +981,7 @@ do_fat_read (const char *filename, void *buffer, unsigned long maxsize,
     if(buffer)
     {
         ret = get_contents (mydata, dentptr, buffer, maxsize);
-		flush_cache(buffer, FAT2CPU32(dentptr->size));
+		flush_cache((unsigned long)buffer, FAT2CPU32(dentptr->size));
         FAT_DPRINT ("Size: %d, got: %ld\n", FAT2CPU32 (dentptr->size), ret);
     }
     else

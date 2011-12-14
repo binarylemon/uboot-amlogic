@@ -432,4 +432,6 @@ FONT ISO_88591_24Font = {
     TOTAL_CHARACTER_NUM,
     ISO_88591_24GetCharacterFontBit
 } ;
+
+#undef TOTAL_CHARACTER_NUM
 #endif

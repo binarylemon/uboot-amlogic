@@ -459,7 +459,6 @@ static int memory_post_tests (unsigned long start, unsigned long size)
 __attribute__((weak))
 int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
- 	bd_t *bd = gd->bd;
 #ifdef CONFIG_POST_AML
 	//*vstart = POST_MEM_START;
 	//*size=POST_MEM_SIZE;  // just for test
@@ -493,6 +492,7 @@ int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 	asm("mov r0, r0");
 	asm("mov r0, r0");	*/
 #else		
+ 	bd_t *bd = gd->bd;
  	*vstart = CONFIG_SYS_SDRAM_BASE;
  	*size = (bd->bi_memsize >= 256 << 20 ?
  			256 << 20 : bd->bi_memsize) - (1 << 20);

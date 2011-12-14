@@ -25,6 +25,9 @@
 #define PREG_SDIO_MEM_ADDR  CBUS_REG_ADDR(SDIO_M_ADDR)
 #define PREG_SDIO_STAT_IRQ  CBUS_REG_ADDR(SDIO_STATUS_IRQ)
 #define PREG_SDIO_IRQ_CFG   CBUS_REG_ADDR(SDIO_IRQ_CONFIG)
+
+extern void mdelay(unsigned long msec);
+
 /*
  * **********************************************************************************************
  * board relative
@@ -666,7 +669,7 @@ CMD_RETRY:
 
 int aml_sd_init(struct mmc *mmc)
 {
-	int ret;
+	//int ret;
 	struct aml_card_sd_info *sdio=mmc->priv;
 	//setting io pin mux
 

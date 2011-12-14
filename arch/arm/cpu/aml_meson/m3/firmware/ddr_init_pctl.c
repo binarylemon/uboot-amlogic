@@ -81,7 +81,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
 }
 
 
-static int init_pctl_ddr3(struct ddr_set * timing_reg)
+int init_pctl_ddr3(struct ddr_set * timing_reg)
 {
    int i;
    int mrs0_value;

@@ -10,6 +10,7 @@ unsigned char  font_nums = 0 ;
 PFONT gpCurFont = NULL;
 
 extern vidinfo_t panel_info;
+extern void mdelay(unsigned long msec);
 
 unsigned char is_rect_invalid(const RECT *rect)
 {

@@ -1,6 +1,7 @@
 #include <common.h>
 #include <asm/saradc.h>
 #include <post.h>
+#include <devfont.h>
 
 #ifdef CONFIG_SARADC
 
@@ -24,6 +25,7 @@ extern struct adc_device aml_adc_devices;
 static void display_adc_title(char *s, int pos)
 {
 #ifdef ENABLE_FONT_RESOURCE
+extern unsigned short GetCharHeight(void);
 	int font_height=GetCharHeight();
 	
 	int x_cur = 40;
@@ -33,7 +35,7 @@ static void display_adc_title(char *s, int pos)
 		return;
 		
 	DrawRect(x_cur, y_cur+font_height*pos, panel_info.vl_col-x_cur,font_height,DISPLAY_BLACK_COLOR);
-	AsciiPrintf((uchar*)s, x_cur, y_cur+font_height*pos, DISPLAY_WHITE_COLOR);		
+	AsciiPrintf((char*)s, x_cur, y_cur+font_height*pos, DISPLAY_WHITE_COLOR);		
 #endif	
 }
 

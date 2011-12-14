@@ -31,3 +31,7 @@ struct act8942_operations {
 
 	unsigned int update_period; /* msecs, default is 5000 */
 };
+
+void act8942_init(struct act8942_operations *act8942_opts);
+unsigned char act8942_i2c_read(unsigned char reg);
+void act8942_i2c_write(unsigned char reg, unsigned char val);

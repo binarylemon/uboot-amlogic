@@ -45,11 +45,11 @@
 #endif
 #define WANT_UCL_WILDARGV 1
 
-static const char *progname = NULL;
+const char *progname = NULL;
 
 static unsigned long total_in = 0;
 static unsigned long total_out = 0;
-static int opt_debug = 0;
+//static int opt_debug = 0;
 
 /* use option `-F' for faster operation - then we don't compute or verify
  * a checksum and always use the fast decompressor */

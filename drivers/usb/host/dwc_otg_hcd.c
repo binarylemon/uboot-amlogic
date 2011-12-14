@@ -16,6 +16,7 @@
 #include <usb.h>
 #include <malloc.h>
 #include <linux/list.h>
+#include <asm/cache.h>
 
 
 #include "dwc_otg_regs.h"

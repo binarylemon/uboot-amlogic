@@ -3,6 +3,7 @@
 #include <asm/arch/memory.h>
 #include <share_kernel.h>
 #include <asm/arch/gpio.h>
+#include <malloc.h>
 
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
@@ -20,20 +21,25 @@
 #include <font/ISO_88591_40.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+extern void mdelay(unsigned long msec);
+
+#ifdef __GNUC__
+#define IS_NOT_USED __attribute__ ((unused)) 
+#else 
+#define IS_NOT_USED 
+#endif 
 
 #ifdef CONFIG_PMU_ACT8942
 #include <act8942.h>  
 
 #define msleep(a) udelay(a * 1000)
 
-static void power_off(void)
+IS_NOT_USED static void power_off(void)
 {
     //Power hold down
     set_gpio_val(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), 0);
     set_gpio_mode(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), GPIO_OUTPUT_MODE);
 }
-
-
 
 /*
  *	DC_DET(GPIOA_20)	enable internal pullup
@@ -59,7 +65,7 @@ static inline int is_ac_online(void)
 //temporary
 static inline int is_usb_online(void)
 {
-	u8 val;
+	//u8 val;
 
 	return 0;
 }
@@ -110,12 +116,12 @@ static inline int measure_current(void)
 	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
 	msleep(2);
 	Vl = get_adc_sample(5) * (2 * 2500000 / 1023);
-	printf("%s: Vh is %duV.\n", __FUNCTION__, Vh);
+	printf("%s: Vl is %duV.\n", __FUNCTION__, Vl);
 	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
 	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 0);
 	msleep(2);
 	Vh = get_adc_sample(5) * (2 * 2500000 / 1023);
-	printf("%s: Vl is %duV.\n", __FUNCTION__, Vl);
+	printf("%s: Vh is %duV.\n", __FUNCTION__, Vh);
 	Vdiff = Vh - Vl;
 	val = Vdiff * 50;
 	printf("%s: get from adc is %duA.\n", __FUNCTION__, val);
@@ -138,9 +144,9 @@ static inline int measure_capacity(void)
 }
 
 //temporary
-static int set_bat_off(void)
+static void set_bat_off(void)
 {
-	return 0;
+	return;
 }
 
 static struct act8942_operations act8942_pdata = {
@@ -292,7 +298,7 @@ static struct i2c_board_info aml_i2c_info[] = {
 };
 
 struct aml_i2c_device aml_i2c_devices={
-	.aml_i2c_boards = aml_i2c_info,
+	.aml_i2c_boards = (struct i2c_borad_info *)aml_i2c_info,
 	.dev_num = sizeof(aml_i2c_info)/sizeof(struct i2c_board_info)
 };
 #endif /*CONFIG_AML_I2C*/
@@ -723,6 +729,7 @@ int board_mmc_init(bd_t	*bis)
 
 static int is_ac_connected(void)
 {
+extern int pmu_is_ac_online(void);	
 	return pmu_is_ac_online();
 }
 
@@ -754,7 +761,7 @@ inline void power_up(void)
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 }
 
-inline void power_down()
+inline void power_down(void)
 {
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
@@ -789,7 +796,7 @@ int powerkey_hold(unsigned long hold_time)
     if(!hold_time)
     {
         tmp = powerkey_scan();
-        printf("powerkey: %d\n", tmp);
+        printf("powerkey: %ld\n", tmp);
         if((!tmp) || (powerkey_hold_count < 0))
         {
             powerkey_hold_count = -2;
@@ -829,10 +836,10 @@ int powerkey_hold(unsigned long hold_time)
 
 int upgrade_bootloader(void)
 {
-    int	i = 0, j = 0, retry = 2;
+    int	i = 0;  //, j = 0 , retry = 2;
     char	str[128];
-    unsigned long   size, size1;
-    char    *filepath;
+   // unsigned long   size, size1;
+   // char    *filepath;
     
     printf("u-boot upgrading...\n");
     if(run_command ("mmcinfo", 0))
@@ -932,7 +939,7 @@ static void prepare_black_bmp(char * addr, int w, int h)
 
 void into_recovery(void)
 {
-    int	i = 0, j = 0, ret = 0;
+    int	i = 0,ret = 0; // j = 0, 
     char	str[128];
     
     printf("Recovery Start...\n");
@@ -967,7 +974,7 @@ void into_recovery(void)
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
 
-inline int get_key()
+inline int get_key(void)
 {
     int adc_val = get_adc_sample(4);
     printf("get_adc_sample(4): 0x%x\n", adc_val);
@@ -975,7 +982,7 @@ inline int get_key()
 }
 
 #ifdef CONFIG_VOLTAGE_AO12
-void vccao_1_2v()
+void vccao_1_2v(void)
 {	//change vcc ao from 1.25v to 1.2v
 	act8942_i2c_write(0x20,0x18);
 	act8942_i2c_write(0x21,0x18);
@@ -983,7 +990,7 @@ void vccao_1_2v()
 #endif
 
 #ifdef CONFIG_VOLTAGE_DDR15
-void ddr_1_5_v()
+void ddr_1_5_v(void)
 { //change ddr from 1.55v to 1.5v
 	act8942_i2c_write(0x30,0x1E);
 	act8942_i2c_write(0x31,0x1E);	
@@ -1018,7 +1025,7 @@ int switch_boot_mode(void)
 #endif*/
 	
 	upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
-	printf("upgrade_step = %d\n", upgrade_step);
+	printf("upgrade_step = %ld\n", upgrade_step);
 		
 	saradc_enable();
 	
@@ -1032,6 +1039,7 @@ int switch_boot_mode(void)
 
     if(get_key())
     {
+extern int aml_autoscript(void);    	
 	    aml_autoscript();
     }
 	powerkey_hold(0);
@@ -1113,7 +1121,7 @@ int switch_boot_mode(void)
 	else
 	{
 		power_up();
-		printf("Upgrade step %d...\n", upgrade_step);
+		printf("Upgrade step %ld...\n", upgrade_step);
 	}
 
 	if(upgrade_step == 0)
@@ -1150,7 +1158,7 @@ int switch_boot_mode(void)
 	{
 		udelay(polling_time);
 		tmp = get_key();
-		printf("get_key(): %d\n", tmp);
+		printf("get_key(): %ld\n", tmp);
 		if(!tmp)  break;
 		hold_time -= polling_time;
 	}

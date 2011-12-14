@@ -94,7 +94,7 @@ unsigned test_w_l1cache(unsigned fill_value, unsigned modify_value)
 	addr = (unsigned*)no_cache_mem_start;	
 	for(i=0; i<size; i++, addr++){
 		if(*addr != modify_value){							
-			err_addr = addr;			
+			err_addr = (unsigned)addr;			
 			break;
 		}
 	}	
