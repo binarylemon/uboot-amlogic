@@ -14,18 +14,19 @@
 #include <asm/cache.h>      
 #include "spi_flash_amlogic.h"
 
-//note: To use Amlogic SPI flash controller for SPI flash access 
-//         two macro CONFIG_CMD_SF & CONFIG_AML_MESON_1/2/3
-//         must be set to 1
-//         header file locate at:  \board\amlogic\configs\
+/*note: To use Amlogic SPI flash controller for SPI flash access 
+         two macro CONFIG_CMD_SF & CONFIG_AML_MESON_1/2/3
+         must be set to 1
+         header file locate at:  \board\amlogic\configs\
 
-//backup PIN_MAX_1 value before claim bus for SPI controller
-//restore the original value after usage
-//note: following two functions for one SPI operation
-//      void spi_release_bus(struct spi_slave *slave)
-//      int spi_claim_bus(struct spi_slave *slave)
+backup PIN_MAX_1 value before claim bus for SPI controller
+restore the original value after usage
+note: following two functions for one SPI operation
+      void spi_release_bus(struct spi_slave *slave)
+      int spi_claim_bus(struct spi_slave *slave)
 
-//static u32 g_u32_PERIPHS_PIN_MUX_1_backup = 0;
+static u32 g_u32_PERIPHS_PIN_MUX_1_backup = 0;
+*/
 
 int spi_flash_cmd(struct spi_slave *spi, u32 cmd, void *response, size_t len)
 {
@@ -87,7 +88,7 @@ __attribute__((weak)) void spi_cs_activate(struct spi_slave *slave) {}
 
 __attribute__((weak)) void spi_cs_deactivate(struct spi_slave *slave){}
 
-static void spi_initialize(){ 
+static void spi_initialize(void){ 
 	writel(0xea949,P_SPI_FLASH_CTRL); //SPI clock-> system clock / 10
 }
 

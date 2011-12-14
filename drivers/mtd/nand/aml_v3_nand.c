@@ -10,6 +10,7 @@
 #include <linux/err.h>
 #include <asm/cache.h>
 #include <asm/arch/pinmux.h>
+#include <asm/arch/clock.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
@@ -221,10 +222,10 @@ static void aml_nand_cmdfunc(struct mtd_info *mtd, unsigned command, int column,
 
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 {
-	struct mtd_info *mtd = aml_chip->mtd;
-	struct nand_chip *chip = &aml_chip->chip;
+	//struct mtd_info *mtd = aml_chip->mtd;
+	//struct nand_chip *chip = &aml_chip->chip;
 	struct aml_nand_platform *plat = aml_chip->platform;
-	struct clk *sys_clk;
+	//struct clk *sys_clk;
 	unsigned sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, time_mode, tmp;
 
 	if (!plat->T_REA)
@@ -549,14 +550,12 @@ static void aml_platform_write_byte(struct aml_nand_chip *aml_chip, uint8_t data
 
 /*ADD RBPIN NO mode*/
 static int aml_platform_wait_devready(struct aml_nand_chip *aml_chip, int chipnr)
-{
-	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = aml_chip->mtd;
-	unsigned time_out_cnt = 0;
-	int status;
-
+{	
 #if   CONFIG_AM_NAND_RBPIN
-
+	int status;
+	unsigned time_out_cnt = 0;
+	struct mtd_info *mtd = aml_chip->mtd;
+	struct nand_chip *chip = &aml_chip->chip;
 	/* wait until command is processed or timeout occures */
 	aml_chip->aml_nand_select_chip(aml_chip, chipnr);
 	do {
@@ -1030,7 +1029,7 @@ static int aml_platform_dma_waiting(struct aml_nand_chip *aml_chip)
 
 static int aml_platform_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode)
 {
-	struct mtd_info *mtd = aml_chip->mtd;
+	//struct mtd_info *mtd = aml_chip->mtd;
 	struct nand_chip *chip = &aml_chip->chip;
 	unsigned count= len/chip->ecc.size,pgsz=0;
 	int ret = 0;
@@ -1067,7 +1066,7 @@ static int aml_platform_dma_write(struct aml_nand_chip *aml_chip, unsigned char 
 
 static int aml_platform_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode)
 {
-	struct mtd_info *mtd = aml_chip->mtd;
+	//struct mtd_info *mtd = aml_chip->mtd;
 	struct nand_chip *chip = &aml_chip->chip;
 //	unsigned dma_unit_size=0;
 	unsigned count= len/chip->ecc.size,pgsz=0;
@@ -1233,7 +1232,7 @@ static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 { 
 	struct nand_chip * chip = mtd->priv;	
 	struct mtd_oob_ops aml_oob_ops;
-	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	//struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 
 	aml_oob_ops.mode = MTD_OOB_AUTO;
 	aml_oob_ops.len = mtd->writesize;
@@ -1345,7 +1344,7 @@ static uint8_t aml_platform_read_byte(struct mtd_info *mtd)
 
 static void aml_platform_write_bytes(struct mtd_info *mtd,  uint8_t *buf ,int bytes)
 {
-	struct nand_chip *chip = mtd->priv;
+	//struct nand_chip *chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	int i=0;
 
@@ -1907,12 +1906,13 @@ static void aml_nand_cmdfunc(struct mtd_info *mtd, unsigned command, int column,
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct nand_chip *chip = &aml_chip->chip;
-	int i = 0, valid_page_num = 1, internal_chip;
+	int i = 0;
 	int status=0;
 
 //remember address for lower 
 	if (page_addr != -1) {
 #if 0
+		int valid_page_num = 1, internal_chip;
 		valid_page_num = (mtd->writesize >> chip->page_shift);
 		valid_page_num /= aml_chip->plane_num;
 
@@ -2064,11 +2064,12 @@ static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct nand_chip *chip = mtd->priv;
-	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
-	unsigned vt_page_num, i = 0, j = 0, internal_chipnr = 1, page_addr, valid_page_num;
+	struct nand_chip *chip = mtd->priv;	
+	unsigned i = 0, j = 0, internal_chipnr = 1, page_addr;
 
 #if 0
+	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
+	unsigned vt_page_num, valid_page_num;
 	vt_page_num = (mtd->writesize / (1 << chip->page_shift));
 	vt_page_num *= (1 << pages_per_blk_shift);
 	if (page % vt_page_num)
@@ -2081,7 +2082,7 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 
 	page_addr /= valid_page_num;
 #else
-	page_addr =  page & (~ (1<< chip->phys_erase_shift  -1)) ;	//address block align 
+	page_addr =  page & (~ (1<< (chip->phys_erase_shift  -1))) ;	//address block align 
 //	vt_page_num = (1 << pages_per_blk_shift )*aml_chip->plane_num;
 //	if (page % vt_page_num){
 //		aml_nand_debug("skip page 0x%x!\n" ,page);		
@@ -2410,7 +2411,7 @@ static uint8_t aml_nand_get_onfi_features(struct aml_nand_chip *aml_chip, uint8_
 {
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &aml_chip->mtd;
-	int i, j;
+	int i;
 
 	for (i=0; i<aml_chip->chip_num; i++) {
 
@@ -2434,7 +2435,7 @@ static void aml_nand_set_onfi_features(struct aml_nand_chip *aml_chip,  uint8_t 
 {
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &aml_chip->mtd;
-	int i, j;
+	int i;
 
 	for (i=0; i<aml_chip->chip_num; i++) {
 
@@ -2486,7 +2487,7 @@ static int aml_onfi_timingsetting(struct aml_nand_chip *aml_chip)
 			printk ("read:" );
 			for(i=0;i<4;i++)
 				printk ("0x%x ",aml_chip->aml_nand_data_buf[i] );
-			return ;	
+			return 0;	
 		}
 		if(sync){
 //			int syncmask= ( aml_chip->mfr_type==NAND_MFR_MICRON )?NAND_SYNC_MODE:NAND_TOGGLE_MODE ;
@@ -2505,9 +2506,6 @@ static int aml_onfi_timingsetting(struct aml_nand_chip *aml_chip)
 static int aml_toggle_timingsetting(struct aml_nand_chip *aml_chip)
 {
 	struct aml_nand_platform *plat = aml_chip->platform;
-	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = aml_chip->mtd;
-
 	{
 		uint8_t	P[4];
 		int sync =plat->platform_nand_data.chip.options&NAND_SYNC_OPTIONS_MASK;
@@ -2515,6 +2513,8 @@ static int aml_toggle_timingsetting(struct aml_nand_chip *aml_chip)
 		memset(P,0,4);
 
 #if  0
+	struct nand_chip *chip = &aml_chip->chip;
+	struct mtd_info *mtd = aml_chip->mtd;
 		P[0] =  (sync?(0x06):0);
 		P[1] =  (sync?(0x00):0);
 		memcpy(aml_chip->aml_nand_data_buf , P,4);	
@@ -2555,6 +2555,7 @@ static int aml_toggle_timingsetting(struct aml_nand_chip *aml_chip)
 			printk ("async setting ok\n");
 		}
 	}
+	return 0;
 }
 
 

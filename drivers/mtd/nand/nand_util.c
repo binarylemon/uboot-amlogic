@@ -667,7 +667,7 @@ int nand_read_skip_bad(nand_info_t *nand, loff_t offset, size_t *length,
 int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 			u_char *buf, int protect_flag)
 {
-	unsigned int area_size,i,cur,area_loop;
+	unsigned int area_size,cur,area_loop;
 	unsigned ret=0,err_flag=0;
 	unsigned int w_size,total_size;
 	unsigned w_offset = 0;
@@ -748,7 +748,7 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 
 	unsigned short_mode=0,pg_num=0;
 	unsigned pages_in_block = mtd->erasesize/mtd->writesize;
-	struct nand_chip * chip=(struct nand_chip *)(mtd->priv);
+	//struct nand_chip * chip=(struct nand_chip *)(mtd->priv);
 	struct aml_nand_platform * plat_info = aml_chip->platform;
 
 
@@ -784,7 +784,7 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 		if(ret)
 		{
 			err_flag|=1<<area_loop;
-			printk("mtd->writeoob err at area %d first pg %lld \n",area_loop,area_loop*area_size);	
+			printk("mtd->writeoob err at area %d first pg %lld \n",area_loop,(long long unsigned)area_loop*area_size);	
 		}
     }
     if(err_flag==0xf)
@@ -820,14 +820,14 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
 			u_char *buf)
 {
-	unsigned int i,cur;
+	//unsigned int i,cur;
 	unsigned ret=0,err_flag=0;
 	unsigned int w_size;
 	unsigned r_offset = 0;
-	size_t len=*plen;
-	unsigned  * rom_inter_buff=NULL;
+	//size_t len=*plen;
+	unsigned  char* rom_inter_buff=NULL;
 
-	nand_erase_options_t opts;
+	//nand_erase_options_t opts;
 	struct mtd_oob_ops ops=	{.retlen=0 ,
 							.mode=MTD_OOB_PLACE};
     unsigned short oob[8];							
@@ -859,7 +859,7 @@ int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
 	}	
 	
 	ops.retlen=0;
-	ops.oobbuf= &oob[0];
+	ops.oobbuf= (uint8_t*)&oob[0];
 	ops.ooblen=8;
 	ops.len=mtd->writesize;
 	ops.datbuf=rom_inter_buff;
@@ -899,8 +899,8 @@ int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
     			aml_nand_debug("mtd->read err at  %x %d mem_addr=%x",r_offset,ret,databuf);	
     		}
     		aml_nand_debug("\n");
-	        memcpy(databuf,rom_inter_buff,w_size);
-	        memcpy(oobbuf,&oob[0],w_size/(384/2));
+	        memcpy((void*)databuf,rom_inter_buff,w_size);
+	        memcpy((void*)oobbuf,&oob[0],w_size/(384/2));
 	    }
 	}
 	

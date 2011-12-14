@@ -343,16 +343,15 @@ static void DMATXStart(void)
 
 }
 
-static void DMARXStop(void)
-{
-	writel(readl(ETH_DMA_6_Operation_Mode) & ~ETH_DMA_6_Operation_Mode_SR, ETH_DMA_6_Operation_Mode);
+//static void DMARXStop(void)
+//{
+//	writel(readl(ETH_DMA_6_Operation_Mode) & ~ETH_DMA_6_Operation_Mode_SR, ETH_DMA_6_Operation_Mode);
+//}
 
-}
-
-static void DMATXStop(void)
+/*static void DMATXStop(void)
 {
 	writel(readl(ETH_DMA_6_Operation_Mode) & ~ETH_DMA_6_Operation_Mode_ST, ETH_DMA_6_Operation_Mode);
-}
+}*/
 
 static void GetDMAStatus(unsigned int* mask,unsigned  int* status)
 {
@@ -360,7 +359,7 @@ static void GetDMAStatus(unsigned int* mask,unsigned  int* status)
 	*status = readl(ETH_DMA_5_Status);
 }
 
-static void chk_dma_stat(void)
+/*static void chk_dma_stat(void)
 {
 	unsigned int mask;
 	unsigned int status;
@@ -437,7 +436,7 @@ static void chk_dma_stat(void)
 			DMATXStart();
 		}
 	}
-}
+}*/
 
 static void aml_eth_halt(struct eth_device * net_current)
 {

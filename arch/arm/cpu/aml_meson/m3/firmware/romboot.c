@@ -1,6 +1,13 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
+
+#if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
+extern int uclDecompress(char* op, unsigned* o_len, char* ip);
+#endif
+#endif
+
 #ifndef FIRMWARE_IN_ONE_FILE
 #define STATIC_PREFIX
 #else
@@ -138,7 +145,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 	unsigned len;    
     if(rc==0){
         serial_puts("ucl decompress\n");
-        rc=uclDecompress(target,&len,temp_addr);
+        rc=uclDecompress((char*)target,&len,(char*)temp_addr);
         serial_puts(rc?"decompress false\n":"decompress true\n");
     }
 #endif    
@@ -172,7 +179,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 	unsigned len;
     if(!rc){
 	    serial_puts("ucl decompress\n");
-	    rc=uclDecompress(target,&len,temp_addr);
+	    rc=uclDecompress((char*)target,&len,(char*)temp_addr);
         serial_puts("decompress finished\n");
     }
 #endif    
@@ -223,7 +230,7 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
     	int rc;
         if( __load_table[i].size&(~0x3fffff))
         {
-            rc=uclDecompress(__load_table[i].dest,&len,temp_addr+__load_table[i].src);
+            rc=uclDecompress((char*)(__load_table[i].dest),&len,(char*)(temp_addr+__load_table[i].src));
             if(rc)
             {
                 serial_put_dword(i);

@@ -220,6 +220,7 @@
 
 #define NAND_INFO_DONE(a)         (((a)>>31)&1)
 #define NAND_ECC_ENABLE(a)        (((a)>>30)&1)
+
 #define NAND_ECC_CNT(a)           (((a)>>24)&0x3f)
 #define NAND_ZERO_CNT(a)	      (((a)>>16)&0x3f)	
 #define NAND_INFO_DATA_2INFO(a)   ((a)&0xffff)

@@ -38,6 +38,12 @@ int find_dev_and_part(const char *id, struct mtd_device **dev,
 		      u8 *part_num, struct part_info **part);
 #endif
 
+
+extern int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf);
+extern int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
+			u_char *buf, int protect_flag);			
+			
 static int nand_protect = 1;
 
 static int nand_dump(nand_info_t *nand, ulong off, int only_oob, int repeat)
@@ -634,7 +640,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		s = strchr(cmd, '.');
 		if (!s ||!strcmp(s, ".e") || !strcmp(s, ".i")) {
 			if (read){
-				ret = romboot_nand_read(nand, off, &size,
+				ret = romboot_nand_read(nand, off, (size_t * )&size,
 							 (u_char *)addr);
 			}
 			else

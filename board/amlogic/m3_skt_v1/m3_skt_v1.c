@@ -1,6 +1,7 @@
 #include <common.h>
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
+#include <malloc.h>
 
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
