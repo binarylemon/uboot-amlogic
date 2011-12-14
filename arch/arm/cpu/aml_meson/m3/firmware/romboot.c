@@ -16,13 +16,13 @@
 short check_sum(unsigned * addr,unsigned short check_sum,unsigned size);
 #else
 STATIC_PREFIX short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
-{
-    int i;
-    unsigned short * p=(unsigned short *)addr;
+{    
     serial_put_dword(addr[15]);
     if(addr[15]!=CONFIG_AML_UBOOT_MAGIC)
         return -1;
 #if 0
+	int i;   
+	unsigned short * p=(unsigned short *)addr;
     for(i=0;i<size>>1;i++)
         check_sum^=p[i];
 #endif
@@ -98,8 +98,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     temp_addr=target;
 #endif
 
-    unsigned * mem;
-    unsigned len;    
+    unsigned * mem;    
     switch(POR_GET_1ST_CFG(por_cfg))
     {
         case POR_1ST_NAND:
@@ -136,6 +135,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     }
 #if CONFIG_UCL    
 #ifndef CONFIG_IMPROVE_UCL_DEC
+	unsigned len;    
     if(rc==0){
         serial_puts("ucl decompress\n");
         rc=uclDecompress(target,&len,temp_addr);
@@ -195,9 +195,8 @@ struct load_tbl_s{
 extern struct load_tbl_s __load_table[2];
 STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
 {
-    int i,rc;
+    int i;
     unsigned temp_addr;
-    unsigned len;
 #if CONFIG_UCL
     temp_addr=target-0x800000;
 #else
@@ -208,9 +207,9 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
     {
         // spi boot
         if(por_cfg&POR_ROM_BOOT_ENABLE)
-            temp_addr=(unsigned *)(NOR_START_ADDR+READ_SIZE);
+            temp_addr=(unsigned)(NOR_START_ADDR+READ_SIZE);
         else
-            temp_addr=(unsigned *)(NOR_START_ADDR+READ_SIZE+ROM_SIZE);
+            temp_addr=(unsigned)(NOR_START_ADDR+READ_SIZE+ROM_SIZE);
         
     }
         
@@ -220,6 +219,8 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
             continue;
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
+    	unsigned len;
+    	int rc;
         if( __load_table[i].size&(~0x3fffff))
         {
             rc=uclDecompress(__load_table[i].dest,&len,temp_addr+__load_table[i].src);
@@ -231,7 +232,7 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
         }else
 #endif        
 #endif  
-        memcpy(__load_table[i].dest,__load_table[i].src+temp_addr,__load_table[i].size&0x3fffff);      
+        memcpy((void*)(__load_table[i].dest),(const void*)(__load_table[i].src+temp_addr),__load_table[i].size&0x3fffff);      
     }
 }
 

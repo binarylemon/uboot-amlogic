@@ -1,14 +1,14 @@
 static int ddr_phy_data_traning(void)
 {
-    int  dqs0_delay;
-    int  dqs1_delay;
-    int  dqs2_delay;
-    int  dqs3_delay;
-    int  msdll0_phase;
-    int  msdll1_phase;
-    int  msdll2_phase;
-    int  msdll3_phase;
-    int  find_windows;
+   // int  dqs0_delay;
+   // int  dqs1_delay;
+   // int  dqs2_delay;
+    //int  dqs3_delay;
+    //int  msdll0_phase;
+    //int  msdll1_phase;
+    //int  msdll2_phase;
+    //int  msdll3_phase;
+    //int  find_windows;
     int  data_temp;
     clrbits_le32(P_PCTL_DTUAWDT_ADDR,3<<9);
         APB_Wr(PCTL_DTUWD0_ADDR, 0xdd22ee11);

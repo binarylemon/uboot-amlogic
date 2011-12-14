@@ -86,7 +86,7 @@ void init_dmc(struct ddr_set * ddr_setting)
 }
 
 static unsigned char dllcr[7]={3,2,1,0,0xe,0xd,0xc};
-static unsigned char max_lane = 2;
+//static unsigned char max_lane = 2;
 #define TEST_COUNT 16
 #define MAX_PATERN 18
 static unsigned phd[MAX_PATERN][4]={
@@ -116,7 +116,7 @@ static int dtu_test(struct ddr_set *ddr_setting, unsigned lane, unsigned char *t
 {
     int i=0;
     int result = -1;
-    int dtu_result;
+    //int dtu_result;
 #ifdef RESET_MMC_FOR_DTU_TEST
     ddr_setting->init_pctl(ddr_setting);
 #endif
@@ -463,7 +463,7 @@ static unsigned ddr_init_sw(struct ddr_set * ddr_setting)
             if (Tra[0]!=0xff)
                 break;
         }
-        if (Tra[0]=0xff) Tra[0]=5;
+        if (Tra[0]==0xff) Tra[0]=5;
     }
     for (i=0;i<5;i++){
         Phase[1] = phase_retry[i];
@@ -482,7 +482,7 @@ static unsigned ddr_init_sw(struct ddr_set * ddr_setting)
             if (Tra[1]!=0xff)
                 break;
         }
-        if (Tra[1]=0xff) Tra[1]=5;
+        if (Tra[1]==0xff) Tra[1]=5;
     }
 	for (i=0;i<5;i++){
         Phase[2] = phase_retry[i];
@@ -501,7 +501,7 @@ static unsigned ddr_init_sw(struct ddr_set * ddr_setting)
             if (Tra[2]!=0xff)
                 break;
         }
-        if (Tra[2]=0xff) Tra[2]=5;
+        if (Tra[2]==0xff) Tra[2]=5;
     }
 	for (i=0;i<5;i++){
         Phase[3] = phase_retry[i];
@@ -520,7 +520,7 @@ static unsigned ddr_init_sw(struct ddr_set * ddr_setting)
             if (Tra[3]!=0xff)
                 break;
         }
-        if (Tra[3]=0xff) Tra[3]=5;
+        if (Tra[3]==0xff) Tra[3]=5;
     }
     Tr[0] = dwc_dq_alignment(ddr_setting, 0, Tra, Dqs, Dqsn);
     Tr[1] = dwc_dq_alignment(ddr_setting, 1, Tra, Dqs, Dqsn);

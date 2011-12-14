@@ -6,20 +6,29 @@
 //  Copyright 2009 Amlogic. All rights reserved.
 // 
 
-extern int uclDecompress(char* op, unsigned o_len, char* ip);
+extern int uclDecompress(char* op, unsigned* o_len, char* ip);
 
 //extern unsigned CONFIG_SYS_TEXT_BASE;
 //extern void *UCL_TEXT_BASE;
 extern void *input_data;
 extern void *input_data_end;
-extern void mmu_disable();
+extern void mmu_disable(void);
+extern void	serial_puts   (const char *);
+extern void serial_wait_tx_empty(void);
+extern void dcache_disable (void);
+extern void icache_disable (void);
+#include <asm/cache.h>
+#ifndef CONFIG_L2_OFF
+#include <asm/cache-l2x0.h>
+#endif
+
 	
 void start_arcboot_ucl(void)
 {
 	typedef void (* JumpAddr)(void);	
 	unsigned len ;
 	serial_puts("ucl decompress in TPL: \n");
-	uclDecompress(CONFIG_SYS_TEXT_BASE,&len,&input_data);
+	uclDecompress((char*)CONFIG_SYS_TEXT_BASE,&len,(char*)&input_data);
     serial_puts("decompress finished\n");
     serial_wait_tx_empty();
         
@@ -35,7 +44,7 @@ void start_arcboot_ucl(void)
 	l2_cache_disable();
 	l2x0_clean_inv_all();
 #endif
-    unsigned int i;
+    unsigned int i=0;
 
 	/* mem barrier to sync up things */
 	asm("mcr p15, 0, %0, c7, c10, 4": :"r"(i));

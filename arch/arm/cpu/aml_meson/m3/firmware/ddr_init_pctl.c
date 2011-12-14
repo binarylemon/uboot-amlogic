@@ -85,8 +85,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 {
    int i;
    int mrs0_value;
-   int mrs1_value;
-   int mrs2_value;
+   int mrs1_value;   
    int mrs3_value;
    static unsigned time_tag = 1;
     Wr(RESET1_REGISTER,1<<3);
@@ -97,6 +96,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
     }
 		APB_Wr(MMC_DDR_CTRL,timing_reg->ddr_ctrl);
 #if 0    
+		int mrs2_value;
      mrs0_value =           (1 << 12 ) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
                             (4 <<9 )   |   //wr recovery   4 means write recovery = 8 cycles..
                             (0  << 8 ) |   //DLL reset.

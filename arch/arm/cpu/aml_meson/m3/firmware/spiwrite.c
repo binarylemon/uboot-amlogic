@@ -14,7 +14,7 @@ SPL_STATIC_FUNC void spi_pinmux_init(void)
 
 STATIC_PREFIX int SPI_page_program(unsigned * addr_source, unsigned spi_addr, int byte_length)
 {
-   unsigned temp;
+   //unsigned temp;
    unsigned temp_addr;
    int temp_bl,i;
    
@@ -39,7 +39,7 @@ STATIC_PREFIX int SPI_page_program(unsigned * addr_source, unsigned spi_addr, in
         do{
             writel(1 << SPI_FLASH_RDSR,P_SPI_FLASH_CMD);
             while(readl(P_SPI_FLASH_CMD)!=0);
-        }while(readl(P_SPI_FLASH_STATUS)&1==1);
+        }while((readl(P_SPI_FLASH_STATUS)&1)==1);
    }
    
   ///enable SPI nor from AHB bus
@@ -48,7 +48,7 @@ STATIC_PREFIX int SPI_page_program(unsigned * addr_source, unsigned spi_addr, in
 }
 STATIC_PREFIX int SPI_sector_erase(unsigned addr )
 {
-   unsigned temp;
+   //unsigned temp;
    clrbits_le32(P_SPI_FLASH_CTRL,1<<SPI_ENABLE_AHB);
    writel(addr & 0xffffff,P_SPI_FLASH_ADDR);
    
@@ -64,7 +64,7 @@ STATIC_PREFIX int SPI_sector_erase(unsigned addr )
   do{
         writel(1 << SPI_FLASH_RDSR,P_SPI_FLASH_CMD);
         while(readl(P_SPI_FLASH_CMD)!=0);
-  }while(readl(P_SPI_FLASH_STATUS)&1==1);
+  }while((readl(P_SPI_FLASH_STATUS)&1)==1);
   
   ///enable SPI nor from AHB bus
   setbits_le32(P_SPI_FLASH_CTRL,1<<SPI_ENABLE_AHB); 

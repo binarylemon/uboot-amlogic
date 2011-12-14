@@ -14,6 +14,8 @@
 #include <asm/arch/uart.h>
 #include <asm/arch/io.h>
 
+int serial_set_pin_port(unsigned port_base);
+
 SPL_STATIC_FUNC void serial_init(unsigned set)
 {
     /* baud rate */
@@ -42,7 +44,7 @@ void serial_putc(const char c)
 }
 
 //SPL_STATIC_FUNC 
-void serial_wait_tx_empty()
+void serial_wait_tx_empty(void)
 {
     while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY)==0);
     

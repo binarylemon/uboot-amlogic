@@ -57,7 +57,9 @@
 
 #define C_ROM_BOOT_DEBUG_LOG (volatile unsigned long *)(GL_DATA_ADR + 0xe0)
 //#define DEBUG_EFUSE
+#ifndef NULL
 #define NULL (void*)0
+#endif
 #define CARD_TYPE_SD 0
 #define CARD_TYPE_SDHC 1
 #define CARD_TYPE_MMC 2

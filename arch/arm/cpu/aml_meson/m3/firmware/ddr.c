@@ -37,7 +37,7 @@ static unsigned ddr_start_again=1;
 static void wait_pll(unsigned clk,unsigned dest);
 void set_ddr_clock(struct ddr_set * timing_reg)
 {
- int i;
+// int i;
 #ifdef ENABLE_POWER_SAVING
     APB_Wr(PCTL_DLLCR_ADDR, APB_Rd(PCTL_DLLCR_ADDR)|(7<<2));
 #endif
@@ -94,7 +94,7 @@ static unsigned ( * mem_test[])(unsigned tag,struct ddr_set * timing_reg)={
 
 unsigned m3_ddr_init_test(int arg)
 {
-    int i,j;
+    int i; //,j;
     unsigned por_cfg=1;
     serial_putc('\n');
     por_cfg=0;

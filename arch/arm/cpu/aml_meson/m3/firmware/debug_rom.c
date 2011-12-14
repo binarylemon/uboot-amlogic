@@ -8,10 +8,14 @@
 #ifndef STATIC_PREFIX
 #define STATIC_PREFIX
 #endif
+extern void ipl_memcpy(void*, const void *, __kernel_size_t);
 #define memcpy ipl_memcpy
 #define get_timer get_utimer
 static  char cmd_buf[DEBUGROM_CMD_BUF_SIZE];
-STATIC_PREFIX char * get_cmd()
+
+void restart_arm(void);
+
+STATIC_PREFIX char * get_cmd(void)
 {
     
     int i,j;
@@ -185,10 +189,10 @@ STATIC_PREFIX void start_arc(int argc,char * argv[] )
     spi_init();
     get_dword(argv[1],&addr);
     /** copy ARM code*/
-    memcpy(0x49008000,0x49000000,16*1024);
+    memcpy((void*)0x49008000,(const void*)0x49000000,16*1024);
     writel((0x49008000>>14)&0xf,0xc810001c);
     /** copy ARC code*/
-    memcpy(0x49008000,addr,16*1024);
+    memcpy((void*)0x49008000,(const void*)addr,16*1024);
     writel(0x1<<4,0xc8100020);
     writel(0x7fffffff,P_AO_RTI_STATUS_REG0);
     serial_puts("start up ARC\n");
@@ -265,16 +269,16 @@ STATIC_PREFIX void memory_pll_init(int argc, char * argv[])
 STATIC_PREFIX void debugrom_set_start(int argc, char * argv[])
 {
     char * p;
-    int i;
+    //int i;
     p=argv[1];
     memcpy(&init_script[0],p,sizeof(init_script));
     init_script[sizeof(init_script)-1]=0;
 }
 
-STATIC_PREFIX char * debugrom_startup()
+STATIC_PREFIX char * debugrom_startup(void)
 {
     static int cur =0;
-    int i,ret;
+    int ret;
     ret=cur;
     if(cur>sizeof(init_script))
         return NULL;
@@ -289,7 +293,7 @@ STATIC_PREFIX char * debugrom_startup()
 }
 STATIC_PREFIX int run_cmd(char * cmd)
 {
-    int i,j,argc;
+    int argc;
     char * argv[4]={NULL,NULL,NULL,NULL};
     char * str;
     for(argc=0,str=cmd;argc<4;argc++)
@@ -402,7 +406,7 @@ STATIC_PREFIX void debug_rom(char * file, int line)
 #ifdef AML_DEBUGROM    
     nf_erase();
 #endif    
-    int c;
+    //int c;
     serial_puts("Enter Debugrom mode at ");
     serial_puts(file);
     serial_putc(':');
@@ -444,7 +448,7 @@ void relocate_init(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 }
 #endif
 
-void restart_arm()
+void restart_arm(void)
 {
 	  writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	  //reset A9

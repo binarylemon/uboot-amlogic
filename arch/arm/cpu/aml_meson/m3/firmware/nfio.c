@@ -15,6 +15,7 @@ read one page only
     bit 22 , 1:large  0:small
     bit 23 , 1:without RB pin  0:with RB pin
 */
+#undef NAND_INFO_BUF
 #define NAND_INFO_BUF 0x80000000
 #define NAND_TEMP_BUF 0x82000000
 #define DEFAULT_ECC_MODE  ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
@@ -171,7 +172,7 @@ STATIC_PREFIX short
 {
     unsigned por_cfg=romboot_info->por_cfg;
     unsigned ext=romboot_info->ext;
-    unsigned area;
+    //unsigned area;
     unsigned temp_addr = NAND_TEMP_BUF;
     
     
