@@ -25,6 +25,7 @@ SECTIONS
         . = ALIGN(4);
         __bss_start = .;
         .bss : { *(.bss) }
+        . = ALIGN(4);
         _end = .;
 }
 ASSERT(_end <= _STACK_END-1024, " too big");

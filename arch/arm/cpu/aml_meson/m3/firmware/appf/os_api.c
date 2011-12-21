@@ -55,17 +55,19 @@ int appf_runtime_call(unsigned function, unsigned arg1, unsigned arg2, unsigned 
 /**
  * This function is called after a warm reset, from entry.S.
  */
-#define writel(v,addr) (*((unsigned*)addr) = v)
-#define readl(addr) (*((unsigned*)addr))
+
 extern void pwr_delay(int n);
 int appf_warm_reset(void)
 {
     int ret;
+		writel(0,0xC810001C);
+		writel(0,0xC8100020);
+		writel(0,0xC110990C);
     
     struct appf_cpu *cpu;
     struct appf_cluster *cluster;
     int cpu_index, cluster_index;
-
+    
     cpu_index = appf_platform_get_cpu_index();
     cluster_index = appf_platform_get_cluster_index();
 
@@ -79,11 +81,6 @@ int appf_warm_reset(void)
     
     release_spinlock(cpu_index, cluster->context->lock);
 
-		//restore AHB setting.
-		writel(0,0xC110990C);
-//		writel(0,0xC810001C);
-//		writel(0,0xC8100020);
-		
 		pwr_delay(10);
 		
     return ret;
@@ -93,6 +90,7 @@ int appf_warm_reset(void)
 /** 
  * This function is called while running flat-mapped, on the boot loader's stack.
  */
+int appf_boottime_init(void) __attribute__ ((section ("APPF_BOOT_ENTRY_POINT")));
 int appf_boottime_init(void)
 {
     /* Set up stack pointers per CPU, per cluster */
@@ -100,8 +98,8 @@ int appf_boottime_init(void)
 		update_offset();
     appf_platform_boottime_init();
 
-    *((unsigned*)reloc_addr((unsigned)(&appf_runtime_call_flat_mapped))) =  (unsigned)appf_runtime_call;
-    *((unsigned*)reloc_addr((unsigned)(&appf_device_memory_flat_mapped))) = reloc_addr((unsigned)appf_device_memory);
+    *((unsigned*)reloc_addr(&appf_runtime_call_flat_mapped)) =  appf_runtime_call;
+    *((unsigned*)reloc_addr(&appf_device_memory_flat_mapped)) = reloc_addr(appf_device_memory);
 
     return 0;
 }
@@ -128,7 +126,7 @@ int appf_runtime_init(void)
 {
     int ret,i;
     unsigned va, pa;
-    struct appf_main_table* pmaintable = (struct appf_main_table*)reloc_addr((unsigned)(&main_table));
+    struct appf_main_table* pmaintable = (struct appf_main_table*)reloc_addr(&main_table);
     struct appf_cluster* pcluster;
     
     update_offset();
@@ -137,7 +135,7 @@ int appf_runtime_init(void)
     is_smp = FALSE;
 
     pa = reloc_addr((unsigned)&main_table);
-    va = (unsigned)(&main_table);
+    va = &main_table;
     if (pa == va)
     {
     	 __V(flat_mapped) = TRUE;
@@ -196,11 +194,10 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
     struct appf_cluster *cluster;
     int cpu_index, cluster_index;
     int i, rc, cluster_can_enter_cstate1;
-    struct appf_main_table* pmaintable = (struct appf_main_table*)reloc_addr((unsigned)(&main_table));
+    struct appf_main_table* pmaintable = (struct appf_main_table*)reloc_addr(&main_table);
 #ifdef USE_REALVIEW_EB_RESETS
     int system_reset = FALSE, last_cpu = FALSE;
 #endif
-
     cpu_index = appf_platform_get_cpu_index();
     cluster_index = appf_platform_get_cluster_index();
 	 

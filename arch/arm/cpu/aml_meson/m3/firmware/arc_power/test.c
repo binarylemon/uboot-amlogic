@@ -7,9 +7,7 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
-//#include "boot_code.c"
-extern unsigned arm_reboot[];
-extern int arm_reboot_size;
+#include "boot_code.c"
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));
@@ -35,14 +33,6 @@ void store_restore_plls(int flag);
 
 #define dbg_out(s,v) serial_puts(s);serial_put_hex(v,32);serial_putc('\n');
 
-extern void vddio_off(void);	
-extern void vddio_on(void);
-extern void reg7_off(void);
-extern void reg7_on(void);
-extern void init_I2C(void);
-extern void init_ddr_pll(void);
-
-
 static void timer_init()
 {
 	//100uS stick timer a mode : periodic, timer a enable, timer e enable
@@ -54,7 +44,7 @@ unsigned  get_tick(unsigned base)
     return readl(P_AO_TIMERE_REG)-base;
 }
 
-unsigned delay_tick(unsigned count)
+unsigned t_delay_tick(unsigned count)
 {
     unsigned base=get_tick(0);
     if(readl(P_AO_RTI_PWR_CNTL_REG0)&(1<<8)){
@@ -63,6 +53,19 @@ unsigned delay_tick(unsigned count)
         while(get_tick(base)<count*100);
     }
     return 0;
+}
+
+unsigned delay_tick(unsigned count)
+{
+    unsigned i,j;
+    for(i=0;i<count;i++)
+    {
+        for(j=0;j<1000;j++)
+        {
+            asm("mov r0,r0");
+            asm("mov r0,r0");
+        }
+    }
 }
 
 void delay_ms(int ms)
@@ -81,9 +84,8 @@ void copy_reboot_code()
 	int i;
 	int code_size;
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
-  volatile unsigned char * arm_base = (volatile unsigned char *)0x8000;
-	//code_size = sizeof(arm_reboot);
-	code_size = arm_reboot_size;
+  volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
+	code_size = sizeof(arm_reboot);
 	//copy new code for ARM restart
 	for(i = 0; i < code_size; i++)
 	{
@@ -92,30 +94,27 @@ void copy_reboot_code()
 		pcode++;
 		arm_base++;
 	}
-/*	pcode = (volatile unsigned char *)0x8000;
-	for(i = 0; i < code_size; i++)
-	{
-			serial_put_hex(*pcode,8);
-			pcode++;
-	}*/
 }
 
 void power_off_vddio();
 #define POWER_OFF_VDDIO
 #define POWER_OFF_HDMI_VCC
+#define POWER_OFF_AVDD33
+#define POWER_OFF_AVDD25
+#define POWER_DOWN_VCC12
+#define POWER_DOWN_DDR
 //#define POWER_OFF_EE
 void enter_power_down()
 {
-//	int i;
-//	unsigned v1,v2,v;
+	int i;
+	unsigned v1,v2,v;
 	unsigned rtc_ctrl;
 	unsigned power_key;
- 
 	//*******************************************
 	//*  power down flow  
 	//*******************************************
 	f_serial_puts("\n");
-	
+	wait_uart_empty();
 	// disable all memory accesses.
     disable_mmc_req();
    
@@ -124,13 +123,13 @@ void enter_power_down()
     
     //mmc enter sleep
     mmc_sleep();
-    delay_ms(10);
+//    delay_ms(20);
     
     // save ddr power
     APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
     APB_Wr(PCTL_PHYCR_ADDR, APB_Rd(PCTL_PHYCR_ADDR)|(1<<6));
     APB_Wr(PCTL_DLLCR9_ADDR, APB_Rd(PCTL_DLLCR9_ADDR)|(1<<31));
- 	delay_ms(10);
+// 	  delay_ms(20);
 
  	// power down DDR
  	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
@@ -138,17 +137,19 @@ void enter_power_down()
 	// enable retention
 	enable_retention();
 
+	writel(0,P_AO_RTI_STATUS_REG1);
+
  	// reset A9
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 	 
 	// enable iso ee for A9
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
-#ifdef POWER_OFF_VDDIO 
-	vddio_off(); 
-#endif		
 #ifdef POWER_OFF_HDMI_VCC
 	reg7_off();
+#endif
+#ifdef POWER_OFF_AVDD33
+	reg5_off();
 #endif
 
 #ifdef POWER_OFF_EE 
@@ -171,31 +172,75 @@ void enter_power_down()
 	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
 #endif
 
-	// gate off REMOTE, I2C s/m, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xf)),P_AO_RTI_GEN_CNTL_REG0);
 	
 	// change RTC filter for 32k
-    rtc_ctrl = readl(0xC810074c);
+  rtc_ctrl = readl(0xC810074c);
 	writel(0x00800000,0xC810074c);
 	// switch to 32k
     writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+    udelay(100);
+#ifdef POWER_OFF_VDDIO 
+	vddio_off(); 
+#endif		
+#ifdef POWER_OFF_AVDD25
+	reg6_off();
+#endif
+	udelay(100);
+#if (defined(POWER_DOWN_VCC12) || defined(POWER_DOWN_DDR))
+	switch_voltage(1);
+#endif
+#ifdef POWER_DOWN_DDR
+	powerdown_ddr();
+#endif
+#ifdef POWER_DOWN_VCC12
+	powerdown_vcc12();
+#endif
 
+	// gate off REMOTE, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 	// wait key
     power_key = readl(0Xc8100744);
+    #if 1
     while (((power_key&4) != 0)&&((power_key&8) == 0))
-    {
+   {
      	power_key = readl(0Xc8100744);
+   }
+   #else
+    for(i=0;i<64;i++)
+    {
+        udelay(1000);
+        //udelay(1000);
     }
-    // switch to clk81 
+   #endif
+    
+	// gate on REMOTE, I2C s/m, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF, P_AO_RTI_GEN_CNTL_REG0); 
+	udelay(10);
+#ifdef POWER_DOWN_DDR
+	powerup_ddr();
+#endif
+#ifdef POWER_DOWN_VCC12
+	powerup_vcc12();
+#endif
+#if (defined(POWER_DOWN_VCC12) || defined(POWER_DOWN_DDR))
+	switch_voltage(0);
+#endif
+
+#ifdef POWER_OFF_AVDD25
+	reg6_on();
+#endif
+#ifdef POWER_OFF_VDDIO 
+	vddio_on();
+#endif
+	udelay(100);
+   // switch to clk81 
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x1<<8)),P_AO_RTI_PWR_CNTL_REG0);
+	udelay(100);
 	// restore RTC filter
 	writel(rtc_ctrl,0xC810074c);
 
 	// set AO interrupt mask
 	writel(0xFFFF,P_AO_IRQ_STAT_CLR);
-
-	// gate on REMOTE, I2C s/m, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xf, P_AO_RTI_GEN_CNTL_REG0); 
 	
 #ifdef POWER_OFF_EE
 	//turn on EE voltage
@@ -217,17 +262,19 @@ void enter_power_down()
     // ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 #endif
-
-#ifdef POWER_OFF_VDDIO 
-	vddio_on();
+	
+#ifdef POWER_OFF_AVDD33
+	reg5_on();
 #endif
 #ifdef POWER_OFF_HDMI_VCC
 	reg7_on();
-#endif
+#endif    
 
     store_restore_plls(0);
      
     init_ddr_pll();
+    
+		uart_reset();
 
     reset_mmc();
 
@@ -245,20 +292,23 @@ void enter_power_down()
     // Next, we enable all requests
     enable_mmc_req();
 
-	f_serial_puts("restart arm...\n");
+//	f_serial_puts("restart arm...\n");
 	
 	//0. make sure a9 reset
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 		
 	//1. write flag
-	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	if (power_key&8)
+		writel(0xabcd1234,P_AO_RTI_STATUS_REG2);
+	else
+		writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	
 	//2. remap AHB SRAM
-	writel(2,P_AO_REMAP_REG0);
+	writel(3,P_AO_REMAP_REG0);
 	writel(2,P_AHB_ARBDEC_REG);
  
 	//3. turn off romboot clock
-	writel(0x7fffffff,P_HHI_GCLK_MPEG1);
+	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
  
 	//4. Release ISO for A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
@@ -269,23 +319,117 @@ void enter_power_down()
 	delay_ms(1);
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
-	delay_1s();
-	delay_1s();
-	delay_1s();
+//	delay_1s();
+//	delay_1s();
+//	delay_1s();
 }
 
+//#define ART_CORE_TEST
+#ifdef ART_CORE_TEST
+void test_arc_core()
+{
+    int i;
+    int j,k;
+    unsigned int power_key=0;
+    
+    for(i=0;i<1000;i++)
+    {
+        asm("mov r0,r0");
+        asm("mov r0,r0");
+        //udelay(1000);
+        //udelay(1000);
+        
+    }
+    
+    
+	f_serial_puts("\n");
+	wait_uart_empty();
+
+    writel(0,P_AO_RTI_STATUS_REG1);    
+
+ 	// reset A9 clock
+	//setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+
+	// enable iso ee for A9
+	//writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
+
+
+	// wait key
+    power_key = readl(0Xc8100744);
+    
+    f_serial_puts("get power_key\n");
+    #if 0
+    while (((power_key&4) != 0)&&((power_key&8) == 0))
+   {
+     	power_key = readl(0Xc8100744);
+   }
+   #else
+    for(i=0;i<1000;i++)
+    {
+        for(j=0;j<1000;j++)
+        {
+            for(k=0;k<100;k++)
+            {
+                asm("mov r0,r0");
+            }
+        }
+        //udelay(1000);
+        //udelay(1000);
+        
+    }
+   #endif
+
+    f_serial_puts("delay 2s\n");
+
+	//0. make sure a9 reset
+//	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+
+#if 0
+	//1. write flag
+	if (power_key&8)
+		writel(0xabcd1234,P_AO_RTI_STATUS_REG2);
+	else
+		writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+#endif
+	//2. remap AHB SRAM
+	writel(3,P_AO_REMAP_REG0);
+	writel(2,P_AHB_ARBDEC_REG);
+	
+	f_serial_puts("remap arm arc\n");
+
+	//3. turn off romboot clock
+	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
+	
+	f_serial_puts("off romboot clock\n");
+
+	//4. Release ISO for A9 domain.
+	//setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
+
+	//reset A9
+	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
+//	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
+	delay_ms(1);
+//	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+
+//	f_serial_puts("arm reboot\n");
+//	wait_uart_empty();
+    f_serial_puts("arm reboot\n");
+
+}
+#endif
+#define _UART_DEBUG_COMMUNICATION_
 int main(void)
 {
 	unsigned cmd;
 	char c;
-//	int i = 0,j;
+	int i = 0,j;
 	timer_init();
 #ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");
 #else
 	f_serial_puts("sleep .......\n");
 #endif
-	
+		
 	while(1){
 		
 		cmd = readl(P_AO_RTI_STATUS_REG0);
@@ -297,11 +441,12 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC))
+#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
 			init_I2C();
 #endif
 			copy_reboot_code();
 			enter_power_down();
+			//test_arc_core();
 			break;
 		}
 		else if(c == 'q')
@@ -319,6 +464,49 @@ int main(void)
 	}
 	
 	while(1){
+	    udelay(6000);
+	    cmd = readl(P_AO_RTI_STATUS_REG1);
+	    c = (char)cmd;
+	    if(c == 0)
+	    {
+	        udelay(6000);
+	        cmd = readl(P_AO_RTI_STATUS_REG1);
+	        c = (char)cmd;
+	        if((c == 0)||(c!='r'))
+	        {
+	            #ifdef _UART_DEBUG_COMMUNICATION_
+	            serial_put_hex(cmd,32);
+	            f_serial_puts(" arm boot fail\n\n");
+	            wait_uart_empty();
+	            #endif
+	            #if 0 //power down 
+	            cmd = readl(P_AO_GPIO_O_EN_N);
+	            cmd &= ~(1<<6);
+	            cmd &= ~(1<<22);
+	            writel(cmd,P_AO_GPIO_O_EN_N);
+	            #endif
+	        }
+	    }
+	    else if(c=='r')
+	    {
+	        writel(0,0xc8100030);
+	        #ifdef _UART_DEBUG_COMMUNICATION_
+	        //f_serial_puts("arm boot succ\n");
+	        //wait_uart_empty();
+	        #endif
+	    }
+	    else
+	    {
+	        #ifdef _UART_DEBUG_COMMUNICATION_
+	        serial_put_hex(cmd,32);
+	        f_serial_puts(" arm unkonw state\n");
+	        wait_uart_empty();
+	        #endif
+	    }
+	    //cmd='f';
+	    //writel(cmd,P_AO_RTI_STATUS_REG1);
+	    
+		asm(".long 0x003f236f"); //add sync instruction.
 		asm("SLEEP");
 	}
 	return 0;
@@ -327,7 +515,7 @@ unsigned clk_settings[2]={0,0};
 unsigned pll_settings[2][3]={{0,0,0},{0,0,0}};
 void store_restore_plls(int flag)
 {
-//    int i;
+    int i;
     if(flag)
     {
 #ifdef POWER_OFF_EE 

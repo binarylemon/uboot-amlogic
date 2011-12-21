@@ -42,7 +42,7 @@ all : clean $(obj)code_elf.out
 $(obj)code_elf.out: $(obj)romboot.lds Makefile  $(OBJS) $(obj)start_arc.o
 	$(ARCLD) $(ARCLD_FLAGS) $(filter %.o,$^)  $(MAP_OUT_OPTION) --cref -o $@
 ifneq ($(OS),Windows_NT)	
-	$(ARCOBJCOPY) -I elf32-little -O binary $@ $(@:%.out=%.bin)
+	$(ARCOBJCOPY) -I elf32-little --gap-fill=0xff -O binary $@ $(@:%.out=%.bin)
 endif	
 	./bin2code arc_code $(obj)code_elf.bin $(SRCTREE)/build/include2/arc_code.dat
 

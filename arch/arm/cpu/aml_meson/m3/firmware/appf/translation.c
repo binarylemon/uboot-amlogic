@@ -164,8 +164,6 @@ int find_shareable_bit(unsigned prrr, unsigned type, unsigned desired_shareable)
 
 extern void dbg_wait(void);
 
-#define writel(v,addr) (*((unsigned*)addr) = v)
-#define readl(addr) (*((unsigned*)addr))
 #define L2X0_BASE 0xC4200000
 #define L2X0_CACHE_SYNC                (L2X0_BASE+0x730)
 #define L2X0_CLEAN_INV_WAY             (L2X0_BASE+0x7FC)
@@ -554,7 +552,7 @@ int appf_setup_translation_tables(void)
 //   ((unsigned*)tab1_pa)[firmware_start_pa >> SECTION_SHIFT] = reloc_addr((unsigned)appf_translation_table2b) | PAGE_TABLE;
 
    pa = reloc_addr((unsigned)&appf_ttbr0);
-    *((unsigned*)pa) = reloc_addr((unsigned)appf_translation_table1);
+    *((volatile unsigned*)pa) = reloc_addr((unsigned)appf_translation_table1);
      
     __V(appf_ttbcr) = 0;
     return APPF_OK;

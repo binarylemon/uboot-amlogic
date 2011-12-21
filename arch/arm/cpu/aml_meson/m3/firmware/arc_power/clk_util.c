@@ -794,7 +794,6 @@ STATIC_PREFIX unsigned long    clk_util_clk_msr_1(unsigned long   clk_mux)
 unsigned long    clk_util_clk_msr(unsigned long   clk_mux, unsigned long   uS_gate_time)
 {
     unsigned long   measured_val;
-    unsigned long dummy_rd;
     writel(0,P_MSR_CLK_REG0);
     // Set the measurement gate to 64uS
     clrsetbits_le32(P_MSR_CLK_REG0,0xffff,(uS_gate_time-1));
@@ -805,7 +804,7 @@ unsigned long    clk_util_clk_msr(unsigned long   clk_mux, unsigned long   uS_ga
     clrsetbits_le32(P_MSR_CLK_REG0,
         (0xf << 20)|(1<<19)|(1<<16),
         (clk_mux<<20) |(1<<19)|(1<<16));
-    { dummy_rd = readl(P_MSR_CLK_REG0); }
+    { unsigned long dummy_rd = readl(P_MSR_CLK_REG0); }
     // Wait for the measurement to be done
     while( (readl(P_MSR_CLK_REG0) & (1 << 31)) ) {} 
     // disable measuring

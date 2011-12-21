@@ -264,7 +264,7 @@ restore_banked_registers	FUNCTION
 
 	
 save_cp15	FUNCTION
-	; CSSELR ?Cache Size Selection Register
+	; CSSELR – Cache Size Selection Register
 	MRC	p15,2,r3,c0,c0,0
 	STR	r3,[r0], #4
 
@@ -278,7 +278,7 @@ save_cp15	FUNCTION
 	ENDFUNC
         
 restore_cp15	FUNCTION
-	; CSSELR ?Cache Size Selection Register
+	; CSSELR – Cache Size Selection Register
 	LDR	r3,[r0], #4
 	MCR	p15,2,r3,c0,c0,0
 
@@ -381,6 +381,8 @@ restore_mmu	FUNCTION
 save_vfp	FUNCTION
         ; FPU state save/restore.
         ; FPSID,MVFR0 and MVFR1 don't get serialized/saved (Read Only).
+;  push {r0,r1,r2,r3,r12,lr}
+;	bl dbg_wait
 	MRC	p15,0,r3,c1,c0,2	; CPACR allows CP10 and CP11 access
 	ORR	r2,r3,#0xF00000       
 	MCR	p15,0,r2,c1,c0,2
@@ -411,12 +413,22 @@ save_vfp	FUNCTION
 	BLT	%f1
         ; Store the Advanced SIMD/VFP-D32 additional registers.
 	VSTM	r0!, {D16-D31}
-
-        ; IMPLEMENTATION DEFINED: save any subarchitecture defined state 
+	
+	        ; IMPLEMENTATION DEFINED: save any subarchitecture defined state 
         ; NOTE: Don't change the order of the FPEXC and CPACR restores
-	VMSR	FPEXC,r10         ; Restore the original En bit of FPU.
+	VMSR	FPEXC,r12         ; Restore the original En bit of FPU.
+	tst	r12, #(1<<31)
+	beq	s_next
+	VMRS r2, FPINST		@ FPINST (only if FPEXC.EX is set)
+	str r2,[r0],#4
+	tst	r12, #(1<<28)		@ is there an FPINST2 to read?
+	beq	s_next
+	vmrs r2, FPINST2		@ FPINST2 if needed (and present)
+	str r2,[r0],#4
+s_next
 1
 	MCR	p15,0,r3,c1,c0,2 ; Restore the original CPACR value.
+;	pop {r0,r1,r2,r3,r12,pc}
 	BX	lr
 	ENDFUNC
 
@@ -425,7 +437,10 @@ restore_vfp	FUNCTION
 	; FPU state save/restore. Obviously FPSID,MVFR0 and MVFR1 don't get
 	; serialized (RO).
 	; Modify CPACR to allow CP10 and CP11 access
+;  push {r0,r1,r2,r3,r12,lr}
+;	bl dbg_wait
 	MRC	p15,0,r2,c1,c0,2
+	mov r1,r2
 	ORR	r2,r2,#0x00F00000       
 	MCR	p15,0,r2,c1,c0,2
 	; Enable FPU access to save/restore the rest of registers.
@@ -449,9 +464,23 @@ restore_vfp	FUNCTION
 0	; Restore configuration registers and enable.
 	; Restore FPSCR _before_ FPEXC since FPEXC could disable FPU
 	; and make setting FPSCR unpredictable.
-	VMSR	FPSCR,r12    
+	
+	VMSR	FPSCR,r12    	
 	VMSR	FPEXC,r3		; Restore FPEXC after FPSCR
+
+	tst	r3, #(1<<31)
+	beq	r_next
+	LDM r0!,{r2}
+	VMSR FPINST,r2
+	tst	r3, #(1<<28)		@ is there an FPINST2 to read?
+	beq	r_next
+	LDM r0!,{r2}
+	VMSR FPINST2,r2
+r_next
+	
 	; CPACR (c1,c0,2) is restored later.
+	MCR	p15,0,r1,c1,c0,2
+;  pop {r0,r1,r2,r3,r12,pc}
 	BX	lr
 	ENDFUNC
 

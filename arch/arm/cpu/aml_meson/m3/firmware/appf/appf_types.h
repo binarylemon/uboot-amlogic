@@ -99,3 +99,5 @@ struct appf_cpu
     volatile appf_u32 power_state;
 };
 
+#define writel(v,addr) (*((volatile unsigned*)addr) = v)
+#define readl(addr) (*((volatile unsigned*)addr))

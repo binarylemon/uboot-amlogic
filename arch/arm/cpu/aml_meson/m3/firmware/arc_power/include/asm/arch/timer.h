@@ -32,7 +32,8 @@
 
 //timer E
 #define TIMERE_SUB(timea,timeb) (((timea<<8)-(timeb<<8))>>8)
-#define TIMERE_GET()            (readl(P_AO_TIMERE_REG)&0xffffff)
+//#define TIMERE_GET()            (readl(P_AO_TIMERE_REG)&0xffffff)
+#define TIMERE_GET()            (readl(P_AO_TIMERE_REG))
 
 
 #endif

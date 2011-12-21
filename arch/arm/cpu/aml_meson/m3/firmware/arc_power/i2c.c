@@ -8,8 +8,6 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
-extern void delay_ms(int ms);
-
 #define AML_I2C_CTRL_CLK_DELAY_MASK			0x3ff
 #define AML_I2C_SLAVE_ADDR_MASK				0xff
 #define AML_I2C_SLAVE_ADDR_MASK_7BIT   (0x7F)
@@ -81,8 +79,8 @@ static int aml_i2c_do_address(unsigned int addr)
 {
 	i2c.cur_slave_addr = addr & AML_I2C_SLAVE_ADDR_MASK_7BIT;
 	writel(readl(P_AO_I2C_M_0_SLAVE_ADDR)&(~AML_I2C_SLAVE_ADDR_MASK), P_AO_I2C_M_0_SLAVE_ADDR);
-//	writel(readl(P_AO_I2C_M_0_SLAVE_ADDR)|(i2c.cur_slave_addr<<1), P_AO_I2C_M_0_SLAVE_ADDR);
-	writel((i2c.cur_slave_addr<<1), P_AO_I2C_M_0_SLAVE_ADDR);
+	writel(readl(P_AO_I2C_M_0_SLAVE_ADDR)|(i2c.cur_slave_addr<<1), P_AO_I2C_M_0_SLAVE_ADDR);
+//	writel((i2c.cur_slave_addr<<1), P_AO_I2C_M_0_SLAVE_ADDR);
 	return 0;
 }
 static void  aml_i2c_clear_token_list(void)
@@ -103,12 +101,24 @@ static void aml_i2c_set_token_list(void)
 	writel(token_reg, P_AO_I2C_M_0_TOKEN_LIST0);
 }
 
+#if 0
 void udelay(int i)
 {
-	int delays = i * 24;
-	unsigned base= readl(P_AO_TIMERE_REG)&0xffffff;
-	while((readl(P_AO_TIMERE_REG)&0xffffff) < (base + delays));
+	int delays = i ;//* 24;
+	unsigned base= readl(P_AO_TIMERE_REG);
+	//while(((readl(P_AO_TIMERE_REG)-base)&0xffffff) < (  delays&0xffffff)); //reg value is 24bit case
+	while(((readl(P_AO_TIMERE_REG)-base)) < (  delays));
 }
+#else
+void udelay(int i)
+{
+    int delays = 0;
+    for(delays=0;delays<i;delays++)
+    {
+        asm("mov r0,r0");
+    }
+}
+#endif
 
 static void aml_i2c_start_token_xfer()
 {
@@ -345,7 +355,7 @@ unsigned char i2c_act8942_read(unsigned char reg)
     return val;
 }
 
-void vddio_off(void)
+void vddio_off()
 {
 	unsigned char reg3;
 	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
@@ -357,7 +367,7 @@ void vddio_off(void)
 	i2c_act8942_write(0x42,reg3);
 }
 
-void vddio_on(void)
+void vddio_on()
 {
 	unsigned char reg3;
 	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
@@ -370,7 +380,7 @@ void vddio_on(void)
 }
 
 //Regulator7 Disable for cut down HDMI_VCC
-void reg7_off(void)
+void reg7_off()
 {
 	unsigned char data;
 	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
@@ -383,7 +393,7 @@ void reg7_off(void)
 }
 
 //Regulator7 Enable for power on HDMI_VCC
-void reg7_on(void)
+void reg7_on()
 {
 	unsigned char data;
 	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
@@ -394,10 +404,61 @@ void reg7_on(void)
 	data |= (1<<7);	
 	i2c_act8942_write(0x65,data);
 }
-
-void init_I2C(void)
+//Regulator7 Disable for cut down HDMI_VCC
+void reg5_off()
 {
-	unsigned v,reg;	
+	unsigned char data;
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	data = i2c_act8942_read(0x55);
+	data |= (1<<7);	
+	i2c_act8942_write(0x55,data);
+	data = i2c_act8942_read(0x55);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x55,data);
+}
+
+//Regulator7 Enable for power on HDMI_VCC
+void reg5_on()
+{
+	unsigned char data;
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	data = i2c_act8942_read(0x55);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x55,data);
+	data = i2c_act8942_read(0x55);
+	data |= (1<<7);	
+	i2c_act8942_write(0x55,data);
+}
+//Regulator7 Disable for cut down HDMI_VCC
+void reg6_off()
+{
+	unsigned char data;
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	data = i2c_act8942_read(0x61);
+	data |= (1<<7);	
+	i2c_act8942_write(0x61,data);
+	data = i2c_act8942_read(0x61);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x61,data);
+}
+
+//Regulator7 Enable for power on HDMI_VCC
+void reg6_on()
+{
+	unsigned char data;
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	data = i2c_act8942_read(0x61);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x61,data);
+	data = i2c_act8942_read(0x61);
+	data |= (1<<7);	
+	i2c_act8942_write(0x61,data);
+}
+
+void init_I2C()
+{
+	unsigned v,speed,reg;
+	struct aml_i2c_reg_ctrl* ctrl;
 
 	//1. set pinmux
 	v = readl(P_AO_RTI_PIN_MUX_REG);
@@ -409,19 +470,109 @@ void init_I2C(void)
 
 	//-------------------------------	
 	//reset
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|(3<<18),P_AO_RTI_GEN_CNTL_REG0);
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(3<<18)),P_AO_RTI_GEN_CNTL_REG0);
-	delay_ms(20);
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|(3<<18),P_AO_RTI_GEN_CNTL_REG0);
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(3<<18)),P_AO_RTI_GEN_CNTL_REG0);
+//	delay_ms(20);
 	//---------------------------------
 	//config	  
- 	v=80; //(32000/speed) >>2) speed:100
+ 	//v=20; //(32000/speed) >>2) speed:400K
+ 	v = 12; //for saving time cost
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
 	reg |= (v <<12);
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
-	delay_ms(20);		
+//	delay_ms(20);
+	delay_ms(1);		
 	v = i2c_act8942_read(0);
 	if(v == 0xFF || v == 0)
 		serial_puts("Error: I2C init failed!\n");
 
+}
+
+unsigned pin_mux = 0;
+unsigned gpio_ao = 0;
+void switch_voltage(int idx)
+{
+	if(idx = 1){
+		unsigned v = readl(P_AO_RTI_PIN_MUX_REG);
+		pin_mux = v;
+		gpio_ao = readl(0xc8100024);
+		v &= ~((1<<9)|(1<<7)|(1<<3));
+		writel(v,P_AO_RTI_PIN_MUX_REG);
+		//select second voltage
+		writel(readl(0xc8100024)&(~(1<<3)),0xc8100024);
+		writel(readl(0xc8100024)|(1<<19),0xc8100024);
+		udelay(10);
+	}
+	else{
+		//switch to prime voltage
+		writel(readl(0xc8100024)&(~(1<<3)),0xc8100024);
+		writel(readl(0xc8100024)&(~(1<<19)),0xc8100024);
+		udelay(10);
+		writel(pin_mux,P_AO_RTI_PIN_MUX_REG);
+		writel(gpio_ao,0xc8100024);
+	}
+}
+unsigned char vcc12_setting = 0;
+#if 0
+void powerdown_vcc12(void)
+{
+	unsigned char data;
+	vcc12_setting = i2c_act8942_read(0x21);
+	data = vcc12_setting - 1;
+	while(data >= 0xE){//0x10=1.0v  0xE=0.95V
+		i2c_act8942_write(0x21,data);
+		data -= 1;
+		udelay(5);
+	}
+}
+void powerup_vcc12(void)
+{
+	unsigned char data = i2c_act8942_read(0x21);
+	while(data < vcc12_setting){
+		data++;
+		i2c_act8942_write(0x21,data);	
+		udelay(5);
+	}
+}
+#else
+void powerdown_vcc12(void)
+{
+	unsigned char data;
+	vcc12_setting = i2c_act8942_read(0x21);
+	data = vcc12_setting - 1;
+	data = 0xE;//0x10=1.0v  0xE=0.95V
+	i2c_act8942_write(0x21,data);
+	//udelay(5);
+	udelay(100);
+}
+void powerup_vcc12(void)
+{
+	unsigned char data = i2c_act8942_read(0x21);
+	data = vcc12_setting;
+	i2c_act8942_write(0x21,data);	
+	udelay(100);
+}
+#endif
+
+unsigned ddr_voltage = 0;
+void powerdown_ddr(void)
+{
+	unsigned char data;
+	ddr_voltage = i2c_act8942_read(0x31);
+	data = ddr_voltage - 1;
+	while(data >= 0x1c){//0x1d=1.45v 0x1c=1.4v
+		i2c_act8942_write(0x31,data);
+		data--;
+		udelay(5);
+	}
+}
+void powerup_ddr(void)
+{
+	unsigned char data = i2c_act8942_read(0x31);
+	while(data < ddr_voltage){
+		data++;
+		i2c_act8942_write(0x31,data);
+		udelay(5);
+	}
 }

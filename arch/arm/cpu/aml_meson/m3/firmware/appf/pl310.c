@@ -31,7 +31,7 @@
 
 struct lockdown_regs
 {
-    unsigned int d, i;
+    volatile unsigned int d, i;
 };
 
 typedef struct
@@ -243,7 +243,8 @@ void save_pl310(appf_u32 *pointer, unsigned pl310_address)
     context->lock_line_en = pl310->lock_line_en;
     for (i=0; i<8; ++i)
     {
-        context->lockdown[i] = pl310->lockdown[i];
+        context->lockdown[i].d = pl310->lockdown[i].d;
+        context->lockdown[i].i = pl310->lockdown[i].i;
     }
     context->addr_filtering_start = pl310->addr_filtering_start;
     context->addr_filtering_end = pl310->addr_filtering_end;
@@ -280,7 +281,8 @@ void restore_pl310(appf_u32 *pointer, unsigned pl310_address, int dormant)
     pl310->lock_line_en = context->lock_line_en;
     for (i=0; i<8; ++i)
     {
-        pl310->lockdown[i] = context->lockdown[i];
+        pl310->lockdown[i].d = context->lockdown[i].d;
+        pl310->lockdown[i].i = context->lockdown[i].i;
     }
     pl310->addr_filtering_start = context->addr_filtering_start;
     pl310->addr_filtering_end = context->addr_filtering_end;

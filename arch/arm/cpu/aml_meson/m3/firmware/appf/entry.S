@@ -359,6 +359,15 @@ label_df
 appf_reset_entry_point
 	; This is the entry point from the platform warm start code
 
+    mov r0,#0x4    ;P_AO_RTI_STATUS_REG1
+    movt r0,#0xc810
+    mov r1,#0x72   ;'r'
+    str r1,[r0]
+;wait_test
+;    ldr r1,[r0]
+;    cmp r1,#0x66 ;'f'
+;    bne wait_test
+
 	; Get stack pointer
 	bl	appf_platform_get_stack_pointer
 	sub	r0, r0, #24		; The 6 registers PUSHed above are still valid!

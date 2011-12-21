@@ -4,6 +4,15 @@
 ;; -- auto-vector space, jump to start of code ---------- 
 _start:
     j boot_start
+    ; reserved for arm reboot code.
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 boot_start:
 ; Disable Instruction  Cache 
 ; Disable Data Cache 
@@ -24,6 +33,16 @@ boot_start:
 ;		lr r0,[0x11]
 ;		or r0,r0,1
 ;		sr r0,[0x11]
+
+		;clear bss segment
+		mov r0,0
+		mov r1, __bss_start
+clear_loop:
+		st  r0,[r1]
+		add r1,r1,4
+		cmp r1,_end
+		bne clear_loop
+		
     bl      main
     nop
 
@@ -31,5 +50,3 @@ boot_start:
     b 	.
 	nop
 	
-
-

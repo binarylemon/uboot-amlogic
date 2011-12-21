@@ -31,11 +31,21 @@ SPL_STATIC_FUNC void serial_clr_err(void)
     if(readl(P_UART_STATUS(UART_PORT_CONS))&(UART_STAT_MASK_PRTY_ERR|UART_STAT_MASK_FRAM_ERR))
 	    setbits_le32(P_UART_CONTROL(UART_PORT_CONS),UART_CNTL_MASK_CLR_ERR);
 }
-
+void __udelay(int n);
+SPL_STATIC_FUNC void uart_reset()
+{
+	unsigned uart_cfg = readl(P_UART_CONTROL(UART_PORT_CONS));
+	unsigned uart_misc = readl(P_AO_UART_MISC);
+	setbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
+	clrbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
+	__udelay(100);
+	writel(uart_cfg,P_UART_CONTROL(UART_PORT_CONS));
+	writel(uart_misc,P_AO_UART_MISC);
+}
 SPL_STATIC_FUNC void serial_init(unsigned set,unsigned tag)
 {
     /* baud rate */
-//    unsigned baud_para=0;
+    unsigned baud_para=0;
     if(tag){//reset uart.
 	    setbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
 	    clrbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
@@ -124,6 +134,23 @@ void f_serial_puts(const char *s)
     }
 }
 
+void wait_uart_empty()
+{
+//	while((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY) == 0)
+//		delay_tick(4);
+    unsigned int count=0;
+    do{
+        if((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY) == 0)
+        {
+            delay_tick(4);
+        }
+        else
+        {
+            break;
+        }
+        count++;
+    }while(count<20000);
+}
 
 SPL_STATIC_FUNC
 void serial_puts_no_delay(const char *s)

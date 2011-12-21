@@ -101,80 +101,57 @@ void pwr_delay(int n)
 #define RESET_ARC625        (1<<13)
 #define P_AUD_ARC_CTL       0xC1109964 //CBUS_REG_ADDR(AUD_ARC_CTL)
 #define P_AHB_ARBDEC_REG    0xC110990c //CBUS_REG_ADDR(AHB_ARBDEC_REG)
-#define writel(v,addr) (*((unsigned*)addr) = v)
-#define readl(addr) (*((unsigned*)addr))
 
 void l2x0_clean_all(void); 
-
+extern void platform_reset_handler(void);
 void run_arc_program()
 {
 	 char cmd;
 	  int i;
 	  unsigned vaddr1,vaddr2,v;
 	  unsigned* pbuffer;
-	  volatile unsigned* arc_reset = (unsigned*)P_AUD_ARC_CTL;
 		vaddr1 = 0x49000000;  
-		vaddr2 = 0x49008000;
+		vaddr2 = 0x4900c000;
 		
     /** copy ARM code*/
     //change arm mapping
-    appf_memcpy((char*)vaddr2,(char*)vaddr1,16*1024);
+   // appf_memcpy((char*)vaddr2,(char*)vaddr1,16*1024);
     
  		//remap arm memory
-    writel((vaddr2>>14)&0xf,P_AO_REMAP_REG0);
+   // writel((vaddr2>>14)&0xf,P_AO_REMAP_REG0);
   
     /** copy ARC code*/
     //copy code to 49000000 and remap to zero
    // memcpy((char*)vaddr2,(char*)addr,16*1024);
    	//load arc code into memory
+   	writel(0,P_AO_REMAP_REG0);
+   	pwr_delay(10);
    	pbuffer = (unsigned*)vaddr2;
 		for(i = 0; i < sizeof(arc_code)/4; i++){
 				*pbuffer = arc_code[i];
 				pbuffer++;
 		}
-    writel(0x1<<4,P_AO_REMAP_REG1);
-    
+    writel((0x1<<4) | ((vaddr2>>14)&0xf),P_AO_REMAP_REG1);
+     *(volatile unsigned *)(vaddr2 +0x20) = (unsigned)(&platform_reset_handler);
     l2x0_clean_all();
     
     //switch to ARC jtag
- //   writel(0x51001,0xc8100030);
+    writel(0x51001,0xc8100030);
         
     //reset arc
     writel(RESET_ARC625,P_RESET2_REGISTER);
-    pwr_delay(1000);
+    pwr_delay(1);
     
     cmd = 0;
     writel((unsigned)cmd,P_AO_RTI_STATUS_REG0);
    	//enable arc
-   	*arc_reset = 1;
-   	pwr_delay(10);
-   	*arc_reset = 0;
+   	writel(1,P_AUD_ARC_CTL);
+   	pwr_delay(2);
+   	writel(0,P_AUD_ARC_CTL);
 		//for(i = 0; i < 2; i++)
-	  pwr_delay(1000);	
+	  pwr_delay(2);	
     cmd = 't';
-    writel((unsigned)cmd,P_AO_RTI_STATUS_REG0);
-
-/*
-    do{
-     		printk("cmd >");
-    		//cmd = getc(stdin);//getchar();
-    		cmd = am_uart_get_char(0);
-    		printk("<%x>",cmd);
-				writel((unsigned)cmd,P_AO_RTI_STATUS_REG0);
-				pwr_delay(1000);
-				pwr_delay(1000);		
-				if(cmd == 't'){
-					 asm volatile ("wfi");
-				}
-				else{
-    				while(readl(P_AO_RTI_STATUS_REG0) != 0)
-    				{
-    					pwr_delay(1000);
-    				}
- 				}			    
-    }while(cmd != 'q');*/
-    
-    
+	writel((unsigned)cmd,P_AO_RTI_STATUS_REG0); 
 }
 int appf_platform_enter_cstate(unsigned cpu_index, struct appf_cpu *cpu, struct appf_cluster *cluster)
 {

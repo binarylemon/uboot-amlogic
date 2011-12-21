@@ -8,24 +8,31 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
-extern void delay_ms(int ms);
-
 #define dbg_out(s,v) serial_puts(s);serial_put_hex(v,32);serial_putc('\n');
 #define dbg_puts serial_puts
 
-void ts_delay(int n)
+#if 0
+void __udelay(int n)
 {	
-    int i;
-		for(i = 0; i < n; i++){
-			delay_tick(100);
-		}
+	unsigned base= get_tick(0);
+	while(get_tick(base) < n);
 }
+#else
+void __udelay(int n)
+{	
+	int i;
+	for(i=0;i<n;i++)
+	{
+	    asm("mov r0,r0");
+	}
+}
+#endif
 
 void disable_mmc_req(void)
 {
 	APB_Wr(MMC_REQ_CTRL,0X0);
   	while(APB_Rd(MMC_CHAN_STS) == 0){
-		ts_delay(1);	
+		__udelay(10);	
 	}
 }
 
@@ -33,7 +40,7 @@ void reset_mmc(void)
 {
 	unsigned ustate;
 	writel(1<<3, P_RESET1_REGISTER);
-	delay_ms(10);
+	__udelay(50);	
  	ustate = readl(P_MMC_CHAN_RST);
 	writel(0x17ff,P_MMC_CHAN_RST);
 	while((ustate = readl(P_MMC_CHAN_RST)) != 0){
@@ -46,7 +53,7 @@ void enable_mmc_req(void)
 	// Next, we enable all requests
 	APB_Wr(MMC_REQ_CTRL, 0xff);
 	while(APB_Rd(MMC_CHAN_STS) == 0){
-		ts_delay(1);
+		__udelay(10);	
 	}
 }
 void mmc_sleep(void)
@@ -176,7 +183,7 @@ void init_dmc (void)
 {
     APB_Wr(MMC_DDR_CTRL, v_mmc_ddr_ctrl);
     APB_Wr(MMC_REQ_CTRL, 0xff ); 
-	ts_delay(8);
+		__udelay(50);	
 }
 void disp_pctl(void)
 {
@@ -311,18 +318,19 @@ void init_ddr_pll(void)
  	writel(v_ddr_pll_cntl3, P_HHI_DDR_PLL_CNTL3);    
 	writel(v_ddr_pll_cntl & (~0x8000), P_HHI_DDR_PLL_CNTL);
  	writel(1<<0, P_RESET5_REGISTER);
-	delay_ms(50);
+	__udelay(50);	
+
   
  	writel(readl(P_HHI_DDR_PLL_CNTL)&(~(1<<15)),P_HHI_DDR_PLL_CNTL);
- 	delay_ms(50);
+	__udelay(50);	
 }
 
 void init_pctl(void)
 {
-//	int i;
+	int i;
 	int mrs0_value;
 	int mrs1_value;
-	//int mrs2_value;
+	int mrs2_value;
 	int mrs3_value = 0;
     
  	APB_Wr(MMC_DDR_CTRL, v_mmc_ddr_ctrl);
@@ -403,4 +411,3 @@ void disable_retention(void)
 {
   writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
 }
-

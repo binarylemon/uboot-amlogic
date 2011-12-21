@@ -98,7 +98,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     save_mmu(context->mmu_data);
     context->saved_items = saved_items;
     
-    if (cluster_down)
+  //  if (cluster_down)
     {
     		if(cluster->scu_address)
         	save_a9_scu(cluster_context->scu_data, cluster->scu_address);
@@ -200,10 +200,11 @@ int appf_platform_restore_context(struct appf_cluster *cluster, struct appf_cpu 
     saved_items = context->saved_items;
     
     /* First set up the SCU & L2, if necessary */
-    if (cluster_init)
+  //  if (cluster_init)
     {
         cluster_saved_items = cluster_context->saved_items;
-        restore_a9_scu(cluster_context->scu_data, cluster->scu_address);
+        if(cluster->scu_address)
+        	restore_a9_scu(cluster_context->scu_data, cluster->scu_address);
         if (cluster_saved_items & SAVED_L2)
         {
             restore_pl310(cluster_context->l2_data, cluster->l2_address, cluster->power_state == 2);
