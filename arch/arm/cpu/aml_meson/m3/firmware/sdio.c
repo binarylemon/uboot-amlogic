@@ -183,7 +183,7 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
       read_size+=cur_size;
 
       WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)) << 16);
-      if(card_type==CARD_TYPE_SDHC)
+      if((card_type==CARD_TYPE_SDHC)||(card_type==CARD_TYPE_EMMC))
             arg=addr>>9;
       else
         arg=addr;
