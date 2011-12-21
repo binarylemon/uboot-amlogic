@@ -97,7 +97,8 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 {
 	bd_t	*bd = gd->bd;
 	char	*s;
-	int	machid = bd->bi_arch_number;
+	int	machid = 0;
+	int  machidenv = bd->bi_arch_number;	
 	void	(*kernel_entry)(int zero, int arch, uint params);
 
 #ifdef CONFIG_CMDLINE_TAG
@@ -110,8 +111,33 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 	s = getenv ("machid");
 	if (s) {
 		machid = simple_strtoul (s, NULL, 16);
-		printf ("Using machid 0x%x from environment\n", machid);
+		printf ("machid from environment: 0x%x \n", machidenv);
 	}
+
+#ifdef CONFIG_EFUSE
+	int machidefuse = (int)efuse_readcustomerid();
+	char buf[5];
+	if(machidefuse != 0){
+		machid = machidefuse;
+		printf ("Using machid 0x%x from EFUSE\n", machid);
+		if(s && (machidefuse != machidenv)){
+			memset(buf, 0, 5);
+			sprintf(buf, "%s", machidefuse);
+			setenv("machid", buf);
+#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+			saveenv();
+#endif
+		}		
+	}
+	else{
+			machid = machidenv;		
+			printf ("EFUSE machid is not set.\n");
+			printf ("Using machid 0x%x from environment\n", machid);
+	}		
+#else
+	machid = machidenv;		
+	printf ("Using machid 0x%x from environment\n", machid);
+#endif	
 
 	show_boot_progress (15);
 

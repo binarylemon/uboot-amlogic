@@ -4,92 +4,20 @@
 #include <command.h>
 #include <malloc.h>
 #include <amlogic/efuse.h>
-#include <efuse_bch_8.h>
+#include "efuse_bch_8.h"
 #include "efuse_regs.h"
 
 
-/* efuse layout
-http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
-0~3			licence				1 check byte			4 bytes(in total)
-4~10			mac				1 check byte			7 bytes(in total)
-12~322			hdcp				10 check byte			310 bytes(in total)
-322~384  		usid				2 check byte		 	62 bytes(in total)
-*/
-
-#define EFUSE_LICENCE_OFFSET 				0
-#define EFUSE_LICENCE_DATA_BYTES 		3
-#define EFUSE_LICENCE_ENC_BYTES		4
-
-#define EFUSE_MACADDR_OFFSET			4
-#define EFUSE_MACADDR_DATA_BYTES	6
-#define EFUSE_MACADDR_ENC_BYTES 	7
-
-#define EFUSE_HDMHDCP_OFFSET		12
-#define EFUSE_HDMHDCP_DATA_BYTES 300
-#define EFUSE_HDMHDCP_ENC_BYTES 310
-
-#define EFUSE_USERIDF_OFFSET 322
-#define EFUSE_USERIDF_DATA_BYTES 60
-#define EFUSE_USERIDF_ENC_BYTES 62
-
-#ifdef CONFIG_REFB09_NEW
-//for m1 refb09 new
-#define EFUSE_USERIDF_REFB09_NEW_OFFSET 324
-#define EFUSE_USERIDF_REFB09_NEW_DATA_BYTES 20
-#define EFUSE_USERIDF_REFB09_NEW_ENC_BYTES 21
-#endif
-
 char efuse_buf[EFUSE_BYTES] = {0};
-efuseinfo_t efuse_info[] = 
-{
-	{
-		.title = "licence",
-		.nID = USR_LICENCE,
-		.offset = EFUSE_LICENCE_OFFSET,
-		.enc_len = EFUSE_LICENCE_ENC_BYTES,
-		.data_len = EFUSE_LICENCE_DATA_BYTES,
-		.we = 0,
-	},
-	{
-		.title = "mac",
-		.nID = USR_MACADDR,
-		.offset = EFUSE_MACADDR_OFFSET,
-		.enc_len = EFUSE_MACADDR_ENC_BYTES,
-		.data_len = EFUSE_MACADDR_DATA_BYTES,
-		.we = 1,
-	},
-	{
-		.title = "hdcp",
-		.nID = USR_HDMIHDCP,
-		.offset = EFUSE_HDMHDCP_OFFSET,
-		.enc_len = EFUSE_HDMHDCP_ENC_BYTES,
-		.data_len = EFUSE_HDMHDCP_DATA_BYTES,
-		.we = 0,
-	},
-	{
-		.title = "usid",
-		.nID = USR_USERIDF,
-		.offset = EFUSE_USERIDF_OFFSET,
-		.enc_len = EFUSE_USERIDF_ENC_BYTES,
-		.data_len = EFUSE_USERIDF_DATA_BYTES,
-		.we = 0,
-	},	
-#ifdef CONFIG_REFB09_NEW	
-	// for refb09 new
-	{
-		.title = "USID",
-		.nID = USR_USERIDF_REFB09_NEW,
-		.offset = EFUSE_USERIDF_REFB09_NEW_OFFSET,
-		.enc_len = EFUSE_USERIDF_REFB09_NEW_ENC_BYTES,
-		.data_len = EFUSE_USERIDF_REFB09_NEW_DATA_BYTES,
-		.we = 0,		
-	},
-#endif	
-};
-unsigned efuse_info_cnt = sizeof(efuse_info)/sizeof(efuseinfo_t);
-
 static void __efuse_write_byte( unsigned long addr, unsigned long data );
 static void __efuse_read_dword( unsigned long addr, unsigned long *data);
+
+extern int efuseinfo_num;
+extern efuseinfo_t efuseinfo[];
+extern int efuse_active_version;
+extern int efuse_active_customerid;
+extern pfn efuse_getinfoex;
+extern int printf(const char *fmt, ...);
 
 static void __efuse_write_byte( unsigned long addr, unsigned long data )
 {
@@ -203,8 +131,8 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
     unsigned long contents[EFUSE_DWORDS];
 	unsigned pos = *ppos;
     unsigned long *pdw;
-    unsigned residunt = pos - (pos/4)*4;
-    unsigned int dwsize = (count+residunt+3)/4;
+    unsigned residunt = pos%4;
+    unsigned int dwsize = (count+residunt+3)>>2;
     
 	if (pos >= EFUSE_BYTES)
 		return 0;
@@ -262,13 +190,13 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 	return count;
 }
 
-int efuse_chk_written(int usr_type)
+static int efuse_chk_written(efuseinfo_item_t* info)
 {
 	int ret = 0;
 	char buf[EFUSE_BYTES];
 
-	loff_t ppos = efuse_info[usr_type].offset;
-	size_t count = efuse_info[usr_type].enc_len;	
+	loff_t ppos = info->offset;
+	size_t count = info->enc_len;	
 	
 	efuse_init();
 	memset(buf,0,sizeof(buf));	
@@ -286,65 +214,218 @@ int efuse_chk_written(int usr_type)
 	return ret;	
 }
 
-char *efuse_read_usr(int usr_type)
+char *efuse_read_usr(efuseinfo_item_t* info)
 {
+	loff_t ppos = info->offset;
+	unsigned enc_len = info->enc_len;	
+	
 	char enc_buf[EFUSE_BYTES];
-	loff_t ppos = efuse_info[usr_type].offset;
-	unsigned enc_len = efuse_info[usr_type].enc_len;
-	//unsigned data_len = efuse_info[usr_type].data_len;
 	char *pdata = efuse_buf;
 	char *penc = enc_buf;
 	
 	efuse_init();
 	memset(efuse_buf, 0, sizeof(efuse_buf));
-	memset(enc_buf, 0, sizeof(enc_buf));
-	efuse_read(enc_buf, enc_len, &ppos);
 	
-	while(enc_len >= 31){
-		efuse_bch_dec(penc, 31, pdata);
-		penc += 31;
-		pdata += 30;
-		enc_len -= 31;
-	}
-	if(enc_len > 0)
-		efuse_bch_dec(penc, enc_len, pdata);
+	if(info->bch_en != 0){
+		memset(enc_buf, 0, sizeof(enc_buf));
+		efuse_read(enc_buf, enc_len, &ppos);
+		while(enc_len >= 31){
+			efuse_bch_dec(penc, 31, pdata);
+			penc += 31;
+			pdata += 30;
+			enc_len -= 31;
+		}
+		if((enc_len > 0))
+			efuse_bch_dec(penc, enc_len, pdata);
+	}	
+	else
+		efuse_read(efuse_buf, enc_len, &ppos);	
 		
 	return (char*)efuse_buf;	
 }
 
-int efuse_write_usr(int usr_type, char *data)
-{
-	//int ret = 0;		
-	if(efuse_chk_written(usr_type))
+int efuse_write_usr(efuseinfo_item_t* info, char *data)
+{	
+	if(efuse_chk_written(info))
 		return -1;
 	
-	loff_t ppos = efuse_info[usr_type].offset;
-	unsigned enc_len = efuse_info[usr_type].enc_len;
-	unsigned data_len = efuse_info[usr_type].data_len;
+	loff_t ppos = info->offset;
+	unsigned enc_len = info->enc_len;
+	unsigned data_len = info->data_len;
 	char *pdata = data;
 	char *penc = efuse_buf;	
 	memset(efuse_buf, 0, sizeof(efuse_buf));
 		
-	while(data_len >= 30){
-		efuse_bch_enc(pdata, 30, penc);
-		data_len -= 30;
-		pdata += 30;
-		penc += 31;		
-	}
-	if(data_len > 0)
-		efuse_bch_enc(pdata, data_len, penc);
-
+	if(info->bch_en != 0){
+		while(data_len >= 30){
+			efuse_bch_enc(pdata, 30, penc);
+			data_len -= 30;
+			pdata += 30;
+			penc += 31;		
+		}
+		if(data_len > 0)
+			efuse_bch_enc(pdata, data_len, penc);
+	}	
+	else
+		memcpy(penc, pdata, enc_len);
+	
 	efuse_write(efuse_buf, enc_len, &ppos);
 	
 	return 0 ;
 }
 
-
-#ifdef CONFIG_EFUSE_DUMP
-char* efuse_dump()
+static int cpu_is_before_m6(void)
 {
-	  int i=0;
-    unsigned pos;
+	unsigned int val;
+	asm("mrc p15, 0, %0, c0, c0, 5	@ get MPIDR" : "=r" (val) : : "cc");
+	
+	return ((val & 0x40000000) == 0x40000000);
+}
+
+static int efuse_is_all_free(void)
+{
+	char *op = efuse_dump();
+	int i;
+	for(i=0; i<EFUSE_BYTES; i++)
+		if(op[i] != 0)
+			return 0;
+	
+	return 1;	
+}
+
+static int efuse_readversion(void)
+{
+	if(efuse_active_version != -1)
+		return efuse_active_version;
+	
+	loff_t ppos;
+	char ver_buf[4];
+	memset(ver_buf, 0, sizeof(ver_buf));
+	
+	if(cpu_is_before_m6()){    // M1, M2, M3, A3
+		ppos = 380;
+		efuse_read(efuse_buf, 4, &ppos);
+		efuse_bch_dec(efuse_buf, 4, ver_buf);		
+		if(ver_buf[0] != 0){
+			efuse_active_version = ver_buf[0];
+			return ver_buf[0];
+		}
+		else{   // distinguish free efuse layout and M1/M2 old version
+			if(efuse_is_all_free())
+				return -1;
+			else
+				return 0;
+		}
+	}
+	else{
+		ppos = 3;
+		efuse_read(ver_buf, 1, &ppos);
+		if(ver_buf[0] != 0){
+			efuse_active_version = ver_buf[0];
+			return ver_buf[0];
+		}
+		else
+			return -1;	
+	}		
+}
+
+int efuse_getinfo(char *title, efuseinfo_item_t *info)
+{
+		int ver = efuse_readversion();
+		if(ver < 0){
+			printf("efuse version is not selected.\n");
+			return -1;
+		}
+		int i;
+		efuseinfo_t *vx = NULL;
+		for(i=0; i<efuseinfo_num; i++){
+			if(efuseinfo[i].version == ver){
+				vx = &(efuseinfo[i]);
+				break;
+			}				
+		}
+		if(!vx){
+			printf("efuse version %d is not supported.\n", ver);
+			return -1;
+		}	
+		
+		efuseinfo_item_t *item = vx->efuseinfo_version;
+		int size = vx->size;
+		int ret = -1;		
+		for(i=0; i<size; i++, item++){
+			if(strcmp(item->title, title) == 0){
+				strcpy(info->title, item->title);				
+				info->offset = item->offset;
+				info->enc_len = item->enc_len;
+				info->data_len = item->data_len;
+				info->we = item->we;
+				info->bch_en = item->bch_en;				
+				ret = 0;
+				break;
+			}
+		}
+		
+		if((ret < 0) && (efuse_getinfoex != NULL))
+			ret = efuse_getinfoex(title, info);		
+		if(ret < 0)
+			printf("%s is not found.\n", title);
+			
+		return ret;
+}
+
+unsigned efuse_readcustomerid(void)
+{
+	if(efuse_active_customerid != 0)
+		return efuse_active_customerid;
+	
+	loff_t ppos;
+	char buf[4];
+	memset(buf, 0, sizeof(buf));
+	
+	if(cpu_is_before_m6()){
+		ppos = 380;
+		efuse_read(efuse_buf, 4, &ppos);
+		efuse_bch_dec(efuse_buf, 4, buf);
+		if((buf[1] != 0) || (buf[2] != 0))
+			efuse_active_customerid = (buf[2]<<8) + buf[1];		
+	}
+	else{
+		ppos = 4;
+		efuse_read(buf, 4, &ppos);		
+		int i;
+		unsigned val = 0;
+		for(i=3; i>=0;i--)
+			val = ((val<<8) + buf[i]);
+		if(val != 0)
+			efuse_active_customerid = val;			
+	}
+	
+	return efuse_active_customerid;
+}
+
+void efuse_getinfo_version(efuseinfo_item_t *info)
+{
+	strcpy(info->title, "version");
+	info->we = 1;
+		
+	if(cpu_is_before_m6()){
+		info->offset = 380;
+		info->enc_len = 4;
+		info->data_len = 3;
+		info->bch_en = 1;	
+	}
+	else{
+		info->offset = 3;
+		info->enc_len = 5;
+		info->data_len = 5;
+		info->bch_en = 0;
+	}		
+}
+
+char* efuse_dump(void)
+{
+	int i=0;
+    //unsigned pos;
     memset(efuse_buf, 0, sizeof(efuse_buf));
 
 #ifdef CONFIG_AML_MESION_3		
@@ -354,7 +435,7 @@ char* efuse_dump()
 #endif            
 
 	for(i=0; i<EFUSE_BYTES; i+=4)
-		__efuse_read_dword(i,  &(efuse_buf[i]));	    
+		__efuse_read_dword(i,  (unsigned long*)(&(efuse_buf[i])));	    
 		
 #ifdef CONFIG_AML_MESION_3		
     // Disable auto-read mode    
@@ -364,4 +445,4 @@ char* efuse_dump()
      
      return (char*)efuse_buf;
 }
-#endif
+

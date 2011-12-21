@@ -25,7 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libefuse.o
 
-COBJS-$(CONFIG_EFUSE) += efuse.o
+COBJS-$(CONFIG_EFUSE) += efuse.o efuse_bch_8.o efuse_version.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

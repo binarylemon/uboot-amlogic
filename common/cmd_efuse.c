@@ -4,91 +4,44 @@
 #include <command.h>
 #include <malloc.h>
 #include <amlogic/efuse.h>
-#include "efuse_bch_8.h"
-
-extern efuseinfo_t efuse_info[];
-extern unsigned efuse_info_cnt;
 
 #define EFUSE_WRITE 0
 #define EFUSE_READ 1
 #define EFUSE_DUMP 2
+#define EFUSE_VERSION 3
 
 int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0 ;
-	int i, j;
+	int i;
 	char addr[EFUSE_BYTES];
 	char *title;
 	char *op;	
 	char *s;
 	char *end;
+	efuseinfo_item_t info;
 	int action = -1;	
 		
 	if(argc < 2){
 		cmd_usage(cmdtp);
 		return -1;
 	}
+	
 	if(strncmp(argv[1], "read", 4) == 0)
 		action=EFUSE_READ;
 	else if(strncmp(argv[1], "write", 5) == 0)
 		action=EFUSE_WRITE;
-#ifdef CONFIG_EFUSE_DUMP
 	else if(strcmp(argv[1], "dump") == 0)
 		action=EFUSE_DUMP;
-#endif			
+	else if(strcmp(argv[1], "version") == 0)
+		action = EFUSE_VERSION;
 	else{
 		printf("%s arg error\n", argv[1]);
 		return -1;
 	}
 				
-	// efuse read/write	
-	if(action == EFUSE_READ || action==EFUSE_WRITE){		
-		title = argv[2];
-		for(i=0; i<efuse_info_cnt; i++){
-			if(strcmp(title, efuse_info[i].title) == 0)
-				break;
-		}
-		if(i>=efuse_info_cnt){
-			printf("%s arg error. \n", title);
-			return -1;
-		}	
-					
-		// efuse read
-		if(action == EFUSE_READ){
-			op = (char*)efuse_read_usr(i);
-			printf("%s is: ", title);
-			for(j=0; j<efuse_info[i].data_len; j++)
-				printf(":%02x", op[j]);
-			printf("\n");
-		}
-		// efuse write
-		else{			
-			if(!(efuse_info[i].we)){
-				printf("%s write unsupport now. \n", title);
-				return -1;
-			}
-			if(argc<4){
-				printf("arg count error\n");
-				return -1;
-			}
-			memset(addr, 0, sizeof(addr));	
-			s=argv[3];
-			for(j=0; j<efuse_info[i].data_len; j++){
-				addr[j] = s ? simple_strtoul(s, &end, 16) : 0;
-				if (s)
-					s = (*end) ? end+1 : end;
-			}
-			if(efuse_write_usr(i, addr)){
-				printf("error: efuse has written.\n");
-				return -1;
-			}
-			else
-				printf("%s written done.\n", efuse_info[i].title);			
-		}
-	}
 	// efuse dump
-#ifdef CONFIG_EFUSE_DUMP
-	else if(action == EFUSE_DUMP){
+	if(action == EFUSE_DUMP){
 		op = efuse_dump();		
 		printf("Raw efuse data: \n");
 		for(i=0; i<EFUSE_BYTES; i++){
@@ -100,7 +53,81 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}	
 		printf("efuse raw data dump finish \n");
 	}
-#endif	
+	
+	// efuse version
+	else if(action == EFUSE_VERSION){
+		if(argc<3){
+				printf("arg count error\n");
+				return -1;
+		}
+		efuse_getinfo_version(&info);
+		memset(addr, 0, sizeof(addr));	
+		s=argv[2];
+		for(i=0; i<info.data_len; i++){
+			addr[i] = s ? simple_strtoul(s, &end, 16) : 0;
+			if (s)
+				s = (*end) ? end+1 : end;
+		}
+		for(i=1; i<info.data_len; i++){			
+			if(addr[i] != 0)
+				break;
+		}		
+		if(i==info.data_len){
+			printf("err: efuse need select version and machid at the same time.\n");
+			return -1;
+		}
+			
+		if(efuse_write_usr(&info, addr)){
+			printf("error: efuse version has been selected.\n");
+			return -1;
+		}
+		else
+			printf("efuse version select done.\n");		
+	}
+		
+
+	// efuse read
+	else if(action == EFUSE_READ){
+		title = argv[2];
+		if(efuse_getinfo(title, &info) < 0)		
+			return -1;
+		
+		op = (char*)efuse_read_usr(&info);
+		printf("%s is: ", title);
+		for(i=0; i<(info.data_len); i++)
+			printf(":%02x", op[i]);
+		printf("\n");
+	}
+	
+	// efuse write
+	else if(action==EFUSE_WRITE){		
+		if(argc<4){
+			printf("arg count error\n");
+			return -1;
+		}
+		title = argv[2];
+		if(efuse_getinfo(title, &info) < 0)
+			return -1;		
+		if(!(info.we)){
+			printf("%s write unsupport now. \n", title);
+			return -1;
+		}
+		
+		memset(addr, 0, sizeof(addr));	
+		s=argv[3];
+		for(i=0; i<info.data_len; i++){
+			addr[i] = s ? simple_strtoul(s, &end, 16) : 0;
+			if (s)
+				s = (*end) ? end+1 : end;
+		}
+		if(efuse_write_usr(&info, addr)){
+			printf("error: efuse has written.\n");
+			return -1;
+		}
+		else
+			printf("%s written done.\n", info.title);					
+	}
+
 	else{
 		printf("arg error\n");
 		return -1;	
@@ -120,6 +147,8 @@ U_BOOT_CMD(
 	"	   [mem_addr] usr do \n"
 	"efuse [dump]\n"
 	"	   dump raw efuse data\n"
+	"efuse [version] [versionnumber]\n"
+	"	   select efuse version\n"
 );
 
 /****************************************************/

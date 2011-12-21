@@ -293,9 +293,11 @@ void main_loop (void)
 #endif /* CONFIG_BOOTCOUNT_LIMIT */
 
 #ifdef CONFIG_EFUSE
-	char *r_addr;
+	//char *r_addr;
 	char *r_efus;
 	char addr[20];
+	efuseinfo_item_t info;
+	int i;
 #endif
 
 #if defined(CONFIG_VFD) && defined(VFD_TEST_LOGO)
@@ -376,12 +378,18 @@ extern int switch_boot_mode(void);
 #endif
 
 #ifdef CONFIG_EFUSE
-	r_addr = getenv ("ethaddr");
-	if(efuse_chk_written(USR_MACADDR)){
-		r_efus = efuse_read_usr(USR_MACADDR);
-		memset(addr,0,sizeof(addr));
-		sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",r_efus[0],r_efus[1],r_efus[2],r_efus[3],r_efus[4],r_efus[5]);
-		setenv ("ethaddr", addr);
+	//r_addr = getenv ("ethaddr");
+	if(efuse_getinfo("mac", &info) == 0){
+		r_efus = efuse_read_usr(&info);
+		for(i=0; i<info.data_len; i++){
+			if(r_efus[i] != 0)
+				break;
+		}
+		if(i<info.data_len){
+			memset(addr,0,sizeof(addr));
+			sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",r_efus[0],r_efus[1],r_efus[2],r_efus[3],r_efus[4],r_efus[5]);
+			setenv ("ethaddr", addr);
+		}		
 	}
 #endif
 

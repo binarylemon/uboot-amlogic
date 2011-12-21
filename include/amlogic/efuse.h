@@ -3,37 +3,42 @@
 
 #include <config.h>
 
-typedef struct efuseinfo{
-	char title[40];
-	int nID;
+typedef struct efuseinfo_item{
+	char title[40];	
 	unsigned offset;    // write offset
 	unsigned enc_len;
 	unsigned data_len;
 	int we;    // write enable 	 
-} efuseinfo_t;
+	int bch_en; //BCH enable
+} efuseinfo_item_t;
 
-char *efuse_read_usr(int usr_type);
-int efuse_write_usr(int usr_type, char *data);
-int efuse_chk_written(int usr_type);
 
+typedef struct efuseinfo{
+	struct efuseinfo_item *efuseinfo_version;
+	int size;
+	int version;
+}efuseinfo_t;
+
+typedef int (*pfn) (char *title, efuseinfo_item_t *info); 
+
+char *efuse_dump(void);
+unsigned efuse_readcustomerid(void);
+void efuse_getinfo_version(efuseinfo_item_t *info);
+
+int efuse_getinfo(char *title, efuseinfo_item_t *info);
+char *efuse_read_usr(efuseinfo_item_t* info);
+int efuse_write_usr(efuseinfo_item_t* info, char *data);
+
+
+#if defined(CONFIG_M3) || defined(CONFIG_M1) 
+// for M1, M2, M3, A3 efuse length 
 #define EFUSE_BYTES            384  //(EFUSE_BITS/8)
 #define EFUSE_DWORDS            96  //(EFUSE_BITS/32)
-
-#define USR_LICENCE		0
-#define USR_MACADDR		1
-#define USR_HDMIHDCP		2
-#define USR_USERIDF		3
-#ifdef CONFIG_REFB09_NEW
-#define USR_USERIDF_REFB09_NEW USR_USERIDF+1
-#else	
-#define USR_USERIDF_REFB09_NEW USR_USERIDF
+#else
+// for m6 and after efuse length
+#define EFUSE_BYTES				512   //(EFUSE_BITS/8)
+#define EFUSE_DWORDS		128   //(EFUSE_BITS/32)
 #endif
-// next item definition need use the following format because the ID is used as index
-//#ifdef xxx
-//#define USR_XXX USR_USERIDF_REFB09+1
-//#else
-//#define USR_XXX USR_USERIDF_REFB09
-//#endif
 
 #endif
 
