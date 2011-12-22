@@ -110,7 +110,7 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 
 	s = getenv ("machid");
 	if (s) {
-		machid = simple_strtoul (s, NULL, 16);
+		machidenv = simple_strtoul (s, NULL, 16);
 		printf ("machid from environment: 0x%x \n", machidenv);
 	}
 
