@@ -397,6 +397,7 @@ int mmc_change_freq(struct mmc *mmc)
 {
 	char ext_csd[512];
 	char cardtype;
+	u64  sector_count;
 	int err;
 	mmc->card_caps = 0;
 
@@ -414,7 +415,9 @@ int mmc_change_freq(struct mmc *mmc)
 	if (ext_csd[212] || ext_csd[213] || ext_csd[214] || ext_csd[215])
 	{
 		//mmc->capacity = (*(unsigned *)(&ext_csd[212]))*mmc->read_bl_len;
-		mmc->high_capacity = 1;
+		sector_count = (((unsigned)ext_csd[215])<<24)|(((unsigned)ext_csd[214])<<16)|(((unsigned)ext_csd[213])<<8)|(((unsigned)ext_csd[212])<<0);
+		mmc->capacity = sector_count*mmc->read_bl_len;
+		//mmc->high_capacity = 1;
 	}		
 
 	cardtype = ext_csd[196] & 0xf;
