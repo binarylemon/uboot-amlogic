@@ -456,7 +456,7 @@ static inline struct aml_nand_chip *mtd_to_nand_chip(struct mtd_info *mtd)
 }
 
 extern int aml_nand_init(struct aml_nand_chip *aml_chip);
-
+extern int aml_nand_probe(struct mtd_info *mtd);
 
 
 #endif // NAND_H_INCLUDED

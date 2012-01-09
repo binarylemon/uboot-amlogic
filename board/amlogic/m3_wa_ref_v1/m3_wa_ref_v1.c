@@ -135,9 +135,8 @@ static void board_i2c_init(void)
 	//must call aml_i2c_init(); before any I2C operation	
 
 	/*M3 MID board*/
-	board_wa_aml8726_m3_ref_v10_i2c_test();	
-
-	udelay(10000);	
+	//board_wa_aml8726_m3_ref_v10_i2c_test();	
+	//udelay(10000);	
 	
 }
 //for sys_test only, not check yet

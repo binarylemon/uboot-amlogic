@@ -338,6 +338,12 @@ int saveenv(void)
 	size_t addr = 0;
 	int ret = 0;
 	size_t offset = CONFIG_ENV_OFFSET;	
+
+#ifdef CONFIG_M3
+	if(nand_probe(1))
+		return 1;
+#endif	
+	
 	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
 	if (IS_ERR(mtd))
 		return 1;
@@ -407,6 +413,12 @@ int readenv (size_t offset, u_char * buf)
 	static u_char map_flag = 0;
 	u_char *char_ptr;
 	u_char blk_num = 0;
+
+#ifdef  CONFIG_M3
+	if(nand_probe(1))
+		return 1;
+#endif	
+	
 	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
 	if (IS_ERR(mtd))
 		return 1;
@@ -580,6 +592,13 @@ void env_relocate_spec (void)
 	int ret;
 	env_t env_buf;
 	
+#ifdef CONFIG_M3	
+	if(nand_probe(1)){
+		set_default_env("!no available device.");
+		return;
+	}
+#endif
+
 	memset(env_buf.data, 0, ENV_SIZE);
 	ret = readenv(CONFIG_ENV_OFFSET, (u_char *) &env_buf);
 	if (ret) {		

@@ -39,7 +39,7 @@ static struct ecc_desc_s ecc_list[]={
 };
 
 
-static int a3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
+static int m3_nand_init(struct aml_nand_platform *plat, unsigned dev_num)
 {
 	struct aml_nand_chip *aml_chip = NULL;
 	struct nand_chip *chip = NULL;
@@ -116,7 +116,8 @@ void nand_init(void)
 			printk("error for not platform data\n");
 			continue;
 		}
-		ret = a3_nand_probe(plat, i);
+		//ret = a3_nand_probe(plat, i);
+		ret = m3_nand_init(plat, i);
 		if (ret) {
 			printk("nand init faile: %d\n", ret);
 			continue;
@@ -129,3 +130,14 @@ void nand_init(void)
 	return;
 }
 
+int nand_probe(int dev)
+{
+	if (dev < 0 || dev >= CONFIG_SYS_MAX_NAND_DEVICE ||
+	    !nand_info[dev].name) {
+		printk("No such device\n");
+		return -1;
+	}
+	
+	return(aml_nand_probe(&(nand_info[dev])));
+		
+}

@@ -2785,8 +2785,22 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	chip->verify_buf = aml_nand_verify_buf;
 	chip->read_byte = aml_platform_read_byte;
 
-
 	aml_chip->chip_num = plat->platform_nand_data.chip.nr_chips;
+
+	return 0;
+}
+
+
+int aml_nand_probe(struct mtd_info *mtd)
+{	
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);	
+	struct nand_chip *chip = &aml_chip->chip;	
+	struct aml_nand_platform *plat = aml_chip->platform;
+	int err = 0, i = 0;
+	
+	if(aml_chip->mfr_type != 0)   // probed finish
+		return 0;
+		
 	if (aml_chip->chip_num > MAX_CHIP_NUM) {
 		aml_nand_debug("couldn`t support for so many chips\n");
 		err = -ENXIO;
@@ -3001,6 +3015,7 @@ exit_error:
 		kfree(aml_chip->aml_nand_data_buf);
 		aml_chip->aml_nand_data_buf = NULL;
 	}
+	aml_chip->mfr_type=0;
 	return err;
 }
 
