@@ -15,7 +15,7 @@ http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
 /**
 	new efuse version 0.0 (for exist MP production, compitable version)
 */
-/** efuse layout before M3 
+/** efuse layout before M3 (for M1, M2, A3)
 0~3					licence					1 check byte				4 bytes(in total)
 4~10				mac						1 check byte				7 bytes(in total)
 12~322			hdcp					10 check byte				310 bytes(in total)
@@ -26,16 +26,18 @@ http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
 */
 
 /**
- * efuse version 0.1 (for M1,M2,A3,M3 )
+ * efuse version 0.1 (for M3 ) 
+ * M3 efuse: read all free efuse data maybe fail on addr 0 and addr 0x40
+ * so M3 EFUSE layout avoid using 0 and 0x40
  */
 /** 
-0~3					licence					1 check byte				4 bytes(in total)
-4~10				mac						1 check byte				7 bytes(in total)
-12~322			hdcp					10 check byte				310 bytes(in total)
-322~328 			mac_bt				1 check byte				7 bytes(in total)
-330~336 			mac_wifi				1 check byte				7 bytes(in total)
-337~379  		usid						2 check byte		 		43 bytes(in total)
-380~384			version				1 check byte 				4 bytes(in total) (it should be zero) 
+1~38				usid						2 check byte				38 bytes(in total)
+39~45	 			mac_wifi				1 check byte				7 bytes(in total)
+46~52	 			mac_bt				1 check byte				7 bytes(in total)
+53~59				mac						1 check byte				7 bytes(in total)
+60~63				licence					1 check byte				4 bytes(in total)
+68~377			hdcp					10 check byte				310 bytes(in total)
+380~383			version 				1 check byte				4 bytes(in total) (version=1)
 * 		3 valid byte is 1byte for version and 2byte for customerid . version is 1
 * 		
 */
@@ -118,53 +120,53 @@ static efuseinfo_item_t efuseinfo_v0[] =
 static efuseinfo_item_t efuseinfo_v1[] =
 {
 	{
-		.title = "licence",
-		.offset = 0,
-		.enc_len = 4,
-		.data_len = 3,
+		.title = "usid",
+		.offset = 1,
+		.enc_len = 38,
+		.data_len = 36,
 		.we = 0,
 		.bch_en = 1,
-	},
+	},	
 	{
-		.title = "mac",
-		.offset = 4,
+		.title = "mac_wifi",
+		.offset = 39,
 		.enc_len = 7,
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
 	},
 	{
-		.title = "hdcp",
-		.offset = 12,
-		.enc_len = 310,
-		.data_len = 300,
-		.we = 0,
-		.bch_en = 1,
-	},
-	{
 		.title = "mac_bt",
-		.offset = 322,
+		.offset = 46,
 		.enc_len = 7,
 		.data_len = 6,
 		.we=1,
 		.bch_en = 1,
 	},
 	{
-		.title = "mac_wifi",
-		.offset = 330,
+		.title = "mac",
+		.offset = 53,
 		.enc_len = 7,
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
 	},
 	{
-		.title = "usid",
-		.offset = 337,
-		.enc_len = 43,
-		.data_len = 42,
-		.we = 0,
+		.title = "licence",
+		.offset = 60,
+		.enc_len = 4,
+		.data_len = 3,
+		.we = 1,
 		.bch_en = 1,
 	},	
+	{
+		.title = "hdcp",
+		.offset = 68,
+		.enc_len = 310,
+		.data_len = 300,
+		.we = 0,
+		.bch_en = 1,
+	},
 	{
 		.title= "version",     //1B(version=1)+2B(machid)
 		.offset=380,
