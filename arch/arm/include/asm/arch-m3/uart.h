@@ -99,6 +99,8 @@
     #define UART_STAT_MASK_RFIFO_EMPTY              (1<<20)
     #define UART_STAT_MASK_TFIFO_FULL               (1<<21)
     #define UART_STAT_MASK_TFIFO_EMPTY              (1<<22)
+    #define UART_STAT_MASK_XMIT_BUSY					(1<<25)
+    #define UART_STAT_MASK_RECV_BUSY					(1<<26)
 #define P_UART_MISC(uart_base)    P_UART(uart_base,UART_MISC   )
 
 

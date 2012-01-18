@@ -154,6 +154,10 @@ static int serial_init_port (unsigned port_base)
 {
 	int ret;
 
+#ifdef CONFIG_M3
+	while((readl(P_UART_STATUS(port_base)) & (UART_STAT_MASK_XMIT_BUSY)));
+#endif
+
     writel(0,P_UART_CONTROL(port_base));
     ret = serial_set_pin_port(port_base);
     if (ret < 0)
@@ -176,6 +180,9 @@ static int serial_init_port (unsigned port_base)
     writel(readl(P_UART_CONTROL(port_base)) | UART_CNTL_MASK_TX_EN | UART_CNTL_MASK_RX_EN, P_UART_CONTROL(port_base));
     while(!(readl(P_UART_STATUS(port_base)) & UART_STAT_MASK_TFIFO_EMPTY));
     serial_reset_port(port_base);
+#ifdef CONFIG_M3
+	while((readl(P_UART_STATUS(port_base)) & (UART_STAT_MASK_XMIT_BUSY)));
+#endif    
     serial_putc_port(port_base,'\n');
     return 0;
 }
