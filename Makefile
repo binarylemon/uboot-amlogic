@@ -252,6 +252,12 @@ ifdef CONFIG_SARADC
 LIBS += drivers/adc/libadc.o
 endif
 LIBS += common/libcommon.o
+
+ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
+LIBS += customer/common/lib_customer_cmd.o
+LIBS += customer/drivers/lib_customer_drivers.o
+endif
+
 LIBS += lib/libfdt/libfdt.o
 LIBS += api/libapi.o
 LIBS += post/libpost.o
@@ -273,7 +279,12 @@ endif
 LIBS := $(addprefix $(obj),$(sort $(LIBS)))
 .PHONY : $(LIBS) $(TIMESTAMP_FILE) $(VERSION_FILE)
 
+ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
+LIBBOARD = customer/board/$(BOARD)/lib$(BOARD).o
+else
 LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).o
+endif
+
 LIBBOARD := $(addprefix $(obj),$(LIBBOARD))
 
 UCL_BOOTLIBS += arch/$(ARCH)/cpu/$(CPU)/uclboot/ucl_lib_$(CPU).o

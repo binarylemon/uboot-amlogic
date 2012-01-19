@@ -1,4 +1,4 @@
-help: 
+help: help_customer
 
 	@echo =======================================================================
 	@echo The mark in board is "Mesonboard_AML8726-M_V1.1"
@@ -18,6 +18,8 @@ help:
 	
 	@echo =======================================================================
 	@echo The mark in board is "OPLAY_AML8726_M_R100 (ASUS:M3)"
-	@echo config command: \"make m3_oplay_config\"
+	@echo config command: \"make m3_oplay_config\"	
 	
 	@echo
+		
+sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)
