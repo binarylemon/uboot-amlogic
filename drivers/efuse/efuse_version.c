@@ -229,7 +229,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.bch_en = 0,
 	},
 	{
-		.title = "mac1",  //for the second network interface or bt
+		.title = "mac_bt",  //for the second network interface or bt
 		.offset = 442,
 		.enc_len = 6,
 		.data_len = 6,
@@ -237,7 +237,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.bch_en = 0,
 	},
 	{
-		.title = "mac2", //for the second network interface or bt
+		.title = "mac_wifi", //for the second network interface or bt
 		.offset = 448,
 		.enc_len = 6,
 		.data_len = 6,
