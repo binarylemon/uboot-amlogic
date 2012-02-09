@@ -90,7 +90,7 @@ NOPED_OBJ_FILES-y += mkimage.o
 OBJ_FILES-$(CONFIG_NETCONSOLE) += ncb.o
 NOPED_OBJ_FILES-y += os_support.o
 OBJ_FILES-$(CONFIG_SHA1_CHECK_UB_IMG) += ubsha1.o
-OBJ_FILES-$(CONFIG_AML_MESON)	+=convert.o m1_romboot.o a3_romboot.o m3_romboot.o
+OBJ_FILES-$(CONFIG_AML_MESON)	+=convert.o m1_romboot.o a3_romboot.o m3_romboot.o m6_romboot.o
 OBJ_FILES-$(CONFIG_UCL) += uclpack.o
 OBJ_FILES-$(CONFIG_AML_SUSPEND) += bin2code.o
 # Don't build by default
@@ -105,7 +105,7 @@ LIBFDT_OBJ_FILES-y += fdt_ro.o
 LIBFDT_OBJ_FILES-y += fdt_rw.o
 LIBFDT_OBJ_FILES-y += fdt_strerror.o
 LIBFDT_OBJ_FILES-y += fdt_wip.o
-LIBUCL_FILE = $(SRCTREE)/tools/ucl/libucl_linux.a
+LIBUCL_FILE = $(SRCTREE)/tools/ucl/libucl.a
 
 # Generated LCD/video logo
 LOGO_H = $(OBJTREE)/include/bmp_logo.h
@@ -205,11 +205,12 @@ $(obj)ncb$(SFX):	$(obj)ncb.o
 $(obj)ubsha1$(SFX):	$(obj)os_support.o $(obj)sha1.o $(obj)ubsha1.o
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 $(obj)convert$(SFX): $(obj)convert.o \
-										$(obj)m1_romboot.o $(obj)a3_romboot.o $(obj)m3_romboot.o
+										$(obj)m1_romboot.o $(obj)a3_romboot.o $(obj)m3_romboot.o $(obj)m6_romboot.o
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 $(obj)uclpack$(SFX): $(obj)uclpack.o $(LIBUCL_FILE)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
-
+$(LIBUCL_FILE):
+	make -C $(@D)
 $(obj)bin2code$(SFX): $(obj)bin2code.o
 	$(HOSTCC) -g $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 		

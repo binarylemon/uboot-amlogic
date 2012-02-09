@@ -24,6 +24,11 @@ struct romboot_s support_socs[]={
         .write=a3_write,
     }, 
     {
+        .cpu="m6",
+        .write=m6_write,
+        .write_ex=m6_write_ex,
+    },
+    {
         .cpu=NULL,
         .write=NULL,
     }
