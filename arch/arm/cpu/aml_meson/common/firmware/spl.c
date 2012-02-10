@@ -18,6 +18,43 @@
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
+#if 0
+	ldr     r0,=0xda004004
+    ldr     r1,=0x80000510
+    str     r1,[r0]
+    
+    ldr     r0,=0xc8100014
+    mov     r1,#0x4000
+    str     r1,[r0]
+
+    
+    ldr     r0,=0xc1109900
+    mov     r1,#0
+    str     r1,[r0]
+    wfi
+#endif
+	
+#if 1
+	//A9 JTAG enable
+	writel(0x80000510,0xda004004);
+
+	//TDO enable
+	writel(0x4000,0xc8100014);
+	
+#else
+	//release to shiming for debug 2012.02.08
+	//ARC JTAG enable
+	writel(0x80051001,0xda004004);
+		
+	//ARC bug fix disable
+	writel((readl(0xc8100040)|1<<24),0xc8100040);
+#endif	
+	
+	//Watchdog disable
+	writel(0,0xc1109900);
+///	asm volatile ("wfi");
+
+
 #if defined(WA_AML8726_M3_REF_V10) || defined(SHUTTLE_M3_MID_V1)
 	//PWREN GPIOAO_2, PWRHLD GPIOAO_6 pull up
 	//@WA-AML8726-M3_REF_V1.0.pdf -- WA_AML8726_M3_REF_V10

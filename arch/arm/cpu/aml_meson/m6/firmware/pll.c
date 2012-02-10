@@ -65,7 +65,12 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 
 	writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL);
 	
-	//**************************************************************//
+	///clk81=200M
+	writel((7 << 12) | // 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
+                               (1 << 8)  | // 0:oscin 1:pll
+                               (1 << 7)  | // 0:oscin 1:div enable
+                               (1 << 0),P_HHI_MPEG_CLK_CNTL);   // 0:div1, n:div(n+1)
+		//**************************************************************//
  	__udelay(1000);
 	
 }

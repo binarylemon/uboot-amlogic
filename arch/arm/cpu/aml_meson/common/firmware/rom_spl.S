@@ -159,7 +159,7 @@ fiq:
 	mov r0,#7
 	b fail_sleep	
 fail_sleep:
-	ldr     sp, =0x49002000  // setup stack pointer 			
+	ldr     sp, =_STACK_END  // setup stack pointer 	hisun 20120208		
 	bl do_exception
 	wfi
 
