@@ -191,7 +191,7 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
     int i;
     datum pattern;
     datum antipattern;
-    serial_puts("Total Size");serial_put_dword(nBytes);
+    serial_puts("\nTotal Size ");serial_put_dword(nBytes);serial_putc('\n');
 
     /*
      * Fill memory with a known pattern.

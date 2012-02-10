@@ -31,7 +31,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned boot_id=romboot_info->boot_id;
 	unsigned size;
 	int rc=0;
-    serial_puts("HHH\n");
+    serial_puts("\nHHH\n");
 	size=__TEXT_SIZE;
 	//boot_id = 1;
 	if(boot_id>1)

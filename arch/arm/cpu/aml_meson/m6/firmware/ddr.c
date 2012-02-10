@@ -37,11 +37,11 @@ static void wait_pll(unsigned clk,unsigned dest);
 
 void set_ddr_clock(struct ddr_set * timing_reg)
 {
-/*
+	/*
 #ifdef ENABLE_POWER_SAVING
     APB_Wr(PCTL_DLLCR_ADDR, APB_Rd(PCTL_DLLCR_ADDR)|(7<<2));
 #endif
-*/
+	*/
     //set_ddr_clock.
     //  +------------------------------------------------------------+   +----------------------------------------+
     //  |                      <<< PLL >>>                           |   |         <<< Clock Reset Test >>>       |
@@ -51,23 +51,16 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     //  +---------+-----------+----------------------+---------------+   +------+-----------+---------------------+  +------------
     //  | 24.0000 |  3   133  |   8.0000  1064.0000  |   1  532.0000 |   |   1  |  532.0000 |  -0.188% ( 533.000) |  | 0x00010685 
     //  | 24.0000 |  3   125  |   8.0000  1000.0000  |   1  500.0000 |   |   1  |  500.0000 |   0.000% ( 500.000) |  | 0x0001067d
-    //Wr(0x1068, 0x0001067d );
-
-	#if 0
-	//code from romboot
-   *P_HHI_DDR_PLL_CNTL = (1<<29); // RESET
-   *P_HHI_DDR_PLL_CNTL2=0x814d3928;
-   *P_HHI_DDR_PLL_CNTL3=0x6b425012;
-   *P_HHI_DDR_PLL_CNTL4=0x101;
-   *P_HHI_DDR_PLL_CNTL = (1<<16) | (1<<9) | (48<<0); // TRUE ENABLE
-	#endif
+    Wr(HHI_DDR_PLL_CNTL, (1<<29) );
 	
-	Wr(HHI_DDR_PLL_CNTL, (1<<29) );
 	Wr(HHI_DDR_PLL_CNTL2, 0x814d3928 );
 	Wr(HHI_DDR_PLL_CNTL3, 0x6b425012 );
-	Wr(HHI_DDR_PLL_CNTL4, 0x101 );
-	Wr(HHI_DDR_PLL_CNTL, 0x0001067d);//500M
+	//Wr(HHI_DDR_PLL_CNTL4, 0x101 ); 
+	Wr(HHI_DDR_PLL_CNTL4, 0x110 ); //shi suggest PM14:23
+	
+	//Wr(HHI_DDR_PLL_CNTL, 0x0001067d);//500M
 	//Wr(HHI_DDR_PLL_CNTL, 0x00010664);//400M
+	Wr(HHI_DDR_PLL_CNTL, 0x0002067d);//250M
 	
 	
   	//wait to DDR PLL lock.
@@ -83,9 +76,10 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     // release the DDR DLL reset pin.
     MMC_Wr(MMC_SOFT_RST,  0xffff);
 	
-    __udelay(1000);
+    //__udelay(1000);
 
-	wait_pll(3,500);
+	//wait_pll(3,500);
+	wait_pll(3,250);
 	//wait_pll(3,400);
 	
 	//asm volatile ("wfi");
@@ -127,7 +121,7 @@ static unsigned ( * mem_test[])(unsigned tag,struct ddr_set * timing_reg)={
 
 #define MEM_DEVICE_TEST_ITEMS_BASE (sizeof(mem_test)/sizeof(mem_test[0]))
 
-unsigned m3_ddr_init_test(int arg)
+unsigned m6_ddr_init_test(int arg)
 {
     int i; //,j;
     unsigned por_cfg=1;
@@ -148,7 +142,18 @@ unsigned m3_ddr_init_test(int arg)
 }
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
 {
-	m3_ddr_init_test(0xe);
+#define DDR_INIT_START  (1)
+#define DDR_TEST_ADDR   (1<<1)
+#define DDR_TEST_DATA   (1<<2)
+#define DDR_TEST_DEVICE (1<<3)
+
+#define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
+#define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
+
+	//m6_ddr_init_test(6);
+	//m6_ddr_init_test(0x0E);
+	m6_ddr_init_test(DDR_TEST_BASEIC);
+
 	return 0;
 }
 	

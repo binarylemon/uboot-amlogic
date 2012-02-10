@@ -37,19 +37,19 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 static struct ddr_set __ddr_setting={
 
-                    .cl             =   8,
-                    .t_faw          =  20,   //8bit:20, 16bit:27
+                    .cl             =   9,
+                    .t_faw          =  30,   //8bit:20, 16bit:27
                     .t_mrd          =   4,
-                    .t_1us_pck      = 520,
-                    .t_100ns_pck    =  52,
-                    .t_init_us      = 512,
-                    .t_ras          =  20,
-                    .t_rc           =  28,
-                    .t_rcd          =   8,
+                    .t_1us_pck      = 500,
+                    .t_100ns_pck    =  50,
+                    .t_init_us      = 511,
+                    .t_ras          =  24,
+                    .t_rc           =  33,
+                    .t_rcd          =   9,
                     .t_refi_100ns   =  78,
-                    .t_rfc          =  86,   //4Gb:139, 2Gb:86, 1Gb:59
-                    .t_rp           =   8,
-                    .t_rrd          =   6,   //8bit:4, 16bit:6
+                    .t_rfc          =  139,   //4Gb:139, 2Gb:86, 1Gb:59
+                    .t_rp           =   9,
+                    .t_rrd          =   5,   //8bit:4, 16bit:6
                     .t_rtp          =   4,
                     .t_wr           =   8,
                     .t_wtr          =   4,
@@ -77,7 +77,7 @@ static struct ddr_set __ddr_setting={
                     .mcfg = {  1 |              // burst length 0 = 4; 1 = 8
                                 (0 << 2) |      // bl8int_en.   enable bl8 interrupt function.
                                 (1 << 5) |      // 1: ddr3 protocal; 0 : ddr2 protocal
-                                //(1 << 3) |        //2T mode, default is disable
+                                (1 << 3) |        //2T mode, default is disable
                                 //(tFAW <<18) | //tFAW will be set according to the calculation with t_rrd and t_faw
                                                 // in file /firmware/ddr_init_pctl.c
                                 (1 << 17) |     // power down exit which fast exit.

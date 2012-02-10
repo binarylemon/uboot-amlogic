@@ -122,7 +122,7 @@
 #define CONFIG_CMD_KGDB			1
 ////#define CONFIG_SERIAL_TAG       1*/
 
-#define CONFIG_AML_RTC
+//#define CONFIG_AML_RTC //hisun 2012.02.10
 #define CONFIG_LZMA  1
 #define CONFIG_LZO
 #define CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
