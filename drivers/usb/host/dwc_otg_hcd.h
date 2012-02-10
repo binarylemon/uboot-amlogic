@@ -10,7 +10,7 @@
  ****************************************************************************/
 #ifndef __DWC_OTG_HCD_H__
 #define __DWC_OTG_HCD_H__
-#include <asm/arch/registers.h>
+#include <asm/arch/io.h>
 
 #define DWC_DRIVER_VERSION	"2011-OCT-11"
 //#define DEBUG

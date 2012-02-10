@@ -4,9 +4,19 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 //#include <common.h>
-#include "registers.h"
+#include "register.h"
 #include "reg_addr.h"
 #include "io.h"
+#define NAND_CMD                                ((0xc1108600-IO_CBUS_BASE)>>2)
+#define NAND_CFG                                ((0xc1108604-IO_CBUS_BASE)>>2)
+#define NAND_DADR                               ((0xc1108608-IO_CBUS_BASE)>>2)
+#define NAND_IADR                               ((0xc110860c-IO_CBUS_BASE)>>2)
+#define NAND_BUF                                ((0xc1108610-IO_CBUS_BASE)>>2)
+#define NAND_INFO                               ((0xc1108614-IO_CBUS_BASE)>>2)
+#define NAND_DC                                 ((0xc1108618-IO_CBUS_BASE)>>2)
+#define NAND_ADR                                ((0xc110861c-IO_CBUS_BASE)>>2)
+#define NAND_DL                                 ((0xc1108620-IO_CBUS_BASE)>>2)
+#define NAND_DH                                 ((0xc1108624-IO_CBUS_BASE)>>2)
 
 /** Register defination **/
 

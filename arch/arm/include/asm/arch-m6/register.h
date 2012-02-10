@@ -349,6 +349,7 @@
 #define PREG_PAD_GPIO5_EN_N                        0x201b
 #define PREG_PAD_GPIO5_O                           0x201c
 #define PREG_PAD_GPIO5_I                           0x201d
+
 // ----------------------------
 // A9 and L2 chche
 // ----------------------------

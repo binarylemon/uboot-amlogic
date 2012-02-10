@@ -471,7 +471,7 @@
 #define ETH_PLL_CNTL_DATEND                     (1<<2)
 #define ETH_PLL_CNTL_DESEND                     (1<<3)
 
-#include "registers.h"
+#include "register.h"
 
 #define ETH_PLL_CNTL                            CBUS_REG_ADDR(PREG_ETHERNET_ADDR0)
 

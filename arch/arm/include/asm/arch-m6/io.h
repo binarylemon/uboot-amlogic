@@ -16,6 +16,31 @@
 #ifndef __ASSEMBLY__
 
 #include <asm/io.h>
+#define IO_CBUS_BASE			  0xc1100000
+#define IO_AXI_BUS_BASE			0xc1300000
+#define IO_AHB_BUS_BASE			0xc9000000
+#define IO_APB_BUS_BASE			0xc8000000
+
+#define MESON_PERIPHS1_VIRT_BASE	0xc1108400
+#define MESON_PERIPHS1_PHYS_BASE	0xc1108400
+
+#define MESON_PERIPHS1_VIRT_BASE	0xc1108400
+#define MESON_PERIPHS1_PHYS_BASE	0xc1108400
+
+#define CBUS_REG_OFFSET(reg) ((reg) << 2)
+#define CBUS_REG_ADDR(reg)	 (IO_CBUS_BASE + CBUS_REG_OFFSET(reg))
+
+#define AXI_REG_OFFSET(reg)  ((reg) << 2)
+#define AXI_REG_ADDR(reg)	 (IO_AXI_BUS_BASE + AXI_REG_OFFSET(reg))
+
+#define AHB_REG_OFFSET(reg)  ((reg) << 2)
+#define AHB_REG_ADDR(reg)	 (IO_AHB_BUS_BASE + AHB_REG_OFFSET(reg))
+
+#define APB_REG_OFFSET(reg)  (reg)
+#define APB_REG_ADDR(reg)	 (IO_APB_BUS_BASE + APB_REG_OFFSET(reg))
+#define APB_REG_ADDR_VALID(reg) (((unsigned long)(reg) & 3) == 0)
+
+
 
 #define WRITE_CBUS_REG(reg, val) __raw_writel(val, CBUS_REG_ADDR(reg))
 #define READ_CBUS_REG(reg) (__raw_readl(CBUS_REG_ADDR(reg)))
@@ -69,5 +94,5 @@
 #endif
 
 #include "reg_addr.h"
-
+#include "m6_mmc.h"
 #endif

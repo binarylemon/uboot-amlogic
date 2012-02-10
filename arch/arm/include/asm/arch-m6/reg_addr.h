@@ -1,7 +1,7 @@
 #ifndef __MACH_MESSON_REG_ADDR_H
 #define __MACH_MESSON_REG_ADDR_H
 //CBUS REG ADDR
-#include "registers.h"
+#include "register.h"
 #include "ao_reg.h"
 #define P_SECOND_DEMUX_OFFSET_0 CBUS_REG_ADDR(SECOND_DEMUX_OFFSET_0)
 #define P_THIRD_DEMUX_OFFSET_0 CBUS_REG_ADDR(THIRD_DEMUX_OFFSET_0)
