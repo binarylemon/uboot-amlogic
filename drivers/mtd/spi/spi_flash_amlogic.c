@@ -106,7 +106,8 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	amls->slave.cs 	= cs;
 
 #if defined(CONFIG_AML_MESON_1) || defined (CONFIG_AML_MESON_2)||defined(CONFIG_AML_MESON_3)
-    amls->adr_base 	=(void*)0x40000000;
+    //amls->adr_base 	=(void*)0x40000000;
+    amls->adr_base 	=(void*)0xCC000000; //temp for M6 work
 #elif defined(CONFIG_AML_MESON_A3)
 	#error "please implement A3 SPI buffer address!"
 #else
