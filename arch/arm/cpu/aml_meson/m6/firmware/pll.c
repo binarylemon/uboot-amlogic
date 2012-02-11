@@ -61,9 +61,9 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	writel(0x814d3928,0xc1104264);//P_HHI_SYS_PLL_CNTL2
 	writel(0x6b425012,0xc1104268);//P_HHI_SYS_PLL_CNTL3
 	writel(0x101,0xc110426c);//P_HHI_SYS_PLL_CNTL4
-	writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260);
-
-	writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL);
+	writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260); //SYS pll clk: 600M
+	
+	writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL); //300M
 	
 	///clk81=200M
 	writel((7 << 12) | // 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
@@ -71,6 +71,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
                                (1 << 7)  | // 0:oscin 1:div enable
                                (1 << 0),P_HHI_MPEG_CLK_CNTL);   // 0:div1, n:div(n+1)
 		//**************************************************************//
+
  	__udelay(1000);
 	
 }

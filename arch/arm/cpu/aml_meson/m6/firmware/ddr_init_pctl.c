@@ -39,70 +39,75 @@ void load_zqcl(int zqcl_value )
                          (DDR_RANK << 20) |   //rank select
                   (zqcl_value << 4 ) |
                           ZQ_LONG_CMD );
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {}
+  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {};
+  
 }
 
 unsigned get_mrs0(struct ddr_set * timing_reg)
-{
-    unsigned mmc_ctrl=timing_reg->ddr_ctrl;
-    unsigned ret=(1<<12)|(0<<3);
-    //bl 2==4 0==8
-    ret|=mmc_ctrl&(1<<10)?2:0;
-    //cl
-    ret|=((timing_reg->cl-4)&0x7)<<4;
-    //wr: write recovery 
+{    
+    //only calculate CL (6:4) and WR (11:9)
+    //all others load from timming.c          
+    unsigned short nMask = ~((7<<4)|(7<<9));
+    unsigned short nMR0 = timing_reg->mrs[0] & nMask;    
+    
+    //CL
+    nMR0 |=  ((timing_reg->cl-4)&0x7)<<4;
+    
+    //WR
     if(timing_reg->t_wr <= 8)
-        ret|=((timing_reg->t_wr-4)&0x7)<<9;
+        nMR0|=((timing_reg->t_wr-4)&0x7)<<9;
     else
-    	  ret|=((timing_reg->t_wr>>1)&7)<<9;
-    return ret&0x1fff;
+    	nMR0|=((timing_reg->t_wr>>1)&7)<<9;
+    	
+    return nMR0;      
 }
 
 unsigned get_mrs1(struct ddr_set * timing_reg)
-{
-	unsigned ret = 0;
-    ret|=timing_reg->mrs[1]&((1<<9)|(1<<6)|(1<<2)| //rtt_nominal
-                             (1<<5)|(1<<1) |       //(A5 A1),Output driver impedance control 00:RZQ/6,01:RZQ/7,10£ºRZQ/5 11:Reserved
-                             (0<<12)|              //Qoff output buffer
-                             (0<<7) );             //Write level  
-
-    //cl
+{   
+    //only calculate AL (4:3)
+    //all others load from timming.c          
+    unsigned short nMask = ~((3<<3));
+    unsigned short nMR1 = timing_reg->mrs[1] & nMask;
+    
+    
+    //AL
     if(timing_reg->t_al)
     {
-        ret|=((timing_reg->cl-timing_reg->t_al)&3)<<3;
+        nMR1|=((timing_reg->cl-timing_reg->t_al)&3)<<3;
     }
-    return ret&0x1fff;
+        	
+    return nMR1;
 }
 unsigned get_mrs2(struct ddr_set * timing_reg)
-{
-    unsigned ret=((timing_reg->t_cwl-5)&7)<<3;
-    return ret&0x1fff;
+{   
+    //only calculate CWL (5:3)
+    //all others load from timming.c          
+    unsigned short nMask = ~((7<<3));  
+    unsigned short nMR2 = timing_reg->mrs[2] & nMask;
+    
+    
+    //CWL
+    nMR2 |= ((timing_reg->t_cwl-5)&7)<<3;
+            	
+    return nMR2;
 }
 
 
 int init_pctl_ddr3(struct ddr_set * timing_reg)
-{
-	//timing_reg=ddr3_timing;
-	//set_ddr_clock.
-	//	+------------------------------------------------------------+	 +----------------------------------------+
-	//	|					   <<< PLL >>>							 |	 |		   <<< Clock Reset Test >>> 	  |
-	//	+---------+-----------+----------------------+---------------+	 +------+-----------+---------------------+  +------------
-	//	|		  | PLL Ports | 	 PLL		PLL  | PLL	PLL 	 |	 | CRT	|	 Final	|				Ideal |  |	HIU REG 
-	//	|	Fin   |  N	  M   | 	Fref		VCO  |	OD	FOUT	 |	 |	XD	|	 Clock	|	 Error		Clock |  |	0x1068
-	//	+---------+-----------+----------------------+---------------+	 +------+-----------+---------------------+  +------------
-	//	| 24.0000 |  3	 133  |   8.0000  1064.0000  |	 1	532.0000 |	 |	 1	|  532.0000 |  -0.188% ( 533.000) |  | 0x00010685 
-	//	| 24.0000 |  3	 125  |   8.0000  1000.0000  |	 1	500.0000 |	 |	 1	|  500.0000 |	0.000% ( 500.000) |  | 0x0001067d
+{	
+	int nTempVal;
+	
+	//UPCTL memory timing registers
+	MMC_Wr(UPCTL_TOGCNT1U_ADDR, timing_reg->t_1us_pck);	 //1us = nn cycles.
 
-	//write memory timing registers
-	MMC_Wr(UPCTL_TOGCNT1U_ADDR, timing_reg->t_1us_pck);	 //1us =  cycles.
-
-	MMC_Wr(UPCTL_TOGCNT100N_ADDR, timing_reg->t_100ns_pck); //100ns = cycles.
+	MMC_Wr(UPCTL_TOGCNT100N_ADDR, timing_reg->t_100ns_pck);//100ns = nn cycles.
 
 	MMC_Wr(UPCTL_TINIT_ADDR, timing_reg->t_init_us);  //200us.
 
-	MMC_Wr(UPCTL_TRSTH_ADDR, 500);	  // 0 for ddr2;  2 for simulation; 500 for ddr3.
+	MMC_Wr(UPCTL_TRSTH_ADDR, timing_reg->t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
 
 	//configure the PCTL for DDR3 SDRAM burst length = 8
+	/*
 	MMC_Wr(UPCTL_MCFG_ADDR, 	1		  |   // burst length 0 = 4; 1 = 8
 							   (0 << 2)   |   // bl8int_en.   enable bl8 interrupt function.
 							   //(1 << 3)   |   //2T mode by hisun2012.02.10
@@ -111,6 +116,12 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 							   (1 << 17)  |   // power down exit which fast exit.
 							   (1 <<18) 	  // tFAW. 1 : 5*tRRD.
 									   );
+	*/
+	//for(nTempVal=4;(nTempVal)*timing_reg->t_rrd<timing_reg->t_faw&&nTempVal<=6;nTempVal++);
+	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
+	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
+	MMC_Wr(UPCTL_MCFG_ADDR,((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
+                           timing_reg->mcfg);
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
@@ -119,6 +130,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(PUB_PGCR_ADDR, 0x01842e04); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.
+	/*
 	MMC_Wr( PUB_MR0_ADDR,	(1 << 12 ) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
 							(4 <<  9 ) |   //wr recovery   4 means write recovery = 8 cycles..
 							(0	<< 8 ) |   //DLL reset.
@@ -127,10 +139,16 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 							(0	<< 3 ) |   //burst type,  0:sequential 1 Interleave.
 							(0	<< 2 ) |   //cas latency bit 0.
 								   0 ); 	//burst length	:  2'b00 fixed BL8 
-	//MMC_Wr( PUB_MR0_ADDR, 0x940); 
-	MMC_Wr( PUB_MR1_ADDR, 0x6); //Rtt = RZQ/4 = 60(M5, M1);	OUTPUT Drive = RZQ/7 = 34(M9,M6,M2); 
-	MMC_Wr( PUB_MR2_ADDR, 0x8); //CWL = 6 ( M5, M4, M3).   2.5ns > tCK >= 1.875ns). 
-	MMC_Wr( PUB_MR3_ADDR, 0x0); 
+	*/
+	MMC_Wr( PUB_MR0_ADDR,get_mrs0(timing_reg));
+	
+	//MMC_Wr( PUB_MR1_ADDR, 0x6); //Rtt = RZQ/4 = 60(M5, M1);	OUTPUT Drive = RZQ/7 = 34(M9,M6,M2); 
+	MMC_Wr( PUB_MR1_ADDR,get_mrs1(timing_reg));
+	
+	//MMC_Wr( PUB_MR2_ADDR, 0x8); //CWL = 6 ( M5, M4, M3).   2.5ns > tCK >= 1.875ns). 
+	MMC_Wr( PUB_MR2_ADDR,get_mrs2(timing_reg));
+		
+	MMC_Wr( PUB_MR3_ADDR, 0x0);	
 
 
 	//program DDR SDRAM timing parameter.

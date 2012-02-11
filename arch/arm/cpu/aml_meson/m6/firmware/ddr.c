@@ -58,6 +58,7 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	//Wr(HHI_DDR_PLL_CNTL4, 0x101 ); 
 	Wr(HHI_DDR_PLL_CNTL4, 0x110 ); //shi suggest PM14:23
 	
+	//Wr(HHI_DDR_PLL_CNTL, 0x00010696);//600M
 	//Wr(HHI_DDR_PLL_CNTL, 0x0001067d);//500M
 	//Wr(HHI_DDR_PLL_CNTL, 0x00010664);//400M
 	Wr(HHI_DDR_PLL_CNTL, 0x0002067d);//250M
@@ -78,9 +79,18 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	
     //__udelay(1000);
 
+	//wait_pll(3,600);
 	//wait_pll(3,500);
 	wait_pll(3,250);
 	//wait_pll(3,400);
+
+
+	//sys_pll_div3
+	wait_pll(25,200);//600M /3 = 200M
+
+	//clk81 200M
+	wait_pll(7,200);
+
 	
 	//asm volatile ("wfi");
 	
