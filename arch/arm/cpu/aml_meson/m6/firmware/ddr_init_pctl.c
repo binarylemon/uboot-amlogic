@@ -123,7 +123,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 							(4 <<  9 ) |   //wr recovery   4 means write recovery = 8 cycles..
 							(0	<< 8 ) |   //DLL reset.
 							(0	<< 7 ) |   //0= Normal 1=Test.
-							(4	<< 4 ) |   //cas latency high 3 bits (A6,A5, A4, A2) = 8 
+							(5	<< 4 ) |   //cas latency high 3 bits (A6,A5, A4, A2) 4 : for cl=8. 5 : for cl=9
 							(0	<< 3 ) |   //burst type,  0:sequential 1 Interleave.
 							(0	<< 2 ) |   //cas latency bit 0.
 								   0 ); 	//burst length	:  2'b00 fixed BL8 
@@ -134,26 +134,26 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 
 	//program DDR SDRAM timing parameter.
-	MMC_Wr( PUB_DTPR0_ADDR, (0x0 |		//tMRD. 
-						(4 <<2) |		//tRTP 
-					  ( 4 << 5) |		//tWTR 
-					   (7 << 8) |		//tRP 
-					  (8 << 12) |		//tRCD 
-					  (14 <<16) |		//tRAS 
-					 ( 6 <<21 ) |		//tRRD 
-					  (28 <<25) |		//tRC 
-						( 0 <<31) ));	//tCCD 
+	MMC_Wr( PUB_DTPR0_ADDR, (0x0 |		//tMRD.
+						(timing_reg->t_rtp <<2) |		//tRTP
+						( timing_reg->t_wtr << 5) |		//tWTR
+						(timing_reg->t_rp << 8) |		//tRP
+						(timing_reg->t_rcd << 12) |		//tRCD
+						(timing_reg->t_ras <<16) |		//tRAS
+						( timing_reg->t_rrd <<21 ) |		//tRRD
+						(timing_reg->t_rc <<25) |		//tRC
+						( 0 <<31) ));	//tCCD
 
-	MMC_Wr( PUB_DTPR1_ADDR, ((27 << 3) |   //tFAW 
-							(12 << 9) |   //tMOD
-							(0 << 11) |   //tRTODT 
-						   (89 << 16) |   //tRFC
+	MMC_Wr( PUB_DTPR1_ADDR, ((timing_reg->t_faw << 3) |   //tFAW
+							(timing_reg->t_mod << 9) |   //tMOD
+							(0 << 11) |   //tRTODT
+						   ( timing_reg->t_rfc << 16) |   //tRFC
 						   ( 0 << 24) |   //tDQSCK
 						   ( 0 << 27) )); //tDQSCKmax
 
 	MMC_Wr( PUB_DTPR2_ADDR, ( 512 |		 //tXS
-					 ( 10 << 10) |		 //tXP
-					  ( 3 << 15) |		 //tCKE 
+					 ( timing_reg->t_xp << 10) |		 //tXP
+					  ( timing_reg->t_cke << 15) |		 //tCKE
 					( 512 << 19) ));	 //tDLLK
 
 	// initialization PHY.
@@ -205,7 +205,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(UPCTL_TAL_ADDR,	timing_reg->t_al);
 	//wr_reg UPCTL_TAL_ADDR, 0
 
-	MMC_Wr(UPCTL_TCWL_ADDR,  timing_reg->cl-1 + timing_reg->t_al);
+	MMC_Wr(UPCTL_TCWL_ADDR,  timing_reg->t_cwl);
 	//wr_reg UPCTL_TCWL_ADDR, 6
 
 	MMC_Wr(UPCTL_TCL_ADDR, timing_reg->cl);	 //6: 400Mhz. 8 : 533Mhz.
@@ -242,25 +242,25 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(UPCTL_TDQS_ADDR, timing_reg->t_dqs);
 	// wr_reg UPCTL_TDQS_ADDR, 2
 
-	MMC_Wr(UPCTL_TDQS_ADDR, timing_reg->t_dqs);
+	MMC_Wr(UPCTL_TRTW_ADDR, timing_reg->t_rtw);
 	//wr_reg UPCTL_TRTW_ADDR, 2
 
-	MMC_Wr(UPCTL_TCKSRE_ADDR, 5);
+	MMC_Wr(UPCTL_TCKSRE_ADDR, timing_reg->t_cksre);
 	//wr_reg UPCTL_TCKSRE_ADDR, 5 
 
-	MMC_Wr(UPCTL_TCKSRX_ADDR, 5);
+	MMC_Wr(UPCTL_TCKSRX_ADDR, timing_reg->t_cksrx);
 	//wr_reg UPCTL_TCKSRX_ADDR, 5 
 
 	MMC_Wr(UPCTL_TMOD_ADDR, timing_reg->t_mod);
 	//wr_reg UPCTL_TMOD_ADDR, 8
 
-	MMC_Wr(UPCTL_TCKE_ADDR, 4);
+	MMC_Wr(UPCTL_TCKE_ADDR, timing_reg->t_cke);
 	//wr_reg UPCTL_TCKE_ADDR, 4 
 
 	MMC_Wr(UPCTL_TZQCS_ADDR, 64);
 	//wr_reg UPCTL_TZQCS_ADDR , 64 
 
-	MMC_Wr(UPCTL_TZQCL_ADDR, 512);
+	MMC_Wr(UPCTL_TZQCL_ADDR, timing_reg->t_zqcl);
 	//wr_reg UPCTL_TZQCL_ADDR , 512 
 
 	MMC_Wr(UPCTL_TXPDLL_ADDR, 10);
@@ -275,19 +275,19 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	MMC_Wr( UPCTL_SCTL_ADDR, 1);
 	while (!( MMC_Rd(UPCTL_STAT_ADDR) & 1))  {}
-	
+
 	//config the DFI interface.
 	MMC_Wr( UPCTL_PPCFG_ADDR, (0xf0 << 1) );
-	MMC_Wr( UPCTL_DFISTCFG0_ADDR, 0x4  );
-	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, 5	);
-	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, 6	);
+	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITPHYWRDATA_ADDR,  0x1 );
+	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, timing_reg->t_cwl -1  );    //CWL -1
+	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, timing_reg->cl - 2  );    //CL -2
 	MMC_Wr( UPCTL_DFITPHYRDLAT_ADDR, 15 );
 	MMC_Wr( UPCTL_DFITDRAMCLKDIS_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITDRAMCLKEN_ADDR, 2 );
-	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
+	MMC_Wr( UPCTL_DFISTCFG0_ADDR, 0x4  );
 	MMC_Wr( UPCTL_DFITCTRLUPDMIN_ADDR, 0x4000 );
-	MMC_Wr( UPCTL_DFILPCFG0_ADDR, ( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28))); 
+	MMC_Wr( UPCTL_DFILPCFG0_ADDR, ( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28)));
 
 	MMC_Wr( UPCTL_CMDTSTATEN_ADDR, 1);
 	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
