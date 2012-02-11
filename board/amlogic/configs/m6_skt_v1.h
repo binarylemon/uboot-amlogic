@@ -102,7 +102,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
-	"machid=B8E\0" \
+	"machid=F81\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
