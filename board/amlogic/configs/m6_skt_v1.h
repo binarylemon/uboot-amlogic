@@ -103,7 +103,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=F81\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext2 rootwait init=/init console=ttyS0,115200n8 nohlt a9_clk=600M clk81=200M mem=512m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -117,7 +117,7 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage-m6;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 

@@ -62,9 +62,11 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	writel(0x6b425012,0xc1104268);//P_HHI_SYS_PLL_CNTL3
 	writel(0x101,0xc110426c);//P_HHI_SYS_PLL_CNTL4
 	writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260);
-
-	writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL);
-	
+	do{
+		__udelay(1000);
+	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
+	//~ writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL);
+	clrsetbits_le32(P_HHI_A9_CLK_CNTL,(1<<7)|0x3 , (1<<7)|0x1);
 	///clk81=200M
 	writel((7 << 12) | // 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
                                (1 << 8)  | // 0:oscin 1:pll

@@ -106,11 +106,11 @@ static struct ddr_set __ddr_setting={
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
 ={
     .sys_pll_cntl=0x232,//1200M
-    .sys_clk_cntl=(1<<0)    |  //select sys pll for sys cpu
-	        (0<<2)    |  // divided 2
-	        (1<<4)    |  //APB_en
-	        (1<<5)    |  //AT en
-	        (1<<7)    |(1<<8),  // send to sys cpu
+    .sys_clk_cntl=(1 << 7) | // 0:oscin 1:scale out
+                                  (1 << 5) | // A9_AT CLKEN
+                                  (1 << 4) | // A9_APB CLKEN
+                                  (0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
+                                  (1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock,  // send to sys cpu
     .other_pll_cntl=0x00000219,//0x19*24/1=600M
     .mpeg_clk_cntl= (1 << 12) |                     // select other PLL
                    ((3- 1) << 0 ) |    // div1

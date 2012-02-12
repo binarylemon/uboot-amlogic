@@ -159,8 +159,11 @@ static int  sdio_init(unsigned port)
 }
 static int  sdio_detect(unsigned port)
 {
+	int ret;
 	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-	return readl(P_PREG_PAD_GPIO5_I)&(1<<29)?1:0;
+	ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+	printf( " %s return %d\n",__func__,ret);
+	return 0;
 }
 static void sdio_pwr_prepare(unsigned port)
 {
