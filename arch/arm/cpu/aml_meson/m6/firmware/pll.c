@@ -73,6 +73,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
                                (1 << 7)  | // 0:oscin 1:div enable
                                (1 << 0),P_HHI_MPEG_CLK_CNTL);   // 0:div1, n:div(n+1)
 		//**************************************************************//
+
  	__udelay(1000);
 	
 }

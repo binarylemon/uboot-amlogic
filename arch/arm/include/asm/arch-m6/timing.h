@@ -8,6 +8,7 @@ struct ddr_set{
         unsigned short t_1us_pck;
         unsigned short t_100ns_pck;
         unsigned short t_init_us;
+        unsigned short t_rsth_us;
         unsigned short t_ras;
         unsigned short t_rc;
         unsigned short t_rcd;

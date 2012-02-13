@@ -373,14 +373,25 @@ static void gpio_set_vbus_power(char is_power_on)
 {
 	if(is_power_on)
 	{
+		//@WA-AML8726-M3_REF_V1.0.pdf
+	    //GPIOA_26 -- VCCX2_EN
 		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
+	
+		//@WA-AML8726-M3_REF_V1.0.pdf
+		//GPIOD_9 -- USB_PWR_CTL
+		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
+		
 		udelay(100000);
 	}
 	else
 	{
+		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
+
 		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);
+		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
 
@@ -389,7 +400,7 @@ static void gpio_set_vbus_power(char is_power_on)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
 //USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 27(336MHz); @Rev2663 M3 SKT board DDR is 336MHz
 //                                                            43 (528MHz); M3 SKT board DDR not stable for 528MHz
-struct amlogic_usb_config g_usb_config_m3_skt={
+struct amlogic_usb_config g_usb_config_m6_skt={
 	USB_PHY_CLOCK_SEL_M3_XTAL,
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M6_USBPORT_BASE,
@@ -412,7 +423,7 @@ int board_init(void)
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-	board_usb_init(&g_usb_config_m3_skt);
+	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 	
 	return 0;

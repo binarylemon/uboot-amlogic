@@ -38,11 +38,12 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 static struct ddr_set __ddr_setting={
 
                     .cl             =   9,
-                    .t_faw          =  30,   //8bit:20, 16bit:27
+                    .t_faw          =  30,   //8bit:20, 16bit:30
                     .t_mrd          =   4,
                     .t_1us_pck      = 500,
                     .t_100ns_pck    =  50,
-                    .t_init_us      = 511,
+                    .t_init_us      = 512,
+                    .t_rsth_us      = 500,  // 0 for ddr2;  2 for simulation; 500 for ddr3.
                     .t_ras          =  24,
                     .t_rc           =  33,
                     .t_rcd          =   9,
@@ -61,28 +62,43 @@ static struct ddr_set __ddr_setting={
                     .t_clr          =   8,   // cas_latency for DDR2 (nclk cycles)
                     .t_dqs          =   2,   // distance between data phases to different ranks
                     .t_cwl          =   6,
-                    .t_mod          =  8,
+                    .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
                     .t_cksrx        =   6,
                     .t_cksre        =   6,
                     .t_cke          =   4,
-                    .mrs={  [0]=0,
-                            [1]=(0<<6)|(1<<2)| //rtt_nominal;      //(A9, A6, A2) 000 : disabled. 001 : RZQ/4   010:RZQ/2 (A6:A2)
-                                (0<<5)|(0<<1)| //(A5 A1),Output driver impedance control 00:RZQ/6,01:RZQ/7,10：RZQ/5 11:Reserved
-                                (0<<12)|(0<<7),
-                            [2]=0,
+                    .mrs={  [0]=(1 << 12) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
+                    			(4 <<  9) |   //wr recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    			(0 <<  8) |   //DLL reset.
+                    			(0 <<  7) |   //0= Normal 1=Test.
+                    			(5 <<  4) |   //cas latency high 3 bits (A6,A5, A4, A2=0).
+                    						  //It will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    			(0 << 3 ) |   //burst type,  0:sequential; 1:Interleave.
+                    			(0 << 2 ) |   //cas latency bit 0.
+								(0 << 0 ),    //burst length	:  2'b00 fixed BL8
+                    			                    						      
+                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (A9,A6,A2) RZQ/4(001) = 60
+                                (0 << 5)|(1 << 1) |			//DIC(M5, M1) RZQ/7(01) = 34
+                                (0 <<3 ),					//AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
+                                
+                                                                	
+                            [2]=0,	//CWL:(A5,A4,A3)000 = 5 (tCK = 2.5ns) 
+                            		//001 = 6 (2.5ns > tCK = 1.875ns)
+                            		//010 = 7 (1.875ns > tCK = 1.5ns)
+                            		//011 = 8 (1.5ns > tCK = 1.25ns)
                             [3]=0
                         },
-                    .mcfg = {  1 |              // burst length 0 = 4; 1 = 8
-                                (0 << 2) |      // bl8int_en.   enable bl8 interrupt function.
-                                (1 << 5) |      // 1: ddr3 protocal; 0 : ddr2 protocal
-                                (1 << 3) |        //2T mode, default is disable
-                                //(tFAW <<18) | //tFAW will be set according to the calculation with t_rrd and t_faw
-                                                // in file /firmware/ddr_init_pctl.c
-                                (1 << 17) |     // power down exit which fast exit.
-                                (0xf << 8)      // 0xf cycle empty will entry power down mode.
-                             },
+                    .mcfg = {  1 |				// burst length: 0 for 4; 1 for 8
+                    		  (0 << 2) |		// bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
+                    		  					// and is ignored for mDDR/LPDDR2 and DDR3
+                              (1 << 5) |      	// 1: ddr3 protocal; 0 : ddr2 protocal
+                              //(1 << 3) |    	//2T mode, default is disable
+                              //(tFAW <<18) | 	//tFAW will be set according to the calculation with t_rrd and t_faw
+                                              	// in file /firmware/ddr_init_pctl.c
+                              (1 << 17) |     	// power down exit which fast exit.
+                              (0 << 8)      	// 0xf cycle empty will entry power down mode.
+                           },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
          .ddr_pll_cntl=0x1067d, //500MHz
          .ddr_clk=500,
