@@ -13,8 +13,27 @@
 mmu_table:
 		.set __base, 0
 		/*  ddr */
-		.rept 0xc00
+		.rept 0x010
 		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_SO_MEM)
+		.set __base, __base + 1
+		.endr
+				
+		.set __base, 0x010
+		/* N/A */
+		.rept 0x800 -0x010
+		.word 0x00000000
+		.endr		
+		
+		.set __base,0x800
+		/** DDR memory **/
+		.rept 0xa00 - 0x800
+		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_WB)
+		.set __base, __base + 1
+		.endr
+		
+		/** DDR without cache , debug **/
+		.rept 0xc00 - 0xa00
+		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_SO_MEM )
 		.set __base, __base + 1
 		.endr
 		
@@ -22,6 +41,7 @@ mmu_table:
 		.rept 0xc11 -0xc00
 		.word 0x00000000
 		.endr
+		
 		.set __base,0xc11
 		.rept 0xc13 - 0xc11
 		FL_SECTION_ENTRY __base,(SEC_PROT_RW_NA | SEC_XN | SEC_SO_MEM )
