@@ -2933,6 +2933,8 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_C2MMI                2950
 #define MACH_TYPE_MESON_6236M          2951
 #define MACH_TYPE_MESON_8626M          2952
+#define MACH_TYPE_MESON6_SKT           3969
+#define MACH_TYPE_MESON6_REF           3970
 
 #ifdef CONFIG_ARCH_EBSA110
 # ifdef machine_arch_type
@@ -37984,6 +37986,30 @@ extern unsigned int __machine_arch_type;
 # define machine_is_meson_8626m()	(machine_arch_type == MACH_TYPE_MESON_8626M)
 #else
 # define machine_is_meson_8626m()	(0)
+#endif
+
+#ifdef CONFIG_MACH_MESON6_SKT
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type     __machine_arch_type
+# else
+#  define machine_arch_type     MACH_TYPE_MESON6_SKT
+# endif
+# define machine_is_meson6_skt()        (machine_arch_type == MACH_TYPE_MESON6_SKT)
+#else
+# define machine_is_meson6_skt()        (0)
+#endif
+
+#ifdef CONFIG_MACH_MESON6_REF
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type     __machine_arch_type
+# else
+#  define machine_arch_type     MACH_TYPE_MESON6_REF
+# endif
+# define machine_is_meson6_ref()        (machine_arch_type == MACH_TYPE_MESON6_REF)
+#else
+# define machine_is_meson6_ref()        (0)
 #endif
 
 /*
