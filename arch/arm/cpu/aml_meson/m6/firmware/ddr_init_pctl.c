@@ -105,19 +105,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(UPCTL_TINIT_ADDR, timing_reg->t_init_us);  //200us.
 
 	MMC_Wr(UPCTL_TRSTH_ADDR, timing_reg->t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
-
-	//configure the PCTL for DDR3 SDRAM burst length = 8
-	/*
-	MMC_Wr(UPCTL_MCFG_ADDR, 	1		  |   // burst length 0 = 4; 1 = 8
-							   (0 << 2)   |   // bl8int_en.   enable bl8 interrupt function.
-							   //(1 << 3)   |   //2T mode by hisun2012.02.10
-							   (1 << 5)   |   // 1: ddr3 protocal; 0 : ddr2 protocal
-							   (0x0 << 8) |   // 0xf cycle empty will entry power down mode.
-							   (1 << 17)  |   // power down exit which fast exit.
-							   (1 <<18) 	  // tFAW. 1 : 5*tRRD.
-									   );
-	*/
-	//for(nTempVal=4;(nTempVal)*timing_reg->t_rrd<timing_reg->t_faw&&nTempVal<=6;nTempVal++);
+	
 	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
 	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
 	MMC_Wr(UPCTL_MCFG_ADDR,((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
@@ -129,27 +117,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(PUB_DCR_ADDR, 0x3 | (1 << 3));
 	MMC_Wr(PUB_PGCR_ADDR, 0x01842e04); //PUB_PGCR_ADDR: c8001008
 
-	// program PUB MRx registers.
-	/*
-	MMC_Wr( PUB_MR0_ADDR,	(1 << 12 ) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
-							(4 <<  9 ) |   //wr recovery   4 means write recovery = 8 cycles..
-							(0	<< 8 ) |   //DLL reset.
-							(0	<< 7 ) |   //0= Normal 1=Test.
-							(5	<< 4 ) |   //cas latency high 3 bits (A6,A5, A4, A2) 4 : for cl=8. 5 : for cl=9
-							(0	<< 3 ) |   //burst type,  0:sequential 1 Interleave.
-							(0	<< 2 ) |   //cas latency bit 0.
-								   0 ); 	//burst length	:  2'b00 fixed BL8 
-	*/
+	// program PUB MRx registers.	
 	MMC_Wr( PUB_MR0_ADDR,get_mrs0(timing_reg));
-	
-	//MMC_Wr( PUB_MR1_ADDR, 0x6); //Rtt = RZQ/4 = 60(M5, M1);	OUTPUT Drive = RZQ/7 = 34(M9,M6,M2); 
 	MMC_Wr( PUB_MR1_ADDR,get_mrs1(timing_reg));
-	
-	//MMC_Wr( PUB_MR2_ADDR, 0x8); //CWL = 6 ( M5, M4, M3).   2.5ns > tCK >= 1.875ns). 
 	MMC_Wr( PUB_MR2_ADDR,get_mrs2(timing_reg));
-		
 	MMC_Wr( PUB_MR3_ADDR, 0x0);	
-
 
 	//program DDR SDRAM timing parameter.
 	MMC_Wr( PUB_DTPR0_ADDR, (0x0 |		//tMRD.

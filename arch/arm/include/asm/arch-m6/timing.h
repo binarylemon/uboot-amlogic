@@ -45,44 +45,90 @@ struct ddr_set{
         unsigned       ddr_clk;
         int            (* init_pctl)(struct ddr_set *);  
 }__attribute__ ((packed));
-/*
 struct pll_clk_settings{
-	unsigned sys_pll_cntl;
+	/*
+	 * SYS_PLL setting:
+	 * 24MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=50, PLL_FOUT= (24*(50/1))/2 = 600MHz
+	 * 25MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=48, PLL_FOUT= (25*(48/1))/2 = 600MHz
+	 */
+	unsigned sys_pll_cntl;	//sys_pll_cntl2,sys_pll_cntl23,sys_pll_cntl24 are fixed
+	unsigned sys_clk_cntl;	//
+	unsigned sys_clk;	 	//0x80
+	
+	
 	unsigned other_pll_cntl;
 	unsigned mpeg_clk_cntl;
-	unsigned clk81;
-	unsigned a9_clk;
+	unsigned other_clk;
+	
 	unsigned spi_setting;
 	unsigned nfc_cfg;
 	unsigned sdio_cmd_clk_divide;
-	unsigned sdio_time_short;
+	unsigned sdio_time_short;//0x90
 	unsigned demod_pll400m_cntl;
 	unsigned uart;
+
+	unsigned clk81;
+	unsigned a9_clk;
 	
 }__attribute__ ((packed));
 
-*/
-	struct pll_clk_settings{
-		unsigned sys_pll_cntl;//0x7c
-		unsigned sys_clk_cntl;//0x7c
-		unsigned sys_clk;//0x80
-		
-		
-		unsigned other_pll_cntl;
-		unsigned mpeg_clk_cntl;
-		unsigned other_clk;
-		
-		unsigned spi_setting;
-		unsigned nfc_cfg;
-		unsigned sdio_cmd_clk_divide;
-		unsigned sdio_time_short;//0x90
-		unsigned demod_pll400m_cntl;
-		unsigned uart;
+//M6 all pll controler use bit 29 as reset bit
+#define M6_PLL_RESET(pll) \
+	Wr(pll,Rd(pll) | (1<<29));
 
-		unsigned clk81;
-		unsigned a9_clk;
-		
-	}__attribute__ ((packed));
+//wait for pll lock
+//must wait first (100us+) then polling lock bit to check
+#define M6_PLL_WAIT_FOR_LOCK(pll) \
+	do{\
+		__udelay(1000);\
+	}while((Rd(pll)&0x80000000)==0);
+
+//M6 PLL control value 
+#define M6_PLL_CNTL_CST2 (0x814d3928)
+#define M6_PLL_CNTL_CST3 (0x6b425012)
+#define M6_PLL_CNTL_CST4 (0x110)
+
+#define M6_PLL_CNTL_CST12 (0x04294000)
+#define M6_PLL_CNTL_CST13 (0x026b4250)
+#define M6_PLL_CNTL_CST14 (0x06278410)
+#define M6_PLL_CNTL_CST15 (0x1e1)
+#define M6_PLL_CNTL_CST16 (0xacac10ac)
+#define M6_PLL_CNTL_CST17 (0x0108e000)
+
+
+//DDR PLL
+#define M6_DDR_PLL_CNTL_2 (M6_PLL_CNTL_CST2)
+#define M6_DDR_PLL_CNTL_3 (M6_PLL_CNTL_CST3)
+#define M6_DDR_PLL_CNTL_4 (M6_PLL_CNTL_CST4)
+
+//SYS PLL
+#define M6_SYS_PLL_CNTL_2 (M6_PLL_CNTL_CST2)
+#define M6_SYS_PLL_CNTL_3 (M6_PLL_CNTL_CST3)
+#define M6_SYS_PLL_CNTL_4 (M6_PLL_CNTL_CST4)
+
+//VIID PLL
+#define M6_VIID_PLL_CNTL_2 (M6_PLL_CNTL_CST2)
+#define M6_VIID_PLL_CNTL_3 (M6_PLL_CNTL_CST3)
+#define M6_VIID_PLL_CNTL_4 (M6_PLL_CNTL_CST4)
+//Wr(HHI_VIID_PLL_CNTL,  0x20242 );	 //0x1047
+
+
+//VID PLL
+#define M6_VID_PLL_CNTL_2 (M6_PLL_CNTL_CST2)
+#define M6_VID_PLL_CNTL_3 (M6_PLL_CNTL_CST3)
+#define M6_VID_PLL_CNTL_4 (M6_PLL_CNTL_CST4)
+//Wr(HHI_VID_PLL_CNTL,  0xb0442 ); //0x109c
+
+//FIXED PLL/Multi-phase PLL
+#define M6_MPLL_CNTL_2 (M6_PLL_CNTL_CST12)
+#define M6_MPLL_CNTL_3 (M6_PLL_CNTL_CST13)
+#define M6_MPLL_CNTL_4 (M6_PLL_CNTL_CST14)
+#define M6_MPLL_CNTL_5 (M6_PLL_CNTL_CST15)
+#define M6_MPLL_CNTL_6 (M6_PLL_CNTL_CST16)
+#define M6_MPLL_CNTL_7 (M6_PLL_CNTL_CST17)
+#define M6_MPLL_CNTL_8 (M6_PLL_CNTL_CST17)
+#define M6_MPLL_CNTL_9 (M6_PLL_CNTL_CST17)
+#define M6_MPLL_CNTL_10 (0)
 
 #endif
 #endif

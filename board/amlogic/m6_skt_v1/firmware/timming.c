@@ -38,30 +38,30 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 static struct ddr_set __ddr_setting={
 
                     .cl             =   9,
-                    .t_faw          =  30,   //8bit:20, 16bit:30
+                    .t_faw          =  30,
                     .t_mrd          =   4,
                     .t_1us_pck      = 500,
                     .t_100ns_pck    =  50,
                     .t_init_us      = 512,
-                    .t_rsth_us      = 500,  // 0 for ddr2;  2 for simulation; 500 for ddr3.
+                    .t_rsth_us      = 500,  
                     .t_ras          =  24,
                     .t_rc           =  33,
                     .t_rcd          =   9,
                     .t_refi_100ns   =  78,
-                    .t_rfc          =  139,   //4Gb:139, 2Gb:86, 1Gb:59
+                    .t_rfc          = 107,
                     .t_rp           =   9,
-                    .t_rrd          =   5,   //8bit:4, 16bit:6
-                    .t_rtp          =   4,
+                    .t_rrd          =   5,
+                    .t_rtp          =   5,
                     .t_wr           =   8,
-                    .t_wtr          =   4,
+                    .t_wtr          =   5,
                     .t_xp           =   4,
-                    .t_xsrd         =   0,   // init to 0 so that if only one of them is defined, this is chosen
+                    .t_xsrd         =   0,
                     .t_xsnr         =   0,
                     .t_exsr         = 512,
-                    .t_al           =   0,   // Additive Latency
-                    .t_clr          =   8,   // cas_latency for DDR2 (nclk cycles)
-                    .t_dqs          =   2,   // distance between data phases to different ranks
-                    .t_cwl          =   6,
+                    .t_al           =   0,
+                    .t_clr          =   8,
+                    .t_dqs          =   2,
+                    .t_cwl          =   7,
                     .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
@@ -69,10 +69,10 @@ static struct ddr_set __ddr_setting={
                     .t_cksre        =   6,
                     .t_cke          =   4,
                     .mrs={  [0]=(1 << 12) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
-                    			(4 <<  9) |   //wr recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    			(4 <<  9) |   //WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     			(0 <<  8) |   //DLL reset.
                     			(0 <<  7) |   //0= Normal 1=Test.
-                    			(5 <<  4) |   //cas latency high 3 bits (A6,A5, A4, A2=0).
+                    			(5 <<  4) |   //CL cas latency high 3 bits (A6,A5, A4, A2=0).
                     						  //It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     			(0 << 3 ) |   //burst type,  0:sequential; 1:Interleave.
                     			(0 << 2 ) |   //cas latency bit 0.
@@ -83,10 +83,11 @@ static struct ddr_set __ddr_setting={
                                 (0 <<3 ),					//AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
                                 
                                                                 	
-                            [2]=0,	//CWL:(A5,A4,A3)000 = 5 (tCK = 2.5ns) 
-                            		//001 = 6 (2.5ns > tCK = 1.875ns)
-                            		//010 = 7 (1.875ns > tCK = 1.5ns)
-                            		//011 = 8 (1.5ns > tCK = 1.25ns)
+                            [2]=(2<<3),	//CWL:(A5,A4,A3)
+	                            		//000 = 5 (tCK = 2.5ns) 
+    	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
+        	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
+            	                		//011 = 8 (1.5ns > tCK = 1.25ns)
                             [3]=0
                         },
                     .mcfg = {  1 |				// burst length: 0 for 4; 1 for 8
@@ -100,7 +101,7 @@ static struct ddr_set __ddr_setting={
                               (0 << 8)      	// 0xf cycle empty will entry power down mode.
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-         .ddr_pll_cntl=0x1067d, //500MHz
+         .ddr_pll_cntl=0x10600 | (500/4), //500MHz 1067d
          .ddr_clk=500,
          .ddr_ctrl= (0 << 24 ) |    //pctl_brst 4,
                     (0xff << 16) |  //reorder en for the 8 channel.
@@ -108,11 +109,12 @@ static struct ddr_set __ddr_setting={
                     (0 << 14 ) |     // page policy = 0.
                     (1 << 13 ) |     // command reorder enabled.
                     (0 << 12 ) |     // bank map = 0, bank sweep between 4 banks.
-                    (0 << 11 ) |     // Block size.  0 = 32x32 bytes.  1 = 64x32 bytes.
+                    (1 << 11 ) |     // Block size.  0 = 32x32 bytes.  1 = 64x32 bytes.
                     (0 << 10 )  |     // ddr burst 0 = 8 burst. 1 = 4 burst.
                     (3 << 8 )  |      // ddr type.  2 = DDR2 SDRAM.  3 = DDR3 SDRAM.
                     (0 << 7 )  |     // ddr 16 bits mode.  0 = 32bits mode.
                     (1 << 6 )  |     // 1 = 8 banks.  0 = 4 banks.
+                    (1 << 5) |
                     (0 << 4 )  |     // rank size.   0= 1 rank.   1 = 2 rank.
                     (ddr3_row_size << 2) |
                     (ddr3_col_size),
@@ -121,20 +123,44 @@ static struct ddr_set __ddr_setting={
 
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
 ={
-    .sys_pll_cntl=0x232,//1200M
-    .sys_clk_cntl=(1 << 7) | // 0:oscin 1:scale out
-                                  (1 << 5) | // A9_AT CLKEN
-                                  (1 << 4) | // A9_APB CLKEN
-                                  (0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
-                                  (1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock,  // send to sys cpu
+	/*
+	* SYS_PLL setting:
+	* 24MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=50, PLL_FOUT= (24*(50/1))/2 = 600MHz
+	* 25MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=48, PLL_FOUT= (25*(48/1))/2 = 600MHz
+	*/
+	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V
+	//PLL=1296MHz: PD=0,RESET=0,OD=0,N=1,M=54
+	//PLL=1200MHz: PD=0,RESET=0,OD=0,N=1,M=50
+	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50	
+	.sys_pll_cntl=	(0  << 16) |
+					(1  << 9 ) | 
+					(50 << 0 ),	
+	//A9 clock setting
+    .sys_clk_cntl=	(1 << 7) | // 0:oscin 1:scale out
+                  	(1 << 5) | // A9_AT CLKEN
+                  	(1 << 4) | // A9_APB CLKEN
+                  	(0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
+                  	(1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock 
+    //A9 clock              	
+    .sys_clk=1200,
+    
     .other_pll_cntl=0x00000219,//0x19*24/1=600M
-    .mpeg_clk_cntl= (1 << 12) |                     // select other PLL
-                   ((3- 1) << 0 ) |    // div1
-                    (1 << 7 ) |                     // cntl_hi_mpeg_div_en, enable gating
-                    (1 << 8 ) |(1<<15),                    // Connect clk81 to the PLL divider output
+
+	//MPEG clock(clock81) setting
+	//[14:12]MPEG_CK_SEL 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
+	//[8]0:clk81=XTL 1:clk81=pll
+	//[7]enable gating
+    .mpeg_clk_cntl= (7 << 12) |    // select fclk_div5=400MHz
+    				(1 << 8 ) |    // select pll
+    				(1 << 7 ) |    // cntl_hi_mpeg_div_en, enable gating
+                    (1 << 0 ) |    // div 2 (n+1)                  
+					(1 << 15),     // Connect clk81 to the PLL divider output
+
+	.clk81=200000000,	//750/4=180M
+
     .demod_pll400m_cntl=(1<<9)  | //n 1200=xtal*m/n 
             (50<<0),    //m 50*24
-    .clk81=200000000,   //750/4=180M
+    
     .a9_clk=1200000000/2,
     .spi_setting=0xea949,
     .nfc_cfg=(((0)&0xf)<<10) | (0<<9) | (0<<5) | 5,

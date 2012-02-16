@@ -42,30 +42,29 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     APB_Wr(PCTL_DLLCR_ADDR, APB_Rd(PCTL_DLLCR_ADDR)|(7<<2));
 #endif
 	*/
-    //set_ddr_clock.
-    //  +------------------------------------------------------------+   +----------------------------------------+
-    //  |                      <<< PLL >>>                           |   |         <<< Clock Reset Test >>>       |
-    //  +---------+-----------+----------------------+---------------+   +------+-----------+---------------------+  +------------
-    //  |         | PLL Ports |      PLL        PLL  | PLL  PLL      |   | CRT  |    Final  |               Ideal |  |  HIU REG 
-    //  |   Fin   |  N    M   |     Fref        VCO  |  OD  FOUT     |   |  XD  |    Clock  |    Error      Clock |  |  0x1068
-    //  +---------+-----------+----------------------+---------------+   +------+-----------+---------------------+  +------------
-    //  | 24.0000 |  3   133  |   8.0000  1064.0000  |   1  532.0000 |   |   1  |  532.0000 |  -0.188% ( 533.000) |  | 0x00010685 
-    //  | 24.0000 |  3   125  |   8.0000  1000.0000  |   1  500.0000 |   |   1  |  500.0000 |   0.000% ( 500.000) |  | 0x0001067d
-    Wr(HHI_DDR_PLL_CNTL, (1<<29) );
-	
-	Wr(HHI_DDR_PLL_CNTL2, 0x814d3928 );
-	Wr(HHI_DDR_PLL_CNTL3, 0x6b425012 );
-	//Wr(HHI_DDR_PLL_CNTL4, 0x101 ); 
-	Wr(HHI_DDR_PLL_CNTL4, 0x110 ); //shi suggest PM14:23
-	
-	//Wr(HHI_DDR_PLL_CNTL, 0x00010696);//600M
-	//Wr(HHI_DDR_PLL_CNTL, 0x0001067d);//500M
-	//Wr(HHI_DDR_PLL_CNTL, 0x00010664);//400M
-	Wr(HHI_DDR_PLL_CNTL, 0x0002067d);//250M
-	
-	
-  	//wait to DDR PLL lock.
-   	while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
+
+	M6_PLL_RESET(HHI_DDR_PLL_CNTL);
+	Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
+	Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
+	Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
+	Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
+	M6_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
+
+
+	/*
+	#define MMC_CLK_CNTL      0xc800641c
+	//bit 31     1 disabel all clock.
+	//bit 30.    1 enable  auto clock gating. 0 : enable all clock if bit 31 = 0;
+	//bit 29.    DDR PLL lock signal.   DDR PLL locked = 1.  
+	//bit  7.    dll_clk_sel. 1 : the DLL input is directly from DDR PLL.  0: the DLL input is from slow clock or from DDR PLL clock divider. 
+	//bit  6.    pll_clk_en.  1 : enable the DDR PLL clock to DDR DLL path. 0 : disable the DDR PLL clock to DDR PLL path.
+	//bit  5.    divider/slow clock selection.   1 = slow clock.  0 = DDR PLL clock divider.  
+	//bit  4.    slow clock enable.     1 = slow clock en.  0 : disalbe slow clock.
+	//bit  3.    PLL clk divider enable. 1 = enable. 0 disable.
+	//bit  2.    divider clock output enalbe.
+	//bit 1:0    divider:    00 : /2.   01: /4. 10 : /8. 11: /16. 
+
+	*/
 
   	//Enable DDR DLL clock input from PLL.
     MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
@@ -77,22 +76,13 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     // release the DDR DLL reset pin.
     MMC_Wr(MMC_SOFT_RST,  0xffff);
 	
-    //__udelay(1000);
-
-	//wait_pll(3,600);
-	//wait_pll(3,500);
-	wait_pll(3,250);
-	//wait_pll(3,400);
-
+	wait_pll(3,timing_reg->ddr_clk);
 
 	//sys_pll_div3
-	wait_pll(25,200);//600M /3 = 200M
+	//wait_pll(25,__plls->sys_clk/3);
 
 	//clk81 200M
 	wait_pll(7,200);
-
-	
-	//asm volatile ("wfi");
 	
     serial_puts("set ddr clock ok!\n");
 }
@@ -160,8 +150,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
 #define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
-	//m6_ddr_init_test(6);
-	//m6_ddr_init_test(0x0E);
+
 	m6_ddr_init_test(DDR_TEST_BASEIC);
 
 	return 0;

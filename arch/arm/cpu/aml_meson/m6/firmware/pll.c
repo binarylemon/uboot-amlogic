@@ -37,110 +37,63 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	//*P_HHI_MPLL_CNTL5	  |= 0x1; // Enable Both MPLL and SYS_PLL enable pin  
 //	0xc11081bc
 	writel(readl(0xc11081bc)|1,0xc11081bc);
+	//#define AM_ANALOG_TOP_REG1                         0x206f
 	
-	/**
-	 * SYS_PLL setting:
-	 * 24MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=50, PLL_FOUT= (24*(50/1))/2 = 600MHz
-	 * 25MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=48, PLL_FOUT= (25*(48/1))/2 = 600MHz
-	 */
-	 #if 0
-	*P_HHI_SYS_PLL_CNTL = (1 << 29); // RESET
-	if (crystal)
-		sys_pll_cntl = (1 << 16) | (1 << 9) | (50 << 0);
-	else
-		sys_pll_cntl = (1 << 16) | (1 << 9) | (48 << 0);
-	*P_HHI_SYS_PLL_CNTL2 = 0x814d3928;
-	*P_HHI_SYS_PLL_CNTL3 = 0x6b425012;
-	*P_HHI_SYS_PLL_CNTL4 = 0x101;
-	*P_HHI_SYS_PLL_CNTL = sys_pll_cntl; // TRUE ENABLE
-	#endif
-
+	
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
-    Wr( HHI_A9_CLK_CNTL, 0);
+    Wr( HHI_A9_CLK_CNTL, 0);	
 	
-	writel((1<<29), 0xc1104260); //reset
-	writel(0x814d3928,0xc1104264);//P_HHI_SYS_PLL_CNTL2
-	writel(0x6b425012,0xc1104268);//P_HHI_SYS_PLL_CNTL3
-	//writel(0x101,0xc110426c);//P_HHI_SYS_PLL_CNTL4
-	writel(0x110,0xc110426c);//P_HHI_SYS_PLL_CNTL4
-	//writel(0x110,0xc110426c);//P_HHI_SYS_PLL_CNTL4
-	//writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260); //SYS pll clk: 600M
-	writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260); //SYS pll clk: 600M
+	M6_PLL_RESET(HHI_SYS_PLL_CNTL);
+	Wr(HHI_SYS_PLL_CNTL2,M6_SYS_PLL_CNTL_2);
+	Wr(HHI_SYS_PLL_CNTL3,M6_SYS_PLL_CNTL_3);
+	Wr(HHI_SYS_PLL_CNTL4,M6_SYS_PLL_CNTL_4);
+	Wr(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
+	M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
 
-	 // then set the scale to oscin This is not sync mux. 
-    Wr( HHI_A9_CLK_CNTL, (1<<0)	|  //select sys pll for sys cpu
-				(0<<2)	  |  // divided 2
-				(1<<4)	  |  //APB_en
-				(1<<5)	  |  //AT en
-				(0<<7)	  |(0<<8));	// send to sys cpu
-				
-	//writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL); //300M
-    Wr( HHI_A9_CLK_CNTL, Rd(HHI_A9_CLK_CNTL) | (1 << 7) );  
+	//A9 clock setting	
+	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl & (~(1<<7))));
+	__udelay(1);
+	//enable A9 clock
+	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl | (1<<7)));
 
-	__udelay(1000);
-	
 	//VIID PLL
-	//reset PLL
-	Wr(HHI_VIID_PLL_CNTL, (1<<29) ); 	 //0x1047
-	Wr(HHI_VIID_PLL_CNTL2, 0x814d3928 ); //0x1048
-	Wr(HHI_VIID_PLL_CNTL3, 0x6b425012 ); //0x1049
-	Wr(HHI_VIID_PLL_CNTL4, 0x110 );	     //0x1046
-	Wr(HHI_VIID_PLL_CNTL,  0x20242 );    //0x1047
-		
+	M6_PLL_RESET(HHI_VIID_PLL_CNTL);
+	Wr(HHI_VIID_PLL_CNTL2, M6_VIID_PLL_CNTL_2 );
+	Wr(HHI_VIID_PLL_CNTL3, M6_VIID_PLL_CNTL_3 );
+	Wr(HHI_VIID_PLL_CNTL4, M6_VIID_PLL_CNTL_4 );
+	Wr(HHI_VIID_PLL_CNTL,  0x20242 );
+	M6_PLL_WAIT_FOR_LOCK(HHI_VIID_PLL_CNTL);
 
 
 	//VID PLL
-	//reset PLL
-	Wr(HHI_VID_PLL_CNTL, (1<<29) );     //0x109c
-	Wr(HHI_VID_PLL_CNTL2, 0x814d3928 ); //0x109d
-	Wr(HHI_VID_PLL_CNTL3, 0x6b425012 ); //0x109e
-	Wr(HHI_VID_PLL_CNTL4, 0x110 );    //0x109f
-	Wr(HHI_VID_PLL_CNTL,  0xb0442 ); //0x109c
+	M6_PLL_RESET(HHI_VID_PLL_CNTL);
+	Wr(HHI_VID_PLL_CNTL2, M6_VID_PLL_CNTL_2 );
+	Wr(HHI_VID_PLL_CNTL3, M6_VID_PLL_CNTL_3 );
+	Wr(HHI_VID_PLL_CNTL4, M6_VID_PLL_CNTL_4 );
+	Wr(HHI_VID_PLL_CNTL,  0xb0442 );
+	M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
+
+
+	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
+	M6_PLL_RESET(HHI_MPLL_CNTL);	
+	Wr(HHI_MPLL_CNTL2, M6_MPLL_CNTL_2 );
+	Wr(HHI_MPLL_CNTL3, M6_MPLL_CNTL_3 );
+	Wr(HHI_MPLL_CNTL4, M6_MPLL_CNTL_4 );
+	Wr(HHI_MPLL_CNTL5, M6_MPLL_CNTL_5 );
+	Wr(HHI_MPLL_CNTL6, M6_MPLL_CNTL_6 );
+	Wr(HHI_MPLL_CNTL7, M6_MPLL_CNTL_7 );
+	Wr(HHI_MPLL_CNTL8, M6_MPLL_CNTL_8 );
+	Wr(HHI_MPLL_CNTL9, M6_MPLL_CNTL_9 );
+	Wr(HHI_MPLL_CNTL10,M6_MPLL_CNTL_10);
+	Wr(HHI_MPLL_CNTL, 0x67d );
+	M6_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL);
 	
-	
+	//clk81=fclk_div5 /2=400/2=200M
+	Wr(HHI_MPEG_CLK_CNTL, plls->mpeg_clk_cntl );
 
-	//----------------------------------------------
-	//FIXED PLL/Multi-phase PLL
-	//reset PLL
-	Wr(HHI_MPLL_CNTL, (1<<29) );     //0x10a0
-	Wr(HHI_MPLL_CNTL2, 0x04294000 ); //0x10a1
-	Wr(HHI_MPLL_CNTL3, 0x026b4250 ); //0x10a2
-	Wr(HHI_MPLL_CNTL4, 0x06278410 ); //0x10a3	
-	Wr(HHI_MPLL_CNTL5, 0x1e1 );		 //0x10a4
-	Wr(HHI_MPLL_CNTL6, 0xacac10ac ); //0x10a5
-	Wr(HHI_MPLL_CNTL7, 0x0108e000 ); //0x10a6
-	Wr(HHI_MPLL_CNTL8, 0x0108e000 ); //0x10a7
-	Wr(HHI_MPLL_CNTL9, 0x0108e000 ); //0x10a8
-	Wr(HHI_MPLL_CNTL10, 0 );		 //0x10a9
-	Wr(HHI_MPLL_CNTL, 0x67d ); //0x10a0 //
-	//MPLL is fixed to 2GHz
-	//----------------------------------------------
-
-
-	//fclk_div5=2G/5=400MHz	
-	//clk81=200M
-	writel(0x101,0xc110426c);//P_HHI_SYS_PLL_CNTL4
-	writel(((1 << 16) | (1 << 9) | (50 << 0)),0xc1104260);
-	do{
-		__udelay(1000);
-	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
-	//~ writel(plls->sys_clk_cntl,P_HHI_A9_CLK_CNTL);
-	clrsetbits_le32(P_HHI_A9_CLK_CNTL,(1<<7)|0x3 , (1<<7)|0x1);
-	///clk81=200M
-	writel((7 << 12) | // 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
-                               (1 << 8)  | // 0:oscin 1:pll
-                               (1 << 7)  | // 0:oscin 1:div enable
-                               (1 << 0),P_HHI_MPEG_CLK_CNTL);   // 0:div1, n:div(n+1)
-	//**************************************************************//
-
- 	__udelay(1000);
+ 	__udelay(100);
 	
 }
-SPL_STATIC_FUNC void ddr_pll_init(struct ddr_set * ddr_setting) 
-{
-    writel(ddr_setting->ddr_pll_cntl,P_HHI_DDR_PLL_CNTL);    
-}
-
 unsigned long    clk_util_clk_msr(unsigned long   clk_mux)
 {
 	

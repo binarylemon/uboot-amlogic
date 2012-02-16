@@ -39,7 +39,8 @@ static int ddr_phy_data_traning(void)
 void init_dmc(struct ddr_set * ddr_setting)
 {
 	//APB_Wr(MMC_DDR_CTRL, ddr_setting->ddr_ctrl); //hisun 2012.02.08
-	MMC_Wr(MMC_DDR_CTRL, 0xff236a); //MMC_DDR_CTRL: c8006000 hisun 2010.02.10
+	//MMC_Wr(MMC_DDR_CTRL, 0xff236a); //MMC_DDR_CTRL: c8006000 hisun 2010.02.10
+	MMC_Wr(MMC_DDR_CTRL, ddr_setting->ddr_ctrl);
 	sec_mmc_wr(DMC_SEC_PORT0_RANGE0, 0xffff);
     sec_mmc_wr(DMC_SEC_PORT1_RANGE0, 0xffff);
     sec_mmc_wr(DMC_SEC_PORT2_RANGE0, 0xffff);
