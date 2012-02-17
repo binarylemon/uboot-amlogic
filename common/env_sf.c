@@ -50,6 +50,14 @@ DECLARE_GLOBAL_DATA_PTR;
 /* references to names in env_common.c */
 extern uchar default_environment[];
 
+#ifdef ENV_IS_EMBEDDED
+extern uchar environment[];
+env_t *env_ptr = (env_t *)(&environment[0]);
+#else /* ! ENV_IS_EMBEDDED */
+env_t *env_ptr = 0;
+#endif /* ENV_IS_EMBEDDED */
+
+
 char * env_name_spec = "SPI Flash";
 
 static struct spi_flash *env_flash;

@@ -18,42 +18,24 @@
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
-#if 0
-	ldr     r0,=0xda004004
-    ldr     r1,=0x80000510
-    str     r1,[r0]
-    
-    ldr     r0,=0xc8100014
-    mov     r1,#0x4000
-    str     r1,[r0]
+#ifdef AML_M6_JTAG_ENABLE
+	#if AML_M6_JTAG_SET_ARM
+		//A9 JTAG enable
+		writel(0x80000510,0xda004004);
+		//TDO enable
+		writel(0x4000,0xc8100014);	
+	#elif AML_M6_JTAG_SET_ARC
+		//ARC JTAG enable
+		writel(0x80051001,0xda004004);		
+		//ARC bug fix disable
+		writel((readl(0xc8100040)|1<<24),0xc8100040);
+	#endif	//AML_M6_JTAG_SET_ARM	
 
-    
-    ldr     r0,=0xc1109900
-    mov     r1,#0
-    str     r1,[r0]
-    wfi
-#endif
-	
-#if 1
-	//A9 JTAG enable
-	writel(0x80000510,0xda004004);
-
-	//TDO enable
-	writel(0x4000,0xc8100014);
-	
-#else
-	//release to shiming for debug 2012.02.08
-	//ARC JTAG enable
-	writel(0x80051001,0xda004004);
-		
-	//ARC bug fix disable
-	writel((readl(0xc8100040)|1<<24),0xc8100040);
-#endif	
-	
 	//Watchdog disable
 	writel(0,0xc1109900);
-///	asm volatile ("wfi");
-
+	//asm volatile ("wfi");
+	
+#endif //AML_M6_JTAG_ENABLE
 
 #if defined(WA_AML8726_M3_REF_V10) || defined(SHUTTLE_M3_MID_V1)
 	//PWREN GPIOAO_2, PWRHLD GPIOAO_6 pull up
@@ -68,7 +50,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		
     //Adjust 1us timer base
     timer_init();
-	  //default uart clock.
+    //default uart clock.
     serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
@@ -83,7 +65,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     ddr_init_test();
     // load uboot
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
-    serial_puts("Systemp Started\n");
+    serial_puts("\nSystemp Started\n");
     //wait serial_puts end.
     for(i = 0; i < 10; i++)
 		  __udelay(1000);

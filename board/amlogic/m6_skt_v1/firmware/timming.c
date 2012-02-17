@@ -36,18 +36,20 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #endif
 
 static struct ddr_set __ddr_setting={
-
+//Please just define M6 DDR clock here only
+#define M6_DDR_CLK (500)
                     .cl             =   9,
                     .t_faw          =  30,
                     .t_mrd          =   4,
-                    .t_1us_pck      = 500,
-                    .t_100ns_pck    =  50,
+                    .t_1us_pck      = M6_DDR_CLK,
+                    .t_100ns_pck    = M6_DDR_CLK/10,
                     .t_init_us      = 512,
-                    .t_rsth_us      = 500,  
+                    .t_rsth_us      = 500,
+                    .t_rstl_us      = 100,
                     .t_ras          =  24,
                     .t_rc           =  33,
                     .t_rcd          =   9,
-                    .t_refi_100ns   =  78,
+                    .t_refi_100ns   =  39,//78 for temperature over 85 degrees
                     .t_rfc          = 107,
                     .t_rp           =   9,
                     .t_rrd          =   5,
@@ -65,57 +67,71 @@ static struct ddr_set __ddr_setting={
                     .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
-                    .t_cksrx        =   6,
-                    .t_cksre        =   6,
+                    .t_cksrx        =   7,
+                    .t_cksre        =   7,
                     .t_cke          =   4,
-                    .mrs={  [0]=(1 << 12) |   // 1 fast exit from power down (tXARD), 0 slow (txARDS).
-                    			(4 <<  9) |   //WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
-                    			(0 <<  8) |   //DLL reset.
-                    			(0 <<  7) |   //0= Normal 1=Test.
-                    			(5 <<  4) |   //CL cas latency high 3 bits (A6,A5, A4, A2=0).
-                    						  //It will be calcualted by get_mrs0()@ddr_init_pctl.c
-                    			(0 << 3 ) |   //burst type,  0:sequential; 1:Interleave.
-                    			(0 << 2 ) |   //cas latency bit 0.
-								(0 << 0 ),    //burst length	:  2'b00 fixed BL8
+                    .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
+                    			(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    						  //001 = 5
+                    						  //010 = 6
+                    						  //011 = 7
+                    						  //100 = 8
+                    						  //101 = 10
+                    						  //110 = 12                    						  
+                    			(1 <<  8) |   //[B8]DLL reset.
+                    			(0 <<  7) |   //[B7]0= Normal 1=Test.
+                    			(5 <<  4) |   //CL cas latency high 3 bits (B6,B5, B4, B2=0).
+                    						  //@@[B6,B5,B4,B2]CL will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    						  //0010 = 5
+                    						  //0100 = 6
+                    						  //0110 = 7
+                    						  //1000 = 8
+                    						  //1010 = 9
+                    						  //1100 = 10
+                    						  //1110 = 11
+                    			(0 << 3 ) |   //[B3]burst type,  0:sequential; 1:Interleave.
+                    			(0 << 2 ) |   //[B2]cas latency bit 0.
+								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (A9,A6,A2) RZQ/4(001) = 60
-                                (0 << 5)|(1 << 1) |			//DIC(M5, M1) RZQ/7(01) = 34
-                                (0 <<3 ),					//AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
+                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                                (0 <<3 ),					//@@[B4,B3]AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
+                                							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved
                                 
                                                                 	
-                            [2]=(2<<3),	//CWL:(A5,A4,A3)
+                            [2]=(2<<3),	//@@CWL:(B5,B4,B3)
 	                            		//000 = 5 (tCK = 2.5ns) 
     	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
         	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
             	                		//011 = 8 (1.5ns > tCK = 1.25ns)
                             [3]=0
                         },
-                    .mcfg = {  1 |				// burst length: 0 for 4; 1 for 8
-                    		  (0 << 2) |		// bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
-                    		  					// and is ignored for mDDR/LPDDR2 and DDR3
-                              (1 << 5) |      	// 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	//2T mode, default is disable
-                              //(tFAW <<18) | 	//tFAW will be set according to the calculation with t_rrd and t_faw
-                                              	// in file /firmware/ddr_init_pctl.c
-                              (1 << 17) |     	// power down exit which fast exit.
-                              (0 << 8)      	// 0xf cycle empty will entry power down mode.
+                    .mcfg = {  1 |				   //[B0] burst length: 0 for 4; 1 for 8
+                    		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
+                    		  					   // and is ignored for mDDR/LPDDR2 and DDR3
+                              (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
+                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
+                                              	   // in file /firmware/ddr_init_pctl.c
+                                              	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
+                              (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
+                              (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-         .ddr_pll_cntl=0x10600 | (500/4), //500MHz 1067d
-         .ddr_clk=500,
-         .ddr_ctrl= (0 << 24 ) |    //pctl_brst 4,
-                    (0xff << 16) |  //reorder en for the 8 channel.
-                    (0 << 15 ) |     // pctl16 mode = 0.  pctl =   32bits data pins
-                    (0 << 14 ) |     // page policy = 0.
-                    (1 << 13 ) |     // command reorder enabled.
-                    (0 << 12 ) |     // bank map = 0, bank sweep between 4 banks.
-                    (1 << 11 ) |     // Block size.  0 = 32x32 bytes.  1 = 64x32 bytes.
-                    (0 << 10 )  |     // ddr burst 0 = 8 burst. 1 = 4 burst.
+         .ddr_pll_cntl=0x10600 | (M6_DDR_CLK/4), //500MHz 1067d
+         .ddr_clk=M6_DDR_CLK,
+         .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
+                    (0xff << 16) |    //reorder en for the 8 channel.
+                    (0 << 15 ) |      // pctl16 mode = 0.  pctl =   32bits data pins
+                    (0 << 14 ) |      // page policy = 0.
+                    (1 << 13 ) |      // command reorder enabled.
+                    (0 << 12 ) |      // bank map = 0, bank sweep between 4 banks.
+                    (1 << 11 ) |      // Block size.  0 = 32x32 bytes.  1 = 64x32 bytes.
+                    (0 << 10 ) |      // ddr burst 0 = 8 burst. 1 = 4 burst.
                     (3 << 8 )  |      // ddr type.  2 = DDR2 SDRAM.  3 = DDR3 SDRAM.
-                    (0 << 7 )  |     // ddr 16 bits mode.  0 = 32bits mode.
-                    (1 << 6 )  |     // 1 = 8 banks.  0 = 4 banks.
-                    (1 << 5) |
-                    (0 << 4 )  |     // rank size.   0= 1 rank.   1 = 2 rank.
+                    (0 << 7 )  |      // ddr 16 bits mode.  0 = 32bits mode.
+                    (1 << 6 )  |      // 1 = 8 banks.  0 = 4 banks.
+                    (0 << 4 )  |      // rank size.   0= 1 rank.   1 = 2 rank.
                     (ddr3_row_size << 2) |
                     (ddr3_col_size),
          .init_pctl=init_pctl_ddr3        
@@ -131,18 +147,25 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V
 	//PLL=1296MHz: PD=0,RESET=0,OD=0,N=1,M=54
 	//PLL=1200MHz: PD=0,RESET=0,OD=0,N=1,M=50
-	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50	
-	.sys_pll_cntl=	(0  << 16) |
-					(1  << 9 ) | 
-					(50 << 0 ),	
+	//PLL=1000MHz: PD=0,RESET=0,OD=0,N=3,M=125
+	//PLL=900MHz:   PD=0,RESET=0,OD=0,N=2,M=75
+	//PLL=800MHz:   PD=0,RESET=0,OD=0,N=3,M=100
+	//PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
+	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50
+	//0x1098[0xc1104260]
+	.sys_pll_cntl=	(0  << 16) | //OD
+					(1  << 9 ) | //N
+					(50 << 0 ),	 //M
 	//A9 clock setting
+	//0x1067[0xc110419c]
     .sys_clk_cntl=	(1 << 7) | // 0:oscin 1:scale out
                   	(1 << 5) | // A9_AT CLKEN
                   	(1 << 4) | // A9_APB CLKEN
                   	(0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
                   	(1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock 
     //A9 clock              	
-    .sys_clk=1200,
+    .sys_clk=1200,//MHz
+    .a9_clk=1200, //MHz
     
     .other_pll_cntl=0x00000219,//0x19*24/1=600M
 
@@ -150,18 +173,18 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//[14:12]MPEG_CK_SEL 0:socin 1:ddr_pll 2:mp0_clko 3:mp1_clko 4:mp2_clko 5:fclk_div2 6:fclk_div3 7:fclk_div5
 	//[8]0:clk81=XTL 1:clk81=pll
 	//[7]enable gating
-    .mpeg_clk_cntl= (7 << 12) |    // select fclk_div5=400MHz
-    				(1 << 8 ) |    // select pll
-    				(1 << 7 ) |    // cntl_hi_mpeg_div_en, enable gating
-                    (1 << 0 ) |    // div 2 (n+1)                  
-					(1 << 15),     // Connect clk81 to the PLL divider output
+	//0x105d [0xc1104174]
+    .mpeg_clk_cntl= (7 << 12) |    //[B14,B13,B12] select fclk_div5=400MHz
+    				(1 << 8 ) |    //[B8] select pll
+    				(1 << 7 ) |    //[B7] cntl_hi_mpeg_div_en, enable gating
+                    (1 << 0 ) |    //[B6-B0] div 2 (n+1)  fclk_div5=2G/5=400MHz, clk81=400MHz/(1+1)=200MHz
+					(1 << 15),     //[B15] Connect clk81 to the PLL divider output
 
-	.clk81=200000000,	//750/4=180M
+	.clk81=200000000,	
 
     .demod_pll400m_cntl=(1<<9)  | //n 1200=xtal*m/n 
-            (50<<0),    //m 50*24
-    
-    .a9_clk=1200000000/2,
+            (50<<0),    		//m 50*24
+            
     .spi_setting=0xea949,
     .nfc_cfg=(((0)&0xf)<<10) | (0<<9) | (0<<5) | 5,
     .sdio_cmd_clk_divide=5,

@@ -105,11 +105,13 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr(UPCTL_TINIT_ADDR, timing_reg->t_init_us);  //200us.
 
 	MMC_Wr(UPCTL_TRSTH_ADDR, timing_reg->t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
+	MMC_Wr(UPCTL_TRSTL_ADDR, timing_reg->t_rstl_us);
 	
 	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
 	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
+	//MMC_Wr(UPCTL_MCFG_ADDR,(nTempVal <<18)|(timing_reg->mcfg & (~(3<<18))));
 	MMC_Wr(UPCTL_MCFG_ADDR,((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
-                           timing_reg->mcfg);
+                           (timing_reg->mcfg & (~(3<<18))));
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
@@ -158,12 +160,18 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
 
+    //MMC_Wr( PUB_ZQ0CR1_ADDR, 0x1b | (3<<29));
+    MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18);
+    //MMC_Wr( PUB_ZQ0CR1_ADDR, 0x17 | (3<<29));
+   
+
 	//for simulation to reduce the init time.
 	//MMC_Wr(PUB_PTR1_ADDR,  (20000 | 		  // Tdinit0   DDR3 : 500us.  LPDDR2 : 200us.
 	//					  (192 << 19)));	  //tdinit1    DDR3 : tRFC + 10ns. LPDDR2 : 100ns.
 	//MMC_Wr(PUB_PTR2_ADDR,  (10000 | 		  //tdinit2    DDR3 : 200us for power up. LPDDR2 : 11us.  
 	//					(40 << 17)));		  //tdinit3    LPDDR2 : 1us. 
 
+    __udelay(10);
 	//wait DDR3_ZQ_DONE: 
 	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
 
@@ -285,7 +293,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0x0 <<12) | (7 << 28))); 
 
 	// DDR PHY initialization 
-	MMC_Wr( PUB_PIR_ADDR, 0x1e1); 
+	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);
+	MMC_Wr( PUB_PIR_ADDR, 0x1e9);
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
 

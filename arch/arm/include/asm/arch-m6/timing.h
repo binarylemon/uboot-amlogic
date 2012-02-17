@@ -9,6 +9,7 @@ struct ddr_set{
         unsigned short t_100ns_pck;
         unsigned short t_init_us;
         unsigned short t_rsth_us;
+		unsigned short t_rstl_us;
         unsigned short t_ras;
         unsigned short t_rc;
         unsigned short t_rcd;
@@ -53,7 +54,8 @@ struct pll_clk_settings{
 	 */
 	unsigned sys_pll_cntl;	//sys_pll_cntl2,sys_pll_cntl23,sys_pll_cntl24 are fixed
 	unsigned sys_clk_cntl;	//
-	unsigned sys_clk;	 	//0x80
+	unsigned sys_clk;
+	unsigned a9_clk;
 	
 	
 	unsigned other_pll_cntl;
@@ -67,8 +69,7 @@ struct pll_clk_settings{
 	unsigned demod_pll400m_cntl;
 	unsigned uart;
 
-	unsigned clk81;
-	unsigned a9_clk;
+	unsigned clk81;	
 	
 }__attribute__ ((packed));
 

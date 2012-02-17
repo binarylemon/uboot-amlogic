@@ -78,12 +78,6 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	
 	wait_pll(3,timing_reg->ddr_clk);
 
-	//sys_pll_div3
-	//wait_pll(25,__plls->sys_clk/3);
-
-	//clk81 200M
-	wait_pll(7,200);
-	
     serial_puts("set ddr clock ok!\n");
 }
 
