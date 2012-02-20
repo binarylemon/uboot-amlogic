@@ -76,5 +76,7 @@ extern  DataFormat * magic_info;
 #define    ROM_STACK_END  	(AHB_SRAM_BASE+0x1d80)
 #define    ROM_FIQ_STACK	(AHB_SRAM_BASE+0x1e00)
 #define    ROM_IRQ_STACK  	(AHB_SRAM_BASE+0x1f00)
+#define    _STACK_END       (ROM_IRQ_STACK)
+//Temp for arch\arm\cpu\aml_meson\common\firmware\rom_spl.s compile pass, not verify
 
 #endif /* ROMBOOT_H_ */

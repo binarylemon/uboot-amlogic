@@ -14,6 +14,8 @@
 #ifndef __M3_SHUTTLE_MID_V1_H__
 #define __M3_SHUTTLE_MID_V1_H__
 
+#define CONFIG_SUPPORT_CUSOTMER_BOARD 1
+
 /*board ID*/
 /*@Q07CL_DSN_RB_0922A.pdf*/
 #define SHUTTLE_M3_MID_V1 1

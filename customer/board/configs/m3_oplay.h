@@ -1,6 +1,8 @@
 #ifndef __CONFIG_M3_SOCKET_H_
 #define __CONFIG_M3_SOCKET_H_
 
+#define CONFIG_SUPPORT_CUSOTMER_BOARD 1
+
 #define M3_STB8726_REV_1_00 1
 
 //UART Sectoion
