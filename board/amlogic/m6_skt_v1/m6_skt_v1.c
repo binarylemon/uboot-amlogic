@@ -231,30 +231,127 @@ int board_mmc_init(bd_t	*bis)
 
 #ifdef CONFIG_AML_I2C 
 /*I2C module is board depend*/
-#error "Please define the board depend I2C setting as following!"
 static void board_i2c_set_pinmux(void){
-/*board depend I2C initialization*/
-/*..........*/
+	/*@M6_SKT_V1.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+    /*********************************************/
+    /*                | I2C_Master_B        |I2C_Slave            |       */
+    /*********************************************/
+    /*                | I2C_SCK                | I2C_SCK_SLAVE  |      */
+    /* GPIOX28  | [PIM_MUX5:30]     | [PIM_MUX5:28]   |     */
+    /*********************************************/
+    /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
+    /* GPIOX27  | [PIM_MUX5:31]     | [PIM_MUX5:29]   |     */
+    /*********************************************/	
+	//Wr(PAD_PULL_UP_REG4,Rd(PAD_PULL_UP_REG4) | (1 << 27)| (1 << 28) );
+
+	//disable all other pins which share with I2C_SDA_B & I2C_SCK_B
+    clrbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,((1<<28)|(1<<29)));
+    //enable I2C MASTER B pins
+	setbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,
+	(MESON_I2C_MASTER_B_GPIOX_27_BIT|MESON_I2C_MASTER_B_GPIOX_28_BIT));
+	
+    udelay(10000);
+	
 };
 struct aml_i2c_platform g_aml_i2c_plat = {
-    .wait_count         = 0,
-    .wait_ack_interval  = 0,
-    .wait_read_interval = 0,
-    .wait_xfer_interval = 0,
-    .master_no          = 0,
+    .wait_count         = 1000000,
+    .wait_ack_interval  = 5,
+    .wait_read_interval = 5,
+    .wait_xfer_interval = 5,
+    .master_no          = AML_I2C_MASTER_B,
     .use_pio            = 0,
-    .master_i2c_speed   = 0,
-    .master_ao_pinmux = {
-        .scl_reg  = 0,
-        .scl_bit  = 0,
-        .sda_reg  = 0,
-        .sda_bit  = 0,
+    .master_i2c_speed   = AML_I2C_SPPED_400K,
+    .master_b_pinmux = {
+        .scl_reg    = MESON_I2C_MASTER_B_GPIOX_28_REG,
+        .scl_bit    = MESON_I2C_MASTER_B_GPIOX_28_BIT,
+        .sda_reg    = MESON_I2C_MASTER_B_GPIOX_27_REG,
+        .sda_bit    = MESON_I2C_MASTER_B_GPIOX_27_BIT,
     }
 };
+
+#define I2C_ALC5631Q_ADDR   (0x1A)
+
+void i2c_ALC5631Q_write(unsigned char reg, unsigned short val)
+{
+    unsigned char buff[3];
+    buff[0] = reg;
+    buff[1] = (val >> 8) & 0xFF; //MSB
+	buff[2] = (val & 0xFF); //LSB
+
+	struct i2c_msg msg[] = {
+        {
+        .addr  = I2C_ALC5631Q_ADDR,
+        .flags = 0,
+        .len   = 3,
+        .buf   = buff,
+        }
+    };
+
+    if (aml_i2c_xfer(msg, 1) < 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+    }
+}
+
+unsigned short i2c_ALC5631Q_read(unsigned char reg)
+{
+    unsigned short val = 0;
+    struct i2c_msg msgs[] = {
+        {
+            .addr = I2C_ALC5631Q_ADDR,
+            .flags = 0,
+            .len = 1,
+            .buf = &reg,
+        },
+        {
+            .addr = I2C_ALC5631Q_ADDR,
+            .flags = I2C_M_RD,
+            .len = 2,
+            .buf = &val,
+        },		
+    };
+
+    if ( aml_i2c_xfer(msgs, 2)< 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+    }
+
+	/*@ALC5631Q-VE DataSheet_0.91.pdf Page31*/
+    return (val & 0xFF)<< 8 | ((val >> 8) & 0xFF);
+}
+void board_M6_SKT_V1_i2c_test(void)
+{
+	/*@M6_SKT_V1.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+	/*@ALC5631Q-VE DataSheet_0.91.pdf*/
+	int nMaxID = 0x20;
+	int nIdx = 0;
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
+	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
+		printf("Reg addr=0x%02x Val=0x%04x\n",
+		nIdx,i2c_ALC5631Q_read(nIdx));
+
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
+
+	//try to write some reg
+	/*
+	i2c_ALC5631Q_write(0x02,0xAA55);
+	i2c_ALC5631Q_write(0x04,0x0);
+
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
+	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
+		printf("Reg addr=0x%02x Val=0x%04x\n",
+		nIdx,i2c_ALC5631Q_read(nIdx));
+	
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
+	*/
+		
+}
+
 static void board_i2c_init(void)
 {		
 	//set I2C pinmux with PCB board layout
-	//refer AML8726-M_ARM_DEV_BOARD_2DDR_V1R1.pdf
+	/*@M6_SKT_V1.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
 	board_i2c_set_pinmux();
 
 	//Amlogic I2C controller initialized
@@ -262,15 +359,17 @@ static void board_i2c_init(void)
 	aml_i2c_init();
 
 	//must call aml_i2c_init(); before any I2C operation	
+	/*M6 socket board*/
+	board_M6_SKT_V1_i2c_test();	
+	//udelay(10000);	
 
 	udelay(10000);		
 }
 
 //for sys_test only, not check yet
-#error "Please define the I2C device address of board!"
 static struct i2c_board_info aml_i2c_info[] = {
     {
-        I2C_BOARD_INFO("I2C ?????", 000),
+        I2C_BOARD_INFO("I2C ALC5631Q", 000),
         .device_init = board_i2c_init,
     },
 };
