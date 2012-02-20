@@ -9,7 +9,7 @@
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-#define CONFIG_AML_I2C      1
+//#define CONFIG_AML_I2C      1
 
 
 //Enable storage devices
