@@ -26,7 +26,7 @@
 
 #endif
 
-#if CONFIG_M3==0
+#if CONFIG_M6==0
 
 #error please define CONFIG_M1
 

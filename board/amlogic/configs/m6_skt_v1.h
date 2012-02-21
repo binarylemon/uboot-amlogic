@@ -2,7 +2,7 @@
 #define __CONFIG_M3_SOCKET_H_
 
 #define M6_SKT_V1_20120201 1
-#define CONFIG_M3
+//#define CONFIG_M3
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -19,7 +19,7 @@
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-#define CONFIG_AML_MESON_3 1
+#define CONFIG_AML_MESON_6 1
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
