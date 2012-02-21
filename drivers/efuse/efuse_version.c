@@ -66,6 +66,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 3,
 		.we = 0,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},
 	{
 		.title = "mac",
@@ -74,6 +75,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},
 	{
 		.title = "hdcp",
@@ -82,6 +84,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 300,
 		.we = 0,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},
 	{
 		.title = "mac_bt",
@@ -90,6 +93,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 6,
 		.we=1,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},
 	{
 		.title = "mac_wifi",
@@ -98,6 +102,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},
 	{
 		.title = "usid",
@@ -106,6 +111,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 41,
 		.we = 0,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},	
 	{
 		.title= "version",     //1B(version=0)+2B(machid)
@@ -114,6 +120,7 @@ static efuseinfo_item_t efuseinfo_v0[] =
 		.data_len = 3,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 };
 
@@ -126,6 +133,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 36,
 		.we = 0,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},	
 	{
 		.title = "mac_wifi",
@@ -134,6 +142,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "mac_bt",
@@ -142,6 +151,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 6,
 		.we=1,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "mac",
@@ -150,6 +160,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "licence",
@@ -158,6 +169,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 3,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 1,
 	},	
 	{
 		.title = "hdcp",
@@ -166,6 +178,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 300,
 		.we = 0,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 	{
 		.title= "version",     //1B(version=1)+2B(machid)
@@ -174,6 +187,7 @@ static efuseinfo_item_t efuseinfo_v1[] =
 		.data_len = 3,
 		.we = 1,
 		.bch_en = 1,
+		.bch_reverse = 0,
 	},
 };
 
@@ -187,22 +201,16 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 3,
 		.we = 0,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
-		.title = "version",
+		.title = "version",   // include machid
 		.offset = 3,
-		.enc_len = 1,
-		.data_len = 1,
+		.enc_len = 5,
+		.data_len = 5,
 		.we = 1,
 		.bch_en = 0,	
-	},
-	{
-		.title = "customerid",
-		.offset = 4,
-		.enc_len = 4,
-		.data_len = 4,
-		.we = 1,
-		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "rsakey",
@@ -211,6 +219,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 128,
 		.we = 0,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "hdcp",
@@ -219,6 +228,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 300,
 		.we = 0,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "mac",    //for the main network interface
@@ -227,6 +237,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 6,
 		.we=1,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "mac_bt",  //for the second network interface or bt
@@ -235,6 +246,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 6,
 		.we=1,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
 		.title = "mac_wifi", //for the second network interface or bt
@@ -243,14 +255,16 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.data_len = 6,
 		.we = 1,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 	{
-		.title = "userid",   
+		.title = "usid",   
 		.offset = 454,
 		.enc_len = 58,
 		.data_len = 58,
 		.we=0,
 		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 };
 

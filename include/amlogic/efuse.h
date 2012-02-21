@@ -10,6 +10,7 @@ typedef struct efuseinfo_item{
 	unsigned data_len;
 	int we;    // write enable 	 
 	int bch_en; //BCH enable
+	int bch_reverse;
 } efuseinfo_item_t;
 
 
@@ -30,14 +31,14 @@ char *efuse_read_usr(efuseinfo_item_t* info);
 int efuse_write_usr(efuseinfo_item_t* info, char *data);
 
 
-#if defined(CONFIG_M3) || defined(CONFIG_M1) 
-// for M1, M2, M3, A3 efuse length 
-#define EFUSE_BYTES            384  //(EFUSE_BITS/8)
-#define EFUSE_DWORDS            96  //(EFUSE_BITS/32)
-#else
+#ifdef CONFIG_M6
 // for m6 and after efuse length
 #define EFUSE_BYTES				512   //(EFUSE_BITS/8)
 #define EFUSE_DWORDS		128   //(EFUSE_BITS/32)
+#elif defined(CONFIG_M3) || defined(CONFIG_M1) 
+// for M1, M2, M3, A3 efuse length 
+#define EFUSE_BYTES            384  //(EFUSE_BITS/8)
+#define EFUSE_DWORDS            96  //(EFUSE_BITS/32)
 #endif
 
 #endif

@@ -9,8 +9,6 @@
 
 
 char efuse_buf[EFUSE_BYTES] = {0};
-static void __efuse_write_byte( unsigned long addr, unsigned long data );
-static void __efuse_read_dword( unsigned long addr, unsigned long *data);
 
 extern int efuseinfo_num;
 extern efuseinfo_t efuseinfo[];
@@ -18,113 +16,9 @@ extern int efuse_active_version;
 extern int efuse_active_customerid;
 extern pfn efuse_getinfoex;
 extern int printf(const char *fmt, ...);
-
-static void __efuse_write_byte( unsigned long addr, unsigned long data )
-{
-	//printf("addr=%d, data=%x\n", addr, data);
-    unsigned long auto_wr_is_enabled = 0;
-
-    if ( READ_CBUS_REG( EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_WR_ENABLE_BIT ) )
-    {
-        auto_wr_is_enabled = 1;
-    }
-    else
-    {
-        /* temporarily enable Write mode */
-        WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_ENABLE_ON,
-            CNTL1_AUTO_WR_ENABLE_BIT, CNTL1_AUTO_WR_ENABLE_SIZE );
-    }
-
-    /* write the address */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, addr,
-        CNTL1_BYTE_ADDR_BIT, CNTL1_BYTE_ADDR_SIZE );
-    /* set starting byte address */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_BYTE_ADDR_SET_ON,
-        CNTL1_BYTE_ADDR_SET_BIT, CNTL1_BYTE_ADDR_SET_SIZE );
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_BYTE_ADDR_SET_OFF,
-        CNTL1_BYTE_ADDR_SET_BIT, CNTL1_BYTE_ADDR_SET_SIZE );
-
-    /* write the byte */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, data,
-        CNTL1_BYTE_WR_DATA_BIT, CNTL1_BYTE_WR_DATA_SIZE );
-    /* start the write process */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_START_ON,
-        CNTL1_AUTO_WR_START_BIT, CNTL1_AUTO_WR_START_SIZE );
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_START_OFF,
-        CNTL1_AUTO_WR_START_BIT, CNTL1_AUTO_WR_START_SIZE );
-    /* dummy read */
-    READ_CBUS_REG( EFUSE_CNTL1 );
-
-    while ( READ_CBUS_REG(EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_WR_BUSY_BIT ) )
-    {
-        udelay(1);
-    }
-
-    /* if auto write wasn't enabled and we enabled it, then disable it upon exit */
-    if (auto_wr_is_enabled == 0 )
-    {
-        WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_ENABLE_OFF,
-            CNTL1_AUTO_WR_ENABLE_BIT, CNTL1_AUTO_WR_ENABLE_SIZE );
-    }
-}
-
-static void __efuse_read_dword( unsigned long addr, unsigned long *data )
-{
-    unsigned long auto_rd_is_enabled = 0;
-    
-    if( READ_CBUS_REG(EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_RD_ENABLE_BIT ) )
-    {
-        auto_rd_is_enabled = 1;
-    }
-    else
-    {
-        /* temporarily enable Read mode */
-        WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-    }
-
-    /* write the address */
-    
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, addr,
-        CNTL1_BYTE_ADDR_BIT,  CNTL1_BYTE_ADDR_SIZE );
-    	
-    /* set starting byte address */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_BYTE_ADDR_SET_ON,
-        CNTL1_BYTE_ADDR_SET_BIT, CNTL1_BYTE_ADDR_SET_SIZE );	
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_BYTE_ADDR_SET_OFF,
-        CNTL1_BYTE_ADDR_SET_BIT, CNTL1_BYTE_ADDR_SET_SIZE );
-   /* start the read process */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_START_ON,
-        CNTL1_AUTO_RD_START_BIT, CNTL1_AUTO_RD_START_SIZE );      
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_WR_START_OFF,
-        CNTL1_AUTO_RD_START_BIT, CNTL1_AUTO_RD_START_SIZE );
-      
-    /* dummy read */
-    READ_CBUS_REG( EFUSE_CNTL1 );
-    while ( READ_CBUS_REG(EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_RD_BUSY_BIT ) )
-    {
-        udelay(1);
-    }
-    /* read the 32-bits value */
-    ( *data ) = READ_CBUS_REG( EFUSE_CNTL2 );    
-    /* if auto read wasn't enabled and we enabled it, then disable it upon exit */
-    if ( auto_rd_is_enabled == 0 )
-    {
-        WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-    }
-
-    //printf("__efuse_read_dword: addr=%ld, data=0x%lx\n", addr, *data);
-}
-
-int efuse_init(void)
-{	
-    /* disable efuse encryption */
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL4, CNTL1_AUTO_WR_ENABLE_OFF,
-        CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );
-
-    return 0;
-}
+extern void __efuse_write_byte( unsigned long addr, unsigned long data );
+extern void __efuse_read_dword( unsigned long addr, unsigned long *data);
+extern void efuse_init(void);
 
 ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 {
@@ -143,21 +37,25 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 
     memset(contents, 0, sizeof(contents));
 
-#ifdef CONFIG_M3
-	// Enabel auto-read mode
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-#endif
+#ifdef CONFIG_M6
 
+#elif defined(CONFIG_M3)
+ 	// Enabel auto-read mode    
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+ #endif
+ 
     pos = (pos/4)*4;
     for (pdw = contents; dwsize-- > 0 && pos < EFUSE_BYTES; pos += 4, ++pdw)
 		__efuse_read_dword(pos, pdw);	    
 
-#ifdef CONFIG_M3
-    // Disable auto-read mode    
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-#endif
+#ifdef COMFIG_M6
+
+#elif defined(CONFIG_M3)
+     // Disable auto-read mode    
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+ #endif
             
 	memcpy(buf, (char*)contents+residunt, count);	
 	
@@ -230,13 +128,13 @@ char *efuse_read_usr(efuseinfo_item_t* info)
 		memset(enc_buf, 0, sizeof(enc_buf));
 		efuse_read(enc_buf, enc_len, &ppos);
 		while(enc_len >= 31){
-			efuse_bch_dec(penc, 31, pdata);
+			efuse_bch_dec(penc, 31, pdata, info->bch_reverse);
 			penc += 31;
 			pdata += 30;
 			enc_len -= 31;
 		}
 		if((enc_len > 0))
-			efuse_bch_dec(penc, enc_len, pdata);
+			efuse_bch_dec(penc, enc_len, pdata, info->bch_reverse);
 	}	
 	else
 		efuse_read(efuse_buf, enc_len, &ppos);	
@@ -258,13 +156,13 @@ int efuse_write_usr(efuseinfo_item_t* info, char *data)
 		
 	if(info->bch_en != 0){
 		while(data_len >= 30){
-			efuse_bch_enc(pdata, 30, penc);
+			efuse_bch_enc(pdata, 30, penc, info->bch_reverse);
 			data_len -= 30;
 			pdata += 30;
 			penc += 31;		
 		}
 		if(data_len > 0)
-			efuse_bch_enc(pdata, data_len, penc);
+			efuse_bch_enc(pdata, data_len, penc, info->bch_reverse);
 	}	
 	else
 		memcpy(penc, pdata, enc_len);
@@ -282,13 +180,21 @@ static int cpu_is_before_m6(void)
 	return ((val & 0x40000000) == 0x40000000);
 }
 
-static int efuse_is_all_free(void)
+static int check_is_version0(void)
 {
 	char *op = efuse_dump();
 	int i;
 	for(i=0; i<EFUSE_BYTES; i++)
+#ifdef CONFIG_M6
 		if(op[i] != 0)
 			return 0;
+#elif defined(CONFIG_M3)
+		if((op[i] != 0) && (i!=0) &&(i!=1)&&(i!=2)&&(i!=3)&& (i!=0x40))
+			return 0;
+#else
+		if(op[i] != 0)
+			return 0;
+#endif
 	
 	return 1;	
 }
@@ -305,16 +211,19 @@ static int efuse_readversion(void)
 	if(cpu_is_before_m6()){    // M1, M2, M3, A3
 		ppos = 380;
 		efuse_read(efuse_buf, 4, &ppos);
-		efuse_bch_dec(efuse_buf, 4, ver_buf);		
+		efuse_bch_dec(efuse_buf, 4, ver_buf, 0);		
 		if(ver_buf[0] != 0){
 			efuse_active_version = ver_buf[0];
 			return ver_buf[0];
 		}
 		else{   // distinguish free efuse layout and M1/M2 old version
-			if(efuse_is_all_free())
-				return -1;
+			//if(efuse_is_all_free())			
+			if(check_is_version0()){				
+				efuse_active_version = 0;
+ 				return 0;
+			}
 			else
-				return 0;
+				return -1;
 		}
 	}
 	else{
@@ -360,6 +269,7 @@ int efuse_getinfo(char *title, efuseinfo_item_t *info)
 				info->data_len = item->data_len;
 				info->we = item->we;
 				info->bch_en = item->bch_en;				
+				info->bch_reverse = item->bch_reverse;	
 				ret = 0;
 				break;
 			}
@@ -385,7 +295,7 @@ unsigned efuse_readcustomerid(void)
 	if(cpu_is_before_m6()){
 		ppos = 380;
 		efuse_read(efuse_buf, 4, &ppos);
-		efuse_bch_dec(efuse_buf, 4, buf);
+		efuse_bch_dec(efuse_buf, 4, buf, 0);
 		if((buf[1] != 0) || (buf[2] != 0))
 			efuse_active_customerid = (buf[2]<<8) + buf[1];		
 	}
@@ -407,6 +317,7 @@ void efuse_getinfo_version(efuseinfo_item_t *info)
 {
 	strcpy(info->title, "version");
 	info->we = 1;
+	info->bch_reverse = 0;
 		
 	if(cpu_is_before_m6()){
 		info->offset = 380;
@@ -428,20 +339,27 @@ char* efuse_dump(void)
     //unsigned pos;
     memset(efuse_buf, 0, sizeof(efuse_buf));
 
-#ifdef CONFIG_AML_MESION_3		
-	// Enabel auto-read mode
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-#endif            
+#ifdef EFUSE_DEBUG
+	efuse_init();
+#endif	
+
+#ifdef CONFIG_M6
+
+#elif defined(CONFIG_M3)
+ 	// Enabel auto-read mode
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+ #endif            
 
 	for(i=0; i<EFUSE_BYTES; i+=4)
 		__efuse_read_dword(i,  (unsigned long*)(&(efuse_buf[i])));	    
 		
-#ifdef CONFIG_AML_MESION_3		
-    // Disable auto-read mode    
-    WRITE_CBUS_REG_BITS( EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
-            CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-#endif
+#ifdef CONFIG_M6		
+#elif defined(CONFIG_M3)
+     // Disable auto-read mode    
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+ #endif
      
      return (char*)efuse_buf;
 }

@@ -3,6 +3,7 @@
 
 #define M6_SKT_V1_20120201 1
 //#define CONFIG_M3
+#define CONFIG_MACH_MESON6_SKT
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -26,7 +27,7 @@
 
 //Amlogic SARADC support
 //#define CONFIG_SARADC 1
-//#define CONFIG_EFUSE 1
+#define CONFIG_EFUSE 1
 
 #define CONFIG_L2_OFF			1
 

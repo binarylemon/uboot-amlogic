@@ -1,14 +1,25 @@
 #ifndef __EFUSE_REG_H
 #define __EFUSE_REG_H
 
-#define EFUSE_CNTL0 0x2158
-#define EFUSE_CNTL1 0x2159
-#define EFUSE_CNTL2 0x215a
-#define EFUSE_CNTL3 0x215b
-#define EFUSE_CNTL4 0x215c
+//#define EFUSE_DEBUG
+
+// register definition move to arch/asm/include/asm/arch-mx
+/*
+ #define EFUSE_CNTL0 0x2158
+ #define EFUSE_CNTL1 0x2159
+ #define EFUSE_CNTL2 0x215a
+ #define EFUSE_CNTL3 0x215b
+ #define EFUSE_CNTL4 0x215c
+*/
+#define WRITE_EFUSE_REG(reg, val)  __raw_writel(val, reg)
+#define READ_EFUSE_REG(reg)  (__raw_readl(reg))
+#define WRITE_EFUSE_REG_BITS(reg, val, start, len) \
+	WRITE_EFUSE_REG(reg,	(READ_EFUSE_REG(reg) & ~(((1L<<(len))-1)<<(start)) )| ((unsigned)((val)&((1L<<(len))-1)) << (start)))
+#define READ_EFUSE_REG_BITS(reg, start, len) \
+	((READ_EFUSE_REG(reg) >> (start)) & ((1L<<(len))-1))
+ 
 
 /* EFUSE_CNTL0 */
-
 
 /**
 EFUSE_CNTL1
@@ -26,6 +37,11 @@ bit[11]     BYTE_ADDR_SET
 bit[10]
 bit[9-0]    BYTE_ADDR
 **/
+#define CNTL1_PD_ENABLE_BIT					27
+#define CNTL1_PD_ENABLE_SIZE					1
+#define CNTL1_PD_ENABLE_ON	1
+#define CNTL1_PD_ENABLE_OFF   0
+
 #define CNTL1_AUTO_RD_BUSY_BIT              26
 #define CNTL1_AUTO_RD_BUSY_SIZE             1
 
@@ -36,8 +52,6 @@ bit[9-0]    BYTE_ADDR
 #define CNTL1_AUTO_RD_ENABLE_SIZE           1
 #define CNTL1_AUTO_RD_ENABLE_ON             1
 #define CNTL1_AUTO_RD_ENABLE_OFF            0
-
-
 
 #define CNTL1_BYTE_WR_DATA_BIT              16
 #define CNTL1_BYTE_WR_DATA_SIZE             8
@@ -50,32 +64,22 @@ bit[9-0]    BYTE_ADDR
 #define CNTL1_AUTO_WR_START_ON              1
 #define CNTL1_AUTO_WR_START_OFF             0
 
-
-
 #define CNTL1_AUTO_WR_ENABLE_BIT            12
 #define CNTL1_AUTO_WR_ENABLE_SIZE           1
 #define CNTL1_AUTO_WR_ENABLE_ON             1
 #define CNTL1_AUTO_WR_ENABLE_OFF            0
-
-
 
 #define CNTL1_BYTE_ADDR_SET_BIT             11
 #define CNTL1_BYTE_ADDR_SET_SIZE            1
 #define CNTL1_BYTE_ADDR_SET_ON              1
 #define CNTL1_BYTE_ADDR_SET_OFF             0
 
-
-
-
 #define CNTL1_BYTE_ADDR_BIT                 0
 #define CNTL1_BYTE_ADDR_SIZE                10
 
-
 /* EFUSE_CNTL2 */
 
-
 /* EFUSE_CNTL3 */
-
 
 /**
 EFUSE_CNTL4
@@ -88,9 +92,6 @@ bit[9]      Encrypt reset
 bit[8]      XOR_ROTATE
 bit[7-0]    XOR
 **/
-#define CNTL4_RD_CLOCK_HIGH_BIT             23
-#define CNTL4_RD_CLOCK_HIGH_SIZE            8
-
 #define CNTL4_ENCRYPT_ENABLE_BIT            10
 #define CNTL4_ENCRYPT_ENABLE_SIZE           1
 #define CNTL4_ENCRYPT_ENABLE_ON             1

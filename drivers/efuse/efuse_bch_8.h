@@ -32,8 +32,8 @@
 #define BCH_M           8
 #define BCH_P_BYTES     30
 
-void efuse_bch_enc(const char *ibuf, int isize, char *obuf);
-void efuse_bch_dec(const char *ibuf, int isize, char *obuf);
+void efuse_bch_enc(const char *ibuf, int isize, char *obuf, int reverse);
+void efuse_bch_dec(const char *ibuf, int isize, char *obuf, int reverse);
 
 #endif
 
