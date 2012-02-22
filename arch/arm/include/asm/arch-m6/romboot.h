@@ -65,8 +65,8 @@
 #define CARD_TYPE_MMC 2
 #define CARD_TYPE_EMMC 3
 #define MAGIC_WORD1 0x4848334d
-//#define MAGIC_WORD2 0x30564552
-#define MAGIC_WORD2 machine_arch_type
+#define MAGIC_WORD2 0x30564552
+//#define MAGIC_WORD2 machine_arch_type
 
 /**
  * This Section is about the romboot spl's first sector structure
