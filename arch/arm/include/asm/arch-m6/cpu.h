@@ -31,7 +31,7 @@
 #define CONFIG_SYS_POST_WORD_ADDR CONFIG_SYS_TEXT_BASE-0x4
 #endif
 #define CONFIG_SYS_MALLOC_LEN   (4<<20)
-#define CONFIG_ENV_SIZE         (8 * 1024)
+
 #define CONFIG_SYS_MAXARGS      16
 
 #define CONFIG_SYS_LOAD_ADDR    0x82000000
@@ -74,12 +74,26 @@
 #define SPI_FLASH_CACHELINE         64 //amlogic special setting. in M1 , SPI_A for SPI flash
 #define CONFIG_SPI_FLASH_MACRONIX   1
 #define CONFIG_SPI_FLASH_EON        1
-//#define CONFIG_SPI_FLASH_SPANSION   1
+#define CONFIG_SPI_FLASH_SPANSION   1
 #define CONFIG_SPI_FLASH_SST        1
 //#define CONFIG_SPI_FLASH_STMICRO    1
 #define CONFIG_SPI_FLASH_WINBOND    1
-
 #endif
+
+//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
+#ifndef CONFIG_ENV_SIZE
+#define CONFIG_ENV_SIZE         (64 * 1024) 
+#endif
+/*
+#ifdef CONFIG_SPI_FLASH_SPANSION
+	#undef CONFIG_ENV_SIZE
+	#define CONFIG_ENV_SIZE         (64 * 1024)
+#else
+	#define CONFIG_ENV_SIZE         (8 * 1024)
+#endif
+*/
+
+
 #if CONFIG_SDIO_B1 || CONFIG_SDIO_A || CONFIG_SDIO_B || CONFIG_SDIO_C
 #define CONFIG_CMD_MMC          1
 #define CONFIG_MMC              1

@@ -476,7 +476,62 @@ int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 
 		spi_flash_cmd(slave,var,NULL,0);	
 		
 		//Trigger sector erase command
-		var=1<<SPI_FLASH_SE;
+		var=1<<SPI_FLASH_SE;		
+		spi_flash_cmd(slave,var,NULL,0);	
+
+		//debug for hangup
+		//printf("PIN_MAX_REG0 = 0x%08X\n",READ_CBUS_REG(PERIPHS_PIN_MUX_1));
+
+		nReturn=1;
+  		while ( (nReturn&1)==1 ) { 	
+			var=1<<SPI_FLASH_RDSR;
+			spi_flash_cmd(slave,var,&nReturn,2);		//2 byte status				
+  		}	
+	}
+
+	//reopen AHB bus after any APB bus operation
+	SET_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); 
+	
+   return nReturn;	
+}
+
+//for CONFIG_SPI_FLASH_SPANSION no SE(0x20) command
+//use Block erase 0xD8 command
+int spi_flash_erase_be_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 sector_size)
+{
+	struct spi_slave * slave=flash->spi;
+	size_t actual;	
+	unsigned var;
+	int nReturn = -1;		
+
+	if (offset % sector_size || len % sector_size) {
+		printf("SF: Erase offset/length not multiple of sector size!\n");
+		return nReturn;
+	}
+
+	//close AHB bus before any APB bus operation
+	CLEAR_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); 	
+
+#ifdef SPI_WRITE_PROTECT
+	spi_disable_write_protect();
+#endif
+
+	for (actual = 0; actual < len; actual+=sector_size) {
+		
+		debug("Erase:%x\n",actual);
+			
+		var=(offset+actual) & 0xffffff;
+		spi_flash_addr_write(slave,var);
+	
+		//Trigger write enable command
+		var=1<<SPI_FLASH_WREN;
+		spi_flash_cmd(slave,var,NULL,0);	
+		
+		//Trigger sector erase command
+		//for CONFIG_SPI_FLASH_SPANSION no SE(0x20) command	
+		//use BE(0xD8) command
+		var=1<<SPI_FLASH_BE;		
+		
 		spi_flash_cmd(slave,var,NULL,0);	
 
 		//debug for hangup

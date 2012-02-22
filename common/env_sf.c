@@ -133,8 +133,8 @@ int saveenv(void)
 		if (ret)
 			goto done;
 	}
-
-	if (CONFIG_ENV_SIZE > CONFIG_ENV_SECT_SIZE) {
+	
+	if (CONFIG_ENV_SIZE >= CONFIG_ENV_SECT_SIZE) {
 		sector = CONFIG_ENV_SIZE / CONFIG_ENV_SECT_SIZE;
 		if (CONFIG_ENV_SIZE % CONFIG_ENV_SECT_SIZE)
 			sector++;
