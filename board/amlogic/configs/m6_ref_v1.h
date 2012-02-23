@@ -2,7 +2,8 @@
 #define __CONFIG_M3_SOCKET_H_
 
 #define M6_SKT_V1_20120201 1
-#define CONFIG_M3
+//#define CONFIG_M3
+#define CONFIG_MACH_MESON6_SKT
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -19,14 +20,15 @@
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-#define CONFIG_AML_MESON_3 1
+#define CONFIG_AML_MESON_6 1
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
 //#define CONFIG_SARADC 1
-//#define CONFIG_EFUSE 1
+#define CONFIG_EFUSE 1
+//#define CONFIG_MACHID_CHECK 1
 
 #define CONFIG_L2_OFF			1
 
@@ -137,7 +139,14 @@
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
 	#define CONFIG_CMD_SAVEENV	
-	#define CONFIG_ENV_SECT_SIZE        0x1000
+	
+	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
+	//#ifdef CONFIG_SPI_FLASH_SPANSION
+	 #define CONFIG_ENV_SECT_SIZE		0x10000
+	//#else
+	//	#define CONFIG_ENV_SECT_SIZE        0x1000
+	//#endif
+	
 	#define CONFIG_ENV_OFFSET           0x1f0000
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
