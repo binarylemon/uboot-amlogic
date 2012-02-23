@@ -68,4 +68,8 @@ struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode);
 struct spi_flash *spi_fram_probe_ramtron(struct spi_slave *spi, u8 *idcode);
 #endif
 
+#ifdef CONFIG_SPI_FLASH_GIGADEVICE
+struct spi_flash *spi_flash_probe_gigadevice(struct spi_slave *spi, u8 *idcode);
+#endif
+
 #endif //__SPI_FLASH_AMLOGIC_H__

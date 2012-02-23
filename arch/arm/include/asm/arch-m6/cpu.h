@@ -78,6 +78,7 @@
 #define CONFIG_SPI_FLASH_SST        1
 //#define CONFIG_SPI_FLASH_STMICRO    1
 #define CONFIG_SPI_FLASH_WINBOND    1
+#define CONFIG_SPI_FLASH_GIGADEVICE     1
 #endif
 
 //for CONFIG_SPI_FLASH_SPANSION 64KB sector size
