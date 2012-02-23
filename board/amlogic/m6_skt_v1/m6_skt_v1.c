@@ -32,42 +32,41 @@ DECLARE_GLOBAL_DATA_PTR;
   *************************************************/
 static void setup_net_chip(void)
 {
-	//disable all other pins which share the GPIOA_23
-    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_0,(1<<6)); //LCDin_B7 R0[6]
-    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_7,(1<<11));//ENC_11 R7[11]
-	//GPIOA_23 -> 0
-    CLEAR_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);    //RST -> 0
-    //GPIOA_23 output enable
-    CLEAR_CBUS_REG_MASK(PREG_EGPIO_EN_N,1<<23); //OUTPUT enable	
-    udelay(2000);
-	//GPIOA_23 -> 1
-    SET_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);      //RST -> 1
-    udelay(2000);	
+#if 0
+	WRITE_CBUS_REG(0x1076,0x303);
+	WRITE_CBUS_REG(0x2032,0x4007ffe0);
+	WRITE_CBUS_REG(0x2042,0x241);   // // desc endianess "same order"   
+	SET_CBUS_REG_MASK(0x2692,1<<8);
+	SET_CBUS_REG_MASK(0x2694,1<<8);
+	
+	CLEAR_CBUS_REG_MASK(0x201b,1<<15);
+	CLEAR_CBUS_REG_MASK(0x201c,1<<15); //phy reset
+	 udelay(20000);
+	SET_CBUS_REG_MASK(0x201c,1<<15);
+#else
+	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL,0x303);
+	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6,0x4007ffe0);
+	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0,0x241);   // // desc endianess "same order"   
+	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK,1<<8);
+	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT,1<<8);
+	
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N,1<<15);
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O,1<<15); //phy reset
+	udelay(20000);
+	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O,1<<15);	
+#endif	
+
+	
 }
 
 int board_eth_init(bd_t *bis)
 {   	
-	//set clock
-    eth_clk_set(ETH_CLKSRC_MISC_PLL_CLK,800*CLK_1M,50*CLK_1M);	
 
-	//set pinmux
-    aml_eth_set_pinmux(ETH_BANK0_GPIOY1_Y9,ETH_CLK_OUT_GPIOY0_REG6_17,0);
-
-	//ethernet pll control
-    writel(readl(ETH_PLL_CNTL) & ~(0xF << 0), ETH_PLL_CNTL); // Disable the Ethernet clocks        
-    writel(readl(ETH_PLL_CNTL) | (0 << 3), ETH_PLL_CNTL);    // desc endianess "same order"   
-    writel(readl(ETH_PLL_CNTL) | (0 << 2), ETH_PLL_CNTL);    // data endianess "little"    
-    writel(readl(ETH_PLL_CNTL) | (1 << 1), ETH_PLL_CNTL);    // divide by 2 for 100M     
-    writel(readl(ETH_PLL_CNTL) | (1 << 0), ETH_PLL_CNTL);    // enable Ethernet clocks   
-    
-    udelay(1000);
-
-	//reset LAN8720 with GPIOA_23
     setup_net_chip();
 
     udelay(1000);
-	
-extern int aml_eth_init(bd_t *bis);
+		
+	extern int aml_eth_init(bd_t *bis);
 
     aml_eth_init(bis);
 

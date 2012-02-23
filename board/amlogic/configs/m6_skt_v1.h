@@ -32,7 +32,7 @@
 
 #define CONFIG_L2_OFF			1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
 #define CONFIG_AML_ETHERNET 1
