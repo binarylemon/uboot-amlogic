@@ -128,9 +128,9 @@ static efuseinfo_item_t efuseinfo_v1[] =
 {
 	{
 		.title = "usid",
-		.offset = 1,
-		.enc_len = 38,
-		.data_len = 36,
+		.offset = 4,
+		.enc_len = 35,
+		.data_len = 33,
 		.we = 0,
 		.bch_en = 1,
 		.bch_reverse = 0,
@@ -206,9 +206,22 @@ static efuseinfo_item_t efuseinfo_v2[] =
 	{
 		.title = "version",   // include machid
 		.offset = 3,
-		.enc_len = 5,
-		.data_len = 5,
+		.enc_len = 1,
+		.data_len = 1,
 		.we = 1,
+		.bch_en = 0,	
+		.bch_reverse = 0,
+	},
+	{
+		.title = "machid",   // include machid
+		.offset = 4,
+		.enc_len = 4,
+		.data_len = 4,
+#ifdef CONFIG_MACHID_CHECK		
+		.we = 1,
+#else
+		.we = 0,
+#endif		
 		.bch_en = 0,	
 		.bch_reverse = 0,
 	},

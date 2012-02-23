@@ -327,8 +327,8 @@ void efuse_getinfo_version(efuseinfo_item_t *info)
 	}
 	else{
 		info->offset = 3;
-		info->enc_len = 5;
-		info->data_len = 5;
+		info->enc_len = 1;
+		info->data_len = 1;
 		info->bch_en = 0;
 	}		
 }

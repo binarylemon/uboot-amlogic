@@ -68,6 +68,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
+#ifndef CONFIG_M6		
 		for(i=1; i<info.data_len; i++){			
 			if(addr[i] != 0)
 				break;
@@ -76,6 +77,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("err: efuse need select version and machid at the same time.\n");
 			return -1;
 		}
+#endif		
 			
 		if(efuse_write_usr(&info, addr)){
 			printf("error: efuse version has been selected.\n");
