@@ -2,7 +2,7 @@
 #define __CONFIG_M3_SOCKET_H_
 
 #define M6_SKT_V1_20120201 1
-//#define CONFIG_M3
+
 #define CONFIG_MACH_MESON6_SKT
 
 //UART Sectoion
@@ -125,10 +125,10 @@
 
 #define CONFIG_AUTO_COMPLETE	1
 
-//#define CONFIG_SPI_BOOT 1
+#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
-#define CONFIG_NAND_BOOT 1
+	#define CONFIG_NAND_BOOT 1
 #endif
 
 //#ifdef CONFIG_NAND_BOOT
@@ -204,32 +204,33 @@
 	}	
 #endif   /*end ifdef CONFIG_POST*/
 
-/*-----------------------------------------------------------------------
- * Physical Memory Map
- */
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
-//#define DDR3_9_9_9
-#define DDR3_7_7_7
+//Please just define M6 DDR clock here only
+//current DDR clock range (300~600)MHz
+#define M6_DDR_CLK (500)
+
+#define DDR3_9_9_9
+//#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
-//board/amlogic/aml_tv_m2c/firmware/timming.c 
+//board/amlogic/m6_skt_v1/firmware/timming.c 
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file aml_tv_m2c.h\n"
+	#error "Please set DDR3 property first in file m6_skt_v1.h\n"
 #endif
 
 //#define M2C_DDR3_1GB
 #define M6_DDR3_512M
 //above setting will affect following:
-//board/amlogic/aml_tv_m2c/firmware/timming.c
-//arch/arm/cpu/aml_meson/m2/mmutable.s
+//board/amlogic/m6_skt_v1/firmware/timming.c
+//arch/arm/cpu/aml_meson/m6/mmutable.s
 
 //note: please DO NOT remove following check code
 #if !defined(M6_DDR3_1GB) && !defined(M6_DDR3_512M)
-	#error "Please set DDR3 capacity first in file aml_tv_m2c.h\n"
+	#error "Please set DDR3 capacity first in file m6_skt_v1.h\n"
 #endif
 
 
@@ -241,7 +242,7 @@
 #elif defined(M6_DDR3_512M)
 	#define PHYS_MEMORY_SIZE     0x20000000 // 512M
 #else
-	#error "Please define DDR3 memory capacity in file aml_tv_m2c.h\n"
+	#error "Please define DDR3 memory capacity in file m6_skt_v1.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      
