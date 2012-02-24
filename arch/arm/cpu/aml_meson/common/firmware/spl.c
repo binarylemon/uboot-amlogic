@@ -19,7 +19,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
 #ifdef AML_M6_JTAG_ENABLE
-	#if AML_M6_JTAG_SET_ARM
+	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
 		writel(0x80000510,0xda004004);
 		//TDO enable

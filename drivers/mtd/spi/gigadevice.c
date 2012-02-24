@@ -28,20 +28,17 @@ static inline struct gigadevice_spi_flash *to_gigadevice_spi_flash(struct spi_fl
 	return container_of(flash, struct gigadevice_spi_flash, flash);
 }
 
-#define GIGADEVICE_ID_GD25QXX 0x4015
+#define GIGADEVICE_ID_GD25Q16 0x4015
 
 static const struct gigadevice_spi_flash_params gigadevice_spi_flash_table[] = {
-	{	.id			 = GIGADEVICE_ID_GD25QXX,
+	{	.id			 = GIGADEVICE_ID_GD25Q16,
 		.sector_size = 4*1024,
-		.block_size	 = 64*1024 ,
-		.chip_size	 = 16*1024*1024,
-		.name		 = "GD25QXX",
+		.block_size	 = 16*4*1024 ,
+		.chip_size	 = 32*16*4*1024,
+		.name		 = "GD25Q16",
 	},	
 };
 
-//new solution for Amlogic SPI controller 
-//
-//
 static int gigadevice_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
 {	
 	int nReturn = 0;
@@ -84,8 +81,6 @@ static int gigadevice_erase(struct spi_flash *flash, u32 offset, size_t len)
 	return nReturn;
 }
 
-
-
 struct spi_flash *spi_flash_probe_gigadevice(struct spi_slave *spi, u8 *idcode)
 {
 	const struct gigadevice_spi_flash_params *params;
@@ -116,13 +111,8 @@ struct spi_flash *spi_flash_probe_gigadevice(struct spi_slave *spi, u8 *idcode)
 	gigadevice->flash.write = gigadevice_write;
 	gigadevice->flash.erase = gigadevice_erase;
 	gigadevice->flash.read  = gigadevice_read_fast;
-	
-#ifndef CONFIG_AMLOGIC_SPI_FLASH
-	gigadevice->flash.size = params->page_size * params->pages_per_sector
-	    * params->nr_sectors;
-#else
+
 	gigadevice->flash.size = params->chip_size;
-#endif /*CONFIG_AMLOGIC_SPI_FLASH*/
 
 	debug("SF: Detected %s with page size %u, total %u bytes\n",
 	      params->name, params->page_size, gigadevice->flash.size);
