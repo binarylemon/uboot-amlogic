@@ -15,7 +15,7 @@
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
-//#define CONFIG_CMD_NAND  1
+#define CONFIG_CMD_NAND  1
 //#endif
 #define CONFIG_CMD_SF    1
 
@@ -125,11 +125,11 @@
 
 #define CONFIG_AUTO_COMPLETE	1
 
-#define CONFIG_SPI_BOOT 1
+//#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
-//#ifndef CONFIG_JERRY_NAND_TEST
-//#define CONFIG_NAND_BOOT 1
-//#endif
+#ifndef CONFIG_JERRY_NAND_TEST
+#define CONFIG_NAND_BOOT 1
+#endif
 
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1

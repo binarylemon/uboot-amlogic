@@ -114,7 +114,7 @@ static int set_dev(int dev)
 		puts("No such device\n");
 		return -1;
 	}
-#ifdef CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if(nand_probe(dev)){
 		puts("No such device\n");
 		return -1;
@@ -423,7 +423,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 
 		putc('\n');
 		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {
-#ifdef CONFIG_M3			
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 			if ((nand_info[i].name) && (!nand_probe(i)))
 #else
 			if (nand_info[i].name)
@@ -438,7 +438,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			putc('\n');
 			if (dev < 0 || dev >= CONFIG_SYS_MAX_NAND_DEVICE)
 				puts("no devices available\n");
-#ifdef CONFIG_M3			
+#if (defined CONFIG_M3) || (defined CONFIG_M6)	
 			if (nand_probe(dev))
 				puts("no devices available\n");
 #endif									
@@ -471,7 +471,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		return 1;
 	}
 	nand = &nand_info[dev];
-#ifdef CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if(nand_probe(dev) != 0){
 		puts("\nno devices available\n");
 		return 1;
@@ -655,7 +655,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		addr = (ulong)simple_strtoul(argv[2], NULL, 16);
 		printf("\nNAND %s: ", read ? "rom_read" : "rom_write");
 		nand_curr_device = 0;		
-#ifdef CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 		if(nand_probe(nand_curr_device) != 0){
 			puts("\nno available device\n");
 			return 1;
@@ -962,7 +962,7 @@ usage:
 
 	idx = simple_strtoul(boot_device, NULL, 16);
 
-#ifdef CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if (idx < 0 || idx >= CONFIG_SYS_MAX_NAND_DEVICE || !nand_info[idx].name || (nand_probe(idx))) {
 #else
 	if (idx < 0 || idx >= CONFIG_SYS_MAX_NAND_DEVICE || !nand_info[idx].name) {

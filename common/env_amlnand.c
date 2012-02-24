@@ -339,7 +339,7 @@ int saveenv(void)
 	int ret = 0;
 	size_t offset = CONFIG_ENV_OFFSET;	
 
-#ifdef CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if(nand_probe(1))
 		return 1;
 #endif	
@@ -414,7 +414,7 @@ int readenv (size_t offset, u_char * buf)
 	u_char *char_ptr;
 	u_char blk_num = 0;
 
-#ifdef  CONFIG_M3
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if(nand_probe(1))
 		return 1;
 #endif	
@@ -592,7 +592,7 @@ void env_relocate_spec (void)
 	int ret;
 	env_t env_buf;
 	
-#ifdef CONFIG_M3	
+#if (defined CONFIG_M3) || (defined CONFIG_M6)
 	if(nand_probe(1)){
 		set_default_env("!no available device.");
 		return;
