@@ -48,6 +48,15 @@
 #ifdef CONFIG_POST_AML
 #include <aml_rtc.h>
 
+// Define RTC register address mapping
+#define RTC_COUNTER_ADDR            0
+#define RTC_GPO_COUNTER_ADDR        1
+#define RTC_SEC_ADJUST_ADDR         2
+#define RTC_UNUSED_ADDR_0           3
+#define RTC_REGMEM_ADDR_0           4
+#define RTC_REGMEM_ADDR_1           5
+#define RTC_REGMEM_ADDR_2           6
+#define RTC_REGMEM_ADDR_3           7
 //===============================================================
 struct rtc_time pattern1 ={
 	.tm_year = 111,
@@ -95,6 +104,12 @@ static int read_rtc(struct rtc_time* pattern)
 int rtc_post_test (int flags)
 {
 	int i, ret;
+	unsigned data, val;
+	unsigned long   osc_clk_count1; 
+	unsigned long   osc_clk_count2; 
+	int diff;
+		
+	// test serial access
 	write_rtc(&pattern1);	
 	ret = 0;
 	for(i=0; i<4;i++){
@@ -103,6 +118,35 @@ int rtc_post_test (int flags)
 			ret = -1;
 		}		
 	}
+	// mesure 1s osc clock counter
+	aml_test_1s_clock(&osc_clk_count1, &osc_clk_count2);
+	post_log("<%d>%s:%d: RTC before osc counter: %d.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__, osc_clk_count1);
+	post_log("<%d>%s:%d: RTC after osc counter: %d.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__, osc_clk_count2);
+	diff = osc_clk_count2-osc_clk_count1;
+	if(diff > 32768)
+		post_log("<%d>%s:%d: RTC 1s interval osc counter greater: %d.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__, diff-32768);
+	else if(diff < 32768)
+		post_log("<%d>%s:%d: RTC 1s interval osc counter less: %d.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__, 32768-diff);
+	else
+		post_log("<%d>%s:%d: RTC 1s osc counter diff: equal 32768.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);
+	
+	//test GPO counter: interval 180s GPO output from low level to high level	
+	// reset GPO
+	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);	
+	data = 0;
+	data |= (180-1) << 0;
+	data |= 2<<20;
+	data |= 1<<22;
+	ser_access_write(RTC_GPO_COUNTER_ADDR,data);	
+	udelay(180000000);	
+	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
+	if(val & (1<<24))		
+		post_log("<%d>%s:%d: gpo level is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else{
+		post_log("<%d>%s:%d: test fail: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+		ret = -1;
+	}   
+	
 	return ret;
 }
 //===============================================================

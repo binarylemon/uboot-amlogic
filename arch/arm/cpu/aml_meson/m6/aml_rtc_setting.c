@@ -12,5 +12,5 @@ M3: data=0x3c0a;
  *****************************************************************************/
 unsigned long get_rtc_static_reg_init_val(void)
 {
-	return 0x3c0a;
+	return 0x1c0a;	
 }

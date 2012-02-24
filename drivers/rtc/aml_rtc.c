@@ -16,6 +16,9 @@
 #include <common.h>
 #include <asm/arch/io.h>
 #include <aml_rtc.h>
+#ifdef CONFIG_POST_AML
+#include <post.h>
+#endif
 
 #define printk printf
 
@@ -280,7 +283,7 @@ static void rtc_set_mode(unsigned mode)
 }
 
 
-static unsigned int ser_access_read(unsigned long addr)
+unsigned int ser_access_read(unsigned long addr)
 {
 	unsigned val = 0;
 	int s_nrdy_cnt = 0;
@@ -308,7 +311,7 @@ static unsigned int ser_access_read(unsigned long addr)
 	return val;
 }
 
-static int ser_access_write(unsigned long addr, unsigned long data)
+int ser_access_write(unsigned long addr, unsigned long data)
 {
 	int s_nrdy_cnt = 0;
 
@@ -437,8 +440,17 @@ int aml_rtc_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_POST_AML
+#if CONFIG_POST & CONFIG_SYS_POST_RTC
+void aml_test_1s_clock(unsigned long* osc_clk_count1, unsigned long* osc_clk_count2)
+{
+	WR_RTC(RTC_ADDR3, RD_RTC(RTC_ADDR3) | (1 << 17));   // Enable count always    
+	*osc_clk_count1 = RD_RTC(RTC_ADDR2);    // Wait for 50uS.  32.768khz is 30.5uS.  This should be long   
+										// enough for one full cycle of 32.768 khz   	
+	delay_us( 1000000 );   
+	*osc_clk_count2 = RD_RTC(RTC_ADDR2);    		
+	WR_RTC(RTC_ADDR3, RD_RTC(RTC_ADDR3) & ~(1 << 17));  // disable count always    	   	
+}
 
-
-
-
-
+#endif
+#endif

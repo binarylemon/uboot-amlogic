@@ -49,11 +49,14 @@
 #define P_I2C_TOKEN_WDATA_REG1	        (0xc8100514)	
 #define P_I2C_TOKEN_RDATA_REG0	        (0xc8100518)	
 #define P_I2C_TOKEN_RDATA_REG1	        (0xc810051c)	
+/*
+M6 RTC move to SecureBus
 #define P_RTC_ADDR0	                    (0xc8100740)	
 #define P_RTC_ADDR1	                    (0xc8100744)	
 #define P_RTC_ADDR2	                    (0xc8100748)	
 #define P_RTC_ADDR3	                    (0xc810074c)	
 #define P_RTC_ADDR4	                    (0xc8100750)	
+*/
 /*#define P_I2C_S_CONTROL_REG	            (0xc8100540)	
 #define P_I2C_S_SEND_REG                (0xc8100544)	
 #define P_I2C_S_RECV_REG                (0xc8100548)	
