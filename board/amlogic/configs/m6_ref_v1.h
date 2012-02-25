@@ -12,6 +12,9 @@
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
 
+#define HAS_AO_MODULE
+#define CONFIG_AML_I2C	//add by Elvis Yu
+#define CONFIG_AW_AXP20
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -71,16 +74,6 @@
 #define CONFIG_USB_STORAGE      1
 #define CONFIG_USB_DWC_OTG_HCD  1
 #define CONFIG_CMD_USB 1
-
-
-#define CONFIG_MEMSIZE	512	/*unit is MB*/ 
-#if(CONFIG_MEMSIZE == 512)
-#define BOARD_INFO_ENV  " mem=512M"
-#define UBOOTPATH		"u-boot-512M-UartB.bin"
-#else
-#define BOARD_INFO_ENV ""
-#define UBOOTPATH		"u-boot-aml.bin"
-#endif
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
@@ -162,6 +155,8 @@
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
+
+#define BOARD_LATE_INIT
 
 /*POST support*/
 //#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
