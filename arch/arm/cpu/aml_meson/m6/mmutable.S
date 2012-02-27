@@ -26,16 +26,22 @@ mmu_table:
 		
 		.set __base,0x800
 		/** DDR memory **/
+#ifdef M6_DDR3_1GB		
+		.rept 0xc00 - 0x800
+#else
 		.rept 0xa00 - 0x800
+#endif
 		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_WB)
 		.set __base, __base + 1
 		.endr
-		
+
+#ifndef M6_DDR3_1GB		
 		/** DDR without cache , debug **/
 		.rept 0xc00 - 0xa00
 		FL_SECTION_ENTRY __base,(SEC_PROT_RW_RW | SEC_SO_MEM )
 		.set __base, __base + 1
 		.endr
+#endif
 		
 		/* N/A */
 		.rept 0xc11 -0xc00

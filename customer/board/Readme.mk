@@ -14,6 +14,10 @@ help_customer:
 	@echo The mark in board is "OPLAY_AML8726_M_R100 (ASUS:M3)"
 	@echo config command: \"make m3_oplay_config\"	
 
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "RAMOS_AML8726_MX_REF_A"
+	@echo config command: \"make m6_ramos_v1_config\"
+
 	@echo customer defined board end
 	@echo
 	

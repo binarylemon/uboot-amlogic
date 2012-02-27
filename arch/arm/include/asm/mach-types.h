@@ -38012,6 +38012,19 @@ extern unsigned int __machine_arch_type;
 # define machine_is_meson6_ref()        (0)
 #endif
 
+#ifdef CONFIG_MACH_MESON6_RAMOS
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type     __machine_arch_type
+# else
+#  define machine_arch_type     MACH_TYPE_MESON6_RAMOS
+# endif
+# define machine_is_meson6_ramos()        (machine_arch_type == MACH_TYPE_MESON6_RAMOS)
+#else
+# define machine_is_meson6_ramos()        (0)
+#endif
+
+
 /*
  * These have not yet been registered
  */
