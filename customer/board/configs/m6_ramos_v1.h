@@ -21,7 +21,7 @@
 	#define CONFIG_CMD_NAND  1
 //#endif
 
-#define CONFIG_CMD_SF    1
+//#define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
 	#define CONFIG_AML_MESON_6 1
@@ -51,7 +51,7 @@
 	#define CONFIG_CMD_RARP 1
 	
 	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
-	#define CONFIG_HOSTNAME        arm_m1
+	#define CONFIG_HOSTNAME        arm_m6
 	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
 	#define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
 	#define CONFIG_GATEWAYIP       10.18.9.1           /* Our getway ip address */
@@ -215,22 +215,22 @@
 #define DDR3_9_9_9
 //#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
-//board/amlogic/m6_ref_v1/firmware/timming.c 
+//customer/board/m6_ramos_v1/firmware/timming.c 
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6_ref_v1.h\n"
+	#error "Please set DDR3 property first in file m6_ramos_v1.h\n"
 #endif
 
 #define M6_DDR3_1GB
 //#define M6_DDR3_512M
 //above setting will affect following:
-//board/amlogic/m6_ref_v1/firmware/timming.c
+//customer/board/m6_ramos_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6/mmutable.s
 
 //note: please DO NOT remove following check code
 #if !defined(M6_DDR3_1GB) && !defined(M6_DDR3_512M)
-	#error "Please set DDR3 capacity first in file m6_ref_v1.h\n"
+	#error "Please set DDR3 capacity first in file m6_ramos_v1.h\n"
 #endif
 
 
@@ -242,7 +242,7 @@
 #elif defined(M6_DDR3_512M)
 	#define PHYS_MEMORY_SIZE     0x20000000 // 512M
 #else
-	#error "Please define DDR3 memory capacity in file m6_ref_v1.h\n"
+	#error "Please define DDR3 memory capacity in file m6_ramos_v1.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      

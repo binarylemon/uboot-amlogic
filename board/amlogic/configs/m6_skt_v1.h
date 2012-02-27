@@ -1,9 +1,7 @@
-#ifndef __CONFIG_M3_SOCKET_H_
-#define __CONFIG_M3_SOCKET_H_
+#ifndef __CONFIG_M6_SKT_V1_H__
+#define __CONFIG_M6_SKT_V1_H__
 
 #define M6_SKT_V1_20120201 1
-
-#define CONFIG_MACH_MESON6_SKT
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -29,6 +27,11 @@
 //#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
+#ifdef CONFIG_MACHID_CHECK
+	//#define CONFIG_MACH_MESON6_SKT 0x30564552
+	#define CONFIG_MACH_MESON6_SKT 0x00000000
+	//note: if use above definition then uboot will be dedicated for the board
+#endif //CONFIG_MACHID_CHECK
 
 #define CONFIG_L2_OFF			1
 
@@ -42,7 +45,7 @@
 #define CONFIG_CMD_RARP 1
 
 #define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
-#define CONFIG_HOSTNAME        arm_m1
+#define CONFIG_HOSTNAME        arm_m6
 #define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
 #define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
 #define CONFIG_GATEWAYIP       10.18.9.1           /* Our getway ip address */
@@ -257,4 +260,4 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 
 
-#endif
+#endif //__CONFIG_M6_SKT_V1_H__
