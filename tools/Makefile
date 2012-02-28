@@ -105,7 +105,7 @@ LIBFDT_OBJ_FILES-y += fdt_ro.o
 LIBFDT_OBJ_FILES-y += fdt_rw.o
 LIBFDT_OBJ_FILES-y += fdt_strerror.o
 LIBFDT_OBJ_FILES-y += fdt_wip.o
-LIBUCL_FILE = $(SRCTREE)/tools/ucl/libucl.a
+LIBUCL_FILE = $(obj)ucl_linux/libucl_linux.a
 
 # Generated LCD/video logo
 LOGO_H = $(OBJTREE)/include/bmp_logo.h
@@ -210,7 +210,8 @@ $(obj)convert$(SFX): $(obj)convert.o \
 $(obj)uclpack$(SFX): $(obj)uclpack.o $(LIBUCL_FILE)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 $(LIBUCL_FILE):
-	make -C $(@D)
+	make -C ucl
+
 $(obj)bin2code$(SFX): $(obj)bin2code.o
 	$(HOSTCC) -g $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 		

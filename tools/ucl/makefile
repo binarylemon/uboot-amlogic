@@ -1,5 +1,5 @@
-
-UTILOBJS = $(patsubst %.c,objs/%.o,$(wildcard src/*.c))
+uclobjs = $(obj)ucl_linux
+UTILOBJS = $(patsubst %.c,$(uclobjs)/%.o,$(wildcard src/*.c))
 
 CC=gcc
 AR=ar
@@ -12,19 +12,19 @@ LDFLAGS = -Iinclude -I.
 SYSLIB = -lwinmm 
 
 all: $(UTILOBJS)
-	$(AR) r libucl.a $^
+	$(AR) r $(uclobjs)/libucl_linux.a $^
 
 
-objs/%.o : %.cpp
+$(uclobjs)/%.o : %.cpp
 	$(MKDIR) -p $(@D)
 	$(CC) -c $(CFLAGS) $< -o $@
 	
-objs/%.o : %.c
+$(uclobjs)/%.o : %.c
 	$(MKDIR) -p $(@D)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) objs
+	$(RM) $(uclobjs)
 	rm *.exe
 
 
