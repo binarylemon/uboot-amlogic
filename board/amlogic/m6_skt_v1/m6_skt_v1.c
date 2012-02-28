@@ -9,10 +9,6 @@
 #include <asm/arch/io.h>
 #endif /*(CONFIG_CMD_NET)*/
 
-#ifdef CONFIG_SARADC
-#include <asm/saradc.h>
-#endif /*CONFIG_SARADC*/
-
 #if defined(CONFIG_AML_I2C)
 #include <aml_i2c.h>
 #include <asm/arch/io.h>
@@ -75,68 +71,57 @@ int board_eth_init(bd_t *bis)
 #endif /* (CONFIG_CMD_NET) */
 
 #ifdef CONFIG_SARADC
-/*following key value are test with board 
-  [M3_SKT_V1 20110622]
-  ref doc:
-  1. m3_skt_v1.pdf(2011.06.22)
-  2. M3-Periphs-Registers.docx (Pg43-47)
-*/
-static struct adckey_info g_key_K1_info[] = {
-    {"K1", 6, 60},
-};
-static struct adckey_info g_key_K2_info[] = {
-    {"K2", 180, 60},
-};
-static struct adckey_info g_key_K3_info[] = {
-    {"K3", 400, 60},
-};
-static struct adckey_info g_key_K4_info[] = {
-    {"K4", 620, 60},
-};
-static struct adckey_info g_key_K5_info[] = {
-    {"K5", 850, 60},
-};
-
-static struct adc_info g_adc_info[] = {
-    {"Press Key K1", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
-    {"Press Key K2", AML_ADC_CHAN_4, ADC_KEY,&g_key_K2_info},
-    {"Press Key K3", AML_ADC_CHAN_4, ADC_KEY,&g_key_K3_info},
-    {"Press Key K4", AML_ADC_CHAN_4, ADC_KEY,&g_key_K4_info},
-    {"Press Key K5", AML_ADC_CHAN_4, ADC_KEY,&g_key_K5_info},
-    {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL},
-};
-
-struct adc_device aml_adc_devices={
-	.adc_device_info = g_adc_info,
-	.dev_num = sizeof(g_adc_info)/sizeof(struct adc_info)
-};
-
-/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
-/* void adc_init(struct adc_info *adc_info, unsigned int len) 
-     @trunk/common/sys_test.c */
-
-/*following is test code to test ADC & key pad*/
-/*
-#ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-	saradc_enable();	
+/*following key value are test with board 
+  [M6_SKT_V_1.0 20120112]
+  ref doc:
+  1. M6_SKT_V1.pdf
+*/
+/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
+/*following is test code to test ADC & key pad*/
+static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if(argc > 2)
+		goto usage;
+	
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
-	while(nCnt < 3)
+	char *endp;
+	int nMaxCnt;
+	if(2 == argc)
+		nMaxCnt	= simple_strtoul(argv[1], &endp, 10);
+	else
+		nMaxCnt = 10;
+
+	saradc_enable();
+	while(nCnt < nMaxCnt)
 	{
 		udelay(nDelay);
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
 		
-		printf("get_key(): %d\n", nKeyVal);
+		printf("SARADC CH-4 Get key : %d [%d\%]\n", nKeyVal,(100*nKeyVal)/1024);
 		nCnt++;
 	}
 	saradc_disable();
-#endif
-*/
-#endif
+
+	return 0;
+	
+usage:
+	return cmd_usage(cmdtp);
+}
+
+U_BOOT_CMD(
+	adc,	2,	1,	do_adc,
+	"M6 ADC test",		
+	"[times] -  read `times' adc key through channel-4, default to read 10 times\n"
+	"		10bit ADC. key value: min=0; max=1024\n"
+	"		SKT BOARD #20: Key1=13 Key2=149 key3=274 key4=393 key5=514\n"
+);
+
+#endif //CONFIG_SARADC
 
 u32 get_board_rev(void)
 {

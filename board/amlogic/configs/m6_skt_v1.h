@@ -24,7 +24,7 @@
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
-//#define CONFIG_SARADC 1
+#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #ifdef CONFIG_MACHID_CHECK

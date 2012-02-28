@@ -18,6 +18,12 @@
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
+//Default to open ARM JTAG for M6 only
+#ifdef CONFIG_M6
+	#define AML_M6_JTAG_ENABLE
+	#define AML_M6_JTAG_SET_ARM
+#endif
+
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
