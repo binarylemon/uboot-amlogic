@@ -430,6 +430,7 @@ int board_init(void)
 	return 0;
 }
 
+#ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
 #ifdef CONFIG_AML_I2C  
@@ -441,9 +442,10 @@ int board_late_init(void)
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 #ifdef CONFIG_AW_AXP20
-	axp_charger_open();
+set_dcdc2(1500);	//set DC-DC2 to 1500mV
+set_dcdc3(1100);	//set DC-DC3 to 1100mV
 #endif
 
 	return 0;
 }
-
+#endif
