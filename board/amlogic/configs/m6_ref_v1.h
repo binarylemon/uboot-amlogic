@@ -145,6 +145,19 @@
 
 #define BOARD_LATE_INIT
 
+/* config LCD output */ 
+#define CONFIG_VIDEO_AML
+#define CONFIG_VIDEO_AMLLCD
+//#define CONFIG_VIDEO_AMLLCD_M3
+#define CONFIG_CMD_BMP
+#define LCD_BPP LCD_COLOR24
+#define CURRENT_OSD OSD2
+#define LCD_TEST_PATTERN
+#ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+#endif
+/*end config LCD output*/
+
 /*POST support*/
 //#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
 										CONFIG_SYS_POST_RTC | CONFIG_SYS_POST_ADC | \
