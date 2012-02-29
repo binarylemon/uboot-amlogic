@@ -2,6 +2,7 @@
 #define __CONFIG_M6_SKT_V1_H__
 
 #define M6_SKT_V1_20120201 1
+#define CONFIG_MACH_MESON6_SKT  // generate M6 SKT machid number
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -27,11 +28,6 @@
 #define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
-#ifdef CONFIG_MACHID_CHECK
-	//#define CONFIG_MACH_MESON6_SKT 0x30564552
-	#define CONFIG_MACH_MESON6_SKT 0x00000000
-	//note: if use above definition then uboot will be dedicated for the board
-#endif //CONFIG_MACHID_CHECK
 
 #define CONFIG_L2_OFF			1
 

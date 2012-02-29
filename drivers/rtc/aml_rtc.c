@@ -436,7 +436,11 @@ int aml_rtc_init(void)
 {
     printf("aml_rtc_init\n");
 	static_register_write(get_rtc_static_reg_init_val());
+#ifdef CONFIG_M6
+	ser_access_write(RTC_GPO_COUNTER_ADDR,0x500000);    // M6 GPO is the reverse of M3
+#else	
 	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);
+#endif	
 	return 0;
 }
 

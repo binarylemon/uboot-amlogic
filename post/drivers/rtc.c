@@ -130,21 +130,29 @@ int rtc_post_test (int flags)
 	else
 		post_log("<%d>%s:%d: RTC 1s osc counter diff: equal 32768.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);
 	
-	//test GPO counter: interval 180s GPO output from low level to high level	
+	//test GPO counter: interval 10s GPO output from low level to high level	
 	// reset GPO
-	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);	
+	ser_access_write(RTC_GPO_COUNTER_ADDR,0x500000);	
 	data = 0;
-	data |= (180-1) << 0;
+	data |= (10-1) << 0;
 	data |= 2<<20;
-	data |= 1<<22;
+	data |= 0<<22;
 	ser_access_write(RTC_GPO_COUNTER_ADDR,data);	
-	udelay(180000000);	
+	udelay(5000000);
 	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
 	if(val & (1<<24))		
 		post_log("<%d>%s:%d: gpo level is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
 	else{
-		post_log("<%d>%s:%d: test fail: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+		post_log("<%d>%s:%d: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);				
+	}
+	udelay(5000000);	
+	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
+	if(val & (1<<24))		{
+		post_log("<%d>%s:%d: test fail: gpo level is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
 		ret = -1;
+	}
+	else{
+		post_log("<%d>%s:%d: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);				
 	}   
 	
 	return ret;
