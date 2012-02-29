@@ -2,6 +2,7 @@
 #define __CONFIG_M6_REF_V1_H__
 
 #define M6_REF_V1_20120201 1
+#define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_REF
 
 //UART Sectoion
@@ -22,7 +23,6 @@
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-#define CONFIG_AML_MESON_6 1
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
@@ -100,18 +100,6 @@
 	"chipname=8726m\0" \
 	"machid=F82\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
-	"partnum=2\0" \
-	"p0start=1000000\0" \
-	"p0size=400000\0" \
-	"p0path=uImage\0" \
-	"p1start=1400000\0" \
-	"p1size=8000000\0" \
-	"p1path=android.rootfs\0" \
-	"bootstart=0\0" \
-	"bootsize=60000\0" \
-	"bootpath=u-boot-512M-UartB.bin\0" \
-	"normalstart=1000000\0" \
-	"normalsize=400000\0" \
 
 #define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
 
@@ -203,7 +191,7 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6_DDR_CLK (500)
+#define M6_DDR_CLK (528)
 
 #define DDR3_9_9_9
 //#define DDR3_7_7_7
@@ -215,8 +203,7 @@
 	#error "Please set DDR3 property first in file m6_ref_v1.h\n"
 #endif
 
-//#define M2C_DDR3_1GB
-#define M6_DDR3_512M
+#define M6_DDR3_1GB
 //above setting will affect following:
 //board/amlogic/m6_ref_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6/mmutable.s

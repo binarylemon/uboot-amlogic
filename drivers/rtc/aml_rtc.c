@@ -434,11 +434,18 @@ int aml_rtc_write_time(struct rtc_time *tm)
 
 int aml_rtc_init(void)
 {
-    printf("aml_rtc_init\n");
+	printf("aml_rtc_init\n");
+#ifdef CONFIG_AML_MESON_6
+	if(!(readl(P_RTC_ADDR1) & (s_ready)))
+	{
+		printf("aml rtc init first time!\n");
+		static_register_write(get_rtc_static_reg_init_val());
+		mdelay(2);
+		ser_access_write(RTC_GPO_COUNTER_ADDR, 0x500000);
+		//changed GPI :RTC_ADDR1: GPI_LEVEL:  current level of the GPI signal from the RTC block
+	}
+#else
 	static_register_write(get_rtc_static_reg_init_val());
-#ifdef CONFIG_M6
-	ser_access_write(RTC_GPO_COUNTER_ADDR,0x500000);    // M6 GPO is the reverse of M3
-#else	
 	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);
 #endif	
 	return 0;

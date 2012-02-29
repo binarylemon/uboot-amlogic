@@ -420,7 +420,7 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
+	gd->bd->bi_arch_number=MACH_TYPE_MESON6_REF;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
     nand_init();
