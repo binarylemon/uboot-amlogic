@@ -33,7 +33,6 @@
  *
  * It is entered with cluster->lock held.
  */
- 
 int appf_platform_power_up_cpu(struct appf_cpu *cpu,
                                struct appf_cluster *cluster)
 {
@@ -110,9 +109,11 @@ void run_arc_program()
 	  int i;
 	  unsigned vaddr1,vaddr2,v;
 	  unsigned* pbuffer;
-		vaddr1 = 0x49000000;  
-		vaddr2 = 0x4900c000;
+		vaddr1 = 0xd9000000;  
+		vaddr2 = 0xd9000000;
 		
+		dbg_prints("run_arc_program ...\n");
+	
     /** copy ARM code*/
     //change arm mapping
    // appf_memcpy((char*)vaddr2,(char*)vaddr1,16*1024);
@@ -132,12 +133,21 @@ void run_arc_program()
 				pbuffer++;
 		}
     writel((0x1<<4) | ((vaddr2>>14)&0xf),P_AO_REMAP_REG1);
+    v = ((vaddr2 & 0xFFFFF)>>12);
+    writel(v<<8,0xDA004000);
      *(volatile unsigned *)(vaddr2 +0x20) = (unsigned)(&platform_reset_handler);
     l2x0_clean_all();
     
     //switch to ARC jtag
-    writel(0x51001,0xc8100030);
-        
+    //set pinmux
+/*    writel(readl(0xc8100014)|(1<<14),0xc8100014);
+ 		//ARC JTAG enable
+		writel(0x80051001,0xda004004);		
+		//ARC bug fix disable
+		writel((readl(0xc8100040)|1<<24),0xc8100040);
+   	//Watchdog disable
+		writel(0,0xc1109900);
+*/
     //reset arc
     writel(RESET_ARC625,P_RESET2_REGISTER);
     pwr_delay(1);

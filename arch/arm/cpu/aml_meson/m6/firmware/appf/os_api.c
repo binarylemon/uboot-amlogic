@@ -167,7 +167,7 @@ static int late_init(void)
     struct appf_cluster *cluster;
     int cluster_index;
     unsigned maintable_pa;
-
+		f_serial_puts("late_init ...\n");
     cluster_index = appf_platform_get_cluster_index();
     
     maintable_pa = reloc_addr((unsigned)&main_table);
@@ -204,9 +204,14 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
     cluster = pmaintable->cluster_table;
     cluster += cluster_index;
     
+    dbg_print("cluster:",cluster);
+    
     cpu = cluster->cpu_table;
     cpu += cpu_index;   
- 
+   
+    dbg_print("cpu:",cpu_index);
+    dbg_print("cluster_index:",cluster_index);
+
     /* Validate arguments */
     if (cstate > 3)
     {
@@ -216,7 +221,6 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
     {
         return APPF_BAD_RSTATE;
     }
-
     /* If we're just entering standby mode, we don't mark the CPU as inactive */
     if (cstate == 1)
     {
@@ -259,10 +263,11 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
     }
 
     /* Ok, we're not just entering standby, so we are going to lose the context on this CPU */
-
-    get_spinlock(cpu_index, cluster->context->lock);
+		dbg_prints("step1\n");
+	  get_spinlock(cpu_index, cluster->context->lock);
     --cluster->active_cpus;
-
+		dbg_prints("step2\n");
+		
     cpu->power_state = cstate;
     if (cluster->active_cpus == 0)
     {
@@ -276,16 +281,17 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
         }
 #endif
     }
-    
+  
     /* add flags as required by hardware (e.g. APPF_SAVE_L2 if L2 is on) */
     flags |= cpu->context->flags;
     appf_platform_save_context(cluster, cpu, flags);
 		
-		
+		dbg_prints("step3\n");
+
     /* Call the platform-specific shutdown code */
     rc = appf_platform_enter_cstate(cpu_index, cpu, cluster);
-    
-    /* Did the power down succeed? */
+   
+     /* Did the power down succeed? */
     if (rc == APPF_OK)
     {
 
