@@ -374,7 +374,7 @@ appf_reset_entry_point
 	mov	sp, r0
 	
 	;------------------------------
-	;using mmu to avaliabe 0x1FF00000 segment
+	;using mmu to avaliabe 0x9FF00000 segment
 	; Switch translation tables back to OS
 ;	bl dbg_wait
   adr	r10, appf_ttbr0;

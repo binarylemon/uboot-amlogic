@@ -42,7 +42,8 @@ OBJECTS= $(OUTDIR)/os_api.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/platform.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/power.o \
 	       $(OUTDIR)/platform/$(PLATFORM)/context.o \
-         $(OUTDIR)/platform/$(PLATFORM)/reset.o
+         $(OUTDIR)/platform/$(PLATFORM)/reset.o \
+         $(OUTDIR)/serial.o
         
 CPU=cortex-a9
 GCC= TRUE
@@ -103,8 +104,7 @@ $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
 
 ifeq "$(FIRMWARE_AUTO_UPDATE)" "y"
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m3/power_firmware.dat
-#	./bin2code power_firmware_code $@ $(SRCTREE)/arch/arm/cpu/aml_meson/m3/power_firmware.dat
+	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m6/power_firmware.dat
 endif
 
 $(OUTDIR)/appf_srec.txt: $(OUTDIR)/appf.axf

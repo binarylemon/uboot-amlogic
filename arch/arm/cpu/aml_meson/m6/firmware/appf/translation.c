@@ -483,69 +483,36 @@ int appf_setup_translation_tables(void)
     	}
     	else if(i == 0xDFF)
     	{
-      	((unsigned*)tab1_pa) [i] = 0xc0e|(0x1FF<<20);
+      	((unsigned*)tab1_pa) [i] = 0xc0e|(0x9FF<<20);
     	}
     	else if(i == 0xCFF)
     	{
       	((unsigned*)tab1_pa) [i] = 0xc0e|(0xFF<<20);
     	}
-    	else if(i == 0xF80)
-    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC80<<20);
-    	else if(i == 0xF81)
-    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC81<<20);
-    	else if(i == 0xF11)
+   		else if(i == 0xF11)
     	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC11<<20);
     	else if(i == 0xF13)
     	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC13<<20);
+     	else if(i == 0xF22)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC42<<20);
+    	else if(i == 0xF23)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC43<<20);
+     	else if(i == 0xF30)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC80<<20);
+    	else if(i == 0xF31)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC81<<20);
+    	else if(i == 0xF32)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xC90<<20);
+    	else if(i == 0xF40)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xCC0<<20);
+    	else if(i == 0xF80)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xd00<<20);
     	else if(i == 0xF90)
-    	   		((unsigned*)tab1_pa) [i] = 0xc0e|(0x490<<20);
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xd90<<20);
+    	else if(i == 0xFA0)
+    	   		((unsigned*)tab1_pa) [i] = 0x412|(0xda0<<20);
     	else
       	((unsigned*)tab1_pa) [i] = attr|(i<<20);
-
-/*    		
-    	if(i >= 0xC00 && i <= 0xC06)
-    	{
-      	((unsigned*)tab1_pa) [i] = 0xc0e|((0x800 + (i - 0xc00))<<20);
-    	}		
-    	else if(i == 0xc80)
-    			((unsigned*)tab1_pa) [i] = 0x11452|((0xC80)<<20);
-    	else if(i == 0xc81)
-    			((unsigned*)tab1_pa) [i] = 0x11452|((0xC81)<<20);
-    	else if(i == 0xc11)
-    			((unsigned*)tab1_pa) [i] = 0x11452|((0xC11)<<20);
-    	else if(i == 0xc12)
-    			((unsigned*)tab1_pa) [i] = 0x11452|((0xC12)<<20);
-    	else if(i == 0xc13)
-    			((unsigned*)tab1_pa) [i] = 0x11452|((0xC13)<<20);
-    			
-  //  	else if( i >= 0xc7c && i <= 0xaff)
-  //  	{
-   //   	((unsigned*)tab1_pa) [i] = 0x40e|((0x87c + (i - 0xc7c))<<20);
-  //  	}
-    	else if(i >= 0xD00 & i <= 0xDFF)
-    	{
-      	((unsigned*)tab1_pa) [i] = 0xc0e|((0x900 + (i - 0xD00))<<20);
-    	}
-    	else if(i == 0xCFF)
-    	{
-      	((unsigned*)tab1_pa) [i] = 0xc0e|(0xFF<<20);
-    	}
-    	else if(i == 0xF90)
-    	   		((unsigned*)tab1_pa) [i] = 0x11452|(0x490<<20);
-    	else if(i == 0xF81)
-    	   		((unsigned*)tab1_pa) [i] = 0x11452|(0xC81<<20);
-    	else if(i == 0xF11)
-    	   		((unsigned*)tab1_pa) [i] = 0x11452|(0xC11<<20);
-    	else if(i == 0xF12)
-    	   		((unsigned*)tab1_pa) [i] = 0x11452|(0xC12<<20);
-    	else if(i == 0xF13)
-    	   		((unsigned*)tab1_pa) [i] = 0x11452|(0xC13<<20);
- //   	else if(i == 0xF90)
- //   	   		((unsigned*)tab1_pa) [i] = 0xc0e|(0x490<<20);
-    	else
-      	((unsigned*)tab1_pa) [i] = attr|(i<<20);
-      //  appf_translation_table1[i] = attr | (i<<20);
-      */
     }
 
 //   ((unsigned*)tab1_pa)[firmware_start_va >> SECTION_SHIFT]  = reloc_addr((unsigned)appf_translation_table2a) | PAGE_TABLE;

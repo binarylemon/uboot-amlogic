@@ -1,6 +1,6 @@
 SECTIONS 
 {
-    . = 0x1FF00000; 
+    . = 0x9FF00000; 
     TRANSLATION_TABLE1 ALIGN(16384):
     {
         *(APPF_TRANSLATION_TABLE1)
@@ -18,7 +18,7 @@ SECTIONS
         *(APPF_ENTRY_POINT_DATA)
         *(.got .got.plt)
       }
-     . = 0X1FF05800;
+     . = 0X9FF05800;
   	OS_BOOT_ENTRY_POINT ALIGN(1024) :
   	{
   	 *(APPF_BOOT_ENTRY_POINT)
