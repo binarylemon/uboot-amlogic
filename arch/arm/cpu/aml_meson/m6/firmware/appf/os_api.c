@@ -167,7 +167,7 @@ static int late_init(void)
     struct appf_cluster *cluster;
     int cluster_index;
     unsigned maintable_pa;
-		f_serial_puts("late_init ...\n");
+		dbg_prints("late_init ...\n");
     cluster_index = appf_platform_get_cluster_index();
     
     maintable_pa = reloc_addr((unsigned)&main_table);

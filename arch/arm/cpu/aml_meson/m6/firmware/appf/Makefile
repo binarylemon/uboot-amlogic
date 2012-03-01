@@ -42,8 +42,8 @@ OBJECTS= $(OUTDIR)/os_api.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/platform.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/power.o \
 	       $(OUTDIR)/platform/$(PLATFORM)/context.o \
-         $(OUTDIR)/platform/$(PLATFORM)/reset.o \
-         $(OUTDIR)/serial.o
+         $(OUTDIR)/platform/$(PLATFORM)/reset.o 
+#         $(OUTDIR)/serial.o
         
 CPU=cortex-a9
 GCC= TRUE
