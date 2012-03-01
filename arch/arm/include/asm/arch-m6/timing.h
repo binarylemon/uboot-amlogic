@@ -39,6 +39,7 @@ struct ddr_set{
         unsigned short mrs[4];
         unsigned       mcfg;      //PCTL mcfg
         unsigned       zqcr;      //PCTL zqcr
+        unsigned       zq0cr1;    //PUB_ZQ0CR1
         unsigned       dllcr;
         unsigned       iocr;
         unsigned       ddr_ctrl;

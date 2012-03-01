@@ -210,7 +210,7 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~700)MHz
-#define M6_DDR_CLK (700)
+#define M6_DDR_CLK (600)
 
 #define DDR3_9_9_9
 //#define DDR3_7_7_7

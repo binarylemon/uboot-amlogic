@@ -161,11 +161,9 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	// configure DDR3_rst pin.
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
-#ifdef CONFIG_AML_MESON_6
-    MMC_Wr( PUB_ZQ0CR1_ADDR, timing_reg->zqcr);	//get from __ddr_setting
-#else
-		MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18);
-#endif
+	
+    MMC_Wr( PUB_ZQ0CR1_ADDR, timing_reg->zq0cr1);	//get from __ddr_setting
+
 	//for simulation to reduce the init time.
 	//MMC_Wr(PUB_PTR1_ADDR,  (20000 | 		  // Tdinit0   DDR3 : 500us.  LPDDR2 : 200us.
 	//					  (192 << 19)));	  //tdinit1    DDR3 : tRFC + 10ns. LPDDR2 : 100ns.
