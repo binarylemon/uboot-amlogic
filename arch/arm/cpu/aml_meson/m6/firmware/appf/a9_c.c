@@ -26,7 +26,7 @@
 #include "appf_types.h"
 #include "appf_internals.h"
 #include "appf_helpers.h"
-#if 1
+#if 0
 #define TIMER_BASE_ADDR 0xC1109900
 typedef struct
 {
@@ -136,6 +136,18 @@ typedef struct
     /* 0x34 */ volatile unsigned watchdog_disable;
 } a9_timer_registers;
 
+#define UART_AO_BASE_0 0xc81004c0
+#define UART_AO_BASE_1 0xc81004e0
+typedef struct
+{
+	/* 0x00 */ volatile unsigned wdata;
+	/* 0x04 */ volatile unsigned rdata;
+	/* 0x08 */ volatile unsigned ctrl;
+	/* 0x0c */ volatile unsigned status;
+	/* 0x10 */ volatile unsigned irq_ctrl;
+	/* 0x14 */ volatile unsigned reg5;
+}m6_ao_uart;
+
 typedef struct
 {
     unsigned timer_load;
@@ -146,6 +158,8 @@ typedef struct
     unsigned watchdog_counter;
     unsigned watchdog_control;
     unsigned watchdog_interrupt_status;
+    m6_ao_uart ao_uart0;
+    m6_ao_uart ao_uart1;
 } a9_timer_context;
 
 
@@ -155,7 +169,7 @@ void save_a9_timers(appf_u32 *pointer, unsigned scu_address)
 {
     a9_timer_context *context = (a9_timer_context *)pointer;
     a9_timer_registers *timers = (a9_timer_registers *)(scu_address + A9_TIMERS_OFFSET);
-
+		m6_ao_uart* ao_uart;
     /* 
      * First, stop the timers
      */
@@ -176,12 +190,28 @@ void save_a9_timers(appf_u32 *pointer, unsigned scu_address)
      * Similarly, we have no use for watchdog_disable - this is only used for
      * returning to timer mode, which is the default mode after reset.
      */
+     ao_uart = (m6_ao_uart*)UART_AO_BASE_0;
+     context->ao_uart0.wdata = ao_uart->wdata;
+     context->ao_uart0.rdata = ao_uart->rdata;
+     context->ao_uart0.ctrl = ao_uart->ctrl;
+     context->ao_uart0.status = ao_uart->status;
+     context->ao_uart0.irq_ctrl = ao_uart->irq_ctrl;
+     context->ao_uart0.reg5 = ao_uart->reg5;
+     
+     ao_uart = (m6_ao_uart*)UART_AO_BASE_1;
+     context->ao_uart1.wdata = ao_uart->wdata;
+     context->ao_uart1.rdata = ao_uart->rdata;
+     context->ao_uart1.ctrl = ao_uart->ctrl;
+     context->ao_uart1.status = ao_uart->status;
+     context->ao_uart1.irq_ctrl = ao_uart->irq_ctrl;
+     context->ao_uart1.reg5 = ao_uart->reg5;
 }
 
 void restore_a9_timers(appf_u32 *pointer, unsigned scu_address)
 {
     a9_timer_context *context = (a9_timer_context *)pointer;
     a9_timer_registers *timers = (a9_timer_registers *)(scu_address + A9_TIMERS_OFFSET);
+		m6_ao_uart* ao_uart;
 
     timers->timer_control = 0;
     timers->watchdog_control = 0;
@@ -220,5 +250,21 @@ void restore_a9_timers(appf_u32 *pointer, unsigned scu_address)
 
     timers->timer_control = context->timer_control;
     timers->watchdog_control = context->watchdog_control;
+    
+     ao_uart = (m6_ao_uart*)UART_AO_BASE_0;
+     ao_uart->wdata = context->ao_uart0.wdata;
+     ao_uart->rdata = context->ao_uart0.rdata;
+     ao_uart->ctrl = context->ao_uart0.ctrl;
+     ao_uart->status = context->ao_uart0.status;
+     ao_uart->irq_ctrl = context->ao_uart0.irq_ctrl;
+     ao_uart->reg5 = context->ao_uart0.reg5;
+     
+     ao_uart = (m6_ao_uart*)UART_AO_BASE_1;
+     ao_uart->wdata = context->ao_uart1.wdata;
+     ao_uart->rdata = context->ao_uart1.rdata;
+     ao_uart->ctrl = context->ao_uart1.ctrl;
+     ao_uart->status = context->ao_uart1.status;
+     ao_uart->irq_ctrl = context->ao_uart1.irq_ctrl;
+     ao_uart->reg5 = context->ao_uart1.reg5;
 }
 #endif

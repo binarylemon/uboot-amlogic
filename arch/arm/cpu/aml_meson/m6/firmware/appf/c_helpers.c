@@ -51,20 +51,20 @@ void initialize_spinlock(bakery_t *bakery)
 void get_spinlock(unsigned cpuid, bakery_t *bakery)
 {
     unsigned i, max=0, my_full_number, his_full_number;
-
+	
     /* Get a ticket */
     bakery->entering[cpuid] = TRUE;
     for (i=0; i<MAX_CPUS; ++i)
-    {
+    { 		
         if (bakery->number[i] > max)
         {
             max = bakery->number[i];
         }
     }
+
     ++max;
     bakery->number[cpuid] = max;
     bakery->entering[cpuid] = FALSE;
-
     /* Wait for our turn */
     my_full_number = (max << 8) + cpuid;
     for (i=0; i<MAX_CPUS; ++i)

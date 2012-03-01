@@ -39,15 +39,15 @@ static struct ddr_set __ddr_setting={
 
                 #ifdef DDR3_9_9_9
                     .cl             =   9,
-                    .t_faw          =  30,
+                    .t_faw          =  20,//30,
                 #endif
                 #ifdef DDR3_7_7_7
                     .cl             =   7,
                     .t_faw          =  27,
                 #endif
                     .t_mrd          =   4,
-                    .t_1us_pck      = ((M6_DDR_CLK/4)*4),
-                    .t_100ns_pck    = ((M6_DDR_CLK/4)*4)/10,
+                    .t_1us_pck      = (M6_DDR_CLK),
+                    .t_100ns_pck    = (M6_DDR_CLK)/10,
                     .t_init_us      = 512,
                     .t_rsth_us      = 500,
                     .t_rstl_us      = 100,
@@ -65,7 +65,7 @@ static struct ddr_set __ddr_setting={
                 #ifdef DDR3_9_9_9
                     .t_rfc          = 107,
                     .t_rp           =   9,
-                    .t_rrd          =   5,
+                    .t_rrd          =   6,//5,
                 #endif
                 #ifdef DDR3_7_7_7
                     .t_rfc          =  86,
@@ -73,7 +73,7 @@ static struct ddr_set __ddr_setting={
                     .t_rrd          =   6,
                 #endif
                     .t_rtp          =   5,
-                    .t_wr           =   8,
+                    .t_wr           =   10,//8,
                     .t_wtr          =   5,
                     .t_xp           =   4,
                     .t_xsrd         =   0,
@@ -82,7 +82,7 @@ static struct ddr_set __ddr_setting={
                     .t_al           =   0,
                     .t_clr          =   8,
                     .t_dqs          =   2,
-                    .t_cwl          =   7,
+                    .t_cwl          =   6,//7,
                     .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
@@ -90,7 +90,7 @@ static struct ddr_set __ddr_setting={
                     .t_cksre        =   7,
                     .t_cke          =   4,
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
-                    			(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
+                    			(5 <<  9) |//(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     						  //001 = 5
                     						  //010 = 6
                     						  //011 = 7
@@ -118,7 +118,7 @@ static struct ddr_set __ddr_setting={
                                 							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved
                                 
                                                                 	
-                            [2]=(2<<3),	//@@CWL:(B5,B4,B3)
+                            [2]=(1<<3),//(2<<3),	//@@CWL:(B5,B4,B3)
 	                            		//000 = 5 (tCK = 2.5ns) 
     	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
         	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
@@ -136,9 +136,10 @@ static struct ddr_set __ddr_setting={
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
                               (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
                            },
-                    .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-         .ddr_pll_cntl=0x10600 | (M6_DDR_CLK/4), //500MHz 1067d
-         .ddr_clk=((M6_DDR_CLK/4)*4),
+                    //.zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
+                    .zqcr  = 0x1b,   //auto ZQCR
+         .ddr_pll_cntl = 0x10200 | (M6_DDR_CLK/12), //528MHz
+         .ddr_clk = (M6_DDR_CLK),
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
                     (0xff << 16) |    //reorder en for the 8 channel.
                     (0 << 15 ) |      // pctl16 mode = 0.  pctl =   32bits data pins
@@ -153,7 +154,7 @@ static struct ddr_set __ddr_setting={
                     (0 << 4 )  |      // rank size.   0= 1 rank.   1 = 2 rank.
                     (ddr3_row_size << 2) |
                     (ddr3_col_size),
-         .init_pctl=init_pctl_ddr3        
+         .init_pctl = init_pctl_ddr3        
 };
 
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))

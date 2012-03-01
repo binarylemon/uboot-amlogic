@@ -372,6 +372,56 @@ int axp_charger_usbcur_limit(int pmu_usbcur_limit)
   return 0;
 }
 
+//unit is mV
+int set_dcdc2(u32 val)
+{
+	char reg_val = 0;
+	if((val<700)||(val>2275))
+	{
+		printf("%s: value(%dmV) is outside the allowable range of 700-2275mV!\n",
+			__FUNCTION__, val);
+	}
+	reg_val = (val-700)/25;
+	;
+	if(axp_write(POWER20_DC2OUT_VOL, reg_val))
+	{
+		printf("axp_write(): Failed!\n");
+		return -1;
+	}
+	if(axp_read(POWER20_DC2OUT_VOL, &reg_val))
+	{
+		printf("axp_read(): Failed!\n");
+		return -1;
+	}
+	printf("POWER20_DC2OUT_VOL is set to 0x%02x\n", reg_val);
+	return 0;
+}
+
+int set_dcdc3(u32 val)
+{
+	char reg_val = 0;
+	if((val<700)||(val>3500))
+	{
+		printf("%s: value(%dmV) is outside the allowable range of 700-2275mV!\n",
+			__FUNCTION__, val);
+	}
+	reg_val = (val-700)/25;
+	;
+	if(axp_write(POWER20_DC3OUT_VOL, reg_val))
+	{
+		printf("axp_write(): Failed!\n");
+		return -1;
+	}
+	if(axp_read(POWER20_DC3OUT_VOL, &reg_val))
+	{
+		printf("axp_read(): Failed!\n");
+		return -1;
+	}
+	printf("POWER20_DC3OUT_VOL is set to 0x%02x\n", reg_val);
+	return 0;
+}
+
+
 void axp_charger_open(void)
 {
     int bat,ac;

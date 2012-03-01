@@ -60,9 +60,9 @@ static struct appf_main_table temp_main_table = {0x0,0x10000000,1};
 struct appf_cluster aem_cluster[] __attribute__ ((section ("APPF_TABLE_DATA")))
     = {{CPU_A9MPCORE,  //cpu_type
         0x0200,        //cpu_version
-        0,             //num_cpus
-        0,            //active_cpus
-        0,//0x1f000000,   //scu_address ,for multi-core
+        2,             //num_cpus
+        2,            //active_cpus
+        0xC4300000,//0x1f000000,   //scu_address ,for multi-core
         0,//0x1f001000,   //ic_address; interrupt controller
         0xC4200000,//0x1f002000,   //l2_address ; L2cc
         (void *)0,    // appf_cluster_context* context
@@ -239,8 +239,8 @@ int appf_platform_get_cpu_index(void)
  */
 int appf_platform_get_cluster_index(void)
 {
-    return 0;
-/*    return (read_mpidr() >> 8) & 0xff; */
+	return 0;
+  //  return (read_mpidr() >> 8) & 0xff;
 }
 
 

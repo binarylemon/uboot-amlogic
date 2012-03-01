@@ -14,6 +14,9 @@
 #else
 #define REGISTER_H
 
+#include "canvas_missed_define.h"
+#include "vpp_misc_missed_define.h"
+
 #define Is_dos_reg(addr) ((((addr)>>8)==0x09 || ((addr)>>8)==0x0c || ((addr)>>8)==0x0e || ((addr)>>8)==0x03)? 1 : 0)
 
 #define Wr(addr, data) *(volatile unsigned long *)((Is_dos_reg(addr)? 0xc8010000:0xc1100000)|((addr)<<2))=(data)

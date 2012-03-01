@@ -7,10 +7,10 @@
 void init_suspend_firmware(void)
 {
 	//1. load source code to memory
-	unsigned * paddr = (unsigned*)0x1FF00000;
+	unsigned * paddr = (unsigned*)0x9FF00000;
 	unsigned size = sizeof(power_firmware_code)/sizeof(unsigned);
 	int i;
-	int (*entry)(void) = (int(*)(void))0x1FF05800;
+	int (*entry)(void) = (int(*)(void))0x9FF05800;
 	
 	for(i = 0; i < size; i++){
 		*paddr = power_firmware_code[i];

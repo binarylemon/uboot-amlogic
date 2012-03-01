@@ -85,10 +85,18 @@ void copy_reboot_code()
 	int code_size;
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
   volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
+
 	code_size = sizeof(arm_reboot);
 	//copy new code for ARM restart
 	for(i = 0; i < code_size; i++)
 	{
+/*	 	f_serial_puts("[ ");
+		serial_put_hex(*arm_base,8);
+	 	f_serial_puts(" , ");
+		serial_put_hex(*pcode,8);
+	 	f_serial_puts(" ]  ");
+*/	 	
+		
 		if(i != 32 && i != 33 && i != 34 && i != 35) //skip firmware's reboot entry address.
 				*arm_base = *pcode;
 		pcode++;
@@ -97,13 +105,54 @@ void copy_reboot_code()
 }
 
 void power_off_vddio();
-#define POWER_OFF_VDDIO
-#define POWER_OFF_HDMI_VCC
-#define POWER_OFF_AVDD33
-#define POWER_OFF_AVDD25
-#define POWER_DOWN_VCC12
-#define POWER_DOWN_DDR
+//#define POWER_OFF_VDDIO
+//#define POWER_OFF_HDMI_VCC
+//#define POWER_OFF_AVDD33
+//#define POWER_OFF_AVDD25
+//#define POWER_DOWN_VCC12
+//#define POWER_DOWN_DDR
 //#define POWER_OFF_EE
+void arm_restart()
+{
+	int i;
+	 //switch to 32KHz
+//	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+   udelay(100);
+
+	 for(i=0;i<6400;i++)
+   {
+        udelay(1000);
+        //udelay(1000);
+   }
+	 // switch to clk81 
+//	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x1<<8)),P_AO_RTI_PWR_CNTL_REG0);
+	 udelay(100);
+
+		//0. make sure a9 reset
+	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+		
+	//1. write flag
+	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	
+	//2. remap AHB SRAM
+//	writel(3,P_AO_REMAP_REG0);
+	writel(1,P_AHB_ARBDEC_REG);
+ 
+	//3. turn off romboot clock
+	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
+ 
+	//4. Release ISO for A9 domain.
+	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
+
+	//reset A9
+	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
+	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
+	delay_ms(1);
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+  
+ 	f_serial_puts("arm restarted ...\n");
+	wait_uart_empty();
+}
 void enter_power_down()
 {
 	int i;
@@ -113,13 +162,21 @@ void enter_power_down()
 	//*******************************************
 	//*  power down flow  
 	//*******************************************
-	f_serial_puts("\n");
-	wait_uart_empty();
+	f_serial_puts("enter_power_down\n");
+
+	arm_restart();
+	return;
+	
 	// disable all memory accesses.
     disable_mmc_req();
+    
+ 	 f_serial_puts("arc 0\n");
    
     //save registers for clk and ddr
     store_restore_plls(1);
+
+	f_serial_puts("arc 1\n");
+	wait_uart_empty();
     
     //mmc enter sleep
     mmc_sleep();
@@ -144,6 +201,8 @@ void enter_power_down()
 	 
 	// enable iso ee for A9
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
+	f_serial_puts("arc 2\n");
+	wait_uart_empty();
 
 #ifdef POWER_OFF_HDMI_VCC
 	reg7_off();
@@ -239,6 +298,9 @@ void enter_power_down()
 	// restore RTC filter
 	writel(rtc_ctrl,0xC810074c);
 
+	f_serial_puts("arc 3\n");
+	wait_uart_empty();
+
 	// set AO interrupt mask
 	writel(0xFFFF,P_AO_IRQ_STAT_CLR);
 	
@@ -269,6 +331,8 @@ void enter_power_down()
 #ifdef POWER_OFF_HDMI_VCC
 	reg7_on();
 #endif    
+	f_serial_puts("arc 4\n");
+	wait_uart_empty();
 
     store_restore_plls(0);
      
@@ -291,6 +355,8 @@ void enter_power_down()
 
     // Next, we enable all requests
     enable_mmc_req();
+	f_serial_puts("arc 5\n");
+	wait_uart_empty();
 
 //	f_serial_puts("restart arm...\n");
 	
@@ -304,8 +370,8 @@ void enter_power_down()
 		writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	
 	//2. remap AHB SRAM
-	writel(3,P_AO_REMAP_REG0);
-	writel(2,P_AHB_ARBDEC_REG);
+//	writel(3,P_AO_REMAP_REG0);
+	writel(1,P_AHB_ARBDEC_REG);
  
 	//3. turn off romboot clock
 	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
@@ -319,6 +385,9 @@ void enter_power_down()
 	delay_ms(1);
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
+ 	f_serial_puts("arc 6\n");
+	wait_uart_empty();
+ 
 //	delay_1s();
 //	delay_1s();
 //	delay_1s();
@@ -427,7 +496,7 @@ int main(void)
 #ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");
 #else
-	f_serial_puts("sleep .......\n");
+	f_serial_puts("sleep .......ww\n");
 #endif
 		
 	while(1){
