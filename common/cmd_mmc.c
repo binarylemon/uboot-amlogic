@@ -24,7 +24,6 @@
 #include <common.h>
 #include <command.h>
 #include <mmc.h>
-#include <asm/arch/io.h>
 
 #ifndef CONFIG_GENERIC_MMC
 static int curr_device = -1;
@@ -142,11 +141,7 @@ U_BOOT_CMD(
 int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int rc = 0;
-	int i;
-	for(i = 0; i< 0x3000;i++){
-        printf("CBUS[0x%x]: 0x%x\n", i, READ_MPEG_REG(i));
-    }
-    return 1;
+
 	switch (argc) {
 	case 3:
 		if (strcmp(argv[1], "rescan") == 0) {
