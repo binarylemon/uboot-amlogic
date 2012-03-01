@@ -42,18 +42,22 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     struct appf_cluster_context *cluster_context = cluster->context;
     int cluster_down;
     
+    dbg_prints("save step 1\n");
+
     /* Save perf. monitors first, so we don't interfere too much with counts */
     if (flags & APPF_SAVE_PMU)
     {
         save_performance_monitors(context->pmu_data);
         saved_items |= SAVED_PMU;
     }
+    dbg_prints("save step 2\n");
 
     if (flags & APPF_SAVE_TIMERS)
     {
         save_a9_timers(context->timer_data, cluster->scu_address);
         saved_items |= SAVED_TIMERS;
     }
+    dbg_prints("save step 3\n");
 
     if (flags & APPF_SAVE_VFP)
     {
@@ -61,6 +65,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
         saved_items |= SAVED_VFP;
     }
     
+    dbg_prints("save step 4\n");
 		
 		if(cpu->ic_address)
     	save_gic_interface(context->gic_interface_data, cpu->ic_address);
@@ -68,6 +73,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
 	   if(cluster->ic_address)	
     	save_gic_distributor_private(context->gic_dist_private_data, cluster->ic_address);
     /* TODO: check return value and quit if nonzero! */
+    dbg_prints("save step 5\n");
 
     save_banked_registers(context->banked_registers);
     
@@ -79,6 +85,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
         save_a9_debug(context->debug_data);
         saved_items |= SAVED_DEBUG;
     }
+    dbg_prints("save step 6\n");
     
     cluster_down = cluster->power_state >= 2;
 
@@ -97,6 +104,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     save_control_registers(context);
     save_mmu(context->mmu_data);
     context->saved_items = saved_items;
+    dbg_prints("save step 7\n");
     
   //  if (cluster_down)
     {
@@ -110,6 +118,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
         }
         cluster_context->saved_items = cluster_saved_items;
     }
+    dbg_prints("save step 8\n");
 
     /* 
      * DISABLE DATA CACHES
@@ -133,6 +142,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     {
         write_actlr(read_actlr() & ~A9_SMP_BIT);
     }
+    dbg_prints("save step 9\n");
 
     /*
      * If the L2 cache is in use, there is still more to do.
@@ -170,6 +180,7 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
             clean_range_pl310(cluster_context,   sizeof(struct appf_cluster_context), cluster->l2_address);
         }
     }
+    dbg_prints("save step 10\n");
 
     return APPF_OK;
 }

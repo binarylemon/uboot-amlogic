@@ -106,5 +106,8 @@ void f_serial_puts(const char *s);
 void wait_uart_empty();
 void serial_put_hex(unsigned int data,unsigned bitlen);
 
-#define dbg_print(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");}
-#define dbg_prints(s)  {f_serial_puts(s);wait_uart_empty();}
+#define dbg_print(s,v)
+#define dbg_prints(s)
+
+//#define dbg_print(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");}
+//#define dbg_prints(s)  {f_serial_puts(s);wait_uart_empty();}
