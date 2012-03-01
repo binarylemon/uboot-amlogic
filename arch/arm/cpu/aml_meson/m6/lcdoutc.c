@@ -22,7 +22,7 @@
  #include <malloc.h>
 #include <asm/arch/io.h>
 #include <asm/arch/vinfo.h>
-#include <asm/arch/lcd.h>
+#include <asm/arch/lcdoutc.h>
 #include <amlogic/aml_lcd.h>
 #include <asm/arch/mlvds_regs.h>
 #include <asm/arch/clock.h> 
@@ -1059,7 +1059,7 @@ static void set_control_lvds(lcdConfig_t *pConf)
                    ( 1<<12 ) | //g_select  //0:R, 1:G, 2:B, 3:0
                    ( 2<<14 )); //b_select  //0:R, 1:G, 2:B, 3:0
 
-    WRITE_MPEG_REG( LVDS_GEN_CNTL, (READ_MPEG_REG(LVDS_GEN_CNTL) | (3 << 0)) );  //fifo enable  (1 << 0)
+    WRITE_MPEG_REG( LVDS_GEN_CNTL, (READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 0)) );  //fifo enable  (1 << 0)
     WRITE_MPEG_REG( LVDS_GEN_CNTL, (READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 3))); // enable fifo
 	
 	printf("lvds fifo clk = %d\n", clk_util_clk_msr(LVDS_FIFO_CLK));	
@@ -1158,20 +1158,16 @@ static void init_lvds_phy(lcdConfig_t *pConf)
     unsigned tmp_add_data;
     WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4)|0x7f);  //0xfff
 
-    WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0xfe0);  //0x16
+    WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0xee1);  //0x16
 
-//	tmp_add_data  = 0;
-//    tmp_add_data |= (pConf->lvds_mlvds_config.lvds_config->lvds_phy_control->lvds_prem_ctl & 0xf) << 0; //LVDS_PREM_CTL<3:0>=<1111>
-//    tmp_add_data |= (pConf->lvds_mlvds_config.lvds_config->lvds_phy_control->lvds_swing_ctl & 0xf) << 4; //LVDS_SWING_CTL<3:0>=<0011>    
-//    tmp_add_data |= (pConf->lvds_mlvds_config.lvds_config->lvds_phy_control->lvds_vcm_ctl & 0x7) << 8; //LVDS_VCM_CTL<2:0>=<001>
-//    tmp_add_data |= (pConf->lvds_mlvds_config.lvds_config->lvds_phy_control->lvds_ref_ctl & 0x1f) << 11; //LVDS_REFCTL<4:0>=<01111> 
-//    aml_write_reg32(P_LVDS_PHY_CNTL5, tmp_add_data);
-//
-//    aml_write_reg32(P_LVDS_PHY_CNTL0,0xfff);	    
-    WRITE_MPEG_REG(LVDS_PHY_CNTL0, 0x001f);
-    WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0x0ee1);      //Test mode:0xae1 Normal mode:0xee1
-    WRITE_MPEG_REG(LVDS_PHY_CNTL4 ,0x7f);
-    WRITE_MPEG_REG(LVDS_PHY_CNTL5 ,0x0af40);
+    tmp_add_data  = 0;
+    tmp_add_data |= (pConf->lvds_config->lvds_phy_control->lvds_prem_ctl & 0xf) << 0; //LVDS_PREM_CTL<3:0>=<1111>
+    tmp_add_data |= (pConf->lvds_config->lvds_phy_control->lvds_swing_ctl & 0xf) << 4; //LVDS_SWING_CTL<3:0>=<0011>
+    tmp_add_data |= (pConf->lvds_config->lvds_phy_control->lvds_vcm_ctl & 0x7) << 8; //LVDS_VCM_CTL<2:0>=<001>
+    tmp_add_data |= (pConf->lvds_config->lvds_phy_control->lvds_ref_ctl & 0x1f) << 11; //LVDS_REFCTL<4:0>=<01111>
+    WRITE_MPEG_REG(LVDS_PHY_CNTL5, tmp_add_data);
+
+    WRITE_MPEG_REG(LVDS_PHY_CNTL0,0x1f);  //0xfff
     WRITE_MPEG_REG(LVDS_PHY_CNTL1,0xffff);
 
     WRITE_MPEG_REG(LVDS_PHY_CNTL6,0xcccc);
