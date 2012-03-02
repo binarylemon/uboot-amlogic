@@ -23,7 +23,7 @@
 #include <asm/arch/io.h>
 #include <asm/arch/pinmux.h>
 #include <asm/arch/gpio.h>
-#include <asm/arch/lcd.h>
+#include <asm/arch/lcdoutc.h>
 #include <asm/arch/osd.h>
 #include <asm/arch/osd_hw.h>
 #include <aml_i2c.h>
@@ -41,9 +41,9 @@ extern GraphicDevice aml_gdev;
 vidinfo_t panel_info;
 
 #define LCD_WIDTH       800
-#define LCD_HEIGHT      1280
-#define MAX_WIDTH       960 //1056//1344
-#define MAX_HEIGHT      1320//635
+#define LCD_HEIGHT      1280 //1280 //480
+#define MAX_WIDTH       960 //1056
+#define MAX_HEIGHT      1320 //1320 //525
 #define VIDEO_ON_PIXEL  80
 #define VIDEO_ON_LINE   32
 
@@ -79,10 +79,10 @@ int  video_dac_disable(void)
 
 static lvds_phy_control_t lcd_lvds_phy_control = 
 {
-    .lvds_prem_ctl = 0x3,		//0x1
-    .lvds_swing_ctl = 0x0,	    //0x3
+    .lvds_prem_ctl = 0x0,		//0x1
+    .lvds_swing_ctl = 0x4,	    //0x3
     .lvds_vcm_ctl = 0x7,		//0x1
-    .lvds_ref_ctl = 0x1, 		//0xf
+    .lvds_ref_ctl = 0x15, 		//0xf
 };
 
 //Define LVDS data mapping, bit num.
@@ -102,8 +102,8 @@ lcdConfig_t lcd_config =
     .max_height = MAX_HEIGHT,
 	.video_on_pixel = VIDEO_ON_PIXEL,
     .video_on_line = VIDEO_ON_LINE,
-    .pll_ctrl = 0x10220,
-    .div_ctrl = 0x18803,
+    .pll_ctrl = 0x10220, //0x10229, //0x10220,  //27.4MHz  //clk=63.4MHz, vfreq=50.1Hz 
+    .div_ctrl = 0x18803, //0x18803, //0x18813,
 	.clk_ctrl = 0x1111,	//pll_sel,div_sel,vclk_sel,xd
 	
     .gamma_cntl_port = (1 << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
@@ -130,7 +130,7 @@ lcdConfig_t lcd_config =
     .flags = LCD_DIGITAL_LVDS,
     .screen_width = 5,
     .screen_height = 8,
-    .sync_duration_num = 504,
+    .sync_duration_num = 501,
     .sync_duration_den = 10,
 	.lvds_config = &lcd_lvds_config,
     // .power_on=lcd_power_on,

@@ -187,11 +187,11 @@ next_run
         ldr	r10, [r10]
         ldr	r9, [r9]
         bfc r10,#29,#3
-       	orr r10,r10,#0x1<<28 ;table 0x1FF00000;
+       	orr r10,r10,#0x9<<28 ;table 0x9FF00000;
    	
    			adr r12 ,next_label
    			bfc r12,#29,#3
-   			orr r12,r12,#0x1<<28 ;switch to 0x1FFxxxxx
+   			orr r12,r12,#0x9<<28 ;switch to 0x9FFxxxxx
 						
 			  ; Get current TTBR0, TTBCR, DACR
         mrc	p15, 0, r8, c2, c0, 0	; read TTBR0
@@ -220,7 +220,7 @@ next_label
 0 
 	mov	r12, sp
 	bfc r11,#29,#3
-	orr r11,r11,#1<<28  ;modified to 1FF
+	orr r11,r11,#9<<28  ;modified to 9FF
 	mov	sp, r11
 	push	{r4-r8,r12}		; see comment in appf_reset_entry_point below
 	
@@ -355,6 +355,20 @@ label_df
 	
 	pop	{r4-r12, pc}
 
+_cpu_stat
+	.word	0x01FFE0
+not_cpu0
+    mov r2,#1
+    mov r2,r2, asl r0
+    orr r2,r2,#1
+not_cpu0_loop
+    ldr r3,_cpu_stat
+    ldr r1,[r3]
+    and r1,r2,r1
+    cmp r1,r2
+    wfene               @wait for event 
+    bne   not_cpu0_loop
+    ldr     pc, [r3, r0, asl #2]
 
 appf_reset_entry_point
 	; This is the entry point from the platform warm start code
@@ -367,6 +381,18 @@ appf_reset_entry_point
 ;    ldr r1,[r0]
 ;    cmp r1,#0x66 ;'f'
 ;    bne wait_test
+
+	;--------------------------
+	;CPU1 will go to standby 
+	 MRC p15, 0, r0, c0, c0, 5   @ Read MPIDR
+   AND r0, #0x3                @ Get CPU ID
+   ldr r3,_cpu_stat
+   mov     r2,#0               @ cpu_stat[r0]=0
+   str     r2, [r3, r0,LSL #2]
+   CMP r0, #0                  @ Is this CPU0
+   BNE not_cpu0
+
+	;--------------------------
 
 	; Get stack pointer
 	bl	appf_platform_get_stack_pointer
@@ -382,7 +408,7 @@ appf_reset_entry_point
   ldr	r10, [r10]
   ldr	r9, [r9]
   bfc r10,#29,#3
-	orr r10,r10,#0x1<<28
+	orr r10,r10,#0x9<<28
 	
   movw r5, #0x5555
   movt r5, #0x5555

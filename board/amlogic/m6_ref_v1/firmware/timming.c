@@ -136,8 +136,8 @@ static struct ddr_set __ddr_setting={
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
                               (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
                            },
-                    //.zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zqcr  = 0x1b,   //auto ZQCR
+                    .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
+                    .zq0cr1 = 0x1b,   //auto ZQCR
          .ddr_pll_cntl = 0x10200 | (M6_DDR_CLK/12), //528MHz
          .ddr_clk = (M6_DDR_CLK),
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,

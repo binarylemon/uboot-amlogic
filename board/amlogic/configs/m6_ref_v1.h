@@ -144,7 +144,6 @@
 #endif
 
 #define BOARD_LATE_INIT
-
 /* config LCD output */ 
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD

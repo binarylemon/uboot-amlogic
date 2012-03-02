@@ -46,8 +46,8 @@ static struct ddr_set __ddr_setting={
                     .t_faw          =  27,
                 #endif
                     .t_mrd          =   4,
-                    .t_1us_pck      = (M6_DDR_CLK/4)*4,
-                    .t_100ns_pck    = ((M6_DDR_CLK/4)*4)/10,
+                    .t_1us_pck      = (M6_DDR_CLK/12)*12,
+                    .t_100ns_pck    = ((M6_DDR_CLK/12)*12)/10,
                     .t_init_us      = 512,
                     .t_rsth_us      = 500,
                     .t_rstl_us      = 100,
@@ -137,8 +137,9 @@ static struct ddr_set __ddr_setting={
                               (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-         .ddr_pll_cntl=0x10600 | (M6_DDR_CLK/4), //500MHz 1067d
-         .ddr_clk=(M6_DDR_CLK/4)*4,
+                    .zq0cr1 = 0x18,   //PUB ZQ0CR1
+         .ddr_pll_cntl=0x10200 | (M6_DDR_CLK/12), //504MHz 1022a
+         .ddr_clk=(M6_DDR_CLK/12)*12,
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
                     (0xff << 16) |    //reorder en for the 8 channel.
                     (0 << 15 ) |      // pctl16 mode = 0.  pctl =   32bits data pins

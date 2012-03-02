@@ -196,11 +196,6 @@ typedef struct {
 	u16 sth1_vs_addr;
 	u16 sth1_ve_addr;
 
-	// u16 sth2_hs_addr;
-	// u16 sth2_he_addr;
-	// u16 sth2_vs_addr;
-	// u16 sth2_ve_addr;
-
 	u16 oeh_hs_addr;
 	u16 oeh_he_addr;
 	u16 oeh_vs_addr;
@@ -215,35 +210,15 @@ typedef struct {
 	u16 cpv1_vs_addr;
 	u16 cpv1_ve_addr;
 
-	// u16 cpv2_hs_addr;
-	// u16 cpv2_he_addr;
-	// u16 cpv2_vs_addr;
-	// u16 cpv2_ve_addr;
-
 	u16 stv1_hs_addr;
 	u16 stv1_he_addr;
 	u16 stv1_vs_addr;
 	u16 stv1_ve_addr;
 
-	// u16 stv2_hs_addr;
-	// u16 stv2_he_addr;
-	// u16 stv2_vs_addr;
-	// u16 stv2_ve_addr;
-
 	u16 oev1_hs_addr;
 	u16 oev1_he_addr;
 	u16 oev1_vs_addr;
 	u16 oev1_ve_addr;
-
-	// u16 oev2_hs_addr;
-	// u16 oev2_he_addr;
-	// u16 oev2_vs_addr;
-	// u16 oev2_ve_addr;
-
-	// u16 oev3_hs_addr;
-	// u16 oev3_he_addr;
-	// u16 oev3_vs_addr;
-	// u16 oev3_ve_addr;
 
 	u16 inv_cnt_addr;
 
