@@ -354,7 +354,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 1,
-                .options = (NAND_TIMING_MODE5| NAND_ECC_BCH30_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE),
             },
         },
         .rbpin_mode = 1,
@@ -447,5 +447,18 @@ set_dcdc3(1100);	//set DC-DC3 to 1100mV
 #endif
 
 	return 0;
+}
+#endif
+
+
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode(void)
+{
+	saradc_enable();	
+	if(get_adc_sample(4) < 1000)
+	{
+		run_command ("run update", 0);
+	}
+	saradc_disable();
 }
 #endif

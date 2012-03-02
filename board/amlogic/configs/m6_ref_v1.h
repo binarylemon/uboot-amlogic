@@ -28,7 +28,7 @@
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
-//#define CONFIG_SARADC 1
+#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 
@@ -96,12 +96,13 @@
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m1_mbox\0" \
-	"chipname=8726m\0" \
+	"boardname=m6_ref\0" \
+	"chipname=8726m6\0" \
 	"machid=F82\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+#define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -144,6 +145,7 @@
 #endif
 
 #define BOARD_LATE_INIT
+#define CONFIG_SWITCH_BOOT_MODE
 /* config LCD output */ 
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
