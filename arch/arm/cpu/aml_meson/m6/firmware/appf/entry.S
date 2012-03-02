@@ -187,11 +187,11 @@ next_run
         ldr	r10, [r10]
         ldr	r9, [r9]
         bfc r10,#29,#3
-       	orr r10,r10,#0x1<<28 ;table 0x1FF00000;
+       	orr r10,r10,#0x9<<28 ;table 0x9FF00000;
    	
    			adr r12 ,next_label
    			bfc r12,#29,#3
-   			orr r12,r12,#0x1<<28 ;switch to 0x1FFxxxxx
+   			orr r12,r12,#0x9<<28 ;switch to 0x9FFxxxxx
 						
 			  ; Get current TTBR0, TTBCR, DACR
         mrc	p15, 0, r8, c2, c0, 0	; read TTBR0
@@ -220,7 +220,7 @@ next_label
 0 
 	mov	r12, sp
 	bfc r11,#29,#3
-	orr r11,r11,#1<<28  ;modified to 1FF
+	orr r11,r11,#9<<28  ;modified to 9FF
 	mov	sp, r11
 	push	{r4-r8,r12}		; see comment in appf_reset_entry_point below
 	
@@ -408,7 +408,7 @@ appf_reset_entry_point
   ldr	r10, [r10]
   ldr	r9, [r9]
   bfc r10,#29,#3
-	orr r10,r10,#0x1<<28
+	orr r10,r10,#0x9<<28
 	
   movw r5, #0x5555
   movt r5, #0x5555
