@@ -133,6 +133,18 @@ int rtc_post_test (int flags)
 	//test GPO counter: interval 10s GPO output from low level to high level	
 	// reset GPO
 	ser_access_write(RTC_GPO_COUNTER_ADDR,0x500000);	
+//	aml_get_gpo_dig
+	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
+	if(val & (1<<24))		
+		post_log("<%d>%s:%d: reset gpo level RTC_GPO_COUNTER_ADDR[24] is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else
+		post_log("<%d>%s:%d: reset gpo level RTC_GPO_COUNTER_ADDR[24] is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);					
+	if(aml_get_gpo_dig())
+		post_log("<%d>%s:%d: reset gpo level RTC_ADDR1[3] is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else
+		post_log("<%d>%s:%d: reset gpo level RTC_ADDR1[3] is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+		
+	
 	data = 0;
 	data |= (10-1) << 0;
 	data |= 2<<20;
@@ -141,10 +153,14 @@ int rtc_post_test (int flags)
 	udelay(5000000);
 	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
 	if(val & (1<<24))		
-		post_log("<%d>%s:%d: gpo level is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
-	else{
-		post_log("<%d>%s:%d: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);				
-	}
+		post_log("<%d>%s:%d: 5s gpo level RTC_GPO_COUNTER_ADDR[24] is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else
+		post_log("<%d>%s:%d: 5s gpo level RTC_GPO_COUNTER_ADDR[24] is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);					
+	if(aml_get_gpo_dig())
+		post_log("<%d>%s:%d: 5s gpo level RTC_ADDR1[3] is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else
+		post_log("<%d>%s:%d: 5s gpo level RTC_ADDR1[3] is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+		
 	udelay(5000000);	
 	val = ser_access_read(RTC_GPO_COUNTER_ADDR);
 	if(val & (1<<24))		{
@@ -154,7 +170,11 @@ int rtc_post_test (int flags)
 	else{
 		post_log("<%d>%s:%d: gpo level is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);				
 	}   
-	
+	if(aml_get_gpo_dig())
+		post_log("<%d>%s:%d: 10s gpo level RTC_ADDR1[3] is high.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+	else
+		post_log("<%d>%s:%d: 10s gpo level RTC_ADDR1[3] is low.\n", SYSTEST_INFO_L2, __FUNCTION__, __LINE__);		
+		
 	return ret;
 }
 //===============================================================
