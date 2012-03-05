@@ -101,19 +101,50 @@ typedef struct DDR_timing {
 #define mmc_phy_ctrl    39
 #define ddr_pll_cntl2   40
 #define ddr_pll_cntl3   41
-#define dllcr9          42
-#define dllcr0          43
-#define dllcr1          44
-#define dllcr2          45
-#define dllcr3          46
-#define dqscr           47
-#define dqsntr          48
-#define tr0             49
-#define tr1             50
-#define tr2             51
-#define tr3             52
+#define ddr_pll_cntl4   42
+#define dllcr9          43
+#define dllcr0          44
+#define dllcr1          45
+#define dllcr2          46
+#define dllcr3          47
+#define dqscr           48
+#define dqsntr          49
+#define tr0             50
+#define tr1             51
+#define tr2             52
+#define tr3             53
+//--new item
+#define t_rtw             54
+#define tzqcs             55
+#define txpdll            56
+#define scfg              57
+#define ppcfg             58
 
-#define DDR_SETTING_COUNT 53
+#define rslr1             59
+#define rslr2             60
+#define rdgr1             61
+#define rdgr2             62
+#define dqtr5             63
+#define dqtr4             64
+#define dllcr             65
+#define dfilp_cfg0        66
+
+#define pub_dtar          67
+#define pub_dcr           68
+#define pub_pgcr          69
+#define pub_mr0           70
+#define pub_mr1           71
+#define pub_mr2           72
+#define pub_mr3           73
+#define pub_dtpr0         74
+#define pub_dtpr1         75
+#define pub_dtpr2         76
+#define pub_ptr0          77
+#define pub_zq0cr1        78
+
+
+
+#define DDR_SETTING_COUNT 79
 
 #define v_ddr_pll_cntl    ddr_settings[ddr_pll_cntl]
 #define v_mmc_ddr_ctrl    ddr_settings[mmc_ddr_ctrl]
@@ -157,6 +188,7 @@ typedef struct DDR_timing {
 #define	v_mmc_phy_ctrl    ddr_settings[mmc_phy_ctrl]
 #define v_ddr_pll_cntl2   ddr_settings[ddr_pll_cntl2]
 #define v_ddr_pll_cntl3   ddr_settings[ddr_pll_cntl3]
+#define v_ddr_pll_cntl4   ddr_settings[ddr_pll_cntl4]
 #define v_dllcr9          ddr_settings[dllcr9]
 #define v_dllcr0          ddr_settings[dllcr0]
 #define v_dllcr1          ddr_settings[dllcr1]
@@ -168,6 +200,36 @@ typedef struct DDR_timing {
 #define v_tr1             ddr_settings[tr1]
 #define v_tr2             ddr_settings[tr2]
 #define v_tr3             ddr_settings[tr3]
+//-- new items for m6 ddr3
+#define v_t_rtw            ddr_settings[t_rtw]
+#define v_tzqcs            ddr_settings[tzqcs]
+#define v_txpdll           ddr_settings[txpdll]
+#define v_scfg             ddr_settings[scfg]
+#define v_ppcfg            ddr_settings[ppcfg]
+
+#define v_rslr1               ddr_settings[rslr1]
+#define v_rslr2               ddr_settings[rslr2]
+#define v_rdgr1               ddr_settings[rdgr1]
+#define v_rdgr2               ddr_settings[rdgr2]
+#define v_dqtr5               ddr_settings[dqtr5]
+#define v_dqtr4               ddr_settings[dqtr4]
+#define v_dllcr               ddr_settings[dllcr]
+#define v_dfilp_cfg0          ddr_settings[dfilp_cfg0]
+
+#define v_pub_dtar            ddr_settings[pub_dtar]
+#define v_pub_dcr             ddr_settings[pub_dcr]
+#define v_pub_pgcr            ddr_settings[pub_pgcr]
+#define v_pub_mr0             ddr_settings[pub_mr0]
+#define v_pub_mr1             ddr_settings[pub_mr1]
+#define v_pub_mr2             ddr_settings[pub_mr2]
+#define v_pub_mr3             ddr_settings[pub_mr3]
+#define v_pub_dtpr0           ddr_settings[pub_dtpr0]
+#define v_pub_dtpr1           ddr_settings[pub_dtpr1]
+#define v_pub_dtpr2           ddr_settings[pub_dtpr2]
+#define v_pub_ptr0            ddr_settings[pub_ptr0]
+#define v_pub_zq0cr1          ddr_settings[pub_zq0cr1]
+
+
 
 extern unsigned ddr_settings[];
 extern int init_pctl_ddr2(void);

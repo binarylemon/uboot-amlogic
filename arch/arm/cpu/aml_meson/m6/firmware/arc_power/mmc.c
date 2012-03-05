@@ -38,14 +38,46 @@ void disable_mmc_req(void)
 
 void reset_mmc(void)
 {
-	unsigned ustate;
+	unsigned ustate,v;
 	writel(1<<3, P_RESET1_REGISTER);
-	__udelay(50);	
- 	ustate = readl(P_MMC_CHAN_RST);
-	writel(0x17ff,P_MMC_CHAN_RST);
-	while((ustate = readl(P_MMC_CHAN_RST)) != 0){
-		writel(ustate,P_MMC_CHAN_RST);
+	__udelay(1000);
+	writel(0x17ff,P_MMC_SOFT_RST);
+  while(readl(P_MMC_SOFT_RST) != 0) {
+ 		serial_put_hex(readl(P_MMC_SOFT_RST),32);
+ 		__udelay(1000);
+ 		__udelay(1000);
+  }
+
+	v = readl(P_MMC_CLK_CNTL);
+	serial_put_hex(v,32);
+/*	//Enable DDR DLL clock input from PLL.
+	writel(0xc0000080,P_MMC_CLK_CNTL);
+	writel(0xc00000c0,P_MMC_CLK_CNTL);
+   //enable the clock.
+	writel(0x400000c0,P_MMC_CLK_CNTL);
+ */
+ 	
+
+/*	
+ 	ustate = readl(P_MMC_SOFT_RST);
+	serial_put_hex(ustate,32);
+ 	ustate = readl(P_MMC_RST_STS);
+	serial_put_hex(ustate,32);
+	f_serial_puts("\n");
+	writel(0x17ff,P_MMC_RST_STS);
+	while((ustate = readl(P_MMC_RST_STS)) != 0){
+		writel(ustate,P_MMC_RST_STS);
+		__udelay(1000);
+		serial_put_hex(ustate,32);
+//		v = readl(P_MMC_SOFT_RST);
+//		serial_put_hex(v,32);		
 	}
+*/
+   // release the DDR DLL reset pin.
+//   writel(0xFFFF,P_MMC_SOFT_RST);
+//		__udelay(1000);	
+//		v = readl(P_MMC_SOFT_RST);
+//		serial_put_hex(v,32);		
 }
 
 void enable_mmc_req(void)
@@ -62,6 +94,7 @@ void mmc_sleep(void)
 	do
 	{
 		stat = APB_Rd(PCTL_STAT_ADDR);
+		stat &= 0x7;//see dwc_ddr3l_pctl_db.pdf
 		if(stat == PCTL_STAT_INIT) {
 			APB_Wr(PCTL_SCTL_ADDR, SCTL_CMD_CONFIG);
 		}
@@ -71,6 +104,7 @@ void mmc_sleep(void)
 		else if(stat == PCTL_STAT_ACCESS) {
 				APB_Wr(PCTL_SCTL_ADDR, SCTL_CMD_SLEEP);
 		}
+		serial_put_hex(stat,32);
 	}while(stat != PCTL_STAT_LOW_POWER);
 }
 
@@ -80,6 +114,7 @@ void mmc_wakeup(void)
 	do
 	{
 		stat = APB_Rd(PCTL_STAT_ADDR);
+		stat &= 0x7;//see dwc_ddr3l_pctl_db.pdf
 		if(stat == PCTL_STAT_LOW_POWER) {
 			APB_Wr(PCTL_SCTL_ADDR, SCTL_CMD_WAKEUP);
 			while(stat != PCTL_STAT_LOW_POWER);
@@ -296,6 +331,7 @@ void save_ddr_settings()
 	
 	v_ddr_pll_cntl2 = readl(P_HHI_DDR_PLL_CNTL2);
 	v_ddr_pll_cntl3 = readl(P_HHI_DDR_PLL_CNTL3);
+	v_ddr_pll_cntl4 = readl(P_HHI_DDR_PLL_CNTL4);
 	
 	v_dllcr9 = APB_Rd(PCTL_DLLCR9_ADDR);
 
@@ -309,10 +345,110 @@ void save_ddr_settings()
   v_tr1 = APB_Rd(PCTL_DQTR1_ADDR);
   v_tr2 = APB_Rd(PCTL_DQTR2_ADDR);
   v_tr3 = APB_Rd(PCTL_DQTR3_ADDR);
+  
+  //----------------------------------
+	v_t_rtw = APB_Rd(PCTL_TRTW_ADDR);
+	v_tzqcs  = APB_Rd(PCTL_TZQCS_ADDR);
+	v_txpdll = APB_Rd(PCTL_TXPDLL_ADDR);
+	v_scfg = APB_Rd(PCTL_SCFG_ADDR);
+	v_ppcfg = APB_Rd(PCTL_PPCFG_ADDR);
+
+	v_rslr1 = APB_Rd(PCTL_RSLR1_ADDR);
+	v_rslr2 = APB_Rd(PCTL_RSLR2_ADDR);
+	v_rdgr1  = APB_Rd(PCTL_RDGR1_ADDR);
+	v_rdgr2 = APB_Rd(PCTL_RDGR2_ADDR);
+	v_dqtr5 = APB_Rd(PCTL_DQTR5_ADDR);
+	v_dqtr4 = APB_Rd(PCTL_DQTR4_ADDR);
+	v_dllcr = APB_Rd(PCTL_DLLCR_ADDR);
+	v_dfilp_cfg0 = APB_Rd(PCTL_DFILPCFG0_ADDR);
+	
+	v_pub_dtar = APB_Rd(PUB_DTAR_ADDR);
+	v_pub_dcr = APB_Rd(PUB_DCR_ADDR);
+	v_pub_pgcr = APB_Rd(PUB_PGCR_ADDR);
+	v_pub_mr0  = APB_Rd(PUB_MR0_ADDR);
+	v_pub_mr1 = APB_Rd(PUB_MR1_ADDR);
+	v_pub_mr2 = APB_Rd(PUB_MR2_ADDR);
+	v_pub_mr3 = APB_Rd(PUB_MR3_ADDR);
+	v_pub_dtpr0 = APB_Rd(PUB_DTPR0_ADDR);
+	v_pub_dtpr1 = APB_Rd(PUB_DTPR1_ADDR);
+	v_pub_dtpr2 = APB_Rd(PUB_DTPR2_ADDR);
+	v_pub_ptr0 = APB_Rd(PUB_PTR0_ADDR);
+	v_pub_zq0cr1 = APB_Rd(PUB_ZQ0CR1_ADDR);
+}
+unsigned long clk_util_msr(unsigned long   clk_mux)
+{
+    unsigned long   measured_val;
+    unsigned long dummy_rd;
+    unsigned long v;
+    writel(0,P_MSR_CLK_REG0);
+    
+    // Set the measurement gate to 64uS
+    v = readl(P_MSR_CLK_REG0);
+    v &= ~0xFFFF;
+    v |= 63;
+    writel(v,P_MSR_CLK_REG0);
+ 
+ 		
+    // Disable continuous measurement
+    // disable interrupts
+    v = readl(P_MSR_CLK_REG0);
+    v &= ~((1<<18)|(1<<17));
+    writel(v,P_MSR_CLK_REG0);
+ 
+ //    Wr(MSR_CLK_REG0, (Rd(MSR_CLK_REG0) & ~((1 << 18) | (1 << 17))) );
+    v = readl(P_MSR_CLK_REG0);
+    v &= ~((0xf << 20)|(1<<19)|(1<<16));
+    v |= (clk_mux<<20) |(1<<19)|(1<<16);
+    writel(v,P_MSR_CLK_REG0);
+
+    { dummy_rd = readl(P_MSR_CLK_REG0); }
+    // Wait for the measurement to be done
+    while( (readl(P_MSR_CLK_REG0) & (1 << 31)) ) {} 
+    
+    // disable measuring
+    v = readl(P_MSR_CLK_REG0);
+    v &= ~(1<<16);
+    writel(v,P_MSR_CLK_REG0);
+
+    measured_val = readl(P_MSR_CLK_REG2)&0x000FFFFF;
+    // Return value in Hz*measured_val
+    // Return Mhz
+    return (measured_val>>6);
+    // Return value in Hz*measured_val
 }
 
 void init_ddr_pll(void)
-{
+{//ddr:3
+/*	M6_PLL_RESET(HHI_DDR_PLL_CNTL);
+	Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
+	Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
+	Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
+	Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
+	M6_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
+*/
+	unsigned v;
+
+	//reset pll m6
+	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<29),P_HHI_DDR_PLL_CNTL);
+ 	writel(v_ddr_pll_cntl2, P_HHI_DDR_PLL_CNTL2);
+ 	writel(v_ddr_pll_cntl3, P_HHI_DDR_PLL_CNTL3);    
+ 	writel(v_ddr_pll_cntl4, P_HHI_DDR_PLL_CNTL4);    
+	writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
+
+	do{\
+		__udelay(1000);\
+	}while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000)==0);
+	v = readl(P_HHI_DDR_PLL_CNTL);
+	serial_put_hex(v,32);
+	
+	f_serial_puts("ddr:");
+	v = clk_util_msr(3);
+	serial_put_hex(v,32);
+	f_serial_puts("clk81:");
+	v = clk_util_msr(7);
+	serial_put_hex(v,32);
+	wait_uart_empty();
+/*	
  	writel(v_ddr_pll_cntl | 0x8000, P_HHI_DDR_PLL_CNTL);
  	writel(v_ddr_pll_cntl2, P_HHI_DDR_PLL_CNTL2);
  	writel(v_ddr_pll_cntl3, P_HHI_DDR_PLL_CNTL3);    
@@ -323,6 +459,7 @@ void init_ddr_pll(void)
   
  	writel(readl(P_HHI_DDR_PLL_CNTL)&(~(1<<15)),P_HHI_DDR_PLL_CNTL);
 	__udelay(50);	
+	*/
 }
 
 void init_pctl(void)
@@ -335,22 +472,75 @@ void init_pctl(void)
     
  	APB_Wr(MMC_DDR_CTRL, v_mmc_ddr_ctrl);
 	APB_Wr(PCTL_DLLCR9_ADDR, v_dllcr9);
+	
 	APB_Wr(PCTL_TOGCNT1U_ADDR,   v_t_1us_pck); //timing_reg.t_1us_pck);
 	APB_Wr(PCTL_TOGCNT100N_ADDR, v_t_100ns_pck);  //timing_reg.t_100ns_pck);
 	APB_Wr(PCTL_TINIT_ADDR,      v_t_init_us);//200); //timing_reg.t_init_us);
-
+	
 	APB_Wr(PCTL_TRSTH_ADDR, v_t_rsth);       // 500us  to hold reset high before assert CKE. change it to 50 for fast simulation time.
 	APB_Wr(PCTL_TSRTL_ADDR, v_t_srtl);        //  100 clock cycles for reset low 
 
+	APB_Wr(PCTL_MCFG_ADDR,v_mcfg);
+	
+	//configure DDR PHY PUBL registers.
+	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
+	//  3:    8 bank. 
+	APB_Wr(PUB_DCR_ADDR, v_pub_dcr);
+	APB_Wr(PUB_PGCR_ADDR, v_pub_pgcr); //PUB_PGCR_ADDR: c8001008
+
+	// program PUB MRx registers.	
+	APB_Wr( PUB_MR0_ADDR,v_pub_mr0);
+	APB_Wr( PUB_MR1_ADDR,v_pub_mr1);
+	APB_Wr( PUB_MR2_ADDR,v_pub_mr2);
+	APB_Wr( PUB_MR3_ADDR, v_pub_mr3);	
+
+	//program DDR SDRAM timing parameter.
+	APB_Wr( PUB_DTPR0_ADDR, v_pub_dtpr0);
+	APB_Wr( PUB_DTPR1_ADDR, v_pub_dtpr1);	
+	APB_Wr( PUB_DTPR2_ADDR, v_pub_dtpr2);
+	// initialization PHY.
+	APB_Wr( PUB_PTR0_ADDR,  v_pub_ptr0); 
+
+
+		f_serial_puts("pctl 1\n");
+	  wait_uart_empty();  
+
+	//wait PHY DLL LOCK
+	while(!(APB_Rd( PUB_PGSR_ADDR) & 1)) {}
+
+	// configure DDR3_rst pin.
+	APB_Wr( PUB_ACIOCR_ADDR, APB_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
+	APB_Wr( PUB_DSGCR_ADDR,	APB_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
+	
+  APB_Wr( PUB_ZQ0CR1_ADDR, v_pub_zq0cr1);	//get from __ddr_setting
+
+  __udelay(10);
 	APB_Wr(MMC_PHY_CTRL,   v_mmc_phy_ctrl );  
 	APB_Wr(PCTL_IOCR_ADDR, v_iocr);
 	APB_Wr(PCTL_PHYCR_ADDR, v_phycr);
+	
+		f_serial_puts("pctl 2\n");
+	  wait_uart_empty();  
+	//wait DDR3_ZQ_DONE: 
+	while( !(APB_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
 
+		f_serial_puts("pctl 3\n");
+	  wait_uart_empty();  
+	// wait DDR3_PHY_INIT_WAIT : 
+	while (!(APB_Rd(PUB_PGSR_ADDR) & 1 )) {}
+
+		f_serial_puts("pctl 4\n");
+	  wait_uart_empty();  
+	// Monitor DFI initialization status.
+	while(!(APB_Rd(PCTL_DQTR0_ADDR) & 1)) {} 
+
+		f_serial_puts("pctl 5\n");
+	  wait_uart_empty();  
 	while (!(APB_Rd(PCTL_POWSTAT_ADDR) & 2)) {} // wait for dll lock
 	APB_Wr(PCTL_POWCTL_ADDR, 1);            // start memory power up sequence
 	while (!(APB_Rd(PCTL_POWSTAT_ADDR) & 1)) {} // wait for memory power up
-
-	APB_Wr(PCTL_MCFG_ADDR,v_mcfg);
+		f_serial_puts("pctl 6\n");
+	  wait_uart_empty();  
 
 	//configure DDR3 SDRAM parameter.
 	APB_Wr(PCTL_TREFI_ADDR, v_t_refi); //timing_reg.t_refi_100ns);
@@ -379,14 +569,30 @@ void init_pctl(void)
 	APB_Wr(PCTL_ODTCFG_ADDR, v_odtcfg);         //configure ODT
 	APB_Wr(PCTL_ZQCR_ADDR, v_zqcr );
 
-	load_nop();
-	load_mrs(2, get_mrs2());
-	load_mrs(3, mrs3_value);
-	mrs1_value = get_mrs1() & 0xfffffffe; //dll enable 
-	load_mrs(1, mrs1_value);
-	mrs0_value = get_mrs0() | (1 << 8);    // dll reset.
-	load_mrs(0, mrs0_value);
-	load_zqcl(0);     // send ZQ calibration long command.
+	//new item
+	APB_Wr(PCTL_TRTW_ADDR, v_t_rtw);
+	APB_Wr(PCTL_TZQCS_ADDR, v_tzqcs);
+	APB_Wr(PCTL_TXPDLL_ADDR, v_txpdll);
+	APB_Wr(PCTL_SCFG_ADDR, v_scfg);
+
+		f_serial_puts("pctl 7\n");
+	  wait_uart_empty();  
+	
+	APB_Wr(PCTL_SCTL_ADDR, 1);
+	while (!( APB_Rd(PCTL_STAT_ADDR) & 1))  {}
+	
+	//config the DFI interface.
+	APB_Wr( PCTL_PPCFG_ADDR, v_ppcfg );
+	
+	APB_Wr( PCTL_RSLR1_ADDR, v_rslr1 );
+	APB_Wr( PCTL_RSLR2_ADDR, v_rslr2);    //CWL -1
+	APB_Wr( PCTL_RDGR1_ADDR, v_rdgr1);    //CL -2
+	APB_Wr( PCTL_RDGR2_ADDR, v_rdgr2 );
+	APB_Wr( PCTL_DQTR5_ADDR, v_dqtr5 );
+	APB_Wr( PCTL_DQTR4_ADDR, v_dqtr4 );
+	APB_Wr( PCTL_DLLCR_ADDR, v_dllcr );
+	APB_Wr( PCTL_DFILPCFG0_ADDR, v_dfilp_cfg0);
+
 
   APB_Wr(PCTL_RDGR0_ADDR ,v_rdgr0);
   APB_Wr(PCTL_RSLR0_ADDR ,v_rslr0);
@@ -400,6 +606,42 @@ void init_pctl(void)
   APB_Wr(PCTL_DQTR1_ADDR, v_tr1);
   APB_Wr(PCTL_DQTR2_ADDR, v_tr2);
   APB_Wr(PCTL_DQTR3_ADDR, v_tr3);
+
+
+		f_serial_puts("pctl 8\n");
+	  wait_uart_empty();  
+	  
+	APB_Wr(PCTL_CMDTSTATEN_ADDR, 1);
+	while (!(APB_Rd(PCTL_CMDTSTAT_ADDR) & 1 )) {}
+
+	APB_Wr( PUB_DTAR_ADDR, v_pub_dtar); 
+
+		f_serial_puts("pctl 9\n");
+	  wait_uart_empty();  
+	// DDR PHY initialization 
+	APB_Wr( PUB_PIR_ADDR, 0x1e1);
+	//DDR3_SDRAM_INIT_WAIT : 
+	while( !(APB_Rd(PUB_PGSR_ADDR & 1))) {}
+
+
+	f_serial_puts("pctl 10\n");
+  wait_uart_empty();  
+
+	APB_Wr(PCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
+	while ((APB_Rd(PCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+
+
+/*	load_nop();
+	load_mrs(2, get_mrs2());
+	load_mrs(3, mrs3_value);
+	mrs1_value = get_mrs1() & 0xfffffffe; //dll enable 
+	load_mrs(1, mrs1_value);
+	mrs0_value = get_mrs0() | (1 << 8);    // dll reset.
+	load_mrs(0, mrs0_value);
+	load_zqcl(0);     // send ZQ calibration long command.
+*/
+
+
 }
 
 void enable_retention(void)

@@ -115,19 +115,145 @@ void power_off_vddio();
 void arm_restart()
 {
 	int i;
-	 //switch to 32KHz
-//	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
-   udelay(100);
+	unsigned v;
+	//-- 1 - off
+	f_serial_puts("step 1\n");
+	v = readl(P_HHI_DDR_PLL_CNTL);
+	serial_put_hex(v,32);
+	wait_uart_empty();
+  disable_mmc_req();
+  
+  //-- 2 - off
+	f_serial_puts("step 2\n");
+	wait_uart_empty();
 
-	 for(i=0;i<6400;i++)
+  store_restore_plls(1);
+	
+	//-- 3 - off
+	f_serial_puts("step 3\n");
+	wait_uart_empty();
+  mmc_sleep();
+  
+  //-- 4 - off
+ 	f_serial_puts("step 4\n");
+	wait_uart_empty();
+  // save ddr power
+  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
+  APB_Wr(PCTL_PHYCR_ADDR, APB_Rd(PCTL_PHYCR_ADDR)|(1<<6));
+  APB_Wr(PCTL_DLLCR9_ADDR, APB_Rd(PCTL_DLLCR9_ADDR)|(1<<31));
+ 	// power down DDR
+ 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
+	// enable retention
+	enable_retention();
+	
+	writel(0,P_AO_RTI_STATUS_REG1);
+
+	//-- 5 - off
+ 	// reset A9
+ 	f_serial_puts("step 5\n");
+	wait_uart_empty();
+	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+	 
+	 
+	//-- 6 - off
+	// enable iso ee for A9
+ 	f_serial_puts("step 6\n");
+	wait_uart_empty();
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
+	
+	
+	//-- 7 - off
+	// ee use 32k
+	f_serial_puts("step 7\n");
+	wait_uart_empty();
+	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+
+ 	f_serial_puts("siwtch to 32KHz\n");
+	wait_uart_empty();
+	
+	 //----------------------------------------------------------------------
+	 //switch to 32KHz
+	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+   udelay(100);
+   
+// gate off REMOTE, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+
+//	 for(i=0;i<64;i++)
    {
         udelay(1000);
         //udelay(1000);
    }
+
+	// gate on REMOTE, I2C s/m, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF, P_AO_RTI_GEN_CNTL_REG0); 
+	udelay(10);
+
 	 // switch to clk81 
-//	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x1<<8)),P_AO_RTI_PWR_CNTL_REG0);
+	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x1<<8)),P_AO_RTI_PWR_CNTL_REG0);
 	 udelay(100);
 
+//	f_serial_puts("switch to clk81\n");
+//	wait_uart_empty();
+	//----------------------------------------------------------------------------
+ 
+	// set AO interrupt mask
+	writel(0xFFFF,P_AO_IRQ_STAT_CLR);
+	
+	//-- 8 - on
+  // ee go back to clk81
+	f_serial_puts("step 8 \n");
+	wait_uart_empty();  
+	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+	
+
+		f_serial_puts("step 9\n");
+	  wait_uart_empty();  
+    store_restore_plls(0);
+     
+     
+		f_serial_puts("step 10\n");
+	  wait_uart_empty();  
+    init_ddr_pll();
+    
+    
+		uart_reset();
+
+		f_serial_puts("step 11\n");
+	  wait_uart_empty();  
+    reset_mmc();
+
+		f_serial_puts("step 12\n");
+	  wait_uart_empty();  
+    // initialize mmc and put it to sleep
+    init_pctl();
+
+		f_serial_puts("step 13\n");
+	  wait_uart_empty();  
+    mmc_sleep();
+    
+		f_serial_puts("step 14\n");
+	  wait_uart_empty();  
+    // disable retention
+    disable_retention();
+
+		f_serial_puts("step 15\n");
+	  wait_uart_empty();  
+    // Next, we wake up
+    mmc_wakeup();
+
+		f_serial_puts("step 16\n");
+	  wait_uart_empty();  
+    // Next, we enable all requests
+    enable_mmc_req();
+    
+    
+		f_serial_puts("arm restart ...\n");
+		wait_uart_empty();
+
+
+	//------------------------------------------------------------------------
+	// restart arm
 		//0. make sure a9 reset
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 		
@@ -150,7 +276,7 @@ void arm_restart()
 	delay_ms(1);
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
- 	f_serial_puts("arm restarted ...\n");
+ 	f_serial_puts("arm restarted ...done\n");
 	wait_uart_empty();
 }
 void enter_power_down()
@@ -496,7 +622,7 @@ int main(void)
 #ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");
 #else
-	f_serial_puts("sleep .......ww\n");
+	f_serial_puts("sleep .......\n");
 #endif
 		
 	while(1){
