@@ -1409,6 +1409,7 @@
 #define HHI_DDR_PLL_CNTL                           0x1068
 #define HHI_DDR_PLL_CNTL2                          0x1069
 #define HHI_DDR_PLL_CNTL3                          0x106a
+#define HHI_DDR_PLL_CNTL4                          0x106b
 #define HHI_MALI_CLK_CNTL                          0x106c
 #define HHI_DEMOD_PLL_CNTL                         0x106d
 #define HHI_DEMOD_PLL_CNTL2                        0x106e
