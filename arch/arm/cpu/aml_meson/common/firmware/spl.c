@@ -18,6 +18,8 @@
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
+	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+
 //Default to open ARM JTAG for M6 only
 #ifdef CONFIG_M6
 	#define AML_M6_JTAG_ENABLE
