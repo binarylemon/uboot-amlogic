@@ -19,217 +19,209 @@
 #define SFT_RESET_CMD 6
 
 
-typedef struct DDR_timing {
-  unsigned short cl; // cas latency
-  unsigned short t_faw;
-  unsigned short t_mrd;
-  unsigned short t_1us_pck;
-  unsigned short t_100ns_pck;
-  unsigned short t_init_us;
-  unsigned short t_ras;
-  unsigned short t_rc;
-  unsigned short t_rcd;
-  unsigned short t_refi_100ns;
-  unsigned short t_rfc;
-  unsigned short t_rp;
-  unsigned short t_rrd;
-  unsigned short t_rtp;
-  unsigned short t_wr;
-  unsigned short t_wtr;
-  unsigned short t_xp;
-  unsigned short t_xsrd;       // init to 0 so that if only one of them is defined, this is chosen
-  unsigned short t_xsnr;
-  unsigned short t_exsr;
-  unsigned short t_al;     // Additive Latency
-  unsigned short t_clr;    // cas_latency for DDR2 (nclk cycles)
-  unsigned short t_dqs;    // distance between data phases to different ranks
-  unsigned short t_cwl;     // cas write latency.
-  unsigned short t_mod;     // MRS command  
-  unsigned short t_zqcl;    // ZQ calibration long period in clock cycles.
-  unsigned short t_cksrx;   // CKE maintained high before issuing self refresh command. 
-  unsigned short t_cksre;   // Time after Self Refresh Entry that CKE is heold high before going low. 
-  unsigned short t_cke;     // CKE minimum pulse width in memory clock cycles. 
-  unsigned ddr_pll_cntl;
-  unsigned ddr_clk;
-  unsigned ddr_ctrl;
-  int (* init_pctl)(void);
-} DDR_Timing;
-//#if 1
-//static DDR_Timing timing_reg;
-//#else
-//#endif
+//ddr training result
+#define 	rslr0           0     
+#define 	rdgr0           1    
+#define 	t_1us_pck       2     
+#define 	t_100ns_pck     3 
+#define 	t_init_us       4  
+#define 	t_refi_100ns    5  
+#define 	t_mrd           6  
+#define 	t_rfc           7  
+#define 	t_rp            8  
+#define 	t_al            9  
+#define 	t_cl            10  
+#define 	t_ras           11  
+#define 	t_rc            12  
+#define 	t_rcd           13  
+#define 	t_rrd           14 
+#define 	t_rtp           15 
+#define 	t_wr            16 
+#define 	t_wtr           17  
+#define 	t_exsr          18  
+#define 	t_xp            19  
+#define 	t_dqs           20 
+#define 	t_trtw          21  
+#define 	t_mod           22 
+#define   t_cwl           23
+#define   mmc_phy_ctrl    24
+#define   mmc_ddr_ctrl    25
+#define   ddr_pll_cntl    26
+#define   ddr_pll_cntl2   27
+#define   ddr_pll_cntl3   28
+#define   ddr_pll_cntl4   29
+#define   mmc_clk_cntl    30
+#define   t_rsth_us       31
+#define   t_rstl_us       32
+#define   t_faw           33
+#define   mcfg            34
+#define   t_cke           35
+#define   t_cksre         36
+#define   t_cksrx         37
+#define   t_zqcl          38
+#define   pub_dtpr0       39
+#define   pub_dtpr1       40
+#define   pub_dtpr2       41
+#define   pub_ptr0        42
+#define   pub_ptr1        43
+#define   pub_ptr2        44
+#define   msr0            45
+#define   msr1            46
+#define   msr2            47
+#define   msr3            48
+#define   odtcfg          49
+#define   zqcr            50
+#define   dllcr9          51
+#define   iocr            52
+#define   dllcr0          53
+#define   dllcr1          54
+#define   dllcr2          55
+#define   dllcr3          56
+#define   dqscr           57
+#define   dqsntr          58
+#define   tr0             59
+#define   tr1             60
+#define   tr2             61
+#define   tr3             62
 
-#define ddr_pll_cntl    0
-#define mmc_ddr_ctrl    1
-#define t_1us_pck       2
-#define t_100ns_pck     3
-#define t_init_us       4
-#define iocr            5
-#define t_rsth          6
-#define t_srtl          7
-#define powstat         8
-#define powctl          9
-#define odtcfg          10
-#define zqcr            11
-#define t_refi          12
-#define t_mrd           13
-#define t_rfc           14
-#define t_rp            15
-#define t_al            16
-#define t_cwl           17
-#define t_cl            18
-#define t_ras           19
-#define t_rc            20
-#define t_rcd           21
-#define t_rrd           22
-#define t_rtp           23
-#define t_wr            24
-#define t_wtr           25
-#define t_exsr          26
-#define t_xp            27
-#define t_dqs           28
-#define t_mod           29
-#define t_zqcl          30
-#define t_cksrx         31
-#define t_cksre         32
-#define t_cke           33
-#define mcfg            34
-#define phycr           35
-#define rdgr0           36
-#define rslr0           37
-#define t_zqcsi         38
-#define mmc_phy_ctrl    39
-#define ddr_pll_cntl2   40
-#define ddr_pll_cntl3   41
-#define ddr_pll_cntl4   42
-#define dllcr9          43
-#define dllcr0          44
-#define dllcr1          45
-#define dllcr2          46
-#define dllcr3          47
-#define dqscr           48
-#define dqsntr          49
-#define tr0             50
-#define tr1             51
-#define tr2             52
-#define tr3             53
-//--new item
-#define t_rtw             54
-#define tzqcs             55
-#define txpdll            56
-#define scfg              57
-#define ppcfg             58
+#define  dx0gsr0  63 
+#define  dx0gsr1  64 
+#define  dx0dqstr 65 
+	
+#define  dx1gsr0  66 
+#define  dx1gsr1  67 
+#define  dx1dqstr 68 
 
-#define rslr1             59
-#define rslr2             60
-#define rdgr1             61
-#define rdgr2             62
-#define dqtr5             63
-#define dqtr4             64
-#define dllcr             65
-#define dfilp_cfg0        66
+#define  dx2gsr0  69 
+#define  dx2gsr1  70 
+#define  dx2dqstr 71 
 
-#define pub_dtar          67
-#define pub_dcr           68
-#define pub_pgcr          69
-#define pub_mr0           70
-#define pub_mr1           71
-#define pub_mr2           72
-#define pub_mr3           73
-#define pub_dtpr0         74
-#define pub_dtpr1         75
-#define pub_dtpr2         76
-#define pub_ptr0          77
-#define pub_zq0cr1        78
+#define  dx3gsr0  72 
+#define  dx3gsr1  73 
+#define  dx3dqstr 74 
 
+#define  dx4gsr0  75 
+#define  dx4gsr1  76 
+#define  dx4dqstr 77 
 
+#define  dx5gsr0  78 
+#define  dx5gsr1  79 
+#define  dx5dqstr 80 
 
-#define DDR_SETTING_COUNT 79
+#define  dx6gsr0  81 
+#define  dx6gsr1  82 
+#define  dx6dqstr 83 
 
-#define v_ddr_pll_cntl    ddr_settings[ddr_pll_cntl]
-#define v_mmc_ddr_ctrl    ddr_settings[mmc_ddr_ctrl]
-#define v_t_1us_pck       ddr_settings[t_1us_pck]
-#define v_t_100ns_pck     ddr_settings[t_100ns_pck]
-#define v_t_init_us       ddr_settings[t_init_us]
-#define v_iocr            ddr_settings[iocr]
-#define v_t_rsth          ddr_settings[t_rsth]
-#define v_t_srtl          ddr_settings[t_srtl]
-#define v_powstat         ddr_settings[powstat]
-#define v_powctl          ddr_settings[powctl]
-#define v_odtcfg          ddr_settings[odtcfg]
-#define v_zqcr            ddr_settings[zqcr]
-#define v_t_refi          ddr_settings[t_refi]
-#define v_t_mrd           ddr_settings[t_mrd]
-#define v_t_rfc           ddr_settings[t_rfc]
-#define v_t_rp            ddr_settings[t_rp]
-#define v_t_al            ddr_settings[t_al]
-#define v_t_cwl           ddr_settings[t_cwl]
-#define v_t_cl            ddr_settings[t_cl]
-#define v_t_ras           ddr_settings[t_ras]
-#define v_t_rc            ddr_settings[t_rc]
-#define v_t_rcd           ddr_settings[t_rcd]
-#define v_t_rrd           ddr_settings[t_rrd]
-#define v_t_rtp           ddr_settings[t_rtp]
-#define v_t_wr            ddr_settings[t_wr]
-#define v_t_wtr           ddr_settings[t_wtr]
-#define v_t_exsr          ddr_settings[t_exsr]
-#define v_t_xp            ddr_settings[t_xp]
-#define v_t_dqs           ddr_settings[t_dqs]
-#define v_t_mod           ddr_settings[t_mod]
-#define v_t_zqcl          ddr_settings[t_zqcl]
-#define v_t_cksrx         ddr_settings[t_cksrx]
-#define v_t_cksre         ddr_settings[t_cksre]
-#define v_t_cke           ddr_settings[t_cke]
-#define v_mcfg            ddr_settings[mcfg]
-#define v_phycr           ddr_settings[phycr]
-#define v_rdgr0           ddr_settings[rdgr0]
-#define v_rslr0           ddr_settings[rslr0]
-#define v_t_zqcsi         ddr_settings[t_zqcsi]
-#define	v_mmc_phy_ctrl    ddr_settings[mmc_phy_ctrl]
-#define v_ddr_pll_cntl2   ddr_settings[ddr_pll_cntl2]
-#define v_ddr_pll_cntl3   ddr_settings[ddr_pll_cntl3]
-#define v_ddr_pll_cntl4   ddr_settings[ddr_pll_cntl4]
-#define v_dllcr9          ddr_settings[dllcr9]
-#define v_dllcr0          ddr_settings[dllcr0]
-#define v_dllcr1          ddr_settings[dllcr1]
-#define v_dllcr2          ddr_settings[dllcr2]
-#define v_dllcr3          ddr_settings[dllcr3]
-#define v_dqscr           ddr_settings[dqscr] 
-#define v_dqsntr          ddr_settings[dqsntr]
-#define v_tr0             ddr_settings[tr0]
-#define v_tr1             ddr_settings[tr1]
-#define v_tr2             ddr_settings[tr2]
-#define v_tr3             ddr_settings[tr3]
-//-- new items for m6 ddr3
-#define v_t_rtw            ddr_settings[t_rtw]
-#define v_tzqcs            ddr_settings[tzqcs]
-#define v_txpdll           ddr_settings[txpdll]
-#define v_scfg             ddr_settings[scfg]
-#define v_ppcfg            ddr_settings[ppcfg]
+#define  dx7gsr0  84 
+#define  dx7gsr1  85 
+#define  dx7dqstr 86 
 
-#define v_rslr1               ddr_settings[rslr1]
-#define v_rslr2               ddr_settings[rslr2]
-#define v_rdgr1               ddr_settings[rdgr1]
-#define v_rdgr2               ddr_settings[rdgr2]
-#define v_dqtr5               ddr_settings[dqtr5]
-#define v_dqtr4               ddr_settings[dqtr4]
-#define v_dllcr               ddr_settings[dllcr]
-#define v_dfilp_cfg0          ddr_settings[dfilp_cfg0]
+#define  dx8gsr0  87  
+#define  dx8gsr1  88 
+#define  dx8dqstr 89 
 
-#define v_pub_dtar            ddr_settings[pub_dtar]
-#define v_pub_dcr             ddr_settings[pub_dcr]
-#define v_pub_pgcr            ddr_settings[pub_pgcr]
-#define v_pub_mr0             ddr_settings[pub_mr0]
-#define v_pub_mr1             ddr_settings[pub_mr1]
-#define v_pub_mr2             ddr_settings[pub_mr2]
-#define v_pub_mr3             ddr_settings[pub_mr3]
-#define v_pub_dtpr0           ddr_settings[pub_dtpr0]
-#define v_pub_dtpr1           ddr_settings[pub_dtpr1]
-#define v_pub_dtpr2           ddr_settings[pub_dtpr2]
-#define v_pub_ptr0            ddr_settings[pub_ptr0]
-#define v_pub_zq0cr1          ddr_settings[pub_zq0cr1]
+#define DDR_SETTING_COUNT 90
 
+#define 	v_rslr0          ddr_settings[ rslr0 ]    
+#define 	v_rdgr0          ddr_settings[ rdgr0 ]   
+#define 	v_t_1us_pck      ddr_settings[ t_1us_pck ]    
+#define 	v_t_100ns_pck    ddr_settings[ t_100ns_pck ]
+#define 	v_t_init_us      ddr_settings[ t_init_us ] 
+#define 	v_t_refi_100ns   ddr_settings[ t_refi_100ns ] 
+#define 	v_t_mrd          ddr_settings[ t_mrd ] 
+#define 	v_t_rfc          ddr_settings[ t_rfc ] 
+#define 	v_t_rp           ddr_settings[ t_rp ] 
+#define 	v_t_al           ddr_settings[ t_al ] 
+#define 	v_t_cl           ddr_settings[ t_cl ] 
+#define 	v_t_ras          ddr_settings[ t_ras ] 
+#define 	v_t_rc           ddr_settings[ t_rc ] 
+#define 	v_t_rcd          ddr_settings[ t_rcd ] 
+#define 	v_t_rrd          ddr_settings[ t_rrd ]
+#define 	v_t_rtp          ddr_settings[ t_rtp ]
+#define 	v_t_wr           ddr_settings[ t_wr ]
+#define 	v_t_wtr          ddr_settings[ t_wtr ] 
+#define 	v_t_exsr         ddr_settings[ t_exsr ] 
+#define 	v_t_xp           ddr_settings[ t_xp ] 
+#define 	v_t_dqs          ddr_settings[ t_dqs ]
+#define 	v_t_trtw         ddr_settings[ t_trtw ] 
+#define 	v_t_mod          ddr_settings[ t_mod ]
+#define 	v_t_cwl          ddr_settings[ t_cwl ]
+#define   v_mmc_phy_ctrl   ddr_settings[ mmc_phy_ctrl ]
+#define   v_mmc_ddr_ctrl   ddr_settings[ mmc_ddr_ctrl ]
+#define   v_ddr_pll_cntl   ddr_settings[ ddr_pll_cntl ]
+#define   v_ddr_pll_cntl2  ddr_settings[ ddr_pll_cntl2 ]
+#define   v_ddr_pll_cntl3  ddr_settings[ ddr_pll_cntl3 ]
+#define   v_ddr_pll_cntl4  ddr_settings[ ddr_pll_cntl4 ]
+#define   v_mmc_clk_cntl   ddr_settings[ mmc_clk_cntl ]
+#define   v_t_rsth_us   ddr_settings[ t_rsth_us ]
+#define   v_t_rstl_us   ddr_settings[ t_rstl_us ]
+#define   v_t_faw       ddr_settings[ t_faw ]
+#define   v_mcfg        ddr_settings[ mcfg ]
+#define   v_t_cke       ddr_settings[ t_cke ]
+#define   v_t_cksre     ddr_settings[ t_cksre ]
+#define   v_t_cksrx     ddr_settings[ t_cksrx ]
+#define   v_t_zqcl      ddr_settings[ t_zqcl ]
+#define   v_pub_dtpr0   ddr_settings[ pub_dtpr0 ]
+#define   v_pub_dtpr1   ddr_settings[ pub_dtpr1 ]
+#define   v_pub_dtpr2   ddr_settings[ pub_dtpr2 ]
+#define   v_pub_ptr0    ddr_settings[ pub_ptr0 ]
+#define   v_pub_ptr1    ddr_settings[ pub_ptr1 ]
+#define   v_pub_ptr2    ddr_settings[ pub_ptr2 ]
+#define   v_msr0        ddr_settings[ msr0 ]
+#define   v_msr1        ddr_settings[ msr1 ]
+#define   v_msr2        ddr_settings[ msr2 ]
+#define   v_msr3        ddr_settings[ msr3 ]
+#define   v_odtcfg      ddr_settings[ odtcfg ]
+#define   v_zqcr        ddr_settings[ zqcr ]
 
+#define   v_dllcr9      ddr_settings[ dllcr9 ]
+#define   v_iocr        ddr_settings[ iocr ]
+#define   v_dllcr0      ddr_settings[ dllcr0 ]
+#define   v_dllcr1      ddr_settings[ dllcr1 ]
+#define   v_dllcr2      ddr_settings[ dllcr2 ]
+#define   v_dllcr3      ddr_settings[ dllcr3 ]
+#define   v_dqscr       ddr_settings[ dqscr ]
+#define   v_dqsntr      ddr_settings[ dqsntr ]
+#define   v_tr0         ddr_settings[ tr0 ]
+#define   v_tr1         ddr_settings[ tr1 ]
+#define   v_tr2         ddr_settings[ tr2 ]
+#define   v_tr3         ddr_settings[ tr3 ]
+
+#define v_dx0gsr0  ddr_settings[ dx0gsr0  ] 
+#define v_dx0gsr1  ddr_settings[ dx0gsr1  ] 
+#define v_dx0dqstr ddr_settings[ dx0dqstr ] 
+	                                       
+#define v_dx1gsr0  ddr_settings[ dx1gsr0  ] 
+#define v_dx1gsr1  ddr_settings[ dx1gsr1  ] 
+#define v_dx1dqstr ddr_settings[ dx1dqstr ] 
+                                         
+#define v_dx2gsr0  ddr_settings[ dx2gsr0  ] 
+#define v_dx2gsr1  ddr_settings[ dx2gsr1  ] 
+#define v_dx2dqstr ddr_settings[ dx2dqstr ] 
+                                         
+#define v_dx3gsr0  ddr_settings[ dx3gsr0  ] 
+#define v_dx3gsr1  ddr_settings[ dx3gsr1  ] 
+#define v_dx3dqstr ddr_settings[ dx3dqstr ] 
+                                         
+#define v_dx4gsr0  ddr_settings[ dx4gsr0  ] 
+#define v_dx4gsr1  ddr_settings[ dx4gsr1  ] 
+#define v_dx4dqstr ddr_settings[ dx4dqstr ] 
+                                         
+#define v_dx5gsr0  ddr_settings[ dx5gsr0  ] 
+#define v_dx5gsr1  ddr_settings[ dx5gsr1  ] 
+#define v_dx5dqstr ddr_settings[ dx5dqstr ] 
+                                         
+#define v_dx6gsr0  ddr_settings[ dx6gsr0  ] 
+#define v_dx6gsr1  ddr_settings[ dx6gsr1  ] 
+#define v_dx6dqstr ddr_settings[ dx6dqstr ] 
+                                         
+#define v_dx7gsr0  ddr_settings[ dx7gsr0  ] 
+#define v_dx7gsr1  ddr_settings[ dx7gsr1  ] 
+#define v_dx7dqstr ddr_settings[ dx7dqstr ] 
+                                         
+#define v_dx8gsr0  ddr_settings[ dx8gsr0  ]  
+#define v_dx8gsr1  ddr_settings[ dx8gsr1  ] 
+#define v_dx8dqstr ddr_settings[ dx8dqstr ] 
 
 extern unsigned ddr_settings[];
 extern int init_pctl_ddr2(void);
