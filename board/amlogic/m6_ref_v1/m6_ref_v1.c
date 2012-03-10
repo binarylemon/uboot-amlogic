@@ -3,6 +3,8 @@
 #include <asm/arch/memory.h>
 #include <malloc.h>
 
+#include <share_kernel.h>
+
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
 #include <asm/arch/aml_eth_pinmux.h>
@@ -454,11 +456,41 @@ set_dcdc3(1100);	//set DC-DC3 to 1100mV
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
+	uint32_t reboot_mode_val;
 	saradc_enable();	
 	if(get_adc_sample(4) < 1000)
 	{
+		saradc_disable();
 		run_command ("run update", 0);
 	}
 	saradc_disable();
+
+	reboot_mode_val = reboot_mode;
+	reboot_mode_clear();
+	switch(reboot_mode_val)
+	{
+		case AMLOGIC_NORMAL_BOOT:
+		{
+			printf("AMLOGIC_NORMAL_BOOT...\n");
+			break;
+		}
+		case AMLOGIC_FACTORY_RESET_REBOOT:
+		{
+			printf("AMLOGIC_FACTORY_RESET_REBOOT...\n");
+			run_command ("run recovey", 0);
+			break;
+		}
+		case AMLOGIC_UPDATE_REBOOT:
+		{
+			printf("AMLOGIC_UPDATE_REBOOT...\n");
+			run_command ("run update", 0);
+			break;
+		}
+		default:
+		{
+			printf("AMLOGIC_CHARGING_REBOOT...\n");
+			break;
+		}
+	}
 }
 #endif

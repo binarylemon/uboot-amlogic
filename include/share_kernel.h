@@ -1,7 +1,6 @@
 #ifndef __SHARE_KERNEL_H
 #define __SHARE_KERNEL_H
 
-#ifdef  AMLOGIC_REBOOT_MODE
 #include <asm/arch/sram.h>
 
 #define reboot_mode *((volatile unsigned long*)(0xC9000000 + REBOOT_MODE_OFFSET))
@@ -45,7 +44,6 @@ typedef enum kernel_cmd
 }kernel_cmd_t;
 
 kernel_cmd_t get_kernel_cmd(void);
-#endif
 
 #endif
 
