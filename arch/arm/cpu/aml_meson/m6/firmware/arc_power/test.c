@@ -316,7 +316,7 @@ void enter_power_down()
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
    
- 	 for(i=0;i<34;i++)
+ 	 for(i=0;i<64;i++)
    {
         udelay(1000);
         //udelay(1000);

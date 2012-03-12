@@ -697,30 +697,16 @@ void init_ddr_pll(void)
 
 void enable_retention(void)
 {
-	unsigned v;
-//	dbg_out("MCFG:",MMC_Rd(UPCTL_MCFG_ADDR));
-//	dbg_out("MCFG1:",MMC_Rd(UPCTL_MCFG1_ADDR));
-//   v = readl(P_AO_RTI_PULL_UP_REG);
- //  v |= (1<<12);
- //  writel(v,P_AO_RTI_PULL_UP_REG);
+	 //RENT_N/RENT_EN_N switch from 01 to 10 (2'b10 = ret_enable)
+//   writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(2<<16),P_AO_RTI_PWR_CNTL_REG0);
+
    writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<20),P_AO_RTI_PIN_MUX_REG);
-/*	v = MMC_Rd(UPCTL_MCFG1_ADDR);
-	v |= 0xd;
-	MMC_Wr(UPCTL_MCFG1_ADDR,v);
-	v = MMC_Rd(UPCTL_MCFG_ADDR);
-	v |= (0xd<<24) | (0xd<<8);
-	MMC_Wr(UPCTL_MCFG1_ADDR,v);*/
 }
 
 void disable_retention(void)
 {
-/*	unsigned v;
-	v = MMC_Rd(UPCTL_MCFG1_ADDR);
-	v &= 0xFFFFFF00;
-	MMC_Wr(UPCTL_MCFG1_ADDR,v);
-	v = MMC_Rd(UPCTL_MCFG_ADDR);
-	v &=~((0xF<<24) | (0xF<<8));
-	MMC_Wr(UPCTL_MCFG1_ADDR,v);*/
+//RENT_N/RENT_EN_N switch from 10 to 01
+//  writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(1<<16),P_AO_RTI_PWR_CNTL_REG0);
 
   writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
 }
