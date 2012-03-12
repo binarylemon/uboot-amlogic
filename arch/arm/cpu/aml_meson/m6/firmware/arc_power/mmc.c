@@ -413,6 +413,12 @@ void init_dmc(void)
 void init_pctl(void)
 {
 	int nTempVal;
+  
+  MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
+	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
+	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
+	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+
 	
   //wait to DDR PLL lock.
     while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
@@ -615,7 +621,7 @@ void init_pctl(void)
   MMC_Wr(MMC_REQ_CTRL, 0xff ); 
 //	udelay(50);	
 	//traning result
-
+/*
   MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
   MMC_Wr(UPCTL_DLLCR1_ADDR, v_dllcr1); //288
   MMC_Wr(UPCTL_DLLCR2_ADDR, v_dllcr2); //28c
@@ -670,7 +676,7 @@ void init_pctl(void)
 	MMC_Wr(PUB_DX8GSR0_ADDR,v_dx8gsr0); 
 	MMC_Wr(PUB_DX8GSR1_ADDR,v_dx8gsr1); 
 	MMC_Wr(PUB_DX8DQSTR_ADDR,v_dx8dqstr); 
-	
+	*/
 	return 0;
 }
 

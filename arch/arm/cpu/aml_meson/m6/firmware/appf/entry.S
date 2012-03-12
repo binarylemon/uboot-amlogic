@@ -48,7 +48,6 @@ appf_entry_point
 
 	; TODO: Decide how we're calling the firmware - BL or SMC
 	;  - for now we don't have SMC
-
 	; Save some stuff on the OS stack (preserve 8 byte alignment)
 	push	{r4-r12, lr}		
 				;---------------------------------------
@@ -140,6 +139,10 @@ next_run
 				bfc r12,#2,#1
 				bfc r12,#12,#1
 				mcr p15,0,r12,c1,c0,0; read control
+;	 			mov r12,#0
+;				mcr p15, 0, r12, c7, c10, 4
+; 				dsb
+; 				isb
 	      ; Is this runtime initialization?
 	cmp	r0, #APPF_FUNCTION_INITIALIZE
 	bne	%f1
@@ -188,11 +191,10 @@ next_run
         ldr	r9, [r9]
         bfc r10,#29,#3
        	orr r10,r10,#0x9<<28 ;table 0x9FF00000;
-   	
    			adr r12 ,next_label
    			bfc r12,#29,#3
    			orr r12,r12,#0x9<<28 ;switch to 0x9FFxxxxx
-						
+				;bl dbg_wait	
 			  ; Get current TTBR0, TTBCR, DACR
         mrc	p15, 0, r8, c2, c0, 0	; read TTBR0
         mrc	p15, 0, r7, c2, c0, 2	; read TTBCR
@@ -366,8 +368,10 @@ not_cpu0_loop
     ldr r1,[r3]
     and r1,r2,r1
     cmp r1,r2
-    wfene               @wait for event 
+    ;wfene               @wait for event 
+    wfi
     bne   not_cpu0_loop
+    b   not_cpu0_loop
     ldr     pc, [r3, r0, asl #2]
 
 appf_reset_entry_point

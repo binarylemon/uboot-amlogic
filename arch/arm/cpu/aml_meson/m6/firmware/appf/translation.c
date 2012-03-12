@@ -433,7 +433,7 @@ int appf_setup_translation_tables(void)
 }
 #endif
 
-#if 0
+#if 1
 int appf_setup_translation_tables(void)
 {
 	  unsigned firmware_start_pa, firmware_start_va,attr;
@@ -526,7 +526,7 @@ int appf_setup_translation_tables(void)
 }
 #endif
 
-#if 1
+#if 0
 struct mmu_tbl{
 	unsigned virt_addr_s;
 	unsigned virt_addr_e;	
@@ -596,6 +596,7 @@ int appf_setup_translation_tables(void)
 	  struct mmu_tbl* ptbl;
 	  int i; 
     data_addr = reloc_addr((unsigned)appf_translation_table1);  
+    
 		
     count = sizeof(mmutable)/sizeof(struct mmu_tbl);
     	ptbl = &(mmutable[0]);
@@ -616,8 +617,7 @@ int appf_setup_translation_tables(void)
      
     __V(appf_ttbcr) = 0;
 //extern  void v7_invalidate_dcache_all(void);
-  	invalidate_dcache_v7();    
+//  	v7_flush_cache_all();    
     return APPF_OK;
-
 }
 #endif

@@ -100,7 +100,7 @@ int appf_boottime_init(void)
 
     *((unsigned*)reloc_addr(&appf_runtime_call_flat_mapped)) =  appf_runtime_call;
     *((unsigned*)reloc_addr(&appf_device_memory_flat_mapped)) = reloc_addr(appf_device_memory);
-
+		appf_setup_translation_tables();
     return 0;
 }
 
@@ -140,7 +140,7 @@ int appf_runtime_init(void)
     {
     	 __V(flat_mapped) = TRUE;
     }
-    
+ /*   
     if (__V(flat_mapped) == 0 && use_smc == 0)
     {
     		ret = 0;
@@ -149,7 +149,7 @@ int appf_runtime_init(void)
         {
             return ret;
         }
-    }
+    }*/
 
     return appf_platform_runtime_init();
 }
