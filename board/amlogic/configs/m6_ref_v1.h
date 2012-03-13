@@ -108,7 +108,7 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
 	"recovery=if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 
