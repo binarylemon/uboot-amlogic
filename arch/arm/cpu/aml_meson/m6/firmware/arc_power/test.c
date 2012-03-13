@@ -220,7 +220,7 @@ void restart_arm()
 
 void test_ddr(int i)
 {
-#if 1
+#if 0
 	f_serial_puts("test_ddr...\n");
 
 	volatile unsigned addr = (volatile unsigned*)0x80000000;
@@ -235,7 +235,7 @@ void test_ddr(int i)
 	}
 	else if(i == 1){
 			for(i = 0; i < 100; i++){
-				writel(i,addr);
+			//	writel(i,addr);
 				v = readl(addr);
 			//	if(v != i)
 				{
@@ -384,7 +384,7 @@ void enter_power_down()
 	
 //	disp_pctl();
 	
-//	test_ddr(1);
+	test_ddr(1);
 //	test_ddr(0);
 //	test_ddr(1);
 	
@@ -818,6 +818,8 @@ int main(void)
 	    }
 	    //cmd='f';
 	    //writel(cmd,P_AO_RTI_STATUS_REG1);
+	  f_serial_puts(" arm boot -- OK!\n\n");
+	  wait_uart_empty();
 	    
 		asm(".long 0x003f236f"); //add sync instruction.
 		asm("SLEEP");

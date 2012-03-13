@@ -4,7 +4,7 @@
 ;; -- auto-vector space, jump to start of code ---------- 
 _start:
     j boot_start
-    ; reserved for arm reboot code.
+    ; reserved for arm reboot code. (0x220 bytes)
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -19,7 +19,7 @@ boot_start:
 ; Release power on pins except test_n, which always need pull_up
 
 ; Initialize stack pointer registers
-  mov  sp, 0x4000;_STACK_END         
+  mov  sp, 0x8000;_STACK_END         
   ;mov sp , 0xE000
 
 ; Initialise small data pointer registers

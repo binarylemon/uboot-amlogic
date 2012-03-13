@@ -110,7 +110,7 @@ void mmc_wakeup(void)
 
 void disp_pctl(void)
 {
-#if 1
+#if 0
 #if 0
 	dbg_out("DDR_PLL_CNTL:",readl(P_HHI_DDR_PLL_CNTL));
 	dbg_out("DDR_PLL_CNTL2:",readl(P_HHI_DDR_PLL_CNTL2));
@@ -415,13 +415,14 @@ void init_pctl(void)
 	int nTempVal;
   
   MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
-	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
+  MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
 	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+//	MMC_Wr(UPCTL_PHYCR_ADDR, 2);//????
 
-	
+
   //wait to DDR PLL lock.
-    while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
+   while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
   //Enable DDR DLL clock input from PLL.
      MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
      MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);    
@@ -430,15 +431,15 @@ void init_pctl(void)
      
     // release the DDR DLL reset pin.
     MMC_Wr( MMC_SOFT_RST,  0xffff);
-	
+  	__udelay(10);
 	//UPCTL memory timing registers
 	MMC_Wr(UPCTL_TOGCNT1U_ADDR, v_t_1us_pck);	 //1us = nn cycles.
 	MMC_Wr(UPCTL_TOGCNT100N_ADDR, v_t_100ns_pck);//100ns = nn cycles.
 	MMC_Wr(UPCTL_TINIT_ADDR, v_t_init_us);  //200us.
 	
 //  MMC_Wr(UPCTL_TRSTH_ADDR, 2);      // 0 for ddr2; 500 for ddr3. 2 for simulation.
-	MMC_Wr(UPCTL_TRSTH_ADDR, v_t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
-	MMC_Wr(UPCTL_TRSTL_ADDR, v_t_rstl_us);
+	MMC_Wr(UPCTL_TRSTH_ADDR, v_t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3. //???
+	MMC_Wr(UPCTL_TRSTL_ADDR, v_t_rstl_us);  //?????
 	
 	MMC_Wr(UPCTL_MCFG_ADDR,v_mcfg);
 	 
@@ -452,13 +453,14 @@ void init_pctl(void)
 	MMC_Wr( PUB_MR1_ADDR,v_msr1);
 	MMC_Wr( PUB_MR2_ADDR,v_msr2);
 	MMC_Wr( PUB_MR3_ADDR,v_msr3);	
+//	MMC_Wr( PUB_MR3_ADDR,0);	
 	
 	MMC_Wr(PUB_DTPR0_ADDR,v_pub_dtpr0);
 	MMC_Wr(PUB_DTPR1_ADDR,v_pub_dtpr1);
 	MMC_Wr(PUB_DTPR2_ADDR,v_pub_dtpr2);
 	MMC_Wr(PUB_PTR0_ADDR,v_pub_ptr0);
 	
-	
+	  __udelay(50);
 	//wait PHY DLL LOCK
 	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
 
@@ -466,23 +468,20 @@ void init_pctl(void)
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
 
-  MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18);
+  MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
    
 
 	//for simulation to reduce the init time.
 	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
 	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
 
-
-   __udelay(10);
+   __udelay(20);
 	//wait DDR3_ZQ_DONE: 
 	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
 	
- 	
 	// wait DDR3_PHY_INIT_WAIT : 
 	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
-	
-
+		
 	// Monitor DFI initialization status.
 	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 
@@ -576,10 +575,9 @@ void init_pctl(void)
 	MMC_Wr(UPCTL_SCFG_ADDR, 0xf00);
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
 	
- 	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg);
-	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr);
+	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg); //????
+	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr); //?????
  	
-
  	MMC_Wr( UPCTL_SCTL_ADDR, 1);
 	while (!( MMC_Rd(UPCTL_STAT_ADDR) & 1))  {
 		MMC_Wr(UPCTL_SCTL_ADDR, 1);
@@ -597,7 +595,7 @@ void init_pctl(void)
 	MMC_Wr( UPCTL_DFISTCFG0_ADDR, 0x4  );
 	MMC_Wr( UPCTL_DFITCTRLUPDMIN_ADDR, 0x4000 );
 	MMC_Wr( UPCTL_DFILPCFG0_ADDR, ( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28)));
-
+ 
 	MMC_Wr( UPCTL_CMDTSTATEN_ADDR, 1);
 	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
 
@@ -610,19 +608,20 @@ void init_pctl(void)
 
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-
+	
  	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-
-
+	
 	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
 	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
   MMC_Wr(MMC_REQ_CTRL, 0xff ); 
+  
 //	udelay(50);	
+
+//	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
 	//traning result
-/*
-  MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
+/*  MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
   MMC_Wr(UPCTL_DLLCR1_ADDR, v_dllcr1); //288
   MMC_Wr(UPCTL_DLLCR2_ADDR, v_dllcr2); //28c
   MMC_Wr(UPCTL_DLLCR3_ADDR, v_dllcr3); //290
@@ -635,9 +634,12 @@ void init_pctl(void)
 
 
 	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
-	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+	*/
+	
+//	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
+//	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
 
-
+/*
 	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
 	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
 
