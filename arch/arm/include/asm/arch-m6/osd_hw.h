@@ -22,10 +22,12 @@ typedef  enum{
 	OSD_COLOR_KEY,
 	OSD_COLOR_KEY_ENABLE,
 	OSD_GBL_ALPHA,
+	OSD_CHANGE_ORDER,
 	DISP_GEOMETRY,
 	DISP_SCALE_ENABLE,
 	HW_REG_INDEX_MAX
 }hw_reg_index;
+
 
 
 typedef struct {
@@ -35,12 +37,13 @@ typedef struct {
 	s32 y_end;
 } pandata_t;
 
-
+#define  OSD_ORDER_01		1	 /*forground osd1*/
+#define  OSD_ORDER_10		2	 /*forground osd2*/
 #define OSD_GLOBAL_ALPHA_DEF  0xff
 #define OSD_DATA_BIG_ENDIAN 	0
 #define OSD_DATA_LITTLE_ENDIAN 1
 #define OSD_TC_ALPHA_ENABLE_DEF 0  //disable tc_alpha
-#define   REG_OFFSET		0x20
+#define   REG_OFFSET		(0x20<<2)
 
 extern void  osd_set_colorkey_hw(u32 index,u32 bpp,u32 colorkey ) ;
 extern void  osd_srckey_enable_hw(u32  index,u8 enable);

@@ -67,14 +67,14 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	*/
 
   	//Enable DDR DLL clock input from PLL.
-    MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
-    MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);
+    writel(0xc0000080, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
+    writel(0xc00000c0, P_MMC_CLK_CNTL);
 
     //enable the clock.
-    MMC_Wr(MMC_CLK_CNTL, 0x400000c0);
+    writel(0x400000c0, P_MMC_CLK_CNTL);
      
     // release the DDR DLL reset pin.
-    MMC_Wr(MMC_SOFT_RST,  0xffff);
+    writel(0xffff, P_MMC_SOFT_RST);
 	
 	wait_pll(3,timing_reg->ddr_clk);
 
@@ -123,14 +123,14 @@ unsigned m6_ddr_init_test(int arg)
     por_cfg=0;
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
 	{
-        writel(0,P_WATCHDOG_RESET);
+        writel(0, P_WATCHDOG_RESET);
         por_cfg=mem_test[i](arg&(1<<i),&__ddr_setting);
         serial_puts("\nStage ");
         serial_put_hex(i,8);
         serial_puts(" Result ");
         serial_put_hex(por_cfg,32);
 	}
-	writel(0,P_WATCHDOG_TC);
+	writel(0, P_WATCHDOG_TC);
 	ddr_start_again=por_cfg?1:ddr_start_again;
 	return por_cfg;
 }

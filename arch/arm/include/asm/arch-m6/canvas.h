@@ -23,11 +23,11 @@
 #define CANVAS_H
 
 typedef struct {
-    ulong addr;
-    u32 width;
-    u32 height;
-    u32 wrap;
-    u32 blkmode;
+	ulong addr;
+	u32 width;
+	u32 height;
+	u32 wrap;
+	u32 blkmode;
 } canvas_t;
 
 #define OSD1_CANVAS_INDEX 0x40
@@ -37,10 +37,16 @@ typedef struct {
 #define GE2D_MAX_CANVAS_INDEX   0x5f
 
 #define DISPLAY_CANVAS_BASE_INDEX   0x60
-#define DISPLAY_CANVAS_MAX_INDEX    0x62 
+#define DISPLAY_CANVAS_MAX_INDEX    0x65 
 
-#define DEINTERLACE_CANVAS_BASE_INDEX	0x63
-#define DEINTERLACE_CANVAS_MAX_INDEX	0x6a
+/*here ppmgr share the same canvas with deinterlace*/
+#define PPMGR_CANVAS_INDEX 0x70
+#define PPMGR_DEINTERLACE_BUF_CANVAS 0x77   /*for progressive mjpeg use*/
+
+
+#define DEINTERLACE_CANVAS_BASE_INDEX	0x70
+#define DEINTERLACE_CANVAS_MAX_INDEX	0x7f
+
 
 extern void canvas_config(u32 index, ulong addr, u32 width,
                           u32 height, u32 wrap, u32 blkmode);
