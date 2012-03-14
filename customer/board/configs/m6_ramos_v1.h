@@ -103,10 +103,11 @@
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m1_mbox\0" \
+	"boardname=m6_g04\0" \
 	"chipname=8726m\0" \
-	"machid=F81\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"machid=4e21\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m\0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -120,7 +121,7 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+#define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 

@@ -444,7 +444,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 1,
-                .options = (NAND_TIMING_MODE5| NAND_ECC_BCH30_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_MODE | NAND_TWO_PLANE_MODE),
             },
         },
         .rbpin_mode = 1,
