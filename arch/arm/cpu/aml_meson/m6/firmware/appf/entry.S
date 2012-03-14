@@ -358,9 +358,10 @@ label_df
 	pop	{r4-r12, pc}
 
 _cpu_stat
-	.word	0x01FFE0
-;second_cpu_start
-;	.word 0x810160e0
+	.word	0x01FF80
+	.word	0
+	.word	0
+	.word	0
 not_cpu0
     mov r2,#1
     mov r2,r2, asl r0
@@ -373,8 +374,6 @@ not_cpu0_loop
     wfene               @wait for event 
 ;    wfi
     bne   not_cpu0_loop
-;    ldr r3, second_cpu_start
-;    ldr pc, [r3]
 ;    b   not_cpu0_loop
 ;    ldr     pc, [r3, r0, asl #2]
 
