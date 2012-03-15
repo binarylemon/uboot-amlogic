@@ -311,32 +311,18 @@ static void lcd_io_init(void)
 static int lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
-	char envstr[20];
+
+	panel_info.lcd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
+	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
+	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, NULL);
+	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
+	panel_info.lcd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
+	panel_info.lcd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
 	
 	lcd_setup_gama_table(&lcd_config);
     lcd_io_init();
     tcon_probe();
-	
-	setenv("video_dev", "panel");
-	sprintf(envstr, "%x", panel_info.lcd_base);
-	setenv("fb_addr", envstr);		
-	sprintf(envstr, "%d", LCD_WIDTH);
-	setenv("display_width", envstr);
-	sprintf(envstr, "%d", LCD_HEIGHT);
-	setenv("display_height", envstr);
-	sprintf(envstr, "%d", COLOR_INDEX_24_RGB);
-	setenv("display_bpp", envstr);	
-	if(CURRENT_OSD == OSD1)
-		setenv("display_layer", "osd1");	
-	if(CURRENT_OSD == OSD2)
-		setenv("display_layer", "osd2");	
-	
-	setenv("video_dev", "panel");
-	setenv("panel", "panel_m3");
-	aml_gdev.fg	=	panel_info.lcd_color_fg;
-	aml_gdev.bg	=	panel_info.lcd_color_fg;
-		
-	video_hw_init();	    
+
     return 0;
 }
 
@@ -350,18 +336,16 @@ void lcd_disable(void)
 
 vidinfo_t panel_info = 
 {
-	.vl_col	=	LCD_WIDTH,		/* Number of columns (i.e. 160) */
-	.vl_row	=	LCD_HEIGHT,		/* Number of rows (i.e. 100) */
+	.vl_col	=	0,		/* Number of columns (i.e. 160) */
+	.vl_row	=	0,		/* Number of rows (i.e. 100) */
 
-	.vl_bpix	=	COLOR_INDEX_24_RGB,				/* Bits per pixel, 24bpp */
-
-	.lcd_base	=	0, //FB_ADDR,		/* Start of framebuffer memory	*/
+	.vl_bpix	=	0,				/* Bits per pixel */
 
 	.lcd_console_address	=	NULL,	/* Start of console buffer	*/
 	.console_col	=	0,
 	.console_row	=	0,
 	
-	.lcd_color_fg	=	0xffffff,
+	.lcd_color_fg	=	0,
 	.lcd_color_bg	=	0,
 	.max_bl_level	=	255,
 

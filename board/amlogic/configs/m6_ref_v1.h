@@ -99,8 +99,18 @@
 	"boardname=m6_ref\0" \
 	"chipname=8726m6\0" \
 	"machid=F82\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"video_dev=panel\0" \
+	"display_width=800\0" \
+	"display_height=1280\0" \
+	"display_bpp=16\0" \
+	"display_color_format_index=16\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x84900000\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
+	"recovery=if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 
 #define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
 
@@ -151,8 +161,7 @@
 #define CONFIG_VIDEO_AMLLCD
 //#define CONFIG_VIDEO_AMLLCD_M3
 #define CONFIG_CMD_BMP
-#define LCD_BPP LCD_COLOR24
-#define CURRENT_OSD OSD2
+#define LCD_BPP LCD_COLOR16
 #define LCD_TEST_PATTERN
 #ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV

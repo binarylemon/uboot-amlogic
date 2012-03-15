@@ -1,45 +1,50 @@
 void load_nop(void)
 {
-  APB_Wr(UPCTL_MCMD_ADDR, (1 << 31) |
-                         (DDR_RANK << 20) |   //rank select
-                          NOP_CMD );
-  __udelay(1000);
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {}
+	writel((1 << 31) |
+		(DDR_RANK << 20) |   //rank select
+		NOP_CMD
+		, P_UPCTL_MCMD_ADDR);
+	__udelay(1000);
+	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
 }
 void load_prea(void)
 {
-  APB_Wr(UPCTL_MCMD_ADDR, (1 << 31) |
-                         (DDR_RANK << 20) |   //rank select
-                         PREA_CMD );
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {}
+	writel((1 << 31) |
+		(DDR_RANK << 20) |   //rank select
+		PREA_CMD
+		, P_UPCTL_MCMD_ADDR);
+	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
 }
 
 void load_mrs(int mrs_num, int mrs_value)
 {
-  APB_Wr(UPCTL_MCMD_ADDR, (1 << 31) | 
-                         (DDR_RANK << 20) |   //rank select
-                   (mrs_num << 17) |
-                  (mrs_value << 4) |
-                           MRS_CMD );
-  __udelay(1000);
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {};
+	writel((1 << 31) | 
+		(DDR_RANK << 20) |   //rank select
+		(mrs_num << 17) |
+		(mrs_value << 4) |
+		MRS_CMD
+		, P_UPCTL_MCMD_ADDR);
+	__udelay(1000);
+	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {};
 }
 
 void load_ref(void )
 {
-  APB_Wr(UPCTL_MCMD_ADDR, (1 << 31) | 
-                         (DDR_RANK << 20) |   //rank select
-                          REF_CMD );
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {}
+	writel((1 << 31) | 
+		(DDR_RANK << 20) |   //rank select
+		REF_CMD
+		, P_UPCTL_MCMD_ADDR);
+	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
 }
 
 void load_zqcl(int zqcl_value )
 {
-  APB_Wr(UPCTL_MCMD_ADDR, (1 << 31) | 
-                         (DDR_RANK << 20) |   //rank select
-                  (zqcl_value << 4 ) |
-                          ZQ_LONG_CMD );
-  while ( APB_Rd(UPCTL_MCMD_ADDR) & 0x80000000 ) {};
+	writel((1 << 31) | 
+		(DDR_RANK << 20) |   //rank select
+		(zqcl_value << 4 ) |
+		ZQ_LONG_CMD
+		, P_UPCTL_MCMD_ADDR);
+	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {};
   
 }
 
@@ -98,71 +103,76 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	int nTempVal;
 	
 	//UPCTL memory timing registers
-	MMC_Wr(UPCTL_TOGCNT1U_ADDR, timing_reg->t_1us_pck);	 //1us = nn cycles.
+	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
 
-	MMC_Wr(UPCTL_TOGCNT100N_ADDR, timing_reg->t_100ns_pck);//100ns = nn cycles.
+	writel(timing_reg->t_100ns_pck, P_UPCTL_TOGCNT100N_ADDR);//100ns = nn cycles.
 
-	MMC_Wr(UPCTL_TINIT_ADDR, timing_reg->t_init_us);  //200us.
+	writel(timing_reg->t_init_us, P_UPCTL_TINIT_ADDR);  //200us.
 
-	MMC_Wr(UPCTL_TRSTH_ADDR, timing_reg->t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
-	MMC_Wr(UPCTL_TRSTL_ADDR, timing_reg->t_rstl_us);
+	writel(timing_reg->t_rsth_us, P_UPCTL_TRSTH_ADDR);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
+	writel(timing_reg->t_rstl_us, P_UPCTL_TRSTL_ADDR);
 	
 	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
 	if(nTempVal<4) nTempVal = 4;
 	if(nTempVal>6) nTempVal = 6;
 	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
 	//MMC_Wr(UPCTL_MCFG_ADDR,(nTempVal <<18)|(timing_reg->mcfg & (~(3<<18))));
-	MMC_Wr(UPCTL_MCFG_ADDR,((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
-                           (timing_reg->mcfg & (~(3<<18))));
+	writel(((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
+		(timing_reg->mcfg & (~(3<<18)))
+		, P_UPCTL_MCFG_ADDR);
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
-	MMC_Wr(PUB_DCR_ADDR, 0x3 | (1 << 3));
-	MMC_Wr(PUB_PGCR_ADDR, 0x01842e04); //PUB_PGCR_ADDR: c8001008
+	writel(0x3 | (1 << 3), P_PUB_DCR_ADDR);
+	writel(0x01842e04, P_PUB_PGCR_ADDR); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.	
-	MMC_Wr( PUB_MR0_ADDR,get_mrs0(timing_reg));
-	MMC_Wr( PUB_MR1_ADDR,get_mrs1(timing_reg));
-	MMC_Wr( PUB_MR2_ADDR,get_mrs2(timing_reg));
-	MMC_Wr( PUB_MR3_ADDR, 0x0);	
+	writel(get_mrs0(timing_reg), P_PUB_MR0_ADDR);
+	writel(get_mrs1(timing_reg), P_PUB_MR1_ADDR);
+	writel(get_mrs2(timing_reg), P_PUB_MR2_ADDR);
+	writel(0x0, P_PUB_MR3_ADDR);	
 
 	//program DDR SDRAM timing parameter.
-	MMC_Wr( PUB_DTPR0_ADDR, (0x0 |		//tMRD.
-						(timing_reg->t_rtp <<2) |		//tRTP
-						( timing_reg->t_wtr << 5) |		//tWTR
-						(timing_reg->t_rp << 8) |		//tRP
-						(timing_reg->t_rcd << 12) |		//tRCD
-						(timing_reg->t_ras <<16) |		//tRAS
-						( timing_reg->t_rrd <<21 ) |		//tRRD
-						(timing_reg->t_rc <<25) |		//tRC
-						( 0 <<31) ));	//tCCD
+	writel((0x0 |		//tMRD.
+		(timing_reg->t_rtp <<2) |		//tRTP
+		( timing_reg->t_wtr << 5) |		//tWTR
+		(timing_reg->t_rp << 8) |		//tRP
+		(timing_reg->t_rcd << 12) |		//tRCD
+		(timing_reg->t_ras <<16) |		//tRAS
+		( timing_reg->t_rrd <<21 ) |		//tRRD
+		(timing_reg->t_rc <<25) |		//tRC
+		( 0 <<31) )
+		, P_PUB_DTPR0_ADDR);	//tCCD
 
-	MMC_Wr( PUB_DTPR1_ADDR, ((timing_reg->t_faw << 3) |   //tFAW
-							(timing_reg->t_mod << 9) |   //tMOD
-							(0 << 11) |   //tRTODT
-						   ( timing_reg->t_rfc << 16) |   //tRFC
-						   ( 0 << 24) |   //tDQSCK
-						   ( 0 << 27) )); //tDQSCKmax
+	writel(((timing_reg->t_faw << 3) |   //tFAW
+		(timing_reg->t_mod << 9) |   //tMOD
+		(0 << 11) |   //tRTODT
+		( timing_reg->t_rfc << 16) |   //tRFC
+		( 0 << 24) |   //tDQSCK
+		( 0 << 27) )
+		, P_PUB_DTPR1_ADDR); //tDQSCKmax
 
-	MMC_Wr( PUB_DTPR2_ADDR, ( 512 |		 //tXS
-					 ( timing_reg->t_xp << 10) |		 //tXP
-					  ( timing_reg->t_cke << 15) |		 //tCKE
-					( 512 << 19) ));	 //tDLLK
+	writel(( 512 |		 //tXS
+		( timing_reg->t_xp << 10) |		 //tXP
+		( timing_reg->t_cke << 15) |		 //tCKE
+		( 512 << 19) )
+		, P_PUB_DTPR2_ADDR);	 //tDLLK
 
 	// initialization PHY.
-	MMC_Wr( PUB_PTR0_ADDR,  ( 27 |	  //tDLL_SRST 
-					(2750 << 6) |	  //tDLLLOCK 
-					   (8 <<18)));	   //tITMSRST 
+	writel(( 27 |	  //tDLL_SRST 
+		(2750 << 6) |	  //tDLLLOCK 
+		(8 <<18))
+		, P_PUB_PTR0_ADDR);	   //tITMSRST 
 
 	//wait PHY DLL LOCK
-	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
+	while(!(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
 	// configure DDR3_rst pin.
-	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
-	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
+	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
+	writel(readl(P_PUB_DSGCR_ADDR) & 0xffffffef, P_PUB_DSGCR_ADDR); 
 	
-    MMC_Wr( PUB_ZQ0CR1_ADDR, timing_reg->zq0cr1);	//get from __ddr_setting
+    writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
 
 	//for simulation to reduce the init time.
 	//MMC_Wr(PUB_PTR1_ADDR,  (20000 | 		  // Tdinit0   DDR3 : 500us.  LPDDR2 : 200us.
@@ -172,134 +182,135 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
     __udelay(10);
 	//wait DDR3_ZQ_DONE: 
-	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
+	while(!(readl(P_PUB_PGSR_ADDR) & (1<< 2))) {}
 
 	// wait DDR3_PHY_INIT_WAIT : 
-	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
+	while (!(readl(P_PUB_PGSR_ADDR) & 1 )) {}
 
 	// Monitor DFI initialization status.
-	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
+	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 
-	MMC_Wr(UPCTL_POWCTL_ADDR, 1);
-	while(!(MMC_Rd( UPCTL_POWSTAT_ADDR & 1) )) {}
+	writel(1, P_UPCTL_POWCTL_ADDR);
+	while(!(readl(P_UPCTL_POWSTAT_ADDR & 1) )) {}
 
 
 
 
 	// initial upctl ddr timing.
-	MMC_Wr(UPCTL_TREFI_ADDR, timing_reg->t_refi_100ns);  // 7800ns to one refresh command.
+	writel(timing_reg->t_refi_100ns, P_UPCTL_TREFI_ADDR);  // 7800ns to one refresh command.
 	// wr_reg UPCTL_TREFI_ADDR, 78
 
-	MMC_Wr(UPCTL_TMRD_ADDR, timing_reg->t_mrd);
+	writel(timing_reg->t_mrd, P_UPCTL_TMRD_ADDR);
 	//wr_reg UPCTL_TMRD_ADDR, 4
 
-	MMC_Wr(UPCTL_TRFC_ADDR, timing_reg->t_rfc);	//64: 400Mhz.  86: 533Mhz. 
+	writel(timing_reg->t_rfc, P_UPCTL_TRFC_ADDR);	//64: 400Mhz.  86: 533Mhz. 
 	// wr_reg UPCTL_TRFC_ADDR, 86
 
-	MMC_Wr(UPCTL_TRP_ADDR, timing_reg->t_rp);	// 8 : 533Mhz.
+	writel(timing_reg->t_rp, P_UPCTL_TRP_ADDR);	// 8 : 533Mhz.
 	//wr_reg UPCTL_TRP_ADDR, 8
 
-	MMC_Wr(UPCTL_TAL_ADDR,	timing_reg->t_al);
+	writel(timing_reg->t_al, P_UPCTL_TAL_ADDR);
 	//wr_reg UPCTL_TAL_ADDR, 0
 
-	MMC_Wr(UPCTL_TCWL_ADDR,  timing_reg->t_cwl);
+	writel(timing_reg->t_cwl, P_UPCTL_TCWL_ADDR);
 	//wr_reg UPCTL_TCWL_ADDR, 6
 
-	MMC_Wr(UPCTL_TCL_ADDR, timing_reg->cl);	 //6: 400Mhz. 8 : 533Mhz.
+	writel(timing_reg->cl, P_UPCTL_TCL_ADDR);	 //6: 400Mhz. 8 : 533Mhz.
 	// wr_reg UPCTL_TCL_ADDR, 8
 
-	MMC_Wr(UPCTL_TRAS_ADDR, timing_reg->t_ras); //16: 400Mhz. 20: 533Mhz.
+	writel(timing_reg->t_ras, P_UPCTL_TRAS_ADDR); //16: 400Mhz. 20: 533Mhz.
 	//  wr_reg UPCTL_TRAS_ADDR, 20 
 
-	MMC_Wr(UPCTL_TRC_ADDR, timing_reg->t_rc);  //24 400Mhz. 28 : 533Mhz.
+	writel(timing_reg->t_rc, P_UPCTL_TRC_ADDR);  //24 400Mhz. 28 : 533Mhz.
 	//wr_reg UPCTL_TRC_ADDR, 28
 
-	MMC_Wr(UPCTL_TRCD_ADDR, timing_reg->t_rcd);	//6: 400Mhz. 8: 533Mhz.
+	writel(timing_reg->t_rcd, P_UPCTL_TRCD_ADDR);	//6: 400Mhz. 8: 533Mhz.
 	// wr_reg UPCTL_TRCD_ADDR, 8
 
-	MMC_Wr(UPCTL_TRRD_ADDR, timing_reg->t_rrd); //5: 400Mhz. 6: 533Mhz.
+	writel(timing_reg->t_rrd, P_UPCTL_TRRD_ADDR); //5: 400Mhz. 6: 533Mhz.
 	//wr_reg UPCTL_TRRD_ADDR, 6
 
-	MMC_Wr(UPCTL_TRTP_ADDR, timing_reg->t_rtp);
+	writel(timing_reg->t_rtp, P_UPCTL_TRTP_ADDR);
 	// wr_reg UPCTL_TRTP_ADDR, 4
 
-	MMC_Wr(UPCTL_TWR_ADDR, timing_reg->t_wr);
+	writel(timing_reg->t_wr, P_UPCTL_TWR_ADDR);
 	// wr_reg UPCTL_TWR_ADDR, 8
 
-	MMC_Wr(UPCTL_TWTR_ADDR, timing_reg->t_wtr);
+	writel(timing_reg->t_wtr, P_UPCTL_TWTR_ADDR);
 	//wr_reg UPCTL_TWTR_ADDR, 4
 
 
-	MMC_Wr(UPCTL_TEXSR_ADDR, timing_reg->t_exsr);
+	writel(timing_reg->t_exsr, P_UPCTL_TEXSR_ADDR);
 	//wr_reg UPCTL_TEXSR_ADDR, 200
 
-	MMC_Wr(UPCTL_TXP_ADDR, timing_reg->t_xp);
+	writel(timing_reg->t_xp, P_UPCTL_TXP_ADDR);
 	//wr_reg UPCTL_TXP_ADDR, 4
 
-	MMC_Wr(UPCTL_TDQS_ADDR, timing_reg->t_dqs);
+	writel(timing_reg->t_dqs, P_UPCTL_TDQS_ADDR);
 	// wr_reg UPCTL_TDQS_ADDR, 2
 
-	MMC_Wr(UPCTL_TRTW_ADDR, timing_reg->t_rtw);
+	writel(timing_reg->t_rtw, P_UPCTL_TRTW_ADDR);
 	//wr_reg UPCTL_TRTW_ADDR, 2
 
-	MMC_Wr(UPCTL_TCKSRE_ADDR, timing_reg->t_cksre);
+	writel(timing_reg->t_cksre, P_UPCTL_TCKSRE_ADDR);
 	//wr_reg UPCTL_TCKSRE_ADDR, 5 
 
-	MMC_Wr(UPCTL_TCKSRX_ADDR, timing_reg->t_cksrx);
+	writel(timing_reg->t_cksrx, P_UPCTL_TCKSRX_ADDR);
 	//wr_reg UPCTL_TCKSRX_ADDR, 5 
 
-	MMC_Wr(UPCTL_TMOD_ADDR, timing_reg->t_mod);
+	writel(timing_reg->t_mod, P_UPCTL_TMOD_ADDR);
 	//wr_reg UPCTL_TMOD_ADDR, 8
 
-	MMC_Wr(UPCTL_TCKE_ADDR, timing_reg->t_cke);
+	writel(timing_reg->t_cke, P_UPCTL_TCKE_ADDR);
 	//wr_reg UPCTL_TCKE_ADDR, 4 
 
-	MMC_Wr(UPCTL_TZQCS_ADDR, 64);
+	writel(64, P_UPCTL_TZQCS_ADDR);
 	//wr_reg UPCTL_TZQCS_ADDR , 64 
 
-	MMC_Wr(UPCTL_TZQCL_ADDR, timing_reg->t_zqcl);
+	writel(timing_reg->t_zqcl, P_UPCTL_TZQCL_ADDR);
 	//wr_reg UPCTL_TZQCL_ADDR , 512 
-
-	MMC_Wr(UPCTL_TXPDLL_ADDR, 10);
+	
+	writel(10, P_UPCTL_TXPDLL_ADDR);
 	// wr_reg UPCTL_TXPDLL_ADDR, 10  
 
-	MMC_Wr(UPCTL_TZQCSI_ADDR, 1000);
+	writel(1000, P_UPCTL_TZQCSI_ADDR);
 	// wr_reg UPCTL_TZQCSI_ADDR, 1000  
 
-	MMC_Wr(UPCTL_SCFG_ADDR, 0xf00);
-
+	writel(0xf00, P_UPCTL_SCFG_ADDR);
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
+	__udelay(500);	//wait a moment before change state
+	writel(1, P_UPCTL_SCTL_ADDR);
 
-	MMC_Wr( UPCTL_SCTL_ADDR, 1);
-	while (!( MMC_Rd(UPCTL_STAT_ADDR) & 1))  {}
+	while (!(readl(P_UPCTL_STAT_ADDR) & 1))  {}
 
 	//config the DFI interface.
-	MMC_Wr( UPCTL_PPCFG_ADDR, (0xf0 << 1) );
-	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
-	MMC_Wr( UPCTL_DFITPHYWRDATA_ADDR,  0x1 );
-	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, timing_reg->t_cwl -1  );    //CWL -1
-	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, timing_reg->cl - 2  );    //CL -2
-	MMC_Wr( UPCTL_DFITPHYRDLAT_ADDR, 15 );
-	MMC_Wr( UPCTL_DFITDRAMCLKDIS_ADDR, 2 );
-	MMC_Wr( UPCTL_DFITDRAMCLKEN_ADDR, 2 );
-	MMC_Wr( UPCTL_DFISTCFG0_ADDR, 0x4  );
-	MMC_Wr( UPCTL_DFITCTRLUPDMIN_ADDR, 0x4000 );
-	MMC_Wr( UPCTL_DFILPCFG0_ADDR, ( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28)));
+	writel((0xf0 << 1), P_UPCTL_PPCFG_ADDR);
+	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR);
+	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR);
+	writel(timing_reg->t_cwl -1, P_UPCTL_DFITPHYWRLAT_ADDR);    //CWL -1
+	writel(timing_reg->cl - 2, P_UPCTL_DFITRDDATAEN_ADDR);    //CL -2
+	writel(15, P_UPCTL_DFITPHYRDLAT_ADDR);
+	writel(2, P_UPCTL_DFITDRAMCLKDIS_ADDR);
+	writel(2, P_UPCTL_DFITDRAMCLKEN_ADDR);
+	writel(0x4, P_UPCTL_DFISTCFG0_ADDR);
+	writel(0x4000, P_UPCTL_DFITCTRLUPDMIN_ADDR);
+	writel(( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28))
+		, P_UPCTL_DFILPCFG0_ADDR);
 
-	MMC_Wr( UPCTL_CMDTSTATEN_ADDR, 1);
-	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
+	writel(1, P_UPCTL_CMDTSTATEN_ADDR);
+	while (!(readl(P_UPCTL_CMDTSTAT_ADDR) & 1 )) {}
 
-	MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0x0 <<12) | (7 << 28))); 
+	writel((0x0 | (0x0 <<12) | (7 << 28)), P_PUB_DTAR_ADDR); 
 
 	// DDR PHY initialization 
 	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);
-	MMC_Wr( PUB_PIR_ADDR, 0x1e9);
+	writel(0x1e9, P_PUB_PIR_ADDR);
 	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
+	while( !(readl(P_PUB_PGSR_ADDR & 1))) {}
 
-	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
+	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
-	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 
 	return 0;
 

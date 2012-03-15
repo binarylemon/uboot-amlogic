@@ -254,6 +254,6 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-
+//#define CONFIG_AML_SUSPEND 1
 
 #endif //__CONFIG_M6_SKT_V1_H__

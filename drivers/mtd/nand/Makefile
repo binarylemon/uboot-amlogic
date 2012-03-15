@@ -54,7 +54,8 @@ COBJS-$(CONFIG_NAND_OMAP_GPMC) += omap_gpmc.o
 COBJS-$(CONFIG_NAND_PLAT) += nand_plat.o
 COBJS-$(CONFIG_NAND_AML_M1) += aml_nand.o m1_nand.o
 COBJS-$(CONFIG_NAND_AML_M2) += aml_nand.o m2_nand.o
-COBJS-$(CONFIG_NAND_AML_M3) += aml_v3_nand.o v3_nand.o
+COBJS-$(CONFIG_NAND_AML_M3) += aml_nand.o m3_nand.o
+COBJS-$(CONFIG_NAND_AML_A3) += aml_nand.o a3_nand.o
 endif
 
 COBJS	:= $(COBJS-y)

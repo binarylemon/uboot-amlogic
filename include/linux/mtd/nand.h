@@ -38,8 +38,7 @@ struct nand_flash_dev;
 extern int nand_scan (struct mtd_info *mtd, int max_chips);
 /* Separate phases of nand_scan(), allowing board driver to intervene
  * and override command or ECC setup according to flash type */
-extern int nand_scan_ident(struct mtd_info *mtd, int max_chips,
-			   const struct nand_flash_dev *table);
+extern int nand_scan_ident(struct mtd_info *mtd, int max_chips);
 extern int nand_scan_tail(struct mtd_info *mtd);
 
 /* Free resources held by the NAND device */
@@ -512,6 +511,8 @@ struct platform_nand_chip {
 	int			chip_delay;
 	unsigned int		options;
 	const char		**part_probe_types;
+	void			(*set_parts)(uint64_t size,
+					struct platform_nand_chip *chip);
 	void			*priv;
 };
 

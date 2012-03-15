@@ -176,7 +176,7 @@ SPL_STATIC_FUNC int nf_sp_read(unsigned dest,unsigned size)
 	   do{
 		   nf_send_read_cmd(page_base+cur,1);//small Page mode
 		   ret=nf_read_dma((unsigned*)(dest+cnt),(unsigned*)CONFIG_NAND_INFO_DMA_ADDR,
-				   512, NAND_ECC_BCH8_512);
+				   512, NAND_ECC_BCH8);
 
 		   if(ret!=-1)
 			   break;

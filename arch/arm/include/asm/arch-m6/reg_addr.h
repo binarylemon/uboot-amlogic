@@ -1,8 +1,9 @@
 #ifndef __MACH_MESSON_REG_ADDR_H
 #define __MACH_MESSON_REG_ADDR_H
 //CBUS REG ADDR
-#include "register.h"
-#include "ao_reg.h"
+#include <asm/arch/io.h>
+#include <asm/arch/register.h>
+#include <asm/arch/ao_reg.h>
 #define P_SECOND_DEMUX_OFFSET_0 CBUS_REG_ADDR(SECOND_DEMUX_OFFSET_0)
 #define P_THIRD_DEMUX_OFFSET_0 CBUS_REG_ADDR(THIRD_DEMUX_OFFSET_0)
 #define P_STB_TOP_CONFIG CBUS_REG_ADDR(STB_TOP_CONFIG)

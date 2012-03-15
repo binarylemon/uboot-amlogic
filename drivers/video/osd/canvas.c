@@ -47,21 +47,22 @@ void canvas_config(u32 index, ulong addr, u32 width,
     _debug("index=%d, addr=0x%08x width=%d, height=%d wrap=%d, blkmode=%d \n",
         index, addr, width, height, wrap, blkmode);
 
-    WRITE_APB_REG(DC_CAV_LUT_DATAL,
-					(((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-					((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT));
+    writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+					((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+					, P_DC_CAV_LUT_DATAL);
 
-    WRITE_APB_REG(DC_CAV_LUT_DATAH,
-					((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+    writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
 					((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)	|
 					((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              |
 					((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              |
-					((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT));
+					((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+					, P_DC_CAV_LUT_DATAH);
 
-    WRITE_APB_REG(DC_CAV_LUT_ADDR, CANVAS_LUT_WR_EN | index);
+    writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
 
-	READ_APB_REG(DC_CAV_LUT_DATAH);
-
+	// read a cbus to make sure last write finish.
+    readl(P_DC_CAV_LUT_DATAH);
+	
 	canvasP->addr = addr;
 	canvasP->width = width;
 	canvasP->height = height;
@@ -91,21 +92,21 @@ void canvas_copy(u32 src, u32 dst)
     wrap = canvasPool[src].wrap;
     blkmode = canvasPool[src].blkmode;
     
-    WRITE_APB_REG(DC_CAV_LUT_DATAL,
-        (((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-        ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT));
+    writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+        ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+        , P_DC_CAV_LUT_DATAL);
 
-    WRITE_APB_REG(DC_CAV_LUT_DATAH,
-        ((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+    writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
         ((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)    |
         ((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              | 
         ((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              | 
-        ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT));
+        ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+        , P_DC_CAV_LUT_DATAH);
 
-    WRITE_APB_REG(DC_CAV_LUT_ADDR, CANVAS_LUT_WR_EN | dst);
+    writel(CANVAS_LUT_WR_EN | dst, P_DC_CAV_LUT_ADDR);
 
     // read a cbus to make sure last write finish.
-    READ_APB_REG(DC_CAV_LUT_DATAH);
+    readl(P_DC_CAV_LUT_DATAH);
     
     canvasPool[dst].addr = addr;
     canvasPool[dst].width = width;
@@ -125,21 +126,21 @@ void canvas_update_addr(u32 index, u32 addr)
 
     canvasPool[index].addr = addr;
 
-    WRITE_APB_REG(DC_CAV_LUT_DATAL,
-        (((canvasPool[index].addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-        ((((canvasPool[index].width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT));
+    writel((((canvasPool[index].addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+        ((((canvasPool[index].width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+        , P_DC_CAV_LUT_DATAL);
 
-    WRITE_APB_REG(DC_CAV_LUT_DATAH,
-        ((((canvasPool[index].width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+    writel(((((canvasPool[index].width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
         ((canvasPool[index].height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)   |
         ((canvasPool[index].wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)             | 
         ((canvasPool[index].wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)             | 
-        ((canvasPool[index].blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT));
+        ((canvasPool[index].blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+        , P_DC_CAV_LUT_DATAH);
 
-    WRITE_APB_REG(DC_CAV_LUT_ADDR, CANVAS_LUT_WR_EN | index);
+    writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
 
     // read a cbus to make sure last write finish.
-    READ_APB_REG(DC_CAV_LUT_DATAH);
+    readl(P_DC_CAV_LUT_DATAH);
 
     return;
 }

@@ -18,12 +18,16 @@
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
-	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 //Default to open ARM JTAG for M6 only
 #ifdef CONFIG_M6
 	#define AML_M6_JTAG_ENABLE
 	#define AML_M6_JTAG_SET_ARM
+	
+	//for M6 only. And it will cause M3 fail to boot up.
+	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+	
 #endif
 
 #ifdef AML_M6_JTAG_ENABLE
@@ -73,7 +77,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     ddr_init_test();
     // load uboot
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
-    serial_puts("\nSystemp Started\n");
+    serial_puts("\nSystem Started\n");
     //wait serial_puts end.
     for(i = 0; i < 10; i++)
 		  __udelay(1000);
