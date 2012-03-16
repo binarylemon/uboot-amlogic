@@ -2,7 +2,7 @@
 #define __CONFIG_M6_RAMOS_H__
 
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
-
+#define CONFIG_AML_MESON_6 1
 #define M6_RAMOS_V1_20120227 1
 
 //UART Sectoion
@@ -10,11 +10,11 @@
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-#define CONFIG_AML_I2C      1
+//#define CONFIG_AML_I2C      1
 
-//#define HAS_AO_MODULE
-//#define CONFIG_AML_I2C
-//#define CONFIG_AW_AXP20
+#define HAS_AO_MODULE
+#define CONFIG_AML_I2C	//add by Elvis Yu
+#define CONFIG_AW_AXP20
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -24,13 +24,12 @@
 //#define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-	#define CONFIG_AML_MESON_6 1
 	#define SPI_WRITE_PROTECT  1
 	#define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
-//#define CONFIG_SARADC 1
+#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #ifdef CONFIG_MACHID_CHECK
@@ -106,20 +105,18 @@
 	"boardname=m6_g04\0" \
 	"chipname=8726m\0" \
 	"machid=4e21\0" \
+	"video_dev=panel\0" \
+	"display_width=1024\0" \
+	"display_height=600\0" \
+	"display_bpp=16\0" \
+	"display_color_format_index=16\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x84900000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
-	"partnum=2\0" \
-	"p0start=1000000\0" \
-	"p0size=400000\0" \
-	"p0path=uImage\0" \
-	"p1start=1400000\0" \
-	"p1size=8000000\0" \
-	"p1path=android.rootfs\0" \
-	"bootstart=0\0" \
-	"bootsize=60000\0" \
-	"bootpath=u-boot-512M-UartB.bin\0" \
-	"normalstart=1000000\0" \
-	"normalsize=400000\0" \
+	"recovery=if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 
 #define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
 
@@ -164,6 +161,18 @@
 #endif
 
 #define BOARD_LATE_INIT
+#define CONFIG_SWITCH_BOOT_MODE
+/* config LCD output */ 
+#define CONFIG_VIDEO_AML
+#define CONFIG_VIDEO_AMLLCD
+//#define CONFIG_VIDEO_AMLLCD_M3
+#define CONFIG_CMD_BMP
+#define LCD_BPP LCD_COLOR16
+#define LCD_TEST_PATTERN
+#ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+#endif
+/*end config LCD output*/
 
 /*POST support*/
 //#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
