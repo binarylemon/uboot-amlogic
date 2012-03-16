@@ -16,6 +16,26 @@ _start:
 	ldr	pc,_not_used
 	ldr	pc,_irq
 	ldr	pc,_fiq
+
+#ifdef CONFIG_M6_SECU_BOOT	
+	.global __ihw_setting
+__ihw_setting:
+  .space 0x1b0 - (. - _start)
+  .org 0x1b0
+.global __magic_word
+__magic_word:
+  .word MAGIC_WORD1
+  .word MAGIC_WORD2
+  .word 0
+  .word 0
+  .word 0xfe0b0101
+  .word 0x3ec1e07f
+  .word 0xa9e00000
+  .word 0x00000075
+  .space 0x1fe - (. - _start)
+  .short 0xaa55
+#endif
+	   
 reset:
 #if 0
 	ldr     r0,=0xda004004
