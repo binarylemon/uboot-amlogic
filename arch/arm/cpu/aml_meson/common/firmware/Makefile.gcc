@@ -30,8 +30,12 @@ AFLAGS	+= -DCONFIG_AMLROM_SPL -DTEXT_BASE=$(TEXT_BASE) -MD
 #CONFIG_AML_ROMBOOT_SPL
 #CC=armcc --translate_gcc --gnu --c99 
 
-
+ifndef CONFIG_M6_SECU_BOOT
 SOBJS	 = rom_spl.o magic.o
+else
+SOBJS	 = rom_spl.o
+endif 
+
 COBJS	 = spl.o 
 				
 OBJS	:= $(addprefix $(obj),$(SOBJS)  )
