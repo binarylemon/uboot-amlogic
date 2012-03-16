@@ -252,6 +252,7 @@ void test_ddr(int i)
 }
 #define pwr_ddr_off 
 
+#if 0 // Just for temp solution for test flow
 void enter_power_down()
 {
 	unsigned v;
@@ -393,7 +394,170 @@ void enter_power_down()
 	restart_arm();
   
 }
+#else// Just for temp solution for test flow
+void enter_power_down()
+{
+	unsigned v;
+	int i;
+	unsigned addr;
+	unsigned gate;
 
+//	disp_pctl();
+//	test_ddr(0);
+	 // First, we disable all memory accesses.
+	f_serial_puts("step 1\n");
+#ifdef pwr_ddr_off
+  disable_mmc_req();
+#endif	
+
+  store_restore_plls(1);
+
+#ifdef pwr_ddr_off
+ 	f_serial_puts("step 2\n");
+ 	wait_uart_empty();
+  // Next, we sleep
+  mmc_sleep();
+
+    // save ddr power
+//  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
+//  APB_Wr(UPCTL_PHYCR_ADDR, APB_Rd(UPCTL_PHYCR_ADDR)|(1<<6));
+//  APB_Wr(UPCTL_DLLCR9_ADDR, APB_Rd(UPCTL_DLLCR9_ADDR)|(1<<31));
+// 	  delay_ms(20);
+
+   // enable retention
+  enable_retention();	
+  
+  // power down DDR
+// 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
+
+ 	f_serial_puts("step 3\n");
+ 	wait_uart_empty();
+
+#endif
+
+ 	f_serial_puts("step 4\n");
+ 	wait_uart_empty();
+  // turn off ee
+//  enable_iso_ee();
+//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+ 	
+  
+ 	f_serial_puts("step 5\n");
+ 	wait_uart_empty();
+  cpu_off();
+  
+  
+ 	f_serial_puts("step 6\n");
+ 	wait_uart_empty();
+
+ 
+	
+//  switch_to_rtc();
+ 
+//  enable_iso_ao();
+ 
+//  ee_off();            
+// gate off REMOTE, UART
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+ //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
+//   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+#if 1
+	// ee use 32k, So interrup status can be accessed.
+//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+
+	writel(readl(0xc1109868)|1<<8,0xc1109868);
+	writel(readl(0xc8100080)|0x1,0xc8100080);
+	do{}while(!(readl(0xc1109860)&0x100));
+	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
+	writel(readl(0xc8100080)&(~0x1),0xc8100080);
+	f_serial_puts("here\n");
+	wait_uart_empty();
+	writel(0x100,0xc1109860);//clear int
+#else
+ 	 for(i=0;i<64;i++)
+   {
+        udelay(1000);
+        //udelay(1000);
+   }
+#endif
+
+
+ //  writel(gate,P_AO_RTI_GEN_CNTL_REG0);
+//	 udelay(100);
+// gate on REMOTE, UART
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+
+ 
+//  ee_on();
+ 
+//  disable_iso_ao();
+
+#ifdef pwr_ddr_off
+ // Next, we reset all channels 
+//  reset_mmc();
+#endif
+
+//  switch_to_81();
+	// ee go back to clk81
+//	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+
+
+	//turn on ee
+// 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+// 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
+// 	uart_reset();
+ 	
+  f_serial_puts("step 7\n");
+ 	wait_uart_empty();
+	store_restore_plls(0);
+	
+#ifdef pwr_ddr_off    
+  f_serial_puts("step 8\n");
+	wait_uart_empty();  
+//  init_ddr_pll();
+
+  f_serial_puts("step 9\n");
+ 	wait_uart_empty();
+  // initialize mmc and put it to sleep
+//  init_pctl();
+
+// 	disp_pctl();
+
+  f_serial_puts("step 10\n");
+ 	wait_uart_empty();
+//  mmc_sleep();
+
+
+  f_serial_puts("step 11\n");
+ 	wait_uart_empty();
+  // disable retention
+  disable_retention();
+
+  f_serial_puts("step 12\n");
+ 	wait_uart_empty();
+  // Next, we wake up
+  mmc_wakeup();
+
+ 
+  f_serial_puts("step 13\n");
+ 	wait_uart_empty();
+  // Next, we enable all requests
+  enable_mmc_req();
+#endif
+	
+//	disp_pctl();
+	
+	test_ddr(1);
+//	test_ddr(0);
+//	test_ddr(1);
+	
+//	disp_code();	
+
+	restart_arm();
+  
+}
+
+#endif
 
 #if 0
 void enter_power_down()
