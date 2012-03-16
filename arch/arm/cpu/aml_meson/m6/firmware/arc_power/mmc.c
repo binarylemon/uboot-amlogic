@@ -600,11 +600,12 @@ void init_pctl(void)
 	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
 
 
-	MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0x0 <<12) | (7 << 28))); 
+//	MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0x0 <<12) | (7 << 28))); 
 	
 	//start trainning.
 	// DDR PHY initialization 
-	MMC_Wr( PUB_PIR_ADDR, 0x1e9);
+	//MMC_Wr( PUB_PIR_ADDR, 0x1e9);
+	MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
 
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
@@ -619,9 +620,9 @@ void init_pctl(void)
   
 //	udelay(50);	
 
-//	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
 	//traning result
-/*  MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
+  MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
   MMC_Wr(UPCTL_DLLCR1_ADDR, v_dllcr1); //288
   MMC_Wr(UPCTL_DLLCR2_ADDR, v_dllcr2); //28c
   MMC_Wr(UPCTL_DLLCR3_ADDR, v_dllcr3); //290
@@ -634,12 +635,8 @@ void init_pctl(void)
 
 
 	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
-	*/
 	
-//	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
-//	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
 
-/*
 	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
 	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
 
@@ -678,10 +675,9 @@ void init_pctl(void)
 	MMC_Wr(PUB_DX8GSR0_ADDR,v_dx8gsr0); 
 	MMC_Wr(PUB_DX8GSR1_ADDR,v_dx8gsr1); 
 	MMC_Wr(PUB_DX8DQSTR_ADDR,v_dx8dqstr); 
-	*/
+	
 	return 0;
 }
-
 
 void init_ddr_pll(void)
 {
