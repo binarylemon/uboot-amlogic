@@ -620,7 +620,7 @@ void init_pctl(void)
   
 //	udelay(50);	
 
-//	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
 	//traning result
   MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
   MMC_Wr(UPCTL_DLLCR1_ADDR, v_dllcr1); //288
