@@ -358,24 +358,34 @@ label_df
 	pop	{r4-r12, pc}
 
 _cpu_stat
-	.word	0x01FF80
-	.word	0
-	.word	0
-	.word	0
+	.word	0x01ff80
+	.word 0x01ff84
+	.word 0
+	.word 0
 not_cpu0
     mov r2,#1
     mov r2,r2, asl r0
     orr r2,r2,#1
 not_cpu0_loop
-    ldr r3,_cpu_stat
+		movw r3, 0x990c
+		movt r3, 0xc110
+	  ldr r1,[r3]
+		movw r3,#0xFF80
+	  cmp r1,#0
+	  beq next1
+		movt r3,#0x1
+		b next
+next1	
+		movt r3,#0xd901			
+next
+		;ldr r3,_cpu_stat		
     ldr r1,[r3]
     and r1,r2,r1
     cmp r1,r2
     wfene               @wait for event 
-;    wfi
     bne   not_cpu0_loop
-;    b   not_cpu0_loop
-;    ldr     pc, [r3, r0, asl #2]
+    ldr     pc, [r3, r0, asl #2]
+    b   not_cpu0_loop
 
 appf_reset_entry_point
 	; This is the entry point from the platform warm start code

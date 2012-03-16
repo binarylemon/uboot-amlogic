@@ -213,8 +213,8 @@ void restart_arm()
 	delay_ms(1);
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
- 	f_serial_puts("arm restarted ...done\n");
-	wait_uart_empty();
+ //	f_serial_puts("arm restarted ...done\n");
+//	wait_uart_empty();
 }
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
@@ -312,7 +312,7 @@ void enter_power_down()
  
 //  ee_off();            
 // gate off REMOTE, UART
-//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+  	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
    
@@ -325,7 +325,7 @@ void enter_power_down()
  //  writel(gate,P_AO_RTI_GEN_CNTL_REG0);
 //	 udelay(100);
 // gate on REMOTE, UART
-//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
  
 //  ee_on();
@@ -342,7 +342,7 @@ void enter_power_down()
 	//turn on ee
 // 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 // 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
-// 	uart_reset();
+ 	uart_reset();
  	
   f_serial_puts("step 7\n");
  	wait_uart_empty();
@@ -818,8 +818,6 @@ int main(void)
 	    }
 	    //cmd='f';
 	    //writel(cmd,P_AO_RTI_STATUS_REG1);
-	  f_serial_puts(" arm boot -- OK!\n\n");
-	  wait_uart_empty();
 	    
 		asm(".long 0x003f236f"); //add sync instruction.
 		asm("SLEEP");
