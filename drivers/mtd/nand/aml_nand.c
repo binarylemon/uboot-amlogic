@@ -1883,7 +1883,7 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 	int32_t ret = 0, read_cnt, page, mtd_erase_shift, blk_addr, pages_per_blk;
 	loff_t addr;
 
-	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) && ((chip->ecc.read_page == aml_nand_read_page_hwecc) || (!getchip)))
+	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) /*&& ((chip->ecc.read_page == aml_nand_read_page_hwecc) || (!getchip))*/)
 		return 0;
 
 	mtd_erase_shift = fls(mtd->erasesize) - 1;
@@ -1917,7 +1917,7 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 				ret = 0;
 
 			if (ret < 0) {
-				printk(" NAND detect Bad block at %llx \n", (uint64_t)addr);
+				printk("1 NAND detect Bad block at %llx \n", (uint64_t)addr);
 				return EFAULT;
 			}
 			if (aml_oob_ops.oobbuf[chip->badblockpos] == 0xFF)
@@ -1925,7 +1925,7 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 			if (aml_oob_ops.oobbuf[chip->badblockpos] == 0) {
 				memset(aml_chip->aml_nand_data_buf, 0, aml_oob_ops.ooblen);
 				if (!memcmp(aml_chip->aml_nand_data_buf, aml_oob_ops.oobbuf, aml_oob_ops.ooblen)) {
-					printk(" NAND detect Bad block at %llx \n", (uint64_t)addr);
+					printk("2 NAND detect Bad block at %llx \n", (uint64_t)addr);
 					return EFAULT;
 				}
 			}
@@ -1948,7 +1948,7 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 			if (chip->oob_poi[chip->badblockpos] == 0) {
 				memset(aml_chip->aml_nand_data_buf, 0, (mtd->writesize + mtd->oobsize));
 				if (!memcmp(aml_chip->aml_nand_data_buf + mtd->writesize, chip->oob_poi, mtd->oobavail)) {
-					printk(" NAND detect Bad block at %llx \n", (uint64_t)addr);
+					printk("3 NAND detect Bad block at %llx \n", (uint64_t)addr);
 					return EFAULT;
 				}	
 			}

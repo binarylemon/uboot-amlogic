@@ -523,7 +523,7 @@ static int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *
 	int bch_mode = aml_chip->bch_mode;
 	int error = 0, i = 0, stat = 0;
 	int ecc_size, configure_data_w, pages_per_blk_w, configure_data, pages_per_blk;
-
+    
 	if (page >= (M3_BOOT_PAGES_PER_COPY*M3_BOOT_COPY_NUM)) 
 	{
 		memset(buf, 0, (1 << chip->page_shift));
@@ -600,8 +600,8 @@ static int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *
                 printk("nand boot page %d check data failed, and onfigure_data_w:0x%x, pages_per_blk_w:0x%x\n", page, configure_data_w, pages_per_blk_w);
             }           
                         
-            printk("nand boot page %d,  NO.%d, configure_data:0x%x, pages_per_blk:0x%x, other data:%x %x %x %x\n", 
-                                    page, (page / M3_BOOT_PAGES_PER_COPY), configure_data, pages_per_blk, buf[8], buf[9], buf[10], buf[11]);
+            //printk("nand boot page %d,  NO.%d, configure_data:0x%x, pages_per_blk:0x%x, other data:%x %x %x %x\n", 
+                                   // page, (page / M3_BOOT_PAGES_PER_COPY), configure_data, pages_per_blk, buf[8], buf[9], buf[10], buf[11]);
 
             bch_mode = aml_chip->bch_mode;
             chip->ecc.size = ecc_size; 
@@ -717,7 +717,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 			else
 				configure_data = NFC_CMD_N2M(0, aml_chip->bch_mode, 0, (chip->ecc.size >> 3), chip->ecc.steps);
 
-			printk("m3_nand_boot_write_page NO:%d, configure_data:0x%x\n", i, configure_data);
+			//printk("m3_nand_boot_write_page NO:%d, configure_data:0x%x\n", i, configure_data);
 			memset(chip->buffers->databuf, 0xbb, mtd->writesize);
 			memcpy(chip->buffers->databuf, (unsigned char *)(&configure_data), sizeof(int));
 			memcpy(chip->buffers->databuf + sizeof(int), (unsigned char *)(&pages_per_blk), sizeof(int));
