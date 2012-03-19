@@ -16,6 +16,10 @@ void init_suspend_firmware(void)
 		*paddr = power_firmware_code[i];
 		paddr++;
 	}
+
+	dcache_flush();
+	icache_invalid();
+	
 	i = entry();
 	printf("init suspend firmware done. (ret:%d)\n",i);
 }
