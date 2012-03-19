@@ -390,6 +390,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		nand_erase_options_t opts;
 		int argc_cnt = 2;
         //printk("%s\n", argv[2]);
+        /*
 		if (isstring(argv[2])) {
 			nand = get_mtd_device_nm(argv[2]);
 			if (IS_ERR(nand)){
@@ -398,6 +399,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			}
 			argc_cnt++;
 		}
+		*/
 		/* "clean" at index 2 means request to write cleanmarker */
 		int clean = argc > argc_cnt && !strcmp("clean", argv[argc_cnt]);
 		if (clean) 

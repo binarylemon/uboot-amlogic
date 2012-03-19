@@ -250,6 +250,9 @@
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
 
+//M6 security boot
+//#define CONFIG_M6_SECU_BOOT	1
+
 /*-----------------------------------------------------------------------
  * power down
  */

@@ -3,6 +3,8 @@
 #include <asm/arch/memory.h>
 #include <malloc.h>
 
+#include <share_kernel.h>
+
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
 #include <asm/arch/aml_eth_pinmux.h>
@@ -235,21 +237,20 @@ static void board_i2c_set_pinmux(void){
 	/*@W19_AML9726-MX-MAINBOARD_V1.0.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
     /*********************************************/
-    /*                | I2C_Master_B        |I2C_Slave            |       */
+    /*                | I2C_Master_AO        |I2C_Slave            |       */
     /*********************************************/
     /*                | I2C_SCK                | I2C_SCK_SLAVE  |      */
-    /* GPIOX28  | [PIM_MUX5:30]     | [PIM_MUX5:28]   |     */
+    /* GPIOAO_4  | [AO_PIN_MUX: 6]     | [AO_PIN_MUX: 2]   |     */
     /*********************************************/
     /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
-    /* GPIOX27  | [PIM_MUX5:31]     | [PIM_MUX5:29]   |     */
+    /* GPIOAO_5  | [AO_PIN_MUX: 5]     | [AO_PIN_MUX: 1]   |     */
     /*********************************************/	
-	//Wr(PAD_PULL_UP_REG4,Rd(PAD_PULL_UP_REG4) | (1 << 27)| (1 << 28) );
 
-	//disable all other pins which share with I2C_SDA_B & I2C_SCK_B
-    clrbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,((1<<28)|(1<<29)));
-    //enable I2C MASTER B pins
-	setbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,
-	(MESON_I2C_MASTER_B_GPIOX_27_BIT|MESON_I2C_MASTER_B_GPIOX_28_BIT));
+	//disable all other pins which share with I2C_SDA_AO & I2C_SCK_AO
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1<<2)|(1<<24)|(1<<1)|(1<<23)));
+    //enable I2C MASTER AO pins
+	setbits_le32(P_AO_RTI_PIN_MUX_REG,
+	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
 	
     udelay(10000);
 	
@@ -259,93 +260,17 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     .wait_ack_interval  = 5,
     .wait_read_interval = 5,
     .wait_xfer_interval = 5,
-    .master_no          = AML_I2C_MASTER_B,
+    .master_no          = AML_I2C_MASTER_AO,
     .use_pio            = 0,
     .master_i2c_speed   = AML_I2C_SPPED_400K,
-    .master_b_pinmux = {
-        .scl_reg    = MESON_I2C_MASTER_B_GPIOX_28_REG,
-        .scl_bit    = MESON_I2C_MASTER_B_GPIOX_28_BIT,
-        .sda_reg    = MESON_I2C_MASTER_B_GPIOX_27_REG,
-        .sda_bit    = MESON_I2C_MASTER_B_GPIOX_27_BIT,
+    .master_ao_pinmux = {
+        .scl_reg    = MESON_I2C_MASTER_AO_GPIOAO_4_REG,
+        .scl_bit    = MESON_I2C_MASTER_AO_GPIOAO_4_BIT,
+        .sda_reg    = MESON_I2C_MASTER_AO_GPIOAO_5_REG,
+        .sda_bit    = MESON_I2C_MASTER_AO_GPIOAO_5_BIT,
     }
 };
 
-#define I2C_ALC5631Q_ADDR   (0x1A)
-
-void i2c_ALC5631Q_write(unsigned char reg, unsigned short val)
-{
-    unsigned char buff[3];
-    buff[0] = reg;
-    buff[1] = (val >> 8) & 0xFF; //MSB
-	buff[2] = (val & 0xFF); //LSB
-
-	struct i2c_msg msg[] = {
-        {
-        .addr  = I2C_ALC5631Q_ADDR,
-        .flags = 0,
-        .len   = 3,
-        .buf   = buff,
-        }
-    };
-
-    if (aml_i2c_xfer(msg, 1) < 0) {
-        printf("%s: i2c transfer failed\n", __FUNCTION__);
-    }
-}
-
-unsigned short i2c_ALC5631Q_read(unsigned char reg)
-{
-    unsigned short val = 0;
-    struct i2c_msg msgs[] = {
-        {
-            .addr = I2C_ALC5631Q_ADDR,
-            .flags = 0,
-            .len = 1,
-            .buf = &reg,
-        },
-        {
-            .addr = I2C_ALC5631Q_ADDR,
-            .flags = I2C_M_RD,
-            .len = 2,
-            .buf = &val,
-        },		
-    };
-
-    if ( aml_i2c_xfer(msgs, 2)< 0) {
-        printf("%s: i2c transfer failed\n", __FUNCTION__);
-    }
-
-	/*@ALC5631Q-VE DataSheet_0.91.pdf Page31*/
-    return (val & 0xFF)<< 8 | ((val >> 8) & 0xFF);
-}
-void board_m6_ramos_v1_i2c_test(void)
-{
-	/*@W19_AML9726-MX-MAINBOARD_V1.0.pdf*/
-	/*@AL5631Q+3G_AUDIO_V1.pdf*/
-	/*@ALC5631Q-VE DataSheet_0.91.pdf*/
-	int nMaxID = 0x20;
-	int nIdx = 0;
-	printf("[m6_ramos_v1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
-	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
-		printf("Reg addr=0x%02x Val=0x%04x\n",
-		nIdx,i2c_ALC5631Q_read(nIdx));
-
-	printf("[m6_ramos_v1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
-
-	//try to write some reg
-	/*
-	i2c_ALC5631Q_write(0x02,0xAA55);
-	i2c_ALC5631Q_write(0x04,0x0);
-
-	printf("[m6_ramos_v1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
-	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
-		printf("Reg addr=0x%02x Val=0x%04x\n",
-		nIdx,i2c_ALC5631Q_read(nIdx));
-	
-	printf("[m6_ramos_v1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
-	*/
-		
-}
 
 static void board_i2c_init(void)
 {		
@@ -360,25 +285,12 @@ static void board_i2c_init(void)
 
 	//must call aml_i2c_init(); before any I2C operation	
 	/*M6 Ramos W19 board*/
-	board_m6_ramos_v1_i2c_test();	
 	//udelay(10000);	
 
 	udelay(10000);		
 }
-
-//for sys_test only, not check yet
-static struct i2c_board_info aml_i2c_info[] = {
-    {
-        I2C_BOARD_INFO("I2C ALC5631Q", 000),
-        .device_init = board_i2c_init,
-    },
-};
-
-struct aml_i2c_device aml_i2c_devices={
-	.aml_i2c_boards = aml_i2c_info,
-	.dev_num = sizeof(aml_i2c_info)/sizeof(struct i2c_board_info)
-};
 #endif /*CONFIG_AML_I2C*/
+
 
 #if CONFIG_JERRY_NAND_TEST //temp test
 #include <amlogic/nand/platform.h>
@@ -520,6 +432,7 @@ int board_init(void)
 	return 0;
 }
 
+#ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
 #ifdef CONFIG_AML_I2C  
@@ -536,4 +449,47 @@ int board_late_init(void)
 
 	return 0;
 }
+#endif
 
+
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode(void)
+{
+	uint32_t reboot_mode_val;
+	saradc_enable();	
+	if(get_adc_sample(4) < 1000)
+	{
+		saradc_disable();
+		run_command ("run update", 0);
+	}
+	saradc_disable();
+
+	reboot_mode_val = reboot_mode;
+	reboot_mode_clear();
+	switch(reboot_mode_val)
+	{
+		case AMLOGIC_NORMAL_BOOT:
+		{
+			printf("AMLOGIC_NORMAL_BOOT...\n");
+			break;
+		}
+		case AMLOGIC_FACTORY_RESET_REBOOT:
+		{
+			printf("AMLOGIC_FACTORY_RESET_REBOOT...\n");
+			run_command ("run recovey", 0);
+			break;
+		}
+		case AMLOGIC_UPDATE_REBOOT:
+		{
+			printf("AMLOGIC_UPDATE_REBOOT...\n");
+			run_command ("run update", 0);
+			break;
+		}
+		default:
+		{
+			printf("AMLOGIC_CHARGING_REBOOT...\n");
+			break;
+		}
+	}
+}
+#endif
