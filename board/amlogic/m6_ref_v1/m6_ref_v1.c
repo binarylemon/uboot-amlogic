@@ -3,8 +3,6 @@
 #include <asm/arch/memory.h>
 #include <malloc.h>
 
-#include <share_kernel.h>
-
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
 #include <asm/arch/aml_eth_pinmux.h>
@@ -284,7 +282,7 @@ static void board_i2c_init(void)
 	aml_i2c_init();
 
 	//must call aml_i2c_init(); before any I2C operation	
-	/*M6 socket board*/
+	/*M6 ref board*/
 	//udelay(10000);	
 
 	udelay(10000);		
@@ -454,6 +452,8 @@ set_dcdc3(1100);	//set DC-DC3 to 1100mV
 
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
+#include <asm/arch/reboot.h>
+
 int switch_boot_mode(void)
 {
 	uint32_t reboot_mode_val;
@@ -466,6 +466,7 @@ int switch_boot_mode(void)
 	saradc_disable();
 
 	reboot_mode_val = reboot_mode;
+	printf("reboot_mode(0x%x)=0x%x\n", &reboot_mode, reboot_mode);
 	reboot_mode_clear();
 	switch(reboot_mode_val)
 	{
@@ -477,7 +478,7 @@ int switch_boot_mode(void)
 		case AMLOGIC_FACTORY_RESET_REBOOT:
 		{
 			printf("AMLOGIC_FACTORY_RESET_REBOOT...\n");
-			run_command ("run recovey", 0);
+			run_command ("run recovery", 0);
 			break;
 		}
 		case AMLOGIC_UPDATE_REBOOT:

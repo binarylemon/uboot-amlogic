@@ -1,9 +1,7 @@
-#ifndef __SHARE_KERNEL_H
-#define __SHARE_KERNEL_H
+#ifndef __REBOOT_H
+#define __REBOOT_H
 
-#include <asm/arch/sram.h>
-
-#define reboot_mode *((volatile unsigned long*)(0xC9000000 + REBOOT_MODE_OFFSET))
+#define reboot_mode *((volatile unsigned long*)(P_AO_RTI_STATUS_REG1))
 
 /*
  * Commands accepted by the arm_machine_restart() system call.

@@ -1,7 +1,6 @@
 #include <common.h>
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
-#include <share_kernel.h>
 #include <asm/arch/gpio.h>
 #include <malloc.h>
 
@@ -973,6 +972,7 @@ void into_recovery(void)
 //end of Upgrade Function
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
+#include <asm/arch/reboot.h>
 
 inline int get_key(void)
 {
