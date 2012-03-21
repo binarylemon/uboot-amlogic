@@ -67,8 +67,8 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     
     dbg_prints("save step 4\n");
 		
-		if(cpu->ic_address)
-    	save_gic_interface(context->gic_interface_data, cpu->ic_address);
+		if(cluster->ic_address)
+    	save_gic_interface(context->gic_interface_data, cluster->ic_address);
     	
 	   if(cluster->ic_address)	
     	save_gic_distributor_private(context->gic_dist_private_data, cluster->ic_address);
@@ -89,16 +89,16 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     
     cluster_down = cluster->power_state >= 2;
 
-    if (cluster_down)
+  //  if (cluster_down)
     {
-    /*    if ((flags & APPF_SAVE_TIMERS) && cluster->cpu_version >= 0x0100)
-        {
+        if ((flags & APPF_SAVE_TIMERS) && cluster->cpu_version >= 0x0100)
+        {	
             save_a9_global_timer(cluster_context->global_timer_data, cluster->scu_address);
             cluster_saved_items |= SAVED_GLOBAL_TIMER;
         }
 
         save_gic_distributor_shared(cluster_context->gic_dist_shared_data, cluster->ic_address);
-        */
+        
     }
  
     save_control_registers(context);
@@ -198,7 +198,6 @@ int appf_platform_restore_context(struct appf_cluster *cluster, struct appf_cpu 
     struct appf_cluster_context *cluster_context;
     int cluster_init;
     appf_u32 saved_items, cluster_saved_items = 0;
-
     /*
      * At this point we may not write to any static data, and we may
      * only read the data that we explicitly cleaned from the L2 above.
@@ -238,7 +237,7 @@ int appf_platform_restore_context(struct appf_cluster *cluster, struct appf_cpu 
     }
 
     /* Restore shared items if necessary */
-    if (cluster_init)
+//    if (cluster_init)
     {
         restore_gic_distributor_shared(cluster_context->gic_dist_shared_data, cluster->ic_address);
         if (cluster_saved_items & SAVED_GLOBAL_TIMER)
@@ -249,8 +248,8 @@ int appf_platform_restore_context(struct appf_cluster *cluster, struct appf_cpu 
 
 		if(cluster->ic_address)
     	restore_gic_distributor_private(context->gic_dist_private_data, cluster->ic_address);
-    if(cpu->ic_address)
-    	restore_gic_interface(context->gic_interface_data, cpu->ic_address);
+    if(cluster->ic_address)
+    	restore_gic_interface(context->gic_interface_data, cluster->ic_address);
     if(context->other_data)
     	restore_a9_other(context->other_data);
     if(context->cp15_data)

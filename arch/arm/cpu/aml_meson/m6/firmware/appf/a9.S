@@ -30,7 +30,7 @@
 
 CA9_SCU_ICD   EQU 0x1000       ; GIC Distributor offset from SCU_BASE
 CA9_SCU_ICC   EQU 0x100        ; GIC CPU Interface offset from SCU_BASE
-CA9_SCU_TIM64 EQU 0x200        ; (64-bit) timer block offset from SCU_BASE
+CA9_SCU_TIM64 EQU 0x600        ; (64-bit) timer block offset from SCU_BASE
 
 			; SCU_BASE offsets:
 SCU_Ctl		EQU 0x0

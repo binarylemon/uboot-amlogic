@@ -69,27 +69,16 @@ sev	FUNCTION
 	; r0: Destination start address (must be word aligned)
 	; r1: Source start address (must be word aligned)
 	; r2: Number of words to copy
-	; Return value is updated destination pointer (first unwritten word)
 copy_words	FUNCTION
-	push	{r4, r5}
-0	cmp	r2, #3
-	ble	%f1
-	ldmia	r1!, {r3, r4, r5, r12}
-	stmia	r0!, {r3, r4, r5, r12}
-	sub	r2, r2, #4
-	b	%b0
-	
-1	cmp	r2, #0
-	beq	%f3
-2	ldr	r3, [r1], #4
+	push {r0,r1,r2,r3,lr}
+	cmp	r2, #0
+	bxeq	lr
+0	ldr	r3, [r1], #4
 	str	r3, [r0], #4
-	subs	r2, r2, #1
-	bne	%b2
-
-3	pop	{r4, r5}
-	bx	lr
-	ENDFUNC
-	
+	subs	r2, #1
+	bne	%b0
+	pop {r0,r1,r2,r3,pc}
+	ENDFUNC	
 	
 appf_memcpy	FUNCTION
 	cmp	r2, #0

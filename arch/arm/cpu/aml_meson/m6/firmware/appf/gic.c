@@ -36,7 +36,7 @@ struct set_and_clear_regs
 typedef struct
 {
     /* 0x000 */  volatile unsigned int control;
-                 const unsigned int controller_type;
+                 volatile unsigned int controller_type;
                  const unsigned int implementer;
                  const char padding1[116];
     /* 0x080 */  volatile unsigned int security[32];
@@ -65,6 +65,10 @@ typedef struct
     /* 0x18 */  volatile unsigned const int highest_pending;
 } cpu_interface;
 
+#define GIC_INTERFACE_OFFSET 0x100
+#define GIC_PRIVATE_OFFSET 0x1000
+#define GIC_SHARED_OFFSET 0x1000
+//#define GIC_SHARED_OFFSET 0x000
 
 /*
  * Saves the GIC CPU interface context
@@ -72,7 +76,7 @@ typedef struct
  */
 void save_gic_interface(appf_u32 *pointer, unsigned gic_interface_address)
 {
-    cpu_interface *ci = (cpu_interface *)gic_interface_address;
+    cpu_interface *ci = (cpu_interface *)(gic_interface_address+GIC_INTERFACE_OFFSET);
 
     pointer[0] = ci->control;
     pointer[1] = ci->priority_mask;
@@ -88,7 +92,7 @@ void save_gic_interface(appf_u32 *pointer, unsigned gic_interface_address)
  */
 int save_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor_address)
 {
-    interrupt_distributor *id = (interrupt_distributor *)gic_distributor_address;
+    interrupt_distributor *id = (interrupt_distributor *)(gic_distributor_address+GIC_PRIVATE_OFFSET);
 
     *pointer = id->enable.set[0];
     ++pointer;
@@ -115,26 +119,31 @@ int save_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor_add
  */
 int save_gic_distributor_shared(appf_u32 *pointer, unsigned gic_distributor_address)
 {
-    interrupt_distributor *id = (interrupt_distributor *)gic_distributor_address;
+    interrupt_distributor *id = (interrupt_distributor *)(gic_distributor_address+GIC_SHARED_OFFSET);
     unsigned num_spis, *saved_pending;
     int i, retval = 0;
-    
-    
+
     /* Calculate how many SPIs the GIC supports */
     num_spis = 32 * (id->controller_type & 0x1f);
 
     /* TODO: add nonsecure stuff */
-
+		*pointer = id->controller_type; 
+		pointer++;
+		
     /* Save rest of GIC configuration */
     if (num_spis)
     {
-        pointer = copy_words(pointer, id->enable.set + 1, num_spis / 32);
-        pointer = copy_words(pointer, id->priority + 8, num_spis / 4);
+        copy_words(pointer, id->enable.set + 1, num_spis / 32);
+       	pointer += num_spis / 32;
+        copy_words(pointer, id->priority + 8, num_spis / 4);
+        pointer += num_spis / 4;
         pointer = copy_words(pointer, id->target + 8, num_spis / 4);
+        pointer +=  num_spis / 4;
         pointer = copy_words(pointer, id->configuration + 2, num_spis / 16);
+        pointer += num_spis / 16;
         saved_pending = pointer;
-        pointer = copy_words(pointer, id->pending.set + 1, num_spis / 32);
-    
+        copy_words(pointer, id->pending.set + 1, num_spis / 32);
+        pointer += num_spis / 32;
         /* Check interrupt pending bits */
         for (i=0; i<num_spis/32; ++i)
         {
@@ -147,6 +156,7 @@ int save_gic_distributor_shared(appf_u32 *pointer, unsigned gic_distributor_addr
     }
     
     /* Save control register */
+  
     *pointer = id->control;
     ++pointer;
     
@@ -155,7 +165,7 @@ int save_gic_distributor_shared(appf_u32 *pointer, unsigned gic_distributor_addr
 
 void restore_gic_interface(appf_u32 *pointer, unsigned gic_interface_address)
 {
-    cpu_interface *ci = (cpu_interface *)gic_interface_address;
+    cpu_interface *ci = (cpu_interface *)(gic_interface_address+GIC_INTERFACE_OFFSET);
 
     /* TODO: add nonsecure stuff */
 
@@ -168,7 +178,7 @@ void restore_gic_interface(appf_u32 *pointer, unsigned gic_interface_address)
 
 void restore_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor_address)
 {
-    interrupt_distributor *id = (interrupt_distributor *)gic_distributor_address;
+    interrupt_distributor *id = (interrupt_distributor *)(gic_distributor_address+GIC_PRIVATE_OFFSET);
     unsigned tmp;
     
     /* First disable the distributor so we can write to its config registers */
@@ -185,14 +195,18 @@ void restore_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor
     id->configuration[1] = *pointer;
     ++pointer;
     id->pending.set[0] = *pointer;
+  
     id->control = tmp;
 }
 
 void restore_gic_distributor_shared(appf_u32 *pointer, unsigned gic_distributor_address)
 {
-    interrupt_distributor *id = (interrupt_distributor *)gic_distributor_address;
+    interrupt_distributor *id = (interrupt_distributor *)(gic_distributor_address+GIC_SHARED_OFFSET);
     unsigned num_spis;
-    
+
+ 		id->controller_type = *pointer; //readonly
+		pointer++;
+
     /* First disable the distributor so we can write to its config registers */
     id->control = 0;
 
@@ -205,15 +219,15 @@ void restore_gic_distributor_shared(appf_u32 *pointer, unsigned gic_distributor_
     if (num_spis)
     {
         copy_words(id->enable.set + 1, pointer, num_spis / 32);
-	pointer += num_spis / 32;
+				pointer += num_spis / 32;
         copy_words(id->priority + 8, pointer, num_spis / 4);
-	pointer += num_spis / 4;
+				pointer += num_spis / 4;
         copy_words(id->target + 8, pointer, num_spis / 4);
-	pointer += num_spis / 4;
+				pointer += num_spis / 4;
         copy_words(id->configuration + 2, pointer, num_spis / 16);
-	pointer += num_spis / 16;
+				pointer += num_spis / 16;
         copy_words(id->pending.set + 1, pointer, num_spis / 32);
-	pointer += num_spis / 32;
+				pointer += num_spis / 32;
     }
         
     /* We assume the I and F bits are set in the CPSR so that we will not respond to interrupts! */

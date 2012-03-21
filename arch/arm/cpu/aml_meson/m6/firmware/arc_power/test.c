@@ -251,15 +251,21 @@ void test_ddr(int i)
 #endif			
 }
 #define pwr_ddr_off 
-
-#if 0 // Just for temp solution for test flow
+#define smp_test
+#ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
 	unsigned v;
 	int i;
 	unsigned addr;
 	unsigned gate;
-
+#ifdef smp_test
+	//ignore ddr problems.
+	for(i = 0; i < 1000; i++)
+		udelay(1000);
+	restart_arm();
+	return;
+#endif
 //	disp_pctl();
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
@@ -385,7 +391,7 @@ void enter_power_down()
 	
 //	disp_pctl();
 	
-	test_ddr(1);
+//	test_ddr(1);
 //	test_ddr(0);
 //	test_ddr(1);
 	
