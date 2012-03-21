@@ -101,7 +101,13 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
-	
+
+#ifdef CONFIG_DDR_LOW_POWER
+	//redefine
+	#undef  readl
+	#define readl(c)	(*(volatile unsigned int *)c)
+#endif //CONFIG_DDR_LOW_POWER
+
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
 
@@ -120,6 +126,27 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
 		(timing_reg->mcfg & (~(3<<18)))
 		, P_UPCTL_MCFG_ADDR);
+
+#ifdef CONFIG_DDR_LOW_POWER		
+	//asm volatile ("wfi");
+
+	//MMC_Wr(UPCTL_MCFG1_ADDR,((0xff<<0)|(0xff<<16)));
+	writel(((0xff<<0)|(0xff<<16)),0xc800007c);
+		
+	//MMC_Wr((MMC_LP_CTRL+0xc), 0x27);
+	writel(0x27,0xc8006434); //#define P_MMC_LP_CTRL4		0xc8006434
+		
+	//MMC_Wr((MMC_LP_CTRL+8), 0x34400f03);
+	writel(0x34400f03,0xc8006430); //#define P_MMC_LP_CTRL3 	  0xc8006430
+		
+	//MMC_Wr((MMC_LP_CTRL+4), 0x8160203);
+	writel(0x8160203,0xc800642c); //#define P_MMC_LP_CTRL2		 0xc800642c
+
+	//MMC_Wr(MMC_LP_CTRL, 0xfc000030);
+	writel(0xfc000030,0xc8006428); //#define P_MMC_LP_CTRL1 	  0xc8006428
+		
+#endif
+
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
@@ -317,6 +344,13 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+
+
+#ifdef CONFIG_DDR_LOW_POWER
+	//restore 
+	#undef  readl
+	#define readl(c)	({ u32 __v = __arch_getl(c); __iormb(); __v; })
+#endif //CONFIG_DDR_LOW_POWER
 
 	return 0;
 
