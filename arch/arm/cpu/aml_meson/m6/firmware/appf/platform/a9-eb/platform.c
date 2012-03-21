@@ -63,7 +63,7 @@ struct appf_cluster aem_cluster[] __attribute__ ((section ("APPF_TABLE_DATA")))
         2,             //num_cpus
         2,            //active_cpus
         0xC4300000,//0x1f000000,   //scu_address ,for multi-core
-        0,//0x1f001000,   //ic_address; interrupt controller
+        0xc4300000,//0x1f001000,   //ic_address; interrupt controller
         0xC4200000,//0x1f002000,   //l2_address ; L2cc
         (void *)0,    // appf_cluster_context* context
         (void *)0,    //appf_cpu* cpu_table
