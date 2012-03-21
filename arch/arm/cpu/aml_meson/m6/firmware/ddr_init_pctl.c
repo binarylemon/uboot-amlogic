@@ -165,6 +165,10 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(8 <<18))
 		, P_PUB_PTR0_ADDR);	   //tITMSRST 
 
+
+	writel(0x17, P_PUB_PIR_ADDR);//INIT,DLLSRST,DLLLOCK,ITMSRST
+	__udelay(10);	
+
 	//wait PHY DLL LOCK
 	while(!(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
@@ -179,6 +183,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//					  (192 << 19)));	  //tdinit1    DDR3 : tRFC + 10ns. LPDDR2 : 100ns.
 	//MMC_Wr(PUB_PTR2_ADDR,  (10000 | 		  //tdinit2    DDR3 : 200us for power up. LPDDR2 : 11us.  
 	//					(40 << 17)));		  //tdinit3    LPDDR2 : 1us. 
+
+	writel(0x9, P_PUB_PIR_ADDR); ////INIT,ZCAL ??
 
     __udelay(10);
 	//wait DDR3_ZQ_DONE: 
