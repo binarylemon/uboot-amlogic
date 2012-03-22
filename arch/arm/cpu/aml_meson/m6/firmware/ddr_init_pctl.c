@@ -101,7 +101,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
-	
+
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
 
@@ -120,6 +120,27 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
 		(timing_reg->mcfg & (~(3<<18)))
 		, P_UPCTL_MCFG_ADDR);
+
+#ifdef CONFIG_DDR_LOW_POWER		
+	//asm volatile ("wfi");
+
+	//MMC_Wr(UPCTL_MCFG1_ADDR,((0xff<<0)|(0xff<<16)));
+	writel(((0xff<<0)|(0xff<<16)),0xc800007c);
+		
+	//MMC_Wr((MMC_LP_CTRL+0xc), 0x27);
+	writel(0x27,0xc8006434); //#define P_MMC_LP_CTRL4		0xc8006434
+		
+	//MMC_Wr((MMC_LP_CTRL+8), 0x34400f03);
+	writel(0x34400f03,0xc8006430); //#define P_MMC_LP_CTRL3 	  0xc8006430
+		
+	//MMC_Wr((MMC_LP_CTRL+4), 0x8160203);
+	writel(0x8160203,0xc800642c); //#define P_MMC_LP_CTRL2		 0xc800642c
+
+	//MMC_Wr(MMC_LP_CTRL, 0xfc000030);
+	writel(0xfc000030,0xc8006428); //#define P_MMC_LP_CTRL1 	  0xc8006428
+		
+#endif
+
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
@@ -165,6 +186,10 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(8 <<18))
 		, P_PUB_PTR0_ADDR);	   //tITMSRST 
 
+
+	writel(0x17, P_PUB_PIR_ADDR);//INIT,DLLSRST,DLLLOCK,ITMSRST
+	__udelay(10);	
+
 	//wait PHY DLL LOCK
 	while(!(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
@@ -180,6 +205,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//MMC_Wr(PUB_PTR2_ADDR,  (10000 | 		  //tdinit2    DDR3 : 200us for power up. LPDDR2 : 11us.  
 	//					(40 << 17)));		  //tdinit3    LPDDR2 : 1us. 
 
+	writel(0x9, P_PUB_PIR_ADDR); ////INIT,ZCAL ??
+
     __udelay(10);
 	//wait DDR3_ZQ_DONE: 
 	while(!(readl(P_PUB_PGSR_ADDR) & (1<< 2))) {}
@@ -191,7 +218,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 
 	writel(1, P_UPCTL_POWCTL_ADDR);
-	while(!(readl(P_UPCTL_POWSTAT_ADDR & 1) )) {}
+	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
 
 
 
@@ -278,9 +305,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	writel(0xf00, P_UPCTL_SCFG_ADDR);
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
-	__udelay(500);	//wait a moment before change state
-	writel(1, P_UPCTL_SCTL_ADDR);
 
+	writel(1, P_UPCTL_SCTL_ADDR);
 	while (!(readl(P_UPCTL_STAT_ADDR) & 1))  {}
 
 	//config the DFI interface.
@@ -306,7 +332,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);
 	writel(0x1e9, P_PUB_PIR_ADDR);
 	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(readl(P_PUB_PGSR_ADDR & 1))) {}
+	while( !(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 

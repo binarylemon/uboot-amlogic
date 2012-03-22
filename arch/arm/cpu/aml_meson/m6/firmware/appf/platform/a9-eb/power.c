@@ -137,7 +137,12 @@ void run_arc_program()
     writel(v<<8,0xDA004000);
      *(volatile unsigned *)(vaddr2 +0x20) = (unsigned)(&platform_reset_handler);
     l2x0_clean_all();
-    
+
+	//**********************//
+
+	writel(readl(0xDA00434c)|(0x1<<29),0xDA00434c);// Enable GPO filter if running at 32khz
+	writel(readl(0xDA004340)|(0x3<<14),0xDA004340);//set int edge of GPO
+	//**********************//
     //switch to ARC jtag
     //set pinmux
 /*    writel(readl(0xc8100014)|(1<<14),0xc8100014);

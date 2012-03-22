@@ -3,8 +3,6 @@
 #include <asm/arch/memory.h>
 #include <malloc.h>
 
-#include <share_kernel.h>
-
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
 #include <asm/arch/aml_eth_pinmux.h>
@@ -453,6 +451,8 @@ int board_late_init(void)
 
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
+#include <asm/arch/reboot.h>
+
 int switch_boot_mode(void)
 {
 	uint32_t reboot_mode_val;
@@ -476,7 +476,7 @@ int switch_boot_mode(void)
 		case AMLOGIC_FACTORY_RESET_REBOOT:
 		{
 			printf("AMLOGIC_FACTORY_RESET_REBOOT...\n");
-			run_command ("run recovey", 0);
+			run_command ("run recovery", 0);
 			break;
 		}
 		case AMLOGIC_UPDATE_REBOOT:

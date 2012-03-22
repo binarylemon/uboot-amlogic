@@ -108,9 +108,9 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
-	"recovery=if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"recovery=if nand read ${loadaddr} 2000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 
 #define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
 
@@ -169,7 +169,11 @@
 /*end config LCD output*/
 
 /*POST support*/
-
+/*
+#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
+										CONFIG_SYS_POST_RTC | CONFIG_SYS_POST_ADC | \
+										CONFIG_SYS_POST_PLL)
+*/
 //CONFIG_SYS_POST_MEMORY
 
 #undef CONFIG_POST
@@ -212,7 +216,9 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6_DDR_CLK (528)
+#define M6_DDR_CLK (504)
+#define CONFIG_DDR_LOW_POWER
+
 
 #define DDR3_9_9_9
 //#define DDR3_7_7_7

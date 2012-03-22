@@ -10,7 +10,7 @@
 #ifndef __MACH_SRAM_H
 #define __MACH_SRAM_H
 
-#define SRAM_SIZE       (127*1024 + 512)
+#define SRAM_SIZE       (127 * 1024 + 512)
 #define SRAM_GRANULARITY    512
 
 #define REBOOT_MODE_OFFSET (SRAM_SIZE + SRAM_GRANULARITY - 4) /*  */

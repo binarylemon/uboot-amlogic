@@ -163,9 +163,11 @@
 #endif
 
 /*POST support*/
-//#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
+/*
+#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
 										CONFIG_SYS_POST_RTC | CONFIG_SYS_POST_ADC | \
 										CONFIG_SYS_POST_PLL)
+*/
 //CONFIG_SYS_POST_MEMORY
 
 #undef CONFIG_POST
@@ -210,6 +212,8 @@
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
 #define M6_DDR_CLK (504)
+
+#define CONFIG_DDR_LOW_POWER 1
 
 #define DDR3_9_9_9
 //#define DDR3_7_7_7
@@ -257,6 +261,6 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-//#define CONFIG_AML_SUSPEND 1
+#define CONFIG_AML_SUSPEND 1
 
 #endif //__CONFIG_M6_SKT_V1_H__
