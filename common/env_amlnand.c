@@ -40,8 +40,6 @@
 #include <nand.h>
 #include <asm/arch/nand.h>
 #include <linux/err.h>
-#include <search.h>
-#include <errno.h>
 
 #if defined(CONFIG_CMD_SAVEENV) && defined(CONFIG_CMD_NAND)
 #define CMD_SAVEENV
@@ -80,7 +78,6 @@ int nand_legacy_rw (struct nand_chip* nand, int cmd,
 
 /* references to names in env_common.c */
 extern uchar default_environment[];
-extern int default_environment_size;
 
 char * env_name_spec = "NAND";
 
@@ -97,10 +94,11 @@ env_t *env_ptr = 0;
 #if !defined(ENV_IS_EMBEDDED)
 static void use_default(void);
 #endif
-
+extern unsigned default_environment_size;
 DECLARE_GLOBAL_DATA_PTR;
 
-typedef struct _env_blockmap{
+static struct aml_nandenv_info_t aml_nandenv_info;
+/*typedef struct _env_blockmap{
 	u_char block_id;
 	u_char block_valid;
 	u_char env_valid;
@@ -108,7 +106,7 @@ typedef struct _env_blockmap{
 }t_env_blockmap;
 static t_env_blockmap env_map[CONFIG_ENV_BLOCK_NUM];
 static u_char last_valid_block = 0;
-static u_char current_valid_block = 0;
+static u_char current_valid_block = 0;*/
 uchar env_get_char_spec (int index)
 {
 	return ( *((uchar *)(gd->env_addr + index)) );
@@ -140,8 +138,8 @@ int env_init(void)
 	nand_erase_options.jffs2 = 0;
 	nand_erase_options.scrub = 0;
 	nand_erase_options.offset = CONFIG_ENV_OFFSET;*/
-	
-#if defined(ENV_IS_EMBEDDED)	
+	//printk("%s enter\n", __func__);
+#if defined(ENV_IS_EMBEDDED)
 	int crc1_ok = 0, crc2_ok = 0;
 	env_t *tmp_env1, *tmp_env2;
 
@@ -178,7 +176,7 @@ int env_init(void)
 		env_ptr = tmp_env1;
 	else if (gd->env_valid == 2)
 		env_ptr = tmp_env2;
-	
+
 	gd->env_addr = (ulong)env_ptr->data;
 	
 #else /* ENV_IS_EMBEDDED */
@@ -197,72 +195,63 @@ int env_init(void)
  */
 int writeenv(size_t offset, u_char *buf)
 {
-	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
-	if (IS_ERR(mtd))
+	struct mtd_info *mtd;
+	struct env_oobinfo_t *env_oobinfo;
+	int error = 0;
+	size_t addr = 0;
+	size_t amount_saved = 0;
+	size_t len;
+	struct mtd_oob_ops aml_oob_ops;
+	unsigned char *data_buf;
+	unsigned char env_oob_buf[sizeof(struct env_oobinfo_t)];
+    //printk("%s enter\n", __func__);
+	mtd = nand_info[nand_curr_device];
+	if (mtd == NULL)
 		return 1;
 
-	size_t addr;
-	size_t amount_saved = 0;
-	size_t pagesize, blocksize, len;
-	
-	u_char *char_ptr;
-	u_char num = 0;
-	blocksize = mtd->erasesize;
-	pagesize = mtd->writesize;
-	len = pagesize;//min(pagesize, CONFIG_ENV_SIZE);
-	u_char tmp_buf[pagesize];	
-		
-	last_valid_block = current_valid_block++;
-	current_valid_block = current_valid_block % CONFIG_ENV_BLOCK_NUM;
-	printk("write env block: %d   %d\n",current_valid_block, env_map[current_valid_block].block_valid);
-	while(num < CONFIG_ENV_BLOCK_NUM) {
-		if(env_map[current_valid_block].block_valid) {
-			addr = offset + current_valid_block*blocksize;
-			while (amount_saved < CONFIG_ENV_SIZE ) {
-				if (pagesize > CONFIG_ENV_SIZE) {
-					memset(tmp_buf, 0xff, pagesize);
-					memcpy(tmp_buf, buf, CONFIG_ENV_SIZE);
-					char_ptr = &tmp_buf[amount_saved];
-				}
-				else
-					char_ptr = &buf[amount_saved];	
-				printk("write env offset: %x\n", addr);
-				if (nand_write(mtd, addr, &len, char_ptr)) {
-					env_map[current_valid_block].block_valid = 0;
-					amount_saved = 0;
-					break;
-				}	
-				
-				addr += pagesize;
-				len = min(pagesize, CONFIG_ENV_SIZE - amount_saved);
-				amount_saved += pagesize;
-			}
-			if(amount_saved >= CONFIG_ENV_SIZE){
-				len = pagesize;
-				memset(tmp_buf, 0xff, pagesize);
-				tmp_buf[0] = 0xaa;
-				tmp_buf[1] = 0x55;				
-				nand_write(mtd, addr, &len, tmp_buf);
-				return 0;
-			}
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	data_buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	if (data_buf == NULL)
+		return -ENOMEM;
+
+	addr = offset;
+	env_oobinfo = (struct env_oobinfo_t *)env_oob_buf;
+	memcpy(env_oobinfo->name, ENV_NAND_MAGIC, 4);
+	env_oobinfo->ec = aml_chip->aml_nandenv_info->env_valid_node->ec;
+	env_oobinfo->timestamp = aml_chip->aml_nandenv_info->env_valid_node->timestamp;
+	env_oobinfo->status_page = 1;
+
+	while (amount_saved < CONFIG_ENV_SIZE ) {
+
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = mtd->writesize;
+		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+		aml_oob_ops.datbuf = data_buf;
+		aml_oob_ops.oobbuf = env_oob_buf;
+
+		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
+		len = min(mtd->writesize, CONFIG_ENV_SIZE - amount_saved);
+		memcpy((unsigned char *)aml_oob_ops.datbuf, buf + amount_saved, len);
+
+		error = mtd->write_oob(mtd, addr, &aml_oob_ops);
+		if (error) {
+			printf("blk check good but write failed: %llx, %d\n", offset, error);
+			return 1;
 		}
-		num++;
-		current_valid_block++;
-		current_valid_block = current_valid_block % CONFIG_ENV_BLOCK_NUM;
+
+		addr += mtd->writesize;;
+		amount_saved += mtd->writesize;
 	}
 	if (amount_saved < CONFIG_ENV_SIZE)
 		return 1;
 
+	kfree(data_buf);
 	return 0;
 }
 #ifdef CONFIG_ENV_OFFSET_REDUND
-static unsigned char env_flags;
-
 int saveenv(void)
 {
-	env_t	*env_new_p = NULL;
-	ssize_t	len;
-	char	*res;
 	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
 	if (IS_ERR(mtd))
 		return 1;
@@ -271,254 +260,224 @@ int saveenv(void)
 	size_t offset = CONFIG_ENV_OFFSET;
 	int ret = 0;
 	nand_erase_options_t nand_erase_options;
-
+    //printk("123 %s enter\n", __func__);
 	offset = (1024 * aml_chip->page_size * (mtd->writesize / (aml_chip->plane_num * aml_chip->page_size)));
 	if (CONFIG_ENV_OFFSET < offset)
 		_debug ("env define offset must larger than 1024 page size: %d \n", mtd->writesize);
 	else
 		offset = CONFIG_ENV_OFFSET;
 
+	env_ptr->flags++;
+	total = CONFIG_ENV_SIZE;
+
 	nand_erase_options.length = CONFIG_ENV_RANGE;
 	nand_erase_options.quiet = 0;
 	nand_erase_options.jffs2 = 0;
 	nand_erase_options.scrub = 0;
+
 	if (CONFIG_ENV_RANGE < CONFIG_ENV_SIZE)
 		return 1;
-		
-	env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);		
-	res = (char *)&(env_new_p->data);
-	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE);
-	if (len < 0) {
-		error("Cannot export environment: errno = %d\n", errno);
-		free(env_new_p);			
-		return 1;
-	}
-	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);
-	env_new_p->flags = ++env_flags; /* increase the serial */
-	total = CONFIG_ENV_SIZE;
-		
 	if(gd->env_valid == 1) {
 		puts ("Erasing redundant Nand...\n");
 		nand_erase_options.offset = CONFIG_ENV_OFFSET_REDUND;
-		if (nand_erase_opts(mtd, &nand_erase_options)){
-			free(env_new_p);
+		if (nand_erase_opts(mtd, &nand_erase_options))
 			return 1;
-		}
 
 		puts ("Writing to redundant Nand... ");
-		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) env_new_p);
+		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) env_ptr);
 	} else {
 		puts ("Erasing Nand...\n");
 		nand_erase_options.offset = CONFIG_ENV_OFFSET;
-		if (nand_erase_opts(mtd, &nand_erase_options)){
-			free(env_new_p);
+		if (nand_erase_opts(mtd, &nand_erase_options))
 			return 1;
-		}
 
 		puts ("Writing to Nand... ");
-		ret = writeenv(CONFIG_ENV_OFFSET, (u_char *) env_new_p);
+		ret = writeenv(CONFIG_ENV_OFFSET, (u_char *) env_ptr);
 	}
 	if (ret) {
 		puts("FAILED!\n");
-		free(env_new_p);
 		return 1;
 	}
 
 	puts ("done\n");
 	gd->env_valid = (gd->env_valid == 2 ? 1 : 2);
-	free(env_new_p);
 	return ret;
 }
 #else /* ! CONFIG_ENV_OFFSET_REDUND */
 int saveenv(void)
-{	
-	env_t *env_new_p = NULL;
-	char	*res;
-	ssize_t	len;		
+{
+	struct mtd_info *mtd;
+	struct aml_nand_bbt_info *nand_bbt_info;
+	struct env_free_node_t *env_free_node, *env_tmp_node;
+	int error = 0, pages_per_blk, i = 1;
 	size_t addr = 0;
-	int ret = 0;
-	size_t offset = CONFIG_ENV_OFFSET;	
+	struct erase_info aml_env_erase_info;
+    //printk("abc %s enter\n", __func__);
+	mtd = nand_info[nand_curr_device];
+	if (mtd == NULL)
+		return 1;
 
-#if 0//(defined CONFIG_M3) || (defined CONFIG_M6)
-	if(nand_probe(1))
-		return 1;
-#endif	
-	
-	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
-	if (IS_ERR(mtd))
-		return 1;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	offset = (1024 * aml_chip->page_size *  (mtd->writesize / (aml_chip->plane_num * aml_chip->page_size)));	
-	if (CONFIG_ENV_OFFSET < offset)
-		_debug ("env define offset must larger than 1024 page size: %d \n", mtd->writesize);
-	else
-		offset = CONFIG_ENV_OFFSET;
-		
-	nand_erase_options_t nand_erase_options;
-	int blocksize = mtd->erasesize;
-	nand_erase_options.length = blocksize;
-	nand_erase_options.quiet = 1;
-	nand_erase_options.jffs2 = 0;
-	nand_erase_options.scrub = 0;		
-	if (CONFIG_ENV_SIZE > blocksize){
-		puts("Error,env size bigger then blocksize! \
-		\nPlease use CONFIG_ENV_IS_IN_NAND to config default storage way!\n");
+	if (!aml_chip->aml_nandenv_info->env_init) 
 		return 1;
-	}
+
+	pages_per_blk = mtd->erasesize / mtd->writesize;
+	if ((mtd->writesize < CONFIG_ENV_SIZE) && (aml_chip->aml_nandenv_info->env_valid == 1))
+		i = (CONFIG_ENV_SIZE + mtd->writesize - 1) / mtd->writesize;
 	
-	env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);			
-	// get env data from hash table
-	res = (char *)&(env_new_p->data);
-	memset(env_new_p->data, 0, ENV_SIZE);
-	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE);
-	if (len < 0) {
-		error("Cannot export environment: errno = %d\n", errno);		
-		free(env_new_p);
+	if (aml_chip->aml_nandenv_info->env_valid) {
+		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr += i;
+		if ((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr + i) > pages_per_blk) {
+
+			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+			if (env_free_node == NULL)
+				return -ENOMEM;
+
+			env_free_node->phy_blk_addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+			env_free_node->ec = aml_chip->aml_nandenv_info->env_valid_node->ec;
+			env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+			while (env_tmp_node->next != NULL) {
+				env_tmp_node = env_tmp_node->next;
+			}
+			env_tmp_node->next = env_free_node;
+
+			env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+			aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = env_tmp_node->phy_blk_addr;
+			aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = 0;
+			aml_chip->aml_nandenv_info->env_valid_node->ec = env_tmp_node->ec;
+			aml_chip->aml_nandenv_info->env_valid_node->timestamp += 1;
+			aml_chip->aml_nandenv_info->env_free_node = env_tmp_node->next;
+			kfree(env_tmp_node);
+		}
+	}
+	else {
+
+		env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+		aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = env_tmp_node->phy_blk_addr;
+		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = 0;
+		aml_chip->aml_nandenv_info->env_valid_node->ec = env_tmp_node->ec;
+		aml_chip->aml_nandenv_info->env_valid_node->timestamp += 1;
+		aml_chip->aml_nandenv_info->env_free_node = env_tmp_node->next;
+		kfree(env_tmp_node);
+	}
+
+	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+	addr *= mtd->erasesize;
+	addr += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
+	if (aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr == 0) {
+
+		memset(&aml_env_erase_info, 0, sizeof(struct erase_info));
+		aml_env_erase_info.mtd = mtd;
+		aml_env_erase_info.addr = addr;
+		aml_env_erase_info.len = mtd->erasesize;
+
+		error = mtd->erase(mtd, &aml_env_erase_info);
+		if (error) {
+			printf("env free blk erase failed %d\n", error);
+			mtd->block_markbad(mtd, addr);
+			return error;
+		}
+		aml_chip->aml_nandenv_info->env_valid_node->ec++;
+	}
+    if(!env_ptr){
+        printf("env_ptr null\n");
+        return 1;
+    }
+
+	nand_bbt_info = &aml_chip->aml_nandenv_info->nand_bbt_info;
+	if ((!memcmp(nand_bbt_info->bbt_head_magic, BBT_HEAD_MAGIC, 4)) && (!memcmp(nand_bbt_info->bbt_tail_magic, BBT_TAIL_MAGIC, 4))) {
+		memcpy(env_ptr->data + default_environment_size, aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, sizeof(struct aml_nand_bbt_info));
+		env_crc_update ();
+	}
+	printf("Writing to Nand... \n");
+	if (writeenv(addr, (u_char *) env_ptr)) {
+		printf("FAILED!\n");
 		return 1;
 	}
-	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);	
-		
-	puts ("Writing to Nand... \n");
-	if (writeenv(offset, (u_char *) env_new_p)) {
-		puts("FAILED!\n");
-		free(env_new_p);
-		return 1;
-	}	
-	if (last_valid_block != current_valid_block) {
-		if (env_map[last_valid_block].block_valid) {
-			addr = offset + last_valid_block*blocksize;
-			printk("erase old env offset: %llx\n", (loff_t)(offset + last_valid_block*blocksize));
-			if ((nand_erase(mtd, addr, blocksize) != 0)) {
-				env_map[last_valid_block].block_valid = 0;
-			}
-		}
-	}	
-	puts("Successful!\n");		
-	free(env_new_p);
-	return ret;
+
+	printf("Successful!\n");	
+	return error;
 }
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 #endif /* CMD_SAVEENV */
 
 int readenv (size_t offset, u_char * buf)
 {
-	int error = 0;
+	struct mtd_info *mtd;
+	struct env_oobinfo_t *env_oobinfo;
+	struct aml_nand_bbt_info *nand_bbt_info;
+	int error = 0, start_blk, total_blk, i, j;
 	size_t addr = 0;
 	size_t amount_loaded = 0;
-	size_t pagesize, blocksize, len;
-
-	int i;
-	offset = CONFIG_ENV_OFFSET;
-	u_char env_flag = 0;
-	static u_char map_flag = 0;
-	u_char *char_ptr;
-	u_char blk_num = 0;
-
-#if 0//(defined CONFIG_M3) || (defined CONFIG_M6)
-	if(nand_probe(1))
-		return 1;
-#endif	
-	
-	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
-	if (IS_ERR(mtd))
+	size_t len;
+	struct mtd_oob_ops aml_oob_ops;
+	unsigned char *data_buf;
+	unsigned char env_oob_buf[sizeof(struct env_oobinfo_t)];
+    //printk("%s enter\n", __func__);
+	mtd = nand_info[nand_curr_device];
+	if (mtd == NULL)
 		return 1;
 
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	offset = (1024 * aml_chip->page_size * (mtd->writesize / (aml_chip->plane_num * aml_chip->page_size)));
-	if (CONFIG_ENV_OFFSET < offset)
-		_debug ("env define offset must larger than 1024 page size: %d \n", mtd->writesize);
-	else
-		offset = CONFIG_ENV_OFFSET;
-	//printk("env offset: %x %x %d %x\n", offset, aml_chip->page_size, aml_chip->plane_num, mtd->writesize);
-	
-	pagesize = mtd->writesize;
-	blocksize = mtd->erasesize;
-	len = min(pagesize, CONFIG_ENV_SIZE);
-	u_char temp_buf[pagesize];
-	nand_erase_options_t nand_erase_options;
-	nand_erase_options.length = blocksize;
-	nand_erase_options.quiet = 1;
-	nand_erase_options.jffs2 = 0;
-	nand_erase_options.scrub = 0;	
-	if(map_flag == 0) {
-		for(i=0; i<CONFIG_ENV_BLOCK_NUM; i++){  //scan block, find valid env block
-			addr = offset + i*blocksize;
-			env_map[i].block_id = (u_char)i;
-			env_map[i].block_valid = (nand_block_isbad(mtd, addr)==0);
+	if (!aml_chip->aml_nandenv_info->env_valid)
+		return 2;
 
-			if (pagesize > CONFIG_ENV_SIZE)
-				addr = (addr + pagesize);
-			else
-				addr = (addr + CONFIG_ENV_SIZE);
-			memset(temp_buf, 0xff, pagesize);
-			if (env_map[i].block_valid) {
-				error = nand_read(mtd, addr, &len, temp_buf);
-				if ((error == 0) || (error == -EUCLEAN)) {
-					env_map[i].env_valid = ((temp_buf[0] == 0xaa)&&(temp_buf[1] == 0x55));
-					env_flag += env_map[i].env_valid;
-				}
-			}
-			printk("read %d: %x, %x, %x %x\n",i,temp_buf[0],temp_buf[1],env_map[i].block_valid, env_map[i].env_valid);
-		}
-		_debug("env offset: %x %x %d %x\n", offset, aml_chip->page_size, env_flag, mtd->writesize);
-		if(env_flag == 0){
-			for(i=0; i<CONFIG_ENV_BLOCK_NUM; i++){
-				if (env_map[i].block_valid) {
-					addr = offset + i*blocksize;
-					env_map[i].block_valid = (nand_erase(mtd, addr, blocksize) == 0);
-					if(env_map[i].block_valid)
-						current_valid_block = i;
-				}
-			}			
-		}
-		if(env_flag > 1){ //conflict resolve, if more than one block has valid env flag
-			if((env_map[0].env_valid==1) && (env_map[CONFIG_ENV_BLOCK_NUM-1].env_valid==1)){
-				//nand_erase_options.offset = offset + (CONFIG_ENV_BLOCK_NUM-1)*blocksize;
-				addr = offset + (CONFIG_ENV_BLOCK_NUM - 1)*blocksize;
-				env_map[CONFIG_ENV_BLOCK_NUM-1].block_valid = (nand_erase(mtd, addr, blocksize) == 0);
-			}
-			else{
-				for(i=0; i<CONFIG_ENV_BLOCK_NUM-1; i++){
-					if(env_map[i].env_valid == 1) {
-						//nand_erase_options.offset = offset + i*blocksize;
-						addr = offset + i*blocksize;
-						env_map[i].block_valid = (nand_erase(mtd, addr, blocksize) == 0);
-						break;
-					}
-				}
-			}
-		}
-		map_flag++;
-	}
-	
-	while(blk_num < CONFIG_ENV_BLOCK_NUM){
-		if(env_map[blk_num].env_valid){
-			current_valid_block = blk_num;
-			break;
-		}
-		blk_num++;
-	}
-	if(blk_num == CONFIG_ENV_BLOCK_NUM)
-		if(!env_map[blk_num-1].env_valid)
-			return 1;
-	_debug("read env block: %d\n",current_valid_block);
-	addr = offset + current_valid_block * blocksize;
-	_debug("read addr: %x\n",addr);
-	while (amount_loaded < CONFIG_ENV_SIZE ) {	
-		char_ptr = &buf[amount_loaded];
-		error = nand_read(mtd, addr, &len, char_ptr);
-		if ((error) && (error != -EUCLEAN)) {
-			printf("read env from nand error: %d\n",error);
+	addr = (1024 * mtd->writesize / aml_chip->plane_num);
+	start_blk = addr / mtd->erasesize;
+	total_blk = mtd->size / mtd->erasesize;
+	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+	addr *= mtd->erasesize;
+	addr += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
+
+	data_buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	if (data_buf == NULL)
+		return -ENOMEM;
+
+	env_oobinfo = (struct env_oobinfo_t *)env_oob_buf;
+	while (amount_loaded < CONFIG_ENV_SIZE ) {
+
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = mtd->writesize;
+		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+		aml_oob_ops.datbuf = data_buf;
+		aml_oob_ops.oobbuf = env_oob_buf;
+
+		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
+		memset((unsigned char *)aml_oob_ops.oobbuf, 0x0, aml_oob_ops.ooblen);
+
+		error = mtd->read_oob(mtd, addr, &aml_oob_ops);
+		if ((error != 0) && (error != -EUCLEAN)) {
+			printf("blk check good but read failed: %llx, %d\n", (uint64_t)addr, error);
 			return 1;
 		}
-		addr += pagesize;
-		len = min(pagesize, CONFIG_ENV_SIZE-amount_loaded);
-		amount_loaded += pagesize;
 
+		if (memcmp(env_oobinfo->name, ENV_NAND_MAGIC, 4)) 
+			printf("invalid nand env magic: %llx\n", (uint64_t)offset);
+
+		addr += mtd->writesize;
+		len = min(mtd->writesize, CONFIG_ENV_SIZE - amount_loaded);
+		memcpy(buf + amount_loaded, data_buf, len);
+		amount_loaded += mtd->writesize;
 	}
 	if (amount_loaded < CONFIG_ENV_SIZE)
 		return 1;
 
+	nand_bbt_info = (struct aml_nand_bbt_info *)(env_ptr->data + default_environment_size);
+	if ((!memcmp(nand_bbt_info->bbt_head_magic, BBT_HEAD_MAGIC, 4)) && (!memcmp(nand_bbt_info->bbt_tail_magic, BBT_TAIL_MAGIC, 4))) {
+		for (i=start_blk; i<total_blk; i++) {
+			aml_chip->block_status[i] = NAND_BLOCK_GOOD;
+			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
+				if (nand_bbt_info->nand_bbt[j] == i) {
+					aml_chip->block_status[i] = NAND_BLOCK_BAD;
+					break;
+				}
+			}
+		}
+		memcpy((unsigned char *)aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, (unsigned char *)nand_bbt_info, sizeof(struct aml_nand_bbt_info));
+	}
+
+	kfree(data_buf);
 	return 0;
 }
 
@@ -528,8 +487,8 @@ void env_relocate_spec (void)
 #if !defined(ENV_IS_EMBEDDED)
 	size_t total;
 	int crc1_ok = 0, crc2_ok = 0;
-	env_t *ep, *tmp_env1, *tmp_env2;
-
+	env_t *tmp_env1, *tmp_env2;
+    //printk("%s enter\n", __func__);
 	total = CONFIG_ENV_SIZE;
 
 	tmp_env1 = (env_t *) malloc(CONFIG_ENV_SIZE);
@@ -546,8 +505,7 @@ void env_relocate_spec (void)
 	if(!crc1_ok && !crc2_ok) {
 		free(tmp_env1);
 		free(tmp_env2);
-		set_default_env("!bad CRC");
-		return;
+		return use_default();
 	} else if(crc1_ok && !crc2_ok)
 		gd->env_valid = 1;
 	else if(!crc1_ok && crc2_ok)
@@ -568,17 +526,14 @@ void env_relocate_spec (void)
 	}
 
 	free(env_ptr);
-	if(gd->env_valid == 1) 
-		ep = tmp_env1;
-	 else 
-		ep = tmp_env2;
-	
-	env_flags = ep->flags;
-	env_import((char *)ep, 0);
+	if(gd->env_valid == 1) {
+		env_ptr = tmp_env1;
+		free(tmp_env2);
+	} else {
+		env_ptr = tmp_env2;
+		free(tmp_env1);
+	}
 
-	free(tmp_env1);
-	free(tmp_env2);	
-	
 #endif /* ! ENV_IS_EMBEDDED */
 }
 #else /* ! CONFIG_ENV_OFFSET_REDUND */
@@ -589,25 +544,31 @@ void env_relocate_spec (void)
 void env_relocate_spec (void)
 {
 #if !defined(ENV_IS_EMBEDDED)
-	int ret;
-	env_t env_buf;
-	
-#if 0//(defined CONFIG_M3) || (defined CONFIG_M6)
-	if(nand_probe(1)){
-		set_default_env("!no available device.");
+	int ret, crc;
+    //printk("%s enter\n", __func__);
+	ret = readenv(CONFIG_ENV_OFFSET, (u_char *) env_ptr);
+	if (ret) {
+		puts ("read enviroment failed\n");
+		use_default();
+		if (ret == 2)
+			saveenv();
 		return;
 	}
-#endif
 
-	memset(env_buf.data, 0, ENV_SIZE);
-	ret = readenv(CONFIG_ENV_OFFSET, (u_char *) &env_buf);
-	if (ret) {		
-		set_default_env("!readenv() failed");		
-		return;
-	}	
-	env_import(&env_buf, 1);
-	
+	crc = crc32(0, env_ptr->data, ENV_SIZE);
+	if (crc != env_ptr->crc) {
+		printf("calculate crc %x read crc %x\n", crc, env_ptr->crc);
+		//puts ("bad CRC for enviroment\n");
+		return use_default();
+	}
 #endif /* ! ENV_IS_EMBEDDED */
 }
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 
+#if !defined(ENV_IS_EMBEDDED)
+static void use_default()
+{
+	puts ("*** Warning - bad CRC or NAND, using default environment\n\n");
+	set_default_env(NULL);
+}
+#endif
