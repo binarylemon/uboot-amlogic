@@ -110,9 +110,12 @@ void serial_put_hex(unsigned int data,unsigned bitlen)
 }
 #define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_putc('\n')
 #define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_putc('\n')
-void do_exception(unsigned reason)
+void do_exception(unsigned reason,unsigned lr)
 {
     serial_puts("Enter Exception:");
     serial_put_dword(reason);
-    writel((1<<22)|1000000,P_WATCHDOG_TC);//enable Watchdog
+    serial_puts("\tlink addr:");
+        serial_put_dword(lr);
+    
+    //~ writel((1<<22)|1000000,P_WATCHDOG_TC);//enable Watchdog
 }
