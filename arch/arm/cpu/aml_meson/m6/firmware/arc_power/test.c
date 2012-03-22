@@ -251,7 +251,7 @@ void test_ddr(int i)
 #endif			
 }
 #define pwr_ddr_off 
-#define smp_test
+//#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
@@ -425,16 +425,16 @@ void enter_power_down()
   mmc_sleep();
 
     // save ddr power
-  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
-  APB_Wr(UPCTL_PHYCR_ADDR, APB_Rd(UPCTL_PHYCR_ADDR)|(1<<6));
-  APB_Wr(UPCTL_DLLCR9_ADDR, APB_Rd(UPCTL_DLLCR9_ADDR)|(1<<31));
+//  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
+//  APB_Wr(UPCTL_PHYCR_ADDR, APB_Rd(UPCTL_PHYCR_ADDR)|(1<<6));
+//  APB_Wr(UPCTL_DLLCR9_ADDR, APB_Rd(UPCTL_DLLCR9_ADDR)|(1<<31));
 // 	  delay_ms(20);
 
    // enable retention
   enable_retention();	
   
   // power down DDR
- 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
+// 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
 
  	f_serial_puts("step 3\n");
  	wait_uart_empty();
@@ -503,9 +503,9 @@ void enter_power_down()
 
 #ifdef pwr_ddr_off
  // Next, we reset all channels 
-	switch_to_rtc();	
-	reset_mmc();
-	switch_to_81();
+//	switch_to_rtc();
+//	reset_mmc();
+//	switch_to_81();
 #endif
 
 	//disable power_key int
@@ -526,18 +526,18 @@ void enter_power_down()
 #ifdef pwr_ddr_off    
 	f_serial_puts("step 8\n");
 	wait_uart_empty();  
-	init_ddr_pll();
+//	init_ddr_pll();
 
 	f_serial_puts("step 9\n");
  	wait_uart_empty();
   // initialize mmc and put it to sleep
-	init_pctl();
+//	init_pctl();
 
 // 	disp_pctl();
 
 	f_serial_puts("step 10\n");
  	wait_uart_empty();
-	mmc_sleep();
+//	mmc_sleep();
 
 
 	f_serial_puts("step 11\n");

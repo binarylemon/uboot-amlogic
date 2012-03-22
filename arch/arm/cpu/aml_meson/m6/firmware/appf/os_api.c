@@ -67,6 +67,10 @@ int appf_warm_reset(void)
     struct appf_cpu *cpu;
     struct appf_cluster *cluster;
     int cpu_index, cluster_index;
+
+	//**********************//
+	writel(readl(0xDA00434c)&(~(0x1<<29)),0xDA00434c);// Disable GPO filter for 32k
+	//**********************//
     
     cpu_index = appf_platform_get_cpu_index();
     cluster_index = appf_platform_get_cluster_index();

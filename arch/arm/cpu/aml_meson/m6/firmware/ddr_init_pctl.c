@@ -102,12 +102,6 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
 
-#ifdef CONFIG_DDR_LOW_POWER
-	//redefine
-	#undef  readl
-	#define readl(c)	(*(volatile unsigned int *)c)
-#endif //CONFIG_DDR_LOW_POWER
-
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
 
@@ -224,7 +218,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 
 	writel(1, P_UPCTL_POWCTL_ADDR);
-	while(!(readl(P_UPCTL_POWSTAT_ADDR & 1) )) {}
+	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
 
 
 
@@ -311,9 +305,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	writel(0xf00, P_UPCTL_SCFG_ADDR);
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
-	__udelay(500);	//wait a moment before change state
-	writel(1, P_UPCTL_SCTL_ADDR);
 
+	writel(1, P_UPCTL_SCTL_ADDR);
 	while (!(readl(P_UPCTL_STAT_ADDR) & 1))  {}
 
 	//config the DFI interface.
@@ -339,18 +332,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);
 	writel(0x1e9, P_PUB_PIR_ADDR);
 	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(readl(P_PUB_PGSR_ADDR & 1))) {}
+	while( !(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-
-
-#ifdef CONFIG_DDR_LOW_POWER
-	//restore 
-	#undef  readl
-	#define readl(c)	({ u32 __v = __arch_getl(c); __iormb(); __v; })
-#endif //CONFIG_DDR_LOW_POWER
 
 	return 0;
 
