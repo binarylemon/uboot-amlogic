@@ -142,6 +142,7 @@ void run_arc_program()
 
 	writel(readl(0xDA00434c)|(0x1<<29),0xDA00434c);// Enable GPO filter if running at 32khz
 	writel(readl(0xDA004340)|(0x3<<14),0xDA004340);//set int edge of GPO
+	writel(readl(0xDA004344)|(0xf<<12),0xDA004344);//clear int
 	//**********************//
     //switch to ARC jtag
     //set pinmux
