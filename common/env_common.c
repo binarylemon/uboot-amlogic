@@ -279,6 +279,7 @@ void env_relocate (void)
 	} else {
 		env_relocate_spec ();
 	}
+    gd->env_addr = (ulong)&(env_ptr->data);
 }
 
 #ifdef CONFIG_AUTO_COMPLETE
