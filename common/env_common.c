@@ -193,12 +193,24 @@ void set_default_env(const char *s)
 	} else {
 		puts("Using default environment\n\n");
 	}
-
+    
 	if (himport_r(&env_htab, (char *)default_environment,
 		    sizeof(default_environment), '\0', 0) == 0) {
 		error("Environment import failed: errno = %d\n", errno);
 	}
 	gd->flags |= GD_FLG_ENV_READY;
+
+    if(env_ptr){
+        memset(env_ptr, 0, sizeof(env_t));
+        memcpy(env_ptr->data, default_environment,
+               sizeof(default_environment));
+#ifdef CONFIG_SYS_REDUNDAND_ENVIRONMENT
+        env_ptr->flags = 0xFF;
+#endif
+        env_crc_update ();
+        gd->env_valid = 1;
+    } else 
+        puts("env_ptr null\n");
 }
 
 /*
@@ -239,6 +251,24 @@ void env_relocate (void)
 
 	env_reloc();
 #endif
+
+#ifdef ENV_IS_EMBEDDED
+	/*
+	 * The environment buffer is embedded with the text segment,
+	 * just relocate the environment pointer
+	 */
+#ifndef CONFIG_RELOC_FIXUP_WORKS
+	env_ptr = (env_t *)((ulong)env_ptr + gd->reloc_off);
+#endif
+	printf("%s[%d] embedded ENV at %p\n", __FUNCTION__,__LINE__,env_ptr);
+#else
+	/*
+	 * We must allocate a buffer for the environment
+	 */
+	env_ptr = (env_t *)malloc (CONFIG_ENV_SIZE);
+	printf("%s[%d] malloced ENV at %p\n", __FUNCTION__,__LINE__,env_ptr);
+#endif
+
 	if (gd->env_valid == 0) {
 #if defined(CONFIG_ENV_IS_NOWHERE)	/* Environment not changable */
 		set_default_env(NULL);
@@ -249,6 +279,7 @@ void env_relocate (void)
 	} else {
 		env_relocate_spec ();
 	}
+    gd->env_addr = (ulong)&(env_ptr->data);
 }
 
 #ifdef CONFIG_AUTO_COMPLETE
