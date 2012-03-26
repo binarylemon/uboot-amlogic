@@ -169,6 +169,7 @@ static void sdio_pwr_prepare(unsigned port)
 {
     /// @todo NOT FINISH
 	///do nothing here
+	cpu_sdio_pwr_prepare(port);
 }
 static void sdio_pwr_on(unsigned port)
 {

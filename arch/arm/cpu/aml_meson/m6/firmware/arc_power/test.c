@@ -8,6 +8,7 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 #include "boot_code.c"
+
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));
@@ -251,7 +252,7 @@ void test_ddr(int i)
 #endif			
 }
 #define pwr_ddr_off 
-//#define smp_test
+#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
@@ -261,10 +262,10 @@ void enter_power_down()
 	unsigned gate;
 #ifdef smp_test
 	//ignore ddr problems.
-	for(i = 0; i < 1000; i++)
-		udelay(1000);
-	restart_arm();
-	return;
+//	for(i = 0; i < 1000; i++)
+//		udelay(1000);
+//	restart_arm();
+//	return;
 #endif
 //	disp_pctl();
 //	test_ddr(0);
@@ -313,7 +314,18 @@ void enter_power_down()
   
  	f_serial_puts("step 6\n");
  	wait_uart_empty();
-  switch_to_rtc();
+	//enable power_key int	
+	writel(0x100,0xc1109860);//clear int
+ 	writel(readl(0xc1109868)|1<<8,0xc1109868);
+	writel(readl(0xc8100080)|0x1,0xc8100080);
+
+
+// ee use 32k, So interrup status can be accessed.
+	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+	switch_to_rtc();
+	udelay(1000);
+
+
  
 //  enable_iso_ao();
  
@@ -322,13 +334,15 @@ void enter_power_down()
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
-   
+#if 1
+	do{}while(!(readl(0xc1109860)&0x100));
+#else
  	 for(i=0;i<64;i++)
    {
         udelay(1000);
         //udelay(1000);
    }
-   
+#endif
  //  writel(gate,P_AO_RTI_GEN_CNTL_REG0);
 //	 udelay(100);
 // gate on REMOTE, UART
@@ -339,12 +353,31 @@ void enter_power_down()
  
 //  disable_iso_ao();
 
-#ifdef pwr_ddr_off
+//#ifdef pwr_ddr_off
  // Next, we reset all channels 
-  reset_mmc();
-#endif
+//  reset_mmc();
+//#endif
 
-  switch_to_81();
+	//disable power_key int
+	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
+	writel(readl(0xc8100080)&(~0x1),0xc8100080);
+	writel(0x100,0xc1109860);//clear int
+
+
+	switch_to_81();
+  // ee go back to clk81
+	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+	udelay(10000);
+
+	
+#ifdef pwr_ddr_off
+	 // Next, we reset all channels 
+	switch_to_rtc();
+	udelay(1000);
+	reset_mmc();
+	switch_to_81();
+	udelay(1000);
+#endif
 
 	//turn on ee
 // 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
@@ -463,9 +496,9 @@ void enter_power_down()
 
 	// ee use 32k, So interrup status can be accessed.
 	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-	udelay(100);
 	//ao to 32k
-	switch_to_rtc();
+	switch_to_rtc();	
+	udelay(1000);
  
 //  enable_iso_ao();
  
