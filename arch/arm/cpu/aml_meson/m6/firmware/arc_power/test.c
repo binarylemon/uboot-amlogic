@@ -252,7 +252,7 @@ void test_ddr(int i)
 #endif			
 }
 #define pwr_ddr_off 
-#define smp_test
+//#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
