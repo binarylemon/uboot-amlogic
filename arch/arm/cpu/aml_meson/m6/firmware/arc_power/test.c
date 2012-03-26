@@ -252,7 +252,7 @@ void test_ddr(int i)
 #endif			
 }
 #define pwr_ddr_off 
-//#define smp_test
+#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
@@ -322,7 +322,6 @@ void enter_power_down()
 
 // ee use 32k, So interrup status can be accessed.
 	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-	udelay(100);
 	switch_to_rtc();
 	udelay(1000);
 
@@ -366,7 +365,6 @@ void enter_power_down()
 
 
 	switch_to_81();
-	udelay(1000);
   // ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay(10000);
@@ -498,7 +496,6 @@ void enter_power_down()
 
 	// ee use 32k, So interrup status can be accessed.
 	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-	udelay(100);
 	//ao to 32k
 	switch_to_rtc();	
 	udelay(1000);
@@ -540,10 +537,8 @@ void enter_power_down()
 #ifdef pwr_ddr_off
  // Next, we reset all channels 
 //	switch_to_rtc();
-//	udelay(1000);
 //	reset_mmc();
 //	switch_to_81();
-//	udelay(1000);
 #endif
 
 	//disable power_key int
