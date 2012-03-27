@@ -546,7 +546,7 @@ static void aml_platform_adjust_timing(struct aml_nand_chip *aml_chip)
 
 static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 {
-	int adjust_offset = 0, mini_part_blk_num, start_blk = 0;
+	int mini_part_blk_num, start_blk = 0;
 	struct mtd_info *mtd = &aml_chip->mtd;
 	struct aml_nand_platform *plat = aml_chip->platform;
 #ifdef CONFIG_MTD_PARTITIONS
@@ -554,7 +554,8 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	struct mtd_partition *parts;
 	int nr, i, error = 0, part_save_in_env = 1, file_system_part = 0, phys_erase_shift;
 	u8 part_num = 0;
-	size_t offset;
+	loff_t offset;
+    loff_t adjust_offset = 0;
 	uint64_t mini_part_size = ((mtd->erasesize > NAND_MINI_PART_SIZE) ? mtd->erasesize : NAND_MINI_PART_SIZE);
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
@@ -585,6 +586,8 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 
 		do {
 			offset = adjust_offset + start_blk * mtd->erasesize;
+            if(offset > (mtd->size >> 1))
+                break;
 			error = mtd->block_isbad(mtd, offset);
 			if (error) {
 				adjust_offset += mtd->erasesize;

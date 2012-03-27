@@ -148,7 +148,8 @@ static void m3_nand_adjust_timing(struct aml_nand_chip *aml_chip)
 		return;
 
 	bus_timing = (start_cycle + end_cycle) / 2;
-#ifndef CONFIG_AML_MESON_6
+//#ifndef CONFIG_AML_MESON_6
+#if 1
 	NFC_SET_CFG(0);
 
 	NFC_SET_TIMING_ASYC(bus_timing, (bus_cycle - 1));
