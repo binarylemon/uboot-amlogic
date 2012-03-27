@@ -75,7 +75,7 @@
 #define CONFIG_CMD_USB 1
 
 #define CONFIG_UCL 1
-#define CONFIG_SELF_COMPRESS 
+#define CONFIG_SELF_COMPRESS
 
 //#define CONFIG_UBI_SUPPORT
 #ifdef	CONFIG_UBI_SUPPORT
@@ -83,7 +83,7 @@
 #define CONFIG_CMD_UBIFS
 #define CONFIG_RBTREE
 #define MTDIDS_DEFAULT		"nand1=nandflash1\0"
-#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"
 #endif
 
 /* Environment information */
@@ -124,39 +124,39 @@
 
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1
-//#endif 
+//#endif
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
-	#define CONFIG_CMD_SAVEENV	
-	
+	#define CONFIG_CMD_SAVEENV
+
 	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
 	//#ifdef CONFIG_SPI_FLASH_SPANSION
 	 #define CONFIG_ENV_SECT_SIZE		0x10000
 	//#else
 	//	#define CONFIG_ENV_SECT_SIZE        0x1000
 	//#endif
-	
+
 	#define CONFIG_ENV_OFFSET           0x1f0000
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+    #define CONFIG_SYS_MMC_ENV_DEV        0
+	#define CONFIG_ENV_OFFSET       0x1000000
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
 
 #define BOARD_LATE_INIT
 #define CONFIG_SWITCH_BOOT_MODE
-/* config LCD output */ 
+/* config LCD output */
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
 //#define CONFIG_VIDEO_AMLLCD_M3
@@ -198,7 +198,7 @@
 	NULL,		\
 	CONFIG_SYS_POST_BSPEC1 	\
 	}
-	
+
 #define CONFIG_POST_BSPEC2 {  \
 	"BIST test", \
 	"bist", \
@@ -208,7 +208,7 @@
 	NULL, \
 	NULL, \
 	CONFIG_SYS_POST_BSPEC1  \
-	}	
+	}
 #endif   /*end ifdef CONFIG_POST*/
 
 /*-----------------------------------------------------------------------
@@ -224,7 +224,7 @@
 #define DDR3_9_9_9
 //#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
-//board/amlogic/m6_ref_v1/firmware/timming.c 
+//board/amlogic/m6_ref_v1/firmware/timming.c
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
@@ -253,8 +253,8 @@
 	#error "Please define DDR3 memory capacity in file m6_ref_v1.h\n"
 #endif
 
-#define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */
+#define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
