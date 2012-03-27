@@ -69,7 +69,9 @@ int appf_warm_reset(void)
     int cpu_index, cluster_index;
 
 	//**********************//
-	writel(readl(0xDA00434c)&(~(0x1<<29)),0xDA00434c);// Disable GPO filter for 32k
+	f_serial_puts("************A******\n");
+	//writel(readl(0xDA00434c)&(~(0x1<<29)),0xDA00434c);// Disable GPO filter for 32k
+	writel(0x3600000,0xDA00434c);// Disable GPO filter for 32k
 	//**********************//
     
     cpu_index = appf_platform_get_cpu_index();

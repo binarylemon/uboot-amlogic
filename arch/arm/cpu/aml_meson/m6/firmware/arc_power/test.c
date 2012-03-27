@@ -251,7 +251,7 @@ void test_ddr(int i)
 	wait_uart_empty();
 #endif			
 }
-#define pwr_ddr_off 
+//#define pwr_ddr_off 
 //#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
@@ -335,7 +335,8 @@ void enter_power_down()
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 #if 1
-	do{}while(!(readl(0xc1109860)&0x100));
+	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
+//	while(!(readl(0xc1109860)&0x100)){break;}
 #else
  	 for(i=0;i<64;i++)
    {
@@ -358,16 +359,18 @@ void enter_power_down()
 //  reset_mmc();
 //#endif
 
-	//disable power_key int
-	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
-	writel(readl(0xc8100080)&(~0x1),0xc8100080);
-	writel(0x100,0xc1109860);//clear int
 
 
 	switch_to_81();
   // ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay(10000);
+
+	//disable power_key int
+	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
+	writel(readl(0xc8100080)&(~0x1),0xc8100080);
+	writel(0x100,0xc1109860);//clear int
+
 
 	
 #ifdef pwr_ddr_off
@@ -508,7 +511,7 @@ void enter_power_down()
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 #if 1
-	do{}while(!(readl(0xc1109860)&0x100));
+	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
 #else
  	 for(i=0;i<64;i++)
    {
