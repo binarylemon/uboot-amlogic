@@ -32,6 +32,10 @@
 #include <errno.h>
 #include <malloc.h>
 
+#ifdef CONFIG_ENV_IS_IN_AML_NAND
+#include <asm/arch/nand.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 extern env_t *env_ptr;
