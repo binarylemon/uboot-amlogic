@@ -1,5 +1,7 @@
 #ifndef __REBOOT_H
 #define __REBOOT_H
+#include <asm/arch/io.h>
+
 
 #define reboot_mode *((volatile unsigned long*)(P_AO_RTI_STATUS_REG1))
 

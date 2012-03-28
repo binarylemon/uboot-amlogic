@@ -449,10 +449,9 @@ int lcd_opt_cmd(int argc, char * const argv[])
 =================================================================================*/
 int aml_lcd_init(void)
 {	
+		panel_oper.enable();
 		lcd_line_length = (panel_info.vl_col * NBITS (panel_info.vl_bpix)) / 8;
 		lcd_is_enabled = 1;		
-
-		panel_oper.enable();
 		/* lcd clear*/
 		memset ((char *)panel_info.lcd_base,	COLOR_MASK(lcd_getbgcolor()),
 									lcd_line_length*panel_info.vl_row);

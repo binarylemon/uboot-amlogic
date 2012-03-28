@@ -2767,7 +2767,7 @@ APB Bus registers
 #define P_EFUSE_CNTL3		(0xDA00000C)
 #define P_EFUSE_CNTL4		(0xDA000010)
 
-#define P_RTC_ADDR0 			(0xDA004340)
+#define P_RTC_ADDR0 		(0xDA004340)
 #define P_RTC_ADDR1			(0xDA004344)
 #define P_RTC_ADDR2			(0xDA004348)
 #define P_RTC_ADDR3			(0xDA00434C)

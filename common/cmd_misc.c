@@ -26,6 +26,8 @@
  */
 #include <common.h>
 #include <command.h>
+static int ms_count = -1;
+
 
 int do_sleep (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -43,7 +45,7 @@ int do_sleep (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 		udelay (100);
 	}
-
+	ms_count += delay;
 	return 0;
 }
 
@@ -53,3 +55,65 @@ U_BOOT_CMD(
 	"N\n"
 	"    - delay execution for N seconds (N is _decimal_ !!!)"
 );
+
+
+int do_msleep (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	ulong start = get_timer(0);
+	ulong delay;
+	char str_val[32];
+
+	if (argc != 2)
+		return cmd_usage(cmdtp);
+
+	delay = simple_strtoul(argv[1], NULL, 10);
+
+	while (get_timer(start) < delay) {
+		if (ctrlc ())
+			return (-1);
+
+		udelay (100);
+	}
+	ms_count += delay;
+	return 0;
+}
+
+U_BOOT_CMD(
+	msleep ,    2,    1,     do_msleep,
+	"delay execution for some time",
+	"N\n"
+	"    - delay execution for N mS (N is _decimal_ !!!)"
+);
+
+int do_restart_mscount (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	ms_count = 0;
+
+	setenv("msleep_count", "0");
+
+	return 0;
+}
+
+U_BOOT_CMD(
+	restart_mscount ,    1,    1,     do_restart_mscount,
+	"mS sleep count restart",
+	"N\n"
+	"    - mS sleep count restart (unit is mS)"
+);
+
+int do_get_mscount (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char str_val[32];
+	sprintf(str_val, "%d", ms_count);
+	setenv("msleep_count", str_val);
+	return 0;
+}
+
+U_BOOT_CMD(
+	get_mscount ,    1,    1,     do_get_mscount,
+	"get mS sleep count",
+	"N\n"
+	"    - get mS sleep count (unit is mS)"
+);
+
+

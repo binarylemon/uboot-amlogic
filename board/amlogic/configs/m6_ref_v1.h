@@ -29,6 +29,7 @@
 
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
+#define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 
@@ -77,22 +78,17 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
-//#define CONFIG_UBI_SUPPORT
-#ifdef	CONFIG_UBI_SUPPORT
-#define CONFIG_CMD_UBI
-#define CONFIG_CMD_UBIFS
-#define CONFIG_RBTREE
-#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
-#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"
-#endif
+#define CONFIG_CMD_IMGPACK 1
+#define CONFIG_CMD_REBOOT 1
 
 /* Environment information */
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
+	"loadaddr_misc=0x83000000\0" \
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
@@ -109,10 +105,20 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
-	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
-	"recovery=if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"prepare=nand read ${loadaddr_misc} 2000000 40000; fatload mmc 0 ${loadaddr_misc} imgpack; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}; saradc open 4\0" \
+	"update=bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
+	"recovery=bmp display ${bootup_offset}; if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"charging_or_not=run prepare; if ac_online; then run charing; else if getkey; then run bootcmd; else poweroff; fi; fi\0" \
+	"charing=video clear; run display_loop\0" \
+	"display_loop=while itest 1 == 1; do bmp display ${battery0_offset}; run custom_sleep; bmp display ${battery1_offset}; run custom_sleep; bmp display ${battery2_offset}; run custom_sleep; bmp display ${battery3_offset}; run custom_sleep; done\0" \
+	"custom_sleep=restart_mscount; while itest ${msleep_count} < 800; do; run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; get_mscount; done\0" \
+	"powerkey_or_not=if getkey; then msleep 200; if getkey; then run bootcmd; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 200; if saradc get_in_range 0x50 0xf0; then run update; fi; fi\0" \
+	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 
-#define CONFIG_BOOTCOMMAND  "nand read 82000000 3800000 400000;bootm"
+
+#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read 82000000 3800000 400000; bootm"
+
 
 #define CONFIG_AUTO_COMPLETE	1
 

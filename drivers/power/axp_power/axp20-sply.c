@@ -241,7 +241,7 @@ void axp_charger_state_dump(void)
 	printf("axp_charger->usb = %d\n",axp_charger->usb);
 	printf("axp_charger->ac = %d\n",axp_charger->ac);
 }
-
+//逻辑反掉了，找kross power确认
 int axp_charger_is_ac_online(void)
 {
 	axp_charger_update_state(axp_charger);

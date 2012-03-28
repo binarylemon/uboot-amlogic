@@ -451,7 +451,6 @@ set_dcdc3(1100);	//set DC-DC3 to 1100mV
 }
 #endif
 
-
 #ifdef CONFIG_SWITCH_BOOT_MODE
 #include <asm/arch/reboot.h>
 
@@ -474,6 +473,7 @@ int switch_boot_mode(void)
 		case AMLOGIC_NORMAL_BOOT:
 		{
 			printf("AMLOGIC_NORMAL_BOOT...\n");
+			run_command ("run prepare", 0);
 			break;
 		}
 		case AMLOGIC_FACTORY_RESET_REBOOT:
@@ -491,8 +491,89 @@ int switch_boot_mode(void)
 		default:
 		{
 			printf("AMLOGIC_CHARGING_REBOOT...\n");
+			run_command ("run charging_or_not", 0);
 			break;
 		}
 	}
 }
 #endif
+
+
+static inline int powerkey_init(void)
+{
+	clrbits_le32(P_RTC_ADDR0, (1<<11));
+	clrbits_le32(P_RTC_ADDR1, (1<<3));
+    return 0;
+}
+
+int powerkey_scan(void)
+{
+	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
+}
+
+int do_getkey (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	static int key_enable = 0;
+	if(!key_enable)
+	{
+		powerkey_init();
+		key_enable = 1;
+	}
+	return !powerkey_scan();
+}
+
+
+U_BOOT_CMD(
+	getkey,	1,	0,	do_getkey,
+	"get POWER key",
+	"/N\n"
+	"This command will get POWER key'\n"
+);
+
+
+int do_ac_online (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+	static int pmu_enable = 0;
+	if(!pmu_enable)
+	{
+		axp_charger_open();
+		pmu_enable = 1;
+	}
+	ret = axp_charger_is_ac_online();
+	if(!ret)
+	{
+		debug("ac adapter not online!\n");
+	}
+	else
+	{
+		debug("ac adapter is online!\n");
+	}
+	return !ret;
+}
+
+
+U_BOOT_CMD(
+	ac_online,	1,	0,	do_ac_online,
+	"get ac adapter online",
+	"/N\n"
+	"This command will get ac adapter online'\n"
+);
+
+
+int do_poweroff (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	axp_power_off();
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	poweroff,	1,	0,	do_poweroff,
+	"system power off",
+	"/N\n"
+	"This command will let system power off'\n"
+);
+
+
+
