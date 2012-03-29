@@ -125,19 +125,21 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//asm volatile ("wfi");
 
 	//MMC_Wr(UPCTL_MCFG1_ADDR,((0xff<<0)|(0xff<<16)));
-	writel(((0xff<<0)|(0xff<<16)),0xc800007c);
+	//writel(((0xff<<0)|(0xff<<16)),0xc800007c); //PUB will use >2048 cycles to wake up, too slow
+	                                         // change MCFG bit15-bit8 (Power-down idle period) from 0 to 0xf
+	                                         // @board/amlogic/xxxx/firmware/timming.c
 		
 	//MMC_Wr((MMC_LP_CTRL+0xc), 0x27);
-	writel(0x27,0xc8006434); //#define P_MMC_LP_CTRL4		0xc8006434
+	writel(0x4d,0xc8006434); //#define P_MMC_LP_CTRL4		0xc8006434
 		
 	//MMC_Wr((MMC_LP_CTRL+8), 0x34400f03);
 	writel(0x34400f03,0xc8006430); //#define P_MMC_LP_CTRL3 	  0xc8006430
 		
 	//MMC_Wr((MMC_LP_CTRL+4), 0x8160203);
-	writel(0x8160203,0xc800642c); //#define P_MMC_LP_CTRL2		 0xc800642c
+	writel(0x8160203,0xc800642c); //#define P_MMC_LP_CTRL2	0xc800642c
 
 	//MMC_Wr(MMC_LP_CTRL, 0xfc000030);
-	writel(0xfc000030,0xc8006428); //#define P_MMC_LP_CTRL1 	  0xc8006428
+	writel(0x7c000030,0xc8006428); //#define P_MMC_LP_CTRL1 	  0xc8006428 //not enable mmc low power
 		
 #endif
 
