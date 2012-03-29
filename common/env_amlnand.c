@@ -424,6 +424,7 @@ int saveenv(void)
 	printf("Writing to Nand... \n");
 	if (writeenv(addr, (u_char *) env_new_p)) {
 		printf("FAILED!\n");
+        free(env_new_p);
 		return 1;
 	}
 
@@ -591,7 +592,9 @@ void env_relocate_spec (void)
 	memset(env_buf.data, 0, ENV_SIZE);
 	ret = readenv(CONFIG_ENV_OFFSET, (u_char *) &env_buf);
 	if (ret) {		
-		set_default_env("!readenv() failed");		
+		set_default_env("!readenv() failed");
+        if (ret == 2)
+			saveenv();
 		return;
 	}	
 	env_import(&env_buf, 1);
