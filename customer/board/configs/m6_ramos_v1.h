@@ -267,6 +267,6 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-
+#define CONFIG_AML_SUSPEND 1
 
 #endif //__CONFIG_M6_RAMOS_H__
