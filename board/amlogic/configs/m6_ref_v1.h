@@ -78,8 +78,10 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
+#define CONFIG_CMD_AML 1
 #define CONFIG_CMD_IMGPACK 1
 #define CONFIG_CMD_REBOOT 1
+#define CONFIG_CMD_MATH 1
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
@@ -95,6 +97,7 @@
 	"boardname=m6_ref\0" \
 	"chipname=8726m6\0" \
 	"machid=F82\0" \
+	"upgrade_step=0\0" \
 	"video_dev=panel\0" \
 	"display_width=800\0" \
 	"display_height=1280\0" \
@@ -104,20 +107,27 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
+	"sleep_threshold=20\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
-	"prepare=nand read ${loadaddr_misc} 2000000 40000; fatload mmc 0 ${loadaddr_misc} imgpack; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}; saradc open 4\0" \
-	"update=bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
-	"recovery=bmp display ${bootup_offset}; if nand read ${loadaddr} 3000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"preboot=run upgrade_check; set sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; set upgrade_step 2; save; fi; fi\0" \
+	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
+	"prepare=nand read logo ${loadaddr_misc} 0 40000; fatload mmc 0 ${loadaddr_misc} imgpack; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}\0" \
+	"update=bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read recovery ${loadaddr} 0 400000; then bootm; fi; fi; fi\0" \
+	"recovery=bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 	"charging_or_not=run prepare; if ac_online; then run charing; else if getkey; then run bootcmd; else poweroff; fi; fi\0" \
 	"charing=video clear; run display_loop\0" \
-	"display_loop=while itest 1 == 1; do bmp display ${battery0_offset}; run custom_sleep; bmp display ${battery1_offset}; run custom_sleep; bmp display ${battery2_offset}; run custom_sleep; bmp display ${battery3_offset}; run custom_sleep; done\0" \
-	"custom_sleep=restart_mscount; while itest ${msleep_count} < 800; do; run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; get_mscount; done\0" \
-	"powerkey_or_not=if getkey; then msleep 200; if getkey; then run bootcmd; fi; fi\0" \
-	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 200; if saradc get_in_range 0x50 0xf0; then run update; fi; fi\0" \
+	"display_loop=while itest 1 == 1; do bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; done\0" \
+	"custom_delay=set msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
+	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; set sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
+	"into_sleep=set sleep_enable 1; video dev bl_off; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev bl_on\0" \
+	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then set sleep_enable 0; fi; fi; if saradc get_in_range 0x20 0x380; then msleep 100; if saradc get_in_range 0x20 0x380; then set sleep_enable 0; fi; fi\0" \
+	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if saradc get_in_range 0x50 0xf0; then run update; fi; fi\0" \
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 
 
-#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read 82000000 3800000 400000; bootm"
+#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
 
 
 #define CONFIG_AUTO_COMPLETE	1
@@ -161,7 +171,7 @@
 #endif
 
 #define BOARD_LATE_INIT
-#define CONFIG_SWITCH_BOOT_MODE
+#define CONFIG_PREBOOT
 /* config LCD output */
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
