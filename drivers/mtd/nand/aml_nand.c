@@ -2797,7 +2797,8 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	offset *= mtd->erasesize;
 	offset += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
 	printk("aml nand env valid addr: %llx \n", (uint64_t)offset);
-
+	debug("CONFIG_ENV_SIZE=0x%x; ENV_HEADER_SIZE=0x%x; ENV_SIZE=0x%x; bbt=0x%x; default_environment_size=0x%x\n",
+		CONFIG_ENV_SIZE, ENV_HEADER_SIZE, ENV_SIZE, sizeof(struct aml_nand_bbt_info), default_environment_size);
 	kfree(data_buf);
 	return 0;
 }
@@ -2982,7 +2983,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &aml_chip->mtd;
 	int err = 0, i = 0, phys_erase_shift;
-
+	
 	switch (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK) {
 
 		case NAND_ECC_SOFT_MODE:

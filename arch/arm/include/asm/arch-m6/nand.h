@@ -353,7 +353,6 @@
 #define MTD_PART_MAGIC					"anpt"
 
 #define NAND_SYS_PART_SIZE				0x10000000
-#define CONFIG_ENV_SIZE         (8 * 1024) 
 
 struct aml_nand_flash_dev {
 	char *name;

@@ -81,19 +81,6 @@
 #define CONFIG_SPI_FLASH_GIGADEVICE     1
 #endif
 
-//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
-#ifndef CONFIG_ENV_SIZE
-#define CONFIG_ENV_SIZE         (64 * 1024) 
-#endif
-/*
-#ifdef CONFIG_SPI_FLASH_SPANSION
-	#undef CONFIG_ENV_SIZE
-	#define CONFIG_ENV_SIZE         (64 * 1024)
-#else
-	#define CONFIG_ENV_SIZE         (8 * 1024)
-#endif
-*/
-
 
 #if CONFIG_SDIO_B1 || CONFIG_SDIO_A || CONFIG_SDIO_B || CONFIG_SDIO_C
 #define CONFIG_CMD_MMC          1
