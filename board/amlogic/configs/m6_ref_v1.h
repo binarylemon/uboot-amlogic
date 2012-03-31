@@ -146,9 +146,6 @@
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif
 
-#ifdef CONFIG_ENV_SIZE
-sadfsdfa
-#endif
 #define CONFIG_ENV_SIZE         0x8000
 
 #ifdef CONFIG_SPI_BOOT

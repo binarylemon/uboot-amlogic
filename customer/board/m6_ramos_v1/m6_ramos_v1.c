@@ -450,46 +450,32 @@ int board_late_init(void)
 #endif
 
 
-#ifdef CONFIG_SWITCH_BOOT_MODE
-#include <asm/arch/reboot.h>
-
-int switch_boot_mode(void)
+//POWER key
+inline void key_init(void)
 {
-	uint32_t reboot_mode_val;
-	saradc_enable();	
-	if(get_adc_sample(4) < 1000)
-	{
-		saradc_disable();
-		run_command ("run update", 0);
-	}
-	saradc_disable();
-
-	reboot_mode_val = reboot_mode;
-	reboot_mode_clear();
-	switch(reboot_mode_val)
-	{
-		case AMLOGIC_NORMAL_BOOT:
-		{
-			printf("AMLOGIC_NORMAL_BOOT...\n");
-			break;
-		}
-		case AMLOGIC_FACTORY_RESET_REBOOT:
-		{
-			printf("AMLOGIC_FACTORY_RESET_REBOOT...\n");
-			run_command ("run recovery", 0);
-			break;
-		}
-		case AMLOGIC_UPDATE_REBOOT:
-		{
-			printf("AMLOGIC_UPDATE_REBOOT...\n");
-			run_command ("run update", 0);
-			break;
-		}
-		default:
-		{
-			printf("AMLOGIC_CHARGING_REBOOT...\n");
-			break;
-		}
-	}
+	clrbits_le32(P_RTC_ADDR0, (1<<11));
+	clrbits_le32(P_RTC_ADDR1, (1<<3));
 }
-#endif
+
+inline int get_key(void)
+{
+	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
+}
+
+
+//AC online
+inline void ac_online_init(void)
+{
+	axp_charger_open();
+}
+
+inline int is_ac_online(void)
+{
+	return axp_charger_is_ac_online();
+}
+
+//Power off
+void power_off(void)
+{
+	axp_power_off();
+}
