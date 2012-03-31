@@ -134,6 +134,8 @@
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif 
 
+#define CONFIG_ENV_SIZE         (64*1024)
+
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
@@ -215,8 +217,8 @@
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-#define DDR3_9_9_9
-//#define DDR3_7_7_7
+//#define DDR3_9_9_9
+#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
 //board/amlogic/m6_skt_v1/firmware/timming.c 
 

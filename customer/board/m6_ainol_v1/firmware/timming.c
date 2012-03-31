@@ -39,11 +39,11 @@ static struct ddr_set __ddr_setting={
 
                 #ifdef DDR3_9_9_9
                     .cl             =   9,
-                    .t_faw          =  20,//30,
+                    .t_faw          =  20,//30:page size 2KB; 20:page size 1KB
                 #endif
                 #ifdef DDR3_7_7_7
                     .cl             =   7,
-                    .t_faw          =  27,
+                    .t_faw          =  20,//27:page size 2KB; 20:page size 1KB
                 #endif
                     .t_mrd          =   4,
                     .t_1us_pck      = (M6_DDR_CLK),
@@ -65,16 +65,19 @@ static struct ddr_set __ddr_setting={
                 #ifdef DDR3_9_9_9
                     .t_rfc          = 107,
                     .t_rp           =   9,
-                    .t_rrd          =   6,//5,
+                    .t_rrd          =   4,
+                    .t_rtp          =   5,
+                    .t_wr           =   10,
+                    .t_wtr          =   5,
                 #endif
                 #ifdef DDR3_7_7_7
                     .t_rfc          =  86,
                     .t_rp           =   7,
-                    .t_rrd          =   6,
+                    .t_rrd          =   4,               
+                    .t_rtp          =   4,
+                    .t_wr           =   8,
+                    .t_wtr          =   4,
                 #endif
-                    .t_rtp          =   5,
-                    .t_wr           =   10,//8,
-                    .t_wtr          =   5,
                     .t_xp           =   4,
                     .t_xsrd         =   0,
                     .t_xsnr         =   0,
@@ -82,7 +85,12 @@ static struct ddr_set __ddr_setting={
                     .t_al           =   0,
                     .t_clr          =   8,
                     .t_dqs          =   2,
-                    .t_cwl          =   6,//7,
+               #ifdef DDR3_9_9_9
+                    .t_cwl          =   7,
+               #endif
+			   #ifdef DDR3_7_7_7
+			        .t_cwl          =   6,
+			   #endif
                     .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,

@@ -244,8 +244,8 @@
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-#define DDR3_9_9_9
-//#define DDR3_7_7_7
+//#define DDR3_9_9_9
+#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
 //customer/board/m6_ramos_v1/firmware/timming.c 
 

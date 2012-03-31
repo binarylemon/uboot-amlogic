@@ -66,15 +66,18 @@ static struct ddr_set __ddr_setting={
                     .t_rfc          = 107,
                     .t_rp           =   9,
                     .t_rrd          =   5,
+                    .t_rtp          =   5,
+                    .t_wr           =   10,
+                    .t_wtr          =   5,
                 #endif
                 #ifdef DDR3_7_7_7
                     .t_rfc          =  86,
                     .t_rp           =   7,
                     .t_rrd          =   6,
-                #endif
-                    .t_rtp          =   5,
+                    .t_rtp          =   4,
                     .t_wr           =   8,
-                    .t_wtr          =   5,
+                    .t_wtr          =   4,
+                #endif                    
                     .t_xp           =   4,
                     .t_xsrd         =   0,
                     .t_xsnr         =   0,
@@ -82,7 +85,12 @@ static struct ddr_set __ddr_setting={
                     .t_al           =   0,
                     .t_clr          =   8,
                     .t_dqs          =   2,
+                #ifdef DDR3_9_9_9
                     .t_cwl          =   7,
+                #endif
+				#ifdef DDR3_7_7_7
+                    .t_cwl          =   6,
+                #endif				
                     .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
