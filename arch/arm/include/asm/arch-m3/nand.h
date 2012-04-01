@@ -6,7 +6,7 @@
 #include <linux/mtd/partitions.h>
 //#include <common.h>
 //#include "regs.h"
-#include "register.h"
+#include "registers.h"
 #include "reg_addr.h"
 #include "io.h"
 

@@ -27,6 +27,8 @@
 #include <asm/arch/fb.h>
 
 typedef  enum {
+	COLOR_INDEX_NULL = 0,
+		
 	COLOR_INDEX_02_PAL4    = 2,  // 0
     	COLOR_INDEX_04_PAL16   = 4, // 0
 	COLOR_INDEX_08_PAL256=8,

@@ -502,7 +502,8 @@
 #define ETH_CLKSRC_AUD_PLL_CLK      (4)
 #define ETH_CLKSRC_VID_PLL_CLK      (5)
 #define ETH_CLKSRC_VID2_PLL_CLK     (6)
-#define ETH_CLKSRC_SYS_PLL_DIV2_CLK (7)
+//#define ETH_CLKSRC_SYS_PLL_DIV2_CLK (7)
+#define ETH_CLKSRC_EXT_CLK 			(7)
 #define CLK_1M						(1000000)
 
 #define ETH_VALIDE_CLKSRC(clk,out_clk) ((clk%out_clk)==0)
