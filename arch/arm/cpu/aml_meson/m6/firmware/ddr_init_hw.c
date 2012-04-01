@@ -50,6 +50,25 @@ void init_dmc(struct ddr_set * ddr_setting)
     writel(0xffff, P_DMC_SEC_PORT6_RANGE0);
     writel(0xffff, P_DMC_SEC_PORT7_RANGE0);
     writel(0x80000000, P_DMC_SEC_CTRL);
+
+
+#ifdef CONFIG_DDR_LOW_POWER		
+	//asm volatile ("wfi");
+	//move from ddr_init_pctl.c
+	//MMC_Wr((MMC_LP_CTRL+0xc), 0x4d);
+	writel(0x4d,0xc8006434); //#define P_MMC_LP_CTRL4		0xc8006434
+		
+	//MMC_Wr((MMC_LP_CTRL+8), 0x34400f03);
+	writel(0x34400f03,0xc8006430); //#define P_MMC_LP_CTRL3 	  0xc8006430
+		
+	//MMC_Wr((MMC_LP_CTRL+4), 0x8160203);
+	writel(0x8160203,0xc800642c); //#define P_MMC_LP_CTRL2	0xc800642c
+
+	//MMC_Wr(MMC_LP_CTRL, 0x7c000030);
+	writel(0x7c000030,0xc8006428); //#define P_MMC_LP_CTRL1 	  0xc8006428 
+			
+#endif
+
 	
 	//APB_Wr(MMC_REQ_CTRL,0xff); //hisun 2012.02.08
 	writel(0xff, P_MMC_REQ_CTRL);   //hisun 2012.02.08
