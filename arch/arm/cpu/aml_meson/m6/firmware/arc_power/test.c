@@ -286,8 +286,8 @@ void enter_power_down()
   mmc_sleep();
 
     // save ddr power
-  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
-  delay_ms(20);
+//  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
+//  delay_ms(20);
 
 
    // enable retention
@@ -420,7 +420,7 @@ void enter_power_down()
   f_serial_puts("step 13\n");
  	wait_uart_empty();
   // Next, we enable all requests
-  enable_mmc_req();
+//  enable_mmc_req();
 #endif
 	
 //	disp_pctl();
