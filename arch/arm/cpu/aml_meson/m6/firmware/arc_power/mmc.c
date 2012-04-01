@@ -100,6 +100,9 @@ void mmc_wakeup(void)
 			//while(stat != UPCTL_STAT_ACCESS);
 		}
 	}while(stat != UPCTL_STAT_LOW_POWER);
+
+	
+	APB_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);//add by Dai
 }
 /*
 #define DDR_RSLR_LEN 6
@@ -425,7 +428,7 @@ void init_pctl(void)
 {
 	int nTempVal;
   
-//	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
+	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 /*	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
 	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
 	MMC_Wr(UPCTL_PHYCR_ADDR, 2);//????
@@ -608,10 +611,8 @@ void init_pctl(void)
 	MMC_Wr( UPCTL_PPCFG_ADDR, (0xf0 << 1) );
 	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITPHYWRDATA_ADDR,  0x1 );
-	//MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl -1  );    //CWL -1
-	//MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl - 2  );    //CL -2
-	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl );    //CWL -1
-	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl  );    //CL -2
+	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl -1  );    //CWL -1
+	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl - 2  );    //CL -2
 	MMC_Wr( UPCTL_DFITPHYRDLAT_ADDR, 15 );
 	MMC_Wr( UPCTL_DFITDRAMCLKDIS_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITDRAMCLKEN_ADDR, 2 );
@@ -637,7 +638,7 @@ void init_pctl(void)
  	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 	dbg_out("d",10);
-	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
+//	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
 //	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 //	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
 //	MMC_Wr(MMC_REQ_CTRL, 0xff );  //enable request in kreboot.s
