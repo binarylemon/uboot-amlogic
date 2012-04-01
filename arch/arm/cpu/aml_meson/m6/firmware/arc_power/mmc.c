@@ -38,8 +38,19 @@ void disable_mmc_req(void)
 
 void reset_mmc(void)
 {
-   APB_Wr(MMC_SOFT_RST, 0x17ff);
-   while(APB_Rd(MMC_SOFT_RST) != 0);
+  	//Enable DDR DLL clock input from PLL.
+    writel(0xc0000080, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
+    writel(0xc00000c0, P_MMC_CLK_CNTL);
+
+    //enable the clock.
+    writel(0x400000c0, P_MMC_CLK_CNTL);
+
+//   APB_Wr(MMC_SOFT_RST, 0x17ff);
+	APB_Wr(MMC_SOFT_RST, 0x0);
+	__udelay(10000);
+	APB_Wr(MMC_SOFT_RST, 0xffff);
+
+	while((APB_Rd(MMC_RST_STS)&0xffff) != 0xffff);
 }
 
 void enable_mmc_req(void)
@@ -322,7 +333,7 @@ void save_ddr_settings()
 	v_msr3 = MMC_Rd( PUB_MR3_ADDR);	
 
 	v_odtcfg = MMC_Rd( UPCTL_LPDDR2ZQCFG_ADDR);	
-	v_zqcr = MMC_Rd( UPCTL_ZQCR_ADDR);	
+/*	v_zqcr = MMC_Rd( UPCTL_ZQCR_ADDR);	
 	
 	v_dllcr9 = MMC_Rd(UPCTL_DLLCR9_ADDR); //2a8	
 	v_iocr = MMC_Rd(UPCTL_IOCR_ADDR); //248
@@ -337,7 +348,7 @@ void save_ddr_settings()
   v_tr1 = MMC_Rd(UPCTL_DQTR1_ADDR);     //2c4
   v_tr2 = MMC_Rd(UPCTL_DQTR2_ADDR);     //2c8
   v_tr3 = MMC_Rd(UPCTL_DQTR3_ADDR);     //2cc
-  
+  */
   
   v_dx0gsr0  = MMC_Rd(PUB_DX0GSR0_ADDR); 
 	v_dx0gsr1  = MMC_Rd(PUB_DX0GSR1_ADDR); 
@@ -414,23 +425,23 @@ void init_pctl(void)
 {
 	int nTempVal;
   
-  MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
-  MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
-	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
+//	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
+/*	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
 	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
-//	MMC_Wr(UPCTL_PHYCR_ADDR, 2);//????
-
+	MMC_Wr(UPCTL_PHYCR_ADDR, 2);//????
+*/
 
   //wait to DDR PLL lock.
    while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
+   dbg_out("d",1);
   //Enable DDR DLL clock input from PLL.
-     MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
-     MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);    
+//     MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
+//     MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);    
     //enable the clock.
      MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
      
     // release the DDR DLL reset pin.
-    MMC_Wr( MMC_SOFT_RST,  0xffff);
+//    MMC_Wr( MMC_SOFT_RST,  0xffff);
   	__udelay(10);
 	//UPCTL memory timing registers
 	MMC_Wr(UPCTL_TOGCNT1U_ADDR, v_t_1us_pck);	 //1us = nn cycles.
@@ -459,10 +470,14 @@ void init_pctl(void)
 	MMC_Wr(PUB_DTPR1_ADDR,v_pub_dtpr1);
 	MMC_Wr(PUB_DTPR2_ADDR,v_pub_dtpr2);
 	MMC_Wr(PUB_PTR0_ADDR,v_pub_ptr0);
+
+	
+//	MMC_Wr( PUB_PIR_ADDR, 0x17);//Add By Dai
 	
 	  __udelay(50);
 	//wait PHY DLL LOCK
 	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
+	dbg_out("d",2);
 
 	// configure DDR3_rst pin.
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
@@ -472,21 +487,27 @@ void init_pctl(void)
    
 
 	//for simulation to reduce the init time.
-	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
-	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
+//	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
+//	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
+
+
+//   MMC_Wr( PUB_PIR_ADDR, 0x9);//Add By Dai
 
    __udelay(20);
 	//wait DDR3_ZQ_DONE: 
 	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
 	
+	dbg_out("d",3);
 	// wait DDR3_PHY_INIT_WAIT : 
 	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
-		
+		dbg_out("d",4);
 	// Monitor DFI initialization status.
 	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
+	dbg_out("d",5);
 
 	MMC_Wr(UPCTL_POWCTL_ADDR, 1);
 	while(!(MMC_Rd( UPCTL_POWSTAT_ADDR & 1) )) {}
+	dbg_out("d",6);
 
 	// initial upctl ddr timing.
 	MMC_Wr(UPCTL_TREFI_ADDR, v_t_refi_100ns);  // 7800ns to one refresh command.
@@ -576,19 +597,21 @@ void init_pctl(void)
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
 	
 	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg); //????
-	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr); //?????
+//	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr); //?????
  	
  	MMC_Wr( UPCTL_SCTL_ADDR, 1);
 	while (!( MMC_Rd(UPCTL_STAT_ADDR) & 1))  {
 		MMC_Wr(UPCTL_SCTL_ADDR, 1);
 	}
-	
+	dbg_out("d",7);
 	//config the DFI interface.
 	MMC_Wr( UPCTL_PPCFG_ADDR, (0xf0 << 1) );
 	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITPHYWRDATA_ADDR,  0x1 );
-	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl -1  );    //CWL -1
-	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl - 2  );    //CL -2
+	//MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl -1  );    //CWL -1
+	//MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl - 2  );    //CL -2
+	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl );    //CWL -1
+	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl  );    //CL -2
 	MMC_Wr( UPCTL_DFITPHYRDLAT_ADDR, 15 );
 	MMC_Wr( UPCTL_DFITDRAMCLKDIS_ADDR, 2 );
 	MMC_Wr( UPCTL_DFITDRAMCLKEN_ADDR, 2 );
@@ -598,6 +621,7 @@ void init_pctl(void)
  
 	MMC_Wr( UPCTL_CMDTSTATEN_ADDR, 1);
 	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
+	dbg_out("d",8);
 
 	//MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0 <<12) | (7 << 28))); //training address is 0x90001800 not safe
 	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
@@ -605,38 +629,24 @@ void init_pctl(void)
 	//start trainning.
 	// DDR PHY initialization 
 	MMC_Wr( PUB_PIR_ADDR, 0x1e9);
-//	MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
+	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
 
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-	
+	dbg_out("d",9);
  	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-	
+	dbg_out("d",10);
 	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
-	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
-	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
-//  MMC_Wr(MMC_REQ_CTRL, 0xff ); 
+//	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
+//	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
+//	MMC_Wr(MMC_REQ_CTRL, 0xff );  //enable request in kreboot.s
   
 //	udelay(50);	
 
-	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
+//	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
 	//traning result
-/*  MMC_Wr(UPCTL_DLLCR0_ADDR, v_dllcr0); //284
-  MMC_Wr(UPCTL_DLLCR1_ADDR, v_dllcr1); //288
-  MMC_Wr(UPCTL_DLLCR2_ADDR, v_dllcr2); //28c
-  MMC_Wr(UPCTL_DLLCR3_ADDR, v_dllcr3); //290
-  MMC_Wr(UPCTL_DQSTR_ADDR, v_dqscr);   //2e4
-  MMC_Wr(UPCTL_DQSNTR_ADDR, v_dqsntr); //2e8
-  MMC_Wr(UPCTL_DQTR0_ADDR, v_tr0);     //2c0
-  MMC_Wr(UPCTL_DQTR1_ADDR, v_tr1);     //2c4
-  MMC_Wr(UPCTL_DQTR2_ADDR, v_tr2);     //2c8
-  MMC_Wr(UPCTL_DQTR3_ADDR, v_tr3);     //2cc
-
-
-	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
-	
-
+/*
 	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
 	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
 
@@ -675,7 +685,9 @@ void init_pctl(void)
 	MMC_Wr(PUB_DX8GSR0_ADDR,v_dx8gsr0); 
 	MMC_Wr(PUB_DX8GSR1_ADDR,v_dx8gsr1); 
 	MMC_Wr(PUB_DX8DQSTR_ADDR,v_dx8dqstr); 
-	*/
+*/
+//	MMC_Wr(MMC_REQ_CTRL, 0xff ); Already enable request in kreboot.s
+	
 	return 0;
 }
 

@@ -271,11 +271,13 @@ void enter_power_down()
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
 	f_serial_puts("step 1\n");
+
+
 #ifdef pwr_ddr_off
-  disable_mmc_req();
+	disable_mmc_req();
 #endif	
 
-  store_restore_plls(1);
+	store_restore_plls(1);
 
 #ifdef pwr_ddr_off
  	f_serial_puts("step 2\n");
@@ -285,15 +287,16 @@ void enter_power_down()
 
     // save ddr power
   APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
-  APB_Wr(UPCTL_PHYCR_ADDR, APB_Rd(UPCTL_PHYCR_ADDR)|(1<<6));
-  APB_Wr(UPCTL_DLLCR9_ADDR, APB_Rd(UPCTL_DLLCR9_ADDR)|(1<<31));
-// 	  delay_ms(20);
+  delay_ms(20);
+
 
    // enable retention
   enable_retention();	
   
   // power down DDR
- 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
+// 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
+	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
+
 
  	f_serial_puts("step 3\n");
  	wait_uart_empty();
@@ -309,7 +312,7 @@ void enter_power_down()
   
  	f_serial_puts("step 5\n");
  	wait_uart_empty();
-  cpu_off();
+	cpu_off();
   
   
  	f_serial_puts("step 6\n");
@@ -334,7 +337,7 @@ void enter_power_down()
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
-#if 1
+#if 0
 	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
@@ -354,13 +357,6 @@ void enter_power_down()
  
 //  disable_iso_ao();
 
-//#ifdef pwr_ddr_off
- // Next, we reset all channels 
-//  reset_mmc();
-//#endif
-
-
-
 	switch_to_81();
   // ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
@@ -373,19 +369,15 @@ void enter_power_down()
 
 
 	
-#ifdef pwr_ddr_off
-	 // Next, we reset all channels 
-	switch_to_rtc();
-	udelay(1000);
-	reset_mmc();
-	switch_to_81();
-	udelay(1000);
-#endif
 
 	//turn on ee
 // 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 // 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
  	uart_reset();
+
+
+
+
  	
   f_serial_puts("step 7\n");
  	wait_uart_empty();
@@ -395,6 +387,12 @@ void enter_power_down()
   f_serial_puts("step 8\n");
 	wait_uart_empty();  
   init_ddr_pll();
+
+   // Next, we reset all channels 
+//  switch_to_rtc();
+  reset_mmc();
+//  switch_to_81();
+
 
   f_serial_puts("step 9\n");
  	wait_uart_empty();

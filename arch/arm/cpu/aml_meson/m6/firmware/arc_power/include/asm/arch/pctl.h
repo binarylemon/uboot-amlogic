@@ -386,6 +386,24 @@
   // bit 2.     write 1 to reset dmc request channel 2.   read 0 means the reset finished.
   // bit 1.     write 1 to reset dmc request channel 1.   read 0 means the reset finished.
   // bit 0.     write 1 to reset dmc request channel 0.   read 0 means the reset finished.
+/*
+	wire chan0_soft_reset_n   = mmc_soft_reset_n[0];
+	wire chan1_soft_reset_n   = mmc_soft_reset_n[1];
+	wire chan2_soft_reset_n   = mmc_soft_reset_n[2];
+	wire chan3_soft_reset_n   = mmc_soft_reset_n[3];
+	wire chan4_soft_reset_n   = mmc_soft_reset_n[4];
+	wire chan5_soft_reset_n   = mmc_soft_reset_n[5];
+	wire chan6_soft_reset_n   = mmc_soft_reset_n[6];
+	wire chan7_soft_reset_n   = mmc_soft_reset_n[7];
+	wire dmc_soft_reset_n     = mmc_soft_reset_n[8];
+	wire pctl_soft_reset_n    = mmc_soft_reset_n[9];
+	wire pctl_p_soft_reset_n  = mmc_soft_reset_n[10];
+	wire phy_soft_reset_n     = mmc_soft_reset_n[11];
+	wire lp_ctrl_soft_reset_n = mmc_soft_reset_n[12];
+	wire pub_soft_reset_n     = mmc_soft_reset_n[13];
+	wire dmc_p_soft_reset_n   = mmc_soft_reset_n[14];
+	wire phy_dll_soft_reset_n = mmc_soft_reset_n[15];
+*/
 
 #define MMC_RST_STS        0x6408
   // bit 23.    reset no hold for chan7.   when do mmc/dmc reset, don't wait chan7 reset finished. maybe there's no clock. active high. 
@@ -516,7 +534,7 @@
 #define  SCTL_CMD_GO            2 
 #define  SCTL_CMD_SLEEP         3 
 #define  SCTL_CMD_WAKEUP        4 
-
+/*
 #define UPCTL_PHYCR_ADDR 			0x240
 #define UPCTL_PHYSR_ADDR 			0x244
 #define UPCTL_IOCR_ADDR 				0x248
@@ -543,7 +561,7 @@
 #define UPCTL_DQSTR_ADDR 			0x2e4
 #define UPCTL_DQSNTR_ADDR 			0x2e8
 #define UPCTL_ZQCR_ADDR 			0x26c
-
+*/
 
 
 
