@@ -115,7 +115,7 @@
 	"preboot=run upgrade_check; run batlow_or_not; set sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; set upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
-	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}\0" \
+	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}; video dev bl_on\0" \
 	"update=bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; fi; fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
 	"recovery=bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 	"charging_or_not=if ac_online; then run prepare; run charing; else if getkey; then run prepare; run bootcmd; else poweroff; fi; fi\0" \

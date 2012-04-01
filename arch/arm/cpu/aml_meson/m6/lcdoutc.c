@@ -1235,7 +1235,7 @@ static void _lcd_module_enable(void)
     //pDev->conf.power_on?pDev->conf.power_on():0;
     panel_oper.power_on();
 	_init_display_driver(&pDev->conf);
-    _enable_backlight(BL_MAX_LEVEL);
+    //_enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
     _enable_vsync_interrupt();
 }
 
