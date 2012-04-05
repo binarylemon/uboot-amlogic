@@ -19,17 +19,19 @@
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
-#define CONFIG_CMD_NAND  1
+	#define CONFIG_CMD_NAND  1
 //#endif
-#define CONFIG_CMD_SF    1
+
+//#define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-#define SPI_WRITE_PROTECT  1
-#define CONFIG_CMD_MEMORY  1
+	#define SPI_WRITE_PROTECT  1
+	#define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
+#define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 
@@ -38,19 +40,19 @@
 //#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
-#define CONFIG_AML_ETHERNET 1
-#define CONFIG_NET_MULTI 1
-#define CONFIG_CMD_PING 1
-#define CONFIG_CMD_DHCP 1
-#define CONFIG_CMD_RARP 1
-
-#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
-#define CONFIG_HOSTNAME        arm_m6
-#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
-#define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
-#define CONFIG_GATEWAYIP       10.18.9.1           /* Our getway ip address */
-#define CONFIG_SERVERIP        10.18.9.113         /* Tftp server ip address */
-#define CONFIG_NETMASK         255.255.255.0
+	#define CONFIG_AML_ETHERNET 1
+	#define CONFIG_NET_MULTI 1
+	#define CONFIG_CMD_PING 1
+	#define CONFIG_CMD_DHCP 1
+	#define CONFIG_CMD_RARP 1
+	
+	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
+	#define CONFIG_HOSTNAME        arm_m6
+	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
+	#define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
+	#define CONFIG_GATEWAYIP       10.18.9.1           /* Our getway ip address */
+	#define CONFIG_SERVERIP        10.18.9.113         /* Tftp server ip address */
+	#define CONFIG_NETMASK         255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
 
 
@@ -61,7 +63,7 @@
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 
-#define CONFIG_MMU                    1
+#define CONFIG_MMU          1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
 #define CONFIG_SYS_LONGHELP	1
 
@@ -78,28 +80,27 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
 
-//#define CONFIG_UBI_SUPPORT
-#ifdef	CONFIG_UBI_SUPPORT
-#define CONFIG_CMD_UBI
-#define CONFIG_CMD_UBIFS
-#define CONFIG_RBTREE
-#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
-#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
-#endif
+#define CONFIG_CMD_AUTOSCRIPT
+#define CONFIG_CMD_AML 1
+#define CONFIG_CMD_IMGPACK 1
+#define CONFIG_CMD_REBOOT 1
+#define CONFIG_CMD_MATH 1
 
 /* Environment information */
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
+	"loadaddr_misc=0x83000000\0" \
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_g06\0" \
 	"chipname=8726m6\0" \
 	"machid=4e23\0" \
+	"upgrade_step=0\0" \
 	"video_dev=panel\0" \
 	"display_width=1024\0" \
 	"display_height=600\0" \
@@ -109,18 +110,38 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
+	"sleep_threshold=20\0" \
+	"batlow_threshold=10\0" \
+	"batfull_threshold=98\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
-	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; if nand read ${loadaddr} 3000000 400000; then bootm; fi; fi; fi\0" \
-	"recovery=if nand read ${loadaddr} 2000000 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"preboot=run upgrade_check; run batlow_or_not; set sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; set upgrade_step 2; save; fi; fi\0" \
+	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
+	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}; video dev bl_on\0" \
+	"update=bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; fi; fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
+	"recovery=bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"charging_or_not=if ac_online; then run prepare; run charing; else if getkey; then run prepare; run bootcmd; else poweroff; fi; fi\0" \
+	"charing=video clear; run display_loop\0" \
+	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} > ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
+	"custom_delay=set msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
+	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; set sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
+	"into_sleep=set sleep_enable 1; video dev bl_off; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev bl_on\0" \
+	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then set sleep_enable 0; fi; fi; if saradc get_in_range 0x20 0x380; then msleep 100; if saradc get_in_range 0x20 0x380; then set sleep_enable 0; fi; fi\0" \
+	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if saradc get_in_range 0x50 0xf0; then run update; fi; fi\0" \
+	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
+	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
+	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
 
-#define CONFIG_BOOTCOMMAND  "nand read 82000000 2800000 400000;bootm"
+
+#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
 //#define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
-#define CONFIG_NAND_BOOT 1
+	#define CONFIG_NAND_BOOT 1
 #endif
 
 //#ifdef CONFIG_NAND_BOOT
@@ -128,7 +149,6 @@
 //#endif 
 
 #define CONFIG_ENV_SIZE         0x8000
-
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
@@ -154,11 +174,11 @@
     #define CONFIG_SYS_MMC_ENV_DEV        0	
 	#define CONFIG_ENV_OFFSET       0x1000000		
 #else
-#define CONFIG_ENV_IS_NOWHERE    1
+	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
 
 #define BOARD_LATE_INIT
-#define CONFIG_SWITCH_BOOT_MODE
+#define CONFIG_PREBOOT
 /* config LCD output */ 
 #define CONFIG_VIDEO_AML
 #define CONFIG_VIDEO_AMLLCD
