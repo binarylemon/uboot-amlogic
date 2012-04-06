@@ -137,9 +137,9 @@
 
 	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
 	//#ifdef CONFIG_SPI_FLASH_SPANSION
-	 #define CONFIG_ENV_SECT_SIZE		0x10000
+	 //#define CONFIG_ENV_SECT_SIZE		0x10000
 	//#else
-	//	#define CONFIG_ENV_SECT_SIZE        0x1000
+	#define CONFIG_ENV_SECT_SIZE        0x1000
 	//#endif
 
 	#define CONFIG_ENV_OFFSET           0x1f0000
