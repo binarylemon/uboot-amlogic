@@ -348,6 +348,11 @@ void main_loop (void)
 	hush_init_var ();
 #endif
 
+#ifdef CONFIG_AML_SUSPEND
+extern void init_suspend_firmware(void);
+	init_suspend_firmware();
+#endif
+
 #ifdef CONFIG_PREBOOT
 	if ((p = getenv ("preboot")) != NULL) {
 # ifdef CONFIG_AUTOBOOT_KEYED
@@ -391,11 +396,6 @@ extern int switch_boot_mode(void);
 			setenv ("ethaddr", addr);
 		}		
 	}
-#endif
-
-#ifdef CONFIG_AML_SUSPEND
-extern void init_suspend_firmware(void);
-	  init_suspend_firmware();
 #endif
 
 #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
