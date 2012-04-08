@@ -251,8 +251,8 @@ void test_ddr(int i)
 	wait_uart_empty();
 #endif			
 }
-//#define pwr_ddr_off 
-//#define smp_test
+#define pwr_ddr_off
+#define smp_test
 #ifdef smp_test  // Just for temp solution for test flow
 void enter_power_down()
 {
@@ -274,10 +274,30 @@ void enter_power_down()
 
 
 #ifdef pwr_ddr_off
-	disable_mmc_req();
-#endif	
+   asm(".long 0x003f236f"); //add sync instruction.
 
-	store_restore_plls(1);
+   disable_mmc_req();
+
+   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+   f_serial_puts("  LP_CTRL1\n");
+   wait_uart_empty();
+
+   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+   f_serial_puts("  MCFG\n");
+   wait_uart_empty();
+
+   store_restore_plls(1);
+
+   APB_Wr(UPCTL_SCTL_ADDR, 1);
+   APB_Wr(UPCTL_MCFG_ADDR, 0x60021 );
+   APB_Wr(UPCTL_SCTL_ADDR, 2);
+
+   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+   f_serial_puts("  MCFG\n");
+   wait_uart_empty();
+
+#endif
+
 
 #ifdef pwr_ddr_off
  	f_serial_puts("step 2\n");
@@ -285,15 +305,17 @@ void enter_power_down()
   // Next, we sleep
   mmc_sleep();
 
+  // enable retention
+  //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
+  //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
+  enable_retention();
+
     // save ddr power
-//  APB_Wr(MMC_PHY_CTRL, APB_Rd(MMC_PHY_CTRL)|(1<<0)|(1<<8)|(1<<13));
-//  delay_ms(20);
+    // before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
+    // that will save the DLL analog power.
+    APB_Wr(MMC_SOFT_RST, 0x0);    // keep all MMC submodules in reset mode.
 
-
-   // enable retention
-  enable_retention();	
-  
-  // power down DDR
+    // shut down DDR PLL.
 // 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<15),P_HHI_DDR_PLL_CNTL);
 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
 
@@ -337,11 +359,11 @@ void enter_power_down()
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
  //  gate = readl(P_AO_RTI_GEN_CNTL_REG0);
 //   writel(gate&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
-#if 0
+#if 1
 	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
- 	 for(i=0;i<64;i++)
+	for(i=0;i<200;i++)
    {
         udelay(1000);
         //udelay(1000);
@@ -389,39 +411,31 @@ void enter_power_down()
   init_ddr_pll();
 
    // Next, we reset all channels 
-//  switch_to_rtc();
   reset_mmc();
-//  switch_to_81();
-
-
   f_serial_puts("step 9\n");
  	wait_uart_empty();
-  // initialize mmc and put it to sleep
-  init_pctl();
 
-// 	disp_pctl();
-
-  f_serial_puts("step 10\n");
- 	wait_uart_empty();
-  mmc_sleep();
-
-
-  f_serial_puts("step 11\n");
- 	wait_uart_empty();
   // disable retention
+  // disable retention before init_pctl is because init_pctl you need to data training stuff.
   disable_retention();
 
-  f_serial_puts("step 12\n");
- 	wait_uart_empty();
-  // Next, we wake up
-  mmc_wakeup();
+  // initialize mmc and put it to sleep
+  init_pctl();
+  f_serial_puts("step 10\n");
+  wait_uart_empty();
 
- 
-  f_serial_puts("step 13\n");
- 	wait_uart_empty();
-  // Next, we enable all requests
-//  enable_mmc_req();
-#endif
+  //print some useful information to help debug.
+   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+   f_serial_puts("  MMC_LP_CTRL1\n");
+   wait_uart_empty();
+
+   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+   f_serial_puts("  MCFG\n");
+   wait_uart_empty();
+
+#endif   //pwr_ddr_off
+  // Moved the enable mmc req and SEC to ARM code.
+  //enable_mmc_req();
 	
 //	disp_pctl();
 	
@@ -431,6 +445,8 @@ void enter_power_down()
 	
 //	disp_code();	
 
+	f_serial_puts("restart arm\n");
+	wait_uart_empty();
 	restart_arm();
   
 }
@@ -1009,10 +1025,22 @@ int main(void)
 	            writel(cmd,P_AO_GPIO_O_EN_N);
 	            #endif
 	        }
-	    }
+		} else if ( cmd == 1 )
+		{
+			serial_put_hex(cmd,32);
+			f_serial_puts(" ARM has started running\n");
+			wait_uart_empty();
+		} else if ( cmd == 2 )
+		{
+			serial_put_hex(cmd,32);
+			f_serial_puts(" Reenable SEC\n");
+			wait_uart_empty();
+	}
 	    else if(c=='r')
 	    {
 	        writel(0,0xc8100030);
+	        f_serial_puts("arm boot succ\n");
+	        wait_uart_empty();
 	        #ifdef _UART_DEBUG_COMMUNICATION_
 	        //f_serial_puts("arm boot succ\n");
 	        //wait_uart_empty();

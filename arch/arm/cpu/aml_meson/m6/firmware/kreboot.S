@@ -22,7 +22,15 @@ pwr_restart:
     dmb
     isb
     mov sp,#0x4000
-    
+
+       //send debug status to ARC
+       // ARM is running.
+       LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+       mov  r1, #1
+       str   r1, [r0]
+
+
+       //restore MMC Security setting.
  		ldr r0,=0xda002020
  		ldr r1,=0xFFFF
  		str r1,[r0]      /*DMC_SEC_PORT0_RANGE0*/
@@ -35,9 +43,86 @@ pwr_restart:
  		str r1,[r0,#28]  /*DMC_SEC_PORT7_RANGE0*/
  		ldr r1,=0x80000000
  		str r1,[r0,#0x84] /*DMC_SEC_CTRL*/
+
+       //enable MMC lower power mode.
+       //LDR r1, =0x27
+       //LDR r0, =0xc8006434    /*MMC_LP_CTRL4*/
+       //STR r1, [r0]
+       //LDR r1, =0x34f00f03
+       //LDR r0, =0xc8006430    /*MMC_LP_CTRL3*/
+       //STR r1, [r0]
+       //LDR r1, =0x08160203
+       //LDR r0, =0xc800642c    /*MMC_LP_CTRL2*/
+       //STR r1, [r0]
+       //LDR r1, =0x78000030
+       //LDR r0, =0xc8006428    /*MMC_LP_CTRL1*/
+       //STR r1, [r0]
+
+        //enable MMC request.
  		mov r1,#0xFF
  		ldr r0,=0xc8006400
  		str r1,[r0]
+
+      //re read write DDR SDRAM several times to make sure the AXI2DDR bugs dispear.
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+      LDR  r0, =0x55555555;
+      LDR  r1, =0x9fffff00;
+      STR  r0, [r1];
+
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      LDR  r1, =0x9fffff00
+      LDR  r0, [r1]
+      dmb
+      isb
+
+       //send debug status to ARC
+       LDR  r0, =0xc8100004
+       mov  r1, #2
+       str   r1, [r0]
  		 		
     /* for debug */
     adr r1,reset_addr
@@ -72,4 +157,4 @@ pwr_fiq:
 	b pwr_fail_sleep	
 pwr_fail_sleep:
 	wfi
-	
+

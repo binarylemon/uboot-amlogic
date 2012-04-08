@@ -32,8 +32,15 @@ void disable_mmc_req(void)
 {
 	APB_Wr(MMC_REQ_CTRL,0X0);
   	while(APB_Rd(MMC_CHAN_STS) == 0){
-		__udelay(10);	
+		__udelay(100);
 	}
+}
+
+void disable_mmc_low_power(void)
+{
+    //disable mmc_low_power mode and force dmc clock and publ and pctl clock enabled.
+    APB_Wr(MMC_LP_CTRL1, 0x60a80000);
+    //__udelay(500);	// wait 2 refresh cycles.
 }
 
 void reset_mmc(void)
@@ -45,21 +52,24 @@ void reset_mmc(void)
     //enable the clock.
     writel(0x400000c0, P_MMC_CLK_CNTL);
 
-//   APB_Wr(MMC_SOFT_RST, 0x17ff);
-	APB_Wr(MMC_SOFT_RST, 0x0);
-	__udelay(10000);
-	APB_Wr(MMC_SOFT_RST, 0xffff);
+	__udelay(10);	// wait clock stable
 
+	//reset all sub module
+	APB_Wr(MMC_SOFT_RST, 0x0);
+	while((APB_Rd(MMC_RST_STS)&0xffff) != 0x0);
+
+	//deseart all reset.
+	APB_Wr(MMC_SOFT_RST, 0xffff);
 	while((APB_Rd(MMC_RST_STS)&0xffff) != 0xffff);
+	__udelay(100);	// wait DLL lock.
+
 }
 
 void enable_mmc_req(void)
 {
 	// Next, we enable all requests
 	APB_Wr(MMC_REQ_CTRL, 0xff);
-	while(APB_Rd(MMC_CHAN_STS) == 0){
-		__udelay(10);	
-	}
+	__udelay(10);
 }
 void mmc_sleep(void)
 {
@@ -83,6 +93,16 @@ void mmc_sleep(void)
 void mmc_wakeup(void)
 {
 	int stat;
+	stat = APB_Rd(MMC_LP_CTRL1);
+	serial_put_hex(stat,32);
+	f_serial_puts("MMC_LP_CTRL1\n");
+	wait_uart_empty();
+
+	stat = APB_Rd(MMC_CLK_CNTL);
+	serial_put_hex(stat,32);
+	f_serial_puts("MMC_CLK_CNTL\n");
+	wait_uart_empty();
+
 	do
 	{
 		stat = APB_Rd(UPCTL_STAT_ADDR);
@@ -99,10 +119,9 @@ void mmc_wakeup(void)
 			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_GO);
 			//while(stat != UPCTL_STAT_ACCESS);
 		}
-	}while(stat != UPCTL_STAT_LOW_POWER);
-
-	
-	APB_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);//add by Dai
+		stat = APB_Rd(UPCTL_STAT_ADDR);
+		stat &= 0x7;
+	} while(stat != UPCTL_STAT_ACCESS);
 }
 /*
 #define DDR_RSLR_LEN 6
@@ -424,9 +443,67 @@ void init_dmc(void)
 }
 #endif
 
+void reset_ddr_dll(void) {
+	MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
+	MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);
+	//enable the clock.
+	MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
+	MMC_Wr( PUB_PIR_ADDR, (0x1 << 1));
+	// check bit 1, the DLL is LOCKED.
+	while( !(MMC_Rd(PUB_PGSR_ADDR & 0x2))) {}
+}
+
+void ddr_data_training(void) {
+	int stat;
+	//start trainning.
+	// DDR PHY initialization
+	// UPCTL enter cfg mode.
+	MMC_Wr(UPCTL_SCTL_ADDR, 1); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
+	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+
+	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
+
+	MMC_Wr( PUB_PIR_ADDR, 0x189);
+	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
+
+	//DDR3_SDRAM_INIT_WAIT :
+	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
+	//check data training result
+	//check ZQ calibraration status.
+	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_ZQ0SR0\n");
+	stat = MMC_Rd(PUB_ZQ0SR1_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_ZQ0SR1\n");
+
+	//check data training result.
+	stat = MMC_Rd(PUB_DX0GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX0GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX1GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX1GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX2GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX2GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX3GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX3GSR0\n");
+	wait_uart_empty();
+
+	dbg_out("d",9);
+	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
+	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+}
+
 void init_pctl(void)
 {
 	int nTempVal;
+	int stat;
   
 	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 /*	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
@@ -435,17 +512,17 @@ void init_pctl(void)
 */
 
   //wait to DDR PLL lock.
-   while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
-   dbg_out("d",1);
+	//while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
+	//dbg_out("d",1);
   //Enable DDR DLL clock input from PLL.
 //     MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
 //     MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);    
     //enable the clock.
-     MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
+	//MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
      
     // release the DDR DLL reset pin.
 //    MMC_Wr( MMC_SOFT_RST,  0xffff);
-  	__udelay(10);
+	//__udelay(10);
 	//UPCTL memory timing registers
 	MMC_Wr(UPCTL_TOGCNT1U_ADDR, v_t_1us_pck);	 //1us = nn cycles.
 	MMC_Wr(UPCTL_TOGCNT100N_ADDR, v_t_100ns_pck);//100ns = nn cycles.
@@ -486,7 +563,8 @@ void init_pctl(void)
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
 
-  MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
+	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
+	MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
    
 
 	//for simulation to reduce the init time.
@@ -635,9 +713,39 @@ void init_pctl(void)
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
 	dbg_out("d",9);
+
+	//check ZQ calibraration status.
+	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_ZQ0SR0\n");
+	stat = MMC_Rd(PUB_ZQ0SR1_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_ZQ0SR1\n");
+
+	//check data training result.
+	stat = MMC_Rd(PUB_DX0GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX0GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX1GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX1GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX2GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX2GSR0\n");
+	wait_uart_empty();
+	stat = MMC_Rd(PUB_DX3GSR0_ADDR);
+	serial_put_hex(stat,32);
+	f_serial_puts(" PUB_DX3GSR0\n");
+	wait_uart_empty();
+
+
  	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 	dbg_out("d",10);
+	__udelay(200);
+
 //	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
 //	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
 //	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
@@ -709,15 +817,17 @@ void init_ddr_pll(void)
 void enable_retention(void)
 {
 	 //RENT_N/RENT_EN_N switch from 01 to 10 (2'b10 = ret_enable)
-//   writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(2<<16),P_AO_RTI_PWR_CNTL_REG0);
+	writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(2<<16),P_AO_RTI_PWR_CNTL_REG0);
+	__udelay(200);
 
-   writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<20),P_AO_RTI_PIN_MUX_REG);
+	//writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<20),P_AO_RTI_PIN_MUX_REG);
 }
 
 void disable_retention(void)
 {
 //RENT_N/RENT_EN_N switch from 10 to 01
-//  writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(1<<16),P_AO_RTI_PWR_CNTL_REG0);
+	writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(1<<16),P_AO_RTI_PWR_CNTL_REG0);
+	__udelay(200);
 
-  writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
+	//writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
 }
