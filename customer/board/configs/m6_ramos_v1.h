@@ -136,6 +136,7 @@
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
+	"hdmitx=vdacoff,powermode1,unplug_powerdown\0"\
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
