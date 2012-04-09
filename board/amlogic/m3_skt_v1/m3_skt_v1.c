@@ -48,18 +48,27 @@ static void setup_net_chip(void)
 int board_eth_init(bd_t *bis)
 {   
 
+	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(3<<17));
+
 	//set clock
 #ifdef CONFIG_M3_EXT_CLK
 	//set pinmux for external clock
-	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(1<<17)); //disable clock out
-    SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(1<<18));   //enable clock in
+	//CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(1<<17)); //disable clock out
+    //SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(1<<18));   //enable clock in
 	//external 50MHz clock
 	eth_clk_set(ETH_CLKSRC_EXT_CLK,50*CLK_1M,50*CLK_1M);
+
+	//set pinmux
+    aml_eth_set_pinmux(ETH_BANK0_GPIOY1_Y9,ETH_CLK_IN_GPIOY0_REG6_18,0);
+	
 #else
     eth_clk_set(ETH_CLKSRC_MISC_PLL_CLK,800*CLK_1M,50*CLK_1M);	
-#endif
+
 	//set pinmux
     aml_eth_set_pinmux(ETH_BANK0_GPIOY1_Y9,ETH_CLK_OUT_GPIOY0_REG6_17,0);
+	
+#endif
+	
 
 	//ethernet pll control
     writel(readl(ETH_PLL_CNTL) & ~(0xF << 0), ETH_PLL_CNTL); // Disable the Ethernet clocks        
