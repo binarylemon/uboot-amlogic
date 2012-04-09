@@ -23,6 +23,10 @@ help_customer:
 	@echo config command: \"make m6_ainol_v1_config\"
 	
 	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "AINOL_AML8726_MX_REF_A"
+	@echo config command: \"make m6_ainol_848_v1_config\"
+	
+	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "MBX_AML8726_MX_REF_A"
 	@echo config command: \"make m6_mbx_v1_config\"
 	
