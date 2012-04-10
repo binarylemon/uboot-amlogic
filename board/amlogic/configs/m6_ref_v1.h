@@ -104,14 +104,14 @@
 	"display_height=1280\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
-	"display_layer=osd1\0" \
+	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x84100000\0" \
+	"fb_addr=0x85100000\0" \
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug\0" \
 	"preboot=run upgrade_check; run batlow_or_not; set sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; set upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
