@@ -130,9 +130,9 @@
 	"custom_delay=set msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
 	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; set sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
 	"into_sleep=set sleep_enable 1; video dev bl_off; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev bl_on\0" \
-	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then set sleep_enable 0; fi; fi; if saradc get_in_range 0x20 0x380; then msleep 100; if saradc get_in_range 0x20 0x380; then set sleep_enable 0; fi; fi\0" \
+	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then set sleep_enable 0; fi; fi; if saradc get_in_range 0x0 0x380; then msleep 100; if saradc get_in_range 0x0 0x380; then set sleep_enable 0; fi; fi\0" \
 	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
-	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if saradc get_in_range 0x50 0xf0; then run update; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then run update; fi; fi; fi\0" \
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
