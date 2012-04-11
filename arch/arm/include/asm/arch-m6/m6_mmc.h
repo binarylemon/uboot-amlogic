@@ -5,6 +5,17 @@
 #define MMC_Rd(addr) *(volatile unsigned long *)  addr 
 
 #define  P_UPCTL_STAT_ADDR 		0xc8000008
+	#define  UPCTL_STAT_INIT          0 
+	#define  UPCTL_STAT_CONFIG        1 
+	#define  UPCTL_STAT_ACCESS        3
+	#define  UPCTL_STAT_LOW_POWER     5 
+
+	#define  SCTL_CMD_INIT          0 
+	#define  SCTL_CMD_CONFIG        1	
+	#define  SCTL_CMD_GO            2 
+	#define  SCTL_CMD_SLEEP         3 
+	#define  SCTL_CMD_WAKEUP        4 
+
 #define  P_UPCTL_INTRSTAT_ADDR 		0xc800000c
 #define  P_UPCTL_SCTL_ADDR 		0xc8000004
 #define  P_UPCTL_SCFG_ADDR 		0xc8000000
@@ -515,9 +526,49 @@
    
 #define P_MMC_DDR_PHY_GPR0   0xc8006420
 #define P_MMC_DDR_PHY_GPR1   0xc8006424
-#define P_MMC_LP_CTRL        0xc8006428
-#define P_MMC_PCTL_STAT      0xc800642c 
-#define P_MMC_CMDZQ_CTRL     0xc8006430 
+#define P_MMC_LP_CTRL1       0xc8006428
+   //bit 31.      enable mmc low power mode.
+   //bit 30.      set low power request to UPCTL  this bit is low active. 
+   //bit 29.      set low power active_in to UPCTL. this bit is low active.
+   //bit 28.      enable PCTL auto power down mode. 
+   //bit 27.      enable DMC auto gate control. 
+   //bit 26.      enable DMC auto gate fast mode.
+   //bit 25.      when mmc low power mode, the DDR PHY DLL is bypassed or not. 
+   //bit 24.      dmc module exit from low power mode before PCTL and DDR PHY wakeup.
+   //bit 23.      force dmc clock enabled. 
+   //bit 22.      disable the dmc clock.  bit 23 and bit 22 can't be 1 same time.
+   //bit 21.      force UPCTL clock enabled. 
+   //bit 20.      disable UPCTL clock. 
+   //bit 19.      force DDR PHY PUBL clock enabled. 
+   //bit 18.      disable DDR PHY PUBL clock. 
+   //bit 17.      for low power request and active to UPCTL use bit 30 29 instead of auto ctrol.
+   //bit 16.      desable the low power request and active to UPCTL from auto controller. 
+   //bit 15:0.    the number of system clock cycles of IDLE state, the system will enter LP mode.
+#define P_MMC_LP_CTRL2       0xc800642c
+   //bit 31:24    t_cross, the cross clock domain latency. 
+   //bit 23:16    t_lp_min,  minmum time for hold in LOW POWER state, then UCPTL can hanle the request correctly. 
+   //bit 15:8.    t_clk_stable,   how long to wait the DDR_PHY clock stable, when we can send new request.
+   //bit 7:0.     t_lp_settle.  the time need to wait after sending wakeup request to UPCTL.
+
+#define P_MMC_LP_CTRL3       0xc8006430
+  //bit 31:24.    t_100ns.    100ns ticker.
+  //bit 23:16.    t_apb_hold.   whenever there's apb3 request, hold the apb clock for some time.
+  //bit 15:8.     t_auto_gate.  in PCTL auto power down mode, ilde counter number to enter power down mode. 
+  //bit 7:0.      t_dmc_gate.   in DMC auto gate fast mode. idle counter number to enter dmc clock gating.
+#define P_MMC_LP_CTRL4       0xc8006434
+  //bit 31.    PVT enable. use MMC Low power controller to controll DDR PHY PVT update.
+  //bit 30.    ZQC enable. use MMC Low power cont
+  //bit 23:16. PVT timing interval.  unit 100ns.
+  //bit 15:8.  ZQC timing interval.  unit 100ns.
+  //bit 7:0.   REFI timing interval.  unit 100ns.
+#define P_MMC_LP_STS         0xc8006438
+  //bit 30.    UPCTL sysack bit value.
+  //bit 29.    UPCTL active bit value.
+  //bit 3:0    LP controller status.
+#define P_MMC_PCTL_STAT      0xc800643c
+#define P_MMC_CMDZQ_CTRL     0xc8006440
+   //bit 20.   force comamnd lane ZQ use register value.
+   //bit 19:0.  register value for command lane ZQ.
 
 
 #define sec_mmc_wr(addr, data) *(volatile unsigned long *) (addr)=data
