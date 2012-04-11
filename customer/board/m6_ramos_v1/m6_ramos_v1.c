@@ -441,10 +441,6 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AW_AXP20
-	axp_charger_open();
-#endif
-
 	return 0;
 }
 #endif
@@ -466,7 +462,7 @@ inline int get_key(void)
 //AC online
 inline void ac_online_init(void)
 {
-	axp_charger_open();
+	return;
 }
 
 inline int is_ac_online(void)

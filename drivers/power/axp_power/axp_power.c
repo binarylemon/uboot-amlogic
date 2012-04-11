@@ -167,33 +167,11 @@ out:
 
 void axp_power_off(void)
 {
-	uint8_t val;
-
-#if defined (CONFIG_AW_AXP18)
-	axp_set_bits(POWER18_ONOFF, 0x80);
-#endif
-
-#if defined (CONFIG_AW_AXP19)
-	axp_set_bits(POWER19_OFF_CTL, 0x80);
-#endif
-
-#if defined (CONFIG_AW_AXP20)
-#if 1
-	axp_read(POWER20_COULOMB_CTL, &val);
-	val &= 0x3f;
-	axp_write(POWER20_COULOMB_CTL, val);
-	val |= 0x80;
-	val &= 0xbf;
-	axp_write(POWER20_COULOMB_CTL, val);
-#endif
-
-    printf("[axp] send power-off command!\n");
-    mdelay(20);
+	printf("[axp] send power-off command!\n");
+	mdelay(20);
 	axp_set_bits(POWER20_OFF_CTL, 0x80);
-    mdelay(20);
-    printf("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
-
-#endif
+	mdelay(20);
+	printf("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 }
 
 

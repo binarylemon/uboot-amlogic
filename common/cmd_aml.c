@@ -65,18 +65,3 @@ U_BOOT_CMD(
 	"This command will let system power off'\n"
 );
 
-static int do_get_batcap (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	setenv("battery_cap", "50");
-	return 0;
-}
-
-
-U_BOOT_CMD(
-	get_batcap,	1,	0,	do_get_batcap,
-	"get battery capability",
-	"/N\n"
-	"This command will get battery capability\n"
-	"capability will set to 'battery_cap'\n"
-);
-
