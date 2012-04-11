@@ -88,7 +88,7 @@ static lvds_phy_control_t lcd_lvds_phy_control =
 //Define LVDS data mapping, bit num.
 static lvds_config_t lcd_lvds_config=
 {
-	.lvds_repack=0,   //data mapping  //0:THine mode, 1:VESA mode
+	.lvds_repack=1,   //data mapping  //0:THine mode, 1:VESA mode
 	.pn_swap=0,		  //0:normal, 1:swap
 	.bit_num=1,       // 0:10bits, 1:8bits, 2:6bits, 3:4bits
 	.lvds_phy_control = &lcd_lvds_phy_control,
