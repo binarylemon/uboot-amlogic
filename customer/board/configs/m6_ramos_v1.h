@@ -121,12 +121,12 @@
 	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug\0" \
 	"preboot=run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; fi\0" \
-	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
-	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; bmp display ${poweron_offset}; video dev bl_on\0" \
+	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
+	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
 	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm; fi; fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
 	"recovery=run prepare; bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
-	"charging_or_not=if ac_online; then run prepare; run charing; else if getkey; then run prepare; run bootcmd; else poweroff; fi; fi\0" \
-	"charing=video clear; run display_loop\0" \
+	"charging_or_not=if ac_online; then run prepare; run charging; else if getkey; then run prepare; bmp display ${poweron_offset}; run bootcmd; else poweroff; fi; fi\0" \
+	"charging=video clear; run display_loop\0" \
 	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} > ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
 	"custom_delay=setenv msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
 	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
