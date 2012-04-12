@@ -2,14 +2,14 @@
 #include <div64.h>
 #include "axp-sply.h"
 
-#define DBG_AXP_PSY 1
+#define DBG_AXP_PSY 0
 #if  DBG_AXP_PSY
 #define DBG_PSY_MSG(format,args...)   printf("[AXP]"format,##args)
 #else
 #define DBG_PSY_MSG(format,args...)   do {} while (0)
 #endif
 
-#define BATTERYCAP				3400							//battery capability
+#define ABS(x)				((x) >0 ? (x) : -(x) )
 
 static int axp_get_freq(void)
 {
@@ -146,6 +146,32 @@ int axp_charger_get_charging_percent()
     return rest_vol;
 }
 
+
+void axp_set_charging_current(int current)
+{
+	char reg_val = 0;
+	axp_read(POWER20_CHARGE1, &reg_val);
+	if(current == 0)
+	{
+		reg_val &= 0x7f;
+		axp_write(POWER20_CHARGE1, reg_val);
+		printf("%s: set charge current to %d Reg value %x!\n",__FUNCTION__, current, reg_val);		
+	}
+	else if((current<300)||(current>1800))
+	{
+		printf("%s: value(%dmA) is outside the allowable range of 300-1800mA!\n",
+			__FUNCTION__, current);
+	}
+	else
+	{
+		reg_val &= 0xf0;
+		reg_val |= ((current-300)/100);
+		axp_write(POWER20_CHARGE1, reg_val);
+		printf("%s: set charge current to %d Reg value %x!\n",__FUNCTION__, current, reg_val);		
+	}
+}
+
+
 //unit is mV
 int set_dcdc2(u32 val)
 {
@@ -194,23 +220,4 @@ int set_dcdc3(u32 val)
 	printf("POWER20_DC3OUT_VOL is set to 0x%02x\n", reg_val);
 	return 0;
 }
-
-
-
-static int do_get_batcap (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	int precent = axp_charger_get_charging_percent();
-	printf("Battery CAP: %d\n", precent);
-	setenv("battery_cap", "50");
-	return 0;
-}
-
-
-U_BOOT_CMD(
-	get_batcap,	1,	0,	do_get_batcap,
-	"get battery capability",
-	"/N\n"
-	"This command will get battery capability\n"
-	"capability will set to 'battery_cap'\n"
-);
 

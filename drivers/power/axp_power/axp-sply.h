@@ -1,7 +1,6 @@
 #ifndef	_LINUX_AXP_SPLY_H_
 #define	_LINUX_AXP_SPLY_H_
 #include "axp-mfd.h"
-#include "axp-cfg.h"
 
 /*      AXP18      */
 #define	AXP18_STATUS						POWER18_STATUS
@@ -388,13 +387,5 @@ struct axp_charger {
 	int usb;
 	int ac;
 };
-static uint8_t coulomb_flag;
-static struct axp_charger *axp_charger = NULL;
-static int Total_Cap = 0;
-static int Cap_Index = 0;
-static int flag_state_change = 0;
-static int Bat_Cap_Buffer[AXP20_VOL_MAX];
-static int counter = 0;
-static int bat_cap = 0;
 
 #endif

@@ -29,16 +29,8 @@ U_BOOT_CMD(
 );
 
 
-static int do_ac_online (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static inline int do_ac_online (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int ret;
-	static int enable = 0;
-	if(!enable)
-	{
-		ac_online_init();
-		enable = 1;
-	}
-
 	return !is_ac_online();
 }
 
@@ -64,4 +56,45 @@ U_BOOT_CMD(
 	"/N\n"
 	"This command will let system power off'\n"
 );
+
+static int do_get_batcap (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char precent_str[16];
+	int precent = get_charging_percent();
+	printf("Battery CAP: %d%\n", precent);
+	sprintf(precent_str, "%d", precent);
+	setenv("battery_cap", precent_str);
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	get_batcap,	1,	0,	do_get_batcap,
+	"get battery capability",
+	"/N\n"
+	"This command will get battery capability\n"
+	"capability will set to 'battery_cap'\n"
+);
+
+static int do_set_chgcur (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int current = simple_strtol(argv[1], NULL, 10);
+
+	set_charging_current(current);
+	
+	printf("Charging current: %smA\n", argv[1]);
+	setenv("charging_current", argv[1]);
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	set_chgcur,	2,	0,	do_set_chgcur,
+	"set battery charging current",
+	"/N\n"
+	"set_chgcur <current>\n"
+	"unit is mA\n"
+);
+
+
 

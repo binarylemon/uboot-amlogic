@@ -458,13 +458,6 @@ inline int get_key(void)
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
 
-
-//AC online
-inline void ac_online_init(void)
-{
-	return;
-}
-
 inline int is_ac_online(void)
 {
 	return axp_charger_is_ac_online();
@@ -474,4 +467,14 @@ inline int is_ac_online(void)
 void power_off(void)
 {
 	axp_power_off();
+}
+
+inline int get_charging_percent(void)
+{
+	return axp_charger_get_charging_percent();
+}
+
+inline int set_charging_current(int current)
+{
+	return axp_set_charging_current(current);
 }
