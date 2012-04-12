@@ -442,10 +442,10 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AW_AXP20
-set_dcdc2(1500);	//set DC-DC2 to 1500mV
-set_dcdc3(1100);	//set DC-DC3 to 1100mV
-#endif
+//#ifdef CONFIG_AW_AXP20
+//set_dcdc2(1500);	//set DC-DC2 to 1500mV
+//set_dcdc3(1100);	//set DC-DC3 to 1100mV
+//#endif
 
 	return 0;
 }
@@ -464,13 +464,6 @@ inline int get_key(void)
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
 
-
-//AC online
-inline void ac_online_init(void)
-{
-	axp_charger_open();
-}
-
 inline int is_ac_online(void)
 {
 	return axp_charger_is_ac_online();
@@ -480,4 +473,14 @@ inline int is_ac_online(void)
 void power_off(void)
 {
 	axp_power_off();
+}
+
+inline int get_charging_percent(void)
+{
+	return axp_charger_get_charging_percent();
+}
+
+inline int set_charging_current(int current)
+{
+	return axp_set_charging_current(current);
 }
