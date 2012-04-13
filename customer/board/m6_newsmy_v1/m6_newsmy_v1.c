@@ -53,10 +53,24 @@ inline int is_ac_online(void)
 }
 
 //temporary
- int is_usb_online(void)
+static inline int is_usb_online(void)
 {
 	//u8 val;
 
+	return 0;
+}
+
+
+/*
+ *	Fast charge when CHG_CON(GPIOAO_11) is High.
+ *	Slow charge when CHG_CON(GPIOAO_11) is Low.
+ */
+static int set_charge_current(int level)
+{
+		#if 0
+	set_gpio_mode(GPIOAO_bank_bit0_11(11), GPIOAO_bit_bit0_11(11), GPIO_OUTPUT_MODE);
+	set_gpio_val(GPIOAO_bank_bit0_11(11), GPIOAO_bit_bit0_11(11), (level ? 1 : 0));
+		#endif
 	return 0;
 }
 
@@ -131,6 +145,114 @@ static inline int measure_capacity(void)
 	val = (tmp - 3600000) / (600000 / 100);
 	//printf("%s: get from adc is %d.\n", __FUNCTION__, val);
 	return val;
+}
+static int bat_level_table[37]={
+0,
+0,
+4,
+10,
+15,
+16,
+18,
+20,
+23,
+26,
+29,
+32,
+35,
+37,
+40,
+43,
+46,
+49,
+51,
+54,
+57,
+60,
+63,
+66,
+68,
+71,
+74,
+77,
+80,
+83,
+85,
+88,
+91,
+95,
+97,
+100,
+100  
+};
+
+static int new_bat_value_table[37]={
+0,  //0    
+7000000,//0  
+7037798,//4  
+7098814,//10 
+7147970,//15 
+7182610,//16 
+7265258,//18 
+7311304,//20 
+7331304,//23 
+7377350,//26 
+7435994,//29 
+7467688,//32 
+7484864,//35   
+7519670,//37 
+7536846,//40 
+7556846,//43 
+7578314,//46 
+7607636,//49 
+7634586,//51 
+7661536,//54 
+7703004,//57 
+7739728,//60 
+7776904,//63 
+7822950,//66  
+7846464,//68  
+7876364,//71  
+7888544,//74  
+7908344,//77  
+7933410,//80  
+7973410,//83  
+8006284,//85  
+8072330,//88  
+8121200,//91  
+8167698,//95  
+8187698,//97  
+8216778,//100 
+8400000 //100
+};
+
+static inline int get_bat_percentage(int adc_vaule, int *adc_table, 
+										int *per_table, int table_size)
+{
+	int i;
+	for(i=0; i<(table_size - 1); i++) {
+		if ((adc_vaule >= adc_table[i]) && (adc_vaule < adc_table[i+1])) 
+			break;
+	}
+  //printk("per_table[%d]=%d\n",i, per_table[i]);
+	return per_table[i];
+}
+
+static int act8942_measure_capacity_charging(void)
+{
+    int vbat = measure_voltage()-33000;  // - 33mV
+    int table_size = ARRAY_SIZE(new_bat_value_table);
+
+	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
+}
+
+static int act8942_measure_capacity_battery(void)
+{
+		
+    int vbat = measure_voltage();
+	int table_size = ARRAY_SIZE(new_bat_value_table);
+//	printk("percentage=%d\n",get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size));
+	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
 }
 
 //temporary
@@ -600,7 +722,7 @@ inline int get_key(void)
 
 inline int get_charging_percent(void)
 {
-	return 0;
+	return act8942_measure_capacity_charging();
 }
 
 inline int set_charging_current(int current)

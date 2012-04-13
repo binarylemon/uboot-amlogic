@@ -34,33 +34,140 @@
 #ifdef CONFIG_AW_AXP20
 #include <axp-gpio.h>
 #endif
+
 #define DEBUG
 
 extern GraphicDevice aml_gdev;
 vidinfo_t panel_info;
 
-#define LCD_WIDTH       1024 
-#define LCD_HEIGHT      768
-#define MAX_WIDTH       2084
-#define MAX_HEIGHT      806
-#define VIDEO_ON_PIXEL  80
-#define VIDEO_ON_LINE   32 //17
-
 //Define backlight control method
 #define BL_CTL_GPIO		0
 #define BL_CTL_PWM		1
 #define BL_CTL			BL_CTL_GPIO
+
+#if(BL_CTL==BL_CTL_PWM)
+#define PWM_MAX         60000   //PWM_MAX <= 65535
+#define	PWM_PRE_DIV		0		//pwm_freq = 24M / (pre_div + 1) / PWM_MAX	
+#endif
+
+#define BL_MAX_LEVEL		255
+#define BL_MIN_LEVEL		0
 #define DEFAULT_BL_LEVEL	128
 
-static void lvds_port_enable(void);
-static void lvds_port_disable(void);
+static unsigned bl_level = 0;
 
-static void lcd_power_on(void);
-static void lcd_power_off(void);
-void power_on_backlight(void);
-void power_off_backlight(void);
-unsigned get_backlight_level(void);
-void set_backlight_level(unsigned level);
+static void lvds_ports_ctrl(Bool_t status)
+{ 
+    debug("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+	if (status) 
+	{
+        WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 3)); // enable fifo
+        WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) | (0x2f<<0));  //enable LVDS phy port
+    }else {
+        WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) & ~(0x7f<<0));  //disable LVDS phy port
+        WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) & ~(1 << 3)); // disable fifo		
+    }
+}
+
+static void backlight_power_ctrl(Bool_t status)
+{
+	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+    if( status == ON )
+	{
+	    mdelay(20);
+	    lvds_ports_ctrl(ON);    
+	    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
+		mdelay(300);
+		
+		//5VA_BST_AML -> GPIOC_2: 1
+		clear_mio_mux(1,(1<<28));
+	  	clear_mio_mux(2,(1<<3));  	
+	  	clear_mio_mux(6,(1<<13));  
+	  	set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 1);
+		set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE); 			
+	    mdelay(50);	
+		//BL_EN: GPIOD_1(PWM_D)		
+#if (BL_CTL==BL_CTL_GPIO)
+	    set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
+	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
+#elif (BL_CTL==BL_CTL_PWM)
+	    WRITE_CBUS_REG_BITS(PWM_PWM_D, 0, 0, 16);  		//pwm low
+		WRITE_CBUS_REG_BITS(PWM_PWM_D, PWM_MAX, 16, 16);	//pwm high
+		WRITE_MPEG_REG(PWM_MISC_REG_CD, (READ_MPEG_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (PWM_PRE_DIV<<16) | (1<<1)));  //enable pwm clk & pwm output
+		WRITE_MPEG_REG(PERIPHS_PIN_MUX_2, READ_MPEG_REG(PERIPHS_PIN_MUX_2) | (1<<3));  //enable pwm pinmux
+#endif
+    	mdelay(20);
+	}
+	else
+	{
+		mdelay(20);	
+		//BL_EN -> GPIOD_1: 0	
+	    WRITE_MPEG_REG(PWM_MISC_REG_CD, READ_MPEG_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+		set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
+	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
+		mdelay(50);	
+		
+		//5VA_BST_AML -> GPIOC_2: 0
+		clear_mio_mux(1,(1<<28)); 
+  		clear_mio_mux(2,(1<<3));
+		clear_mio_mux(6,(1<<13));  
+		set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 0);
+		set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE); 
+	
+	    mdelay(20);
+	    lvds_ports_ctrl(OFF);    
+	    mdelay(20);
+	}	
+}
+
+unsigned get_backlight_level(void)
+{
+    debug("%s :%d\n", __FUNCTION__,bl_level);
+	return bl_level;
+}
+
+void set_backlight_level(unsigned level)
+{
+	debug("%s :%d\n", __FUNCTION__,level);
+	level = level>BL_MAX_LEVEL ? BL_MAX_LEVEL:(level<BL_MIN_LEVEL ? BL_MIN_LEVEL:level);
+	bl_level=level;
+
+#if (BL_CTL==BL_CTL_GPIO)
+	level = level * 15 / BL_MAX_LEVEL;
+	level = 15 - level;
+	WRITE_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
+#elif (BL_CTL==BL_CTL_PWM)
+	level = level * PWM_MAX / BL_MAX_LEVEL ;
+	WRITE_CBUS_REG_BITS(PWM_PWM_D, (PWM_MAX - level), 0, 16);  //pwm low
+    WRITE_CBUS_REG_BITS(PWM_PWM_D, level, 16, 16);  //pwm high
+#endif
+}
+
+static void lcd_power_ctrl(Bool_t status)
+{
+	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+    if (status) 
+	{
+		//GPIOA27 -> LCD_PWR_EN#: 0  lcd 3.3v
+	    clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
+  		clear_mio_mux(0,(1<<17));
+		set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);
+	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+	    mdelay(30);
+	}
+	else
+	{
+		backlight_power_ctrl(OFF);
+   		mdelay(30);
+    
+	    //GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
+	    clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
+		clear_mio_mux(0,(1<<17));
+		set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
+	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+	    mdelay(10);
+	}   
+}
 
 int  video_dac_enable(unsigned char enable_mask)
 {
@@ -74,61 +181,80 @@ int  video_dac_disable(void)
 	debug("%s\n", __FUNCTION__);
 	SET_CBUS_REG_MASK(VENC_VDAC_SETTING, 0x1f);
     return 0;    
-}   
+} 
 
-static lvds_phy_control_t lcd_lvds_phy_control = 
+#define H_ACTIVE		1024
+#define V_ACTIVE		768 
+#define H_PERIOD		2084 
+#define V_PERIOD		806
+#define VIDEO_ON_PIXEL  80
+#define VIDEO_ON_LINE   32  
+
+static Lvds_Phy_Control_t lcd_lvds_phy_control = 
 {
-    .lvds_prem_ctl = 0x0,		//0xf  //0x1
-    .lvds_swing_ctl = 0x4,	    //0x3  //0x1
-    .lvds_vcm_ctl = 0x7,
-    .lvds_ref_ctl = 0x15,
+    .lvds_prem_ctl = 0x0,	
+    .lvds_swing_ctl = 0x4,	  
+    .lvds_vcm_ctl = 0x7,	
+    .lvds_ref_ctl = 0x15, 	
 };
 
-//Define LVDS data mapping, bit num.
-static lvds_config_t lcd_lvds_config=
+//Define LVDS data mapping, pn swap.
+static Lvds_Config_t lcd_lvds_config=
 {
-	.lvds_repack=0,   //data mapping  //0:THine mode, 1:VESA mode
-	.pn_swap=0,		  //0:normal, 1:swap
-	.bit_num = 2,	// 0:10bits, 1:8bits, 2:6bits, 3:4bits
-	.lvds_phy_control = &lcd_lvds_phy_control,
+	.lvds_repack=0,   //data mapping  //0:JEDIA mode, 1:VESA mode
+	.pn_swap=0,		  //0:normal, 1:swap	
 };
-lcdConfig_t lcd_config =
+
+Lcd_Config_t lcd_config = 
 {
-    .width      = LCD_WIDTH,
-    .height     = LCD_HEIGHT,
-    .max_width  = MAX_WIDTH,
-    .max_height = MAX_HEIGHT,
-	.video_on_pixel = VIDEO_ON_PIXEL,
-    .video_on_line = VIDEO_ON_LINE,
-  	.pll_ctrl = 0x10231,  //pclk=84.0MHz, vfreq=49.7Hz
-	.div_ctrl = 0x18803,
-    .clk_ctrl = 0x1111,	//pll_sel,div_sel,vclk_sel,xd
-    .gamma_cntl_port = (1 << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
-    .gamma_vcom_hswitch_addr = 0,
-    .rgb_base_addr = 0xf0,
-    .rgb_coeff_addr = 0x74a,
-    .pol_cntl_addr = (0x0 << LCD_CPH1_POL) |(0x1 << LCD_HS_POL) | (0x1 << LCD_VS_POL),
-    .dith_cntl_addr = 0x600,
-
-	.sth1_hs_addr = 10,
-    .sth1_he_addr = 20,
-    .sth1_vs_addr = 0,
-    .sth1_ve_addr = MAX_HEIGHT - 1,
-	.stv1_hs_addr = 10,
-    .stv1_he_addr = 20,
-    .stv1_vs_addr = 2,
-    .stv1_ve_addr = 4,
-
-    .inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
-    .tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
-    .dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL),
+    .lcd_basic = {
+        .h_active = H_ACTIVE,
+        .v_active = V_ACTIVE,
+        .h_period = H_PERIOD,
+        .v_period = V_PERIOD,
+    	.screen_ratio_width = 4,
+     	.screen_ratio_height = 3,
+        .lcd_type = LCD_DIGITAL_LVDS,    //LCD_DIGITAL_TTL  //LCD_DIGITAL_LVDS  //LCD_DIGITAL_MINILVDS
+        .lcd_bits = 6,  //8  //6
+    },
 	
-    .flags = LCD_DIGITAL_LVDS,
-    .screen_width = 4,
-    .screen_height = 3,
-    .sync_duration_num = 502,
-    .sync_duration_den = 10,
-	.lvds_config = &lcd_lvds_config,
+	.lcd_timing = {
+        .pll_ctrl = 0x10231,  //pclk=84.0MHz, vfreq=50Hz
+        .div_ctrl = 0x18803,  
+        .clk_ctrl = 0x1111, //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
+        //.sync_duration_num = 500,
+        //.sync_duration_den = 10,
+  
+		.video_on_pixel = VIDEO_ON_PIXEL,
+		.video_on_line = VIDEO_ON_LINE,
+		
+		.sth1_hs_addr = 10,
+		.sth1_he_addr = 20,
+		.sth1_vs_addr = 0,
+		.sth1_ve_addr = V_PERIOD - 1,
+		.stv1_hs_addr = 10,
+		.stv1_he_addr = 20,
+		.stv1_vs_addr = 2,
+		.stv1_ve_addr = 4,
+		
+		.pol_cntl_addr = (0x0 << LCD_CPH1_POL) |(0x1 << LCD_HS_POL) | (0x1 << LCD_VS_POL),
+		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
+		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
+		.dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL) | (0<<LCD_RGB_SWP) | (0<<LCD_BIT_SWP),
+    },
+	
+	.lcd_effect = {
+        .gamma_cntl_port = (1 << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
+        .gamma_vcom_hswitch_addr = 0,
+        .rgb_base_addr = 0xf0,
+        .rgb_coeff_addr = 0x74a,        
+    },
+	
+    .lvds_mlvds_config = {
+        .lvds_config = &lcd_lvds_config,
+		.lvds_phy_control = &lcd_lvds_phy_control,
+    },
+
     // .power_on=lcd_power_on,
     // .power_off=lcd_power_off,
     // .backlight_on = power_on_backlight,
@@ -137,8 +263,7 @@ lcdConfig_t lcd_config =
     // .set_bl_level = set_backlight_level,
 };
 
-
-static void lcd_setup_gama_table(lcdConfig_t *pConf)
+static void lcd_setup_gamma_table(Lcd_Config_t *pConf)
 {
     int i;
 	debug("%s\n", __FUNCTION__);
@@ -154,167 +279,95 @@ static void lcd_setup_gama_table(lcdConfig_t *pConf)
     };
 
     for (i=0; i<256; i++) {
-        pConf->GammaTableR[i] = gamma_adjust[i] << 2;
-        pConf->GammaTableG[i] = gamma_adjust[i] << 2;
-        pConf->GammaTableB[i] = gamma_adjust[i] << 2;
+        pConf->lcd_effect.GammaTableR[i] = gamma_adjust[i] << 2;
+        pConf->lcd_effect.GammaTableG[i] = gamma_adjust[i] << 2;
+        pConf->lcd_effect.GammaTableB[i] = gamma_adjust[i] << 2;
     }
 }
 
-#define PWM_MAX			60000   //set pwm_freq=24MHz/PWM_MAX (Base on XTAL frequence: 24MHz, 0<PWM_MAX<65535)
-#define BL_MAX_LEVEL	255
-#define BL_MIN_LEVEL	0		
-void power_on_backlight(void)
+static void lcd_video_adjust(Lcd_Config_t *pConf)
 {
-	debug("%s\n", __FUNCTION__);
-    mdelay(20);
-    lvds_port_enable();
-    mdelay(30);
-    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
+	int i;
 	
-	//BL_EN -> GPIOD_1: 1
-#if (BL_CTL==BL_CTL_GPIO)		
-  	clear_mio_mux(1,(1<<28));
-  	clear_mio_mux(2,(1<<3));
-  	
-  	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
-  	set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 1);	
-     mdelay(50);
-
-  	set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE); 
-  	set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
-#elif (BL_CTL==BL_CTL_PWM)
-	int pwm_div=0;  //pwm_freq=24M/(pwm_div+1)/PWM_MAX	
-	clear_mio_mux(6,(1<<13));  //5VA_BST_AML H:
+	const signed short video_adjust[33] = { -999, -937, -875, -812, -750, -687, -625, -562, -500, -437, -375, -312, -250, -187, -125, -62, 0, 62, 125, 187, 250, 312, 375, 437, 500, 562, 625, 687, 750, 812, 875, 937, 1000};
 	
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, 0, 0, 16);  //pwm low
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, PWM_MAX, 16, 16);  //pwm high
-	SET_CBUS_REG_MASK(PWM_MISC_REG_CD, ((1 << 23) | (pwm_div<<16) | (1<<1)));  //enable pwm clk & pwm output
-    SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1<<3));  //enable pwm pinmux
-#endif
-    mdelay(20);
+	for (i=0; i<33; i++)
+	{
+		pConf->lcd_effect.brightness[i] = video_adjust[i];
+		pConf->lcd_effect.contrast[i]   = video_adjust[i];
+		pConf->lcd_effect.saturation[i] = video_adjust[i];
+		pConf->lcd_effect.hue[i]        = video_adjust[i];
+	}
 }
 
-void power_off_backlight(void)
+static void lcd_sync_duration(Lcd_Config_t *pConf)
 {
-	debug("%s\n", __FUNCTION__);
-	mdelay(20);
+	unsigned m, n, od, div, xd;
+	unsigned pre_div;
+	unsigned sync_duration;
 	
-		//BL_EN -> GPIOD_1: 1
-#if (BL_CTL==BL_CTL_GPIO)		
-  	clear_mio_mux(1,(1<<28)); //BL_EN
-  	clear_mio_mux(2,(1<<3));
-    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
-     mdelay(50);
-	  
-	clear_mio_mux(6,(1<<13));  //VCCx3_EN:5VA_BST_AML L:
-  	set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 0);		  
-	  
-#elif (BL_CTL==BL_CTL_PWM)	  
-
-	clear_mio_mux(6,(1<<13));  //5VA_BST_AML L:
-	set_gpio_mode(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOY_bank_bit0_22(4), GPIOY_bit_bit0_22(4), 0);	
-
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, PWM_MAX, 0, 16);  //pwm low
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, 0, 16, 16);  //pwm high
-	CLEAR_CBUS_REG_MASK(PWM_MISC_REG_CD, ((1 << 23) | (1<<1)));  //disable pwm clk & pwm output
-#endif		
-
-    mdelay(20);
-    lvds_port_disable();
-    mdelay(20);
+	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
+	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
+	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
+	div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;
+	xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
+	
+	od = (od == 0) ? 1:((od == 1) ? 2:4);
+	switch(pConf->lcd_basic.lcd_type)
+	{
+		case LCD_DIGITAL_TTL:
+			pre_div = 1;
+			break;
+		case LCD_DIGITAL_LVDS:
+			pre_div = 7;
+			break;
+		default:
+			pre_div = 1;
+			break;
+	}
+	
+	sync_duration = m*24*100/(n*od*(div+1)*xd*pre_div);	
+	sync_duration = ((sync_duration * 100000 / H_PERIOD) * 10) / V_PERIOD;
+	sync_duration = (sync_duration + 5) / 10;	
+	
+	pConf->lcd_timing.sync_duration_num = sync_duration;
+	pConf->lcd_timing.sync_duration_den = 10;
 }
 
-
-static unsigned bl_level;
-unsigned get_backlight_level(void)
+static void power_on_backlight(void)
 {
-    debug("%s :%d\n", __FUNCTION__,bl_level);
-	return bl_level;
+	//debug("%s\n", __FUNCTION__);
+	backlight_power_ctrl(ON);
 }
 
-void set_backlight_level(unsigned level)
+static void power_off_backlight(void)
 {
-	debug("%s :%d\n", __FUNCTION__,level);
-	level = level>BL_MAX_LEVEL ? BL_MAX_LEVEL:(level<BL_MIN_LEVEL ? BL_MIN_LEVEL:level);
-	bl_level=level;
-				
-#if (BL_CTL==BL_CTL_GPIO)
-	level = level * 15 / BL_MAX_LEVEL;	
-	level = 15 - level;
-	WRITE_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);	
-#elif (BL_CTL==BL_CTL_PWM)	
-	level = level * PWM_MAX / BL_MAX_LEVEL ;	
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, (PWM_MAX - level), 0, 16);  //pwm low
-    WRITE_CBUS_REG_BITS(PWM_PWM_D, level, 16, 16);  //pwm high	
-#endif	
-}
-
-static void power_on_lcd(void)
-{
-	debug("%s\n", __FUNCTION__);
-	//GPIOA_27 -> LCD_PWR_EN#: 0 lcd 3.3v  	
-  	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
-  	clear_mio_mux(0,(1<<17));
-	set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);	
-
-    mdelay(30);    
-}
-
-static void power_off_lcd(void)
-{
-	debug("%s\n", __FUNCTION__);
-	power_off_backlight();
-    mdelay(30);	
-    
-		//GPIOA_27 -> LCD_PWR_EN#: 1 lcd 3.3v  	
-	clear_mio_mux(1,((1<<2) | (1<<3) | (1<<4) | (1<<11)));
-	clear_mio_mux(0,(1<<17));
-	set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE); 
-	set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);	
-    mdelay(10);
-}
-
-static void lvds_port_enable(void)
-{ 
-    debug("%s\n", __FUNCTION__);
-	//enable lvds_fifo
-    WRITE_MPEG_REG(LVDS_GEN_CNTL, READ_MPEG_REG(LVDS_GEN_CNTL) | (1<<3));
-    //enable lvds_data channel
-    WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) | (0x2f<<0));
-}
-
-static void lvds_port_disable(void)
-{    
-    debug("%s\n", __FUNCTION__);
-    //disable lvds_data channel
-    WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) & ~(0x7f<<0));    
-	//disable lvds_fifo
-    WRITE_MPEG_REG(LVDS_GEN_CNTL, READ_MPEG_REG(LVDS_GEN_CNTL) & ~(1<<3)); 
+	//debug("%s\n", __FUNCTION__);
+	backlight_power_ctrl(OFF);
 }
 
 static void lcd_power_on(void)
 {
 	debug("%s\n", __FUNCTION__);
 	video_dac_disable();    
-    power_on_lcd();        
+    //power_on_lcd(); 
+	lcd_power_ctrl(ON);       
 }
 static void lcd_power_off(void)
 {
 	debug("%s\n", __FUNCTION__);
-	power_off_backlight();
-    power_off_lcd();
+	//power_off_backlight();
+	backlight_power_ctrl(OFF);
+    //power_off_lcd();
+	lcd_power_ctrl(OFF);
 }
 
 static void lcd_io_init(void)
 {
     debug("%s\n", __FUNCTION__);
     
-    power_on_lcd();    
+    //power_on_lcd();
+	lcd_power_ctrl(ON);     
     //set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
@@ -329,9 +382,11 @@ static int lcd_enable(void)
 	panel_info.lcd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
 	panel_info.lcd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
 	
-	lcd_setup_gama_table(&lcd_config);
+	lcd_sync_duration(&lcd_config);
+	lcd_setup_gamma_table(&lcd_config);
+	lcd_video_adjust(&lcd_config);
     lcd_io_init();
-    tcon_probe();
+    lcd_probe();
 
     return 0;
 }
@@ -339,9 +394,11 @@ static int lcd_enable(void)
 void lcd_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
-	power_off_backlight();
-    power_off_lcd();
-    tcon_remove();	
+	//power_off_backlight();
+	backlight_power_ctrl(OFF);
+    //power_off_lcd();
+	lcd_power_ctrl(OFF);
+    lcd_remove();
 }
 
 vidinfo_t panel_info = 
@@ -375,4 +432,3 @@ struct panel_operations panel_oper =
 	.power_on=lcd_power_on,
     .power_off=lcd_power_off,
 };
-
