@@ -377,11 +377,11 @@
     #define CANVAS_LUT_RD_EN        (0x1 << 8)
 	
 #define P_DC_CAV_LVL3_MODE          0xc8006330
-#define MMC_PROT_ADDR             0xc8006334 
-#define MMC_PROT_SELH             0xc8006338 
-#define MMC_PROT_SELL             0xc800633c 
-#define MMC_PROT_CTL_STS          0xc8006340 
-#define MMC_INT_STS               0xc8006344 
+#define P_MMC_PROT_ADDR             0xc8006334 
+#define P_MMC_PROT_SELH             0xc8006338 
+#define P_MMC_PROT_SELL             0xc800633c 
+#define P_MMC_PROT_CTL_STS          0xc8006340 
+#define P_MMC_INT_STS               0xc8006344 
 
 
 #define P_MMC_REQ0_CTRL             0xc8006388

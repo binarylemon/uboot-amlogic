@@ -115,6 +115,7 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 	}
 
 #ifdef CONFIG_EFUSE
+	extern	unsigned efuse_readcustomerid(void);
 	int machidefuse = (int)efuse_readcustomerid();
 	char buf[5];
 	if(machidefuse != 0){
@@ -122,7 +123,7 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 		printf ("Using machid 0x%x from EFUSE\n", machid);
 		if(s && (machidefuse != machidenv)){
 			memset(buf, 0, 5);
-			sprintf(buf, "%s", machidefuse);
+			sprintf(buf, "%x", machidefuse);
 			setenv("machid", buf);
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
 			saveenv();

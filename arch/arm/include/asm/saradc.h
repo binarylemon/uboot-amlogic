@@ -39,6 +39,7 @@ struct adc_device{
 };
 
 void saradc_enable(void);
+int saradc_disable(void);
 int  get_adc_sample(int chan);
 
 #endif /*__AML_SARADC_H__*/
