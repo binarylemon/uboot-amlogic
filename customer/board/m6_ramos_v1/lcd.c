@@ -102,8 +102,8 @@ lcdConfig_t lcd_config =
     .max_height = MAX_HEIGHT,
 	.video_on_pixel = VIDEO_ON_PIXEL,
     .video_on_line = VIDEO_ON_LINE,
-    .pll_ctrl = 0x10220, //0x10229, //0x10220,  //27.4MHz  //clk=63.4MHz, vfreq=50.1Hz 
-    .div_ctrl = 0x18803, //0x18803, //0x18813,
+    .pll_ctrl = 0x10232, //0x10229, //0x10220,  //27.4MHz  //clk=63.4MHz, vfreq=50.1Hz 
+    .div_ctrl = 0x18813, //0x18803, //0x18813,
 	.clk_ctrl = 0x1111,	//pll_sel,div_sel,vclk_sel,xd
 	
     .gamma_cntl_port = (1 << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
@@ -128,9 +128,9 @@ lcdConfig_t lcd_config =
     .dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL),
 	
     .flags = LCD_DIGITAL_LVDS,
-    .screen_width = 4,
-    .screen_height = 3,
-    .sync_duration_num = 504,
+    .screen_width = 16,
+    .screen_height = 9,
+    .sync_duration_num = 502,
     .sync_duration_den = 10,
 	.lvds_config = &lcd_lvds_config,
     // .power_on=lcd_power_on,

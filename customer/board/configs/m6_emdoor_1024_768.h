@@ -108,7 +108,7 @@
 	"upgrade_step=0\0" \
 	"video_dev=panel\0" \
 	"display_width=1024\0" \
-	"display_height=600\0" \
+	"display_height=768\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
@@ -254,7 +254,7 @@
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6_emdoor_1024_600.h\n"
+	#error "Please set DDR3 property first in file m6_emdoor_1024_768.h\n"
 #endif
 
 #define M6_DDR3_1GB
@@ -265,7 +265,7 @@
 
 //note: please DO NOT remove following check code
 #if !defined(M6_DDR3_1GB) && !defined(M6_DDR3_512M)
-	#error "Please set DDR3 capacity first in file m6_emdoor_1024_600.h\n"
+	#error "Please set DDR3 capacity first in file m6_emdoor_1024_768.h\n"
 #endif
 
 
@@ -277,7 +277,7 @@
 #elif defined(M6_DDR3_512M)
 	#define PHYS_MEMORY_SIZE     0x20000000 // 512M
 #else
-	#error "Please define DDR3 memory capacity in file m6_emdoor_1024_600.h\n"
+	#error "Please define DDR3 memory capacity in file m6_emdoor_1024_768.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      
