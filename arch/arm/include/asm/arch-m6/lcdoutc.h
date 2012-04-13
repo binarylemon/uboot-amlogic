@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef LCD_H
-#define LCD_H
+#ifndef LCDOUTC_H
+#define LCDOUTC_H
 
 #include <common.h>
 #include <linux/list.h>
@@ -56,12 +56,10 @@
    #define LCD_HADR                 0
 
 /* for POL_CNTL_ADDR */
-   /// FOR RGB format DVI output
-   #define LCD_TCON_VSYNC_SEL_DVI   11
-   /// FOR RGB format DVI output
-   #define LCD_TCON_HSYNC_SEL_DVI   10
-   /// FOR RGB format DVI output
-   #define LCD_TCON_DE_SEL_DVI      9
+   #define LCD_DCLK_SEL             14    //FOR DCLK OUTPUT   
+   #define LCD_TCON_VSYNC_SEL_DVI   11	 // FOR RGB format DVI output   
+   #define LCD_TCON_HSYNC_SEL_DVI   10	 // FOR RGB format DVI output   
+   #define LCD_TCON_DE_SEL_DVI      9	 // FOR RGB format DVI output
    #define LCD_CPH3_POL             8
    #define LCD_CPH2_POL             7
    #define LCD_CPH1_POL             6
@@ -123,15 +121,17 @@
    #define LCD_RES                  3
    #define LCD_LVDS_PORT_SWP        2
    #define LCD_PACK_RVS             1
-   #define LCD_PACK_LITTLE          0
+   #define LCD_PACK_LITTLE          0   
 
-// lcd config flags
-#define LCD_ANALOG              0
-#define LCD_DIGITAL_TTL         1
-#define LCD_SWAP_PbPr           2
-#define LCD_DIGITAL_LVDS        4
-#define LCD_DIGITAL_MLVDS       8
-
+typedef enum
+{
+    LCD_NULL = 0,
+    LCD_DIGITAL_TTL,
+    LCD_DIGITAL_LVDS,
+    LCD_DIGITAL_MINILVDS,
+    LCD_TYPE_MAX,
+} Lcd_Type_t;
+   
 typedef struct {
     int channel_num;
     int hv_sel;
@@ -143,104 +143,145 @@ typedef struct {
     int tcon_2nd_he_addr;
     int tcon_2nd_vs_addr;
     int tcon_2nd_ve_addr;
-}mlvds_tcon_config_t;
-typedef struct {
-    unsigned int lvds_prem_ctl;
+} Mlvds_Tcon_Config_t;
+
+typedef struct {      
+	unsigned int lvds_prem_ctl;
     unsigned int lvds_swing_ctl;
     unsigned int lvds_vcm_ctl;
-    unsigned int lvds_ref_ctl;
-}lvds_phy_control_t;
+    unsigned int lvds_ref_ctl;    
+} Lvds_Phy_Control_t;
+
 typedef struct {
     int mlvds_insert_start;
     int total_line_clk;
     int test_dual_gate;
-    int test_bit_num;
+    //int test_bit_num;
     int test_pair_num;
-    int set_mlvds_pinmux;
+//  int set_mlvds_pinmux;
     int phase_select;
     int TL080_phase;
-    mlvds_tcon_config_t *mlvds_tcon_config;    //Point to TCON0~7
-    lvds_phy_control_t *lvds_phy_control;
+    //Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
+    //Lvds_Phy_Control_t *lvds_phy_control;
     int scan_function;
-}mlvds_config_t;
-typedef struct {
+} Mlvds_Config_t;
+
+typedef struct {    
     int lvds_repack;
-	int pn_swap;
-	int bit_num;
-    lvds_phy_control_t *lvds_phy_control;
-}lvds_config_t;
+    int pn_swap;
+    //int bit_num;  
+    //Lvds_Phy_Control_t *lvds_phy_control;  
+} Lvds_Config_t;   
+
+// Refer to LCD Spec
+typedef struct {
+    u16 h_active;   	// Horizontal display area
+    u16 v_active;     	// Vertical display area 
+    u16 h_period;       // Horizontal total period time 
+    u16 v_period;       // Vertical total period time 
+    u16 screen_ratio_width;      // screen aspect ratio width 
+    u16 screen_ratio_height;     // screen aspect ratio height 
+   
+    Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
+    u16 lcd_bits;         // 6 or 8 bits
+}Lcd_Basic_t;
 
 typedef struct {
-	u16	width;			/* screen width in pixel unit */
-	u16 height;			/* screen height in pixel unit */
-	u16 max_width;		/* signal line width in pixel unit */
-	u16 max_height;		/* signal line height in pixel unit */
-
+	//u16 clk_source;		 /*video pll clock, must be multiple of 12, from 384~744*/
+    u32 pll_ctrl;        /* video PLL settings */    
+    u32 div_ctrl;        /* video pll div settings */
+	u32 clk_ctrl;        /* video clock settings */  //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
+    u16 sync_duration_num;
+    u16 sync_duration_den;
+	
 	u16 video_on_pixel;
-	u16 video_on_line;
+    u16 video_on_line;
 
-	u32 pll_ctrl;		/* video PLL settings */
-	u32 clk_ctrl;		/* video PLL clock settings */
-	u32 div_ctrl;		/* video pll div settings */
+    u16 sth1_hs_addr;
+    u16 sth1_he_addr;
+    u16 sth1_vs_addr;
+    u16 sth1_ve_addr;
+    
+    u16 oeh_hs_addr;
+    u16 oeh_he_addr;
+    u16 oeh_vs_addr;
+    u16 oeh_ve_addr;
+                                
+    u16 vcom_hswitch_addr;
+    u16 vcom_vs_addr;
+    u16 vcom_ve_addr;
+                    
+    u16 cpv1_hs_addr;
+    u16 cpv1_he_addr;
+    u16 cpv1_vs_addr;
+    u16 cpv1_ve_addr;
 
-	u16 gamma_cntl_port;
-	u16 gamma_vcom_hswitch_addr;
+    u16 stv1_hs_addr;
+    u16 stv1_he_addr;
+    u16 stv1_vs_addr;
+    u16 stv1_ve_addr;
 
-	u16 rgb_base_addr;
-	u16 rgb_coeff_addr;
-	u16 pol_cntl_addr;
-	u16 dith_cntl_addr;
+    u16 oev1_hs_addr;
+    u16 oev1_he_addr;
+    u16 oev1_vs_addr;
+    u16 oev1_ve_addr;
 
-	u16 sth1_hs_addr;
-	u16 sth1_he_addr;
-	u16 sth1_vs_addr;
-	u16 sth1_ve_addr;
+    u16 pol_cntl_addr;
+    u16 inv_cnt_addr;
+    u16 tcon_misc_sel_addr;
+    u16 dual_port_cntl_addr;
+} Lcd_Timing_t;
 
-	u16 oeh_hs_addr;
-	u16 oeh_he_addr;
-	u16 oeh_vs_addr;
-	u16 oeh_ve_addr;
+// Fine Effect Tune
+typedef struct {
+    u16 gamma_cntl_port;
+    u16 gamma_vcom_hswitch_addr;
 
-	u16 vcom_hswitch_addr;
-	u16 vcom_vs_addr;
-	u16 vcom_ve_addr;
-
-	u16 cpv1_hs_addr;
-	u16 cpv1_he_addr;
-	u16 cpv1_vs_addr;
-	u16 cpv1_ve_addr;
-
-	u16 stv1_hs_addr;
-	u16 stv1_he_addr;
-	u16 stv1_vs_addr;
-	u16 stv1_ve_addr;
-
-	u16 oev1_hs_addr;
-	u16 oev1_he_addr;
-	u16 oev1_vs_addr;
-	u16 oev1_ve_addr;
-
-	u16 inv_cnt_addr;
-
-	u16 tcon_misc_sel_addr;
-
-	u16 dual_port_cntl_addr;
-
-	u16 flags;
-
-	u16 screen_width;	/* screen aspect ratio X direction */
- 	u16 screen_height;	/* screen aspect ratio Y direction */
-	u16 sync_duration_num;
-	u16 sync_duration_den;
-
-	mlvds_config_t *mlvds_config;
-	lvds_config_t *lvds_config;
-
+    u16 rgb_base_addr;
+    u16 rgb_coeff_addr;
+    u16 dith_cntl_addr;
+    
+    s16 brightness[33];
+    s16 contrast[33];
+    s16 saturation[33];
+    s16 hue[33];
+    
     u16 GammaTableR[256];
     u16 GammaTableG[256];
     u16 GammaTableB[256];
-} lcdConfig_t;
+} Lcd_Effect_t;
 
-lcdConfig_t lcd_config;
+typedef struct {    
+	Lvds_Config_t *lvds_config;
+	Mlvds_Config_t *mlvds_config;
+	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7    
+	Lvds_Phy_Control_t *lvds_phy_control;
+} Lvds_Mlvds_Config_t;
 
-#endif /* LCD_H */
+typedef enum {
+    OFF = 0,
+    ON = 1,
+} Bool_t;
+    
+// Power Control
+typedef struct {
+    int cur_bl_level;
+    void (*power_ctrl)(Bool_t status);
+    void (*backlight_ctrl)(Bool_t status);
+    unsigned (*get_bl_level)(void);
+    void (*set_bl_level)(unsigned bl_level);
+    int (*lcd_suspend)(void *args);
+    int (*lcd_resume)(void *args);
+} Lcd_Power_Ctrl_t;
+
+typedef struct {
+    Lcd_Basic_t lcd_basic;
+    Lcd_Timing_t lcd_timing;    
+    Lcd_Effect_t lcd_effect; 
+	Lvds_Mlvds_Config_t lvds_mlvds_config;	
+	Lcd_Power_Ctrl_t lcd_power_ctrl; 
+} Lcd_Config_t;
+
+Lcd_Config_t lcd_config;
+
+#endif /* LCDOUTC_H */
