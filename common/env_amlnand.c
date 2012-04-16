@@ -427,7 +427,7 @@ int saveenv(void)
         free(env_new_p);
 		return 1;
 	}
-
+	aml_chip->aml_nandenv_info->env_valid = 1;
 	printf("Successful!\n");
     free(env_new_p);
 	return error;
