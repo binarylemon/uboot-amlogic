@@ -296,6 +296,7 @@ void main_loop (void)
 	//char *r_addr;
 	char *r_efus;
 	char addr[20];
+	char efuse_data[20];
 	efuseinfo_item_t info;
 	int i;
 #endif
@@ -385,14 +386,15 @@ extern int switch_boot_mode(void);
 #ifdef CONFIG_EFUSE
 	//r_addr = getenv ("ethaddr");
 	if(efuse_getinfo("mac", &info) == 0){
-		r_efus = efuse_read_usr(&info);
+		memset(efuse_data, 0, sizeof(efuse_data));		
+		efuse_read_usr(efuse_data, info.data_len, (loff_t*)&info.offset);
 		for(i=0; i<info.data_len; i++){
-			if(r_efus[i] != 0)
+			if(efuse_data[i] != 0)
 				break;
 		}
 		if(i<info.data_len){
 			memset(addr,0,sizeof(addr));
-			sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",r_efus[0],r_efus[1],r_efus[2],r_efus[3],r_efus[4],r_efus[5]);
+			sprintf(addr,"%02x:%02x:%02x:%02x:%02x:%02x",efuse_data[0],efuse_data[1],efuse_data[2],efuse_data[3],efuse_data[4],efuse_data[5]);
 			setenv ("ethaddr", addr);
 		}		
 	}

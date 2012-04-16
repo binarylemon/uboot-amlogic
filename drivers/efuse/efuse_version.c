@@ -1,6 +1,7 @@
 
 #include <config.h>
 #include <amlogic/efuse.h>
+#include "efuse_regs.h"
 
 /** efuse layout
 http://wiki-sh.amlogic.com/index.php/How_To_burn_the_info_into_E-Fuse
@@ -106,21 +107,21 @@ static efuseinfo_item_t efuseinfo_v0[] =
 	},
 	{
 		.title = "usid",
-		.offset = 337,
-		.enc_len = 43,
-		.data_len = 41,
+		.offset = V0_EFUSE_USID_OFFSET, //337,
+		.enc_len = V0_EFUSE_USID_ENC_LEN, //43,
+		.data_len = V0_EFUSE_USID_DATA_LEN, //41,
 		.we = 0,
-		.bch_en = 1,
-		.bch_reverse = 1,
+		.bch_en = V0_EFUSE_USID_BCH_EN,//0,
+		.bch_reverse = V0_EFUSE_USID_BCH_REVERSE, //0,
 	},	
 	{
 		.title= "version",     //1B(version=0)+2B(machid)
-		.offset=380,
-		.enc_len = 4,
-		.data_len = 3,
+		.offset=EFUSE_VERSION_OFFSET, //380,
+		.enc_len = EFUSE_VERSION_ENC_LEN, //4,
+		.data_len = EFUSE_VERSION_DATA_LEN, //3,
 		.we = 1,
-		.bch_en = 1,
-		.bch_reverse = 0,
+		.bch_en = EFUSE_VERSION_BCH_EN, //1,
+		.bch_reverse = EFUSE_VERSION_BCH_REVERSE, //0,
 	},
 };
 
@@ -128,12 +129,12 @@ static efuseinfo_item_t efuseinfo_v1[] =
 {
 	{
 		.title = "usid",
-		.offset = 4,
-		.enc_len = 35,
-		.data_len = 33,
+		.offset = V1_EFUSE_USID_OFFSET, //4,
+		.enc_len = V1_EFUSE_USID_ENC_LEN, //35,
+		.data_len = V1_EFUSE_USID_DATA_LEN, //33,
 		.we = 0,
-		.bch_en = 1,
-		.bch_reverse = 0,
+		.bch_en = V1_EFUSE_USID_BCH_EN, //0,
+		.bch_reverse = V1_EFUSE_USID_BCH_REVERSE, //0,
 	},	
 	{
 		.title = "mac_wifi",
@@ -182,12 +183,12 @@ static efuseinfo_item_t efuseinfo_v1[] =
 	},
 	{
 		.title= "version",     //1B(version=1)+2B(machid)
-		.offset=380,
-		.enc_len = 4,
-		.data_len = 3,
+		.offset=EFUSE_VERSION_OFFSET, //380,
+		.enc_len = EFUSE_VERSION_ENC_LEN, //4,
+		.data_len = EFUSE_VERSION_DATA_LEN, //3,
 		.we = 1,
-		.bch_en = 1,
-		.bch_reverse = 0,
+		.bch_en = EFUSE_VERSION_BCH_EN, //1,
+		.bch_reverse = EFUSE_VERSION_BCH_REVERSE, //0,
 	},
 };
 
@@ -205,12 +206,12 @@ static efuseinfo_item_t efuseinfo_v2[] =
 	},
 	{
 		.title = "version",   // include machid
-		.offset = 3,
-		.enc_len = 1,
-		.data_len = 1,
+		.offset = V2_EFUSE_VERSION_OFFSET, //3,
+		.enc_len = V2_EFUSE_VERSION_ENC_LEN, //1,
+		.data_len = V2_EFUSE_VERSION_DATA_LEN, //1,
 		.we = 1,
-		.bch_en = 0,	
-		.bch_reverse = 0,
+		.bch_en = V2_EFUSE_VERSION_BCH_EN, //0,	
+		.bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE, //0,
 	},
 	{
 		.title = "machid",   // include machid
@@ -272,12 +273,12 @@ static efuseinfo_item_t efuseinfo_v2[] =
 	},
 	{
 		.title = "usid",   
-		.offset = 454,
-		.enc_len = 58,
-		.data_len = 58,
+		.offset = V2_EFUSE_USID_OFFSET,// 454,
+		.enc_len = V2_EFUSE_USID_ENC_LEN, //58,
+		.data_len = V2_EFUSE_USID_DATA_LEN, //58,
 		.we=0,
-		.bch_en = 0,
-		.bch_reverse = 0,
+		.bch_en = V2_EFUSE_USID_BCH_EN, //0,
+		.bch_reverse = V2_EFUSE_USID_BCH_REVERSE, //0,
 	},
 };
 
@@ -304,4 +305,5 @@ int efuseinfo_num = sizeof(efuseinfo)/sizeof(efuseinfo_t);
 int efuse_active_version = -1;
 unsigned efuse_active_customerid = 0;
 pfn efuse_getinfoex = 0;
+pfn_byPos efuse_getinfoex_byPos=0;
 

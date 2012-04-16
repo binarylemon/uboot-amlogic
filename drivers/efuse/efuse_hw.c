@@ -130,7 +130,7 @@ int efuse_init(void)
 
 #ifdef EFUSE_DEBUG	
 #ifdef CONFIG_M6
-	char *p = debug_buf;
+/*	char *p = debug_buf;
 	// licence	
 	p[0] = 0xbf;
 	p[1] = 0xff;
@@ -139,7 +139,7 @@ int efuse_init(void)
 	p[8] = 0xaf;
 	p[9] = 0x32;
 	p[10] = 0x76;
-	p[135] = 0xb2;	
+	p[135] = 0xb2;	*/
 #elif defined(CONFIG_M3)
 	char *p = debug_buf;
 	p[0] = p[60] = 0x02;

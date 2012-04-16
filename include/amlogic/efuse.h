@@ -2,6 +2,7 @@
 #define __EFUSE_H
 
 #include <config.h>
+#include <common.h>
 
 typedef struct efuseinfo_item{
 	char title[40];	
@@ -21,14 +22,16 @@ typedef struct efuseinfo{
 }efuseinfo_t;
 
 typedef int (*pfn) (char *title, efuseinfo_item_t *info); 
+typedef int(*pfn_byPos)(unsigned pos, efuseinfo_item_t *info);
+
 
 char *efuse_dump(void);
 unsigned efuse_readcustomerid(void);
-void efuse_getinfo_version(efuseinfo_item_t *info);
+void efuse_set_versioninfo(efuseinfo_item_t *info);
 
 int efuse_getinfo(char *title, efuseinfo_item_t *info);
-char *efuse_read_usr(efuseinfo_item_t* info);
-int efuse_write_usr(efuseinfo_item_t* info, char *data);
+int efuse_read_usr(char *buf, size_t count, loff_t *ppos);
+int efuse_write_usr(char* buf, size_t count, loff_t* ppos);
 
 
 #ifdef CONFIG_M6
