@@ -212,7 +212,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 	loff_t local_pos = pos;	
 	int i;
 	//unsigned char* buf = NULL;
-	char* buf[EFUSE_BYTES];
+	char buf[EFUSE_BYTES];
 	efuseinfo_item_t info;
 	unsigned enc_len ;		
 	
