@@ -97,7 +97,9 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
     return nMR2;
 }
 
-
+#ifdef CONFIG_CMD_DDR_TEST
+static unsigned short zqcr = 0;
+#endif
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
@@ -176,6 +178,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
 	writel(readl(P_PUB_DSGCR_ADDR) & 0xffffffef, P_PUB_DSGCR_ADDR); 
 	
+#ifdef CONFIG_CMD_DDR_TEST
+    if(zqcr)
+	    writel(zqcr, P_PUB_ZQ0CR1_ADDR);
+	else
+#endif
     writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
 
 	//for simulation to reduce the init time.
