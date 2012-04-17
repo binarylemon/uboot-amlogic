@@ -98,6 +98,7 @@ static int efuse_readversion(void)
 	if(efuse_active_version != -1)
 		return efuse_active_version;
 		
+	efuse_init();
 	efuse_set_versioninfo(&info);
 	memset(ver_buf, 0, sizeof(ver_buf));		
 	memset(buf, 0, sizeof(buf));
@@ -227,6 +228,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 		return -1;
 	}
 	
+	efuse_init();
 	enc_len = info.enc_len;				
 	if (efuse_read(buf, enc_len, &local_pos) == enc_len) {
 		for (i = 0; i < enc_len; i++) {
@@ -265,6 +267,7 @@ int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 		return -1;
 	}
 	
+	efuse_init();
 	enc_len = info.enc_len;
 	reverse=info.bch_reverse;			
 	memset(efuse_buf, 0, EFUSE_BYTES);	
@@ -322,6 +325,7 @@ int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 	memset(data, 0, EFUSE_BYTES);
 	memset(efuse_buf, 0, EFUSE_BYTES);
 	
+	efuse_init();	
 	memcpy(data, buf, count)	;	
 	pdata = data;
 	penc = efuse_buf;			
@@ -434,6 +438,7 @@ unsigned efuse_readcustomerid(void)
 	loff_t ppos;
 	char buf[4];
 	memset(buf, 0, sizeof(buf));
+	efuse_init();	
 	
 	if(cpu_is_before_m6()){
 		ppos = 380;
@@ -481,10 +486,7 @@ char* efuse_dump(void)
 	int i=0;
     //unsigned pos;
     memset(efuse_buf, 0, sizeof(efuse_buf));
-
-#ifdef EFUSE_DEBUG
 	efuse_init();
-#endif	
 
  	// Enabel auto-read mode
     WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
