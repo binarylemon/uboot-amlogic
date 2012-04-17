@@ -8,7 +8,7 @@
 #define EFUSE_WRITE 0
 #define EFUSE_READ 1
 #define EFUSE_DUMP 2
-#define EFUSE_VERSION 3
+//#define EFUSE_VERSION 3
 
 int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -33,8 +33,8 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		action=EFUSE_WRITE;
 	else if(strcmp(argv[1], "dump") == 0)
 		action=EFUSE_DUMP;
-	else if(strcmp(argv[1], "version") == 0)
-		action = EFUSE_VERSION;
+	/*else if(strcmp(argv[1], "version") == 0)
+		action = EFUSE_VERSION;*/
 	else{
 		printf("%s arg error\n", argv[1]);
 		return -1;
@@ -55,7 +55,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 	
 	// efuse version
-	else if(action == EFUSE_VERSION){
+	/*else if(action == EFUSE_VERSION){
 		if(argc<3){
 				printf("arg count error\n");
 				return -1;
@@ -68,16 +68,6 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
-#ifndef CONFIG_M6		
-		for(i=1; i<info.data_len; i++){			
-			if(addr[i] != 0)
-				break;
-		}		
-		if(i==info.data_len){
-			printf("err: efuse need select version and machid at the same time.\n");
-			return -1;
-		}
-#endif		
 			
 		if(efuse_write_usr(&info, addr)){
 			printf("error: efuse version has been selected.\n");
@@ -85,7 +75,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 		else
 			printf("efuse version select done.\n");		
-	}
+	}*/
 		
 
 	// efuse read
@@ -94,10 +84,11 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if(efuse_getinfo(title, &info) < 0)		
 			return -1;
 		
-		op = (char*)efuse_read_usr(&info);
+		memset(addr, 0, EFUSE_BYTES);
+		efuse_read_usr(addr, info.data_len, (loff_t *)&info.offset);		
 		printf("%s is: ", title);
 		for(i=0; i<(info.data_len); i++)
-			printf(":%02x", op[i]);
+			printf(":%02x", addr[i]);
 		printf("\n");
 	}
 	
@@ -122,8 +113,14 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
-		if(efuse_write_usr(&info, addr)){
-			printf("error: efuse has written.\n");
+		
+		if(*s){
+			printf("error: The wriiten data length is too large.\n");
+			return -1;
+		}
+		
+		if(efuse_write_usr(addr, info.data_len, (loff_t*)&info.offset)<0){
+			printf("error: efuse write fail.\n");
 			return -1;
 		}
 		else
@@ -140,7 +137,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 U_BOOT_CMD(
 	efuse,	4,	1,	do_efuse,
-	"efuse licence/mac/hdcp/usid read/write or dump raw efuse data commands",
+	"efuse version/licence/mac/hdcp/usid read/write or dump raw efuse data commands",
 	"[read/write] [licence/mac/hdc/usid] [mem_addr]\n"
 	"	   [read/wirte] para read ; write ;\n"
 	"				read need not mem_addr;write need\n"
@@ -148,9 +145,7 @@ U_BOOT_CMD(
 	"				write to write efuse\n"
 	"	   [mem_addr] usr do \n"
 	"efuse [dump]\n"
-	"	   dump raw efuse data\n"
-	"efuse [version] [versionnumber]\n"
-	"	   select efuse version\n"
+	"	   dump raw efuse data\n"	
 );
 
 /****************************************************/

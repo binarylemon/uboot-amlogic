@@ -109,5 +109,37 @@ bit[7-0]    XOR
 #define CNTL4_XOR_BIT                       0
 #define CNTL4_XOR_SIZE                      8
 
+
+// EFUSE version constant definition
+#define 	EFUSE_VERSION_OFFSET     		380
+#define 	EFUSE_VERSION_ENC_LEN  		4
+#define 	EFUSE_VERSION_DATA_LEN 		3
+#define 	EFUSE_VERSION_BCH_EN			1
+#define	EFUSE_VERSION_BCH_REVERSE		0
+
+#define	V2_EFUSE_VERSION_OFFSET			3
+#define	V2_EFUSE_VERSION_ENC_LEN		1
+#define	V2_EFUSE_VERSION_DATA_LEN	1
+#define	V2_EFUSE_VERSION_BCH_EN		0
+#define	V2_EFUSE_VERSION_BCH_REVERSE	0
+
+#define	V0_EFUSE_USID_OFFSET				337
+#define	V0_EFUSE_USID_ENC_LEN				43
+#define	V0_EFUSE_USID_DATA_LEN			43
+#define 	V0_EFUSE_USID_BCH_EN				0
+#define	V0_EFUSE_USID_BCH_REVERSE		0
+
+#define	V1_EFUSE_USID_OFFSET				4
+#define	V1_EFUSE_USID_ENC_LEN				35
+#define	V1_EFUSE_USID_DATA_LEN			35
+#define 	V1_EFUSE_USID_BCH_EN				0
+#define	V1_EFUSE_USID_BCH_REVERSE		0
+
+#define 	V2_EFUSE_USID_OFFSET				454
+#define	V2_EFUSE_USID_ENC_LEN				58
+#define	V2_EFUSE_USID_DATA_LEN			58
+#define	V2_EFUSE_USID_BCH_EN				0
+#define	V2_EFUSE_USID_BCH_REVERSE		0
+
 #endif
 

@@ -27,125 +27,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define msleep(a) udelay(a * 1000)
 
-inline  void power_off(void)
-{
-    //Power hold down
-    set_gpio_val(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), 0);
-    set_gpio_mode(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), GPIO_OUTPUT_MODE);
-}
-
-/*
- *	DC_DET(GPIOA_20)	enable internal pullup
- *		High:		Disconnect
- *		Low:		Connect
- */
-inline int is_ac_online(void)
-{
-	int val;
-	
-	CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG0, (1<<20));	//enable internal pullup
-	set_gpio_mode(GPIOA_bank_bit0_27(20), GPIOA_bit_bit0_27(20), GPIO_INPUT_MODE);
-	val = get_gpio_val(GPIOA_bank_bit0_27(20), GPIOA_bit_bit0_27(20));
-	
-	//printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
-	
-	return !val;
-}
-
-//temporary
-static inline int is_usb_online(void)
-{
-	//u8 val;
-
-	return 0;
-}
-
-
-/*
- *	Fast charge when CHG_CON(GPIOAO_11) is High.
- *	Slow charge when CHG_CON(GPIOAO_11) is Low.
- */
-static int set_charge_current(int level)
-{
-		#if 0
-	set_gpio_mode(GPIOAO_bank_bit0_11(11), GPIOAO_bit_bit0_11(11), GPIO_OUTPUT_MODE);
-	set_gpio_val(GPIOAO_bank_bit0_11(11), GPIOAO_bit_bit0_11(11), (level ? 1 : 0));
-		#endif
-	return 0;
-}
-
-
-/*
- *	nSTAT OUTPUT(GPIOA_21)	enable internal pullup
- *		High:		Full
- *		Low:		Charging
- */
-static inline int get_charge_status(void)
-{
-	int val;
-	
-	CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG0, (1<<21));	//enable internal pullup
-	set_gpio_mode(GPIOA_bank_bit0_27(21), GPIOA_bit_bit0_27(21), GPIO_INPUT_MODE);
-	val = get_gpio_val(GPIOA_bank_bit0_27(21), GPIOA_bit_bit0_27(21));
-
-	//printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
-	
-	return val;
-}
-
-/*
- *	When BAT_SEL(GPIOA_22) is High Vbat=Vadc*2
- */
-static inline int measure_voltage(void)
-{
-	int val;
-	msleep(2);
-	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
-	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
-	val = get_adc_sample(5) * (2 * 2500000 / 1023);
-	//printf("%s: get from adc is %duV.\n", __FUNCTION__, val);
-	return val;
-}
-
-/*
- *	Get Vhigh when BAT_SEL(GPIOA_22) is High.
- *	Get Vlow when BAT_SEL(GPIOA_22) is Low.
- *	I = Vdiff / 0.02R
- *	Vdiff = Vhigh - Vlow
- */
-static inline int measure_current(void)
-{
-	int val, Vh, Vl, Vdiff;
-	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
-	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
-	msleep(2);
-	Vl = get_adc_sample(5) * (2 * 2500000 / 1023);
-	//printf("%s: Vl is %duV.\n", __FUNCTION__, Vl);
-	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
-	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 0);
-	msleep(2);
-	Vh = get_adc_sample(5) * (2 * 2500000 / 1023);
-	//printf("%s: Vh is %duV.\n", __FUNCTION__, Vh);
-	Vdiff = Vh - Vl;
-	val = Vdiff * 50;
-	//printf("%s: get from adc is %duA.\n", __FUNCTION__, val);
-	return val;
-}
-
-static inline int measure_capacity(void)
-{
-	int val, tmp;
-	tmp = measure_voltage();
-	if((tmp>4200000) || (get_charge_status() == 0x1))
-	{
-		//printf("%s: get from PMU and adc is 100.\n", __FUNCTION__);
-		return 100;
-	}
-	
-	val = (tmp - 3600000) / (600000 / 100);
-	//printf("%s: get from adc is %d.\n", __FUNCTION__, val);
-	return val;
-}
 static int bat_level_table[37]={
 0,
 0,
@@ -226,6 +107,51 @@ static int new_bat_value_table[37]={
 8400000 //100
 };
 
+inline  void power_off(void)
+{
+    //Power hold down
+  //  set_gpio_val(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), 0);
+  //  set_gpio_mode(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), GPIO_OUTPUT_MODE);
+  //clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
+	//clrbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
+	u8 val = 0;	
+	
+	val = act8942_i2c_read(0x51);
+	val = val|0x80;	
+
+	act8942_i2c_write(0x51, val);
+	val = val&(~(0x80));	
+     
+	act8942_i2c_write(0x51, val);
+	printf("act8xxx power off....\n");
+}
+
+/*
+ *	DC_DET(GPIOA_20)	enable internal pullup
+ *		High:		Disconnect
+ *		Low:		Connect
+ */
+inline int is_ac_online(void)
+{
+	int val;
+	
+	CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG0, (1<<20));	//enable internal pullup
+	set_gpio_mode(GPIOA_bank_bit0_27(20), GPIOA_bit_bit0_27(20), GPIO_INPUT_MODE);
+	val = get_gpio_val(GPIOA_bank_bit0_27(20), GPIOA_bit_bit0_27(20));
+	
+//	printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
+	
+	return !val;
+}
+
+//temporary
+ int is_usb_online(void)
+{
+	//u8 val;
+
+	return 0;
+}
+
 static inline int get_bat_percentage(int adc_vaule, int *adc_table, 
 										int *per_table, int table_size)
 {
@@ -234,24 +160,75 @@ static inline int get_bat_percentage(int adc_vaule, int *adc_table,
 		if ((adc_vaule >= adc_table[i]) && (adc_vaule < adc_table[i+1])) 
 			break;
 	}
-  //printk("per_table[%d]=%d\n",i, per_table[i]);
+	//printf("per_table[%d]=%d\n",i, per_table[i]);
 	return per_table[i];
 }
-
-static int act8942_measure_capacity_charging(void)
+/*
+ *	nSTAT OUTPUT(GPIOA_21)	enable internal pullup
+ *		High:		Full
+ *		Low:		Charging
+ */
+static inline int get_charge_status(void)
 {
-    int vbat = measure_voltage()-33000;  // - 33mV
-    int table_size = ARRAY_SIZE(new_bat_value_table);
+	int val;
+	
+	CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG0, (1<<21));	//enable internal pullup
+	set_gpio_mode(GPIOA_bank_bit0_27(21), GPIOA_bit_bit0_27(21), GPIO_INPUT_MODE);
+	val = get_gpio_val(GPIOA_bank_bit0_27(21), GPIOA_bit_bit0_27(21));
 
-	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
+	//printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
+	
+	return val;
 }
 
-static int act8942_measure_capacity_battery(void)
+/*
+ *	Get Vhigh when BAT_SEL(GPIOA_22) is High.
+ *	Get Vlow when BAT_SEL(GPIOA_22) is Low.
+ *	I = Vdiff / 0.02R
+ *	Vdiff = Vhigh - Vlow
+ */
+static inline int measure_current(void)
 {
-		
-    int vbat = measure_voltage();
+	int val, Vh, Vl, Vdiff;
+	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
+	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
+	msleep(2);
+	Vl = get_adc_sample(7) * (2500000 / 1023);
+//	printf("%s: Vl is %duV.\n", __FUNCTION__, Vl);
+	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
+	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 0);
+	msleep(2);
+	Vh = get_adc_sample(7) * (2500000 / 1023);
+//	printf("%s: Vh is %duV.\n", __FUNCTION__, Vh);
+	Vdiff = Vh - Vl;
+	val = (Vdiff *1047)/(110*2);
+//	printf("%s: get from adc is %duA.\n", __FUNCTION__, val);
+	return val;
+}
+
+
+/*
+ *	When BAT_SEL(GPIOA_22) is High Vbat=Vadc*2
+ */
+static inline int measure_voltage(void)
+{
+	int val,Vbat,Icur;
+	msleep(2);
+//	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
+//	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
+	val = get_adc_sample(5) * (4 * 2500000 / 1023);
+	Icur = measure_current();
+	Vbat = val - Icur*102/1000;	//0.102
+//	printf("%s: get from adc is %duV,Vbat = .\n", __FUNCTION__, val,Vbat);
+	return Vbat;
+}
+
+
+static inline int measure_capacity(void)
+{	
+	int vbat = measure_voltage();
 	int table_size = ARRAY_SIZE(new_bat_value_table);
-//	printk("percentage=%d\n",get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size));
+	//printf("percentage=%d\n",get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size));
 	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
 }
 
@@ -261,23 +238,6 @@ static void set_bat_off(void)
 	return;
 }
 
-static struct act8942_operations act8942_pdata = {
-	.is_ac_online = is_ac_online,
-	.is_usb_online = is_usb_online,
-	.set_bat_off = set_bat_off,
-	.get_charge_status = NULL,
-	.set_charge_current = NULL,
-	.measure_voltage = measure_voltage,
-	.measure_current = measure_current,
-	.measure_capacity_charging = measure_capacity,
-	.measure_capacity_battery = measure_capacity,
-	.update_period = 2000,	//2S
-};
-
-inline void ac_online_init(void)
-{
-	act8942_init(&act8942_pdata);
-}
 #endif
 
 #if defined(CONFIG_CMD_NET)
@@ -699,10 +659,6 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AW_AXP20
-	axp_charger_open();
-#endif
-
 	return 0;
 }
 #endif
@@ -722,7 +678,7 @@ inline int get_key(void)
 
 inline int get_charging_percent(void)
 {
-	return act8942_measure_capacity_charging();
+	return measure_capacity();
 }
 
 inline int set_charging_current(int current)

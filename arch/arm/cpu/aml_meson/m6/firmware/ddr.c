@@ -47,6 +47,15 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
 	Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
 	Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
+#ifdef CONFIG_CMD_DDR_TEST
+	if((Rd(PREG_STICKY_REG0) & 0xffff) == 0x2012){
+        zqcr = (Rd(PREG_STICKY_REG0) >> 16);
+		Wr(HHI_DDR_PLL_CNTL, Rd(PREG_STICKY_REG1));
+		Wr(PREG_STICKY_REG0, 0);
+        Wr(PREG_STICKY_REG1, 0);
+	}
+	else
+#endif
 	Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
 	M6_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
 
@@ -75,11 +84,43 @@ void set_ddr_clock(struct ddr_set * timing_reg)
      
     // release the DDR DLL reset pin.
     writel(0xffff, P_MMC_SOFT_RST);
-	
+#ifndef CONFIG_CMD_DDR_TEST
 	wait_pll(3,timing_reg->ddr_clk);
-
+#endif
     serial_puts("set ddr clock ok!\n");
 }
+
+#ifdef DDR_ADDRESS_TEST_FOR_DEBUG
+static void ddr_addr_test()
+{
+    unsigned i, j = 0;
+
+addr_start:
+    serial_puts("********************\n");
+    writel(0x55aaaa55, PHYS_MEMORY_START);
+    for(i=2;(((1<<i)&PHYS_MEMORY_SIZE) == 0) ;i++)
+    {
+        writel((i-1)<<(j*8), PHYS_MEMORY_START+(1<<i));
+    }
+
+    serial_put_hex(PHYS_MEMORY_START, 32);
+    serial_puts(" = ");
+    serial_put_hex(readl(PHYS_MEMORY_START), 32);
+    serial_puts("\n");
+    for(i=2;(((1<<i)&PHYS_MEMORY_SIZE) == 0) ;i++)
+    {
+       serial_put_hex(PHYS_MEMORY_START+(1<<i), 32);
+       serial_puts(" = ");
+       serial_put_hex(readl(PHYS_MEMORY_START+(1<<i)), 32);
+       serial_puts("\n");
+    }
+
+    if(j < 3){
+        ++j;
+        goto addr_start;
+    }
+}
+#endif
 
 static inline unsigned lowlevel_ddr(unsigned tag,struct ddr_set * timing_reg)
 {
@@ -101,7 +142,12 @@ static inline unsigned lowlevel_mem_test_data(unsigned tag,struct ddr_set * timi
 static inline unsigned lowlevel_mem_test_addr(unsigned tag,struct ddr_set * timing_reg)
 {
 	//asm volatile ("wfi");
+#ifdef DDR_ADDRESS_TEST_FOR_DEBUG
+    ddr_addr_test();
+    return 0;
+#else
     return tag&&(unsigned)memTestAddressBus((volatile datum *)PHYS_MEMORY_START, PHYS_MEMORY_SIZE);
+#endif
 }
 
 static unsigned ( * mem_test[])(unsigned tag,struct ddr_set * timing_reg)={
