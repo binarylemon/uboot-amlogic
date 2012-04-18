@@ -191,7 +191,8 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 				info->data_len = item->data_len;			
 				info->enc_len = item->enc_len;
 				info->bch_en = item->bch_en;
-				info->bch_reverse = info->bch_reverse;					
+				info->bch_reverse = item->bch_reverse;			
+				info->we=item->we;		
 				ret = 0;
 				break;
 			}
@@ -211,7 +212,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 	loff_t local_pos = pos;	
 	int i;
 	//unsigned char* buf = NULL;
-	char* buf[EFUSE_BYTES];
+	char buf[EFUSE_BYTES];
 	efuseinfo_item_t info;
 	unsigned enc_len ;		
 	
@@ -289,7 +290,7 @@ int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 	else
 		efuse_read(pdata, enc_len, ppos);	
 		
-	memcpy(buf, pdata, count);		
+	memcpy(buf, data, count);		
 
 	return count;	
 }
