@@ -434,6 +434,7 @@ int board_init(void)
 #ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
+	uint8_t reg;
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -446,7 +447,15 @@ int board_late_init(void)
 //set_dcdc2(1500);	//set DC-DC2 to 1500mV
 //set_dcdc3(1100);	//set DC-DC3 to 1100mV
 //#endif
+#ifdef CONFIG_AW_AXP20  
+#define POWER20_PEK_SET             (0x36)
 
+	axp_read(POWER20_PEK_SET, &reg);
+	printf("0: reg=0x%x\n", reg);
+	reg &= ~(3<<6);
+	axp_write(POWER20_PEK_SET, reg);
+	printf("1: reg=0x%x\n", reg);
+#endif /*CONFIG_AW_AXP20*/
 	return 0;
 }
 #endif

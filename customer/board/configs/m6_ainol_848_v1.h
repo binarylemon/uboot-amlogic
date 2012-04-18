@@ -98,7 +98,7 @@
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m6_g06\0" \
+	"boardname=m6_g06_848\0" \
 	"chipname=8726m6\0" \
 	"machid=4e23\0" \
 	"upgrade_step=0\0" \
