@@ -7,7 +7,7 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
-#include "boot_code.c"
+#include "boot_code.dat"
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));

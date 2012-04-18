@@ -438,24 +438,28 @@ endif #end CONFIG_AML_MESON
 		
 ifeq ($(CONFIG_AML_MESON),y)
 firmware:$(obj)firmware.bin
-.PHONY :	$(obj)firmware.bin
+.PHONY :	$(obj)firmware.bin libucl
+
+libucl:
+	$(MAKE) -C lib/ucl
+
 ifeq ($(CONFIG_M3),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
 else 
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif	
 else
 ifeq ($(CONFIG_M6),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
 else 
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk $(LIBS) 
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif	
 else
@@ -517,7 +521,7 @@ endif
 $(OBJS):	depend
 		$(MAKE) -C $(CPUDIR) $(if $(REMOTE_BUILD),$@,$(notdir $@))
 
-$(LIBS):	depend $(SUBDIRS)
+$(LIBS):	depend $(SUBDIRS) $(obj)firmware.bin
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 		
 $(UCL_BOOTLIBS):	$(obj)u-boot-comp.bin depend $(SUBDIRS)
