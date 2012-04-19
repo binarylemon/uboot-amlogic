@@ -434,7 +434,7 @@ void init_I2C()
 //	delay_ms(20);
 	delay_ms(1);
 #ifdef CONFIG_ACT8942QJ233_PMU
-	v = i2c_axp202_read(0);
+	v = i2c_act8942_read(0);
 	if(v == 0xFF || v == 0)
 #endif
 #ifdef CONFIG_AW_AXP20
