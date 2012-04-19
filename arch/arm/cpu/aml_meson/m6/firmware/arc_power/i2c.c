@@ -18,6 +18,8 @@
 #define 	I2C_IDLE		0
 #define 	I2C_RUNNING	1
 
+#define CONFIG_AW_AXP20
+
 struct aml_i2c {
 	unsigned int		cur_slave_addr;
 	unsigned char		token_tag[AML_I2C_MAX_TOKENS];
@@ -309,7 +311,7 @@ int do_msgs(struct i2c_msg *msgs,int num)
 	else 
 		return ret;
 }
-
+#ifdef CONFIG_AW_AXP20
 #define I2C_AXP202_ADDR   (0x68 >> 1)
 void i2c_axp202_write(unsigned char reg, unsigned char val)
 {
@@ -354,7 +356,54 @@ unsigned char i2c_axp202_read(unsigned char reg)
 
     return val;
 }
+#endif//CONFIG_AW_AXP20
 
+#ifdef CONFIG_ACT8942QJ233_PMU
+#define I2C_ACT8942QJ233_ADDR   (0x5B)
+void i2c_act8942_write(unsigned char reg, unsigned char val)
+{
+    unsigned char buff[2];
+    buff[0] = reg;
+    buff[1] = val;
+
+	struct i2c_msg msg[] = {
+        {
+        .addr  = I2C_ACT8942QJ233_ADDR,
+        .flags = 0,
+        .len   = 2,
+        .buf   = buff,
+        }
+    };
+
+    if (do_msgs(msg, 1) < 0) {
+        serial_puts("i2c transfer failed\n");
+    }
+}
+unsigned char i2c_act8942_read(unsigned char reg)
+{
+    unsigned char val = 0;
+    struct i2c_msg msgs[] = {
+        {
+            .addr = I2C_ACT8942QJ233_ADDR,
+            .flags = 0,
+            .len = 1,
+            .buf = &reg,
+        },
+        {
+            .addr = I2C_ACT8942QJ233_ADDR,
+            .flags = I2C_M_RD,
+            .len = 1,
+            .buf = &val,
+        }
+    };
+
+    if (do_msgs(msgs, 2)< 0) {
+       serial_puts("<error>");
+    }
+
+    return val;
+}
+#endif//CONFIG_ACT8942QJ233_PMU
 
 void init_I2C()
 {
@@ -383,17 +432,22 @@ void init_I2C()
 	reg |= (v <<12);
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 //	delay_ms(20);
-	delay_ms(1);		
-	//v = i2c_axp202_read(0);
-	//if(v == 0xFF || v == 0)
+	delay_ms(1);
+#ifdef CONFIG_ACT8942QJ233_PMU
+	v = i2c_axp202_read(0);
+	if(v == 0xFF || v == 0)
+#endif
+#ifdef CONFIG_AW_AXP20
 	v = i2c_axp202_read(0x12);
 	if(v != 0x5F )
+#endif
 		serial_puts("Error: I2C init failed!\n");
 }
 
 /***************************/
 /*******AXP202 PMU*********/
 /**************************/
+#ifdef CONFIG_AW_AXP20
 unsigned char vddio;
 unsigned char avdd25;
 unsigned char avdd33;
@@ -550,95 +604,109 @@ void power_up_ddr15()
 
 	i2c_axp202_write(0x23, ddr15_reg23);
 }
+#endif//CONFIG_AW_AXP20
 
 /**************************/
 /**************************/
-
-
-unsigned pin_mux = 0;
-unsigned gpio_ao = 0;
-void switch_voltage(int idx)
+#ifdef CONFIG_ACT8942QJ233_PMU
+void vddio_off()
 {
-	if(idx = 1){
-		unsigned v = readl(P_AO_RTI_PIN_MUX_REG);
-		pin_mux = v;
-		gpio_ao = readl(0xc8100024);
-		v &= ~((1<<9)|(1<<7)|(1<<3));
-		writel(v,P_AO_RTI_PIN_MUX_REG);
-		//select second voltage
-		writel(readl(0xc8100024)&(~(1<<3)),0xc8100024);
-		writel(readl(0xc8100024)|(1<<19),0xc8100024);
-		udelay(10);
-	}
-	else{
-		//switch to prime voltage
-		writel(readl(0xc8100024)&(~(1<<3)),0xc8100024);
-		writel(readl(0xc8100024)&(~(1<<19)),0xc8100024);
-		udelay(10);
-		writel(pin_mux,P_AO_RTI_PIN_MUX_REG);
-		writel(gpio_ao,0xc8100024);
-	}
+	unsigned char reg3;
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	reg3 = i2c_act8942_read(0x42);	//add by Elvis for cut down VDDIO
+	reg3 |= (1<<7);	
+	i2c_act8942_write(0x42,reg3);
+	reg3 = i2c_act8942_read(0x42);
+	reg3 &= ~(1<<7);	
+	i2c_act8942_write(0x42,reg3);
 }
-unsigned char vcc12_setting = 0;
-#if 0
-void powerdown_vcc12(void)
+
+void vddio_on()
+{
+	unsigned char reg3;
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	reg3 = i2c_act8942_read(0x42);	//add by Elvis, Regulator3 Enable for VDDIO
+	reg3 &= ~(1<<7);	
+	i2c_act8942_write(0x42,reg3);
+	reg3 = i2c_act8942_read(0x42);
+	reg3 |= (1<<7);	
+	i2c_act8942_write(0x42,reg3);
+}
+
+//Regulator7 Disable for cut down HDMI_VCC
+void reg7_off()
 {
 	unsigned char data;
-	vcc12_setting = i2c_axp202_read(0x21);
-	data = vcc12_setting - 1;
-	while(data >= 0xE){//0x10=1.0v  0xE=0.95V
-		i2c_axp202_write(0x21,data);
-		data -= 1;
-		udelay(5);
-	}
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	data = i2c_act8942_read(0x65);
+	data |= (1<<7);	
+	i2c_act8942_write(0x65,data);
+	data = i2c_act8942_read(0x65);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x65,data);
 }
-void powerup_vcc12(void)
-{
-	unsigned char data = i2c_axp202_read(0x21);
-	while(data < vcc12_setting){
-		data++;
-		i2c_axp202_write(0x21,data);	
-		udelay(5);
-	}
-}
-#else
-void powerdown_vcc12(void)
-{
-	unsigned char data;
-	vcc12_setting = i2c_axp202_read(0x21);
-	data = vcc12_setting - 1;
-	data = 0xE;//0x10=1.0v  0xE=0.95V
-	i2c_axp202_write(0x21,data);
-	//udelay(5);
-	udelay(100);
-}
-void powerup_vcc12(void)
-{
-	unsigned char data = i2c_axp202_read(0x21);
-	data = vcc12_setting;
-	i2c_axp202_write(0x21,data);	
-	udelay(100);
-}
-#endif
 
-unsigned ddr_voltage = 0;
-void powerdown_ddr(void)
+//Regulator7 Enable for power on HDMI_VCC
+void reg7_on()
 {
 	unsigned char data;
-	ddr_voltage = i2c_axp202_read(0x31);
-	data = ddr_voltage - 1;
-	while(data >= 0x1c){//0x1d=1.45v 0x1c=1.4v
-		i2c_axp202_write(0x31,data);
-		data--;
-		udelay(5);
-	}
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	data = i2c_act8942_read(0x65);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x65,data);
+	data = i2c_act8942_read(0x65);
+	data |= (1<<7);	
+	i2c_act8942_write(0x65,data);
 }
-void powerup_ddr(void)
+//Regulator7 Disable for cut down HDMI_VCC
+void reg5_off()
 {
-	unsigned char data = i2c_axp202_read(0x31);
-	while(data < ddr_voltage){
-		data++;
-		i2c_axp202_write(0x31,data);
-		udelay(5);
-	}
+	unsigned char data;
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	data = i2c_act8942_read(0x55);
+	data |= (1<<7);	
+	i2c_act8942_write(0x55,data);
+	data = i2c_act8942_read(0x55);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x55,data);
 }
+
+//Regulator7 Enable for power on HDMI_VCC
+void reg5_on()
+{
+	unsigned char data;
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	data = i2c_act8942_read(0x55);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x55,data);
+	data = i2c_act8942_read(0x55);
+	data |= (1<<7);	
+	i2c_act8942_write(0x55,data);
+}
+//Regulator7 Disable for cut down HDMI_VCC
+void reg6_off()
+{
+	unsigned char data;
+	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
+	data = i2c_act8942_read(0x61);
+	data |= (1<<7);	
+	i2c_act8942_write(0x61,data);
+	data = i2c_act8942_read(0x61);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x61,data);
+}
+
+//Regulator7 Enable for power on HDMI_VCC
+void reg6_on()
+{
+	unsigned char data;
+	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
+	data = i2c_act8942_read(0x61);
+	data &= ~(1<<7);	
+	i2c_act8942_write(0x61,data);
+	data = i2c_act8942_read(0x61);
+	data |= (1<<7);	
+	i2c_act8942_write(0x61,data);
+}
+#endif //CONFIG_ACT8942QJ233_PMU
+
