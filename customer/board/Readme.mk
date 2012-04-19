@@ -19,13 +19,16 @@ help_customer:
 	@echo config command: \"make m6_ramos_v1_config\"
 
 	@echo ----------------------------------------------------------------------
-	@echo The mark in board is "AINOL_AML8726_MX_REF_A"
+	@echo The mark in board is "AINOL_AML8726_V1_REF_A"
 	@echo config command: \"make m6_ainol_v1_config\"
 	
 	@echo ----------------------------------------------------------------------
-	@echo The mark in board is "AINOL_AML8726_MX_REF_A"
+	@echo The mark in board is "AINOL_AML8726_848_REF_A"
 	@echo config command: \"make m6_ainol_848_v1_config\"
 	
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "AINOL_AML8726_E3_REF_A"
+	@echo config command: \"make m6_ainol_e3_config\"
 
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "EMDOOR_M6_1024_600_REF_A"
