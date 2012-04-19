@@ -583,11 +583,12 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 			mini_part_blk_num = 2;
 		else
 			mini_part_blk_num = (NAND_MINI_PART_SIZE >> phys_erase_shift);
-
 		do {
 			offset = adjust_offset + start_blk * mtd->erasesize;
-            if(offset > (mtd->size >> 1))
+            if(offset > (mtd->size >> 1)){
+                printk("1 too much bad block!!\n");
                 break;
+            }
 			error = mtd->block_isbad(mtd, offset);
 			if (error) {
 				adjust_offset += mtd->erasesize;
@@ -620,6 +621,10 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 				start_blk = 0;
 				do {
 					offset = adjust_offset + start_blk * mtd->erasesize;
+                    if(offset > (mtd->size >> 1)){
+                        printk("2 too much bad block!!\n");
+                        break;
+                    }
 					error = mtd->block_isbad(mtd, offset);
 					if (error) {
 						adjust_offset += mtd->erasesize;
