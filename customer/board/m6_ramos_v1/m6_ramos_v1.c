@@ -433,7 +433,6 @@ int board_init(void)
 #ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
-	uint8_t reg;
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -441,16 +440,6 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-
-#ifdef CONFIG_AW_AXP20  
-#define POWER20_PEK_SET             (0x36)
-
-	axp_read(POWER20_PEK_SET, &reg);
-	printf("0: reg=0x%x\n", reg);
-	reg &= ~(3<<6);
-	axp_write(POWER20_PEK_SET, reg);
-	printf("1: reg=0x%x\n", reg);
-#endif /*CONFIG_AW_AXP20*/
 	return 0;
 }
 #endif
