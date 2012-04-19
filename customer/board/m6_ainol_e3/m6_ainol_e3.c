@@ -168,6 +168,7 @@ static int  sdio_detect(unsigned port)
 static void sdio_pwr_prepare(unsigned port)
 {
     /// @todo NOT FINISH
+	///do nothing here
 	cpu_sdio_pwr_prepare(port);
 }
 static void sdio_pwr_on(unsigned port)
@@ -232,7 +233,7 @@ int board_mmc_init(bd_t	*bis)
 #ifdef CONFIG_AML_I2C 
 /*I2C module is board depend*/
 static void board_i2c_set_pinmux(void){
-	/*@W19_AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@M6_SKT_V1.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
     /*********************************************/
     /*                | I2C_Master_AO        |I2C_Slave            |       */
@@ -273,7 +274,7 @@ struct aml_i2c_platform g_aml_i2c_plat = {
 static void board_i2c_init(void)
 {		
 	//set I2C pinmux with PCB board layout
-	/*@W19_AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@M6_SKT_V1.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
 	board_i2c_set_pinmux();
 
@@ -282,7 +283,7 @@ static void board_i2c_init(void)
 	aml_i2c_init();
 
 	//must call aml_i2c_init(); before any I2C operation	
-	/*M6 Ramos W19 board*/
+	/*M6 ref board*/
 	//udelay(10000);	
 
 	udelay(10000);		
@@ -349,8 +350,8 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
     },
     {
         .name = NAND_NORMAL_NAME,
-        .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4), //| (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
-        .ready_busy_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4), //| (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
+        .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
+        .ready_busy_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 2,
@@ -420,7 +421,7 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
+	gd->bd->bi_arch_number=MACH_TYPE_MESON6_REF;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
     nand_init();
@@ -433,6 +434,7 @@ int board_init(void)
 #ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
+	uint8_t reg;
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -440,6 +442,20 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+
+//#ifdef CONFIG_AW_AXP20
+//set_dcdc2(1500);	//set DC-DC2 to 1500mV
+//set_dcdc3(1100);	//set DC-DC3 to 1100mV
+//#endif
+#ifdef CONFIG_AW_AXP20  
+#define POWER20_PEK_SET             (0x36)
+
+	axp_read(POWER20_PEK_SET, &reg);
+	printf("0: reg=0x%x\n", reg);
+	reg &= ~(3<<6);
+	axp_write(POWER20_PEK_SET, reg);
+	printf("1: reg=0x%x\n", reg);
+#endif /*CONFIG_AW_AXP20*/
 	return 0;
 }
 #endif

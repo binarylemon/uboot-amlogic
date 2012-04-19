@@ -1,9 +1,10 @@
-#ifndef __CONFIG_M6_RAMOS_H__
-#define __CONFIG_M6_RAMOS_H__
+#ifndef __CONFIG_M6_AINOL_V1_H__
+#define __CONFIG_M6_AINOL_V1_H__
 
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
+#define M6_AINOL_V1_20120201 1
 #define CONFIG_AML_MESON_6 1
-#define M6_RAMOS_V1_20120227 1
+//#define CONFIG_MACH_MESON6_REF
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -34,11 +35,6 @@
 #define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
-#ifdef CONFIG_MACHID_CHECK
-	//#define CONFIG_MACH_MESON6_RAMOS 0x30564552
-	#define CONFIG_MACH_MESON6_RAMOS 0x00000000
-	//note: if use above definition then uboot will be dedicated for the board
-#endif //CONFIG_MACHID_CHECK
 
 #define CONFIG_L2_OFF			1
 
@@ -102,9 +98,9 @@
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m6_g08\0" \
-	"chipname=8726m\0" \
-	"machid=4e21\0" \
+	"boardname=m6_g06\0" \
+	"chipname=8726m6\0" \
+	"machid=4e23\0" \
 	"upgrade_step=0\0" \
 	"video_dev=panel\0" \
 	"display_width=1024\0" \
@@ -117,8 +113,8 @@
 	"fb_addr=0x85100000\0" \
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
-	"batfull_threshold=98\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug\0" \
+	"batfull_threshold=100\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
 	"preboot=run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
@@ -127,7 +123,7 @@
 	"recovery=run prepare; bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then bootm; else echo no uImage_recovery in NAND; fi\0" \
 	"charging_or_not=if ac_online; then run prepare; run charging; else if getkey; then run prepare; bmp display ${poweron_offset}; run bootcmd; else poweroff; fi; fi\0" \
 	"charging=video clear; run display_loop\0" \
-	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} > ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
+	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} >= ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
 	"custom_delay=setenv msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
 	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
 	"into_sleep=setenv sleep_enable 1; video dev bl_off; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev bl_on\0" \
@@ -137,7 +133,6 @@
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
-	"hdmitx=vdacoff,powermode1,unplug_powerdown\0"\
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
@@ -198,74 +193,76 @@
 /*end config LCD output*/
 
 /*POST support*/
-//#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
+/*
+#define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
 										CONFIG_SYS_POST_RTC | CONFIG_SYS_POST_ADC | \
 										CONFIG_SYS_POST_PLL)
+*/
 //CONFIG_SYS_POST_MEMORY
 
 #undef CONFIG_POST
 #ifdef CONFIG_POST
-	#define CONFIG_POST_AML
-	#define CONFIG_POST_ALT_LIST
-	#define CONFIG_SYS_CONSOLE_IS_IN_ENV  /* Otherwise it catches logbuffer as output */
-	#define CONFIG_LOGBUFFER
-	#define CONFIG_CMD_DIAG
+#define CONFIG_POST_AML
+#define CONFIG_POST_ALT_LIST
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV  /* Otherwise it catches logbuffer as output */
+#define CONFIG_LOGBUFFER
+#define CONFIG_CMD_DIAG
+
+#define SYSTEST_INFO_L1 1
+#define SYSTEST_INFO_L2 2
+#define SYSTEST_INFO_L3 3
+
+#define CONFIG_POST_BSPEC1 {    \
+	"L2CACHE test", \
+	"l2cache", \
+	"This test verifies the L2 cache operation.", \
+	POST_RAM | POST_MANUAL,   \
+	&l2cache_post_test,		\
+	NULL,		\
+	NULL,		\
+	CONFIG_SYS_POST_BSPEC1 	\
+	}
 	
-	#define SYSTEST_INFO_L1 1
-	#define SYSTEST_INFO_L2 2
-	#define SYSTEST_INFO_L3 3
-	
-	#define CONFIG_POST_BSPEC1 {    \
-		"L2CACHE test", \
-		"l2cache", \
-		"This test verifies the L2 cache operation.", \
-		POST_RAM | POST_MANUAL,   \
-		&l2cache_post_test,		\
-		NULL,		\
-		NULL,		\
-		CONFIG_SYS_POST_BSPEC1 	\
-		}
-		
-	#define CONFIG_POST_BSPEC2 {  \
-		"BIST test", \
-		"bist", \
-		"This test checks bist test", \
-		POST_RAM | POST_MANUAL, \
-		&bist_post_test, \
-		NULL, \
-		NULL, \
-		CONFIG_SYS_POST_BSPEC1  \
-		}	
+#define CONFIG_POST_BSPEC2 {  \
+	"BIST test", \
+	"bist", \
+	"This test checks bist test", \
+	POST_RAM | POST_MANUAL, \
+	&bist_post_test, \
+	NULL, \
+	NULL, \
+	CONFIG_SYS_POST_BSPEC1  \
+	}	
 #endif   /*end ifdef CONFIG_POST*/
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
 //Please just define M6 DDR clock here only
-//current DDR clock range (300~700)MHz
+//current DDR clock range (300~600)MHz
 #define M6_DDR_CLK (504)
 
-//#define CONFIG_DDR_LOW_POWER 1
+//#define CONFIG_DDR_LOW_POWER
+
 
 //#define DDR3_9_9_9
 #define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
-//customer/board/m6_ramos_v1/firmware/timming.c 
+//board/amlogic/m6_ainol_v1/firmware/timming.c 
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6_emdoor_1024_600.h\n"
+	#error "Please set DDR3 property first in file m6_ainol_e3.h\n"
 #endif
 
 #define M6_DDR3_1GB
-//#define M6_DDR3_512M
 //above setting will affect following:
-//customer/board/m6_ramos_v1/firmware/timming.c
+//board/amlogic/m6_ainol_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6/mmutable.s
 
 //note: please DO NOT remove following check code
 #if !defined(M6_DDR3_1GB) && !defined(M6_DDR3_512M)
-	#error "Please set DDR3 capacity first in file m6_emdoor_1024_600.h\n"
+	#error "Please set DDR3 capacity first in file m6_ainol_e3.h\n"
 #endif
 
 
@@ -277,7 +274,7 @@
 #elif defined(M6_DDR3_512M)
 	#define PHYS_MEMORY_SIZE     0x20000000 // 512M
 #else
-	#error "Please define DDR3 memory capacity in file m6_emdoor_1024_600.h\n"
+	#error "Please define DDR3 memory capacity in file m6_ainol_e3.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      
@@ -292,4 +289,5 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
-#endif //__CONFIG_M6_RAMOS_H__
+
+#endif //__CONFIG_M6_AINOL_V1_H__
