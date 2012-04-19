@@ -45,6 +45,10 @@ void disable_mmc_low_power(void)
 
 void reset_mmc(void)
 {
+	// writel((1 <<3),  P_RESET1_REGISTER);  // reset the whole MMC modules. 
+#ifdef POWER_DOWN_DDRPHY
+    APB_Wr(MMC_SOFT_RST, 0x0);	 // keep all MMC submodules in reset mode.
+#endif
   	//Enable DDR DLL clock input from PLL.
     writel(0xc0000080, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
     writel(0xc00000c0, P_MMC_CLK_CNTL);
@@ -798,6 +802,31 @@ void init_pctl(void)
 //	MMC_Wr(MMC_REQ_CTRL, 0xff ); Already enable request in kreboot.s
 	
 	return 0;
+}
+
+void power_down_ddr_phy(void)
+{
+	APB_Wr(PUB_DXCCR_ADDR,APB_Rd(PUB_DXCCR_ADDR)|(3<<2));
+	   
+	APB_Wr(PUB_DX0GCR_ADDR,APB_Rd(PUB_DX0GCR_ADDR)|(7<<4));	  
+	APB_Wr(PUB_DX1GCR_ADDR,APB_Rd(PUB_DX1GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX2GCR_ADDR,APB_Rd(PUB_DX2GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX3GCR_ADDR,APB_Rd(PUB_DX3GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX4GCR_ADDR,APB_Rd(PUB_DX4GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX5GCR_ADDR,APB_Rd(PUB_DX5GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX6GCR_ADDR,APB_Rd(PUB_DX6GCR_ADDR)|(7<<4));
+	APB_Wr(PUB_DX7GCR_ADDR,APB_Rd(PUB_DX7GCR_ADDR)|(7<<4));
+  
+	APB_Wr(PUB_DLLGCR_ADDR,APB_Rd(PUB_DLLGCR_ADDR)|(7<<2));
+   
+	//ACDLLCR   
+	APB_Wr(PUB_ACDLLCR_ADDR,APB_Rd(PUB_ACDLLCR_ADDR)|(1<<31));
+  
+	//ACIOCR 
+	APB_Wr(PUB_ACIOCR_ADDR,APB_Rd(PUB_ACIOCR_ADDR)|(1<<3)|(7<<8));
+ 
+	//DLLBYP   
+	APB_Wr(PUB_PIR_ADDR,APB_Rd(PUB_PIR_ADDR)|(1<<17));
 }
 
 void init_ddr_pll(void)

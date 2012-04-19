@@ -2,7 +2,7 @@
 #include "dmc.h"
 #include "register.h"
 
-
+#define POWER_DOWN_DDRPHY
 //#define DDR3_533Mhz
 ////#define DDR2_400Mhz
 //#ifdef DDR2_400Mhz

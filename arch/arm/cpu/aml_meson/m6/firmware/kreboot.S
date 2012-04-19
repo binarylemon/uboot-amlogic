@@ -22,7 +22,13 @@ pwr_restart:
     dmb
     isb
     mov sp,#0x4000
-
+/*//for JTEG enable
+       ldr r0,=0xda004000
+       ldr r1,=0x80000510
+       str r1,[r0,#4]
+       mov r1,#1
+       str r1,[r0]
+*/
        //send debug status to ARC
        // ARM is running.
        LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/

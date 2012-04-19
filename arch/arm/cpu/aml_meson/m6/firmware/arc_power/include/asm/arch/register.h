@@ -315,7 +315,9 @@
 // The following are handled by $periphs/rtl/periphs_reg.v
 #define PREG_CTLREG0_ADDR                          0x2000
 // ----------------------------
-// Dummy regs to keep XIF ports from being synthesized away
+#define PREG_PAD_GPIO6_EN_N                        0x2008
+#define PREG_PAD_GPIO6_O                           0x2009
+#define PREG_PAD_GPIO6_I                           0x200a
 // ----------------------------
 // ----------------------------
 #define PREG_JTAG_GPIO_ADDR                        0x200b
@@ -443,6 +445,15 @@
 #define USB_ADDR4                                  0x2104
 #define USB_ADDR5                                  0x2105
 #define USB_ADDR6                                  0x2106
+#define USB_ADDR7                                  0x2107
+#define USB_ADDR8                                  0x2108
+#define USB_ADDR9                                  0x2109
+#define USB_ADDR10                                 0x210a
+#define USB_ADDR11                                 0x210b
+#define USB_ADDR12                                 0x210c
+#define USB_ADDR13                                 0x210d
+#define USB_ADDR14                                 0x210e
+#define USB_ADDR15                                 0x210f
 // ----------------------------
 // Smart Card (8)
 // ----------------------------
@@ -482,6 +493,7 @@
 #define UART0_CONTROL                              0x2132
 #define UART0_STATUS                               0x2133
 #define UART0_MISC                                 0x2134
+#define UART0_REG5                                 0x2135
 // ----------------------------
 // UART1
 // ----------------------------
@@ -658,14 +670,26 @@
 #define UART2_CONTROL                              0x21c2
 #define UART2_STATUS                               0x21c3
 #define UART2_MISC                                 0x21c4
+#define UART2_REG5                                 0x21c5
+// ----------------------------
+// UART3
+// ----------------------------
+#define UART3_WFIFO                                0x21c8
+#define UART3_RFIFO                                0x21c9
+#define UART3_CONTROL                              0x21ca
+#define UART3_STATUS                               0x21cb
+#define UART3_MISC                                 0x21cc
+#define UART3_REG5                                 0x21cd
 // ---------------------------
 // RTC (4)
+//M6 RTC move to SecureBus
 // ---------------------------
-#define RTC_ADDR0                                  0x21d0
+/*#define RTC_ADDR0                                  0x21d0
 #define RTC_ADDR1                                  0x21d1
 #define RTC_ADDR2                                  0x21d2
 #define RTC_ADDR3                                  0x21d3
 #define RTC_ADDR4                                  0x21d4
+*/
 // ----------------------------
 // clock measure (4)
 // ----------------------------
@@ -693,6 +717,28 @@
 #define VGHL_PWM_REG4                              0x21e5
 #define VGHL_PWM_REG5                              0x21e6
 #define VGHL_PWM_REG6                              0x21e7
+// ----------------------------
+// I2C Master
+// ----------------------------
+#define I2C_M_1_CONTROL_REG                        0x21f0
+#define I2C_M_1_SLAVE_ADDR                         0x21f1
+#define I2C_M_1_TOKEN_LIST0                        0x21f2
+#define I2C_M_1_TOKEN_LIST1                        0x21f3
+#define I2C_M_1_WDATA_REG0                         0x21f4
+#define I2C_M_1_WDATA_REG1                         0x21f5
+#define I2C_M_1_RDATA_REG0                         0x21f6
+#define I2C_M_1_RDATA_REG1                         0x21f7
+// ----------------------------
+// I2C Master
+// ----------------------------
+#define I2C_M_2_CONTROL_REG                        0x21f8
+#define I2C_M_2_SLAVE_ADDR                         0x21f9
+#define I2C_M_2_TOKEN_LIST0                        0x21fa
+#define I2C_M_2_TOKEN_LIST1                        0x21fb
+#define I2C_M_2_WDATA_REG0                         0x21fc
+#define I2C_M_2_WDATA_REG1                         0x21fd
+#define I2C_M_2_RDATA_REG0                         0x21fe
+#define I2C_M_2_RDATA_REG1                         0x21ff
 // -------------------------------------------------------------------
 // PSEL Group #2:  0x800 ~ 0xbFF
 // -------------------------------------------------------------------
@@ -1102,6 +1148,9 @@
 #define SD_REG6_PDMA                               0x2386
 #define SD_REG7_MISC                               0x2387
 #define SD_REG8_DATA                               0x2388
+#define SD_REG9_ICTL                               0x2389
+#define SD_REGA_ISTA                               0x238a
+#define SD_REGB_SRST                               0x238b
 //
 // Closing file:  periphs_reg.h
 //
@@ -1177,6 +1226,8 @@
 #define AHB_ARBITER_REG                            0x2642
 #define AHB_ARBDEC_REG                             0x2643
 #define AHB_ARBITER2_REG                           0x264a
+#define DEVICE_MMCP_CNTL                           0x264b
+#define AUDIO_MMCP_CNTL                            0x264c
 // -----------------------------------------------------------
 #define ISA_BIST_REG0                              0x2644
 #define ISA_BIST_REG1                              0x2645
@@ -1185,6 +1236,7 @@
 #define ISA_BIST_REG4                              0x2648
 #define ISA_BIST_REG5                              0x2649
 // -----------------------------------------------------------
+#define ISA_BIST_REG6                              0x264e
 #define ISA_TIMER_MUX                              0x2650
 #define ISA_TIMERA                                 0x2651
 #define ISA_TIMERB                                 0x2652
@@ -1293,6 +1345,18 @@
 #define SYS_CPU_1_IRQ_IN3_INTR_STAT_CLR            0x26ad
 #define SYS_CPU_1_IRQ_IN3_INTR_MASK                0x26ae
 #define SYS_CPU_1_IRQ_IN3_INTR_FIRQ_SEL            0x26af
+#define MEDIA_CPU_IRQ_IN4_INTR_STAT                0x26b0
+#define MEDIA_CPU_IRQ_IN4_INTR_STAT_CLR            0x26b1
+#define MEDIA_CPU_IRQ_IN4_INTR_MASK                0x26b2
+#define MEDIA_CPU_IRQ_IN4_INTR_FIRQ_SEL            0x26b3
+#define SYS_CPU_0_IRQ_IN4_INTR_STAT                0x26b4
+#define SYS_CPU_0_IRQ_IN4_INTR_STAT_CLR            0x26b5
+#define SYS_CPU_0_IRQ_IN4_INTR_MASK                0x26b6
+#define SYS_CPU_0_IRQ_IN4_INTR_FIRQ_SEL            0x26b7
+#define SYS_CPU_1_IRQ_IN4_INTR_STAT                0x26b8
+#define SYS_CPU_1_IRQ_IN4_INTR_STAT_CLR            0x26b9
+#define SYS_CPU_1_IRQ_IN4_INTR_MASK                0x26ba
+#define SYS_CPU_1_IRQ_IN4_INTR_FIRQ_SEL            0x26bb
 //
 // Closing file:  isa_reg.h
 //
@@ -1378,9 +1442,6 @@
 #define HHI_VIID_CLK_DIV                           0x104a
 #define HHI_VIID_CLK_CNTL                          0x104b
 #define HHI_VIID_DIVIDER_CNTL                      0x104c
-#define HHI_SYS_PLL_CNTL2                          0x104d
-#define HHI_AUD_PLL_CNTL2                          0x104e
-#define HHI_VID_PLL_CNTL2                          0x104f
 // Gated clock enables.  There are 64 enables for the MPEG clocks and 32 enables for other clock domains
 #define HHI_GCLK_MPEG0                             0x1050
 #define HHI_GCLK_MPEG1                             0x1051
@@ -1388,13 +1449,7 @@
 #define HHI_GCLK_OTHER                             0x1054
 #define HHI_GCLK_AO                                0x1055
 // PLL Controls
-#define HHI_SYS_PLL_CNTL3                          0x1056
-#define HHI_AUD_PLL_CNTL3                          0x1057
-#define HHI_VID_PLL_CNTL3                          0x1058
 #define HHI_VID_CLK_DIV                            0x1059
-#define HHI_SYS_PLL_CNTL                           0x105a
-#define HHI_AUD_PLL_CNTL                           0x105b
-#define HHI_VID_PLL_CNTL                           0x105c
 #define HHI_MPEG_CLK_CNTL                          0x105d
 #define HHI_AUD_CLK_CNTL                           0x105e
 #define HHI_VID_CLK_CNTL                           0x105f
@@ -1403,18 +1458,16 @@
 #define HHI_WIFI_PLL_CNTL2                         0x1062
 #define HHI_WIFI_PLL_CNTL3                         0x1063
 #define HHI_AUD_CLK_CNTL2                          0x1064
-#define HHI_VID_PLL_CNTL4                          0x1065
 #define HHI_VID_DIVIDER_CNTL                       0x1066
 #define HHI_SYS_CPU_CLK_CNTL                       0x1067
+#define HHI_A9_CLK_CNTL                            HHI_SYS_CPU_CLK_CNTL
 #define HHI_DDR_PLL_CNTL                           0x1068
 #define HHI_DDR_PLL_CNTL2                          0x1069
 #define HHI_DDR_PLL_CNTL3                          0x106a
 #define HHI_DDR_PLL_CNTL4                          0x106b
 #define HHI_MALI_CLK_CNTL                          0x106c
-#define HHI_DEMOD_PLL_CNTL                         0x106d
-#define HHI_DEMOD_PLL_CNTL2                        0x106e
-#define HHI_DEMOD_PLL_CNTL3                        0x106f
-#define HHI_DEMOD_PLL_CNTL4                        0x106b
+#define HHI_VDEC_CLK_CNTL                          0x106d
+#define HHI_MIPI_PHY_CLK_CNTL                      0x106e
 #define HHI_OTHER_PLL_CNTL                         0x1070
 #define HHI_OTHER_PLL_CNTL2                        0x1071
 #define HHI_OTHER_PLL_CNTL3                        0x1072
@@ -1441,6 +1494,7 @@
 #define HHI_VID_PLL_MOD_NOM_TCNT                   0x1087
 #define HHI_DDR_CLK_CNTL                           0x1088
 #define HHI_GEN_CLK_CNTL                           0x108a
+#define HHI_GEN_CLK_CNTL2                          0x108b
 #define HHI_JTAG_CONFIG                            0x108e
 #define HHI_VAFE_CLKXTALIN_CNTL                    0x108f
 #define HHI_VAFE_CLKOSCIN_CNTL                     0x1090
@@ -1449,6 +1503,24 @@
 #define HHI_VAFE_CLKPI_CNTL                        0x1093
 #define HHI_VDIN_MEAS_CLK_CNTL                     0x1094
 #define HHI_PCM_CLK_CNTL                           0x1096
+#define HHI_SYS_PLL_CNTL                           0x1098
+#define HHI_SYS_PLL_CNTL2                          0x1099
+#define HHI_SYS_PLL_CNTL3                          0x109a
+#define HHI_SYS_PLL_CNTL4                          0x109b
+#define HHI_VID_PLL_CNTL                           0x109c
+#define HHI_VID_PLL_CNTL2                          0x109d
+#define HHI_VID_PLL_CNTL3                          0x109e
+#define HHI_VID_PLL_CNTL4                          0x109f
+#define HHI_MPLL_CNTL                              0x10a0
+#define HHI_MPLL_CNTL2                             0x10a1
+#define HHI_MPLL_CNTL3                             0x10a2
+#define HHI_MPLL_CNTL4                             0x10a3
+#define HHI_MPLL_CNTL5                             0x10a4
+#define HHI_MPLL_CNTL6                             0x10a5
+#define HHI_MPLL_CNTL7                             0x10a6
+#define HHI_MPLL_CNTL8                             0x10a7
+#define HHI_MPLL_CNTL9                             0x10a8
+#define HHI_MPLL_CNTL10                            0x10a9
 //-----------------------------------------------------------
 // PARSER 
 //-----------------------------------------------------------
@@ -1463,12 +1535,12 @@
 // bit 2 -- discard_cmd
 // bit 1 -- search_cmd
 // bit 0 -- Parser Busy
-#define PARSER_CONTROL                             0x0160
+#define PARSER_CONTROL                             0x2960
 // Write
 //   bit 31:0 begin address for parser fetch
 // Read
 //   32 bit current fetch address
-#define PARSER_FETCH_ADDR                          0x0161
+#define PARSER_FETCH_ADDR                          0x2961
 // Write
 //   bit 31 circle buffer indicator
 //   bit 30 check_buffer_stop_addr
@@ -1482,11 +1554,11 @@
 //   6:5 cmd_rd_ptr 
 //   4:3 cmd_wr_ptr 
 //   2:0 cmd_number 
-#define PARSER_FETCH_CMD                           0x0162
+#define PARSER_FETCH_CMD                           0x2962
 // 31:0 stop_fetch_addr
-#define PARSER_FETCH_STOP_ADDR                     0x0163
+#define PARSER_FETCH_STOP_ADDR                     0x2963
 // 31:0 stop_fetch_addr - current_write_addr  // read only
-#define PARSER_FETCH_LEVEL                         0x0164
+#define PARSER_FETCH_LEVEL                         0x2964
 // bit 31 - fetch_dma_urgent
 // bit 30 - stream_dma_urgent
 // bit 29 - force_pfifo_ren
@@ -1499,22 +1571,22 @@
 // 11:10 - start code width ( 00-8bits, 01-16bits, 10-24bits, 11-32bits )  
 // 9:8 - pfifo data access width ( 00-8bits, 01-16bits, 10-24bits, 11-32bits )  
 // 7:0 - empty room for fetch data ( max_fetch_cycle ) x64 bits
-#define PARSER_CONFIG                              0x0165
+#define PARSER_CONFIG                              0x2965
 // bit 24:16 -- pfifo_level
 // bit 9:0 -- point to byte address
-#define PFIFO_WR_PTR                               0x0166
+#define PFIFO_WR_PTR                               0x2966
 // bit 9:0 -- point to byte address
-#define PFIFO_RD_PTR                               0x0167
+#define PFIFO_RD_PTR                               0x2967
 // bit 31:0 -- 8/16/24/32 bits data acording to pfifo_data_width
-#define PFIFO_DATA                                 0x0168
+#define PFIFO_DATA                                 0x2968
 // bit 31:0 -- parser search pattern 
-#define PARSER_SEARCH_PATTERN                      0x0169
+#define PARSER_SEARCH_PATTERN                      0x2969
 // bit 31:0 -- parser search mask ( 0 - disable bit match test )
-#define PARSER_SEARCH_MASK                         0x016a
+#define PARSER_SEARCH_MASK                         0x296a
 // bit 31:16 -- parser_int_disable_count
 // bit 15:8 -- Parser interrupt enable for host cpu 
 // bit 7:0 -- Parser interrupt enable for Amrisc 
-#define PARSER_INT_ENABLE                          0x016b
+#define PARSER_INT_ENABLE                          0x296b
 // Bit 7 -- fetch_cmd_finished
 // Bit 6:5 -- reserved
 // Bit 4 -- parse finished
@@ -1524,39 +1596,39 @@
 // Bit 0 -- Search match interrupt (StartCode found)
 // Read 7:0 int status
 // Write will clear (bit based) 
-#define PARSER_INT_STATUS                          0x016c
+#define PARSER_INT_STATUS                          0x296c
 // 15    - SCR_32_READ_OUT (Read Only)
 // 14    - SCR_32_data_valid
 // 13    - SCR_32_data
 // 12    - SCR_count_en
 // 11:0  - SCR90K_DIV
-#define PARSER_SCR_CTL                             0x016d
+#define PARSER_SCR_CTL                             0x296d
 // bit 31:0 SCR value
-#define PARSER_SCR                                 0x016e
+#define PARSER_SCR                                 0x296e
 // bit 31:24 -- insert_loop_number
 // bit 23:21 -- 
 // bit 20:16 -- insert_byte_number 
 // bit 15:0 -- discard number
-#define PARSER_PARAMETER                           0x016f
+#define PARSER_PARAMETER                           0x296f
 // bit 31:0 -- insert data // write only
 // write to PARSER_CONTROL will reset the write position
 // continous write to this address can write upto 16 bytes 
-#define PARSER_INSERT_DATA                         0x0170
+#define PARSER_INSERT_DATA                         0x2970
 // Bit 31:24 -- Reserved Stream_ID
 // Bit 23:16 -- Sub Stream_ID
 // Bit 15:8  -- Audio Stream_ID
 // Bit 7:0   -- Video Stream_ID
-#define VAS_STREAM_ID                              0x0171
+#define VAS_STREAM_ID                              0x2971
 // Bit 31:0 -- VIDEO_DTS
-#define VIDEO_DTS                                  0x0172
+#define VIDEO_DTS                                  0x2972
 // Bit 31:0 -- VIDEO_PTS
-#define VIDEO_PTS                                  0x0173
+#define VIDEO_PTS                                  0x2973
 // Bit 31:0 -- VIDEO_PTS_DTS_WR_PTR
-#define VIDEO_PTS_DTS_WR_PTR                       0x0174
+#define VIDEO_PTS_DTS_WR_PTR                       0x2974
 // Bit 31:0 -- AUDIO_PTS
-#define AUDIO_PTS                                  0x0175
+#define AUDIO_PTS                                  0x2975
 // Bit 31:0 -- AUDIO_PTS_WR_PTR
-#define AUDIO_PTS_WR_PTR                           0x0176
+#define AUDIO_PTS_WR_PTR                           0x2976
 // bit 31:20 -- stream_es_count ( Read Only)
 // bit 19 -- req_pending ( parser ddr_A_fifo ) (Read Only)
 // bit 18 -- stream_es_passthrough_enable
@@ -1568,68 +1640,68 @@
 // bit 4 -- AUDIO using manual read point
 // bit 3:1 -- VIDEO Ees_write Endian 
 // bit 0 -- VIDEO using manual read point
-#define PARSER_ES_CONTROL                          0x0177
+#define PARSER_ES_CONTROL                          0x2977
 // Bit 31:0 PFIFO_MONITOR
-#define PFIFO_MONITOR                              0x0178
+#define PFIFO_MONITOR                              0x2978
 // --------------------------------------------
 // PARSER_VIDEO DDR Interface
 // --------------------------------------------
 // The PARSER_VIDEO start pointer into DDR memory is a 32-bit number
 // The Start pointer will automatically be truncated to land on 
 // an 8-byte boundary.  That is, bits [2:0] = 0;
-#define PARSER_VIDEO_START_PTR                     0x0180
-#define PARSER_VIDEO_END_PTR                       0x0181
+#define PARSER_VIDEO_START_PTR                     0x2980
+#define PARSER_VIDEO_END_PTR                       0x2981
 // --------------------------------------------
 // PARSER_VIDEO Buffer Level Manager
 // --------------------------------------------
-#define PARSER_VIDEO_WP                            0x0182
-#define PARSER_VIDEO_RP                            0x0183
-#define PARSER_VIDEO_HOLE                          0x0184
+#define PARSER_VIDEO_WP                            0x2982
+#define PARSER_VIDEO_RP                            0x2983
+#define PARSER_VIDEO_HOLE                          0x2984
 // --------------------------------------------
 // PARSER_AUDIO DDR Interface
 // --------------------------------------------
 // The PARSER_AUDIO start pointer into DDR memory is a 32-bit number
 // The Start pointer will automatically be truncated to land on 
 // an 8-byte boundary.  That is, bits [2:0] = 0;
-#define PARSER_AUDIO_START_PTR                     0x0185
-#define PARSER_AUDIO_END_PTR                       0x0186
+#define PARSER_AUDIO_START_PTR                     0x2985
+#define PARSER_AUDIO_END_PTR                       0x2986
 // --------------------------------------------
 // PARSER_AUDIO Buffer Level Manager
 // --------------------------------------------
-#define PARSER_AUDIO_WP                            0x0187
-#define PARSER_AUDIO_RP                            0x0188
-#define PARSER_AUDIO_HOLE                          0x0189
+#define PARSER_AUDIO_WP                            0x2987
+#define PARSER_AUDIO_RP                            0x2988
+#define PARSER_AUDIO_HOLE                          0x2989
 // --------------------------------------------
 // PARSER_SUB DDR Interface
 // --------------------------------------------
 // The PARSER_SUB start pointer into DDR memory is a 32-bit number
 // The Start pointer will automatically be truncated to land on 
 // an 8-byte boundary.  That is, bits [2:0] = 0;
-#define PARSER_SUB_START_PTR                       0x018a
-#define PARSER_SUB_END_PTR                         0x018b
+#define PARSER_SUB_START_PTR                       0x298a
+#define PARSER_SUB_END_PTR                         0x298b
 // --------------------------------------------
 // PARSER_SUB Buffer Level Manager
 // --------------------------------------------
-#define PARSER_SUB_WP                              0x018c
-#define PARSER_SUB_RP                              0x018d
-#define PARSER_SUB_HOLE                            0x018e
+#define PARSER_SUB_WP                              0x298c
+#define PARSER_SUB_RP                              0x298d
+#define PARSER_SUB_HOLE                            0x298e
 // Bit[31] dma_busy
 // Bit[30] cur_fetch_or_es_write
 // Bit[29:28] reserved
 // Bit[27:24] fetch_status
 // Bit[23:0] buffer_cycles_left
-#define PARSER_FETCH_INFO                          0x018f
+#define PARSER_FETCH_INFO                          0x298f
 // Bit[31:28] ctl_status
 // Bit[27:24] insert_byte_offset
 // Bit[23:0] es_pack_left_cycle
-#define PARSER_STATUS                              0x0190
+#define PARSER_STATUS                              0x2990
 // Bit [31:16] AUDIO_wrap_count
 // Bit  [15:0] VIDEO_wrap_count
-#define PARSER_AV_WRAP_COUNT                       0x0191
+#define PARSER_AV_WRAP_COUNT                       0x2991
 // bit[29:24] A_brst_num_parser
 // bit[21:16] A_id_parser
 // bit[11:0] wrrsp_count_parser
-#define WRRSP_PARSER                               0x0192
+#define WRRSP_PARSER                               0x2992
 // `define CSS_cmd             12'h200   // address of css command and indirect register
 // `define CSS_cntl            12'h201   // css control register
 // `define CSS_data            12'h202   // indirect register
@@ -1643,6 +1715,23 @@
 // `define CPPM_CMD			12'h214   //CPPM command and control register
 // `define CPPM_CTRL_STATUS	12'h215   //CPPM control status, mainly for debug 
 // `define CPPM_IFIFO_DATA		12'h216   //CPPM input FIFO data pop port, just for debug 
+// --------------------------------------------
+// PARSER_VIDEO2 DDR Interface
+// --------------------------------------------
+// The PARSER_VIDEO2 start pointer into DDR memory is a 32-bit number
+// The Start pointer will automatically be truncated to land on 
+// an 8-byte boundary.  That is, bits [2:0] = 0;
+#define PARSER_VIDEO2_START_PTR                    0x2993
+#define PARSER_VIDEO2_END_PTR                      0x2994
+// --------------------------------------------
+// PARSER_VIDEO2 Buffer Level Manager
+// --------------------------------------------
+#define PARSER_VIDEO2_WP                           0x2995
+#define PARSER_VIDEO2_RP                           0x2996
+#define PARSER_VIDEO2_HOLE                         0x2997
+// Bit [31:16] AUDIO_wrap_count
+// Bit  [15:0] VIDEO2_wrap_count
+#define PARSER_AV2_WRAP_COUNT                      0x2998
 // DDR registers
 //`define USE_DDR2
 //========================================================================
@@ -2003,6 +2092,7 @@
 #define VDIN0_LFIFO_CTRL                        (VDIN0_OFFSET + VDIN_LFIFO_CTRL                   )
 #define VDIN0_COM_GCLK_CTRL                     (VDIN0_OFFSET + VDIN_COM_GCLK_CTRL                )
 #define VDIN0_INTF_WIDTHM1                      (VDIN0_OFFSET + VDIN_INTF_WIDTHM1                 )
+#define VDIN0_WR_CTRL2                          (VDIN0_OFFSET + VDIN_WR_CTRL2                     )
 #define VDIN0_WR_CTRL                           (VDIN0_OFFSET + VDIN_WR_CTRL                      )
 #define VDIN0_WR_H_START_END                    (VDIN0_OFFSET + VDIN_WR_H_START_END               )
 #define VDIN0_WR_V_START_END                    (VDIN0_OFFSET + VDIN_WR_V_START_END               )
@@ -2098,6 +2188,7 @@
 #define VDIN1_LFIFO_CTRL                        (VDIN1_OFFSET + VDIN_LFIFO_CTRL                   )
 #define VDIN1_COM_GCLK_CTRL                     (VDIN1_OFFSET + VDIN_COM_GCLK_CTRL                )
 #define VDIN1_INTF_WIDTHM1                      (VDIN1_OFFSET + VDIN_INTF_WIDTHM1                 )
+#define VDIN1_WR_CTRL2                          (VDIN1_OFFSET + VDIN_WR_CTRL2                     )
 #define VDIN1_WR_CTRL                           (VDIN1_OFFSET + VDIN_WR_CTRL                      )
 #define VDIN1_WR_H_START_END                    (VDIN1_OFFSET + VDIN_WR_H_START_END               )
 #define VDIN1_WR_V_START_END                    (VDIN1_OFFSET + VDIN_WR_V_START_END               )
@@ -7881,31 +7972,31 @@
 // Duplicate Address:  When actually used
 // please move to a different address
 // `define AUDIO_COP_CTL1      12'hf00  // r & w; r-> 6'h00,bsmod[2:0],acmod[2:0],lfeon,nfchans[2:0]
-#define AUDIO_COP_CTL2                             0x0f01
+#define AUDIO_COP_CTL2                             0x2f01
 //  f02 -f0d are special regs , not in ac3_reg.h, but used by CPU for AC3 operations
-#define OPERAND_M_CTL                              0x0f02
-#define OPERAND1_ADDR                              0x0f03
-#define OPERAND2_ADDR                              0x0f04
-#define RESULT_M_CTL                               0x0f05
-#define RESULT1_ADDR                               0x0f06
-#define RESULT2_ADDR                               0x0f07
-#define ADD_SHFT_CTL                               0x0f08
-#define OPERAND_ONE_H                              0x0f09
-#define OPERAND_ONE_L                              0x0f0a
-#define OPERAND_TWO_H                              0x0f0b
-#define OPERAND_TWO_L                              0x0f0c
-#define RESULT_H                                   0x0f0d
-#define RESULT_M                                   0x0f0e
+#define OPERAND_M_CTL                              0x2f02
+#define OPERAND1_ADDR                              0x2f03
+#define OPERAND2_ADDR                              0x2f04
+#define RESULT_M_CTL                               0x2f05
+#define RESULT1_ADDR                               0x2f06
+#define RESULT2_ADDR                               0x2f07
+#define ADD_SHFT_CTL                               0x2f08
+#define OPERAND_ONE_H                              0x2f09
+#define OPERAND_ONE_L                              0x2f0a
+#define OPERAND_TWO_H                              0x2f0b
+#define OPERAND_TWO_L                              0x2f0c
+#define RESULT_H                                   0x2f0d
+#define RESULT_M                                   0x2f0e
 // special reg 
-#define RESULT_L                                   0x0f0f
+#define RESULT_L                                   0x2f0f
 // 
-#define WMEM_R_PTR                                 0x0f10
-#define WMEM_W_PTR                                 0x0f11
-#define AUDIO_LAYER                                0x0f20
-#define AC3_DECODING                               0x0f21
-#define AC3_DYNAMIC                                0x0f22
-#define AC3_MELODY                                 0x0f23
-#define AC3_VOCAL                                  0x0f24
+#define WMEM_R_PTR                                 0x2f10
+#define WMEM_W_PTR                                 0x2f11
+#define AUDIO_LAYER                                0x2f20
+#define AC3_DECODING                               0x2f21
+#define AC3_DYNAMIC                                0x2f22
+#define AC3_MELODY                                 0x2f23
+#define AC3_VOCAL                                  0x2f24
 //======================================
 //  CPU Assist module
 //

@@ -310,8 +310,8 @@ int do_msgs(struct i2c_msg *msgs,int num)
 		return ret;
 }
 
-#define I2C_ACT8942QJ233_ADDR   (0x5B)
-void i2c_act8942_write(unsigned char reg, unsigned char val)
+#define I2C_AXP202_ADDR   (0x68 >> 1)
+void i2c_axp202_write(unsigned char reg, unsigned char val)
 {
     unsigned char buff[2];
     buff[0] = reg;
@@ -319,7 +319,7 @@ void i2c_act8942_write(unsigned char reg, unsigned char val)
 
 	struct i2c_msg msg[] = {
         {
-        .addr  = I2C_ACT8942QJ233_ADDR,
+        .addr  = I2C_AXP202_ADDR,
         .flags = 0,
         .len   = 2,
         .buf   = buff,
@@ -330,18 +330,18 @@ void i2c_act8942_write(unsigned char reg, unsigned char val)
         serial_puts("i2c transfer failed\n");
     }
 }
-unsigned char i2c_act8942_read(unsigned char reg)
+unsigned char i2c_axp202_read(unsigned char reg)
 {
     unsigned char val = 0;
     struct i2c_msg msgs[] = {
         {
-            .addr = I2C_ACT8942QJ233_ADDR,
+            .addr = I2C_AXP202_ADDR,
             .flags = 0,
             .len = 1,
             .buf = &reg,
         },
         {
-            .addr = I2C_ACT8942QJ233_ADDR,
+            .addr = I2C_AXP202_ADDR,
             .flags = I2C_M_RD,
             .len = 1,
             .buf = &val,
@@ -355,105 +355,6 @@ unsigned char i2c_act8942_read(unsigned char reg)
     return val;
 }
 
-void vddio_off()
-{
-	unsigned char reg3;
-	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
-	reg3 = i2c_act8942_read(0x42);	//add by Elvis for cut down VDDIO
-	reg3 |= (1<<7);	
-	i2c_act8942_write(0x42,reg3);
-	reg3 = i2c_act8942_read(0x42);
-	reg3 &= ~(1<<7);	
-	i2c_act8942_write(0x42,reg3);
-}
-
-void vddio_on()
-{
-	unsigned char reg3;
-	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
-	reg3 = i2c_act8942_read(0x42);	//add by Elvis, Regulator3 Enable for VDDIO
-	reg3 &= ~(1<<7);	
-	i2c_act8942_write(0x42,reg3);
-	reg3 = i2c_act8942_read(0x42);
-	reg3 |= (1<<7);	
-	i2c_act8942_write(0x42,reg3);
-}
-
-//Regulator7 Disable for cut down HDMI_VCC
-void reg7_off()
-{
-	unsigned char data;
-	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
-	data = i2c_act8942_read(0x65);
-	data |= (1<<7);	
-	i2c_act8942_write(0x65,data);
-	data = i2c_act8942_read(0x65);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x65,data);
-}
-
-//Regulator7 Enable for power on HDMI_VCC
-void reg7_on()
-{
-	unsigned char data;
-	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
-	data = i2c_act8942_read(0x65);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x65,data);
-	data = i2c_act8942_read(0x65);
-	data |= (1<<7);	
-	i2c_act8942_write(0x65,data);
-}
-//Regulator7 Disable for cut down HDMI_VCC
-void reg5_off()
-{
-	unsigned char data;
-	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
-	data = i2c_act8942_read(0x55);
-	data |= (1<<7);	
-	i2c_act8942_write(0x55,data);
-	data = i2c_act8942_read(0x55);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x55,data);
-}
-
-//Regulator7 Enable for power on HDMI_VCC
-void reg5_on()
-{
-	unsigned char data;
-	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
-	data = i2c_act8942_read(0x55);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x55,data);
-	data = i2c_act8942_read(0x55);
-	data |= (1<<7);	
-	i2c_act8942_write(0x55,data);
-}
-//Regulator7 Disable for cut down HDMI_VCC
-void reg6_off()
-{
-	unsigned char data;
-	//To disable the regulator, set ON[ ] to 1 first then clear it to 0.
-	data = i2c_act8942_read(0x61);
-	data |= (1<<7);	
-	i2c_act8942_write(0x61,data);
-	data = i2c_act8942_read(0x61);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x61,data);
-}
-
-//Regulator7 Enable for power on HDMI_VCC
-void reg6_on()
-{
-	unsigned char data;
-	//To enable the regulator, clear ON[ ] to 0 first then set to 1.
-	data = i2c_act8942_read(0x61);
-	data &= ~(1<<7);	
-	i2c_act8942_write(0x61,data);
-	data = i2c_act8942_read(0x61);
-	data |= (1<<7);	
-	i2c_act8942_write(0x61,data);
-}
 
 void init_I2C()
 {
@@ -483,11 +384,176 @@ void init_I2C()
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 //	delay_ms(20);
 	delay_ms(1);		
-	v = i2c_act8942_read(0);
-	if(v == 0xFF || v == 0)
+	//v = i2c_axp202_read(0);
+	//if(v == 0xFF || v == 0)
+	v = i2c_axp202_read(0x12);
+	if(v != 0x5F )
 		serial_puts("Error: I2C init failed!\n");
+}
+
+/***************************/
+/*******AXP202 PMU*********/
+/**************************/
+unsigned char vddio;
+unsigned char avdd25;
+unsigned char avdd33;
+unsigned char _3gvcc;
+unsigned char ddr15_reg12;//reg=0x12
+unsigned char ddr15_reg23;//reg=0x23
+
+void dump_pmu_reg()
+{
+	int i,data;
+	for(i=0;i<0x95;i++)
+	{
+		data=i2c_axp202_read(i);		
+		serial_put_hex(i,8);
+		serial_puts("	");
+		serial_put_hex(data,8);
+		serial_puts("\n");
+	}
 
 }
+
+
+void power_off_avdd25()
+{
+	unsigned char data;
+
+	data=i2c_axp202_read(0x29);
+	data|=0x80;//LDO3 ctr mode 
+	i2c_axp202_write(0x29,data);
+	
+	avdd25 = i2c_axp202_read(0x12);
+	data = avdd25 & 0xbf;//ldo3
+	i2c_axp202_write(0x12,data);
+/*
+	data=i2c_axp202_read(0x12);
+	serial_puts("avdd25 off\n");
+	serial_put_hex(data,8);
+	serial_puts("\n");*/
+	//udelay(5);
+	udelay(100);
+}
+
+void power_on_avdd25()
+{
+	unsigned char data;
+
+	data=i2c_axp202_read(0x29);
+	data|=0x80;//LDO3 ctr mode 
+	i2c_axp202_write(0x29,data);
+
+	data = avdd25 | 0x40;//ldo3
+	i2c_axp202_write(0x12,data);
+/*	
+	serial_puts("avdd25 on\n");
+	data=i2c_axp202_read(0x12);
+	serial_put_hex(data,8);
+	serial_puts("\n");*/
+	//udelay(5);
+	udelay(100);
+
+}
+
+
+
+void power_off_vddio()
+{
+	unsigned char data;
+	vddio = i2c_axp202_read(0x12);
+	data = vddio & 0xfe;//EXTEN
+	i2c_axp202_write(0x12,data);
+
+	udelay(100);
+
+}
+
+void power_on_vddio()
+{
+	unsigned char data;
+
+	data = vddio | 0x01;//EXTEN
+	i2c_axp202_write(0x12,data);
+
+	udelay(100);
+
+}
+
+void power_off_avdd33()
+{
+	unsigned char data;
+	avdd33 = i2c_axp202_read(0x12);
+	data = avdd33 & 0xf7;
+	i2c_axp202_write(0x12,data);
+
+	udelay(100);
+
+}
+
+void power_on_avdd33()
+{
+	unsigned char data;
+
+	data = avdd33 | 0x08;
+	i2c_axp202_write(0x12,data);
+
+	udelay(100);
+
+}
+
+
+void power_off_3gvcc()
+{
+	unsigned char data;
+	_3gvcc = i2c_axp202_read(0x91);
+	data = _3gvcc & 0x0f;//low or hight is enable
+	//data = _3gvcc | 0x07;
+	i2c_axp202_write(0x91,data);
+
+	udelay(100);
+
+}
+
+void power_on_3gvcc()
+{
+	unsigned char data;
+
+	data = _3gvcc;// | 0xa0;
+	//data = _3gvcc & 0xf8;
+	i2c_axp202_write(0x91,data);
+
+	udelay(100);
+
+}
+
+void power_down_ddr15()
+{
+	unsigned char data;
+
+	ddr15_reg23 = i2c_axp202_read(0x23);
+	data = ddr15_reg23 & 0xc0;
+	data = data | 0x18;// 1.3v//1.5
+	i2c_axp202_write(0x23,data);
+
+	ddr15_reg12 = i2c_axp202_read(0x12);
+	data = ddr15_reg12 & 0xef;//Disable DC-DC2 switch
+	i2c_axp202_write(0x12,data);
+}
+
+void power_up_ddr15()
+{
+	unsigned char data;
+
+	ddr15_reg12 |= 0x10;
+	i2c_axp202_write(0x12, ddr15_reg12);
+
+	i2c_axp202_write(0x23, ddr15_reg23);
+}
+
+/**************************/
+/**************************/
+
 
 unsigned pin_mux = 0;
 unsigned gpio_ao = 0;
@@ -518,20 +584,20 @@ unsigned char vcc12_setting = 0;
 void powerdown_vcc12(void)
 {
 	unsigned char data;
-	vcc12_setting = i2c_act8942_read(0x21);
+	vcc12_setting = i2c_axp202_read(0x21);
 	data = vcc12_setting - 1;
 	while(data >= 0xE){//0x10=1.0v  0xE=0.95V
-		i2c_act8942_write(0x21,data);
+		i2c_axp202_write(0x21,data);
 		data -= 1;
 		udelay(5);
 	}
 }
 void powerup_vcc12(void)
 {
-	unsigned char data = i2c_act8942_read(0x21);
+	unsigned char data = i2c_axp202_read(0x21);
 	while(data < vcc12_setting){
 		data++;
-		i2c_act8942_write(0x21,data);	
+		i2c_axp202_write(0x21,data);	
 		udelay(5);
 	}
 }
@@ -539,18 +605,18 @@ void powerup_vcc12(void)
 void powerdown_vcc12(void)
 {
 	unsigned char data;
-	vcc12_setting = i2c_act8942_read(0x21);
+	vcc12_setting = i2c_axp202_read(0x21);
 	data = vcc12_setting - 1;
 	data = 0xE;//0x10=1.0v  0xE=0.95V
-	i2c_act8942_write(0x21,data);
+	i2c_axp202_write(0x21,data);
 	//udelay(5);
 	udelay(100);
 }
 void powerup_vcc12(void)
 {
-	unsigned char data = i2c_act8942_read(0x21);
+	unsigned char data = i2c_axp202_read(0x21);
 	data = vcc12_setting;
-	i2c_act8942_write(0x21,data);	
+	i2c_axp202_write(0x21,data);	
 	udelay(100);
 }
 #endif
@@ -559,20 +625,20 @@ unsigned ddr_voltage = 0;
 void powerdown_ddr(void)
 {
 	unsigned char data;
-	ddr_voltage = i2c_act8942_read(0x31);
+	ddr_voltage = i2c_axp202_read(0x31);
 	data = ddr_voltage - 1;
 	while(data >= 0x1c){//0x1d=1.45v 0x1c=1.4v
-		i2c_act8942_write(0x31,data);
+		i2c_axp202_write(0x31,data);
 		data--;
 		udelay(5);
 	}
 }
 void powerup_ddr(void)
 {
-	unsigned char data = i2c_act8942_read(0x31);
+	unsigned char data = i2c_axp202_read(0x31);
 	while(data < ddr_voltage){
 		data++;
-		i2c_act8942_write(0x31,data);
+		i2c_axp202_write(0x31,data);
 		udelay(5);
 	}
 }
