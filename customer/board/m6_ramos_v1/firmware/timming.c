@@ -138,7 +138,7 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zq0cr1 = 0x1b,//0x18,   //PUB ZQ0CR1
+                    .zq0cr1 = 0x1d,//0x18,   //PUB ZQ0CR1
          .ddr_pll_cntl=0x10200 | (M6_DDR_CLK/12), //504MHz 1022a
          .ddr_clk = (M6_DDR_CLK),
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
