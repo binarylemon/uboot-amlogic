@@ -338,6 +338,9 @@ void save_ddr_settings()
  	v_t_cwl          = MMC_Rd(UPCTL_TCWL_ADDR );
  	
  	v_mcfg           = MMC_Rd(UPCTL_MCFG_ADDR);
+	
+	v_dturd0_addr      = MMC_Rd(UPCTL_DTURD0_ADDR);
+	
  	v_t_zqcl         = MMC_Rd(UPCTL_TZQCL_ADDR);
 
   v_t_rsth_us  = MMC_Rd(UPCTL_TRSTH_ADDR);
@@ -411,6 +414,8 @@ void save_ddr_settings()
   v_dx8gsr0  = MMC_Rd(PUB_DX8GSR0_ADDR); 
 	v_dx8gsr1  = MMC_Rd(PUB_DX8GSR1_ADDR); 
 	v_dx8dqstr = MMC_Rd(PUB_DX8DQSTR_ADDR); 
+
+	v_zq0cr1   = MMC_Rd(PUB_ZQ0CR1_ADDR);
 	
 }
 
@@ -537,7 +542,10 @@ void init_pctl(void)
 	MMC_Wr(UPCTL_TRSTL_ADDR, v_t_rstl_us);  //?????
 	
 	MMC_Wr(UPCTL_MCFG_ADDR,v_mcfg);
-	 
+	
+	MMC_Wr(UPCTL_DTURD0_ADDR, v_dturd0_addr);//add for Eric fine-tune
+	
+ 
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
@@ -568,9 +576,9 @@ void init_pctl(void)
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
 
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
-	MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
+	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
+	MMC_Wr( PUB_ZQ0CR1_ADDR, v_zq0cr1);
    
-
 	//for simulation to reduce the init time.
 //	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
 //	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
@@ -681,7 +689,7 @@ void init_pctl(void)
 	MMC_Wr(UPCTL_SCFG_ADDR, 0xf00);
 	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
 	
-	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg); //????
+//	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg); //????
 //	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr); //?????
  	
  	MMC_Wr( UPCTL_SCTL_ADDR, 1);

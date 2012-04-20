@@ -120,7 +120,10 @@
 #define  dx8gsr1  88 
 #define  dx8dqstr 89 
 
-#define DDR_SETTING_COUNT 90
+#define dturd0_addr 90
+#define zq0cr1 91
+
+#define DDR_SETTING_COUNT 92
 
 #define 	v_rslr0          ddr_settings[ rslr0 ]    
 #define 	v_rdgr0          ddr_settings[ rdgr0 ]   
@@ -222,6 +225,9 @@
 #define v_dx8gsr0  ddr_settings[ dx8gsr0  ]  
 #define v_dx8gsr1  ddr_settings[ dx8gsr1  ] 
 #define v_dx8dqstr ddr_settings[ dx8dqstr ] 
+
+#define v_dturd0_addr ddr_settings[ dturd0_addr ] 
+#define v_zq0cr1   ddr_settings[zq0cr1]
 
 extern unsigned ddr_settings[];
 extern int init_pctl_ddr2(void);
