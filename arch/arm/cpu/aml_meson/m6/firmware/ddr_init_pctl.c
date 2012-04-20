@@ -123,6 +123,9 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(timing_reg->mcfg & (~(3<<18)))
 		, P_UPCTL_MCFG_ADDR);
 	  
+	  
+    writel(0x8,0xc8000244);
+	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
