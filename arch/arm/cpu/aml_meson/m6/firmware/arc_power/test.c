@@ -701,7 +701,7 @@ void store_restore_plls(int flag)
     int i;
     if(flag)
     {
-#ifdef POWER_OFF_EE 
+//#ifdef POWER_OFF_EE 
         pll_settings[0][0]=readl(P_HHI_SYS_PLL_CNTL);
         pll_settings[0][1]=readl(P_HHI_SYS_PLL_CNTL2);
         pll_settings[0][2]=readl(P_HHI_SYS_PLL_CNTL3);		
@@ -713,20 +713,30 @@ void store_restore_plls(int flag)
 */
         clk_settings[0]=readl(P_HHI_SYS_CPU_CLK_CNTL);
         clk_settings[1]=readl(P_HHI_MPEG_CLK_CNTL);
-#endif
+//#endif
 
         save_ddr_settings();
         return;
     }    
     
-#ifdef POWER_OFF_EE 
+//#ifdef POWER_OFF_EE 
     /* restore from default settings */ 
     writel(pll_settings[0][0]|0x40000000, P_HHI_SYS_PLL_CNTL);
     writel(pll_settings[0][1], P_HHI_SYS_PLL_CNTL2);
     writel(pll_settings[0][2], P_HHI_SYS_PLL_CNTL3);	
     writel(pll_settings[0][3], P_HHI_SYS_PLL_CNTL4);
     writel(pll_settings[0][0]&(~0x40000000),P_HHI_SYS_PLL_CNTL);
-    writel(1<<2, P_RESET5_REGISTER);
+	do{
+		udelay(24000);
+	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
+
+	/*
+	M6_PLL_RESET(HHI_SYS_PLL_CNTL);
+	Wr(HHI_SYS_PLL_CNTL2,M6_SYS_PLL_CNTL_2);
+	Wr(HHI_SYS_PLL_CNTL3,M6_SYS_PLL_CNTL_3);
+	Wr(HHI_SYS_PLL_CNTL4,M6_SYS_PLL_CNTL_4);
+	Wr(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
+	M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);*/
 /*
     writel(pll_settings[1][0]|0x8000, P_HHI_OTHER_PLL_CNTL);
     writel(pll_settings[1][1], P_HHI_OTHER_PLL_CNTL2);
@@ -737,7 +747,7 @@ void store_restore_plls(int flag)
     writel(clk_settings[0],P_HHI_SYS_CPU_CLK_CNTL);
     writel(clk_settings[1],P_HHI_MPEG_CLK_CNTL);	    
     delay_ms(50);
-#endif
+//#endif
 }
 
 void __raw_writel(unsigned val,unsigned reg)
