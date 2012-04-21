@@ -339,7 +339,7 @@ void save_ddr_settings()
  	
  	v_mcfg           = MMC_Rd(UPCTL_MCFG_ADDR);
 	
-	v_dturd0_addr      = MMC_Rd(UPCTL_DTURD0_ADDR);
+	v_dfiodrcfg_adr      = MMC_Rd(UPCTL_DFIODTCFG_ADDR);
 	
  	v_t_zqcl         = MMC_Rd(UPCTL_TZQCL_ADDR);
 
@@ -543,7 +543,7 @@ void init_pctl(void)
 	
 	MMC_Wr(UPCTL_MCFG_ADDR,v_mcfg);
 	
-	MMC_Wr(UPCTL_DTURD0_ADDR, v_dturd0_addr);//add for Eric fine-tune
+	MMC_Wr(UPCTL_DFIODTCFG_ADDR, v_dfiodrcfg_adr);//add for Eric fine-tune
 	
  
 	//configure DDR PHY PUBL registers.
