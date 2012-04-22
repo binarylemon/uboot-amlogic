@@ -1,3 +1,98 @@
+#define reg(a) (*(volatile unsigned*)(a))
+
+static inline int dtu_enable(void)
+{
+    unsigned timeout = 10000;
+    reg(P_UPCTL_DTUECTL_ADDR) = 0x1;  // start wr/rd
+    while((reg(P_UPCTL_DTUECTL_ADDR)&1) && timeout)
+        --timeout;
+    return timeout;
+}
+
+static inline int start_ddr_config(void)
+{
+    unsigned timeout = -1;
+    reg(P_UPCTL_SCTL_ADDR) = 0x1;
+    while((reg(P_UPCTL_STAT_ADDR) != 0x1) && timeout)
+        --timeout;
+
+    return timeout;
+}
+
+static inline int end_ddr_config(void)
+{
+    unsigned timeout = 10000;
+    reg(P_UPCTL_SCTL_ADDR) = 0x2;
+    while((readl(P_UPCTL_STAT_ADDR) != 0x3) && timeout)
+        --timeout;
+
+    return timeout;
+}
+
+static void dtu_test_for_debug_training_result(struct ddr_set * timing_reg)
+{
+    int i;
+    
+    reg(P_UPCTL_DTUWD0_ADDR) = 0xdd22ee11;
+    reg(P_UPCTL_DTUWD1_ADDR) = 0x7788bb44;
+    reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
+    reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+    reg(P_UPCTL_DTUWACTL_ADDR) = 0;
+    reg(P_UPCTL_DTURACTL_ADDR) = 0;
+    for(i = 0; i < ((timing_reg->ddr_ctrl&(1<<7))?0x2:0x4); i++)
+    {
+        serial_puts("\n\n");
+        serial_put_hex(i, 8);
+        serial_puts(" byte lane:\n");
+        start_ddr_config();
+        reg(P_UPCTL_DTUCFG_ADDR) = (i << 10) | 1;
+        end_ddr_config();
+
+        dtu_enable();
+        serial_puts("\n");
+        serial_put_hex(reg(P_UPCTL_DTURD0_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(reg(P_UPCTL_DTURD1_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(reg(P_UPCTL_DTURD2_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(reg(P_UPCTL_DTURD3_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(reg(P_UPCTL_DTUPDES_ADDR), 32);
+
+    }
+}
+
+static void display_training_result(struct ddr_set * timing_reg)
+{
+    serial_puts("\nDX0DLLCR:");
+    serial_put_hex(reg(P_PUB_DX0DLLCR_ADDR), 32);
+    serial_puts("\nDX0DQTR:");
+    serial_put_hex(reg(P_PUB_DX0DQTR_ADDR), 32);
+    serial_puts("\nDX0DQSTR:");
+    serial_put_hex(reg(P_PUB_DX0DQSTR_ADDR), 32);
+    serial_puts("\nDX1DLLCR:");
+    serial_put_hex(reg(P_PUB_DX1DLLCR_ADDR), 32);
+    serial_puts("\nDX1DQTR:");
+    serial_put_hex(reg(P_PUB_DX1DQTR_ADDR), 32);
+    serial_puts("\nDX1DQSTR:");
+    serial_put_hex(reg(P_PUB_DX1DQSTR_ADDR), 32);
+    if(!(timing_reg->ddr_ctrl&(1<<7))){
+        serial_puts("\nDX2DLLCR:");
+        serial_put_hex(reg(P_PUB_DX2DLLCR_ADDR), 32);
+        serial_puts("\nDX2DQTR:");
+        serial_put_hex(reg(P_PUB_DX2DQTR_ADDR), 32);
+        serial_puts("\nDX2DQSTR:");
+        serial_put_hex(reg(P_PUB_DX2DQSTR_ADDR), 32);
+        serial_puts("\nDX3DLLCR:");
+        serial_put_hex(reg(P_PUB_DX3DLLCR_ADDR), 32);
+        serial_puts("\nDX3DQTR:");
+        serial_put_hex(reg(P_PUB_DX3DQTR_ADDR), 32);
+        serial_puts("\nDX3DQSTR:");
+        serial_put_hex(reg(P_PUB_DX3DQSTR_ADDR), 32);
+    }
+}
+
 void init_dmc(struct ddr_set * ddr_setting)
 {	
 	writel(ddr_setting->ddr_ctrl, P_MMC_DDR_CTRL);
@@ -30,9 +125,16 @@ void init_dmc(struct ddr_set * ddr_setting)
 }
 int ddr_init_hw(struct ddr_set * timing_reg)
 {
-    if(timing_reg->init_pctl(timing_reg))
-        return 1;
-
+    int ret = 0;
+    
+    ret = timing_reg->init_pctl(timing_reg);
+    if(ret){
+        dtu_test_for_debug_training_result(timing_reg);
+        return ret;
+    }
+    
+    display_training_result(timing_reg);
+    
     init_dmc(timing_reg);
 
     return 0;

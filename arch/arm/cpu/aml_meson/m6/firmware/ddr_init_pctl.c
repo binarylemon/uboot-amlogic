@@ -103,6 +103,8 @@ static unsigned short zqcr = 0;
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
+	int i;
+	int ret = 0;
 
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
@@ -323,10 +325,13 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
+    ret |= readl(P_PUB_PGSR_ADDR) & (3<<5);
+
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 
-	return 0;
+    return ret;
+	//return 0;
 
 }
