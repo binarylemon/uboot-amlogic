@@ -172,6 +172,7 @@ static uint8_t nand_mode_time[6] = {9, 7, 6, 5, 5, 4};
 static uint8_t nand_boot_flag = 0;
 unsigned default_environment_size = (ENV_SIZE - sizeof(struct aml_nand_bbt_info));
 static int aml_nand_update_env(struct mtd_info *mtd);
+static int aml_nand_free_valid_env(struct mtd_info *mtd);
 
 struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 
@@ -1211,6 +1212,9 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 
 	/* Send commands to erase a block */
 	valid_page_num = (mtd->writesize >> chip->page_shift);
+    if(((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
+         aml_nand_free_valid_env(mtd);
+    }
 	valid_page_num /= aml_chip->plane_num;
 
 	aml_chip->page_addr = page / valid_page_num;
@@ -2416,6 +2420,32 @@ static void aml_platform_write_byte(struct aml_nand_chip *aml_chip, uint8_t data
 	NFC_SEND_CMD(aml_chip->chip_selected | IDLE | 5);
 	while(NFC_CMDFIFO_SIZE()>0);
 	return;
+}
+
+static int aml_nand_free_valid_env(struct mtd_info *mtd)
+{
+    struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+    struct env_free_node_t *env_free_node, *env_tmp_node;
+
+    aml_chip->aml_nandenv_info->env_valid = 0;
+    aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = -1;
+    env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+	if (env_free_node == NULL){
+        printk("no money for env_free_node\n");
+		return -ENOMEM;
+	}
+
+    env_free_node->phy_blk_addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+	env_free_node->ec = aml_chip->aml_nandenv_info->env_valid_node->ec;
+    if (aml_chip->aml_nandenv_info->env_free_node == NULL)
+		aml_chip->aml_nandenv_info->env_free_node = env_free_node;
+	else {
+		env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+		while (env_tmp_node->next != NULL) {
+			env_tmp_node = env_tmp_node->next;
+		}
+		env_tmp_node->next = env_free_node;
+	}
 }
 
 static int aml_nand_read_env (struct mtd_info *mtd, size_t offset, u_char * buf)
