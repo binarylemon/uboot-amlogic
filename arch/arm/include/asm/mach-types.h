@@ -2936,6 +2936,8 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_MESON6_SKT           3969
 #define MACH_TYPE_MESON6_REF           3970
 
+#define MACH_TYPE_MESON6_MBX   20007
+
 #ifdef CONFIG_ARCH_EBSA110
 # ifdef machine_arch_type
 #  undef machine_arch_type

@@ -97,7 +97,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
-	"machid=F81\0" \	
+	"machid=4e27\0" \	
 	"video_dev=panel\0" \
 	"display_width=800\0" \
 	"display_height=1280\0" \
