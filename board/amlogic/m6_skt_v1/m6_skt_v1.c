@@ -23,36 +23,33 @@ DECLARE_GLOBAL_DATA_PTR;
 /*************************************************
   * Amlogic Ethernet controller operation
   * 
-  * Note: The LAN chip LAN8720 need to be reset by GPIOA_23
+  * Note: The LAN chip LAN8720 need to be reset
   *
   *************************************************/
 static void setup_net_chip(void)
 {
-#if 0
-	WRITE_CBUS_REG(0x1076,0x303);
-	WRITE_CBUS_REG(0x2032,0x4007ffe0);
-	WRITE_CBUS_REG(0x2042,0x241);   // // desc endianess "same order"   
-	SET_CBUS_REG_MASK(0x2692,1<<8);
-	SET_CBUS_REG_MASK(0x2694,1<<8);
-	
-	CLEAR_CBUS_REG_MASK(0x201b,1<<15);
-	CLEAR_CBUS_REG_MASK(0x201c,1<<15); //phy reset
-	 udelay(20000);
-	SET_CBUS_REG_MASK(0x201c,1<<15);
+#ifdef CONFIG_NET_CLK_EXTERNAL
+	/* setup ethernet clk */
+	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
+	/* setup ethernet pinmux */
+	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 #else
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL,0x303);
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6,0x4007ffe0);
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0,0x241);   // // desc endianess "same order"   
-	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK,1<<8);
-	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT,1<<8);
-	
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N,1<<15);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O,1<<15); //phy reset
-	udelay(20000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O,1<<15);	
+	/* setup ethernet clk */
+	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
+	/* setup ethernet pinmux */
+	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 #endif	
+	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 
+	/* setup ethernet interrupt */
+	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK, 1 << 8);
+	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT, 1 << 8);
 	
+	/* hardware reset ethernet phy */
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	udelay(2000);
+	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 }
 
 int board_eth_init(bd_t *bis)
@@ -63,7 +60,6 @@ int board_eth_init(bd_t *bis)
     udelay(1000);
 		
 	extern int aml_eth_init(bd_t *bis);
-
     aml_eth_init(bis);
 
 	return 0;
