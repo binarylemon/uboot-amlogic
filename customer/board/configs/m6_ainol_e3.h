@@ -16,7 +16,7 @@
 #define HAS_AO_MODULE
 #define CONFIG_AML_I2C	//add by Elvis Yu
 #define CONFIG_AW_AXP20
-#define BATTERYCAP				3400							//battery capability
+#define BATTERYCAP				3700							//battery capability
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
