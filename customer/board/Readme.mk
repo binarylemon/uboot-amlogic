@@ -43,6 +43,10 @@ help_customer:
 	@echo config command: \"make m6_newsmy_v1_config\"
 
 	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "WINACCORD_AML8726_MX_REF_A"
+	@echo config command: \"make m6_winaccord_v1_config\"
+	
+	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "MBX_AML8726_MX_REF_A"
 	@echo config command: \"make m6_mbx_v1_config\"
 
