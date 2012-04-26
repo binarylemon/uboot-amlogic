@@ -440,6 +440,10 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+#ifdef CONFIG_AW_AXP20
+	#define POWER20_DCDC_MODESET        (0x80)
+	axp_set_bits(POWER20_DCDC_MODESET, ((1<<1)|(1<<2)));	//use constant PWM for DC-DC2 & DC-DC3
+#endif
 	return 0;
 }
 #endif
