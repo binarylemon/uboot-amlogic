@@ -446,6 +446,10 @@ int board_late_init(void)
 //set_dcdc2(1500);	//set DC-DC2 to 1500mV
 //set_dcdc3(1100);	//set DC-DC3 to 1100mV
 //#endif
+#ifdef CONFIG_AW_AXP20
+	#define POWER20_DCDC_MODESET        (0x80)
+	axp_set_bits(POWER20_DCDC_MODESET, ((1<<1)|(1<<2)));	//use constant PWM for DC-DC2 & DC-DC3
+#endif
 	return 0;
 }
 #endif
