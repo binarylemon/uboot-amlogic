@@ -194,15 +194,13 @@ static inline int measure_current(void)
 	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
 	msleep(2);
 	Vl = get_adc_sample(7) * (2500000 / 1023);
-//	printf("%s: Vl is %duV.\n", __FUNCTION__, Vl);
 	set_gpio_mode(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), GPIO_OUTPUT_MODE);
 	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 0);
 	msleep(2);
 	Vh = get_adc_sample(7) * (2500000 / 1023);
-//	printf("%s: Vh is %duV.\n", __FUNCTION__, Vh);
 	Vdiff = Vh - Vl;
 	val = (Vdiff *1047)/(110*2);
-//	printf("%s: get from adc is %duA.\n", __FUNCTION__, val);
+	//printf("%s Vbatn:%duV Vgnd:%duV vdiff:%duV I:%duA.\n", (Vdiff>0)?"charging...":"uncharging...", Vl, Vh, Vdiff, val);
 	return val;
 }
 
@@ -218,17 +216,26 @@ static inline int measure_voltage(void)
 //	set_gpio_val(GPIOA_bank_bit0_27(22), GPIOA_bit_bit0_27(22), 1);
 	val = get_adc_sample(5) * (4 * 2500000 / 1023);
 	Icur = measure_current();
-	Vbat = val - Icur*102/1000;	//0.102
+	Vbat = val - Icur*130/1000;	//0.102
 //	printf("%s: get from adc is %duV,Vbat = .\n", __FUNCTION__, val,Vbat);
 	return Vbat;
 }
 
 
-static inline int measure_capacity(void)
-{	
-	int vbat = measure_voltage();
+static int act8942_measure_capacity_charging(void)
+{
+    int vbat = measure_voltage()-33000;  // - 33mV
+    int table_size = ARRAY_SIZE(new_bat_value_table);
+
+	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
+}
+
+static int act8942_measure_capacity_battery(void)
+{
+		
+    int vbat = measure_voltage();
 	int table_size = ARRAY_SIZE(new_bat_value_table);
-	//printf("percentage=%d\n",get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size));
+//	printk("percentage=%d\n",get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size));
 	return get_bat_percentage(vbat, new_bat_value_table, bat_level_table, table_size);
 }
 
@@ -238,6 +245,22 @@ static void set_bat_off(void)
 	return;
 }
 
+static void set_charge_current(void)
+{
+	return;
+}
+
+static struct act8942_operations act8942_pdata = {
+	.is_ac_online = is_ac_online,
+	.is_usb_online = is_usb_online,
+	.set_bat_off = set_bat_off,
+	.get_charge_status = get_charge_status,
+	.set_charge_current = set_charge_current,
+	.measure_voltage = measure_voltage,
+	.measure_current = measure_current,
+	.measure_capacity_charging = act8942_measure_capacity_charging,
+	.measure_capacity_battery = act8942_measure_capacity_battery,
+};
 #endif
 
 #if defined(CONFIG_CMD_NET)
@@ -658,7 +681,7 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-
+	act8942_init(&act8942_pdata);
 	return 0;
 }
 #endif
@@ -678,7 +701,7 @@ inline int get_key(void)
 
 inline int get_charging_percent(void)
 {
-	return measure_capacity();
+	return act8942_measure_capacity_charging();
 }
 
 inline int set_charging_current(int current)
