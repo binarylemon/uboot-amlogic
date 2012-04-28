@@ -29,6 +29,10 @@ help_customer:
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "AINOL_AML8726_E3_REF_A"
 	@echo config command: \"make m6_ainol_e3_config\"
+	
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "AINOL_AML8726_E4_REF_A"
+	@echo config command: \"make m6_ainol_e4_config\"
 
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "EMDOOR_M6_1024_600_REF_A"
