@@ -373,7 +373,7 @@ static void lcd_io_init(void)
     
     //power_on_lcd();
 	lcd_power_ctrl(ON);     
-    //set_backlight_level(DEFAULT_BL_LEVEL);
+    set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
 static int lcd_enable(void)
