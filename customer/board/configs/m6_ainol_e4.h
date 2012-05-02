@@ -103,8 +103,8 @@
 	"machid=4e23\0" \
 	"upgrade_step=0\0" \
 	"video_dev=panel\0" \
-	"display_width=1024\0" \
-	"display_height=600\0" \
+	"display_width=1280\0" \
+	"display_height=800\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
