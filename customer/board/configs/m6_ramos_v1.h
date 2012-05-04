@@ -90,6 +90,8 @@
 #define CONFIG_CMD_IMGPACK 1
 #define CONFIG_CMD_REBOOT 1
 #define CONFIG_CMD_MATH 1
+#define CONFIG_CMD_SUSPEND 1
+#define SUSPEND_WITH_SARADC_ON
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1

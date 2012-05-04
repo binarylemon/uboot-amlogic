@@ -19,6 +19,15 @@
     but this segment not cleared to zero while running "board_init_f" */
 #define CLK_UNKNOWN (0xffffffff)
 
+__u32 get_rate_xtal(void)
+{
+	unsigned long clk;
+	clk = (readl(P_PREG_CTLREG0_ADDR) >> 4) & 0x3f;
+	clk = clk * 1000 * 1000;
+	return clk;
+}
+
+
 __u32 get_cpu_clk(void)
 {
     static __u32 sys_freq=CLK_UNKNOWN;

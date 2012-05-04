@@ -154,6 +154,7 @@ endif
 COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o
 COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_VFD) += cmd_vfd.o
+COBJS-$(CONFIG_CMD_SUSPEND) += cmd_suspend.o
 COBJS-$(CONFIG_CMD_AML) += cmd_aml.o
 COBJS-$(CONFIG_EFUSE) += cmd_efuse.o
 COBJS-$(CONFIG_RTC_DAY_TEST) += cmd_rtc.o
