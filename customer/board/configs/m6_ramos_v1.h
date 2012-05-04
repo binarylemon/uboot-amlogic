@@ -132,13 +132,16 @@
 	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} >= ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
 	"custom_delay=setenv msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
 	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
-	"into_sleep=setenv sleep_enable 1; video dev bl_off; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev bl_on\0" \
+	"into_sleep=setenv sleep_enable 1; video dev bl_off; video dev disable; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev enable; video dev bl_on\0" \
 	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then setenv sleep_enable 0; fi; fi; if saradc get_in_range 0x0 0x380; then msleep 100; if saradc get_in_range 0x0 0x380; then setenv sleep_enable 0; fi; fi\0" \
 	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
 	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then run update; fi; fi; fi\0" \
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
+
+//Elvis Test!
+//"sleep_get_key=suspend; run aconline_or_not; setenv sleep_enable 0\0" \
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"

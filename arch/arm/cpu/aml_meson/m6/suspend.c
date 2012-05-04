@@ -655,7 +655,7 @@ void meson_pm_suspend(void)
 #endif
 
 	free(pdata);
-	aml_lcd_init();
+	//aml_lcd_init();
 	printf("0:0x%x; 1:0x%x; 2:0x%x; 3:0x%x\n", elvis_array[0], elvis_array[1], elvis_array[2], elvis_array[3]);
 }
 
