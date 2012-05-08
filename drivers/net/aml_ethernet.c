@@ -69,6 +69,23 @@ static int g_mac_mode = MAC_MODE_RMII_CLK_EXTERNAL;
 static int g_debug = 0;
 //#define ET_DEBUG
 
+
+
+
+
+#ifdef CONFIG_M6
+static void hardware_reset(void)
+{
+        /* PHY hardware reset */
+        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+        udelay(500000);
+        SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+        udelay(500000);
+        printf("ETH PHY hardware reset OK\n");
+
+        return;
+}
+#endif
 static void phy_reg_wr(int phyad, unsigned int reg, unsigned int val)
 {
 	unsigned long busy = 0, tmp = 0;
@@ -277,7 +294,7 @@ static void set_phy_mode()
 	unsigned int phyad = -1;
 	unsigned int val;
 
-	phyad = detect_phyad();
+	phyad = 1;
 	if (phyad > 32 || phyad < 0) {
 		return;
 	}
@@ -326,7 +343,10 @@ static int eth_reset(struct _gStruct* emac_config)
 		} else {
 			printf("Success: reset mac OK!(%d)\n", k);
 		}
-
+		
+		udelay(100000);
+		hardware_reset();
+		udelay(100000);
 		phyad = detect_phyad();
 		if (phyad > 32 || phyad < 0) {
 			continue;
@@ -946,24 +966,11 @@ int do_ethchk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
-#ifdef CONFIG_M6
-static void hardware_reset(void)
-{
-	/* PHY hardware reset */
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-	udelay(500);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-	udelay(500);
-	printf("ETH PHY hardware reset OK\n");
-
-	return;
-}
-#endif
 
 static int do_ethrst(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 #ifdef CONFIG_M6
-	hardware_reset();
+//	hardware_reset();
 #endif
 	eth_reset(gS);
 
@@ -1022,7 +1029,7 @@ static int do_ethmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	udelay(1000);
-	hardware_reset();
+	//hardware_reset();
 	eth_reset(gS);
 #endif
 

@@ -5,8 +5,8 @@ BINFILE=u-boot.bin
  
 #aml-debug-rom-sd.bin
 #u-boot-aml.bin 
-dd if=${BUILD_DIR}/${BINFILE} of=$1 bs=1 count=442 
-dd if=${BUILD_DIR}/${BINFILE} of=$1 bs=512 skip=1 seek=1 
+sudo dd if=${BUILD_DIR}/${BINFILE} of=$1 bs=1 count=442 
+sudo dd if=${BUILD_DIR}/${BINFILE} of=$1 bs=512 skip=1 seek=1 
 sync
-eject $1
+sudo eject $1
 echo FINISH
