@@ -328,6 +328,7 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
+ /* 
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -344,6 +345,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     },
+*/    
     {
         .name = NAND_NORMAL_NAME,
         .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
@@ -365,7 +367,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = 2,
+    .dev_num = 1,
 };
 #endif
 
