@@ -449,7 +449,8 @@ void init_I2C()
 /**************************/
 #ifdef CONFIG_AW_AXP20
 unsigned char vddio;
-unsigned char avdd25;
+unsigned char avdd25_reg12;
+unsigned char avdd25_reg29;
 unsigned char avdd33;
 unsigned char _3gvcc;
 unsigned char ddr15_reg12;//reg=0x12
@@ -474,42 +475,40 @@ void power_off_avdd25()
 {
 	unsigned char data;
 
-	data=i2c_axp202_read(0x29);
-	data|=0x80;//LDO3 ctr mode 
+	avdd25_reg29 = i2c_axp202_read(0x29);
+	data = avdd25_reg29|0x80;//LDO3 ctr mode 
 	i2c_axp202_write(0x29,data);
 	
-	avdd25 = i2c_axp202_read(0x12);
-	data = avdd25 & 0xbf;//ldo3
+	avdd25_reg12= i2c_axp202_read(0x12);
+	data = avdd25_reg12& 0xbf;//ldo3
 	i2c_axp202_write(0x12,data);
 /*
-	data=i2c_axp202_read(0x12);
+	data=i2c_axp202_read(0x29);
 	serial_puts("avdd25 off\n");
-	serial_put_hex(data,8);
-	serial_puts("\n");*/
-	//udelay(5);
+	serial_put_hex(avdd25_reg29,8);
+	serial_puts("\n");
+*/
 	udelay(100);
 }
 
 void power_on_avdd25()
 {
 	unsigned char data;
-	unsigned char temp;
 
-	temp=i2c_axp202_read(0x29);//Reg content is not lost when power off
-	temp|=0x80;//LDO3 ctr mode 
-	i2c_axp202_write(0x29,temp);
+	data=i2c_axp202_read(0x29);//Reg content is not lost when power off
+	data|=0x80;//LDO3 ctr mode 
+	i2c_axp202_write(0x29,data);
 
-	data = avdd25 | 0x40;//ldo3
+	data = avdd25_reg12| 0x40;//ldo3
 	i2c_axp202_write(0x12,data);
 
-	temp &=0x7f;
-	i2c_axp202_write(0x29,temp);//switch LDO mode back.
-/*	
+	i2c_axp202_write(0x29,avdd25_reg29);//switch LDO mode back.
+/*
 	serial_puts("avdd25 on\n");
-	data=i2c_axp202_read(0x12);
-	serial_put_hex(data,8);
-	serial_puts("\n");*/
-	//udelay(5);
+	data=i2c_axp202_read(0x29);
+	serial_put_hex(temp,8);
+	serial_puts("\n");
+*/
 	udelay(100);
 
 }
