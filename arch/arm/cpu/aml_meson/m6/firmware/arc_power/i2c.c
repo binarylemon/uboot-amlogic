@@ -493,13 +493,17 @@ void power_off_avdd25()
 void power_on_avdd25()
 {
 	unsigned char data;
+	unsigned char temp;
 
-	data=i2c_axp202_read(0x29);
-	data|=0x80;//LDO3 ctr mode 
-	i2c_axp202_write(0x29,data);
+	temp=i2c_axp202_read(0x29);//Reg content is not lost when power off
+	temp|=0x80;//LDO3 ctr mode 
+	i2c_axp202_write(0x29,temp);
 
 	data = avdd25 | 0x40;//ldo3
 	i2c_axp202_write(0x12,data);
+
+	temp &=0x7f;
+	i2c_axp202_write(0x29,temp);//switch LDO mode back.
 /*	
 	serial_puts("avdd25 on\n");
 	data=i2c_axp202_read(0x12);
@@ -611,13 +615,13 @@ void dc_dc2_pwm_switch(unsigned int flag)
 	if(flag)//PWM
 	{
 		data = i2c_axp202_read(0x80);
-		data |= (unsigned char)(1<<1);
+		data |= (unsigned char)(2<<1);
 		i2c_axp202_write(0x80,data);
 	}
 	else//PFM
 	{
 		data = i2c_axp202_read(0x80);
-		data &= (unsigned char)(~(1<<1));
+		data &= (unsigned char)(~(2<<1));
 		i2c_axp202_write(0x80,data);
 	}
 	udelay(100);
