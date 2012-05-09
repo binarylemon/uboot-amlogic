@@ -145,6 +145,7 @@ void disp_code()
 #define POWER_OFF_AVDD33
 #define POWER_OFF_VCCK12
 #define POWER_OFF_VDDIO
+#define DC2DC_SWITCH_PWM
 
 //#define POWER_DOWN_DDR15
 
@@ -384,6 +385,10 @@ void enter_power_down()
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
 
+#ifdef DC2DC_SWITCH_PWM
+	dc_dc2_pwm_switch(0);
+#endif
+
 // gate off REMOTE, UART
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
@@ -411,6 +416,9 @@ void enter_power_down()
 //  ee_on();
  
 //  disable_iso_ao();
+#ifdef DC2DC_SWITCH_PWM
+	dc_dc2_pwm_switch(1);
+#endif
 
 #ifdef POWER_DOWN_DDR15
 	power_up_ddr15();//1.3v -> 1.5v
