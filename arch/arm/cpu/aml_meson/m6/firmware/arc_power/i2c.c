@@ -608,22 +608,22 @@ void power_up_ddr15()
 	i2c_axp202_write(0x23, ddr15_reg23);
 }
 
-void dc_dc2_pwm_switch(unsigned int flag)
+void dc_dc_pwm_switch(unsigned int flag)
 {
 	unsigned char data;
 	if(flag)//PWM
 	{
 		data = i2c_axp202_read(0x80);
-		data |= (unsigned char)(2<<1);
+		data |= (unsigned char)(3<<1);
 		i2c_axp202_write(0x80,data);
 	}
 	else//PFM
 	{
 		data = i2c_axp202_read(0x80);
-		data &= (unsigned char)(~(2<<1));
+		data &= (unsigned char)(~(3<<1));
 		i2c_axp202_write(0x80,data);
 	}
-	udelay(100);
+	udelay(100);//>1ms@32k
 }
 
 #endif//CONFIG_AW_AXP20
