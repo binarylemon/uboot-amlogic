@@ -455,6 +455,7 @@ unsigned char avdd33;
 unsigned char _3gvcc;
 unsigned char ddr15_reg12;//reg=0x12
 unsigned char ddr15_reg23;//reg=0x23
+unsigned char dcdc_reg;
 
 void dump_pmu_reg()
 {
@@ -611,16 +612,16 @@ void power_up_ddr15()
 void dc_dc_pwm_switch(unsigned int flag)
 {
 	unsigned char data;
-	if(flag)//PWM
+	if(flag)
 	{
-		data = i2c_axp202_read(0x80);
-		data |= (unsigned char)(3<<1);
-		i2c_axp202_write(0x80,data);
+		//data = i2c_axp202_read(0x80);
+		//data |= (unsigned char)(3<<1);
+		i2c_axp202_write(0x80,dcdc_reg);
 	}
 	else//PFM
 	{
-		data = i2c_axp202_read(0x80);
-		data &= (unsigned char)(~(3<<1));
+		dcdc_reg = i2c_axp202_read(0x80);
+		data = dcdc_reg & (unsigned char)(~(3<<1));
 		i2c_axp202_write(0x80,data);
 	}
 	udelay(100);//>1ms@32k
