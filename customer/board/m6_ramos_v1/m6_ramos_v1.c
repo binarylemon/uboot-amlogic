@@ -481,3 +481,26 @@ inline int set_charging_current(int current)
 {
 	return axp_set_charging_current(current);
 }
+
+
+#ifdef CONFIG_AML_TINY_USBTOOL
+int usb_get_update_result(void)
+{
+	unsigned long upgrade_step;
+	upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
+	printf("upgrade_step = %d\n", upgrade_step);
+	if(upgrade_step == 1)
+	{
+		run_command("defenv", 1);
+		run_command("setenv upgrade_step 2", 1);
+		run_command("saveenv", 1);
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+#endif
+
+
