@@ -130,6 +130,8 @@ int ddr_init_hw(struct ddr_set * timing_reg)
     ret = timing_reg->init_pctl(timing_reg);
     if(ret){
         dtu_test_for_debug_training_result(timing_reg);
+        __udelay(10);
+        writel(1<<22, WATCHDOG_TC);
         return ret;
     }
     
