@@ -191,7 +191,8 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
 
-	m6_ddr_init_test(DDR_TEST_BASEIC);
+	if(m6_ddr_init_test(DDR_TEST_BASEIC))
+        writel((1<<22) | (3<<24), P_WATCHDOG_TC);
 
 	return 0;
 }

@@ -131,7 +131,7 @@ int ddr_init_hw(struct ddr_set * timing_reg)
     if(ret){
         dtu_test_for_debug_training_result(timing_reg);
         __udelay(10);
-        writel(1<<22, WATCHDOG_TC);
+        writel((1<<22) | (3<<24), P_WATCHDOG_TC);
         return ret;
     }
     
