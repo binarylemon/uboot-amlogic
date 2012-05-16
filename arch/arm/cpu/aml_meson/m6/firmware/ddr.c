@@ -192,7 +192,12 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 
 
 	if(m6_ddr_init_test(DDR_TEST_BASEIC))
-        writel((1<<22) | (3<<24), P_WATCHDOG_TC);
+    {
+	    serial_puts("\nDDR init test fail! Reset...\n");
+		__udelay(10000); 
+		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
+		while(1);
+	}
 
 	return 0;
 }
