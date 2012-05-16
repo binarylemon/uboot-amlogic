@@ -127,6 +127,7 @@ enum {
 	SINGLE_ENDED_MODE,	/* single ended */
 };
 #define set_sample_mode(mode) WRITE_CBUS_REG_BITS(SAR_ADC_REG3, mode, 23, 1)
+#define set_cal_voltage(sel)	WRITE_CBUS_REG_BITS(SAR_ADC_REG3, sel, 23, 3)
 
 /* TEMPSEN_PD12, TEMPSEN_MODE */
 #define set_tempsen(val)      WRITE_CBUS_REG_BITS(SAR_ADC_REG3, val, 28, 2)
@@ -271,6 +272,7 @@ void saradc_enable(void)
 	disable_detect_pullup();
 	set_detect_irq_pol(0);
 	disable_detect_irq();
+	set_cal_voltage(7);
 
 	enable_sample_engine();
 
