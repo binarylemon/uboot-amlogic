@@ -92,7 +92,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
     
     
     //CWL
-    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3) | (1 << 6 );
+    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3);// | (1 << 6 );
             	
     return nMR2;
 }
