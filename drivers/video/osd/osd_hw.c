@@ -1258,7 +1258,8 @@ void osd_init_hw(void)
 	data32  = 4   << 5;  // hold_fifo_lines
 	data32 |= 3   << 10; // burst_len_sel: 3=64
 	data32 |= 32  << 12; // fifo_depth_val: 32*8=256
-
+	data32 |= 1 << 0;
+	
 	writel(data32, P_VIU_OSD1_FIFO_CTRL_STAT);
 	writel(data32, P_VIU_OSD2_FIFO_CTRL_STAT);
 
