@@ -10,10 +10,13 @@
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-//#define CONFIG_AML_I2C      1
 
 #define HAS_AO_MODULE
 #define CONFIG_AML_I2C	//add by Elvis Yu
+#define CONFIG_CMD_I2C    1     
+#define CONFIG_SYS_I2C_SPEED 400000
+
+
 #define CONFIG_AW_AXP20
 #define BATTERYCAP				3400							//battery capability
 
