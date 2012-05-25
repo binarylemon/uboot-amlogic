@@ -657,3 +657,324 @@ int aml_i2c_init(void)
 
 	return 0;
 }
+
+
+
+/*****************************
+ ** add by wch for cmd_i2c **
+ ****************************/
+/*
+ * i2c read cmd
+ */
+int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
+{
+	int ret;
+	struct i2c_msg *msgs;
+    /*
+	 * I2C data address within the chip.  This can be 1 or
+	 * 2 bytes long.  Some day it might be 3 bytes long :-).
+	 * here,if it has 2 bytes long at most.
+	 */
+	uint8_t devaddr[2];
+
+	switch(alen)
+	{
+		case 0:							 //NO I2C data address within the chip.
+			   puts ("'*.0' shows no i2c data or register address within the chip. \n");
+     		   return -1;
+			   break;
+			   
+		case 1:							 //I2C data address:1 byte long within the chip.
+			   if(addr>0xff)
+			   {
+					puts ("'*.1' shows i2c data or register address 1 byte long within the chip. \n");
+					return -1;
+			   }
+			   else
+			   		devaddr[0] = addr & 0xff;
+			   break;	
+			   
+		case 2:							 //I2C data address:2 bytes long within the chip.
+			   if(addr>0xffff || addr<0x1ff)
+			   {
+					puts ("'*.2' shows i2c data or register address 2 bytes long within the chip. \n");
+					return -1;
+			   }
+			   else
+			   {
+			   		devaddr[0] = addr & 0xff;
+		       		devaddr[1] = (addr >> 8) & 0xff;
+			   }
+			   break;
+			   
+		case 3:							 //I2C data address:3 bytes long within the chip.
+		                                 //Here,if it has 2 bytes long at most.
+			   puts ("Here,we have set i2c data address or register address 2 bytes long at most.\n");
+			   return -1;
+			   break;
+	}
+
+
+	if(len==1)
+	{
+		struct i2c_msg msg[] = {
+        	{
+            	.addr = chip,
+            	.flags = 0,
+            	.len = alen,             //I2C data address length.
+            	.buf = devaddr,
+        	},
+        	{
+            	.addr = chip,
+            	.flags = 1,
+            	.len = 1,                //read 1 byte from I2C data address.
+            	.buf = buffer,
+        	}
+    	};
+		msgs = msg;
+	}
+	else if(len>1)
+	{
+		struct i2c_msg msg[] = {
+        	{
+            	.addr = chip,
+            	.flags = 0,
+            	.len = alen,             //I2C data address length.
+            	.buf = devaddr,
+        	},
+        	{
+            	.addr = chip,
+            	.flags = 1,
+            	.len = len,              //read len bytes from I2C data address.
+            	.buf = buffer,
+        	}
+		};
+		msgs = msg;
+	}
+	
+	ret = aml_i2c_xfer(msgs, 2);
+    if (ret < 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+		return ret;
+    }
+
+/*	
+	printf("chip=0x%x,addr=0x%x,alen=%d,len=%d",chip,addr,alen,len);
+    for(ret=0;ret<len;ret++)
+		printf(",buffer[%d]=0x%x",ret,*buffer++);
+	printf("\n");
+*/
+
+	return 0;
+}
+
+
+
+/*
+ * i2c write cmd
+ */
+int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buffer, int len)
+{
+	int ret;
+	int length;
+	struct i2c_msg *msgs;
+	uint8_t buff[3];
+
+    /*
+	 * I2C data address within the chip.  This can be 1 or
+	 * 2 bytes long.  Some day it might be 3 bytes long :-).
+	 * here,if it has 2 bytes long at most.
+	 */
+	uint8_t devaddr[2];
+
+	switch(alen)                        
+	{
+		case 0:							//NO I2C data address within the chip.
+			   puts ("'*.0' shows no i2c data or register address within the chip. \n");
+			   return -1;
+			   break;
+			   
+		case 1:							//I2C data address:1 byte long within the chip.
+			   if(addr>0xff)
+			   {
+					puts ("'*.1' shows i2c data or register address 1 byte long within the chip. \n");
+					return -1;
+			   }
+			   else
+			   		devaddr[0] = addr & 0xff;
+			   break;	
+			   
+		case 2:							//I2C data address:2 bytes long within the chip.
+			   if(addr>0xffff || addr<0x1ff)
+			   {
+					puts ("'*.2' shows i2c data or register address 2 bytes long within the chip. \n");
+					return -1;
+			   }
+			   else
+			   {
+			   		devaddr[0] = addr & 0xff;
+		       		devaddr[1] = (addr >> 8) & 0xff;
+			   }
+			   break;
+			   
+		case 3:							//I2C data address:3 bytes long within the chip.
+		                                //Here,if it has 2 bytes long at most.
+			   puts ("Here,we have set i2c data address or register address 2 bytes long at most.\n");
+			   return -1;
+			   break;
+	}
+
+	if(len==1)
+	{
+		switch(alen)                        
+		{
+		   
+			case 1:					
+				   buff[0] = devaddr[0];
+				   buff[1] = *buffer;
+				   length = 2;
+			       break;	
+			   
+			case 2:						
+			       buff[0] = devaddr[0];
+			       buff[1] = devaddr[1];
+			       buff[2] = *buffer;
+			       length = 3;
+			       break;
+			/*	   
+			case 3:
+				   //when i2c data address or register address 3 bytes long ,here should be completed.
+				   break;
+			*/
+
+		}
+
+    	struct i2c_msg msg[] = {
+        	{
+       	 	.addr = chip,
+        	.flags = 0,
+        	.len = length,
+        	.buf = buff,
+       		}
+    	};
+		msgs = msg;
+	}
+	else
+	{
+	    /*
+		 * This section may be modified when len > 1.
+	     */
+		printf("I2C write data length is %d. \n",len);
+		return -1;
+	}
+	
+	ret = aml_i2c_xfer(msgs, 1);
+    if (ret < 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+		return ret;
+    }
+
+	return 0;
+}
+
+
+
+/*
+ * i2c probe cmd
+ * return 0:i2c probe ok, non 0:i2c probe failed.
+ */
+int i2c_probe(uchar chip)
+{
+	int ret;
+    unsigned int addr=0x00;		//i2c data or register address
+	struct aml_i2c *i2c = &g_aml_i2c_data;
+	struct i2c_msg * p=0;
+
+    struct i2c_msg msg[] = {
+        	{
+       	 	.addr = chip,
+        	.flags = 0,			//write
+        	.len = 1,
+         	.buf = &addr,
+       		}
+    	};
+
+
+	i2c->ops->xfer_prepare(i2c);
+
+	
+	p = &msg[0];
+	i2c->msg_flags = p->flags;
+	ret = i2c->ops->do_address(i2c, p->addr);
+
+	if (p->flags & I2C_M_RD)
+		ret = i2c->ops->read(i2c, p->buf, p->len);
+	else
+		ret = i2c->ops->write(i2c, p->buf, p->len);
+	
+	i2c->ops->stop(i2c);
+
+	if(ret==0)
+		return 0;          	 	//This chip valid. 
+	else
+		return ret;         	//This chip invalid.
+}
+
+
+
+/*
+ * i2c reset cmd
+ */
+void i2c_init(int speed, int slaveaddr)
+{ 
+	#define AML_I2C_SPPED_400K 400000		 //The initial value of amlogic i2c speed           
+	
+	extern struct aml_i2c_platform g_aml_i2c_plat; 
+    g_aml_i2c_plat.master_i2c_speed = AML_I2C_SPPED_400K; 
+    aml_i2c_init();
+}
+
+
+
+/*
+ * i2c speed cmd
+ * get i2c speed
+ */
+unsigned int i2c_get_bus_speed(void)
+{
+
+	extern struct aml_i2c_platform g_aml_i2c_plat; 
+	return g_aml_i2c_plat.master_i2c_speed;
+}
+
+
+
+/*
+ * i2c speed xxx cmd
+ * set i2c speed
+ */
+int i2c_set_bus_speed(unsigned int speed)
+{
+/*
+#define AML_I2C_SPPED_50K			50000
+#define AML_I2C_SPPED_100K			100000
+#define AML_I2C_SPPED_200K			200000
+#define AML_I2C_SPPED_300K			300000
+#define AML_I2C_SPPED_400K			400000
+*/
+	extern struct aml_i2c_platform g_aml_i2c_plat; 
+
+	if((speed==50000) || (speed==100000) || (speed==200000) || (speed==300000) || (speed==400000))
+    {
+    	g_aml_i2c_plat.master_i2c_speed = speed;  
+    	aml_i2c_init();
+		return 0;
+	}
+	else
+	{
+		printf("The I2C speed setting don't match,should choose:50000,100000,200000,300000 or 400000.\n");
+		return -1;
+	}
+	
+}
+

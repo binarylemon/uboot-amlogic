@@ -151,7 +151,7 @@ static struct nand_ecclayout aml_nand_oob_1792 = {
 	.eccbytes = 1664,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 128}}
+		 .length = 64}}
 };
 
 static struct nand_ecclayout aml_nand_oob_3008 = {
@@ -753,15 +753,14 @@ static int aml_platform_wait_devready(struct aml_nand_chip *aml_chip, int chipnr
 	/* wait until command is processed or timeout occures */
 	aml_chip->aml_nand_select_chip(aml_chip, chipnr);
 	do {
-		if (aml_chip->ops_mode & AML_MULTI_CHIP_SHARE_RB) {
+ 		if (aml_chip->ops_mode & AML_CHIP_NONE_RB) {
+			//udelay(chip->chip_delay);
 			aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, chipnr);
+			udelay(2);
 			status = (int)chip->read_byte(mtd);
 			if (status & NAND_STATUS_READY)
 				break;
-		}
-		else if (aml_chip->ops_mode & AML_CHIP_NONE_RB) {
-			udelay(chip->chip_delay);
-			break;
+			udelay(20);
 		}
 		else {
 			if (chip->dev_ready(mtd))
@@ -832,40 +831,31 @@ static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 			//active ce for operation chip and send cmd
 			aml_chip->aml_nand_select_chip(aml_chip, i);
 
-			if (aml_chip->ops_mode & AML_MULTI_CHIP_SHARE_RB) {
+			if ((state == FL_ERASING) && (chip->options & NAND_IS_AND))
+				aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
+			else
+				aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
 
-				time_cnt = 0;
-				while (time_cnt++ < 0x10000) {
-					if (state == FL_ERASING)
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
-					else
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
-					status[i] = (int)chip->read_byte(mtd);
-					if (status[i] & NAND_STATUS_READY)
+			time_cnt = 0;
+			while (time_cnt++ < 0x40000) {
+				if (chip->dev_ready) {
+					if (chip->dev_ready(mtd))
 						break;
 					udelay(2);
-				}
-			}
-			else {
-				if ((state == FL_ERASING) && (chip->options & NAND_IS_AND))
-					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS_MULTI, -1, -1, i);
-				else
+				} else {
+					if(time_cnt == 1)
+			                    udelay(500);
+					if (chip->read_byte(mtd) & NAND_STATUS_READY)
+						break;
 					aml_chip->aml_nand_command(aml_chip, NAND_CMD_STATUS, -1, -1, i);
-
-				time_cnt = 0;
-				while (time_cnt++ < 0x10000) {
-					if (chip->dev_ready) {
-						if (chip->dev_ready(mtd))
-							break;
-					} else {
-						if (chip->read_byte(mtd) & NAND_STATUS_READY)
-							break;
-					}
-					udelay(2);
+					udelay(50);
+					
 				}
+				//udelay(200);
+			}
 				status[i] = (int)chip->read_byte(mtd);
                 //printk("s:%x\n", status[i]);
-			}
+
 
 			status[0] |= status[i];
 		}
@@ -1401,6 +1391,8 @@ static int aml_nand_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip, 
 					goto exit;
 				}
 
+				if (aml_chip->ops_mode & AML_CHIP_NONE_RB) 
+					chip->cmd_ctrl(mtd, NAND_CMD_READ0 & 0xff, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
 				if (aml_chip->plane_num == 2) {
 
 					aml_chip->aml_nand_command(aml_chip, NAND_CMD_TWOPLANE_READ1, 0x00, page_addr, i);
@@ -1551,6 +1543,8 @@ static int aml_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip
 					goto exit;
 				}
 
+				if (aml_chip->ops_mode & AML_CHIP_NONE_RB) 
+					chip->cmd_ctrl(mtd, NAND_CMD_READ0 & 0xff, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
 				if (aml_chip->plane_num == 2) {
 
 					aml_chip->aml_nand_command(aml_chip, NAND_CMD_TWOPLANE_READ1, 0x00, page_addr, i);
@@ -1806,6 +1800,8 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 					error = -EBUSY;
 					goto exit;
 				}
+				if (aml_chip->ops_mode & AML_CHIP_NONE_RB) 
+					chip->cmd_ctrl(mtd, NAND_CMD_READ0 & 0xff, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
 
 				if (aml_chip->plane_num == 2) {
 
@@ -3300,10 +3296,10 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		aml_chip->rb_enable[i] = (((plat->ready_busy_pad >> i*4) & 0xf) << 10);
 	}
 	if (!aml_chip->rb_enable[0]) {
-        printk("none RB\n");
 		aml_chip->ops_mode |= AML_CHIP_NONE_RB;
 		chip->dev_ready = NULL;
-		chip->chip_delay = 200;
+		chip->chip_delay = 100;
+		printk("#####%s, none RB and chip->chip_delay:%d\n", __func__, chip->chip_delay);
 	}
 
 	aml_chip->aml_nand_hw_init(aml_chip);

@@ -69,10 +69,12 @@ static void m3_nand_select_chip(struct aml_nand_chip *aml_chip, int chipnr)
 					if (!((aml_chip->chip_enable[i] >> 10) & 8))
 						SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));
 
-					if (!((aml_chip->rb_enable[i] >> 10) & 1))
-						SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 17));
-					if (!((aml_chip->rb_enable[i] >> 10) & 2))
-						SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 16));
+					if ((aml_chip->ops_mode & AML_CHIP_NONE_RB) == 0){ 
+						if (!((aml_chip->rb_enable[i] >> 10) & 1))
+							SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 17));
+						if (!((aml_chip->rb_enable[i] >> 10) & 2))
+							SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 16));
+					}
 				}
 			}
 
