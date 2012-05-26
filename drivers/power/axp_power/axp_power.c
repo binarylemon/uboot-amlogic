@@ -3,7 +3,7 @@
 #include <asm/arch/i2c.h>
 #include <aml_i2c.h>
 
-#include "axp-mfd.h"
+#include <axp-mfd.h>
 
 #define AXP_I2C_ADDR 0x34
 
@@ -174,4 +174,71 @@ void axp_power_off(void)
 	printf("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 }
 
+
+int check_axp_regulator_for_m6_board(void)
+{
+	int ret = 0;
+	uint8_t reg_data;
+	
+	//check work mode for DCDC2 & DCDC3
+	axp_read(POWER20_DCDC_MODESET, &reg_data);
+	if(!((reg_data&(1<<1) )&&(reg_data&(1<<2) )))
+	{
+		axp_set_bits(POWER20_DCDC_MODESET, ((1<<1)|(1<<2)));	//use constant PWM for DC-DC2 & DC-DC3
+		printf("Use constant PWM for DC-DC2 & DC-DC3. But the register is 0x%x before\n", reg_data);
+		mdelay(10);
+		ret = 1;
+	}
+
+	axp_read(0x81, &reg_data);	//check switch for  LDO3 under voltage protect
+	if(reg_data & (1<<2))
+	{
+		printf("Disable LDO3 under voltage protect. But the register is 0x%x before\n", reg_data);
+		reg_data &= ~(1<<2);	//disable LDO3 under voltage protect
+		axp_write(0x81, reg_data);	
+		mdelay(10);
+		ret = 1;
+	}
+
+	//check for DCDC2(DDR3_1.5V)
+	axp_read(POWER20_DC2OUT_VOL, &reg_data);
+	if(reg_data != 0x20)
+	{
+		axp_write(POWER20_DC2OUT_VOL, 0x20);	//set DCDC2(DDR3_1.5V) to 1.500V
+		printf("Set DCDC2(DDR3_1.5V) to 1.500V. But the register is 0x%x before\n", reg_data);
+		mdelay(10);
+		ret = 1;
+	}
+
+	//check for DCDC3(VDD_AO)
+	axp_read(POWER20_DC3OUT_VOL, &reg_data);
+	if(reg_data != 0x10)
+	{
+		axp_write(POWER20_DC3OUT_VOL, 0x10);	//set DCDC3(VDD_AO) to 1.100V
+		printf("Set DCDC3(VDD_AO) to 1.100V. But the register is 0x%x before\n", reg_data);
+		mdelay(10);
+		ret = 1;
+	}
+
+	//check for LDO2(VDDIO_AO) & LDO4(AVDD3.3V)
+	axp_read(POWER20_LDO24OUT_VOL, &reg_data);
+	if(reg_data != 0xcf)
+	{
+		axp_write(POWER20_LDO24OUT_VOL, 0xcf);	//set LDO2(VDDIO_AO) to 3.000V; set LDO4(AVDD3.3V) to 3.300V
+		printf("Set  LDO2(VDDIO_AO) to 3.000V; Set LDO4(AVDD3.3V) to 3.300V. But the register is 0x%x before\n", reg_data);
+		mdelay(10);
+		ret = 1;
+	}
+
+	//check for LDO2(AVDD2.5V)
+	axp_read(POWER20_LDO3OUT_VOL, &reg_data);
+	if(reg_data != 0x48)
+	{
+		axp_write(POWER20_LDO3OUT_VOL, 0x48);	//set LDO2(AVDD2.5V) to 2.500V;
+		printf("set LDO2(AVDD2.5V) to 2.500V. But the register is 0x%x before\n", reg_data);
+		mdelay(10);
+		ret = 1;
+	}
+	return ret;
+}
 

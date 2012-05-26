@@ -1,6 +1,6 @@
 #ifndef	_LINUX_AXP_SPLY_H_
 #define	_LINUX_AXP_SPLY_H_
-#include "axp-mfd.h"
+#include <axp-mfd.h>
 
 /*      AXP18      */
 #define	AXP18_STATUS						POWER18_STATUS
