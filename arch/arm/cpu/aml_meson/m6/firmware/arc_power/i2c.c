@@ -448,6 +448,13 @@ void init_I2C()
 /*******AXP202 PMU*********/
 /**************************/
 #ifdef CONFIG_AW_AXP20
+#define POWER20_DCDC_MODESET        (0x80)
+#define POWER20_DC2OUT_VOL          (0x23)
+#define POWER20_DC3OUT_VOL          (0x27)
+#define POWER20_LDO24OUT_VOL        (0x28)
+#define POWER20_LDO3OUT_VOL         (0x29)
+
+
 unsigned char vddio;
 unsigned char avdd33;
 unsigned char _3gvcc;
@@ -599,6 +606,95 @@ void dc_dc_pwm_switch(unsigned int flag)
 	}
 	udelay(100);//>1ms@32k
 }
+
+int check_all_regulators(void)
+{
+	int ret = 0;
+	unsigned char reg_data;
+	
+	f_serial_puts("Check all regulator\n");
+	
+	//check work mode for DCDC2 & DCDC3
+	reg_data = i2c_axp202_read(POWER20_DCDC_MODESET);
+	if(!((reg_data&(1<<1) )&&(reg_data&(1<<2) )))
+	{
+		f_serial_puts("Use constant PWM for DC-DC2 & DC-DC3. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		reg_data |= ((1<<1)|(1<<2));
+		i2c_axp202_write(POWER20_DCDC_MODESET, reg_data);	//use constant PWM for DC-DC2 & DC-DC3
+		udelay(10000);
+		ret = 1;
+	}
+
+	reg_data = i2c_axp202_read(0x81);	//check switch for  LDO3 under voltage protect
+	if(reg_data & (1<<2))
+	{
+		f_serial_puts("Disable LDO3 under voltage protect. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		reg_data &= ~(1<<2);	//disable LDO3 under voltage protect
+		i2c_axp202_write(0x81, reg_data);	
+		udelay(10000);
+		ret = 1;
+	}
+
+	//check for DCDC2(DDR3_1.5V)
+	reg_data = i2c_axp202_read(POWER20_DC2OUT_VOL);
+	if(reg_data != 0x20)
+	{
+		i2c_axp202_write(POWER20_DC2OUT_VOL, 0x20);	//set DCDC2(DDR3_1.5V) to 1.500V
+		f_serial_puts("Set DCDC2(DDR3_1.5V) to 1.500V. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		udelay(10000);
+		ret = 1;
+	}
+
+	//check for DCDC3(VDD_AO)
+	reg_data = i2c_axp202_read(POWER20_DC3OUT_VOL);
+	if(reg_data != 0x10)
+	{
+		i2c_axp202_write(POWER20_DC3OUT_VOL, 0x10);	//set DCDC3(VDD_AO) to 1.100V
+		f_serial_puts("Set DCDC3(VDD_AO) to 1.100V. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		udelay(10000);
+		ret = 1;
+	}
+
+	//check for LDO2(VDDIO_AO) & LDO4(AVDD3.3V)
+	reg_data = i2c_axp202_read(POWER20_LDO24OUT_VOL);
+	if(reg_data != 0xcf)
+	{
+		i2c_axp202_write(POWER20_LDO24OUT_VOL, 0xcf);	//set LDO2(VDDIO_AO) to 3.000V; set LDO4(AVDD3.3V) to 3.300V
+		f_serial_puts("Set  LDO2(VDDIO_AO) to 3.000V; Set LDO4(AVDD3.3V) to 3.300V. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		udelay(10000);
+		ret = 1;
+	}
+
+	//check for LDO2(AVDD2.5V)
+	reg_data = i2c_axp202_read(POWER20_LDO3OUT_VOL);
+	if(reg_data != 0x48)
+	{
+		i2c_axp202_write(POWER20_LDO3OUT_VOL, 0x48);	//set LDO2(AVDD2.5V) to 2.500V;
+		f_serial_puts("set LDO2(AVDD2.5V) to 2.500V. But the register is 0x");
+		serial_put_hex(reg_data, 8);
+		f_serial_puts(" before\n");
+ 		wait_uart_empty();
+		udelay(10000);
+		ret = 1;
+	}
+	return ret;
+}
+
 
 #endif//CONFIG_AW_AXP20
 
