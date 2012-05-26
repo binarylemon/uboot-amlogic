@@ -837,8 +837,11 @@ void power_down_ddr_phy(void)
 	APB_Wr(PUB_PIR_ADDR,APB_Rd(PUB_PIR_ADDR)|(1<<17));
 }
 
+#define P_AM_ANALOG_TOP_REG1                       0xc11081bc
 void init_ddr_pll(void)
 {
+#if 0
+	reset_ddrpll:
 	//reset pll
 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<29),P_HHI_DDR_PLL_CNTL);
 	
@@ -846,9 +849,41 @@ void init_ddr_pll(void)
 	writel(v_ddr_pll_cntl3,P_HHI_DDR_PLL_CNTL3);
 	writel(v_ddr_pll_cntl4,P_HHI_DDR_PLL_CNTL4);
 	writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
-	do{
-		__udelay(1000);
-	}while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000) == 0);
+    
+    __udelay(1000);
+    while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000) == 0)
+    {
+        clrbits_le32(P_AM_ANALOG_TOP_REG1,1);
+        setbits_le32(P_AM_ANALOG_TOP_REG1,1);
+        goto reset_ddrpll;
+    }
+#endif /* 0 */
+
+// Mike's code
+	int i;
+	
+reset_ddrpll:
+	i=0;
+	// reset bandgap
+    clrbits_le32(P_AM_ANALOG_TOP_REG1,1);
+    setbits_le32(P_AM_ANALOG_TOP_REG1,1);
+    __udelay(1000);
+
+	//reset pll
+	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<29),P_HHI_DDR_PLL_CNTL);
+	// program the PLL	
+	writel(v_ddr_pll_cntl2,P_HHI_DDR_PLL_CNTL2);
+	writel(v_ddr_pll_cntl3,P_HHI_DDR_PLL_CNTL3);
+	writel(v_ddr_pll_cntl4,P_HHI_DDR_PLL_CNTL4);
+	writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
+    
+    do {
+    	__udelay(1000);
+    	if (i++ >= 100000)
+    		goto reset_ddrpll;   // excessive error, let's try again
+    } while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000) == 0);
+    
+	return;
 }
 
 void enable_retention(void)
