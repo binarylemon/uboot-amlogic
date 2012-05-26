@@ -28,11 +28,11 @@ U_BOOT_CMD(
 	"This command will get POWER key'\n"
 );
 
+#ifdef CHECK_ALL_REGULATORS
 static inline int do_chk_all_regulators (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	return check_all_regulators();
 }
-
 
 U_BOOT_CMD(
 	chk_all_regulators,	1,	0,	do_chk_all_regulators,
@@ -40,7 +40,7 @@ U_BOOT_CMD(
 	"/N\n"
 	"This command will check all regulators\n"
 );
-
+#endif
 
 static inline int do_ac_online (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
