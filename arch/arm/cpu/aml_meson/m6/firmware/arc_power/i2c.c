@@ -680,12 +680,12 @@ int check_all_regulators(void)
 		ret = 1;
 	}
 
-	//check for LDO2(AVDD2.5V)
+	//check for LDO3(AVDD2.5V)
 	reg_data = i2c_axp202_read(POWER20_LDO3OUT_VOL);
 	if(reg_data != 0x48)
 	{
-		i2c_axp202_write(POWER20_LDO3OUT_VOL, 0x48);	//set LDO2(AVDD2.5V) to 2.500V;
-		f_serial_puts("set LDO2(AVDD2.5V) to 2.500V. But the register is 0x");
+		i2c_axp202_write(POWER20_LDO3OUT_VOL, 0x48);	//set LDO3(AVDD2.5V) to 2.500V;
+		f_serial_puts("set LDO3(AVDD2.5V) to 2.500V. But the register is 0x");
 		serial_put_hex(reg_data, 8);
 		f_serial_puts(" before\n");
  		wait_uart_empty();
