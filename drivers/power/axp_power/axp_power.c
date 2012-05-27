@@ -211,8 +211,8 @@ int check_axp_regulator_for_m6_board(void)
 
 	//check for DCDC2(DDR3_1.5V)
 #ifdef CONFIG_DCDC2_VOLTAGE
-#if ((CONFIG_DCDC2_VOLTAGE<700) || (CONFIG_DCDC2_VOLTAGE>3500))
-#error CONFIG_DCDC2_VOLTAGE not in the range 700~3500mV
+#if ((CONFIG_DCDC2_VOLTAGE<700) || (CONFIG_DCDC2_VOLTAGE>2275))
+#error CONFIG_DCDC2_VOLTAGE not in the range 700~2275mV
 #endif
 	val = (CONFIG_DCDC2_VOLTAGE-700)/25;
 	axp_read(POWER20_DC2OUT_VOL, &reg_data);
