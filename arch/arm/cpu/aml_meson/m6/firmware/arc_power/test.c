@@ -146,6 +146,7 @@ void disp_code()
 #define POWER_OFF_VCCK12
 #define POWER_OFF_VDDIO
 #define DCDC_SWITCH_PWM
+#define CHECK_ALL_REGULATORS
 
 //#define POWER_DOWN_DDR15
 
@@ -271,6 +272,7 @@ void enter_power_down()
 //	disp_pctl();
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
+
 	f_serial_puts("step 1\n");
 
 
@@ -299,6 +301,9 @@ void enter_power_down()
 
 #endif
 
+#ifdef CHECK_ALL_REGULATORS
+	check_all_regulators();
+#endif
 
 #ifdef pwr_ddr_off
  	f_serial_puts("step 2\n");

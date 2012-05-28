@@ -16,9 +16,19 @@
 #define CONFIG_CMD_I2C    1     
 #define CONFIG_SYS_I2C_SPEED 400000
 
-
+#define CHECK_ALL_REGULATORS
 #define CONFIG_AW_AXP20
+#ifdef CONFIG_AW_AXP20
+#define CONFIG_CONST_PWM_FOR_DCDC
+#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
+#define CONFIG_DCDC2_VOLTAGE	1500
+#define CONFIG_DCDC3_VOLTAGE	1100
+#define CONFIG_LDO2_VOLTAGE	3000
+#define CONFIG_LDO3_VOLTAGE	2500
+#define CONFIG_LDO4_VOLTAGE	3300
+
 #define BATTERYCAP				3400							//battery capability
+#endif
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -126,7 +136,7 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt a9_clk_max=1320000000 no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
+	"preboot=chk_all_regulators; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \

@@ -21,7 +21,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-
 #if defined(CONFIG_CMD_NET)
 
 /*************************************************
@@ -440,13 +439,12 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-#ifdef CONFIG_AW_AXP20
-	#define POWER20_DCDC_MODESET        (0x80)
-	axp_set_bits(POWER20_DCDC_MODESET, ((1<<1)|(1<<2)));	//use constant PWM for DC-DC2 & DC-DC3
-#endif
+
 	return 0;
 }
 #endif
+
+
 
 
 //POWER key
@@ -502,5 +500,11 @@ int usb_get_update_result(void)
 	}
 }
 #endif
+
+inline int check_all_regulators(void)
+{
+	printf("Check all regulator\n");
+	return check_axp_regulator_for_m6_board();
+}
 
 
