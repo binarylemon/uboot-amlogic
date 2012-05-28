@@ -16,9 +16,26 @@ ARCDUMPELF = arc-elf32-elfdump
 ARCDUMP_FLAGS = -z
 ARCCPP=arc-elf32-cpp
 
-ARCCC_FLAGS = -mA7 -mno-volatile-cache -O2 -D__ARC__ -DCONFIG_ARC -I. -Iinclude -Wall
+#ARCCC_FLAGS = -mA7 -mno-volatile-cache -O2 -D__ARC__ -DCONFIG_ARC -I. -Iinclude -Wall
+ARCCC_FLAGS = -mA7 -mno-volatile-cache -O2 -D__ARC__ -DCONFIG_ARC  -Iinclude -Wall
 ARCCC_FLAGS += -g -MD -mno-sdata -fno-builtin -ffreestanding -nostdinc -isystem -pipe -fomit-frame-pointer
 AARCC_FLAGS += -Wstrict-prototypes -fno-stack-protector -D__KERNEL__ -mno-cond-exec
+
+ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
+VPATH_LIST = $(TOPDIR)/customer/board/$(BOARD) \
+		$(SRCTREE)/$(CPUDIR)/$(SOC)  \
+		$(SRCTREE)/$(CPUDIR)
+else
+VPATH_LIST=	$(TOPDIR)/board/$(BOARDDIR) \
+		$(SRCTREE)/$(CPUDIR)/$(SOC) \
+		$(SRCTREE)/$(CPUDIR)
+endif
+
+VPATH_LIST:=$(VPATH_LIST:%=%/firmware/arc_power/)
+ARCCC_FLAGS += $(VPATH_LIST:%=-I%)
+vpath %.c $(VPATH_LIST)
+
+ARCCC_FLAGS += -I.
 
 ARCASM_FLAGS = -D__ASSEMBLY__ $(CC_FLAGS)
 
@@ -34,10 +51,16 @@ define MAP_OUT_OPTION
 	  -Map $(obj)code_elf.map
 endef
 
-CSRCS = $(wildcard *.c lib/*.c)
+
+#CSRCS = $(wildcard *.c lib/*.c)
+CSRCS = clk_util.c i2c.c mmc.c suspend.c lib/*.c
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
-all : clean $(obj)code_elf.out 
+#all : clean $(obj)code_elf.out 
+all : clean $(obj)code_elf.out $(obj)arc_pwr.bin
+
+$(obj)arc_pwr.bin: $(obj)code_elf.out
+	$(ARCOBJCOPY) -I elf32-little --gap-fill=0xff -O binary $< $@
 
 $(obj)code_elf.out: $(obj)romboot.lds Makefile  $(OBJS) $(obj)start_arc.o
 	$(ARCLD) $(ARCLD_FLAGS) $(filter %.o,$^)  $(MAP_OUT_OPTION) --cref -o $@
@@ -71,6 +94,13 @@ clean:
 	rm -r -f $(obj)
 	rm -f $(SRCTREE)/build/include2/arc_code.dat
 	
+help:
+	@echo "test arc_power"
+	@echo "VPATH_LIST="$(VPATH_LIST)
+	@echo "SRCTREE="$(SRCTREE)
+	@echo "CPUDIR="$(CPUDIR)
+	@echo "SOC="$(SOC)
+
 $(obj)romboot.lds: romboot.lds
 	@$(call MKDIR, $(@D))	
 	$(ARCCPP) $(ARCCPPFLAGS) $(ARCLDPPFLAGS) -std=c99 -D__ASSEMBLY__ -P - <$^ >$@

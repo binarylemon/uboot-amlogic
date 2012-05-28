@@ -21,3 +21,7 @@ all:
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+
+
+help:
+	make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power help
