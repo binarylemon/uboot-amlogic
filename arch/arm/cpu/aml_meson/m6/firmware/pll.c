@@ -41,14 +41,29 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	
 	
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
-    Wr( HHI_A9_CLK_CNTL, 0);	
-	
-	M6_PLL_RESET(HHI_SYS_PLL_CNTL);
-	Wr(HHI_SYS_PLL_CNTL2,M6_SYS_PLL_CNTL_2);
-	Wr(HHI_SYS_PLL_CNTL3,M6_SYS_PLL_CNTL_3);
-	Wr(HHI_SYS_PLL_CNTL4,M6_SYS_PLL_CNTL_4);
-	Wr(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
-	M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
+    Wr( HHI_A9_CLK_CNTL, 0);
+
+	__udelay(100);
+
+	do{
+		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
+		//Note: once SYS PLL is up, there is no need to 
+		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
+		//          lock fail
+		Wr_reg_bits(HHI_MPLL_CNTL5,0,0,1);
+		__udelay(10);
+		Wr_reg_bits(HHI_MPLL_CNTL5,1,0,1);
+		__udelay(1000); //1ms for bandgap bootup
+		
+		M6_PLL_RESET(HHI_SYS_PLL_CNTL);
+		Wr(HHI_SYS_PLL_CNTL2,M6_SYS_PLL_CNTL_2);
+		Wr(HHI_SYS_PLL_CNTL3,M6_SYS_PLL_CNTL_3);
+		Wr(HHI_SYS_PLL_CNTL4,M6_SYS_PLL_CNTL_4);
+		Wr(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
+		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
+
+		__udelay(500); //wait 100us for PLL lock		
+	}while((Rd(HHI_SYS_PLL_CNTL)&0x80000000)==0);
 
 	//A9 clock setting	
 	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl & (~(1<<7))));
@@ -63,16 +78,6 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr(HHI_VIID_PLL_CNTL4, M6_VIID_PLL_CNTL_4 );
 	Wr(HHI_VIID_PLL_CNTL,  0x20242 );
 	M6_PLL_WAIT_FOR_LOCK(HHI_VIID_PLL_CNTL);
-
-
-	//VID PLL
-	M6_PLL_RESET(HHI_VID_PLL_CNTL);
-	Wr(HHI_VID_PLL_CNTL2, M6_VID_PLL_CNTL_2 );
-	Wr(HHI_VID_PLL_CNTL3, M6_VID_PLL_CNTL_3 );
-	Wr(HHI_VID_PLL_CNTL4, M6_VID_PLL_CNTL_4 );
-	Wr(HHI_VID_PLL_CNTL,  0xb0442 );
-	M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
-
 
 	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
 	M6_PLL_RESET(HHI_MPLL_CNTL);	
@@ -90,6 +95,28 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	
 	//clk81=fclk_div5 /2=400/2=200M
 	Wr(HHI_MPEG_CLK_CNTL, plls->mpeg_clk_cntl );
+
+
+	//VID PLL
+	do{
+		//BANDGAP reset for VID_PLL,DDR_PLL lock fail
+		//Note: once VID PLL is up, there is no need to 
+		//          use AM_ANALOG_TOP_REG1 for DDR PLL
+		//          lock fail
+		Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
+		__udelay(10);
+		Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
+		__udelay(1000); //1ms for bandgap bootup
+		
+		M6_PLL_RESET(HHI_VID_PLL_CNTL);
+		Wr(HHI_VID_PLL_CNTL2, M6_VID_PLL_CNTL_2 );
+		Wr(HHI_VID_PLL_CNTL3, M6_VID_PLL_CNTL_3 );
+		Wr(HHI_VID_PLL_CNTL4, M6_VID_PLL_CNTL_4 );
+		Wr(HHI_VID_PLL_CNTL,  0xb0442 );
+		//M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
+
+		__udelay(500); //wait 100us for PLL lock		
+	}while((Rd(HHI_VID_PLL_CNTL)&0x80000000)==0);
 
  	__udelay(100);
 	

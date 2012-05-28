@@ -724,12 +724,13 @@ int main(void)
 }
 unsigned clk_settings[2]={0,0};
 unsigned pll_settings[2][4]={{0,0,0},{0,0,0}};
+#define CONFIG_SYS_PLL_SAVE
 void store_restore_plls(int flag)
 {
     int i;
     if(flag)
     {
-#ifdef POWER_OFF_EE 
+#ifdef CONFIG_SYS_PLL_SAVE 
         pll_settings[0][0]=readl(P_HHI_SYS_PLL_CNTL);
         pll_settings[0][1]=readl(P_HHI_SYS_PLL_CNTL2);
         pll_settings[0][2]=readl(P_HHI_SYS_PLL_CNTL3);		
@@ -741,20 +742,60 @@ void store_restore_plls(int flag)
 */
         clk_settings[0]=readl(P_HHI_SYS_CPU_CLK_CNTL);
         clk_settings[1]=readl(P_HHI_MPEG_CLK_CNTL);
-#endif
+#endif //CONFIG_SYS_PLL_SAVE
 
         save_ddr_settings();
         return;
     }    
     
-#ifdef POWER_OFF_EE 
-    /* restore from default settings */ 
+#ifdef CONFIG_SYS_PLL_SAVE 
+
+	/*
+	//restore from default settings  
     writel(pll_settings[0][0]|0x40000000, P_HHI_SYS_PLL_CNTL);
     writel(pll_settings[0][1], P_HHI_SYS_PLL_CNTL2);
     writel(pll_settings[0][2], P_HHI_SYS_PLL_CNTL3);	
     writel(pll_settings[0][3], P_HHI_SYS_PLL_CNTL4);
     writel(pll_settings[0][0]&(~0x40000000),P_HHI_SYS_PLL_CNTL);
-    writel(1<<2, P_RESET5_REGISTER);
+    //writel(1<<2, P_RESET5_REGISTER);
+	*/
+
+	//temp define
+#define P_HHI_MPLL_CNTL5         CBUS_REG_ADDR(HHI_MPLL_CNTL5)
+
+	/*
+	//to find bandgap is disabled!
+	if(!(readl(P_HHI_MPLL_CNTL5) & 1))
+	{
+		wait_uart_empty();
+		f_serial_puts("\nERROR! Stop here! SYS PLL bandgap disabled!\n");
+	    wait_uart_empty();
+		while(1);
+	}
+	*/
+	
+	do{
+		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
+		//Note: once SYS PLL is up, there is no need to 
+		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
+		//          lock fail
+		writel(readl(P_HHI_MPLL_CNTL5)&(~1),P_HHI_MPLL_CNTL5); 
+		__udelay(10);
+		writel(readl(P_HHI_MPLL_CNTL5)|1,P_HHI_MPLL_CNTL5); 
+		__udelay(1000); //1ms for bandgap bootup
+		
+		writel(1<<29,P_HHI_SYS_PLL_CNTL);		
+		writel(pll_settings[0][1],P_HHI_SYS_PLL_CNTL2);
+		writel(pll_settings[0][2],P_HHI_SYS_PLL_CNTL3);
+		writel(pll_settings[0][3],P_HHI_SYS_PLL_CNTL4);
+		writel(pll_settings[0][0] & ~(1<<30|1<<29),P_HHI_SYS_PLL_CNTL);
+		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
+
+		__udelay(500); //wait 100us for PLL lock		
+	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
+
+	writel(readl(P_HHI_SYS_PLL_CNTL)|(1<<30),P_HHI_SYS_PLL_CNTL); 
+	
 /*
     writel(pll_settings[1][0]|0x8000, P_HHI_OTHER_PLL_CNTL);
     writel(pll_settings[1][1], P_HHI_OTHER_PLL_CNTL2);
@@ -765,7 +806,7 @@ void store_restore_plls(int flag)
     writel(clk_settings[0],P_HHI_SYS_CPU_CLK_CNTL);
     writel(clk_settings[1],P_HHI_MPEG_CLK_CNTL);	    
     delay_ms(50);
-#endif
+#endif //CONFIG_SYS_PLL_SAVE
 }
 
 void __raw_writel(unsigned val,unsigned reg)
