@@ -504,6 +504,13 @@ void enter_power_down()
 
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
+	
+    serial_put_hex(readl(P_VGHL_PWM_REG0),32);
+   f_serial_puts("  VGHL_PWM before\n");
+   wait_uart_empty();
+	writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
+    __udelay(1000);
+    
 	restart_arm();
   
 }

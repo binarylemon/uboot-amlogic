@@ -275,5 +275,9 @@
 #define P_RESET1_REGISTER                           CBUS_REG_ADDR(RESET1_REGISTER)
 #define P_RESET0_REGISTER                           CBUS_REG_ADDR(RESET0_REGISTER)
 
+
+#define P_VGHL_PWM_REG0                              CBUS_REG_ADDR(VGHL_PWM_REG0)
+
+
 #endif                                                          
 
