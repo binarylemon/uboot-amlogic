@@ -260,109 +260,108 @@ void test_ddr(int i)
 #define pwr_ddr_off 
 void enter_power_down()
 {
-	unsigned v;
 	int i;
-	unsigned addr;
-	unsigned gate;
-#ifdef smp_test
-	//ignore ddr problems.
-//	for(i = 0; i < 1000; i++)
-//		udelay(1000);
-//	restart_arm();
-//	return;
-#endif
-//	disp_pctl();
-//	test_ddr(0);
-	 // First, we disable all memory accesses.
+
+	//	disp_pctl();
+	//	test_ddr(0);
+	// First, we disable all memory accesses.
 
 	f_serial_puts("step 1\n");
 
 
 #ifdef pwr_ddr_off
-   asm(".long 0x003f236f"); //add sync instruction.
+	asm(".long 0x003f236f"); //add sync instruction.
 
-   disable_mmc_req();
+	disable_mmc_req();
 
-   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-   f_serial_puts("  LP_CTRL1\n");
-   wait_uart_empty();
+	serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+	f_serial_puts("  LP_CTRL1\n");
+	wait_uart_empty();
 
-   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-   f_serial_puts("  MCFG\n");
-   wait_uart_empty();
+	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+	f_serial_puts("  MCFG\n");
+	wait_uart_empty();
 
-   store_restore_plls(1);
+	store_restore_plls(1);
 
-   APB_Wr(UPCTL_SCTL_ADDR, 1);
-   APB_Wr(UPCTL_MCFG_ADDR, 0x60021 );
-   APB_Wr(UPCTL_SCTL_ADDR, 2);
+	APB_Wr(UPCTL_SCTL_ADDR, 1);
+	APB_Wr(UPCTL_MCFG_ADDR, 0x60021 );
+	APB_Wr(UPCTL_SCTL_ADDR, 2);
 
-   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-   f_serial_puts("  MCFG\n");
-   wait_uart_empty();
+	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+	f_serial_puts("  MCFG\n");
+	wait_uart_empty();
 
 #endif
 
 #ifdef CHECK_ALL_REGULATORS
+	// Check regulator
+	f_serial_puts("Chk regulators\n");
+ 	wait_uart_empty();
 	check_all_regulators();
 #endif
 
 #ifdef pwr_ddr_off
- 	f_serial_puts("step 2\n");
- 	wait_uart_empty();
-  // Next, we sleep
-  mmc_sleep();
+	// MMC sleep 
+ 	f_serial_puts("Start DDR off\n");
+	wait_uart_empty();
+	// Next, we sleep
+	mmc_sleep();
 
 #if 1
-  //Clear PGCR CK
-  APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<12)));
-  APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
-  //APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
+	//Clear PGCR CK
+	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<12)));
+	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
+	//APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
-  // enable retention
-  //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
-  //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
-  enable_retention();
+	// enable retention
+	//only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
+	//but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
+	enable_retention();
 
     // save ddr power
     // before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
     // that will save the DLL analog power.
 #ifndef POWER_DOWN_DDRPHY
+ 	f_serial_puts("mmc soft rst\n");
+	wait_uart_empty();
 	APB_Wr(MMC_SOFT_RST, 0x0);	 // keep all MMC submodules in reset mode
 #else
+ 	f_serial_puts("pwr dn ddr\n");
+	wait_uart_empty();
 	power_down_ddr_phy();
 #endif
 
   // shut down DDR PLL. 
 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
 
-
- 	f_serial_puts("step 3\n");
- 	wait_uart_empty();
+	f_serial_puts("Done DDR off\n");
+	wait_uart_empty();
 
 #endif
 
- 	f_serial_puts("step 4\n");
+#if 0
+	// Disable EE
+	f_serial_puts("EE off\n");
  	wait_uart_empty();
-  // turn off ee
-//  enable_iso_ee();
-//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
- 	
+	// turn off ee
+	//  enable_iso_ee();
+	//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+ #endif 
   
- 	f_serial_puts("step 5\n");
+ 	f_serial_puts("CPU off\n");
  	wait_uart_empty();
 	cpu_off();
   
-  
- 	f_serial_puts("step 6\n");
+   	f_serial_puts("Set up pwr key\n");
  	wait_uart_empty();
 	//enable power_key int	
 	writel(0x100,0xc1109860);//clear int
  	writel(readl(0xc1109868)|1<<8,0xc1109868);
 	writel(readl(0xc8100080)|0x1,0xc8100080);
 
-
-
+	f_serial_puts("Pwr off domains\n");
+ 	wait_uart_empty();
 #ifdef POWER_OFF_3GVCC
 	power_off_3gvcc();
 #endif
@@ -396,12 +395,16 @@ void enter_power_down()
 	dc_dc_pwm_switch(0);
 #endif
 
-// gate off REMOTE, UART
+	// Now just wait for the power key
+   	f_serial_puts("Wait pwr key\n");
+ 	wait_uart_empty();
+	
+	// gate off REMOTE, UART
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
 #if 1
 //	udelay(200000);//Drain power
-	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
+	do{udelay(200);}while(!(readl(0xc1109860)&0x100));
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
 	for(i=0;i<200;i++)
@@ -431,7 +434,6 @@ void enter_power_down()
 	power_up_ddr15();//1.3v -> 1.5v
 #endif
 
-
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
@@ -439,6 +441,8 @@ void enter_power_down()
 #ifdef POWER_OFF_AVDD25
 	power_on_avdd25();
 #endif
+//  In 32k mode, we had better not print any log.
+	store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
 //	dump_pmu_reg();
 
@@ -447,7 +451,10 @@ void enter_power_down()
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay(10000);
 
-
+	// power on even more domains
+	f_serial_puts("Pwr up avdd33/3gvcc\n");
+	wait_uart_empty();
+	
 #ifdef POWER_OFF_AVDD33
 	power_on_avdd33();
 #endif
@@ -461,41 +468,37 @@ void enter_power_down()
 // 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
  	uart_reset();
 
-
-
-
- 	
-  f_serial_puts("step 7\n");
- 	wait_uart_empty();
-	store_restore_plls(0);
+//	f_serial_puts("step 7\n");
+//	wait_uart_empty();
+//	store_restore_plls(0);
 	
 #ifdef pwr_ddr_off    
-  f_serial_puts("step 8\n");
+	f_serial_puts("step 8\n");
 	wait_uart_empty();  
-  init_ddr_pll();
+	init_ddr_pll();
 
    // Next, we reset all channels 
-  reset_mmc();
-  f_serial_puts("step 9\n");
- 	wait_uart_empty();
+	reset_mmc();
+	f_serial_puts("step 9\n");
+	wait_uart_empty();
 
-  // disable retention
-  // disable retention before init_pctl is because init_pctl you need to data training stuff.
-  disable_retention();
+	// disable retention
+	// disable retention before init_pctl is because init_pctl you need to data training stuff.
+	disable_retention();
 
-  // initialize mmc and put it to sleep
-  init_pctl();
-  f_serial_puts("step 10\n");
-  wait_uart_empty();
+	// initialize mmc and put it to sleep
+	init_pctl();
+	f_serial_puts("step 10\n");
+	wait_uart_empty();
 
-  //print some useful information to help debug.
-   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-   f_serial_puts("  MMC_LP_CTRL1\n");
-   wait_uart_empty();
+	//print some useful information to help debug.
+	serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+	f_serial_puts("  MMC_LP_CTRL1\n");
+	wait_uart_empty();
 
-   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-   f_serial_puts("  MCFG\n");
-   wait_uart_empty();
+	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+	f_serial_puts("  MCFG\n");
+	wait_uart_empty();
 
 #endif   //pwr_ddr_off
   // Moved the enable mmc req and SEC to ARM code.
@@ -511,13 +514,13 @@ void enter_power_down()
 
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
-	
-    serial_put_hex(readl(P_VGHL_PWM_REG0),32);
-   f_serial_puts("  VGHL_PWM before\n");
-   wait_uart_empty();
+
+	serial_put_hex(readl(P_VGHL_PWM_REG0),32);
+	f_serial_puts("  VGHL_PWM before\n");
+	wait_uart_empty();
 	writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
-    __udelay(1000);
-    
+	__udelay(1000);
+
 	restart_arm();
   
 }
@@ -722,8 +725,12 @@ int main(void)
 	}
 	return 0;
 }
-unsigned clk_settings[2]={0,0};
-unsigned pll_settings[2][4]={{0,0,0},{0,0,0}};
+
+unsigned pll_settings[4];
+unsigned mpll_settings[10];
+unsigned viidpll_settings[4];
+unsigned vidpll_settings[4];
+
 #define CONFIG_SYS_PLL_SAVE
 void store_restore_plls(int flag)
 {
@@ -731,34 +738,33 @@ void store_restore_plls(int flag)
     if(flag)
     {
 #ifdef CONFIG_SYS_PLL_SAVE 
-        pll_settings[0][0]=readl(P_HHI_SYS_PLL_CNTL);
-        pll_settings[0][1]=readl(P_HHI_SYS_PLL_CNTL2);
-        pll_settings[0][2]=readl(P_HHI_SYS_PLL_CNTL3);		
-        pll_settings[0][3]=readl(P_HHI_SYS_PLL_CNTL4);
+		pll_settings[0]=readl(P_HHI_SYS_PLL_CNTL);
+		pll_settings[1]=readl(P_HHI_SYS_PLL_CNTL2);
+		pll_settings[2]=readl(P_HHI_SYS_PLL_CNTL3);
+		pll_settings[3]=readl(P_HHI_SYS_PLL_CNTL4);
+
+		for(i=0;i<10;i++)//store mpll
+		{
+			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
+		}
 /*
-        pll_settings[1][0]=readl(P_HHI_OTHER_PLL_CNTL);
-        pll_settings[1][1]=readl(P_HHI_OTHER_PLL_CNTL2);
-        pll_settings[1][2]=readl(P_HHI_OTHER_PLL_CNTL3);
+		viidpll_settings[0]=readl(P_HHI_VIID_PLL_CNTL);
+		viidpll_settings[1]=readl(P_HHI_VIID_PLL_CNTL2);
+		viidpll_settings[2]=readl(P_HHI_VIID_PLL_CNTL3);
+		viidpll_settings[3]=readl(P_HHI_VIID_PLL_CNTL4);
+
+		vidpll_settings[0]=readl(P_HHI_VID_PLL_CNTL);
+		vidpll_settings[1]=readl(P_HHI_VID_PLL_CNTL2);
+		vidpll_settings[2]=readl(P_HHI_VID_PLL_CNTL3);
+		vidpll_settings[3]=readl(P_HHI_VID_PLL_CNTL4);
 */
-        clk_settings[0]=readl(P_HHI_SYS_CPU_CLK_CNTL);
-        clk_settings[1]=readl(P_HHI_MPEG_CLK_CNTL);
 #endif //CONFIG_SYS_PLL_SAVE
 
-        save_ddr_settings();
-        return;
+		save_ddr_settings();
+		return;
     }    
     
 #ifdef CONFIG_SYS_PLL_SAVE 
-
-	/*
-	//restore from default settings  
-    writel(pll_settings[0][0]|0x40000000, P_HHI_SYS_PLL_CNTL);
-    writel(pll_settings[0][1], P_HHI_SYS_PLL_CNTL2);
-    writel(pll_settings[0][2], P_HHI_SYS_PLL_CNTL3);	
-    writel(pll_settings[0][3], P_HHI_SYS_PLL_CNTL4);
-    writel(pll_settings[0][0]&(~0x40000000),P_HHI_SYS_PLL_CNTL);
-    //writel(1<<2, P_RESET5_REGISTER);
-	*/
 
 	//temp define
 #define P_HHI_MPLL_CNTL5         CBUS_REG_ADDR(HHI_MPLL_CNTL5)
@@ -773,39 +779,68 @@ void store_restore_plls(int flag)
 		while(1);
 	}
 	*/
-	
+
 	do{
 		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
 		//Note: once SYS PLL is up, there is no need to 
 		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
 		//          lock fail
 		writel(readl(P_HHI_MPLL_CNTL5)&(~1),P_HHI_MPLL_CNTL5); 
-		__udelay(10);
+		udelay(3);
 		writel(readl(P_HHI_MPLL_CNTL5)|1,P_HHI_MPLL_CNTL5); 
-		__udelay(1000); //1ms for bandgap bootup
+		udelay(30); //1ms in 32k for bandgap bootup
 		
 		writel(1<<29,P_HHI_SYS_PLL_CNTL);		
-		writel(pll_settings[0][1],P_HHI_SYS_PLL_CNTL2);
-		writel(pll_settings[0][2],P_HHI_SYS_PLL_CNTL3);
-		writel(pll_settings[0][3],P_HHI_SYS_PLL_CNTL4);
-		writel(pll_settings[0][0] & ~(1<<30|1<<29),P_HHI_SYS_PLL_CNTL);
+		writel(pll_settings[1],P_HHI_SYS_PLL_CNTL2);
+		writel(pll_settings[2],P_HHI_SYS_PLL_CNTL3);
+		writel(pll_settings[3],P_HHI_SYS_PLL_CNTL4);
+		writel(pll_settings[0] & ~(1<<30|1<<29),P_HHI_SYS_PLL_CNTL);
 		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
 
-		__udelay(500); //wait 100us for PLL lock		
+		udelay(10); //wait 100us for PLL lock
 	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
 
-	writel(readl(P_HHI_SYS_PLL_CNTL)|(1<<30),P_HHI_SYS_PLL_CNTL); 
-	
+	writel(pll_settings[0],P_HHI_SYS_PLL_CNTL);//restore it
+
+	do{
+		//no need to do bandgap reset
+		writel(1<<29,P_HHI_MPLL_CNTL);
+		for(i=1;i<10;i++)
+			writel(mpll_settings[i],P_HHI_MPLL_CNTL+4*i);
+
+		writel((mpll_settings[0] & ~(1<<30))|1<<29,P_HHI_MPLL_CNTL);
+		writel(mpll_settings[0] & ~(1<<29),P_HHI_MPLL_CNTL);
+		udelay(10); //wait 200us for PLL lock		
+	}while((readl(P_HHI_MPLL_CNTL)&0x80000000)==0);
+	writel(mpll_settings[0],P_HHI_MPLL_CNTL);//restore it
 /*
-    writel(pll_settings[1][0]|0x8000, P_HHI_OTHER_PLL_CNTL);
-    writel(pll_settings[1][1], P_HHI_OTHER_PLL_CNTL2);
-    writel(pll_settings[1][2], P_HHI_OTHER_PLL_CNTL3);
-    writel(pll_settings[1][0]&(~0x8000),P_HHI_OTHER_PLL_CNTL);
-    writel(1<<1, P_RESET5_REGISTER);
-*/
-    writel(clk_settings[0],P_HHI_SYS_CPU_CLK_CNTL);
-    writel(clk_settings[1],P_HHI_MPEG_CLK_CNTL);	    
-    delay_ms(50);
+	do{
+		//no need to do bandgap reset
+		writel(1<<29,P_HHI_VIID_PLL_CNTL);		
+		writel(viidpll_settings[1],P_HHI_VIID_PLL_CNTL2);
+		writel(viidpll_settings[2],P_HHI_VIID_PLL_CNTL3);
+		writel(viidpll_settings[3],P_HHI_VIID_PLL_CNTL4);
+
+		writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);
+		writel(viidpll_settings[0] & ~(1<<29),P_HHI_VIID_PLL_CNTL);
+		udelay(10); //wait 200us for PLL lock		
+	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
+	writel(viidpll_settings[0],P_HHI_VIID_PLL_CNTL);//restore it
+//Here need move to ddrpll init location
+	do{
+		//no need to do bandgap reset
+		writel(1<<29,P_HHI_VID_PLL_CNTL);		
+		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
+		writel(vidpll_settings[2],P_HHI_VID_PLL_CNTL3);
+		writel(vidpll_settings[3],P_HHI_VID_PLL_CNTL4);
+
+		writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
+		writel(vidpll_settings[0] & ~(1<<29),P_HHI_VID_PLL_CNTL);
+		udelay(10); //wait 200us for PLL lock
+	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
+	writel(vidpll_settings[0],P_HHI_VID_PLL_CNTL);//restore it
+	*/
+	udelay(3);
 #endif //CONFIG_SYS_PLL_SAVE
 }
 
