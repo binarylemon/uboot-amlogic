@@ -125,6 +125,10 @@ void copy_reboot_code()
 //#define POWER_OFF_WIFI_VCC
 //#define POWER_OFF_3GVCC
 
+//for mbox
+#define POWER_OFF_VCCK_VDDIO
+//#define POWER_OFF_VCC5V
+
 
 /***********************
 **Power control domain**
@@ -162,6 +166,41 @@ static void power_on_via_gpio()
 	udelay(1000);
 
 }
+
+#ifdef POWER_OFF_VCCK_VDDIO
+static void power_off_vcck_vddio(void)
+{
+	//GPIOAO_2
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2 output
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 L VCCK_EN
+	udelay(100);	
+}
+static void power_on_vcck_vddio(void)
+{
+	//GPIOAO_2
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2,3 output
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 H VCCK_EN
+	udelay(100);
+}
+#endif
+
+#ifdef POWER_OFF_VCC5V
+static void power_off_vcc5v(void)
+{
+	//GPIOAO_3
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 2 H VCCK_EN
+	udelay(100);
+}
+static void power_on_vcc5v(void)
+{
+	//GPIOAO_3
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 H VCC5V_EN
+	udelay(100);
+}
+#endif
+
 /***********************/
 
 static void enable_iso_ee()
@@ -362,6 +401,10 @@ void enter_power_down()
 	power_off_vddio();
 #endif
 
+#ifdef POWER_OFF_VCCK_VDDIO
+	power_off_vcck_vddio();
+#endif
+
 #ifdef POWER_DOWN_DDR15
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
@@ -386,7 +429,7 @@ void enter_power_down()
 		  power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
 		  if(power_key==0x1a)  //the reference remote power key code
-        break;
+        		break;
         		  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
@@ -403,7 +446,7 @@ void enter_power_down()
 // gate off REMOTE, UART
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
-#if 1
+#if 0
 //	udelay(200000);//Drain power
 	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
 //	while(!(readl(0xc1109860)&0x100)){break;}
@@ -435,6 +478,9 @@ void enter_power_down()
 	power_up_ddr15();//1.3v -> 1.5v
 #endif
 
+#ifdef POWER_OFF_VCCK_VDDIO
+	power_on_vcck_vddio(); 
+#endif
 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
@@ -518,9 +564,9 @@ void enter_power_down()
 	restart_arm();
 
 
-  
-  resume_remote_register();
-  
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+	resume_remote_register();
+#endif
 }
 
 

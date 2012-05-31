@@ -17,7 +17,10 @@ TOPDIR= $(SRCTREE)
 CPUDIR=arch/$(ARCH)/cpu/$(CPU)
 BOARDDIR=$(VENDOR)/$(BOARD)
 export
-all:
+
+target= firmware_code
+
+all: $(target)
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
@@ -25,3 +28,7 @@ all:
 
 help:
 	make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power help
+
+$(target):
+	make -C $(SRCTREE) firmware
+
