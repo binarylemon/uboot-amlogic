@@ -477,6 +477,8 @@ void enter_power_down()
 	wait_uart_empty();  
 	init_ddr_pll();
 
+	store_vid_pll();
+
    // Next, we reset all channels 
 	reset_mmc();
 	f_serial_puts("step 9\n");
@@ -747,7 +749,7 @@ void store_restore_plls(int flag)
 		{
 			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
 		}
-/*
+
 		viidpll_settings[0]=readl(P_HHI_VIID_PLL_CNTL);
 		viidpll_settings[1]=readl(P_HHI_VIID_PLL_CNTL2);
 		viidpll_settings[2]=readl(P_HHI_VIID_PLL_CNTL3);
@@ -757,7 +759,7 @@ void store_restore_plls(int flag)
 		vidpll_settings[1]=readl(P_HHI_VID_PLL_CNTL2);
 		vidpll_settings[2]=readl(P_HHI_VID_PLL_CNTL3);
 		vidpll_settings[3]=readl(P_HHI_VID_PLL_CNTL4);
-*/
+
 #endif //CONFIG_SYS_PLL_SAVE
 
 		save_ddr_settings();
@@ -813,7 +815,7 @@ void store_restore_plls(int flag)
 		udelay(10); //wait 200us for PLL lock		
 	}while((readl(P_HHI_MPLL_CNTL)&0x80000000)==0);
 	writel(mpll_settings[0],P_HHI_MPLL_CNTL);//restore it
-/*
+
 	do{
 		//no need to do bandgap reset
 		writel(1<<29,P_HHI_VIID_PLL_CNTL);		
@@ -821,13 +823,15 @@ void store_restore_plls(int flag)
 		writel(viidpll_settings[2],P_HHI_VIID_PLL_CNTL3);
 		writel(viidpll_settings[3],P_HHI_VIID_PLL_CNTL4);
 
-		writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);
-		writel(viidpll_settings[0] & ~(1<<29),P_HHI_VIID_PLL_CNTL);
+		writel(viidpll_settings[0] & ~(3<<29),P_HHI_VIID_PLL_CNTL);
+
+		//writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);//ask Knight Shi why fail
+		//writel(viidpll_settings[0] & ~(1<<29),P_HHI_VIID_PLL_CNTL);
 		udelay(10); //wait 200us for PLL lock		
 	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
 	writel(viidpll_settings[0],P_HHI_VIID_PLL_CNTL);//restore it
 //Here need move to ddrpll init location
-	do{
+/*	do{
 		//no need to do bandgap reset
 		writel(1<<29,P_HHI_VID_PLL_CNTL);		
 		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
@@ -842,6 +846,21 @@ void store_restore_plls(int flag)
 	*/
 	udelay(3);
 #endif //CONFIG_SYS_PLL_SAVE
+}
+
+void store_vid_pll()
+{
+	do{
+		//no need to do bandgap reset
+		writel(1<<29,P_HHI_VID_PLL_CNTL);		
+		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
+		writel(vidpll_settings[2],P_HHI_VID_PLL_CNTL3);
+		writel(vidpll_settings[3],P_HHI_VID_PLL_CNTL4);
+
+		writel(vidpll_settings[0] & ~(3<<29),P_HHI_VID_PLL_CNTL);
+		udelay(24000); //wait 200us for PLL lock
+	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
+	writel(vidpll_settings[0],P_HHI_VID_PLL_CNTL);//restore it
 }
 
 void __raw_writel(unsigned val,unsigned reg)
