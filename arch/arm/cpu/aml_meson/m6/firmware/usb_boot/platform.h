@@ -164,7 +164,7 @@ typedef __u64    __be64;
 
 /* Meet with spec */
 #define USB_ROM_VER_MAJOR	0
-#define USB_ROM_VER_MINOR	7				// SPEC Version
+#define USB_ROM_VER_MINOR	8				// SPEC Version
 #define USB_ROM_STAGE_MAJOR	0
 #define USB_ROM_STAGE_MINOR	8		// IPL = 0,	SPL = 8, TPL = 16
 
