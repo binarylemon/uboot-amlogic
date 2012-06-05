@@ -878,7 +878,7 @@ reset_ddrpll:
 	
 	//writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
 	writel((v_ddr_pll_cntl & ~(1<<30))|1<<29,P_HHI_DDR_PLL_CNTL);	
-	writel(v_ddr_pll_cntl & ~(1<<29),P_HHI_DDR_PLL_CNTL);
+	writel(v_ddr_pll_cntl & ~(3<<29),P_HHI_DDR_PLL_CNTL);
     
     do {
     	__udelay(1000);

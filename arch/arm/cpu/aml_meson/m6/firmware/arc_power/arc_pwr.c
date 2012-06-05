@@ -796,13 +796,13 @@ void store_restore_plls(int flag)
 		writel(pll_settings[1],P_HHI_SYS_PLL_CNTL2);
 		writel(pll_settings[2],P_HHI_SYS_PLL_CNTL3);
 		writel(pll_settings[3],P_HHI_SYS_PLL_CNTL4);
-		writel(pll_settings[0] & ~(1<<30|1<<29),P_HHI_SYS_PLL_CNTL);
+		writel((pll_settings[0] & ~(1<<30))|1<<29,P_HHI_SYS_PLL_CNTL);
+		writel(pll_settings[0] & ~(3<<29),P_HHI_SYS_PLL_CNTL);
+		
 		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
 
 		udelay(10); //wait 100us for PLL lock
 	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
-
-	writel(pll_settings[0],P_HHI_SYS_PLL_CNTL);//restore it
 
 	do{
 		//no need to do bandgap reset
@@ -811,56 +811,44 @@ void store_restore_plls(int flag)
 			writel(mpll_settings[i],P_HHI_MPLL_CNTL+4*i);
 
 		writel((mpll_settings[0] & ~(1<<30))|1<<29,P_HHI_MPLL_CNTL);
-		writel(mpll_settings[0] & ~(1<<29),P_HHI_MPLL_CNTL);
+		writel(mpll_settings[0] & ~(3<<29),P_HHI_MPLL_CNTL);
 		udelay(10); //wait 200us for PLL lock		
 	}while((readl(P_HHI_MPLL_CNTL)&0x80000000)==0);
-	writel(mpll_settings[0],P_HHI_MPLL_CNTL);//restore it
 
 	do{
 		//no need to do bandgap reset
+		if(!(viidpll_settings[0] & 0x3fff))//M,N domain == 0, not restore vid pll
+			break;
 		writel(1<<29,P_HHI_VIID_PLL_CNTL);		
 		writel(viidpll_settings[1],P_HHI_VIID_PLL_CNTL2);
 		writel(viidpll_settings[2],P_HHI_VIID_PLL_CNTL3);
 		writel(viidpll_settings[3],P_HHI_VIID_PLL_CNTL4);
 
+		writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);
 		writel(viidpll_settings[0] & ~(3<<29),P_HHI_VIID_PLL_CNTL);
-
-		//writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);//ask Knight Shi why fail
-		//writel(viidpll_settings[0] & ~(1<<29),P_HHI_VIID_PLL_CNTL);
 		udelay(10); //wait 200us for PLL lock		
 	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
-	writel(viidpll_settings[0],P_HHI_VIID_PLL_CNTL);//restore it
-//Here need move to ddrpll init location
-/*	do{
-		//no need to do bandgap reset
-		writel(1<<29,P_HHI_VID_PLL_CNTL);		
-		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
-		writel(vidpll_settings[2],P_HHI_VID_PLL_CNTL3);
-		writel(vidpll_settings[3],P_HHI_VID_PLL_CNTL4);
 
-		writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
-		writel(vidpll_settings[0] & ~(1<<29),P_HHI_VID_PLL_CNTL);
-		udelay(10); //wait 200us for PLL lock
-	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
-	writel(vidpll_settings[0],P_HHI_VID_PLL_CNTL);//restore it
-	*/
 	udelay(3);
 #endif //CONFIG_SYS_PLL_SAVE
 }
 
 void store_vid_pll()
 {
+	if(!(vidpll_settings[0] & 0x7fff))//M,N domain == 0, not restore vid pll
+		return;
 	do{
 		//no need to do bandgap reset
-		writel(1<<29,P_HHI_VID_PLL_CNTL);		
+		writel(1<<29,P_HHI_VID_PLL_CNTL);
+		//writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
 		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
 		writel(vidpll_settings[2],P_HHI_VID_PLL_CNTL3);
 		writel(vidpll_settings[3],P_HHI_VID_PLL_CNTL4);
 
+		writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
 		writel(vidpll_settings[0] & ~(3<<29),P_HHI_VID_PLL_CNTL);
 		udelay(24000); //wait 200us for PLL lock
 	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
-	writel(vidpll_settings[0],P_HHI_VID_PLL_CNTL);//restore it
 }
 
 void __raw_writel(unsigned val,unsigned reg)
