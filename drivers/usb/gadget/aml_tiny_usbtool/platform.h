@@ -164,9 +164,14 @@ typedef __u64    __be64;
 
 /* Meet with spec */
 #define USB_ROM_VER_MAJOR	0
-#define USB_ROM_VER_MINOR	7				// SPEC Version
 #define USB_ROM_STAGE_MAJOR	0
 #define USB_ROM_STAGE_MINOR	16		// IPL = 0,	SPL = 8, TPL = 16
+
+#ifdef CONFIG_M6
+#define USB_ROM_VER_MINOR	8				// SPEC Version
+#else
+#define USB_ROM_VER_MINOR	7				// SPEC Version
+#endif
 
 #if 1
 #define PRINTF(x...)	do{}while(0)
