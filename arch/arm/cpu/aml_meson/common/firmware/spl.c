@@ -66,6 +66,12 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
+    
+#ifdef CONFIG_M6    
+    writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
+    __udelay(1000);
+#endif    
+
     // initial pll
     pll_init(&__plls);
     

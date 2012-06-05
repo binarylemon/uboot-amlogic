@@ -10,12 +10,25 @@
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-//#define CONFIG_AML_I2C      1
 
 #define HAS_AO_MODULE
 #define CONFIG_AML_I2C	//add by Elvis Yu
+#define CONFIG_CMD_I2C    1     
+#define CONFIG_SYS_I2C_SPEED 400000
+
+#define CHECK_ALL_REGULATORS
 #define CONFIG_AW_AXP20
+#ifdef CONFIG_AW_AXP20
+#define CONFIG_CONST_PWM_FOR_DCDC
+#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
+#define CONFIG_DCDC2_VOLTAGE	1500
+#define CONFIG_DCDC3_VOLTAGE	1100
+#define CONFIG_LDO2_VOLTAGE	3000
+#define CONFIG_LDO3_VOLTAGE	2500
+#define CONFIG_LDO4_VOLTAGE	3300
+
 #define BATTERYCAP				3400							//battery capability
+#endif
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -82,6 +95,8 @@
 #define CONFIG_USB_DWC_OTG_HCD  1
 #define CONFIG_CMD_USB 1
 
+#define CONFIG_AML_TINY_USBTOOL
+
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
 
@@ -120,8 +135,8 @@
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 hlt a9_clk_max=1320000000 no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
+	"preboot=chk_all_regulators; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
@@ -247,7 +262,7 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~700)MHz
-#define M6_DDR_CLK (504)
+#define M6_DDR_CLK (480)
 
 #define CONFIG_DDR_LOW_POWER 1
 

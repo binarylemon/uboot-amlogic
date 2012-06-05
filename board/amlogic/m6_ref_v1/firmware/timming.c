@@ -116,7 +116,7 @@ static struct ddr_set __ddr_setting={
                                 
                                                                 	
                             [2]=(2 << 9)|     //[B10,B9]Rtt_WR. 00:off. 01:Rzq/4. 02:Rzq/2
-                                (3 << 6)|     //[B6]Auto self refresh. [B7]Self refresh temperature range. 0:Normal. 1:Extended
+                                //(3 << 6)|     //[B6]Auto self refresh. [B7]Self refresh temperature range. 0:Normal. 1:Extended
                                 (1 << 3),//(2<<3),	//@@CWL:(B5,B4,B3)
 	                            		//000 = 5 (tCK = 2.5ns) 
     	                        		//001 = 6 (2.5ns > tCK = 1.875ns)

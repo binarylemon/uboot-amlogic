@@ -9,6 +9,13 @@
 #include <asm/arch/pctl.h>
 #include "boot_code.dat"
 
+
+#define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
+
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+#include "irremote2arc.c"
+#endif
+
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));
@@ -105,51 +112,96 @@ void copy_reboot_code()
 	}
 }
 
-void disp_code()
-{
-#if 0
-	int i;
-	int code_size;
-	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
-	unsigned addr;
-	code_size = sizeof(arm_reboot);
-	addr = 0;
-	//copy new code for ARM restart
-	for(i = 0; i < code_size; i++)
-	{
-	 	f_serial_puts(",");
-		serial_put_hex(*arm_base,8);
-		if(i == 32)
-			addr |= *arm_base;
-		else if(i == 33)
-			addr |= (*arm_base)<<8;
-		else if(i == 34)
-			addr |= (*arm_base)<<16;
-		else if(i == 35)
-			addr |= (*arm_base)<<24;
-			
-		arm_base++;
-	}
-	
-	f_serial_puts("\n addr:");
-	serial_put_hex(addr,32);
-	
-	f_serial_puts(" value:");
-	wait_uart_empty();
-	serial_put_hex(readl(addr),32);
-	wait_uart_empty();
-#endif
-}
 
+/*
 #define POWER_OFF_AVDD25
 #define POWER_OFF_AVDD33
 #define POWER_OFF_VCCK12
 #define POWER_OFF_VDDIO
-
+#define DCDC_SWITCH_PWM
+*/
 //#define POWER_DOWN_DDR15
 
 //#define POWER_OFF_WIFI_VCC
 //#define POWER_OFF_3GVCC
+
+//for mbox
+#define POWER_OFF_VCCK_VDDIO
+//#define POWER_OFF_VCC5V
+
+
+/***********************
+**Power control domain**
+************************/
+static void power_off_via_gpio()
+{
+	setbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
+	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
+
+	clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+	
+	/*clr AO pinmux for GPIO_AO. AO pinmux has been 
+	  stored in backup_remote_register()
+	*/	
+	clrbits_le32(P_AO_RTI_PIN_MUX_REG ,(0x3ff<<1)|(0xf<<23));//clear 1~10,23~26 bit
+	setbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
+	clrbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
+	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
+}
+
+static void power_on_via_gpio()
+{
+	clrbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
+	setbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
+	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
+	udelay(1000);
+
+	setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+	udelay(1000);
+	
+	clrbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
+	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
+	udelay(1000);
+
+}
+
+#ifdef POWER_OFF_VCCK_VDDIO
+static void power_off_vcck_vddio(void)
+{
+	//GPIOAO_2
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2 output
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 L VCCK_EN
+	udelay(100);	
+}
+static void power_on_vcck_vddio(void)
+{
+	//GPIOAO_2
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2,3 output
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 H VCCK_EN
+	udelay(100);
+}
+#endif
+
+#ifdef POWER_OFF_VCC5V
+static void power_off_vcc5v(void)
+{
+	//GPIOAO_3
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 2 H VCCK_EN
+	udelay(100);
+}
+static void power_on_vcc5v(void)
+{
+	//GPIOAO_3
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 H VCC5V_EN
+	udelay(100);
+}
+#endif
+
+/***********************/
 
 static void enable_iso_ee()
 {
@@ -221,38 +273,6 @@ void restart_arm()
 }
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
-void test_ddr(int i)
-{
-#if 0
-	f_serial_puts("test_ddr...\n");
-
-	volatile unsigned addr = (volatile unsigned*)0x80000000;
-	unsigned v;
-	if(i == 0){
-		for(i = 0; i < 100; i++){
-//		v_outs("addr:",pAddr);
-//		v_outs("value:",*pAddr);
-			writel(i,addr);
-			addr+=4;
-		}
-	}
-	else if(i == 1){
-			for(i = 0; i < 100; i++){
-			//	writel(i,addr);
-				v = readl(addr);
-			//	if(v != i)
-				{
-			//		serial_put_hex(addr,32);
-					f_serial_puts(" , ");
-					serial_put_hex(v,32);
-				}
-				addr+=4;
-			}
-	}
-	f_serial_puts("\n");
-	wait_uart_empty();
-#endif			
-}
 #define pwr_ddr_off 
 void enter_power_down()
 {
@@ -260,6 +280,7 @@ void enter_power_down()
 	int i;
 	unsigned addr;
 	unsigned gate;
+	unsigned power_key;
 #ifdef smp_test
 	//ignore ddr problems.
 //	for(i = 0; i < 1000; i++)
@@ -380,14 +401,52 @@ void enter_power_down()
 	power_off_vddio();
 #endif
 
+#ifdef POWER_OFF_VCCK_VDDIO
+	power_off_vcck_vddio();
+#endif
+
 #ifdef POWER_DOWN_DDR15
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
 
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(0);
+#endif
+
+
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+//backup the remote config (on arm)
+    backup_remote_register();
+//	power_off_via_gpio();    
+    //set the ir_remote to 32k mode at ARC
+    init_custom_trigger();
+    
+    //set the detect gpio
+    //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
+    while(1)
+    {
+    	//detect remote key
+		  power_key=readl(P_AO_IR_DEC_FRAME);
+		  power_key = (power_key>>16)&0xff;
+		  if(power_key==0x1a)  //the reference remote power key code
+        		break;
+        		  
+		  //detect IO key
+		  /*power_key=readl(P_AO_GPIO_I); 
+		  power_key=power_key&(1<<3);
+		  if(!power_key)
+		    break;
+		  */
+		  
+	  }
+//	power_on_via_gpio();
+//	resume_remote_register();
+
+#else
 // gate off REMOTE, UART
   	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
-#if 1
+#if 0
 //	udelay(200000);//Drain power
 	do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
 //	while(!(readl(0xc1109860)&0x100)){break;}
@@ -407,15 +466,21 @@ void enter_power_down()
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
- 
+ #endif//CONFIG_IR_REMOTE_WAKEUP
 //  ee_on();
  
 //  disable_iso_ao();
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(1);
+#endif
 
 #ifdef POWER_DOWN_DDR15
 	power_up_ddr15();//1.3v -> 1.5v
 #endif
 
+#ifdef POWER_OFF_VCCK_VDDIO
+	power_on_vcck_vddio(); 
+#endif
 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
@@ -497,7 +562,11 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-  
+
+
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+	resume_remote_register();
+#endif
 }
 
 
@@ -702,12 +771,13 @@ int main(void)
 }
 unsigned clk_settings[2]={0,0};
 unsigned pll_settings[2][4]={{0,0,0},{0,0,0}};
+#define CONFIG_SYS_PLL_SAVE
 void store_restore_plls(int flag)
 {
     int i;
     if(flag)
     {
-#ifdef POWER_OFF_EE 
+#ifdef CONFIG_SYS_PLL_SAVE 
         pll_settings[0][0]=readl(P_HHI_SYS_PLL_CNTL);
         pll_settings[0][1]=readl(P_HHI_SYS_PLL_CNTL2);
         pll_settings[0][2]=readl(P_HHI_SYS_PLL_CNTL3);		
@@ -719,20 +789,48 @@ void store_restore_plls(int flag)
 */
         clk_settings[0]=readl(P_HHI_SYS_CPU_CLK_CNTL);
         clk_settings[1]=readl(P_HHI_MPEG_CLK_CNTL);
-#endif
+#endif //CONFIG_SYS_PLL_SAVE
 
         save_ddr_settings();
         return;
     }    
     
-#ifdef POWER_OFF_EE 
+#ifdef CONFIG_SYS_PLL_SAVE 
     /* restore from default settings */ 
+	/*
     writel(pll_settings[0][0]|0x40000000, P_HHI_SYS_PLL_CNTL);
     writel(pll_settings[0][1], P_HHI_SYS_PLL_CNTL2);
     writel(pll_settings[0][2], P_HHI_SYS_PLL_CNTL3);	
     writel(pll_settings[0][3], P_HHI_SYS_PLL_CNTL4);
     writel(pll_settings[0][0]&(~0x40000000),P_HHI_SYS_PLL_CNTL);
     writel(1<<2, P_RESET5_REGISTER);
+	*/
+
+	//temp define
+#define P_HHI_MPLL_CNTL5         CBUS_REG_ADDR(HHI_MPLL_CNTL5)
+
+	do{
+		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
+		//Note: once SYS PLL is up, there is no need to 
+		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
+		//          lock fail
+		writel(readl(P_HHI_MPLL_CNTL5)&(~1),P_HHI_MPLL_CNTL5); 
+		__udelay(10);
+		writel(readl(P_HHI_MPLL_CNTL5)|1,P_HHI_MPLL_CNTL5); 
+		__udelay(1000); //1ms for bandgap bootup
+		
+		writel(1<<29,P_HHI_SYS_PLL_CNTL);		
+		writel(pll_settings[0][1],P_HHI_SYS_PLL_CNTL2);
+		writel(pll_settings[0][2],P_HHI_SYS_PLL_CNTL3);
+		writel(pll_settings[0][3],P_HHI_SYS_PLL_CNTL4);
+		writel(pll_settings[0][0] & ~(1<<30|1<<29),P_HHI_SYS_PLL_CNTL);
+		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
+
+		__udelay(500); //wait 100us for PLL lock		
+	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
+
+	writel(readl(P_HHI_SYS_PLL_CNTL)|(1<<30),P_HHI_SYS_PLL_CNTL); 
+	
 /*
     writel(pll_settings[1][0]|0x8000, P_HHI_OTHER_PLL_CNTL);
     writel(pll_settings[1][1], P_HHI_OTHER_PLL_CNTL2);
@@ -743,7 +841,7 @@ void store_restore_plls(int flag)
     writel(clk_settings[0],P_HHI_SYS_CPU_CLK_CNTL);
     writel(clk_settings[1],P_HHI_MPEG_CLK_CNTL);	    
     delay_ms(50);
-#endif
+#endif //CONFIG_SYS_PLL_SAVE
 }
 
 void __raw_writel(unsigned val,unsigned reg)

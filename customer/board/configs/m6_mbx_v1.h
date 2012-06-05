@@ -35,7 +35,7 @@
 
 #define CONFIG_L2_OFF			1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
 #define CONFIG_AML_ETHERNET 1
@@ -110,10 +110,17 @@
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
+	"preboot=run switch_bootmode\0" \
+	"outputmode=480i\0" \
+	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
+	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \ 
+	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \	
 
 
-#define CONFIG_BOOTCOMMAND  "nand read boot 82000000 0 800000;bootm"
+#define CONFIG_BOOTCOMMAND \
+ "setenv bootcmd run nandboot; saveenv; run nandboot" 
+//"nand read boot 82000000 0 800000;bootm"
 
 
 #define CONFIG_AUTO_COMPLETE	1
@@ -134,7 +141,7 @@
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
 	#define CONFIG_CMD_SAVEENV
-  #define CONFIG_ENV_SIZE             0x2000
+//  #define CONFIG_ENV_SIZE             0x2000
 	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
 	//#ifdef CONFIG_SPI_FLASH_SPANSION
 	 //#define CONFIG_ENV_SECT_SIZE		0x10000

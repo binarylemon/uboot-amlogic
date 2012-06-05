@@ -191,7 +191,13 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
 
-	m6_ddr_init_test(DDR_TEST_BASEIC);
+	if(m6_ddr_init_test(DDR_TEST_BASEIC))
+    {
+	    serial_puts("\nDDR init test fail! Reset...\n");
+		__udelay(10000); 
+		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
+		while(1);
+	}
 
 	return 0;
 }

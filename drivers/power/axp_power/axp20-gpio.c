@@ -13,7 +13,7 @@
  */
 #include <common.h>
 #include <asm-generic/errno.h>
-#include "axp-mfd.h"
+#include <axp-mfd.h>
 
 #include <axp-gpio.h>
 

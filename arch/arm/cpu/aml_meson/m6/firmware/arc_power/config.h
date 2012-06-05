@@ -10,6 +10,19 @@
 #define CONFIG_BAUDRATE 115200
 #define CONFIG_CRYSTAL_MHZ 24
 
+#define CONFIG_AW_AXP20
+
+#ifdef CONFIG_AW_AXP20
+#define CONFIG_CONST_PWM_FOR_DCDC
+#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
+#define CONFIG_DCDC2_VOLTAGE	1500
+#define CONFIG_DCDC3_VOLTAGE	1100
+#define CONFIG_LDO2_VOLTAGE	3000
+#define CONFIG_LDO3_VOLTAGE	2500
+#define CONFIG_LDO4_VOLTAGE	3300
+#endif
+
+
 #ifndef __ASSEMBLY__
 void serial_init_with_clk(unsigned clk);
 void serial_put_dword(unsigned int data);
