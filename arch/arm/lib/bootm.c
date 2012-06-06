@@ -50,6 +50,7 @@ static void setup_initrd_tag (bd_t *bd, ulong initrd_start,
 # endif
 static void setup_end_tag (bd_t *bd);
 
+extern void aml_nand_set_reg_default_hynix(void);
 static struct tag *params;
 #endif /* CONFIG_SETUP_MEMORY_TAGS || CONFIG_CMDLINE_TAG || CONFIG_INITRD_TAG */
 
@@ -84,6 +85,7 @@ static void announce_and_cleanup(void)
 {
 	printf("\nStarting kernel ...\n\n");
 
+	aml_nand_set_reg_default_hynix();
 #ifdef CONFIG_USB_DEVICE
 	{
 		extern void udc_disconnect(void);

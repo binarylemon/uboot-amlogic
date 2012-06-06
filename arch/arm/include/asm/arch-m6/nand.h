@@ -153,7 +153,7 @@
 #define NFC_CMD_RB_INT(ce,time)        ((ce)|RB|(((ce>>10)^0xf)<<14)|(time&0x1f))
 #define NFC_CMD_RBIO(time,io)		   (RB|io|(time&0x1f))	
 #define NFC_CMD_RBIO_INT(io,time)      (RB|(((io>>10)^0x7)<<14)|(time&0x1f))
-#define NFC_CMD_SEED(seed)			   (SEED|seed&0x7fff)
+#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + seed&0x7fff))
 #define NFC_CMD_STS(tim) 			   (STS|(tim&3))
 #define NFC_CMD_M2N(ran,ecc,sho,pgsz,pag)      ((ran?M2N:M2N_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
 #define NFC_CMD_N2M(ran,ecc,sho,pgsz,pag)      ((ran?N2M:N2M_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
@@ -422,6 +422,74 @@ struct aml_nand_bch_desc{
     unsigned user_byte_mode;
 };
 
+#define	NEW_NAND_SUPPORT	
+
+#ifdef NEW_NAND_SUPPORT
+#define RETRY_NAND_MAGIC		"refv"
+#define RETRY_NAND_BLK_NUM		2
+#define RETRY_NAND_COPY_NUM	4
+
+#define	READ_RETRY_REG_NUM   	8
+#define	READ_RETRY_CNT   		6
+
+
+#define	ENHANCE_SLC_REG_NUM   	5
+
+#define	NAND_CMD_HYNIX_GET_VALUE				0x37
+#define	NAND_CMD_HYNIX_SET_VALUE_START		0x36
+#define	NAND_CMD_HYNIX_SET_VALUE_END		0x16
+
+#define	NAND_CMD_TOSHIBA_PRE_CON1			0x5c
+#define	NAND_CMD_TOSHIBA_PRE_CON2			0xc5
+#define	NAND_CMD_TOSHIBA_SET_VALUE			0x55
+#define	NAND_CMD_TOSHIBA_BEF_COMMAND1		0x26
+#define	NAND_CMD_TOSHIBA_BEF_COMMAND2		0x5d
+
+
+//for Hynix
+#define	HYNIX_26NM_8GB 		1		//H27UCG8T2M
+#define	HYNIX_26NM_4GB 		2		//H27UBG8T2BTR
+#define	HYNIX_20NM_8GB 		3		//
+#define	HYNIX_20NM_4GB 		4		//
+//for Toshiba
+#define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
+										//TC58NVG6D2GTA00
+
+
+
+struct aml_nand_read_retry{
+	u8	flag;
+	u8	reg_cnt;
+	u8	retry_cnt;
+	u8	default_flag;
+	u8	cur_cnt[MAX_CHIP_NUM];
+	u8	reg_addr[READ_RETRY_REG_NUM];
+	u8	reg_default_value[MAX_CHIP_NUM][READ_RETRY_REG_NUM];	
+	char	reg_offset_value[READ_RETRY_CNT][READ_RETRY_REG_NUM];	
+	void	(*get_default_value)(struct mtd_info *mtd);
+	void	(*set_default_value)(struct mtd_info *mtd);
+	void	(*save_default_value)(struct mtd_info *mtd);
+	void	(*read_retry_handle)(struct mtd_info *mtd, int chipnr);
+	void	(*read_retry_exit)(struct mtd_info *mtd, int chipnr);
+};
+
+struct aml_nand_slc_program{
+	u8	flag;
+	u8	reg_cnt;
+	u8	reg_addr[ENHANCE_SLC_REG_NUM];
+	u8	reg_default_value[MAX_CHIP_NUM][ENHANCE_SLC_REG_NUM];	
+	char	reg_offset_value[ENHANCE_SLC_REG_NUM];
+	void	(*get_default_value)(struct mtd_info *mtd);
+	void	(*exit_enslc_mode)(struct mtd_info *mtd);
+	void	(*enter_enslc_mode)(struct mtd_info *mtd);
+};
+
+struct new_tech_nand_t{
+    u8	type;
+    struct aml_nand_slc_program slc_program_info;
+    struct aml_nand_read_retry read_rety_info;
+};
+#endif
 struct aml_nand_chip {
 	/* mtd info */
 	u8 mfr_type;
@@ -459,11 +527,15 @@ struct aml_nand_chip {
 	unsigned int *user_info_buf;
 	int8_t *block_status;
 
+	u8 ecc_cnt_limit;
+	u8 ecc_cnt_cur;
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
 	struct aml_nandenv_info_t *aml_nandenv_info;
 	struct aml_nand_bch_desc 	*bch_desc;
-
+#ifdef NEW_NAND_SUPPORT
+	struct new_tech_nand_t  new_nand_info;
+#endif
 	/* platform info */
 	struct aml_nand_platform	*platform;
 
