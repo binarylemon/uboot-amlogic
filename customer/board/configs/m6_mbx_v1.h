@@ -44,6 +44,9 @@
 #define CONFIG_CMD_DHCP 1
 #define CONFIG_CMD_RARP 1
 
+//#define CONFIG_NET_RGMII
+#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
+
 #define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
 #define CONFIG_HOSTNAME        arm_m6
 #define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
