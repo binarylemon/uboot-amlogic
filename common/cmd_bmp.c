@@ -237,15 +237,10 @@ static int bmp_display(ulong addr, int x, int y)
 		printf("There is no valid bmp file at the given address\n");
 		return 1;
 	}
-
-#if (defined(CONFIG_LCD) || defined(CONFIG_VIDEO_AMLLCD))
-	extern int lcd_display_bitmap (ulong, int, int);
-
-	ret = lcd_display_bitmap ((unsigned long)bmp, x, y);
-#elif defined(CONFIG_VIDEO)
+    
+#if (defined(CONFIG_LCD) || defined(CONFIG_VIDEO_AMLLCD) || defined(CONFIG_VIDEO) || defined(CONFIG_VIDEO_AML))
 	extern int video_display_bitmap (ulong, int, int);
-
-	ret = video_display_bitmap ((unsigned long)bmp, x, y);
+    ret = video_display_bitmap ((unsigned long)bmp, x, y);
 #else
 # error bmp_display() requires CONFIG_LCD or CONFIG_VIDEO
 #endif

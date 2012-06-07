@@ -15,12 +15,33 @@
  *
  */
 
-#include "asm/arch-m1/am_regs.h"
+#include <asm/arch/io.h>
+#include <common.h>
 #include "hdmi_tx_reg.h"
+
+// if the following bits are 0, then access HDMI IP Port will cause system hungup
+#define GATE_NUM    2
+Hdmi_Gate_s hdmi_gate[GATE_NUM] =   {   {HHI_HDMI_CLK_CNTL, 8},
+                                        {HHI_GCLK_MPEG2   , 4},
+                                    };
+
+// In order to prevent system hangup, add check_cts_hdmi_sys_clk_status() to check 
+static void check_cts_hdmi_sys_clk_status(void)
+{
+    int i;
+
+    for(i = 0; i < GATE_NUM; i++){
+        if(!(READ_CBUS_REG(hdmi_gate[i].cbus_addr) & (1<<hdmi_gate[i].gate_bit))){
+            printf("HDMI Gate Clock is off, turn on now\n");
+            WRITE_CBUS_REG_BITS(hdmi_gate[i].cbus_addr, 1, hdmi_gate[i].gate_bit, 1);
+        }
+    }
+}
 
 unsigned long hdmi_rd_reg(unsigned long addr)
 {
     unsigned long data;
+    check_cts_hdmi_sys_clk_status();
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     
@@ -32,6 +53,7 @@ unsigned long hdmi_rd_reg(unsigned long addr)
 
 void hdmi_wr_only_reg(unsigned long addr, unsigned long data)
 {
+    check_cts_hdmi_sys_clk_status();
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     
@@ -42,6 +64,7 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data)
 {
     unsigned long rd_data;
     
+    check_cts_hdmi_sys_clk_status();
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_REG(HDMI_ADDR_PORT, addr);
     

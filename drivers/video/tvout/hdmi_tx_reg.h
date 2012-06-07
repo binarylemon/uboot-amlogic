@@ -1,12 +1,36 @@
 #ifndef _HDMI_TX_REG_H
 #define _HDMI_TRX_REG_H
 
+#define M6_PLL_RESET(pll) \
+	WRITE_MPEG_REG(pll,READ_MPEG_REG(pll) | (1<<29));
+
+//wait for pll lock
+//must wait first (100us+) then polling lock bit to check
+#define M6_PLL_WAIT_FOR_LOCK(pll) \
+	do{\
+		__udelay(1000);\
+	}while((READ_MPEG_REG(pll)&0x80000000)==0);
+
+//M6 PLL control value 
+#define M6_PLL_CNTL_CST2 (0x814d3928)
+#define M6_PLL_CNTL_CST3 (0x6b425012)
+#define M6_PLL_CNTL_CST4 (0x110)
+
+//VID PLL
+#define M6_VID_PLL_CNTL_2 (M6_PLL_CNTL_CST2)
+#define M6_VID_PLL_CNTL_3 (M6_PLL_CNTL_CST3)
+#define M6_VID_PLL_CNTL_4 (M6_PLL_CNTL_CST4)
 
 unsigned long hdmi_rd_reg(unsigned long addr);
 
 void hdmi_wr_only_reg(unsigned long addr, unsigned long data);
 
 void hdmi_wr_reg(unsigned long addr, unsigned long data);
+
+typedef struct {
+    unsigned short cbus_addr;
+    unsigned char gate_bit;
+}Hdmi_Gate_s;
 
 #define HDMI_ADDR_PORT 0x2000
 #define HDMI_DATA_PORT 0x2004
@@ -42,7 +66,6 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data);
 #define HDMI_OTHER_INTR_STAT_CLR    0x6
 
 //********** TX related **********//
-#define TX_HDCP_DKEY_OFFSET             TX_BASE_ADDR+0x400 
 #define TX_RX_EDID_OFFSET               TX_BASE_ADDR+0x600 
 #define TX_HDCP_SHADOW_OFFSET           TX_BASE_ADDR+0x100 
 
@@ -70,17 +93,31 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data);
 #define TX_SYS0_BIST_DATA_8       TX_BASE_ADDR+0x00E 
 #define TX_SYS0_BIST_DATA_9       TX_BASE_ADDR+0x00F 
 // system config 1
-#define TX_SYS1_PRE_EMPHASIS      TX_BASE_ADDR+0x010 
-#define TX_SYS1_TERMINATION       TX_BASE_ADDR+0x011 
-#define TX_SYS1_AFE_SPARE0        TX_BASE_ADDR+0x012 
-#define TX_SYS1_AFE_SPARE1        TX_BASE_ADDR+0x013 
-#define TX_SYS1_BANDGAP           TX_BASE_ADDR+0x014 
-#define TX_SYS1_BIAS              TX_BASE_ADDR+0x015 
-#define TX_SYS1_AFE_RESET         TX_BASE_ADDR+0x016 
-#define TX_SYS1_AFE_TEST          TX_BASE_ADDR+0x017 
-#define TX_SYS1_PLL               TX_BASE_ADDR+0x018 
-#define TX_SYS1_TUNE              TX_BASE_ADDR+0x019 
-#define TX_SYS1_AFE_CONNECT       TX_BASE_ADDR+0x01A 
+#define TX_HDMI_PHY_CONFIG0       TX_BASE_ADDR+0x010
+    #define HDMI_COMMON_b7_b0       0
+#define TX_HDMI_PHY_CONFIG1       TX_BASE_ADDR+0x011
+    #define HDMI_CTL_REG_b3_b0      4
+    #define HDMI_COMMON_b11_b8      0
+#define TX_HDMI_PHY_CONFIG2        TX_BASE_ADDR+0x012 
+    #define HDMI_CTL_REG_b11_b4     0
+#define TX_HDMI_PHY_CONFIG3        TX_BASE_ADDR+0x013 
+    #define HDMI_MDR_PU             4
+    #define HDMI_L2H_CTL            0
+#define TX_HDMI_PHY_CONFIG4        TX_BASE_ADDR+0x014 
+    #define HDMI_PREM_CTL           4
+    #define HDMI_MODE               2   //0:narmal mode  1:clk chan(ch3) equals ch0  2:alternate high/low  3:alternate low/high
+    #define HDMI_PHY_CLK_EN         1   //1:enable serialzer clock
+    #define HDMI_LF_PD              0
+#define TX_HDMI_PHY_CONFIG5        TX_BASE_ADDR+0x015 
+    #define HDMI_VCM_CTL            5
+    #define HDMI_PREFCTL            0
+#define TX_HDMI_PHY_CONFIG6         TX_BASE_ADDR+0x016 
+    #define HDMI_SWING_CTL          4
+    #define HDMI_RTERM_CTL          0
+//#define TX_SYS1_AFE_TEST          TX_BASE_ADDR+0x017 
+//#define TX_SYS1_PLL               TX_BASE_ADDR+0x018 
+//#define TX_SYS1_TUNE              TX_BASE_ADDR+0x019 
+//#define TX_SYS1_AFE_CONNECT       TX_BASE_ADDR+0x01A 
 #define TX_SYS1_ACR_N_0           TX_BASE_ADDR+0x01C 
 #define TX_SYS1_ACR_N_1           TX_BASE_ADDR+0x01D 
 #define TX_SYS1_ACR_N_2           TX_BASE_ADDR+0x01E 
@@ -262,8 +299,11 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data);
 // system status 1
 #define TX_SYSST1_CALIB_BIT_RESULT_0     TX_BASE_ADDR+0x1E0 
 #define TX_SYSST1_CALIB_BIT_RESULT_1     TX_BASE_ADDR+0x1E1 
-#define TX_SYSST1_CALIB_BIT_RESULT_2     TX_BASE_ADDR+0x1E2 
-#define TX_SYSST1_CALIB_BIT_RESULT_3     TX_BASE_ADDR+0x1E3 
+//HDMI_STATUS_OUT[7:0]
+#define TX_HDMI_PHY_READBACK_0           TX_BASE_ADDR+0x1E2 
+//HDMI_COMP_OUT[4]
+//HDMI_STATUS_OUT[11:8]
+#define TX_HDMI_PHY_READBACK_1           TX_BASE_ADDR+0x1E3 
 #define TX_SYSST1_CALIB_BIT_RESULT_4     TX_BASE_ADDR+0x1E4 
 #define TX_SYSST1_CALIB_BIT_RESULT_5     TX_BASE_ADDR+0x1E5 
 #define TX_SYSST1_CALIB_BIT_RESULT_6     TX_BASE_ADDR+0x1E6 
@@ -416,5 +456,17 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data);
 #define TX_BUSY                 1  // Transmitter is busy
 #define TX_DONE                 2  // Message has been successfully transmitted
 #define TX_ERROR                3  // Message has been transmitted with error
+
+// rx_msg_cmd
+#define RX_NO_OP                0  // No transaction
+#define RX_ACK_CURRENT          1  // Read earliest message in buffer
+#define RX_DISABLE              2  // Disable receiving latest message
+#define RX_ACK_NEXT             3  // Clear earliest message from buffer and read next message
+
+// rx_msg_status
+#define RX_IDLE                 0  // No transaction
+#define RX_BUSY                 1  // Receiver is busy
+#define RX_DONE                 2  // Message has been received successfully
+#define RX_ERROR                3  // Message has been received with error
 
 #endif  // _HDMI_RX_REG_H

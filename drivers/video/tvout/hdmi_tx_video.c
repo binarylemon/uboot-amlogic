@@ -1,24 +1,12 @@
-#if 0
-#include <linux/version.h>
-#include <linux/module.h>
-#include <linux/types.h>
-#include <linux/kernel.h>
-#include <linux/interrupt.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/device.h>
-#include <linux/mm.h>
-#include <linux/major.h>
-#include <linux/platform_device.h>
-#include <linux/mutex.h>
-#include <linux/cdev.h>
-#endif
 #include "ubi_uboot.h"
-#include "asm/arch-m1/am_regs.h"
-#include "asm/arch-m1/vinfo.h"
+#include <common.h>
+#include <asm/arch/io.h>
+#include <amlogic/aml_tv.h>
 
-#include "hdmi_tx_module.h"
 #include "hdmi_info_global.h"
+#include "hdmi_tx_module.h"
+#include "hdmi_tx_reg.h"
+#include "tvenc_conf.h"
 
 static Hdmi_tx_video_para_t hdmi_tx_video_params[] = 
 {
@@ -343,7 +331,7 @@ int hdmitx_set_display(hdmitx_dev_t* hdmitx_device, HDMI_Video_Codes_t VideoCode
         }
         if(hdmitx_device->HWOp.SetDispMode(param)>=0){
     
-            hdmi_tx_construct_avi_packet(param, AVI_DB);
+            hdmi_tx_construct_avi_packet(param, (char*)AVI_DB);
     
             hdmitx_device->HWOp.SetPacket(HDMI_PACKET_AVI, AVI_DB, AVI_HB);
             ret = 0;

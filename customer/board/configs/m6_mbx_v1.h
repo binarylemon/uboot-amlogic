@@ -100,12 +100,12 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
-	"machid=4e27\0" \	
-	"video_dev=panel\0" \
-	"display_width=800\0" \
-	"display_height=1280\0" \
-	"display_bpp=16\0" \
-	"display_color_format_index=16\0" \
+	"machid=4e27\0" \
+	"video_dev=tvout\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
 	"display_layer=osd1\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
@@ -114,17 +114,16 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
 	"preboot=run switch_bootmode\0" \
-	"outputmode=480i\0" \
+	"outputmode=1080p\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
-	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \ 
+	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \
 	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \	
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
 
 
 #define CONFIG_BOOTCOMMAND \
- "setenv bootcmd run nandboot; saveenv; run nandboot" 
-//"nand read boot 82000000 0 800000;bootm"
-
+ "nand read 84900000 1000000 800000;bmp display 84900000;video dev open 1080P;video open"
+//\\temp above
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -170,12 +169,15 @@
 
 #define BOARD_LATE_INIT
 #define CONFIG_PREBOOT
-/* config LCD output */
 #define CONFIG_VIDEO_AML
-#define CONFIG_VIDEO_AMLLCD
+/* config TV output */
+#define CONFIG_VIDEO_AMLTVOUT
+/* config LCD output */
+//#define CONFIG_VIDEO_AMLLCD
 //#define CONFIG_VIDEO_AMLLCD_M3
 #define CONFIG_CMD_BMP
-#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR24
+#define TV_BPP LCD_BPP
 #define LCD_TEST_PATTERN
 #ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV
