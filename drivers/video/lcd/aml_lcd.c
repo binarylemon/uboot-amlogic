@@ -2,6 +2,7 @@
 #include <stdio_dev.h>
 #include <amlogic/aml_lcd.h>
 #include <video_fb.h>
+#include <amlogic/vinfo.h>
 
 /************************************************************************/
 /* ** FONT DATA								*/
@@ -58,26 +59,46 @@ int lcd_getfontheight()
 
 static void console_scrollup (void)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 	/* Copy up rows ignoring the first one */
 	memcpy (CONSOLE_ROW_FIRST, CONSOLE_ROW_SECOND, CONSOLE_SCROLL_SIZE);
 
 	/* Clear the last one */
-	memset (CONSOLE_ROW_LAST, COLOR_MASK(panel_info.lcd_color_bg), CONSOLE_ROW_SIZE);
+	memset (CONSOLE_ROW_LAST, COLOR_MASK(info->vd_color_bg), CONSOLE_ROW_SIZE);
 }
 
 /*----------------------------------------------------------------------*/
 
 static inline void console_back (void)
 {
-	if (--panel_info.console_col < 0) {
-		panel_info.console_col = CONSOLE_COLS-1 ;
-		if (--panel_info.console_row < 0) {
-			panel_info.console_row = 0;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	if (--(info->console_col) < 0) {
+		info->console_col = CONSOLE_COLS-1 ;
+		if (--info->console_row < 0) {
+			info->console_row = 0;
 		}
 	}
 
-	lcd_putc_xy (panel_info.console_col * VIDEO_FONT_WIDTH,
-		     panel_info.console_row * VIDEO_FONT_HEIGHT,
+	lcd_putc_xy (info->console_col * VIDEO_FONT_WIDTH,
+		     info->console_row * VIDEO_FONT_HEIGHT,
 		     ' ');
 }
 
@@ -85,14 +106,24 @@ static inline void console_back (void)
 
 static inline void console_newline (void)
 {
-	++panel_info.console_row;
-	panel_info.console_col = 0;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	++info->console_row;
+	info->console_col = 0;
 
 	/* Check if we need to scroll the terminal */
-	if (panel_info.console_row >= CONSOLE_ROWS) {
+	if (info->console_row >= CONSOLE_ROWS) {
 		/* Scroll everything up */
 		console_scrollup () ;
-		--panel_info.console_row;
+		--info->console_row;
 	}
 }
 
@@ -100,23 +131,33 @@ static inline void console_newline (void)
 
 void lcd_putc (const char c)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 	if (!lcd_is_enabled) {
 		serial_putc(c);
 		return;
 	}
 
 	switch (c) {
-	case '\r':	panel_info.console_col = 0;
+	case '\r':	info->console_col = 0;
 			return;
 
 	case '\n':	console_newline();
 			return;
 
 	case '\t':	/* Tab (8 chars alignment) */
-			panel_info.console_col +=  8;
-			panel_info.console_col &= ~7;
+			info->console_col +=  8;
+			info->console_col &= ~7;
 
-			if (panel_info.console_col >= CONSOLE_COLS) {
+			if (info->console_col >= CONSOLE_COLS) {
 				console_newline();
 			}
 			return;
@@ -124,10 +165,10 @@ void lcd_putc (const char c)
 	case '\b':	console_back();
 			return;
 
-	default:	lcd_putc_xy (panel_info.console_col * VIDEO_FONT_WIDTH,
-				     panel_info.console_row * VIDEO_FONT_HEIGHT,
+	default:	lcd_putc_xy (info->console_col * VIDEO_FONT_WIDTH,
+				     info->console_row * VIDEO_FONT_HEIGHT,
 				     c);
-			if (++panel_info.console_col >= CONSOLE_COLS) {
+			if (++info->console_col >= CONSOLE_COLS) {
 				console_newline();
 			}
 			return;
@@ -169,26 +210,46 @@ void lcd_printf(const char *fmt, ...)
 #if 0
 int lcd_draw_point (ushort x, ushort y, int color)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
     uchar *dest;
 	
-	if((x > panel_info.vl_col) || (y > panel_info.vl_row)) {
+	if((x > info->vl_col) || (y > info->vl_row)) {
 		return	-1;
 	}
 
-	dest = (uchar *)(panel_info.lcd_base + y * lcd_line_length + x * (LCD_BPP / 8));
+	dest = (uchar *)(info->vd_base + y * lcd_line_length + x * (LCD_BPP / 8));
 #if(LCD_BPP == LCD_COLOR24)
 	*dest++ = color & 0xff;
 	*dest++ = (color >> 8) & 0xff;
 	*dest = (color >> 16) & 0xff;
 #endif
-	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)info->vd_base, info->vl_col*info->vl_row*info->vl_bpix/8);
 	return	0;
 }
 int lcd_draw_rect (ushort x, ushort y, ushort w, ushort h, int color)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
     uchar *dest;
 	ushort row, col;
-	if((x > panel_info.vl_col) || (y > panel_info.vl_row)) {
+	if((x > info->vl_col) || (y > info->vl_row)) {
 		return	-1;
 	}
 
@@ -196,7 +257,7 @@ int lcd_draw_rect (ushort x, ushort y, ushort w, ushort h, int color)
 		return -1;
 	}
 
-	dest = (uchar *)(panel_info.lcd_base + y * lcd_line_length + x * (LCD_BPP / 8));
+	dest = (uchar *)(info->vd_base + y * lcd_line_length + x * (LCD_BPP / 8));
 	for(row=0; row<h; row++) {
 		for(col=0; col<w; col++) {
 #if(LCD_BPP == LCD_COLOR24)
@@ -205,26 +266,36 @@ int lcd_draw_rect (ushort x, ushort y, ushort w, ushort h, int color)
 			*dest++ = (color >> 16) & 0xff;
 #endif
 		}
-		dest = (uchar *)(panel_info.lcd_base + (y + row) * lcd_line_length + x * (LCD_BPP / 8));
+		dest = (uchar *)(info->vd_base + (y + row) * lcd_line_length + x * (LCD_BPP / 8));
 	}
-	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)info->vd_base, info->vl_col*info->vl_row*info->vl_bpix/8);
 	return	0;
 }
 #endif
 
 int lcd_drawchars (ushort x, ushort y, uchar *str, int count)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 	uchar *dest;
 	ushort off, row;
 
-	if((x > panel_info.vl_col) || (y > panel_info.vl_row))
+	if((x > info->vl_col) || (y > info->vl_row))
 	{
 		return	-1;
 	}
 
-	dest = (uchar *)(panel_info.lcd_base + y * lcd_line_length + x * (LCD_BPP / 8));
+	dest = (uchar *)(info->vd_base + y * lcd_line_length + x * (LCD_BPP / 8));
 	off  = x * LCD_BPP % 8;
-	//printf("panel_info.lcd_base:0x%x; lcd_line_length:%d; LCD_BPP:%d; dest: 0x%x\n", panel_info.lcd_base, lcd_line_length, LCD_BPP, dest);
+	//printf("info->vd_base:0x%x; lcd_line_length:%d; LCD_BPP:%d; dest: 0x%x\n", info->vd_base, lcd_line_length, LCD_BPP, dest);
 	for (row=0;  row < VIDEO_FONT_HEIGHT;  ++row, dest += lcd_line_length)  {
 		uchar *s = str;
 		int i;
@@ -247,36 +318,36 @@ int lcd_drawchars (ushort x, ushort y, uchar *str, int count)
 			//printf("c: %d;	row: %d;	bits: 0x%x\n", c, row, bits);
 
 #if(LCD_BPP == LCD_MONOCHROME)
-			sym  = (COLOR_MASK(panel_info.lcd_color_fg) & bits) |
-			       (COLOR_MASK(panel_info.lcd_color_bg) & ~bits);
+			sym  = (COLOR_MASK(info->vd_color_fg) & bits) |
+			       (COLOR_MASK(info->vd_color_bg) & ~bits);
 
 			*d++ = rest | (sym >> off);
 			rest = sym << (8-off);
 #elif(LCD_BPP == LCD_COLOR8)
 			for (c=0; c<8; ++c) {
 				*d++ = (bits & 0x80) ?
-						panel_info.lcd_color_fg : panel_info.lcd_color_bg;
+						info->vd_color_fg : info->vd_color_bg;
 				bits <<= 1;
 			}
 #elif(LCD_BPP == LCD_COLOR16)
 			for (c=0; c<8; ++c) {
 				*d++ = (bits & 0x80) ?
-						panel_info.lcd_color_fg : panel_info.lcd_color_bg;
+						info->vd_color_fg : info->vd_color_bg;
 				bits <<= 1;
 			}
 #elif(LCD_BPP == LCD_COLOR24)
 			for (c=0; c<8; ++c) {
 				if(bits & 0x80)
 				{
-					*d++ = (panel_info.lcd_color_fg >> 16) & 0xff;
-					*d++ = (panel_info.lcd_color_fg >> 8) & 0xff;
-					*d++ = panel_info.lcd_color_fg & 0xff;
+					*d++ = (info->vd_color_fg >> 16) & 0xff;
+					*d++ = (info->vd_color_fg >> 8) & 0xff;
+					*d++ = info->vd_color_fg & 0xff;
 				}
 				else
 				{
-					*d++ = (panel_info.lcd_color_bg >> 16) & 0xff;
-					*d++ = (panel_info.lcd_color_bg >> 8) & 0xff;
-					*d++ = panel_info.lcd_color_bg & 0xff;
+					*d++ = (info->vd_color_bg >> 16) & 0xff;
+					*d++ = (info->vd_color_bg >> 8) & 0xff;
+					*d++ = info->vd_color_bg & 0xff;
 				}
 				bits <<= 1;
 			}
@@ -287,7 +358,7 @@ int lcd_drawchars (ushort x, ushort y, uchar *str, int count)
 #if LCD_BPP == LCD_MONOCHROME
 		*d  = rest | (*d & ((1 << (8-off)) - 1));
 #endif
-	flush_cache((unsigned long)panel_info.lcd_base, panel_info.vl_col*panel_info.vl_row*panel_info.vl_bpix/8);
+	flush_cache((unsigned long)info->vd_base, info->vl_col*info->vl_row*info->vl_bpix/8);
 	}
 	return 0;
 }
@@ -361,12 +432,22 @@ static int test_colors[N_BLK_HOR*N_BLK_VERT] = {
 
 static void test_pattern (void)
 {
-	ushort v_max  = panel_info.vl_row;
-	ushort h_max  = panel_info.vl_col;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	ushort v_max  = info->vl_row;
+	ushort h_max  = info->vl_col;
 	ushort v_step = (v_max + N_BLK_VERT - 1) / N_BLK_VERT;
 	ushort h_step = (h_max + N_BLK_HOR  - 1) / N_BLK_HOR;
 	ushort v, h;
-	uchar *pix = (uchar *)panel_info.lcd_base;
+	uchar *pix = (uchar *)info->vd_base;
 
 	printf ("[LCD] Test Pattern: %d x %d [%d x %d]\n",
 		h_max, v_max, h_step, v_step);
@@ -449,22 +530,32 @@ int lcd_opt_cmd(int argc, char * const argv[])
 =================================================================================*/
 int aml_lcd_init(void)
 {	
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 		panel_oper.enable();
-		lcd_line_length = (panel_info.vl_col * NBITS (panel_info.vl_bpix)) / 8;
+		lcd_line_length = (info->vl_col * NBITS (info->vl_bpix)) / 8;
 		lcd_is_enabled = 1;		
 		/* lcd clear*/
-		memset ((char *)panel_info.lcd_base,	COLOR_MASK(lcd_getbgcolor()),
-									lcd_line_length*panel_info.vl_row);
-		flush_cache((unsigned long)panel_info.lcd_base, lcd_line_length*panel_info.vl_row);					
+		memset ((char *)info->vd_base,	COLOR_MASK(lcd_getbgcolor()),
+									lcd_line_length*info->vl_row);
+		flush_cache((unsigned long)info->vd_base, lcd_line_length*info->vl_row);					
 					
 		/* Initialize the console */
-	panel_info.console_col = 0;
+	info->console_col = 0;
 #ifdef CONFIG_LCD_INFO_BELOW_LOGO
-	panel_info.console_row = 7 + BMP_LOGO_HEIGHT / VIDEO_FONT_HEIGHT;
+	info->console_row = 7 + BMP_LOGO_HEIGHT / VIDEO_FONT_HEIGHT;
 #else
-	panel_info.console_row = 1;	/* leave 1 blank line below logo */
+	info->console_row = 1;	/* leave 1 blank line below logo */
 #endif
-	printf("LCD:	%dx%d %dbbp\n", panel_info.vl_col, panel_info.vl_row, panel_info.vl_bpix);
+	printf("LCD:	%dx%d %dbbp\n", info->vl_col, info->vl_row, info->vl_bpix);
 	return 0;
 }
 /************************************************************************/
@@ -479,13 +570,23 @@ int aml_lcd_init(void)
  */
 ulong lcd_setmem (ulong addr)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 	ulong size;
-	int line_length = (panel_info.vl_col * NBITS (panel_info.vl_bpix)) / 8;
+	int line_length = (info->vl_col * NBITS (info->vl_bpix)) / 8;
 
 	debug ("LCD panel info: %d x %d, %d bit/pix\n",
-		panel_info.vl_col, panel_info.vl_row, NBITS (panel_info.vl_bpix) );
+		info->vl_col, info->vl_row, NBITS (info->vl_bpix) );
 
-	size = line_length * panel_info.vl_row;
+	size = line_length * info->vl_row;
 
 	/* Round up to nearest full page */
 	size = (size + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
@@ -494,8 +595,8 @@ ulong lcd_setmem (ulong addr)
 	addr -= size;
 
 	debug ("Reserving %ldk for LCD Framebuffer at: %08lx\n", size>>10, addr);
-	panel_info.lcd_base = (void*)addr;
-	panel_info.lcd_console_address=(void*)addr;
+	info->vd_base = (void*)addr;
+	info->vd_console_address=(void*)addr;
 	
 	return (addr);
 }
@@ -504,28 +605,68 @@ ulong lcd_setmem (ulong addr)
 
 void lcd_setfgcolor (int color)
 {
-	panel_info.lcd_color_fg = color;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	info->vd_color_fg = color;
 }
 
 /*----------------------------------------------------------------------*/
 
 void lcd_setbgcolor (int color)
 {
-	panel_info.lcd_color_bg = color;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	info->vd_color_bg = color;
 }
 
 /*----------------------------------------------------------------------*/
 
 int lcd_getfgcolor (void)
 {
-	return panel_info.lcd_color_fg;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	return info->vd_color_fg;
 }
 
 /*----------------------------------------------------------------------*/
 
 int lcd_getbgcolor (void)
 {
-	return panel_info.lcd_color_bg;
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
+	return info->vd_color_bg;
 }
 
 #if	0
@@ -535,6 +676,16 @@ int lcd_getbgcolor (void)
 #ifdef CONFIG_LCD_LOGO
 void bitmap_plot (int x, int y)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 #ifdef CONFIG_ATMEL_LCD
 	uint *cmap;
 #else
@@ -545,7 +696,7 @@ void bitmap_plot (int x, int y)
 	uchar *fb;
 	ushort *fb16;
 #if defined(CONFIG_PXA250)
-	struct pxafb_info *fbi = &panel_info.pxa;
+	struct pxafb_info *fbi = &info->pxa;
 #elif defined(CONFIG_MPC823)
 	volatile immap_t *immr = (immap_t *) CONFIG_SYS_IMMR;
 	volatile cpm8xx_t *cp = &(immr->im_cpm);
@@ -556,16 +707,16 @@ void bitmap_plot (int x, int y)
 		(int)(sizeof(bmp_logo_palette)/(sizeof(ushort))));
 
 	bmap = &bmp_logo_bitmap[0];
-	fb   = (uchar *)(lcd_base + y * lcd_line_length + x);
+	fb   = (uchar *)(vd_base + y * lcd_line_length + x);
 
-	if (NBITS(panel_info.vl_bpix) < 12) {
+	if (NBITS(info->vl_bpix) < 12) {
 		/* Leave room for default color map */
 #if defined(CONFIG_PXA250)
 		cmap = (ushort *)fbi->palette;
 #elif defined(CONFIG_MPC823)
 		cmap = (ushort *)&(cp->lcd_cmap[BMP_LOGO_OFFSET*sizeof(ushort)]);
 #elif defined(CONFIG_ATMEL_LCD)
-		cmap = (uint *) (panel_info.mmio + ATMEL_LCDC_LUT(0));
+		cmap = (uint *) (info->mmio + ATMEL_LCDC_LUT(0));
 #else
 		/*
 		 * default case: generic system with no cmap (most likely 16bpp)
@@ -607,12 +758,12 @@ void bitmap_plot (int x, int y)
 		for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
 			memcpy (fb, bmap, BMP_LOGO_WIDTH);
 			bmap += BMP_LOGO_WIDTH;
-			fb   += panel_info.vl_col;
+			fb   += info->vl_col;
 		}
 	}
 	else { /* true color mode */
 		u16 col16;
-		fb16 = (ushort *)(lcd_base + y * lcd_line_length + x);
+		fb16 = (ushort *)(vd_base + y * lcd_line_length + x);
 		for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
 			for (j=0; j<BMP_LOGO_WIDTH; j++) {
 				col16 = bmp_logo_palette[(bmap[j]-16)];
@@ -622,7 +773,7 @@ void bitmap_plot (int x, int y)
 					((col16 & 0x0F00) << 4);
 				}
 			bmap += BMP_LOGO_WIDTH;
-			fb16 += panel_info.vl_col;
+			fb16 += info->vl_col;
 		}
 	}
 
@@ -644,6 +795,16 @@ void bitmap_plot (int x, int y)
 
 void *lcd_logo (void)
 {
+    vidinfo_t * info = NULL;
+#if defined CONFIG_VIDEO_AMLLCD
+    extern vidinfo_t panel_info;
+    info = & panel_info;
+#endif
+#if defined CONFIG_VIDEO_AMLTVOUT
+    extern vidinfo_t tv_info;
+    info = & tv_info;
+#endif
+
 #ifdef CONFIG_SPLASH_SCREEN
 	char *s;
 	ulong addr;
@@ -681,7 +842,7 @@ void *lcd_logo (void)
 #endif
 
 		if (lcd_display_bitmap (addr, x, y) == 0) {
-			return ((void *)panel_info.lcd_base);
+			return ((void *)info->vd_base);
 		}
 	}
 #endif /* CONFIG_SPLASH_SCREEN */
@@ -691,15 +852,15 @@ void *lcd_logo (void)
 #endif /* CONFIG_LCD_LOGO */
 
 #ifdef CONFIG_LCD_INFO
-	panel_info.console_col = LCD_INFO_X / VIDEO_FONT_WIDTH;
-	panel_info.console_row = LCD_INFO_Y / VIDEO_FONT_HEIGHT;
+	info->console_col = LCD_INFO_X / VIDEO_FONT_WIDTH;
+	info->console_row = LCD_INFO_Y / VIDEO_FONT_HEIGHT;
 	lcd_show_board_info();
 #endif /* CONFIG_LCD_INFO */
 
 #if defined(CONFIG_LCD_LOGO) && !defined(CONFIG_LCD_INFO_BELOW_LOGO)
-	return ((void *)((ulong)panel_info.lcd_base + BMP_LOGO_HEIGHT * lcd_line_length));
+	return ((void *)((ulong)info->vd_base + BMP_LOGO_HEIGHT * lcd_line_length));
 #else
-	return ((void *)panel_info.lcd_base);
+	return ((void *)info->vd_base);
 #endif /* CONFIG_LCD_LOGO && !CONFIG_LCD_INFO_BELOW_LOGO */
 }
 #endif
