@@ -102,8 +102,8 @@
 	"chipname=8726m6\0" \
 	"machid=4e27\0" \
 	"video_dev=tvout\0" \
-	"display_width=1920\0" \
-	"display_height=1080\0" \
+	"display_width=720\0" \
+	"display_height=480\0" \
 	"display_bpp=24\0" \
 	"display_color_format_index=24\0" \
 	"display_layer=osd1\0" \
@@ -114,7 +114,7 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
 	"preboot=run switch_bootmode\0" \
-	"outputmode=1080p\0" \
+	"outputmode=480p\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
 	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \
 	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
@@ -122,7 +122,11 @@
 
 
 #define CONFIG_BOOTCOMMAND \
- "nand read 84900000 1000000 800000;bmp display 84900000;video dev open 1080P;video open"
+ "nand read 82000000 1000000 800000;video dev open 480P;bmp display 82000000;video open"
+
+//#define CONFIG_BOOTCOMMAND \
+ "mmcinfo 0;fatload mmc 0 82000000 aml_logo480.bmp;video dev open 480P;bmp display 82000000;video open"
+
 //\\temp above
 
 #define CONFIG_AUTO_COMPLETE	1
