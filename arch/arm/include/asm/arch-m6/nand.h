@@ -352,7 +352,7 @@
 #define BBT_TAIL_MAGIC					"bbte"
 #define MTD_PART_MAGIC					"anpt"
 
-#define NAND_SYS_PART_SIZE				0x10000000
+#define NAND_SYS_PART_SIZE				0x20000000
 
 struct aml_nand_flash_dev {
 	char *name;
