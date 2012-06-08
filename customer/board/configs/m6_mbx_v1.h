@@ -120,9 +120,9 @@
 	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
 
-
 #define CONFIG_BOOTCOMMAND \
- "nand read 82000000 1000000 800000;video dev open 480P;bmp display 82000000;video open"
+ "setenv bootcmd run nandboot; saveenv; run nandboot"
+
 
 //#define CONFIG_BOOTCOMMAND \
  "mmcinfo 0;fatload mmc 0 82000000 aml_logo480.bmp;video dev open 480P;bmp display 82000000;video open"
