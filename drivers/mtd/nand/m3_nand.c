@@ -485,7 +485,7 @@ static int m3_nand_hwecc_correct(struct aml_nand_chip *aml_chip, unsigned char *
 			//if((aml_chip->ran_mode) && (NAND_ZERO_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*info_times_int_len])) < 30)){
 			//	continue;
 			//}
-
+            		aml_chip->zero_cnt = NAND_ZERO_CNT(*(unsigned *)(&aml_chip->user_info_buf[ecc_step_num*info_times_int_len]));
 			//printk ("nand communication have uncorrectable ecc error %d\n", ecc_step_num);
 			return -EIO;
 

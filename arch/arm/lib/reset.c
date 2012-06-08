@@ -38,12 +38,15 @@
  */
 
 #include <common.h>
-
+#if defined(CONFIG_CMD_NAND)
 extern void aml_nand_set_reg_default_hynix(void);
+#endif
 int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	puts ("resetting ...\n");
+#if defined(CONFIG_CMD_NAND)	
 	aml_nand_set_reg_default_hynix();
+#endif
 
 	udelay (50000);				/* wait 50 ms */
 
