@@ -384,7 +384,7 @@ int saveenv(void)
 	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
 	addr *= mtd->erasesize;
 	addr += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
-	if (aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr == 0) {
+	if ((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr == 0)&&aml_chip->aml_nandenv_info->env_valid) {
 
 		memset(&aml_env_erase_info, 0, sizeof(struct erase_info));
 		aml_env_erase_info.mtd = mtd;
@@ -421,7 +421,7 @@ int saveenv(void)
 		memcpy(env_new_p->data + default_environment_size, aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, sizeof(struct aml_nand_bbt_info));
 		env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);
 	}
-	printf("Writing to Nand... \n");
+	printf("Writing to Nand... 0x%x\n", addr);
 	if (writeenv(addr, (u_char *) env_new_p)) {
 		printf("FAILED!\n");
         free(env_new_p);
