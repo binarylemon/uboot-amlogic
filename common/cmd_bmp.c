@@ -34,6 +34,7 @@
 
 static int bmp_info (ulong addr);
 static int bmp_display (ulong addr, int x, int y);
+static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsigned new_height);
 
 /*
  * Allocate and decompress a BMP image using gunzip().
@@ -134,9 +135,30 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 	 return (bmp_display(addr, x, y));
 }
 
+static int do_bmp_scale(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	ulong src_addr,dst_addr;
+	unsigned width,height;
+
+	switch (argc) {
+	case 3:
+		src_addr = simple_strtoul(argv[1], NULL, 16);
+		dst_addr = simple_strtoul(argv[2], NULL, 16);
+		width = simple_strtoul(getenv("display_width"), NULL, NULL);
+		height = simple_strtoul(getenv("display_height"), NULL, NULL);
+		printf("src_addr=0x%x,dst_addr=0x%x,w=%d,h=%d\n",src_addr,dst_addr,width,height);
+		break;
+	default:
+		return cmd_usage(cmdtp);
+		break;
+	}
+	return (bmp_scale(src_addr, dst_addr, width,height));
+}
+
 static cmd_tbl_t cmd_bmp_sub[] = {
 	U_BOOT_CMD_MKENT(info, 3, 0, do_bmp_info, "", ""),
 	U_BOOT_CMD_MKENT(display, 5, 0, do_bmp_display, "", ""),
+	U_BOOT_CMD_MKENT(scale, 4, 0, do_bmp_scale, "", ""),
 };
 
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
@@ -175,7 +197,8 @@ U_BOOT_CMD(
 	bmp,	5,	1,	do_bmp,
 	"manipulate BMP image data",
 	"info <imageAddr>          - display image info\n"
-	"bmp display <imageAddr> [x y] - display image at x,y"
+	"bmp display <imageAddr> [x y] - display image at x,y\n"
+	"bmp scale imageaddr scaleaddr 	- scale image\n"
 );
 
 /*
@@ -250,3 +273,60 @@ static int bmp_display(ulong addr, int x, int y)
 
 	return ret;
 }
+
+static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsigned new_height)
+{
+	//ulong new_width,new_height;
+	bmp_image_t *bmp = (bmp_image_t *)src_addr;
+	bmp_image_t *bmp_dst = (bmp_image_t *)dst_addr;	
+	unsigned long len;
+
+	char *pBuf = (char*)bmp+bmp->header.data_offset;
+	printf("Begin bmp scale ...\n");
+
+	if (!((bmp->header.signature[0]=='B') &&
+		      (bmp->header.signature[1]=='M')))
+			bmp = gunzip_bmp(src_addr, &len);
+
+	if (!bmp) {
+		printf("There is no valid bmp file at the given address\n");
+		return 1;
+	}	      
+
+	memcpy(bmp_dst, bmp, sizeof(bmp_image_t));
+	bmp_dst->header.width=new_width;
+	bmp_dst->header.height=new_height;
+	char *pBuf_dst = (char*)bmp_dst+bmp_dst->header.data_offset;
+
+#if 1//Fast scale
+	int   nWidth   ,   nHeight	 ,	 nNewWidth	 ,	 nNewHeight   ,   nNewWidthBit	 ,	 nWidthBit; 
+	float m_xscale,m_yscale;
+	int i,j,x,y,oldoffset;	
+	char *pNewTmp = NULL; 
+	
+	m_xscale = (float)bmp_dst->header.width/(float)bmp->header.width;
+	m_yscale = (float)bmp_dst->header.height/(float)bmp->header.height;
+	nWidth = bmp->header.width;
+	nHeight = bmp->header.height;
+	nNewHeight = bmp_dst->header.width;
+	nNewWidth =	bmp_dst->header.width;
+	nNewWidthBit = ( 4 - nNewWidth * 3 % 4 )%4 + nNewWidth * 3;
+
+	for( i=0; i<nNewHeight; i++ )
+	{ 
+		pNewTmp = pBuf_dst + nNewWidthBit * i; 
+		for( j=0; j<nNewWidth * 3; j += 3 ) 
+		{ 
+			x = (int) (j/m_xscale); 
+			y = (int) (i/m_yscale); 
+			oldoffset = (y*nWidth*3 + x) - (y*nWidth*3 + x)%3; //correct positon in 3 byte mode
+			memcpy(pNewTmp+j, pBuf + oldoffset, 3);
+		} 
+	} 
+#endif
+	printf("End bmp scale \n");
+	return 0;
+}
+
+
+
