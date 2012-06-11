@@ -68,6 +68,26 @@ static int axp_get_basecap()
 		return 0;
 }
 
+static void axp_set_basecap(int base_cap)
+{
+	uint8_t val;
+	if(base_cap >= 0)
+		val = ABS(base_cap) | 0x80;
+	else
+		val = 0;
+	DBG_PSY_MSG("axp_set_basecap = %d\n", val);
+	axp_write(POWER20_DATA_BUFFER4, val);
+}
+
+/* 得到开路电压 */
+static int axp_get_ocv()
+{
+	int battery_ocv;
+	uint8_t v[2];
+	axp_reads(AXP_OCV_BUFFER0, 2, v);
+	battery_ocv = ((v[0] << 4) + (v[1] & 0x0f)) * 11 /10;
+	DBG_PSY_MSG("battery_ocv = %d\n", battery_ocv);
+}
 
 
 
@@ -102,8 +122,13 @@ static int axp_get_coulomb(void)
 int axp_charger_get_charging_percent()
 {
 
-	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol;
-	uint8_t val,v[2];
+	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol, battery_ocv, charging_status, is_ac_online;
+	uint8_t val;
+
+	battery_ocv = axp_get_basecap();
+	charging_status = axp_charger_get_charging_status();
+	is_ac_online = axp_charger_is_ac_online();
+
 
 	axp_read(POWER20_DATA_BUFFER5, &val);
 	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
@@ -120,17 +145,33 @@ int axp_charger_get_charging_percent()
 		bat_cap = BATTERYCAP;
 		rest_vol = 100 * (base_cap * BATTERYCAP / 100 + Cur_CoulombCounter + BATTERYCAP/200) / BATTERYCAP;
 		DBG_PSY_MSG("(val & 0x80) >> 7 = 1,rest_vol = :%d\n",rest_vol);
-		if(rest_vol < 0)
+
+		if((battery_ocv >= 4090) && (rest_vol < 100) && (charging_status == 0) && is_ac_online)
 		{
+			base_cap = 100 - (rest_vol - base_cap);
+			axp_set_basecap(base_cap);
+			rest_vol = 100;
+		}
+
+		if((rest_vol > 99) && charging_status)
+		{
+			base_cap = 99 - (rest_vol - base_cap);
+			axp_set_basecap(base_cap);
+			rest_vol = 99;
+		}
+
+		if((rest_vol > 0) && (battery_ocv < 3550))
+		{
+			base_cap = 0 - (rest_vol - base_cap);
+			axp_set_basecap(base_cap);
 			rest_vol = 0;
 		}
-		if(rest_vol > 100)
+
+		if((rest_vol < 1) && (battery_ocv > 3650))
 		{
-			rest_vol =100;
-		}
-		if(axp_charger_get_charging_status() && (rest_vol ==100))
-		{
-			rest_vol = 99;
+			base_cap = 1 - (rest_vol - base_cap);
+			axp_set_basecap(base_cap);
+			rest_vol = 1;
 		}
 	}
 
@@ -143,6 +184,7 @@ int axp_charger_get_charging_percent()
 			rest_vol = 100;
 		}
 	}
+	
     return rest_vol;
 }
 
