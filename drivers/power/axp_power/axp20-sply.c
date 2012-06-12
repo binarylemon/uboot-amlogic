@@ -2,12 +2,10 @@
 #include <div64.h>
 #include "axp-sply.h"
 
-#define DBG_AXP_PSY 0
-#if  DBG_AXP_PSY
-#define DBG_PSY_MSG(format,args...)   printf("[AXP]"format,##args)
-#else
-#define DBG_PSY_MSG(format,args...)   do {} while (0)
-#endif
+static int axp_debug = 0;
+
+#define DBG_PSY_MSG(format,args...)   if(axp_debug) printf("[AXP]"format,##args)
+
 
 #define ABS(x)				((x) >0 ? (x) : -(x) )
 
@@ -87,6 +85,7 @@ static int axp_get_ocv()
 	axp_reads(AXP_OCV_BUFFER0, 2, v);
 	battery_ocv = ((v[0] << 4) + (v[1] & 0x0f)) * 11 /10;
 	DBG_PSY_MSG("battery_ocv = %d\n", battery_ocv);
+	return battery_ocv;
 }
 
 
@@ -125,7 +124,7 @@ int axp_charger_get_charging_percent()
 	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol, battery_ocv, charging_status, is_ac_online;
 	uint8_t val;
 
-	battery_ocv = axp_get_basecap();
+	battery_ocv = axp_get_ocv();
 	charging_status = axp_charger_get_charging_status();
 	is_ac_online = axp_charger_is_ac_online();
 
@@ -148,6 +147,7 @@ int axp_charger_get_charging_percent()
 
 		if((battery_ocv >= 4090) && (rest_vol < 100) && (charging_status == 0) && is_ac_online)
 		{
+			DBG_PSY_MSG("((battery_ocv >= 4090) && (rest_vol < 100) && (charging_status == 0) && is_ac_online)\n");
 			base_cap = 100 - (rest_vol - base_cap);
 			axp_set_basecap(base_cap);
 			rest_vol = 100;
@@ -155,6 +155,7 @@ int axp_charger_get_charging_percent()
 
 		if((rest_vol > 99) && charging_status)
 		{
+			DBG_PSY_MSG("((rest_vol > 99) && charging_status)\n");
 			base_cap = 99 - (rest_vol - base_cap);
 			axp_set_basecap(base_cap);
 			rest_vol = 99;
@@ -162,6 +163,7 @@ int axp_charger_get_charging_percent()
 
 		if((rest_vol > 0) && (battery_ocv < 3550))
 		{
+			DBG_PSY_MSG("((rest_vol > 0) && (battery_ocv < 3550))\n");
 			base_cap = 0 - (rest_vol - base_cap);
 			axp_set_basecap(base_cap);
 			rest_vol = 0;
@@ -169,6 +171,7 @@ int axp_charger_get_charging_percent()
 
 		if((rest_vol < 1) && (battery_ocv > 3650))
 		{
+			DBG_PSY_MSG("((rest_vol < 1) && (battery_ocv > 3650))\n");
 			base_cap = 1 - (rest_vol - base_cap);
 			axp_set_basecap(base_cap);
 			rest_vol = 1;
@@ -262,4 +265,24 @@ int set_dcdc3(u32 val)
 	printf("POWER20_DC3OUT_VOL is set to 0x%02x\n", reg_val);
 	return 0;
 }
+
+
+
+static int do_set_axp_debug (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	axp_debug = simple_strtol(argv[1], NULL, 10);
+	
+	printf("axp_debug: %d\n", axp_debug);
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	set_axp_debug,	2,	0,	do_set_axp_debug,
+	"set axp debug",
+	"/N\n"
+	"set axp debug <level>\n"
+	"0-7\n"
+);
+
 
