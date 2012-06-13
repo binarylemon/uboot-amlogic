@@ -25,6 +25,27 @@ static int axp_get_freq(void)
 	return ret;
 }
 
+static inline void axp_read_adc(struct axp_adc_res *adc)
+{
+	uint8_t tmp[8];
+	axp_reads(AXP20_VACH_RES,8,tmp);
+	adc->vac_res = ((uint16_t) tmp[0] << 4 )| (tmp[1] & 0x0f);
+	adc->iac_res = ((uint16_t) tmp[2] << 4 )| (tmp[3] & 0x0f);
+	adc->vusb_res = ((uint16_t) tmp[4] << 4 )| (tmp[5] & 0x0f);
+	adc->iusb_res = ((uint16_t) tmp[6] << 4 )| (tmp[7] & 0x0f);
+	axp_reads(AXP20_VBATH_RES,6,tmp);
+	adc->vbat_res = ((uint16_t) tmp[0] << 4 )| (tmp[1] & 0x0f);
+
+	adc->ichar_res = ((uint16_t) tmp[2] << 4 )| (tmp[3] & 0x0f);
+
+	adc->idischar_res = ((uint16_t) tmp[4] << 5 )| (tmp[5] & 0x1f);
+}
+
+static inline int axp_ibat_to_mA(uint16_t reg)
+{
+	return (reg) * 500 / 1000;
+}
+
 int axp_charger_is_ac_online(void)
 {
 	uint8_t val;
@@ -121,16 +142,21 @@ static int axp_get_coulomb(void)
 int axp_charger_get_charging_percent()
 {
 
-	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol, battery_ocv, charging_status, is_ac_online;
+	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
+		battery_ocv, charging_status, is_ac_online, icharging;
 	uint8_t val;
+	struct axp_adc_res axp_adc;
 
+	axp_read_adc(&axp_adc);
 	battery_ocv = axp_get_ocv();
 	charging_status = axp_charger_get_charging_status();
 	is_ac_online = axp_charger_is_ac_online();
-
-
+	icharging = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res));
+	
 	axp_read(POWER20_DATA_BUFFER5, &val);
 	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
+
+	DBG_PSY_MSG("icharging = %d\n", icharging);
 
 	if((val & 0x80) >> 7)
 	{
@@ -159,6 +185,14 @@ int axp_charger_get_charging_percent()
 			base_cap = 99 - (rest_vol - base_cap);
 			axp_set_basecap(base_cap);
 			rest_vol = 99;
+		}
+
+		if((rest_vol < 100) && (icharging < 280) && charging_status && (battery_ocv >= 4150))
+		{
+			DBG_PSY_MSG("((rest_vol < 100) && (icharging < 280) && charging_status && (battery_ocv >= 4150))\n");
+			rest_vol++;
+			base_cap++;
+			axp_set_basecap(base_cap);
 		}
 
 		if((rest_vol > 0) && (battery_ocv < 3550))
