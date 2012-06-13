@@ -9,6 +9,8 @@
 #include <asm/arch/pctl.h>
 #include "boot_code.dat"
 
+#define CONFIG_ARC_SADAC_ENABLE
+#include "sardac_arc.c"
 
 
 //----------------------------------------------------
@@ -261,6 +263,7 @@ void test_ddr(int i)
 void enter_power_down()
 {
 	int i;
+	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 
 	//	disp_pctl();
 	//	test_ddr(0);
@@ -349,6 +352,7 @@ void enter_power_down()
 	//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
  #endif 
   
+
  	f_serial_puts("CPU off\n");
  	wait_uart_empty();
 	cpu_off();
@@ -370,41 +374,49 @@ void enter_power_down()
 	power_off_avdd33();
 #endif
 
-
-	//set signal as 0 from EE for prepare power off core power
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
 // ee use 32k, So interrup status can be accessed.
-	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-	switch_to_rtc();
-	udelay(1000);
-
+	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+	{
+		writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+		switch_to_rtc();
+		udelay(1000);
+	}
+	
+	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+	{
 #ifdef POWER_OFF_AVDD25
-	power_off_avdd25();
+		power_off_avdd25();
 #endif
 
 #ifdef POWER_OFF_VDDIO
-	power_off_vddio();
+		power_off_vddio();
 #endif
+	}
 
-#ifdef POWER_DOWN_DDR15
-	power_down_ddr15();//1.5v -> 1.3v
-#endif
 
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(0);
 #endif
 
-	// Now just wait for the power key
-   	f_serial_puts("Wait pwr key\n");
- 	wait_uart_empty();
-	
 	// gate off REMOTE, UART
-  	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
 #if 1
 //	udelay(200000);//Drain power
-	do{udelay(200);}while(!(readl(0xc1109860)&0x100));
+
+	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
+	{
+		power_off_ddr15();
+		do{udelay(2000);f_serial_puts("adc=");
+		f_serial_puts("\n");serial_put_hex(get_adc_sample_in_arc(4),32);
+		}while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
+		power_on_ddr15();
+	}
+	else
+		do{udelay(200);}while(!(readl(0xc1109860)&0x100));
+
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
 	for(i=0;i<200;i++)
@@ -430,26 +442,29 @@ void enter_power_down()
 	dc_dc_pwm_switch(1);
 #endif
 
-#ifdef POWER_DOWN_DDR15
-	power_up_ddr15();//1.3v -> 1.5v
-#endif
-
+	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+	{
 #ifdef POWER_OFF_VDDIO
-	power_on_vddio();
+		power_on_vddio();
 #endif
 
 #ifdef POWER_OFF_AVDD25
-	power_on_avdd25();
+		power_on_avdd25();
 #endif
+	}
+
+	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+	{
 //  In 32k mode, we had better not print any log.
-	store_restore_plls(0);//Before switch back to clk81, we need set PLL
+		store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
 //	dump_pmu_reg();
-
-	switch_to_81();
-  // ee go back to clk81
-	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
-	udelay(10000);
+	
+		switch_to_81();
+	  // ee go back to clk81
+		writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+		udelay(10000);
+	}
 
 	// power on even more domains
 	f_serial_puts("Pwr up avdd33/3gvcc\n");
@@ -462,6 +477,7 @@ void enter_power_down()
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
+
 
 //turn on ee
 // 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
@@ -501,6 +517,18 @@ void enter_power_down()
 	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
 	f_serial_puts("  MCFG\n");
 	wait_uart_empty();
+
+	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
+	{
+//		writel(readl(P_HHI_SYS_PLL_CNTL)&(~1<<30),P_HHI_SYS_PLL_CNTL);//power on sys pll
+		writel(0,P_AO_RTI_STATUS_REG2);
+		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+		clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+		writel(10,0xc1109904);
+		writel(1<<22|3<<24,0xc1109900);
+
+	    do{udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+	}
 
 #endif   //pwr_ddr_off
   // Moved the enable mmc req and SEC to ARM code.
@@ -850,18 +878,4 @@ void store_vid_pll()
 		udelay(24000); //wait 200us for PLL lock
 	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
 }
-
-void __raw_writel(unsigned val,unsigned reg)
-{
-	(*((volatile unsigned int*)(reg)))=(val);
-	asm(".long 0x003f236f"); //add sync instruction.
-}
-
-unsigned __raw_readl(unsigned reg)
-{
-	asm(".long 0x003f236f"); //add sync instruction.
-	return (*((volatile unsigned int*)(reg)));
-}
-
-
 

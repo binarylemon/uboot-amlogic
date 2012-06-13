@@ -514,9 +514,9 @@ void meson_pm_suspend(void)
 #endif
 
     // Disable MMC_LP_CTRL. Will be re-enabled at resume by kreboot.S
-    printf("MMC_LP_CTRL1 before=%#x\n", readl(P_MMC_LP_CTRL1));
-    writel(0x60a80000, P_MMC_LP_CTRL1);
-    printf("MMC_LP_CTRL1 after=%#x\n", readl(P_MMC_LP_CTRL1));
+    //printf("MMC_LP_CTRL1 before=%#x\n", readl(P_MMC_LP_CTRL1));
+    //writel(0x60a80000, P_MMC_LP_CTRL1);
+    //printf("MMC_LP_CTRL1 after=%#x\n", readl(P_MMC_LP_CTRL1));
 	
     pdata->ddr_clk = readl(P_HHI_DDR_PLL_CNTL);
 
@@ -534,12 +534,9 @@ void meson_pm_suspend(void)
 	printf("0:0x%x\n", elvis_array[0]);
 
 #ifndef SUSPEND_WITH_SARADC_ON	
-    analog_switch(OFF);
+//    analog_switch(OFF);
 #endif
 
-	elvis_array[1] = get_adc_sample(4);
-	printf("1:0x%x\n", elvis_array[1]);
-	
     //usb_switch(OFF, 0);
     //usb_switch(OFF, 1);
 
@@ -547,7 +544,7 @@ void meson_pm_suspend(void)
         pdata->set_vccx2(OFF);
     }
 	printf("a\n");
-    power_gate_switch(OFF);
+    
 	printf("b\n");
     clk_switch(OFF);
 	printf("c\n");
@@ -555,6 +552,7 @@ void meson_pm_suspend(void)
 	printf("2:0x%x\n", elvis_array[2]);
     pll_switch(OFF);
 
+	power_gate_switch(OFF);
 #ifndef CONFIG_MESON_SUSPEND
     printf("meson_sram_suspend params 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
            (unsigned)pdata->pctl_reg_base, (unsigned)pdata->mmc_reg_base, (unsigned)pdata->hiu_reg_base,
@@ -592,6 +590,7 @@ void meson_pm_suspend(void)
 #else
 #ifdef CONFIG_MESON_SUSPEND
 #ifdef SUSPEND_WITH_SARADC_ON
+
 	while(1)
 	{
 		if(get_key() || (get_adc_sample(4)<0x3f0))
@@ -600,6 +599,7 @@ void meson_pm_suspend(void)
 		}
 	}
 #else
+	writel(0x87654321, P_AO_RTI_STATUS_REG2);//set flag for u-boot suspend cmd
     meson_power_suspend();
     printf("Elvis ~.~!\n");
 	elvis_array[3] = get_adc_sample(4);

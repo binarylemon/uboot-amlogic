@@ -458,7 +458,7 @@ unsigned char _3gvcc;
 unsigned char ddr15_reg12;//reg=0x12
 unsigned char ddr15_reg23;//reg=0x23
 unsigned char dcdc_reg;
-
+/*
 void dump_pmu_reg()
 {
 	int i,data;
@@ -472,7 +472,7 @@ void dump_pmu_reg()
 	}
 
 }
-
+*/
 void power_off_avdd25()
 {
 	unsigned char data;
@@ -562,28 +562,16 @@ void power_on_3gvcc()
 
 }
 
-void power_down_ddr15()
-{
-	unsigned char data;
-
-	ddr15_reg23 = i2c_axp202_read(0x23);
-	data = ddr15_reg23 & 0xc0;
-	data = data | 0x18;// 1.3v//1.5
-	i2c_axp202_write(0x23,data);
-
-	ddr15_reg12 = i2c_axp202_read(0x12);
-	data = ddr15_reg12 & 0xef;//Disable DC-DC2 switch
-	i2c_axp202_write(0x12,data);
+void power_off_ddr15()
+{	
+	i2c_axp202_write(0x12,i2c_axp202_read(0x12) & 0xef);	
+	udelay(100);
 }
 
-void power_up_ddr15()
-{
-	unsigned char data;
-
-	ddr15_reg12 |= 0x10;
-	i2c_axp202_write(0x12, ddr15_reg12);
-
-	i2c_axp202_write(0x23, ddr15_reg23);
+void power_on_ddr15()
+{	
+	i2c_axp202_write(0x12,i2c_axp202_read(0x12) | 0x10);	
+	udelay(100);
 }
 
 void dc_dc_pwm_switch(unsigned int flag)

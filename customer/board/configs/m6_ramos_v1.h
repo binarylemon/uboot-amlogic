@@ -106,7 +106,7 @@
 #define CONFIG_CMD_REBOOT 1
 #define CONFIG_CMD_MATH 1
 #define CONFIG_CMD_SUSPEND 1
-#define SUSPEND_WITH_SARADC_ON
+//#define SUSPEND_WITH_SARADC_ON
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
@@ -147,7 +147,7 @@
 	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} >= ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
 	"custom_delay=setenv msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run powerkey_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
 	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
-	"into_sleep=setenv sleep_enable 1; video dev bl_off; video dev disable; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev enable; video dev bl_on\0" \
+	"into_sleep=suspend; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev enable; video dev bl_on\0" \
 	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then setenv sleep_enable 0; fi; fi; if saradc get_in_range 0x0 0x380; then msleep 100; if saradc get_in_range 0x0 0x380; then setenv sleep_enable 0; fi; fi\0" \
 	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
 	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then run update; fi; fi; fi\0" \

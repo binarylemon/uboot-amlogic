@@ -136,7 +136,8 @@ void run_arc_program()
     v = ((vaddr2 & 0xFFFFF)>>12);
     writel(v<<8,0xDA004000);
      *(volatile unsigned *)(vaddr2 +0x20) = (unsigned)(&platform_reset_handler);
-    l2x0_clean_all();
+    if(0x87654321 != readl(P_AO_RTI_STATUS_REG2))//need take more attention
+        l2x0_clean_all();
 
 	//**********************//
 
