@@ -9,7 +9,7 @@
 #include <asm/arch/pctl.h>
 #include "boot_code.dat"
 
-#define CONFIG_ARC_SADAC_ENABLE
+#define CONFIG_ARC_SARDAC_ENABLE
 #include "sardac_arc.c"
 
 
@@ -151,8 +151,6 @@ void disp_code()
 #define POWER_OFF_VDDIO
 #define DCDC_SWITCH_PWM
 #define CHECK_ALL_REGULATORS
-
-//#define POWER_DOWN_DDR15
 
 //#define POWER_OFF_WIFI_VCC
 //#define POWER_OFF_3GVCC
@@ -343,16 +341,6 @@ void enter_power_down()
 
 #endif
 
-#if 0
-	// Disable EE
-	f_serial_puts("EE off\n");
- 	wait_uart_empty();
-	// turn off ee
-	//  enable_iso_ee();
-	//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
- #endif 
-  
-
  	f_serial_puts("CPU off\n");
  	wait_uart_empty();
 	cpu_off();
@@ -377,15 +365,14 @@ void enter_power_down()
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
 // ee use 32k, So interrup status can be accessed.
+#ifdef CONFIG_ARC_SARDAC_ENABLE
 	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+#endif
 	{
 		writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
 		switch_to_rtc();
 		udelay(1000);
-	}
-	
-	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
-	{
+
 #ifdef POWER_OFF_AVDD25
 		power_off_avdd25();
 #endif
@@ -409,9 +396,13 @@ void enter_power_down()
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
 		power_off_ddr15();
-		do{udelay(2000);f_serial_puts("adc=");
-		f_serial_puts("\n");serial_put_hex(get_adc_sample_in_arc(4),32);
-		}while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
+
+#ifdef CONFIG_ARC_SARDAC_ENABLE
+		do{udelay(2000);}
+		while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
+#else
+		do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
+#endif//CONFIG_ARC_SARDAC_ENABLE
 		power_on_ddr15();
 	}
 	else
@@ -434,15 +425,12 @@ void enter_power_down()
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
- 
-//  ee_on();
- 
-//  disable_iso_ao();
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(1);
 #endif
-
+#ifdef CONFIG_ARC_SARDAC_ENABLE
 	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
+#endif
 	{
 #ifdef POWER_OFF_VDDIO
 		power_on_vddio();
@@ -451,14 +439,10 @@ void enter_power_down()
 #ifdef POWER_OFF_AVDD25
 		power_on_avdd25();
 #endif
-	}
+	//  In 32k mode, we had better not print any log.
+//		store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
-	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
-	{
-//  In 32k mode, we had better not print any log.
-		store_restore_plls(0);//Before switch back to clk81, we need set PLL
-
-//	dump_pmu_reg();
+	//	dump_pmu_reg();
 	
 		switch_to_81();
 	  // ee go back to clk81
@@ -478,10 +462,6 @@ void enter_power_down()
 	power_on_3gvcc();
 #endif
 
-
-//turn on ee
-// 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
-// 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
  	uart_reset();
 
 //	f_serial_puts("step 7\n");
@@ -877,5 +857,17 @@ void store_vid_pll()
 		writel(vidpll_settings[0] & ~(3<<29),P_HHI_VID_PLL_CNTL);
 		udelay(24000); //wait 200us for PLL lock
 	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
+}
+
+void __raw_writel(unsigned val,unsigned reg)
+{
+	(*((volatile unsigned int*)(reg)))=(val);
+	asm(".long 0x003f236f"); //add sync instruction.
+}
+
+unsigned __raw_readl(unsigned reg)
+{
+	asm(".long 0x003f236f"); //add sync instruction.
+	return (*((volatile unsigned int*)(reg)));
 }
 
