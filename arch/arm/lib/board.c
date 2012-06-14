@@ -283,6 +283,12 @@ init_fnc_t *init_sequence[] = {
 #endif
 	NULL,
 };
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+#include <asm/arch/timer.h>
+unsigned int spl_boot_end,lib_board_init_f_start,lib_board_init_f_end;
+unsigned int lib_board_init_r_start,main_loop_start;
+#endif
 extern ulong __mmu_table; 
 void board_init_f (ulong bootflag)
 {
@@ -489,6 +495,13 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	ulong flash_size;
 #endif
 
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	spl_boot_end = *((volatile unsigned int*)0x83a00000);
+	lib_board_init_r_start = get_utimer(0);
+
+	printf("\nfrom sys start to board_init_r time(us):%d\n",(lib_board_init_r_start-spl_boot_end));
+#endif
+
 	gd = id;
 	bd = gd->bd;
 
@@ -678,6 +691,11 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		setenv ("mem", (char *)memsz);
 #endif		
 	}
+#endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	main_loop_start = get_utimer(0);
+	printf("\n from board_init_r to start main_loop time(us):%d\n\n",main_loop_start-lib_board_init_r_start);
 #endif
 
 	/* main_loop() can return to retry autoboot, if so just run it again. */

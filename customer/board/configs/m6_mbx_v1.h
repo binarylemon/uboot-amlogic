@@ -5,6 +5,10 @@
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
 
+//#define TEST_UBOOT_BOOT_SPEND_TIME
+
+
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
@@ -34,6 +38,9 @@
 //#define CONFIG_MACHID_CHECK 1
 
 #define CONFIG_L2_OFF			1
+//#define CONFIG_ICACHE_OFF	1
+//#define CONFIG_DCACHE_OFF	1
+
 
 #define CONFIG_CMD_NET   1
 
@@ -81,6 +88,14 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
+#define CONFIG_IMPROVE_UCL_DEC   1
+
+#ifdef CONFIG_IMPROVE_UCL_DEC
+#define UCL_DEC_EN_IDCACHE        1
+#define UCL_DEC_EN_IDCACHE_FINE_TUNE  1
+#endif
+
+
 #define CONFIG_CMD_AUTOSCRIPT
 //#define CONFIG_CMD_AML 1
 #define CONFIG_CMD_IMGPACK 1
@@ -123,9 +138,10 @@
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"
 
-
-//#define CONFIG_BOOTCOMMAND \
+/*
+#define CONFIG_BOOTCOMMAND \
  "mmcinfo 0;fatload mmc 0 82000000 aml_logo480.bmp;video dev open 480P;bmp display 82000000;video open"
+*/
 
 //\\temp above
 
@@ -170,6 +186,16 @@
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
+
+
+/*
+ * Size of malloc() pool
+ */
+						/* Sector */
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 26))
+#define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
+						/* initial data */
+
 
 #define BOARD_LATE_INIT
 #define CONFIG_PREBOOT
