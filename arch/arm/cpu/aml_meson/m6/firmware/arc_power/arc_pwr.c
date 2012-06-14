@@ -9,7 +9,7 @@
 #include <asm/arch/pctl.h>
 #include "boot_code.dat"
 
-#define CONFIG_ARC_SARDAC_ENABLE
+//#define CONFIG_ARC_SARDAC_ENABLE
 #include "sardac_arc.c"
 
 
