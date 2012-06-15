@@ -440,7 +440,7 @@ void enter_power_down()
 		power_on_avdd25();
 #endif
 	//  In 32k mode, we had better not print any log.
-//		store_restore_plls(0);//Before switch back to clk81, we need set PLL
+		store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
 	//	dump_pmu_reg();
 	
