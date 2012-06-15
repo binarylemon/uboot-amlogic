@@ -164,9 +164,9 @@
 
 #ifdef CONFIG_A9_MAX_CLK_RECOVERY	
 	#define A9_MAX_CLK_RECOVERY 800*1000*1000
-	#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
-#else
 	#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; snboot; bootm"
+#else
+	#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
 #endif /*CONFIG_A9_MAX_CLK_RECOVERY*/
 
 #define CONFIG_AUTO_COMPLETE	1

@@ -129,9 +129,9 @@
 
 #ifdef CONFIG_A9_MAX_CLK_RECOVERY	
 	#define A9_MAX_CLK_RECOVERY 800*1000*1000
-	#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
-#else
 	#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage; snboot; bootm"
+#else
+	#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage; bootm"
 #endif /*CONFIG_A9_MAX_CLK_RECOVERY*/
 
 
