@@ -582,56 +582,6 @@ int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return ret;
 }
 
-
-/*******************************************************************/
-/* fixup a9 max clock for recovery */
-/*******************************************************************/
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY
-extern int g_bFlagNormalBoot;
-static int do_set_normal_boot(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	g_bFlagNormalBoot = 1;
-	return 0;
-}
-
-U_BOOT_CMD(
-	snboot,	2,	1,	do_set_normal_boot,
-	"set normal boot",
-	"set normal boot\n"	
-);
-static void fixup_a9_max_clk_for_recovery (void)
-{
-	char buf[384],bufTemp[64], *start, *end;
-	char *cmdline = getenv ("bootargs");
-
-	memset(buf,0,sizeof(buf));
-	memset(bufTemp,0,sizeof(bufTemp));
-
-	if (cmdline) {
-		if ((start = strstr (cmdline, "a9_clk_max=")) != NULL) {
-			end = strchr (start, ' ');			
-			if(end)
-				end++;
-			strncpy (buf, cmdline, (start - cmdline));
-			if (end)
-				strcpy(buf + (start - cmdline), end);
-
-			sprintf(bufTemp, " a9_clk_max=%d",A9_MAX_CLK_RECOVERY );
-			strcat(buf,bufTemp);
-		} else {
-			strcpy (buf, cmdline);			
-			sprintf(bufTemp, " a9_clk_max=%d",A9_MAX_CLK_RECOVERY );
-			strcat(buf,bufTemp);
-		}
-	} else {
-		sprintf(buf, "a9_clk_max=%d",A9_MAX_CLK_RECOVERY ); 
-	}
-
-	setenv ("bootargs", buf);	
-}
-#endif /* CONFIG_A9_MAX_CLK_RECOVERY */
-
-
 /*******************************************************************/
 /* bootm - boot application image from image in memory */
 /*******************************************************************/
@@ -659,12 +609,6 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		relocated = 1;
 	}
 #endif
-
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY
-	extern int g_bFlagNormalBoot;	
-	if(!g_bFlagNormalBoot)
-		fixup_a9_max_clk_for_recovery();
-#endif	/*CONFIG_A9_MAX_CLK_RECOVERY*/
 
 	/* determine if we have a sub command */
 	if (argc > 1) {

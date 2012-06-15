@@ -159,15 +159,7 @@
 //"sleep_get_key=suspend; run aconline_or_not; setenv sleep_enable 0\0" \
 
 
-//note: enable  A9 run with lower clock when recovery or update
-#define CONFIG_A9_MAX_CLK_RECOVERY
-
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY	
-	#define A9_MAX_CLK_RECOVERY 800*1000*1000
-	#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; snboot; bootm"
-#else
-	#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
-#endif /*CONFIG_A9_MAX_CLK_RECOVERY*/
+#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 

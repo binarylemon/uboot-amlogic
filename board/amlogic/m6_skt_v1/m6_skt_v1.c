@@ -498,10 +498,6 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY
-int g_bFlagNormalBoot = 0;
-#endif	/*CONFIG_A9_MAX_CLK_RECOVERY*/
-
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
@@ -518,13 +514,7 @@ int board_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-
-
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY
-	g_bFlagNormalBoot = 0;
-#endif	/*CONFIG_A9_MAX_CLK_RECOVERY*/
-
-
+	
 	return 0;
 }
 

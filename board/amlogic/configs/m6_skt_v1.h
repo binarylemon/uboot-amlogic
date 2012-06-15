@@ -110,7 +110,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=F81\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt a9_clk_max=1320000000\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -124,16 +124,7 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 
-//note: enable  A9 run with lower clock when recovery or update
-#define CONFIG_A9_MAX_CLK_RECOVERY
-
-#ifdef CONFIG_A9_MAX_CLK_RECOVERY	
-	#define A9_MAX_CLK_RECOVERY 800*1000*1000
-	#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage; snboot; bootm"
-#else
-	#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage; bootm"
-#endif /*CONFIG_A9_MAX_CLK_RECOVERY*/
-
+#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
