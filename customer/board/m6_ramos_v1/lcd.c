@@ -41,21 +41,32 @@
 extern GraphicDevice aml_gdev;
 vidinfo_t panel_info;
 
-//Define backlight control method
-#define BL_CTL_GPIO		0
-#define BL_CTL_PWM		1
-#define BL_CTL			BL_CTL_GPIO
-#define DEFAULT_BL_LEVEL	128
+//*****************************************
+// Define backlight control method
+//*****************************************
+#define BL_CTL_GPIO 	0
+#define BL_CTL_PWM  	1
+#define BL_CTL      	BL_CTL_GPIO
 
-#if(BL_CTL==BL_CTL_PWM)
-#define PWM_MAX         60000   //PWM_MAX <= 65535
-#define	PWM_PRE_DIV		0		//pwm_freq = 24M / (pre_div + 1) / PWM_MAX	
+//backlight controlled parameters in driver, define the real backlight level
+#if (BL_CTL==BL_CTL_GPIO)
+#define	DIM_MAX			0x0
+#define	DIM_MIN			0xd	
+#elif (BL_CTL==BL_CTL_PWM)
+#define	PWM_CNT			60000			//PWM_CNT <= 65535
+#define	PWM_PRE_DIV		0				//pwm_freq = 24M / (pre_div + 1) / PWM_CNT
+#define PWM_MAX         (PWM_CNT * 8 / 10)		
+#define PWM_MIN         (PWM_CNT * 3 / 10)  //according to LED-driver-IC reqirement(or customer reqirement), 0 <= PWM_MIN < PWM_MAX
 #endif
 
-#define BL_MAX_LEVEL	255
-#define BL_MIN_LEVEL	0
+//brightness level in Android UI menu
+#define BL_MAX_LEVEL    	255
+#define BL_MIN_LEVEL    	20	
 
 static unsigned bl_level = 0;
+static Bool_t data_status = OFF;
+static Bool_t bl_status = OFF;
+//*****************************************
 
 static void lvds_ports_ctrl(Bool_t status)
 { 
@@ -65,20 +76,23 @@ static void lvds_ports_ctrl(Bool_t status)
         WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 3)); // enable fifo
         WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) | (0x2f<<0));  //enable LVDS phy port
     }else {
+		WRITE_MPEG_REG(LVDS_PHY_CNTL3, READ_MPEG_REG(LVDS_PHY_CNTL3) & ~(1<<0));
+		WRITE_MPEG_REG(LVDS_PHY_CNTL5, READ_MPEG_REG(LVDS_PHY_CNTL5) & ~(1<<11));  //shutdown lvds phy
         WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) & ~(0x7f<<0));  //disable LVDS phy port
         WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) & ~(1 << 3)); // disable fifo		
     }
+	data_status = status;
 }
 
 static void backlight_power_ctrl(Bool_t status)
-{
-	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+{	
     if( status == ON )
 	{
-	    mdelay(20);
-	    lvds_ports_ctrl(ON);    
-	    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
-		mdelay(300);	
+		if ((bl_status == ON) || (data_status == OFF))
+			return;
+        WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
+        mdelay(20); 
+	
 		//BL_EN: GPIOD_1(PWM_D)
 #if (BL_CTL==BL_CTL_GPIO)	
 	    set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
@@ -88,8 +102,7 @@ static void backlight_power_ctrl(Bool_t status)
 		WRITE_CBUS_REG_BITS(PWM_PWM_D, PWM_MAX, 16, 16);	//pwm high
 		WRITE_MPEG_REG(PWM_MISC_REG_CD, (READ_MPEG_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (PWM_PRE_DIV<<16) | (1<<1)));  //enable pwm clk & pwm output
 		WRITE_MPEG_REG(PERIPHS_PIN_MUX_2, READ_MPEG_REG(PERIPHS_PIN_MUX_2) | (1<<3));  //enable pwm pinmux
-#endif
-    	mdelay(20);
+#endif    	
 	}
 	else
 	{
@@ -99,33 +112,53 @@ static void backlight_power_ctrl(Bool_t status)
 		set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
 	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
 		
-	    mdelay(20);
-	    lvds_ports_ctrl(OFF);    
-	    mdelay(20);
+		bl_level = 0;	    
 	}	
+	bl_status = status;
+	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+}
+
+#define BL_MID_LEVEL    		128
+#define BL_MAPPED_MID_LEVEL		102
+static unsigned set_level;
+void set_backlight_level(unsigned level)
+{
+	debug("%s :%d\n", __FUNCTION__,level);
+	level = (level > BL_MAX_LEVEL ? BL_MAX_LEVEL : (level < BL_MIN_LEVEL ? 0 : level));	
+	set_level =  level;
+ 
+    if (set_level > BL_MID_LEVEL) {
+                set_level = ((set_level - BL_MID_LEVEL)*(BL_MAX_LEVEL-BL_MAPPED_MID_LEVEL))/(BL_MAX_LEVEL - BL_MID_LEVEL) + BL_MAPPED_MID_LEVEL; 
+    } else {  
+                set_level = (set_level*BL_MAPPED_MID_LEVEL)/BL_MID_LEVEL;
+    }
+
+	if ((set_level == 0)&&(bl_level != 0))
+	{
+		backlight_power_ctrl(OFF);		
+	}
+	else if (set_level > 0)
+	{	
+#if (BL_CTL==BL_CTL_GPIO)
+		set_level = DIM_MIN - ((set_level - 15) * (DIM_MIN - DIM_MAX)) / (BL_MAX_LEVEL - 15);	//BL_MIN_LEVEL(20) mapping to 15
+		WRITE_CBUS_REG_BITS(LED_PWM_REG0, set_level, 0, 4);
+#elif (BL_CTL==BL_CTL_PWM)
+		set_level = (PWM_MAX - PWM_MIN) * (set_level - 15) / (BL_MAX_LEVEL - 15) + PWM_MIN;	//BL_MIN_LEVEL(20) mapping to 15
+		WRITE_CBUS_REG_BITS(PWM_PWM_D, (PWM_CNT - set_level), 0, 16);  //pwm low
+    	WRITE_CBUS_REG_BITS(PWM_PWM_D, set_level, 16, 16);  //pwm high
+#endif
+		if (bl_level == 0)
+		{
+			backlight_power_ctrl(ON);				
+		}
+	}
+    bl_level = level;
 }
 
 unsigned get_backlight_level(void)
 {
     debug("%s :%d\n", __FUNCTION__,bl_level);
     return bl_level;
-}
-
-void set_backlight_level(unsigned level)
-{
-	debug("%s :%d\n", __FUNCTION__,level);
-    level = level>BL_MAX_LEVEL ? BL_MAX_LEVEL:(level<BL_MIN_LEVEL ? BL_MIN_LEVEL:level);
-	bl_level=level;
-
-#if (BL_CTL==BL_CTL_GPIO)
-	level = level * 15 / BL_MAX_LEVEL;
-	level = 15 - level;
-	WRITE_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
-#elif (BL_CTL==BL_CTL_PWM)
-	level = level * PWM_MAX / BL_MAX_LEVEL ;
-	WRITE_CBUS_REG_BITS(PWM_PWM_D, (PWM_MAX - level), 0, 16);  //pwm low
-    WRITE_CBUS_REG_BITS(PWM_PWM_D, level, 16, 16);  //pwm high
-#endif
 }
 
 static void lcd_power_ctrl(Bool_t status)
@@ -136,7 +169,7 @@ static void lcd_power_ctrl(Bool_t status)
 		//GPIOA27 -> LCD_PWR_EN#: 0  lcd 3.3v
 	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);
 	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
-	    mdelay(30);	    
+	    mdelay(20);	    
     
 #ifdef CONFIG_AW_AXP20
 		//AXP_GPIO3 -> VCCx3_EN#: 1
@@ -147,36 +180,36 @@ static void lcd_power_ctrl(Bool_t status)
 	    set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 1);
 	    set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE);
 #endif    
-    	mdelay(30); 
+    	mdelay(20); 
+		
+		//data ports enable
+	    lvds_ports_ctrl(ON); 
+		mdelay(200);
 	}
 	else
 	{
-		backlight_power_ctrl(OFF);
-    mdelay(50);	
+		backlight_power_ctrl(OFF);		
+		mdelay(250);
+		//data ports disable		
+	    lvds_ports_ctrl(OFF);    
+	    mdelay(20);   
     
- #ifdef CONFIG_AW_AXP20
-	//AXP_GPIO3 -> VCCx3_EN#: 0
-    axp_gpio_set_io(3,0);
+#ifdef CONFIG_AW_AXP20
+		//AXP_GPIO3 -> VCCx3_EN#: 0
+	    axp_gpio_set_io(3,0);
 #else
-    //GPIOD2 -> VCCx3_EN: 0
-    set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 0);
-    set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE);
+	    //GPIOD2 -> VCCx3_EN: 0
+	    set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 0);
+	    set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE);
 #endif    
-    mdelay(30);
+    	mdelay(20);
     
-    //GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
-    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
-    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
-    mdelay(10);
+	    //GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
+	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
+	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+	    mdelay(500);
 	}   
 }
-
-#define H_ACTIVE		1024
-#define V_ACTIVE		600
-#define H_PERIOD		1344
-#define V_PERIOD		660
-#define VIDEO_ON_PIXEL  80
-#define VIDEO_ON_LINE   22
 
 int  video_dac_enable(unsigned char enable_mask)
 {
@@ -192,6 +225,14 @@ int  video_dac_disable(void)
     return 0;    
 }   
 
+#define H_ACTIVE		1024
+#define V_ACTIVE		600
+#define H_PERIOD		1344
+#define V_PERIOD		635
+#define VIDEO_ON_PIXEL  80
+#define VIDEO_ON_LINE   22
+
+// Define LVDS physical PREM SWING VCM REF
 static Lvds_Phy_Control_t lcd_lvds_phy_control = 
 {
     .lvds_prem_ctl = 0x0,	
@@ -224,7 +265,7 @@ Lcd_Config_t lcd_config =
         .pll_ctrl = 0x10232,  //42.9M, 50.2Hz
         .div_ctrl = 0x18813,  
         .clk_ctrl = 0x1111, //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
-        //.sync_duration_num = 502,
+        //.sync_duration_num = 502,	//this parameter is auto calculated in display driver
         //.sync_duration_den = 10,
   
 		.video_on_pixel = VIDEO_ON_PIXEL,
@@ -257,12 +298,14 @@ Lcd_Config_t lcd_config =
 		.lvds_phy_control = &lcd_lvds_phy_control,
     },
 
-    // .power_on=lcd_power_on,
-    // .power_off=lcd_power_off,
-    // .backlight_on = power_on_backlight,
-    // .backlight_off = power_off_backlight,
-	// .get_bl_level = get_backlight_level,
-    // .set_bl_level = set_backlight_level,
+	//.lcd_power_ctrl = {	
+	    // .power_on=lcd_power_on,
+	    // .power_off=lcd_power_off,
+	    // .backlight_on = power_on_backlight,
+	    // .backlight_off = power_off_backlight,
+		// .get_bl_level = get_backlight_level,
+	    // .set_bl_level = set_backlight_level,
+	//},
 };
 
 static void lcd_setup_gamma_table(Lcd_Config_t *pConf)
@@ -302,40 +345,6 @@ static void lcd_video_adjust(Lcd_Config_t *pConf)
 	}
 }
 
-static void lcd_sync_duration(Lcd_Config_t *pConf)
-{
-	unsigned m, n, od, div, xd;
-	unsigned pre_div;
-	unsigned sync_duration;
-	
-	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
-	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
-	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
-	div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;
-	xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
-	
-	od = (od == 0) ? 1:((od == 1) ? 2:4);
-	switch(pConf->lcd_basic.lcd_type)
-	{
-		case LCD_DIGITAL_TTL:
-			pre_div = 1;
-			break;
-		case LCD_DIGITAL_LVDS:
-			pre_div = 7;
-			break;
-		default:
-			pre_div = 1;
-			break;
-	}
-	
-	sync_duration = m*24*100/(n*od*(div+1)*xd*pre_div);	
-	sync_duration = ((sync_duration * 100000 / H_PERIOD) * 10) / V_PERIOD;
-	sync_duration = (sync_duration + 5) / 10;	
-	
-	pConf->lcd_timing.sync_duration_num = sync_duration;
-	pConf->lcd_timing.sync_duration_den = 10;
-}
-
 static void power_on_backlight(void)
 {
 	//debug("%s\n", __FUNCTION__);
@@ -352,24 +361,20 @@ static void lcd_power_on(void)
 {
 	debug("%s\n", __FUNCTION__);
 	video_dac_disable();    
-    //power_on_lcd(); 
 	lcd_power_ctrl(ON);       
 }
 static void lcd_power_off(void)
 {
-	debug("%s\n", __FUNCTION__);
-	//power_off_backlight();
-	backlight_power_ctrl(OFF);
-    //power_off_lcd();
+	debug("%s\n", __FUNCTION__);	
+	backlight_power_ctrl(OFF);    
 	lcd_power_ctrl(OFF);
 }
 
 static void lcd_io_init(void)
 {
-    debug("%s\n", __FUNCTION__);
+    debug("%s\n", __FUNCTION__);    
     
-    //power_on_lcd();
-	lcd_power_ctrl(ON);     
+	//lcd_power_ctrl(ON);     
     //set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
@@ -383,8 +388,7 @@ static int lcd_enable(void)
 	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
 	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
 	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
-	
-	lcd_sync_duration(&lcd_config);
+
 	lcd_setup_gamma_table(&lcd_config);
 	lcd_video_adjust(&lcd_config);
     lcd_io_init();
@@ -396,9 +400,7 @@ static int lcd_enable(void)
 void lcd_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
-	//power_off_backlight();
-	backlight_power_ctrl(OFF);
-    //power_off_lcd();
+	backlight_power_ctrl(OFF);   
 	lcd_power_ctrl(OFF);
     lcd_remove();
 }
@@ -426,10 +428,10 @@ vidinfo_t panel_info =
 struct panel_operations panel_oper =
 {
 	.enable	=	lcd_enable,
-	.disable	=	lcd_disable,
+	.disable=	lcd_disable,
 	.bl_on	=	power_on_backlight,
 	.bl_off	=	power_off_backlight,
-	.set_bl_level	=	set_backlight_level,
+	.set_bl_level =	set_backlight_level,
 	.get_bl_level = get_backlight_level,	
 	.power_on=lcd_power_on,
     .power_off=lcd_power_off,
