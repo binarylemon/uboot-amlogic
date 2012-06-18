@@ -8,6 +8,8 @@
  *              haixiang.bao@amlogic.com
  *		  change to M6 clock setting
  *		   by Victor Wan
+ *		  add Charger detection
+ *              by Victor Wan 2012.6.18
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +32,8 @@
 #include <asm/arch/usb.h>
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-static amlogic_usb_config_t * g_usb_cfg = 0;
+static amlogic_usb_config_t * g_usb_cfg[BOARD_USB_MODE_MAX];
+
 static char * g_clock_src_name_m6[]={
     "XTAL input",
     "XTAL input divided by 2",
@@ -142,26 +145,101 @@ void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 	udelay(delay);
 
 }
-amlogic_usb_config_t * board_usb_start(void)
+const char * bc_name[]={
+	"UNKNOWN",
+	"SDP (PC)",
+	"DCP (Charger)",
+	"CDP (PC with Charger)",
+};
+static void usb_bc_detect(amlogic_usb_config_t * usb_cfg)
 {
-	if(!g_usb_cfg)
+	unsigned long delay = 1000;
+	int port_idx;
+	unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
+	usb_peri_reg_t *peri_a,*peri_b,*peri;
+	usb_adp_bc_data_t adp_bc;
+	usb_dbg_uart_data_t uart;
+	char bc_mode = BC_MODE_UNKNOWN;
+
+	peri_a = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_A);
+	peri_b = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_B);
+
+	if(port == USB_PHY_PORT_A){
+		peri = peri_a;
+		port_idx = 0;
+	}else{
+		peri = peri_b;
+		port_idx = 1;
+	}
+
+	adp_bc.d32 = peri->adp_bc;
+	if(adp_bc.b.device_sess_vld){
+		adp_bc.d32 = peri->adp_bc;
+		adp_bc.b.chrgsel = 0;
+		adp_bc.b.vdatdetenb = 1;
+		adp_bc.b.vdatsrcenb = 1;
+		adp_bc.b.dcd_enable = 0;
+		peri->adp_bc = adp_bc.d32;
+		mdelay(5);
+		adp_bc.d32 = peri->adp_bc;
+		if(adp_bc.b.chg_det){
+			mdelay(50);
+			adp_bc.d32 = peri->adp_bc;
+			adp_bc.b.chrgsel = 1;
+			adp_bc.b.vdatdetenb = 1;
+			adp_bc.b.vdatsrcenb = 1;
+			adp_bc.b.dcd_enable = 0;
+			peri->adp_bc = adp_bc.d32;
+			mdelay(5);
+			adp_bc.d32 = peri->adp_bc;
+			if(adp_bc.b.chg_det)
+				bc_mode = BC_MODE_DCP;
+			else
+				bc_mode = BC_MODE_CDP;
+		}
+		else{
+			bc_mode = BC_MODE_SDP;
+		}
+		adp_bc.d32 = peri->adp_bc;
+		adp_bc.b.vdatdetenb = 0;
+		adp_bc.b.vdatsrcenb = 0;
+		adp_bc.b.dcd_enable = 0;
+		peri->adp_bc = adp_bc.d32;
+
+	}
+
+	printf("detect usb battery charger mode: %s\n",bc_name[bc_mode]);
+	usb_cfg->battery_charging_det_cb(bc_mode);
+
+}
+amlogic_usb_config_t * board_usb_start(int mode)
+{
+	if(mode < 0 || mode >= BOARD_USB_MODE_MAX||!g_usb_cfg[mode])
 		return 0;
 
 
-	set_usb_phy_clock(g_usb_cfg);
-	set_usb_phy_power(g_usb_cfg,1);//on
-	return g_usb_cfg;
+	set_usb_phy_clock(g_usb_cfg[mode]);
+	set_usb_phy_power(g_usb_cfg[mode],1);//on
+	if(mode == BOARD_USB_MODE_CHARGER && 
+	    g_usb_cfg[mode]->battery_charging_det_cb)
+		usb_bc_detect(g_usb_cfg[mode]);
+	return g_usb_cfg[mode];
 }
 
-int board_usb_stop(void)
+int board_usb_stop(int mode)
 {
-	printf("board_usb_stop!\n");
-	set_usb_phy_power(g_usb_cfg,0);//off
+	printf("board_usb_stop cfg: %d\n",mode);
+	if(mode < 0 || mode >= BOARD_USB_MODE_MAX)
+		return 1;
+	set_usb_phy_power(g_usb_cfg[mode],0);//off
 
 	return 0;
 }
-void board_usb_init(amlogic_usb_config_t * usb_cfg)
+void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
 {
-	g_usb_cfg = usb_cfg;
+	if(mode < 0 || mode >= BOARD_USB_MODE_MAX || !usb_cfg)
+		return 0;
+	printf("register usb cfg[%d] = %p\n",mode,usb_cfg);
+	g_usb_cfg[mode] = usb_cfg;
 }
 #endif //CONFIG_USB_DWC_OTG_HCD
