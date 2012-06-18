@@ -5,6 +5,10 @@
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
 
+//#define TEST_UBOOT_BOOT_SPEND_TIME
+
+
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
@@ -34,6 +38,9 @@
 //#define CONFIG_MACHID_CHECK 1
 
 #define CONFIG_L2_OFF			1
+//#define CONFIG_ICACHE_OFF	1
+//#define CONFIG_DCACHE_OFF	1
+
 
 #define CONFIG_CMD_NET   1
 
@@ -43,6 +50,9 @@
 #define CONFIG_CMD_PING 1
 #define CONFIG_CMD_DHCP 1
 #define CONFIG_CMD_RARP 1
+
+//#define CONFIG_NET_RGMII
+#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
 
 #define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
 #define CONFIG_HOSTNAME        arm_m6
@@ -78,6 +88,14 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
+#define CONFIG_IMPROVE_UCL_DEC   1
+
+#ifdef CONFIG_IMPROVE_UCL_DEC
+#define UCL_DEC_EN_IDCACHE        1
+#define UCL_DEC_EN_IDCACHE_FINE_TUNE  1
+#endif
+
+
 #define CONFIG_CMD_AUTOSCRIPT
 //#define CONFIG_CMD_AML 1
 #define CONFIG_CMD_IMGPACK 1
@@ -97,12 +115,12 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
-	"machid=4e27\0" \	
-	"video_dev=panel\0" \
-	"display_width=800\0" \
-	"display_height=1280\0" \
-	"display_bpp=16\0" \
-	"display_color_format_index=16\0" \
+	"machid=4e27\0" \
+	"video_dev=tvout\0" \
+	"display_width=720\0" \
+	"display_height=480\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
 	"display_layer=osd1\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
@@ -111,17 +129,21 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
 	"preboot=run switch_bootmode\0" \
-	"outputmode=480i\0" \
+	"outputmode=480p\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
-	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \ 
+	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \
 	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \	
-
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
 
 #define CONFIG_BOOTCOMMAND \
- "setenv bootcmd run nandboot; saveenv; run nandboot" 
-//"nand read boot 82000000 0 800000;bootm"
+ "setenv bootcmd run nandboot; saveenv; run nandboot"
 
+/*
+#define CONFIG_BOOTCOMMAND \
+ "mmcinfo 0;fatload mmc 0 82000000 aml_logo480.bmp;video dev open 480P;bmp display 82000000;video open"
+*/
+
+//\\temp above
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -165,14 +187,27 @@
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
 
+
+/*
+ * Size of malloc() pool
+ */
+						/* Sector */
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 26))
+#define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
+						/* initial data */
+
+
 #define BOARD_LATE_INIT
 #define CONFIG_PREBOOT
-/* config LCD output */
 #define CONFIG_VIDEO_AML
-#define CONFIG_VIDEO_AMLLCD
+/* config TV output */
+#define CONFIG_VIDEO_AMLTVOUT
+/* config LCD output */
+//#define CONFIG_VIDEO_AMLLCD
 //#define CONFIG_VIDEO_AMLLCD_M3
 #define CONFIG_CMD_BMP
-#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR24
+#define TV_BPP LCD_BPP
 #define LCD_TEST_PATTERN
 #ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV

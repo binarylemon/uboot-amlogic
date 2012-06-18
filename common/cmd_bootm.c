@@ -482,6 +482,10 @@ static cmd_tbl_t cmd_bootm_sub[] = {
 	U_BOOT_CMD_MKENT(go, 0, 1, (void *)BOOTM_STATE_OS_GO, "", ""),
 };
 
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+extern int main_loop_start;
+int bootm_start_time;
+#endif
 int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
@@ -588,6 +592,11 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	ulong		load_end = 0;
 	int		ret;
 	boot_os_fn	*boot_fn;
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	bootm_start_time = get_utimer(0);
+#endif
+
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;
 
@@ -695,6 +704,14 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	arch_preboot_os();
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	{   int boot_kernel_start;
+	    boot_kernel_start = get_utimer(0);
+	    printf("bootm start to prepare boot kernel time:%dus\n",boot_kernel_start-bootm_start_time);
+	    printf("from main_loop start to kernel decompress finished time:%dus\n",boot_kernel_start-main_loop_start);
+	}
+#endif
 
 	boot_fn(0, argc, argv, &images);
 

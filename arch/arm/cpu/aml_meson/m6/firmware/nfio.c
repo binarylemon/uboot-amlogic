@@ -76,7 +76,7 @@ STATIC_PREFIX short nfio_page_read(unsigned src,unsigned mem,unsigned ext)
     // scramble, first page is disabled by default.
     // code page is enabled/disabled by ext[19].
     // 0xa3 + (src&0xff) is used as seed,
-    writel(SEED | (0xa3 + (src&0xff)),P_NAND_CMD);
+    writel(SEED | (0xc2 + (src&0xff)),P_NAND_CMD);
     writel((ext&0x3fffff),P_NAND_CMD);
 //    (*P_NAND_CMD) = (ext&0x3fffff);
     writel((CE0 | IDLE ),P_NAND_CMD);           //send dummy cmd idle
@@ -128,7 +128,7 @@ STATIC_PREFIX short nfio_page_read(unsigned src,unsigned mem,unsigned ext)
 #endif
 STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned ext,unsigned area)
 {
-    int i, ecc_mode, short_mode, short_size, pages, page_size,pages_in_block;
+    int i, ecc_mode, short_mode, short_size, pages, page_size,pages_in_block, new_nand_type;
     int ret, data_size, page_base, read_size;
 	int total_page = 1024;
     // nand parameters
@@ -141,6 +141,7 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
 	    ecc_mode<2 ? 64 : 128; // unit: 8 bytes;
 	
 	pages_in_block = *(volatile int *)(NAND_TEMP_BUF+sizeof(int));
+	new_nand_type  = *(volatile int *)(NAND_TEMP_BUF+sizeof(int) + sizeof(int));
 	
 	serial_puts("pages_in_block=0x");
 	serial_put_hex(pages_in_block,32);
@@ -149,18 +150,27 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
     data_size = page_size * 8 * pages;
     
     page_base = ((area<<8)+1)+(src/data_size);
+    if((new_nand_type) && (new_nand_type < 10))
+    	page_base += 1;
     mem-=src%data_size;
     count+=src%data_size;
 
     for(i=0,read_size=0; i<total_page && read_size<count; i++, read_size+=data_size)
     {
        // do{
+       		if((new_nand_type) && (new_nand_type < 10)){		//for new nand
+       			if((i+page_base)%4 == 0)
+       				i += 2;
+       		}
        		ret = nfio_page_read(i+page_base, mem+read_size, ext);
 	        if (ret) 
 	        {	        	
 	        	page_base += pages_in_block;
 	        	i--;
 	        	total_page -= pages_in_block;
+	        	serial_puts("nand read addr=0x");	
+	        	serial_put_hex(i+page_base,32);
+	        	serial_puts("nfio_read read err here\n");
 	        }
 	    //}while(ret!=ERROR_NONE);
     }

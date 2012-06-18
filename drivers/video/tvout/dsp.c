@@ -1,6 +1,8 @@
 
-#include "asm/arch-m1/firm/regs.h"
-#include "asm/arch-m1/firm/io.h"
+#include <common.h>
+#include <asm/arch/io.h>
+#include <asm/arch/pinmux.h>
+#include <asm/arch/gpio.h>
 
 #include "dsp_firmware.h"
 

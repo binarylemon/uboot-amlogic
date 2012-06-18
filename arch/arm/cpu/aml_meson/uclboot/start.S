@@ -3,8 +3,8 @@
  *
  * Copyright (c) 2004	Texas Instruments <r-woodruff2@ti.com>
  *
- * Copyright (c) 2001	Marius Gr?ger <mag@sysgo.de>
- * Copyright (c) 2002	Alex Z®πpke <azu@sysgo.de>
+ * Copyright (c) 2001	Marius Gr√∂ger <mag@sysgo.de>
+ * Copyright (c) 2002	Alex Z√ºpke <azu@sysgo.de>
  * Copyright (c) 2002	Gary Jennejohn <garyj@denx.de>
  * Copyright (c) 2003	Richard Woodruff <r-woodruff2@ti.com>
  * Copyright (c) 2003	Kshitij <kshitij@ti.com>
@@ -32,7 +32,7 @@
 #include <config.h>
 #include <version.h>
 
-.globl _start
+.globl _start 
 _start: b	reset
 	ldr	pc, _undefined_instruction
 	ldr	pc, _software_interrupt
@@ -108,10 +108,9 @@ reset:
 	orr	r0, r0, #0xd3
 	msr	cpsr,r0
 
-
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-	bl	cpu_init_crit
+	//bl	cpu_init_crit
 #endif
 
 #ifndef CONFIG_SKIP_RELOCATE_UBOOT
@@ -119,7 +118,8 @@ relocate:				@ relocate U-Boot to RAM
 	adr	r0, _start		@ r0 <- current position of code
 	ldr	r1, _TEXT_BASE		@ test if we run from flash or RAM
 	cmp	r0, r1			@ don't reloc during debug
-	beq	stack_setup
+	//beq	stack_setup
+	beq init_cpu
 
 	ldr	r2, _armboot_start
 	ldr	r3, _bss_start
@@ -133,6 +133,12 @@ copy_loop:				@ copy 32 bytes at a time
 	ble	copy_loop
 #endif	/* CONFIG_SKIP_RELOCATE_UBOOT */
 
+    @enable i-cache,d-cache,mmu
+init_cpu:
+#ifndef CONFIG_SKIP_LOWLEVEL_INIT
+    bl	cpu_init_crit
+#endif
+    
 	/* Set up the stack */
 stack_setup:
 	ldr	r0, _TEXT_BASE		@ upper 128 KiB: relocated uboot
@@ -201,30 +207,142 @@ cpu_init_crit:
 	 * bl	cache_init		@ go setup pll,mux,memory
 	 * mov	lr, ip			@ restore link
 	 */
-#if !(CONFIG_ICACHE_OFF && CONFIG_DCACHE_OFF)
-	mov ip, lr
+#ifdef UCL_DEC_EN_IDCACHE_FINE_TUNE
 	ldr r0,__mmu_table
-	bl	cache_init		@go setup pll,mux,memory
-	mov lr, ip			@ restore link
-#endif	 
+	mcr p15,0,r0,c2,c0,0   @ setup TTB0
+
+	ldr r1,=0x55555555	   @ all domains set to client
+	mcr p15,0,r1,c3,c0,0   @ write Domain access control register
+
+	mov r3,#0
+	mcr p15,0,r3,c7,c5,6   @ Invalidate BTAC
+	mcr p15,0,r3,c7,c5,0   @ Invalidate ICache
+	dsb
+	mcr p15,0,r3,c8,c7,0   @ Invalidate TLBs
+	dsb
+#endif//UCL_DEC_EN_IDCACHE_FINE_TUNE
+	mov	ip, lr			@ persevere link reg across call
+	bl	new_d_inval		@ go setup pll,mux,memory
+	mov	lr, ip			@ restore link
+
+	mrc	p15, 0, r0, c1, c0, 0
+#ifdef UCL_DEC_EN_IDCACHE
+    orr	r0, r0, #(1<<12)    @ i-cache enable
+    orr	r0, r0, #(1<<2)     @ d-cache enable
+	orr r0, r0, #(1<<11)    @ enable Branch Prediction
+#ifdef UCL_DEC_EN_IDCACHE_FINE_TUNE
+	orr r0, r0, #1   	    @ enable MMU
+#endif //UCL_DEC_EN_IDCACHE_FINE_TUNE
+#endif
+	mcr	p15, 0, r0, c1, c0, 0
+
 	mov	pc, lr			@ back to my caller
-	
-    .global   mmu_disable
-@void mmu_disable(void)
-mmu_disable:
+
+
+new_d_inval:
+	MOV 	r0,#0
+	MCR 	p15,2,r0,c0,c0,0  @ cache size selection register, select L1 dcache
+	MRC 	p15,1,r0,c0,c0,0  @ cache size ID register
+	MOV 	r0,r0,ASR #13
+	LDR 	r3,=0xfff
+	AND 	r0,r0,r3		
+	CMP 	r0,#0x7f
+	MOVEQ	r6,#0x1000
+	BEQ 	size_done
+	CMP 	r0,#0xff
+	MOVEQ	r6,#0x2000
+	MOVNE	r6,#0x4000
+		
+size_done:
+	MOV 	r2,#0
+	MOV 	r3,#0x40000000
+	MOV 	r4,#0x80000000
+	MOV 	r5,#0xc0000000
+		
+d_inv_loop:
+	MCR 	p15,0,r2,c7,c6,2  @ invalidate dcache by set / way
+	MCR 	p15,0,r3,c7,c6,2  @ invalidate dcache by set / way
+	MCR 	p15,0,r4,c7,c6,2  @ invalidate dcache by set / way
+	MCR 	p15,0,r5,c7,c6,2  @ invalidate dcache by set / way
+	ADD 	r2,r2,#0x20
+	ADD 	r3,r3,#0x20
+	ADD 	r4,r4,#0x20
+	ADD 	r5,r5,#0x20
+	CMP 	r2,r6
+	BNE 	d_inv_loop
+	BX	r14
+
+
+    .global   clean_invalidable_cache
+@void clean_invalidable_cache(void)
+clean_invalidable_cache:
     push    {r4,r5,r6,lr}
 #ifdef UCL_DEC_EN_IDCACHE
-	mov	r0, #0			@ set up for MCR
-	mcr p15, 0, r0, c7, c5, 6  // invalidate BTAC    				   	
- 	mcr p15, 0, r0, c7, c5, 0  // invalidate ICache
-   dsb
-   mcr p15, 0, r0, c8, c7, 0    // invalidate TLBs
-   dsb
-   isb
+    //wfi
+    mov	r0, #0			@ set up for MCR
+/*    mcr	p15, 0, r0, c7, c6, 0	@ invalidate dcache */
+    mcr p15, 0, r0, c7, c5, 6   @ invaliddate entire branch preditor 
+    mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
+    DSB
+    ISB
+    NOP
+
+    @ read d-cache size
+	MOV 	r0,#0
+	MCR 	p15,2,r0,c0,c0,0  @ cache size selection register, select L1 dcache
+	MRC 	p15,1,r0,c0,c0,0  @ cache size ID register
+	MOV 	r0,r0,ASR #13
+	LDR 	r3,=0xfff
+	AND 	r0,r0,r3		
+	CMP 	r0,#0x7f
+	MOVEQ	r6,#0x1000
+	BEQ 	size_done_ucl
+	CMP 	r0,#0xff
+	MOVEQ	r6,#0x2000
+	MOVNE	r6,#0x4000
+
+    @//MOV     r6,#0x4000
+    @MOV     r6,#0x2000
+size_done_ucl:
+    MOV     r2,#0
+    MOV     r3,#0x40000000
+    MOV     r4,#0x80000000
+    MOV     r5,#0xc0000000
+clean_inv:
+    mcr	p15, 0, r2, c7, c14, 2	@ clean and invalidate dcache
+    mcr	p15, 0, r3, c7, c14, 2	@ clean and invalidate dcache
+    mcr	p15, 0, r4, c7, c14, 2	@ clean and invalidate dcache
+    mcr	p15, 0, r5, c7, c14, 2	@ clean and invalidate dcache
+    add r2,  r2, #0x20
+    add r3,  r3, #0x20
+    add r4,  r4, #0x20
+    add r5,  r5, #0x20
+    cmp r2, r6
+    bne clean_inv
+    DSB
+    ISB
+    
+	mov r0,#0
+__NOP:    
+	nop
+	nop
+	nop
+	add r0, r0, #1
+	cmp r0, #100
+	bne __NOP    
+    
+    mrc	p15, 0, r0, c1, c0, 0
+    bic	r0, r0, #(1<<12)    @ i-cache disable 
+    bic	r0, r0, #(1<<2)     @ d-cache disable
+    bic r0, r0, #(1<<11)    @ disable branch prediction
+#ifdef UCL_DEC_EN_IDCACHE_FINE_TUNE
+	bic r0, r0, #1   	    @ disable MMU
+#endif //UCL_DEC_EN_IDCACHE_FINE_TUNE
+    mcr	p15, 0, r0, c1, c0, 0
+
 #endif
-    pop {r4, r5,r6, pc}	
-	
-	
+    pop {r4, r5,r6, pc}
+
 /*
  *************************************************************************
  *
@@ -424,3 +542,4 @@ fiq:
 	bl	do_fiq
 
 #endif
+

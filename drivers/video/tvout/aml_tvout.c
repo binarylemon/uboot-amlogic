@@ -12,7 +12,8 @@
 *
 *********************************************************************************************/
 
-#include <asm/arch-m1/tv_out.h>
+#include <amlogic/aml_tv.h>
+#include <amlogic/vinfo.h>
 
 
 static void opt_cmd_help(void)
@@ -27,19 +28,19 @@ static void opt_cmd_help(void)
 
 static int to_mode(char *mode_name)
 {
-	if(strcmp(mode_name, "1080P")==0)
+	if((strcmp(mode_name, "1080P")==0)||(strcmp(mode_name, "1080p")==0))
 		return TVOUT_1080P;
-	if(strcmp(mode_name, "1080I")==0)
+	if((strcmp(mode_name, "1080I")==0)||(strcmp(mode_name, "1080i")==0))
 		return TVOUT_1080I;
-	if(strcmp(mode_name, "720P")==0)
+	if((strcmp(mode_name, "720P")==0)||(strcmp(mode_name, "720p")==0))
 		return TVOUT_720P;
-	if(strcmp(mode_name, "576P")==0)
+	if((strcmp(mode_name, "576P")==0)||(strcmp(mode_name, "576p")==0))
 		return TVOUT_576P;
-	if(strcmp(mode_name, "480P")==0)
+	if((strcmp(mode_name, "480P")==0)||(strcmp(mode_name, "480p")==0))
 		return TVOUT_480P;
-	if(strcmp(mode_name, "576I")==0)
+	if((strcmp(mode_name, "576I")==0)||(strcmp(mode_name, "576i")==0))
 		return TVOUT_576I;
-	if(strcmp(mode_name, "480I")==0)
+	if((strcmp(mode_name, "480I")==0)||(strcmp(mode_name, "480i")==0))
 		return TVOUT_480I;
 
 	return TVOUT_MAX;
@@ -58,14 +59,17 @@ static char * to_modestr(int mode)
 		CASE_RET(480P);
 		CASE_RET(576I);
 		CASE_RET(480I);
+		default:
+		    return "UNKNOWN";
 	}
-	return "UNKNOWN";
 }
 
 static int tvout_open(int argc, char *argv[])
 {
 	int mode;
 	int ret;
+	extern void init_hdmi(void);
+	extern void start_dsp(void);
 
 	if (argc < 2)
 		goto usage;
@@ -74,7 +78,7 @@ static int tvout_open(int argc, char *argv[])
 	if(mode == TVOUT_MAX)
 		goto usage;
 
-	//Only for HDMI, for Elvis
+    tv_oper.enable();
 	init_hdmi();
 	
 	ret = tv_out_open(mode);
@@ -122,6 +126,7 @@ static int tvout_tst(int argc, char *argv[])
 	int mode;
 	int ret;
 	char *endp;
+	extern int tv_out_test(int);
 
 	if (argc < 2)
 		goto usage;

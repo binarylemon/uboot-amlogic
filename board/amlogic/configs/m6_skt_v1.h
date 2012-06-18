@@ -69,9 +69,10 @@
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-#define CONFIG_M6_USBPORT_BASE	0xC9040000
+#define CONFIG_M6_USBPORT_BASE	0xC90C0000
 #define CONFIG_USB_STORAGE      1
 #define CONFIG_USB_DWC_OTG_HCD  1
+#define CONFIG_USB_DWC_OTG_294	1
 #define CONFIG_CMD_USB 1
 
 

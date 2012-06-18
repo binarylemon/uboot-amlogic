@@ -67,6 +67,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
     
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned spl_boot_start,spl_boot_end;
+	spl_boot_start = TIMERE_GET();
+#endif
+
 #ifdef CONFIG_M6    
     writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
     __udelay(1000);
@@ -75,17 +80,38 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     // initial pll
     pll_init(&__plls);
     
+#ifdef ENTRY_DEBUG_ROM
     __udelay(100000);//wait for a uart input 
+#else
+    //__udelay(100);//wait for a uart input 
+#endif
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
 	 }
+
     // initial ddr
     ddr_init_test();
+
     // load uboot
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
     serial_puts("\nSystem Started\n");
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	spl_boot_end = TIMERE_GET();
+	*((volatile unsigned int*)0x83a00000) = spl_boot_end;
+	serial_puts("\nspl boot time(us):");
+	serial_put_dword((spl_boot_end-spl_boot_start));
+#else
+	*((volatile unsigned int*)0x8fa00000) = 0;
+#endif
+
+#if 0
     //wait serial_puts end.
     for(i = 0; i < 10; i++)
 		  __udelay(1000);
+#else
+	serial_wait_tx_empty();
+#endif
+
     return 0;
 }

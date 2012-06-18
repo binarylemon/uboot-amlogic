@@ -12,6 +12,9 @@ extern void meson_pm_suspend(void);
 
 static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+	run_command("video dev bl_off",1);
+	run_command("video dev disable",1);
+
 	meson_pm_suspend();
 	return 0;
 }

@@ -980,3 +980,57 @@ U_BOOT_CMD(
 );
 
 
+
+/***********************************
+*
+*   add by wch for defenv_without
+*
+***********************************/
+int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+
+	char *init_val=NULL;
+	int i,envCnt=0;
+	
+#define	CONFIG_ENV_NUMBER	50					//effective environment variable number of max
+	char *varName[CONFIG_ENV_NUMBER];
+	char  varValue[CONFIG_ENV_NUMBER][CONFIG_SYS_CBSIZE];
+
+
+	if (argc < 2)
+		return cmd_usage(cmdtp);
+
+	
+	for(i=1;i<argc;i++)
+	{
+		init_val = getenv(argv[i]);				//get environment variable value
+		if(init_val)
+		{
+			varName[envCnt]  = argv[i];
+			strcpy(varValue[envCnt], init_val);			
+			envCnt ++;
+			
+			printf("%s = %s\n",varName[envCnt-1],varValue[envCnt-1]);
+		}
+		else
+			printf("## Error: \"%s\" not defined\n",argv[i]);
+	}
+	
+	set_default_env(NULL);						//defenv
+
+	if(envCnt>0)
+	{
+		for(i=0;i<envCnt;i++)
+			setenv((char *)varName[i],(char *)varValue[i]);  //set specified environment variables
+	}
+		
+	return 0;
+}
+
+
+U_BOOT_CMD(
+	defenv_without, CONFIG_SYS_MAXARGS, 1,	do_defenv_without,
+	"defenv without environment variables",
+	"name ...\n"
+	"    - defenv without specified u-boot environment variables\n"
+);

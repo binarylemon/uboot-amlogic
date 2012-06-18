@@ -33,6 +33,9 @@
 /u-boot-flexonenand.bin
 /build
 /include/configs/amlogic
+include/configs/customer
+arch/arm/cpu/aml_meson/m6/firmware/arc_power/boot_code.dat
+arch/arm/cpu/aml_meson/m6/power_firmware.dat
 
 #
 # Generated files

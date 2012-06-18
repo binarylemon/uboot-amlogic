@@ -412,8 +412,8 @@ $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
 $(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 
-UCL_LIBS = $(obj)arch/$(ARCH)/cpu/$(CPU)/common/firmware/serial.o
-UCL_LIBS += $(obj)arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmutable.o
+#UCL_LIBS = $(obj)arch/$(ARCH)/cpu/$(CPU)/common/firmware/serial.o
+UCL_LIBS = $(obj)arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmutable.o
 UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache.o
 UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache_init.o
 UCL_LIBS += $(obj)arch/$(ARCH)/lib/cache-cp15.o

@@ -292,6 +292,11 @@ struct axp_supply_init_data {
 #define POWER20_BAT_POWERM8             (0x71)
 #define POWER20_BAT_POWERL8             (0x72)
 
+#define AXP_CAP							(0xB9)
+#define AXP_RDC_BUFFER0					(0xBA)
+#define AXP_RDC_BUFFER1					(0xBB)
+#define AXP_OCV_BUFFER0					(0xBC)
+#define AXP_OCV_BUFFER1					(0xBD)
 
 /* bit definitions for AXP events ,irq event */
 

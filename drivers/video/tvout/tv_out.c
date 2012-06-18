@@ -11,30 +11,6 @@ static int tvmode = -1;
 static int used_audio_pll=-1;
 unsigned int system_serial_low=0xA;
 
-static int chip_version_init(void )
-{
-	char  *version_map;
-	unsigned int version;
-
-	/*0x49800000*/
-	/*system_serial_low=,1,2,3,4,5 for REVA,B,C*/
-	version_map=(char *)0x49800000;
-	version = *(volatile unsigned int *)&version_map[0x1a0];
-	switch(version)
-	{
-		case 0xe7e0c653:
-			system_serial_low=0xA;
-			break;
-		case 0xe5832fe0:
-			system_serial_low=0xB;
-			break;	
-		default:/*changed?*/
-			system_serial_low=0xC;
-	}
-	printf("chip version=%x, serial:0x%X\n",version, system_serial_low);
- 	return 0;
-}
-
 static unsigned long get_xtal_clock(void)
 {
 	unsigned long clk;
@@ -136,66 +112,6 @@ void  change_vdac_setting(unsigned int  vdec_setting,int  mode)
 	
 }
 
-
-static int tvoutc_setclk(int mode)
-{
-	const  reg_t *sd,*hd;
-	int xtal;
-
-	if(used_audio_pll==-1)
-		used_audio_pll=(system_serial_low==0xA)?1:0;
-	
-	if(used_audio_pll)
-	{
-		printf("TEST:used audio pll for video out for test!!\n");
-		sd=tvreg_aclk_sd;
-		hd=tvreg_aclk_hd;
-	}
-	else
-	{
-		printf("used Video pll for video out!!\n");
-		sd=tvreg_vclk_sd;
-		hd=tvreg_vclk_hd;
-	}
-	xtal=get_xtal_clock();
-	xtal=xtal/1000000;
-	if(xtal>=24 && xtal <=25)/*current only support 24,25*/
-	{
-		xtal-=24;
-	}
-	else
-	{
-		printf("UNsupport xtal setting for vidoe xtal=%d,default to 24M\n",xtal);	
-		xtal=0;
-	}
-	switch(mode)
-	{
-		case TVOUT_480I:
-		case TVOUT_480CVBS:
-		case TVOUT_480P:
-		case TVOUT_576I:
-		case TVOUT_576CVBS:
-		case TVOUT_576P:
-			  setreg(&sd[xtal]);
-			  //clk_set_rate(clk,540);
-			  break;
-		case TVOUT_720P:
-		case TVOUT_1080I:
-		case TVOUT_1080P:
-			  setreg(&hd[xtal]);
-			  if(xtal == 1)
-			  {
-				WRITE_MPEG_REG(HHI_VID_CLK_DIV, 4);
-			  }
-			 // clk_set_rate(clk,297);
-			  break;
-		default:
-			printf("unsupport tv mode,video clk is not set!!\n");	
-	}
-
-	return 0;
-}
-
 static void enable_vsync_interrupt(void)
 {
 	
@@ -253,6 +169,7 @@ static void enable_vsync_interrupt(void)
 
 int tv_out_open(int mode)
 {
+    extern void set_disp_mode_auto(int);
     const  reg_t *s;
 
     if (TVOUT_VALID(mode))
@@ -260,20 +177,15 @@ int tv_out_open(int mode)
         tvmode = mode;
 
         s = tvregsTab[mode];
-
         while (MREG_END_MARKER != s->reg)
             setreg(s++);
-
-	chip_version_init();
 	
-	tvoutc_setclk(mode);
-	enable_vsync_interrupt();
+//	tvoutc_setclk(mode);
+//	enable_vsync_interrupt();
 
         WRITE_MPEG_REG(VPP_POSTBLEND_H_SIZE, tvinfoTab[mode].xres);
 
-	change_vdac_setting(0x120120, mode);
-
-	set_disp_mode_auto(mode );
+	set_disp_mode_auto(mode);
         return 0;
     }
 

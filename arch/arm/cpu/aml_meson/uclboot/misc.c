@@ -23,26 +23,30 @@ extern void icache_disable (void);
 #endif
 
 	
+extern void clean_invalidable_cache();
 void start_arcboot_ucl(void)
 {
 	typedef void (* JumpAddr)(void);	
 	unsigned len ;
-	serial_puts("ucl decompress in TPL: \n");
+	//serial_puts("ucl decompress in TPL: \n");
 	uclDecompress((char*)CONFIG_SYS_TEXT_BASE,&len,(char*)&input_data);
-    serial_puts("decompress finished\n");
-    serial_wait_tx_empty();
+
+	clean_invalidable_cache();
+
+    //serial_puts("decompress finished\n");
+    //serial_wait_tx_empty();
         
 #ifndef CONFIG_DCACHE_OFF       
-    mmu_disable();
-    dcache_disable();    
+    //mmu_disable();
+    //dcache_disable();    
 #endif    
 #ifndef CONFIG_ICACHE_OFF
-    icache_disable();
-    icache_invalid();
+    //icache_disable();
+    //icache_invalid();
 #endif    
 #ifndef CONFIG_L2_OFF
-	l2_cache_disable();
-	l2x0_clean_inv_all();
+	//l2_cache_disable();
+	//l2x0_clean_inv_all();
 #endif
     unsigned int i=0;
 

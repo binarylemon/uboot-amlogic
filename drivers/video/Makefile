@@ -49,11 +49,12 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/tv_out.o \
-	tvout/hdmi_tx_m1b.o \
+	tvout/hdmi_tx_meson.o \
 	tvout/hdmi_tx_reg.o \
 	tvout/hdmi_tx.o \
 	tvout/hdmi_tx_edid.o \
 	tvout/hdmi_tx_video.o \
+	tvout/enc_clk_config.o \
 	tvout/dsp.o
 endif
 
