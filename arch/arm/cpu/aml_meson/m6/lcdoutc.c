@@ -36,6 +36,8 @@ typedef struct {
     vinfo_t lcd_info;
 } lcd_dev_t;
 
+static unsigned lcd_clk = 0;
+
 static lcd_dev_t *pDev = NULL;
 
 static void _lcd_init(Lcd_Config_t *pConf) ;
@@ -384,10 +386,10 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
                   );
 
     // for channel 4-7, set second setting same as first
-    WRITE_MPEG_REG(L_DE_HS_ADDR, (0xf << 12) | ext_pixel);   // 0xf -- enable double_tcon fir channel7:4
-    WRITE_MPEG_REG(L_DE_HE_ADDR, (0xf << 12) | ext_pixel);   // 0xf -- enable double_tcon fir channel3:0
-    WRITE_MPEG_REG(L_DE_VS_ADDR, 0);
-    WRITE_MPEG_REG(L_DE_VE_ADDR, 0);
+    WRITE_MPEG_REG(L_DE_HS_ADDR, (0x3 << 14) | ext_pixel);   // 0x3 -- enable double_tcon fir channel7:6
+    WRITE_MPEG_REG(L_DE_HE_ADDR, (0x3 << 14) | ext_pixel);   // 0x3 -- enable double_tcon fir channel5:4
+    WRITE_MPEG_REG(L_DE_VS_ADDR, (0x3 << 14) | 0);	// 0x3 -- enable double_tcon fir channel3:2
+    WRITE_MPEG_REG(L_DE_VE_ADDR, (0x3 << 14) | 0);	// 0x3 -- enable double_tcon fir channel1:0
 
     dual_wr_rd_start = 0x5d;
     WRITE_MPEG_REG(MLVDS_DUAL_GATE_WR_START, dual_wr_rd_start);
@@ -409,11 +411,6 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
     {
 		write_tcon_double(&mlvds_tconfig_l[i]);
     }
-
-	//set vcom
-	// WRITE_MPEG_REG(L_VCOM_HSWITCH_ADDR, pConf->vcom_hswitch_addr);
-	// WRITE_MPEG_REG(L_VCOM_VS_ADDR, pConf->vcom_vs_addr);
-	// WRITE_MPEG_REG(L_VCOM_VE_ADDR, pConf->vcom_ve_addr);
 }
 
 static void set_video_spread_spectrum(int video_ss_level)
@@ -421,9 +418,9 @@ static void set_video_spread_spectrum(int video_ss_level)
     switch (video_ss_level)
 	{
 		case 0:  // disable ss
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL2, 0x814d3928 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL3, 0x6b425012 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL4, 0x110 );
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL2, 0x814d3928 );
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL3, 0x6b425012 );
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL4, 0x110 );
 			break;
 		case 1:  //about 1%
 			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
@@ -451,14 +448,14 @@ static void set_video_spread_spectrum(int video_ss_level)
 			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
 			break;	
 		default:  //disable ss
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL2, 0x814d3928 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL3, 0x6b425012 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL4, 0x110 );		
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL2, 0x814d3928 );
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL3, 0x6b425012 );
+			WRITE_MPEG_REG( HHI_VIID_PLL_CNTL4, 0x110 );		
 	}	
 	//debug("set video spread spectrum %d%%.\n", video_ss_level);	
 }
 
-static void vclk_set_lcd(int lcd_type, int ss_level, int pll_sel, int pll_div_sel, int vclk_sel, unsigned long pll_reg, unsigned long vid_div_reg, unsigned int xd)
+static void vclk_set_lcd(int lcd_type, int pll_sel, int pll_div_sel, int vclk_sel, unsigned long pll_reg, unsigned long vid_div_reg, unsigned int xd)
 {
     debug("setup lcd clk.\n");
     vid_div_reg |= (1 << 16) ; // turn clock gate on
@@ -477,9 +474,11 @@ static void vclk_set_lcd(int lcd_type, int ss_level, int pll_sel, int pll_div_se
 	udelay(2);
 
     if(pll_sel){
-        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<29) );
-        set_video_spread_spectrum(ss_level);  //set pll_ctrl2, pll_ctrl3, pll_ctrl4 reg and spread_spectrum
-        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg );
+        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<29) );        
+        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL2, 0x814d3928 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL3, 0x6b425012 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL4, 0x110 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg );
     }
     else{
         WRITE_MPEG_REG( HHI_VID_PLL_CNTL, pll_reg|(1<<29) );
@@ -608,8 +607,9 @@ static void set_pll_ttl(Lcd_Config_t *pConf)
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-	vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);	
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+	vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);	
+	set_video_spread_spectrum(ss_level);  
 }
 
 static void clk_util_lvds_set_clk_div(  unsigned long   divn_sel,
@@ -644,9 +644,11 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
     div_reg = pConf->lcd_timing.div_ctrl | 0x3;    
 	ss_level = ((pConf->lcd_timing.clk_ctrl) >>16) & 0xf;
     pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
-    pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+    //pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+	pll_div_sel = 1;
     vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;
-	xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	//xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	xd = 1;
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 	
@@ -655,8 +657,9 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
     phy_clk_div2 = 0;
 	
 	div_reg = (div_reg | (1 << 8) | (1 << 11) | ((pll_div_post-1) << 12) | (phy_clk_div2 << 10));
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-    vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);		 
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+    vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);		 
+	set_video_spread_spectrum(ss_level); 
 	
 	clk_util_lvds_set_clk_div(1, pll_div_post, phy_clk_div2);
 	
@@ -704,9 +707,11 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     div_reg = pConf->lcd_timing.div_ctrl | 0x3;    
 	ss_level = ((pConf->lcd_timing.clk_ctrl) >>16) & 0xf;
     pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
-    pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+    //pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+	pll_div_sel = 1;
     vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;
-	xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	//xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	xd = 1;
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 
@@ -759,8 +764,9 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     phy_clk_div2 = (test_pair_num != 3);
 	
 	div_reg = (div_reg | (1 << 8) | (1 << 11) | ((pll_div_post-1) << 12) | (phy_clk_div2 << 10));
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-    vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd); 					 
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+    vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd); 					 
+	set_video_spread_spectrum(ss_level); 
 	
 	clk_util_lvds_set_clk_div(1, pll_div_post, phy_clk_div2);	
 	
@@ -977,7 +983,7 @@ static void venc_set_mlvds(Lcd_Config_t *pConf)
 	WRITE_MPEG_REG(ENCL_VIDEO_MODE_ADV,         0x0008); // Sampling rate: 1
 	
 	// bypass filter
- 	WRITE_MPEG_REG(	ENCL_VIDEO_FILT_CTRL,		0x1000);
+ 	WRITE_MPEG_REG(ENCL_VIDEO_FILT_CTRL,		0x1000);
 	
 	WRITE_MPEG_REG(ENCL_VIDEO_YFP1_HTIME,       active_h_start);
 	WRITE_MPEG_REG(ENCL_VIDEO_YFP2_HTIME,       active_h_start + width);
@@ -1155,7 +1161,11 @@ static void init_lvds_phy(Lcd_Config_t *pConf)
 
     unsigned tmp_add_data;    
 
-    WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0xee1);  //0xee0
+	if (lcd_clk > 50000)
+		WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0xee1);  //0xee1
+	else
+    	WRITE_MPEG_REG(LVDS_PHY_CNTL3, 0xee0);  //0xee1
+		
 	WRITE_MPEG_REG(LVDS_PHY_CNTL4 ,0);
 
     tmp_add_data  = 0;
@@ -1175,6 +1185,39 @@ static void init_lvds_phy(Lcd_Config_t *pConf)
     //WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) & ~(0x7f<<0));  //disable LVDS phy port. wait for power on sequence.
 }
 
+static void lcd_clk_region(Lcd_Config_t *pConf)
+{
+	unsigned m, n, od, div, xd;
+	unsigned pre_div;
+	
+	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
+	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
+	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
+	div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;	
+	
+	od = (od == 0) ? 1:((od == 1) ? 2:4);
+	switch(pConf->lcd_basic.lcd_type)
+	{
+		case LCD_DIGITAL_TTL:
+			xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
+			pre_div = 1;
+			break;
+		case LCD_DIGITAL_LVDS:
+			xd = 1;
+			pre_div = 7;
+			break;
+		case LCD_DIGITAL_MINILVDS:
+			xd = 1;
+			pre_div = 6;
+			break;	
+		default:
+			pre_div = 1;
+			break;
+	}
+	
+	lcd_clk = m*24*1000/(n*od*(div+1)*xd*pre_div);
+}
+
 static inline void _init_display_driver(Lcd_Config_t *pConf)
 {
 	int lcd_type;
@@ -1188,7 +1231,8 @@ static inline void _init_display_driver(Lcd_Config_t *pConf)
 	
 	lcd_type = pDev->conf.lcd_basic.lcd_type;
 	printf("\nInit LCD type: %s.\n", lcd_type_table[lcd_type]);
-	printf("lcd frame rate=%d/%d.\n", pDev->conf.lcd_timing.sync_duration_num, pDev->conf.lcd_timing.sync_duration_den);
+	lcd_clk_region(pConf);
+	printf("lcd resolution: %dx%d, clk=%dkHz, frame_rate=%d/%dHz.\n", pConf->lcd_basic.h_active, pConf->lcd_basic.v_active, lcd_clk, pDev->conf.lcd_timing.sync_duration_num, pDev->conf.lcd_timing.sync_duration_den);
 	
 	switch(lcd_type)
 	{
@@ -1212,7 +1256,7 @@ static inline void _init_display_driver(Lcd_Config_t *pConf)
 			set_tcon_mlvds(pConf);  	
 			break;
 		default:
-            printf("Not valid LCD type.\n");
+            printf("Invalid LCD type.\n");
 			break;			
 	}	
 }
@@ -1227,21 +1271,18 @@ static inline void _enable_vsync_interrupt(void)
     }
 }
 static void _enable_backlight(u32 brightness_level)
-{
-    //pDev->conf.backlight_on?pDev->conf.backlight_on():0;
+{    
     panel_oper.bl_on();
 }
 /*static void _disable_backlight(void)
-{
-    //pDev->conf.backlight_off?pDev->conf.backlight_off():0;
+{    
     panel_oper.bl_off();
 }*/
 static void _lcd_module_enable(void)
 {
-    BUG_ON(pDev==NULL);
-    //pDev->conf.power_on?pDev->conf.power_on():0;
-    panel_oper.power_on();
+    BUG_ON(pDev==NULL); 
 	_init_display_driver(&pDev->conf);
+	panel_oper.power_on();
     //_enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
     _enable_vsync_interrupt();
 }
@@ -1287,6 +1328,48 @@ static int lcd_module_disable(vmode_t cur_vmod)
     return 0;
 }*/
 
+static void lcd_sync_duration(Lcd_Config_t *pConf)
+{
+	//printf("lcd_sync_duration\n");
+	unsigned m, n, od, div, xd, pre_div;
+	unsigned h_period, v_period;
+	unsigned sync_duration;
+	
+	h_period = (pConf->lcd_basic.h_period);
+	v_period = (pConf->lcd_basic.v_period);
+	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
+	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
+	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
+	div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;	
+	
+	od = (od == 0) ? 1:((od == 1) ? 2:4);
+	switch(pConf->lcd_basic.lcd_type)
+	{
+		case LCD_DIGITAL_TTL:
+			xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
+			pre_div = 1;
+			break;
+		case LCD_DIGITAL_LVDS:
+			xd = 1;
+			pre_div = 7;
+			break;
+		case LCD_DIGITAL_MINILVDS:
+			xd = 1;
+			pre_div = 6;
+			break;	
+		default:
+			pre_div = 1;
+			break;
+	}
+	
+	lcd_clk = m*24*1000/(n*od*(div+1)*xd*pre_div);		
+	sync_duration = ((lcd_clk * 10000 / h_period) * 10) / v_period;
+	sync_duration = (sync_duration + 5) / 10;	
+	
+	pConf->lcd_timing.sync_duration_num = sync_duration;
+	pConf->lcd_timing.sync_duration_den = 10;
+}
+
 static void _init_vout(lcd_dev_t *pDev)
 {
     pDev->lcd_info.name = PANEL_NAME;
@@ -1302,8 +1385,9 @@ static void _init_vout(lcd_dev_t *pDev)
 
 static void _lcd_init(Lcd_Config_t *pConf)
 {
+	lcd_sync_duration(pConf);
 	_init_vout(pDev);
-    	_lcd_module_enable();
+    	//_lcd_module_enable();		//remove repeatedly lcd_module_enable --Evoke.Zhang
 	lcd_set_current_vmode(VMODE_LCD);
 }
 
