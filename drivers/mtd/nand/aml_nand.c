@@ -68,21 +68,21 @@ static struct nand_ecclayout aml_nand_oob_128 = {
 	.eccbytes = 120,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 16}}
+		 .length = 8}}
 };
 
 static struct nand_ecclayout aml_nand_oob_218 = {
 	.eccbytes = 200,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 16}}
+		 .length = 8}}
 };
 
 static struct nand_ecclayout aml_nand_oob_224 = {
 	.eccbytes = 208,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 16}}
+		 .length = 8}}
 };
 
 static struct nand_ecclayout aml_nand_oob_256 = {
@@ -96,104 +96,31 @@ static struct nand_ecclayout aml_nand_oob_376 = {
 	.eccbytes = 352,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 32}}
+		 .length = 16}}
 };
 
 static struct nand_ecclayout aml_nand_oob_436 = {
 	.eccbytes = 352,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 32}}
+		 .length = 16}}
 };
 
 static struct nand_ecclayout aml_nand_oob_448 = {
 	.eccbytes = 416,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 32}}
+		 .length = 16}}
 };
 
 static struct nand_ecclayout aml_nand_oob_640 = {
 	.eccbytes = 608,
 	.oobfree = {
 		{.offset = 0,
-		 .length = 32}}
-};
-static struct nand_ecclayout aml_nand_oob_752 = {
-	.eccbytes = 704,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
+		 .length = 16}}
 };
 
-static struct nand_ecclayout aml_nand_oob_872 = {
-	.eccbytes = 704,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
 
-static struct nand_ecclayout aml_nand_oob_896 = {
-	.eccbytes = 832,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
-
-static struct nand_ecclayout aml_nand_oob_1280 = {
-	.eccbytes = 1216,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
-static struct nand_ecclayout aml_nand_oob_1504 = {
-	.eccbytes = 1408,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 128}}
-};
-
-static struct nand_ecclayout aml_nand_oob_1744 = {
-	.eccbytes = 1664,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 128}}
-};
-
-static struct nand_ecclayout aml_nand_oob_1792 = {
-	.eccbytes = 1664,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
-
-static struct nand_ecclayout aml_nand_oob_1920 = {
-	.eccbytes = 1664,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
-
-static struct nand_ecclayout aml_nand_oob_2560 = {
-	.eccbytes = 2496,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 64}}
-};
-
-static struct nand_ecclayout aml_nand_oob_3008 = {
-	.eccbytes = 2816,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 256}}
-};
-
-static struct nand_ecclayout aml_nand_oob_3584 = {
-	.eccbytes = 3328,
-	.oobfree = {
-		{.offset = 0,
-		 .length = 256}}
-};
 
 static uint8_t nand_mode_time[6] = {9, 7, 6, 5, 5, 4};
 static uint8_t nand_boot_flag = 0;
@@ -2386,7 +2313,7 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 	unsigned char *oob_buffer = chip->oob_poi;
 	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 	unsigned nand_page_size = (1 << chip->page_shift);
-	unsigned nand_read_size = ((readlen / aml_chip->user_byte_mode) * chip->ecc.size);
+	unsigned nand_read_size = ((readlen /( aml_chip->user_byte_mode * aml_chip->plane_num)) * chip->ecc.size);
 	unsigned read_chip_num = (((nand_read_size + (aml_chip->plane_num * nand_page_size) - 1) / (aml_chip->plane_num * nand_page_size)));
 	int readretry_failed_cnt = 0, ran_mode = aml_chip->ran_mode;
 
@@ -3937,7 +3864,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &aml_chip->mtd;
 	int err = 0, i = 0, phys_erase_shift;
-	
+	int oobmul;
 	switch (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK) {
 
 		case NAND_ECC_SOFT_MODE:
@@ -4306,13 +4233,14 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		chip->ecc.layout = plat->platform_nand_data.chip.ecclayout;
 	}
 	else {
-
+		oobmul = mtd->oobsize /aml_chip->oob_size ;
 		if (!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) {
 			if (!chip->ecc.layout)
 				chip->ecc.layout = &aml_nand_uboot_oob;
 		}
 		else if (chip->ecc.mode != NAND_ECC_SOFT) {
-			switch (mtd->oobsize) {
+			//switch (mtd->oobsize)
+			switch (aml_chip->oob_size) {
 
 				case 64:
 					chip->ecc.layout = &aml_nand_oob_64_2info;
@@ -4341,39 +4269,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 				case 640:
 					chip->ecc.layout = &aml_nand_oob_640;
 					break;					
-				case 752:
-					chip->ecc.layout = &aml_nand_oob_752;
-					break;
-				case 872:
-					chip->ecc.layout = &aml_nand_oob_872;
-					break;
-				case 896:
-					chip->ecc.layout = &aml_nand_oob_896;
-					break;
-				case 1280:
-					chip->ecc.layout = &aml_nand_oob_1280;
-					break;						
-				case 1504:
-					chip->ecc.layout = &aml_nand_oob_1504;
-					break;
-				case 1744:
-					chip->ecc.layout = &aml_nand_oob_1744;
-					break;
-				case 1792:
-					chip->ecc.layout = &aml_nand_oob_1792;
-					break;
-				case 1920:
-					chip->ecc.layout = &aml_nand_oob_1920;
-					break;					
-				case 2560:
-					chip->ecc.layout = &aml_nand_oob_2560;
-					break;						
-				case 3008:
-					chip->ecc.layout = &aml_nand_oob_3008;
-					break;
-				case 3584:
-					chip->ecc.layout = &aml_nand_oob_3584;
-					break;
+
 				default:
 					printk("havn`t found any oob layout use nand base oob layout " "oobsize %d\n", mtd->oobsize);
 					chip->ecc.layout = kzalloc(sizeof(struct nand_ecclayout), GFP_KERNEL);
@@ -4383,6 +4279,8 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 						chip->ecc.layout->oobfree[0].length = ((mtd->writesize / chip->ecc.size) * aml_chip->user_byte_mode);
 					break;
 			}
+			chip->ecc.layout->oobfree[0].length *= oobmul;
+			chip->ecc.layout->eccbytes *= oobmul;
 		}
 	}
 	
