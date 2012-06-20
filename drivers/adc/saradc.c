@@ -323,10 +323,8 @@ int get_adc_sample(int chan)
 
 	while (get_fifo_cnt()){
         value = get_fifo_sample() & 0x3ff;
-        if ((value != 0x1fe) && (value != 0x1ff)){
-			sum += value & 0x3ff;
-            count++;
-        }
+			  sum += value;
+        count++;
 	}
 	value = (count) ? (sum / count) : (-1);
 
