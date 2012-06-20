@@ -538,8 +538,12 @@ static int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *
 	int bch_mode = aml_chip->bch_mode, ran_mode;
 	int error = 0, i = 0, stat = 0;
 	int ecc_size, configure_data_w, pages_per_blk_w, configure_data, pages_per_blk, read_page_tmp, read_page;
-	int en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
-    
+	int en_slc = 0;
+	
+#ifdef NEW_NAND_SUPPORT	
+	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+ #endif
+ 
 	if (page >= (M3_BOOT_PAGES_PER_COPY*M3_BOOT_COPY_NUM)) 
 	{
 		memset(buf, 0, (1 << chip->page_shift));
@@ -736,14 +740,21 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	int status, i, write_page, configure_data, pages_per_blk, write_page_tmp, ran_mode;
-	int new_nand_type = aml_chip->new_nand_info.type;
-	int en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+	int new_nand_type = 0;
+	int en_slc = 0;
+
+#ifdef NEW_NAND_SUPPORT
+	new_nand_type = aml_chip->new_nand_info.type;
+	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+#endif
 
 	if(en_slc){
 		if (page >= (M3_BOOT_PAGES_PER_COPY/2 - 3))
 			return 0;
+#ifdef NEW_NAND_SUPPORT			
 		 if(page > 3)
 			aml_chip->new_nand_info.slc_program_info.enter_enslc_mode(mtd);
+#endif			
 	}
 	else{
 		if (page >= (M3_BOOT_PAGES_PER_COPY - 1))
@@ -814,8 +825,10 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 			if (status & NAND_STATUS_FAIL){
                 		printk("uboot wr page=0x%x, status =  0x%x\n", page,status);
+#ifdef NEW_NAND_SUPPORT                		
                 		if(en_slc && (page > 3))
                 			aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
+ #endif               		
 				return -EIO;
 			}
 		} else {
@@ -823,8 +836,10 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 			status = chip->waitfunc(mtd, chip);
 		}
 	}
+#ifdef NEW_NAND_SUPPORT	
 	if(en_slc && (page > 3))
 		aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
+#endif
 	return 0;
 }
 

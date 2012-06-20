@@ -133,9 +133,10 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"A revision NAND 2GiB H27UAG8T2A",	{NAND_MFR_HYNIX, 0xd5, 0x94, 0x25, 0x44, 0x41}, 4096, 2048, 0x80000, 224, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
 	{"A revision NAND 4GiB H27UBG8T2A",	{NAND_MFR_HYNIX, 0xd7, 0x94, 0x9a, 0x74, 0x42}, 8192, 4096, 0x200000, 448, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
 	{"B revision NAND 2GiB H27UAG8T2B",	{NAND_MFR_HYNIX, 0xd5, 0x94, 0x9a, 0x74, 0x42}, 8192, 2048, 0x200000, 448, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
+#ifdef NEW_NAND_SUPPORT
 	{"B revision NAND 4GiB H27UBG8T2B",	{NAND_MFR_HYNIX, 0xd7, 0x94, 0xda, 0x74, 0xc3}, 8192, 4096, 0x200000, 640, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE)},	//need readretry, disable two plane mode
    	{"B revision NAND 8GiB H27UCG8T2M",	{NAND_MFR_HYNIX, 0xde, 0x94, 0xd2, 0x04, 0x43}, 8192, 8192, 0x200000, 448, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
-
+#endif
 	{"A revision NAND 4GiB MT29F32G-A", {NAND_MFR_MICRON, 0xd7, 0x94, 0x3e, 0x84}, 4096, 4096, 0x80000, 218, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE | NAND_TWO_PLANE_MODE)},
 	{"A revision NAND 16GiB MT29F128G-A", {NAND_MFR_MICRON, 0xd9, 0xd5, 0x3e, 0x88}, 4096, 16384, 0x80000, 218, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE | NAND_TWO_PLANE_MODE)},
 	{"B revision NAND 4GiB MT29F32G-B", {NAND_MFR_MICRON, 0x68, 0x04, 0x46, 0x89}, 4096, 4096, 0x100000, 224, 1, 20, 15, 4, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
@@ -154,8 +155,10 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"F serials NAND 4GiB TC58NVG5D2FTA00", {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x55}, 8192, 4096, 0x100000, 448, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
 	{"F serials NAND 8GiB TC58NVG6D2FTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x32, 0x76, 0x55}, 8192, 8192, 0x100000, 448, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
 	{"F serials NAND 8GiB TH58NVG7D2FTA20", {NAND_MFR_TOSHIBA, 0xDE, 0x95, 0x32, 0x7a, 0x55}, 8192, 8200, 0x100000, 448, 2, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
+#ifdef NEW_NAND_SUPPORT
 	{"F serials NAND 4GiB TC58NVG5D2HTA00", {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56}, 8192, 4096, 0x100000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
 	{"F serials NAND 8GiB TC58NVG6D2GTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56}, 8192, 8192, 0x200000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
+#endif
 
 	{"M Generation NAND 2GiB K9GAG08U0M", {NAND_MFR_SAMSUNG, 0xD5, 0x14, 0xb6, 0x74}, 4096, 2048, 0x80000, 128, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE)},
 	{"5 Generation NAND 2GiB K9GAG08X0D", {NAND_MFR_SAMSUNG, 0xD5, 0x94, 0x29, 0x34, 0x41}, 4096, 2048, 0x80000, 218, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE | NAND_TWO_PLANE_MODE)},
@@ -533,16 +536,6 @@ void aml_nand_exit_enslc_mode_hynix(struct mtd_info *mtd)
 
 }
 
-void aml_nand_set_reg_default_hynix(void)
-{	
-	struct mtd_info *mtd = nand_info[1];
-	
-	if(mtd){
-		aml_nand_set_readretry_default_value_hynix(mtd);
-
-		aml_nand_exit_enslc_mode_hynix(mtd);
-	}
-}
 //when ecc fail,set nand retry reg  
 void aml_nand_read_retry_handle_hynix(struct mtd_info *mtd, int chipnr)
 {
@@ -858,9 +851,19 @@ void aml_nand_read_retry_exit_toshiba(struct mtd_info *mtd, int chipnr)
 
 	memset(&aml_chip->new_nand_info.read_rety_info.cur_cnt[0], 0, MAX_CHIP_NUM);
 }
-
-
 #endif
+
+void aml_nand_set_reg_default_hynix(void)
+{	
+	struct mtd_info *mtd = nand_info[1];
+#ifdef NEW_NAND_SUPPORT	
+	if(mtd){
+		aml_nand_set_readretry_default_value_hynix(mtd);
+
+		aml_nand_exit_enslc_mode_hynix(mtd);
+	}
+#endif	
+}
 
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 {
@@ -1036,9 +1039,10 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	else {
 		if (nand_boot_flag)
 			adjust_offset = (1024 * mtd->writesize / aml_chip->plane_num);
-
+#ifdef NEW_NAND_SUPPORT
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 			adjust_offset += RETRY_NAND_BLK_NUM* mtd->erasesize;		
+#endif
 		part_num++;
 		start_blk = adjust_offset / mtd->erasesize;
 		if ((NAND_MINI_PART_SIZE / mtd->erasesize) < 2)
@@ -1980,7 +1984,10 @@ static int aml_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip
 	int user_byte_num = (((nand_page_size + chip->ecc.size - 1) / chip->ecc.size) * aml_chip->user_byte_mode);
 	int error = 0, i = 0, stat = 0, j = 0, page_addr, internal_chipnr = 1;
 	uint8_t *buf_tmp = buf;
-	int readretry_failed_cnt = 0, ran_mode = aml_chip->ran_mode;
+	int readretry_failed_cnt = 0;
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
+	int ran_mode = aml_chip->ran_mode;
+#endif
 
 	if (aml_chip->ops_mode & AML_INTERLEAVING_MODE)
 		internal_chipnr = aml_chip->internal_chipnr;
@@ -2023,6 +2030,7 @@ dma_retry_plane0:
 					aml_chip->aml_nand_get_user_byte(aml_chip, oob_buf, user_byte_num);
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, buf, nand_page_size, oob_buf);
 					if (stat < 0) {
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ran_mode && (aml_chip->zero_cnt <  aml_chip->ecc_max)){
 							memset(buf, 0xff, nand_page_size);
 						    	memset(oob_buf, 0xff, user_byte_num);	
@@ -2037,6 +2045,7 @@ dma_retry_plane0:
                             				ndelay(500);					
 							goto dma_retry_plane0;			    
 						 } 							 
+#endif						
 						memset(buf, 0xff, nand_page_size);
 						memset(oob_buf, 0xff, user_byte_num);	
 
@@ -2045,17 +2054,20 @@ dma_retry_plane0:
 
 					}
 					else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) {
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d]\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i);
 
 							mtd->ecc_stats.corrected++;
 						}
+#endif						
 						mtd->ecc_stats.corrected += stat;
 					}
-
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 plane0_ff:					
 					aml_chip->ran_mode = ran_mode;
+#endif
 					oob_buf += user_byte_num;
 					buf += nand_page_size;
 
@@ -2068,6 +2080,7 @@ dma_retry_plane1:
 					aml_chip->aml_nand_get_user_byte(aml_chip, oob_buf, user_byte_num);
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, buf, nand_page_size, oob_buf);
 					if (stat < 0) {
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ran_mode && (aml_chip->zero_cnt <  aml_chip->ecc_max)){
 						    	memset(buf, 0xff, nand_page_size);
 						    	memset(oob_buf, 0xff, user_byte_num);
@@ -2084,6 +2097,7 @@ dma_retry_plane1:
                             				ndelay(500);					
 							goto dma_retry_plane1;			    
 						 } 							 
+#endif						
 						memset(buf, 0xff, nand_page_size);
 						memset(oob_buf, 0xff, user_byte_num);
 
@@ -2091,15 +2105,19 @@ dma_retry_plane1:
 					    	printk("aml nand read data ecc plane1 failed at page %d chip %d \n", page_addr, i);
 					}
 					else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d]\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i);
 
 							mtd->ecc_stats.corrected++;
 						}
+#endif				
 						mtd->ecc_stats.corrected += stat;
 					}
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 					aml_chip->ran_mode = ran_mode;	
+#endif					
 					oob_buf += user_byte_num;
 					buf += nand_page_size;
 
@@ -2114,6 +2132,7 @@ dma_retry_3:
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, buf, nand_page_size, oob_buf);
 					if (stat < 0) {
 						//mtd->ecc_stats.failed++;
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ran_mode && (aml_chip->zero_cnt <  aml_chip->ecc_max)){
 						    	memset(buf, 0xff, nand_page_size);
 						  	memset(oob_buf, 0xff, user_byte_num);
@@ -2132,6 +2151,8 @@ dma_retry_3:
 						 } 
 						 
 						 aml_chip->ran_mode = ran_mode;							 
+#endif						 
+#ifdef NEW_NAND_SUPPORT						 
 						if((aml_chip->new_nand_info.type) && (readretry_failed_cnt++ < aml_chip->new_nand_info.read_rety_info.retry_cnt)){
 							printk("aml nand read data ecc failed at page:%d  blk %d chip %d, readretry_failed_cnt:%d\n", 
 															page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
@@ -2139,27 +2160,31 @@ dma_retry_3:
 							aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, 0, page_addr, i);
 							goto read_retry;
 						}							
-						
+#endif						
 						memset(buf, 0xff, nand_page_size);
 						memset(oob_buf, 0xff, user_byte_num);
 						printk("########%s %d read ecc failed here at at page:%d, blk:%d chip[%d]\n", __func__, __LINE__, page_addr, (page_addr >> pages_per_blk_shift), i);
 						mtd->ecc_stats.failed++;
 					}
 					else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						aml_chip->ran_mode = ran_mode;
+#endif					
+#ifdef NEW_NAND_SUPPORT						
 						if((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)) && aml_chip->new_nand_info.type)){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 
 							mtd->ecc_stats.corrected++;
 						}
+#endif					
 						mtd->ecc_stats.corrected += stat;
 					}
-
+#ifdef NEW_NAND_SUPPORT
 					if((readretry_failed_cnt) && (aml_chip->new_nand_info.read_rety_info.read_retry_exit)){
 						aml_chip->new_nand_info.read_rety_info.read_retry_exit(mtd, i);
 					}
-
+#endif
 					oob_buf += user_byte_num;
 					buf += nand_page_size;
 				}
@@ -2317,8 +2342,10 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 	unsigned nand_page_size = (1 << chip->page_shift);
 	unsigned nand_read_size = ((readlen /( aml_chip->user_byte_mode * aml_chip->plane_num)) * chip->ecc.size);
 	unsigned read_chip_num = (((nand_read_size + (aml_chip->plane_num * nand_page_size) - 1) / (aml_chip->plane_num * nand_page_size)));
-	int readretry_failed_cnt = 0, ran_mode = aml_chip->ran_mode;
-
+	int readretry_failed_cnt = 0;
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
+	int ran_mode = aml_chip->ran_mode;
+#endif
 	if (nand_read_size >= nand_page_size)
 		user_byte_num = (((nand_page_size + chip->ecc.size - 1) / chip->ecc.size) * aml_chip->user_byte_mode);
 	else
@@ -2383,6 +2410,7 @@ dma_retry_plane0:
 					aml_chip->aml_nand_get_user_byte(aml_chip, oob_buffer, user_byte_num);
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, nand_buffer, dma_once_size, oob_buffer);
 					if (stat < 0) {
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ran_mode && (aml_chip->zero_cnt <  aml_chip->ecc_max)){
 						    memset(oob_buffer, 0xff, user_byte_num);
 						    goto plane0_ff;
@@ -2396,22 +2424,27 @@ dma_retry_plane0:
                             				ndelay(500);					
 							goto dma_retry_plane0;			    
 						 } 							 
+#endif						 
 						memset(oob_buffer, 0xff, user_byte_num);
 
 				        	mtd->ecc_stats.failed++;  
 					    	printk("aml nand read oob plane0 failed at page %d chip %d \n", page_addr, i);
 					}
 					else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))					
 						if(aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d]\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i);
 
 							mtd->ecc_stats.corrected++;
 						}
+#endif						
 						mtd->ecc_stats.corrected += stat;
 					}
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 plane0_ff:					
 					aml_chip->ran_mode = ran_mode;
+#endif				
 					oob_buffer += user_byte_num;
 					nand_read_size -= dma_once_size;
 
@@ -2422,13 +2455,16 @@ plane0_ff:
 dma_retry_plane1:						
 						error = aml_chip->aml_nand_dma_read(aml_chip, nand_buffer, dma_once_size, aml_chip->bch_mode);
 						if (error){
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 							aml_chip->ran_mode = ran_mode;
+#endif						
 							goto exit;
 						}
 
 						aml_chip->aml_nand_get_user_byte(aml_chip, oob_buffer, user_byte_num);
 						stat = aml_chip->aml_nand_hwecc_correct(aml_chip, nand_buffer, dma_once_size, oob_buffer);
 						if (stat < 0) {
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 	    						if(aml_chip->ran_mode && (aml_chip->zero_cnt <  aml_chip->ecc_max)){
 	    						    	memset(oob_buffer, 0xff, user_byte_num);
 	    							aml_chip->ran_mode = ran_mode;
@@ -2445,21 +2481,26 @@ dma_retry_plane1:
 	                            				ndelay(500);					
 								goto dma_retry_plane1;			    
 							 } 						 
+#endif							 
 							memset(oob_buffer, 0xff, user_byte_num);																
 
 	    					        mtd->ecc_stats.failed++;  
 	    						printk("aml nand read oob plane1 failed at page %d chip %d \n", page_addr, i);
 						}
 						else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 							if(aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit){
 								printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d]\n",
 												__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i);
 						
 								mtd->ecc_stats.corrected++;
 							}
+#endif							
 							mtd->ecc_stats.corrected += stat;
 						}
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						aml_chip->ran_mode = ran_mode;
+#endif						
 						oob_buffer += user_byte_num;
 						nand_read_size -= dma_once_size;
 					}
@@ -2469,13 +2510,16 @@ dma_retry_plane1:
 dma_retry:					
 					error = aml_chip->aml_nand_dma_read(aml_chip, nand_buffer, dma_once_size, aml_chip->bch_mode);
 					if (error){
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						aml_chip->ran_mode = ran_mode;
+#endif					
 						return error;
 					}
 
 					aml_chip->aml_nand_get_user_byte(aml_chip, oob_buffer, user_byte_num);
 					stat = aml_chip->aml_nand_hwecc_correct(aml_chip, nand_buffer, dma_once_size, oob_buffer);
 					if (stat < 0) {
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						if(aml_chip->ran_mode && (aml_chip->zero_cnt  <  aml_chip->ecc_max)){
 						    	memset(oob_buffer, 0xff, user_byte_num);
 						    	oob_buffer += user_byte_num;
@@ -2493,7 +2537,8 @@ dma_retry:
 						 } 
 						 
 						 aml_chip->ran_mode = ran_mode;					 
-						 
+#endif						 
+#ifdef NEW_NAND_SUPPORT						 
 						if((aml_chip->new_nand_info.type) && (readretry_failed_cnt++ < aml_chip->new_nand_info.read_rety_info.retry_cnt)){							
 							printk("aml nand read oob failed at page:%d  blk %d chip %d, readretry_failed_cnt:%d\n", 
 													page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
@@ -2501,26 +2546,31 @@ dma_retry:
 							aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, 0, page_addr, i);
 							goto read_retry;
 						}
+#endif
 						printk("########%s %d read oob failed here at at page:%d, blk:%d chip[%d]\n", __func__, __LINE__, page_addr, (page_addr >> pages_per_blk_shift), i);
 						
 						memset(oob_buffer, 0xff, user_byte_num);
 						mtd->ecc_stats.failed++;
 					}
 					else{
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 						aml_chip->ran_mode = ran_mode;
+#endif						
+#ifdef NEW_NAND_SUPPORT						
 						if((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)) && aml_chip->new_nand_info.type)){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 					
 							mtd->ecc_stats.corrected++;
 						}
+#endif
 						mtd->ecc_stats.corrected += stat;
 					}
-
+#ifdef NEW_NAND_SUPPORT
 					if((readretry_failed_cnt) && (aml_chip->new_nand_info.read_rety_info.read_retry_exit)){
 						aml_chip->new_nand_info.read_rety_info.read_retry_exit(mtd, i);
 					}
-
+#endif
 					oob_buffer += user_byte_num;
 					nand_read_size -= dma_once_size;
 				}
@@ -2676,10 +2726,12 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	struct aml_nand_flash_dev *type = NULL;
 	int i, maf_idx;
 	u8 dev_id[MAX_ID_LEN];
+#ifdef NEW_NAND_SUPPORT
 	u8 dev_id_hynix_26nm_8g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xde, 0x94, 0xd2, 0x04, 0x43};		
 	u8 dev_id_hynix_26nm_4g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xd7, 0x94, 0xda, 0x74, 0xc3};	
 	u8 dev_id_toshiba_24nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56};	
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
+#endif
 	//int tmp_id, tmp_manf;
 
 	/* Send the command for reading device ID */
@@ -2710,7 +2762,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		if (!type)
 			return ERR_PTR(-ENODEV);
 	}
-
+#ifdef NEW_NAND_SUPPORT
 	memset(&aml_chip->new_nand_info, 0, sizeof(struct new_tech_nand_t));
 	if(!strncmp((char*)type->id, (char*)dev_id_hynix_26nm_8g, strlen((const char*)aml_nand_flash_ids[i].id))){
 		aml_chip->new_nand_info.type = 1;
@@ -2891,6 +2943,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.read_rety_info.read_retry_exit = aml_nand_read_retry_exit_toshiba;	
 		
 	}
+#endif
 
 #ifdef CONFIG_MTD_DEVICE
 	//mtd->name = NULL;
@@ -3306,8 +3359,10 @@ static int aml_nand_read_env (struct mtd_info *mtd, size_t offset, u_char * buf)
 		return 1;
 
 	addr = (1024 * mtd->writesize / aml_chip->plane_num);
+#ifdef NEW_NAND_SUPPORT
 	if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 		addr += RETRY_NAND_BLK_NUM* mtd->erasesize;
+#endif
 	start_blk = addr / mtd->erasesize;
 	total_blk = mtd->size / mtd->erasesize;
 	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
@@ -3526,8 +3581,10 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 		default_environment_size = 0;
 		offset = 0;
 	}
+#ifdef NEW_NAND_SUPPORT
 	if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 		offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
+#endif
 	start_blk = (int)(offset >> phys_erase_shift);
 	total_blk = (int)(mtd->size >> phys_erase_shift);
 	pages_per_blk = (1 << (chip->phys_erase_shift - chip->page_shift));
@@ -3750,8 +3807,10 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 
 		phys_erase_shift = fls(mtd->erasesize) - 1;
 		offset = (1024 * mtd->writesize / aml_chip->plane_num);
+#ifdef NEW_NAND_SUPPORT	
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 			offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
+#endif			
 		start_blk = (int)(offset >> phys_erase_shift);
 		total_blk = (int)(mtd->size >> phys_erase_shift);
 		nand_bbt_info = (struct aml_nand_bbt_info *)(env_ptr->data + default_environment_size);
@@ -4189,6 +4248,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			goto exit_error;
 		}
 	}
+#if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
 	switch(aml_chip->bch_mode){
 		case NAND_ECC_BCH8:
 		case NAND_ECC_BCH8_1K:
@@ -4230,6 +4290,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			aml_chip->ecc_max = 16;
 			break;
 	}
+#endif
 
 	if (plat->platform_nand_data.chip.ecclayout) {
 		chip->ecc.layout = plat->platform_nand_data.chip.ecclayout;
@@ -4329,15 +4390,18 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
     //printk("databuf:%p\n", chip->buffers->databuf);
 	chip->oob_poi = chip->buffers->databuf + mtd->writesize;
 	chip->options |= NAND_OWN_BUFFERS;
-
+#ifdef NEW_NAND_SUPPORT
 	if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10)){
 		aml_chip->new_nand_info.slc_program_info.get_default_value(mtd);
 	}
+#endif
 	if (strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) {
+#ifdef NEW_NAND_SUPPORT
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10)){
 		
 			aml_chip->new_nand_info.read_rety_info.get_default_value(mtd);
 		}
+#endif
 		phys_erase_shift = fls(mtd->erasesize) - 1;
 		aml_chip->block_status = kzalloc((mtd->size >> phys_erase_shift), GFP_KERNEL);
 		if (aml_chip->block_status == NULL) {
@@ -4350,9 +4414,11 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		err = aml_nand_env_check(mtd);
 		if (err)
 			printk("invalid nand env\n");
+#ifdef NEW_NAND_SUPPORT
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10) && (aml_chip->new_nand_info.read_rety_info.default_flag == 0)){
 			aml_chip->new_nand_info.read_rety_info.save_default_value(mtd);
 		}
+#endif
 	}
 
 	if (aml_nand_add_partition(aml_chip) != 0) {
