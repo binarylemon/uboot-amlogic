@@ -316,6 +316,7 @@ void enter_power_down()
 	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
 	//APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
+	mmc_sleep();
 	// enable retention
 	//only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
 	//but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
