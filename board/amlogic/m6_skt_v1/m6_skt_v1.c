@@ -540,7 +540,14 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
 	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-	
+
+
+#ifdef CONFIG_M6_TEST_CPU_SWITCH
+	extern int get_cup_id(void);
+	printf("\n*************************************\n");
+	printf("CPU switch : CPU #%d is running\n",get_cpu_id());
+	printf("*************************************\n\n");	
+#endif //CONFIG_M6_TEST_CPU_SWITCH
 	return 0;
 }
 

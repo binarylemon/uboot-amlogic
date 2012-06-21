@@ -270,4 +270,10 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+
+/*
+* CPU switch test for uboot
+*/
+//#define CONFIG_M6_TEST_CPU_SWITCH 1
+
 #endif //__CONFIG_M6_SKT_V1_H__

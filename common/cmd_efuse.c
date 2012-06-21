@@ -138,7 +138,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 U_BOOT_CMD(
 	efuse,	4,	1,	do_efuse,
 	"efuse version/licence/mac/hdcp/usid read/write or dump raw efuse data commands",
-	"[read/write] [licence/mac/hdc/usid] [mem_addr]\n"
+	"[read/write] [licence/mac/hdc/usid/machineid] [mem_addr]\n"
 	"	   [read/wirte] para read ; write ;\n"
 	"				read need not mem_addr;write need\n"
 	"				read to get efuse context\n"
