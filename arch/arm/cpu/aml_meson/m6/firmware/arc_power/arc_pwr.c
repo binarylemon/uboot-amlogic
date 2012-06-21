@@ -263,6 +263,7 @@ void enter_power_down()
 	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned char vcin_state;
+	unsigned char charging_state;
 
 	//	disp_pctl();
 	//	test_ddr(0);
@@ -390,10 +391,7 @@ void enter_power_down()
 #endif
 
 	// gate off REMOTE, UART
-//	if(uboot_cmd_flag == 0x87654321)
-		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
-//	else
-//		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
 
 #if 1
 //	udelay(200000);//Drain power
@@ -405,14 +403,14 @@ void enter_power_down()
 #ifdef CONFIG_ARC_SARDAC_ENABLE
 		do{
 			udelay(2000);
-			vcin_state=get_vcin_state();
+			vcin_state=get_charging_state();
 			if(!vcin_state)
 				break;
 		}while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
 #else
 		do{
 			udelay(2000);
-			vcin_state=get_vcin_state();
+			vcin_state=get_charging_state();
 			if(!vcin_state)
 				break;
 		}while(!(readl(0xc1109860)&0x100));
@@ -420,11 +418,14 @@ void enter_power_down()
 		power_on_ddr15();
 	}
 	else
+	{
+		charging_state=get_charging_state();//get state before enter polling
 		do{
 			udelay(200);
-			if(get_vbus_state())
+			if(get_charging_state() ^ charging_state)//when the state is changed, wakeup
 				break;
 		}while(!(readl(0xc1109860)&0x100));
+	}
 
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
@@ -441,10 +442,7 @@ void enter_power_down()
 	writel(0x100,0xc1109860);//clear int
 
 // gate on REMOTE, UART
-//	if(uboot_cmd_flag == 0x87654321)
-		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
-//	else
-//		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
 
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(1);
