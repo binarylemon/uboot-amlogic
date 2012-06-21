@@ -82,18 +82,18 @@ static int axp_get_basecap()
 	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
 
 	if((val & 0x80) >> 7)
-		return (int) (val & 0x7F);
+		return (int) (0 - (val & 0x7F));
 	else
-		return 0;
+		return (int) (val & 0x7F);
 }
 
 static void axp_set_basecap(int base_cap)
 {
 	uint8_t val;
 	if(base_cap >= 0)
-		val = ABS(base_cap) | 0x80;
+		val = base_cap & 0x7F;
 	else
-		val = 0;
+		val = ABS(base_cap) | 0x80;
 	DBG_PSY_MSG("axp_set_basecap = %d\n", val);
 	axp_write(POWER20_DATA_BUFFER4, val);
 }
@@ -153,7 +153,7 @@ int axp_charger_get_charging_percent()
 	is_ac_online = axp_charger_is_ac_online();
 	icharging = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res));
 	
-	axp_read(POWER20_DATA_BUFFER5, &val);
+	axp_read(POWER20_DATA_BUFFERB, &val);
 	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
 
 	DBG_PSY_MSG("icharging = %d\n", icharging);
