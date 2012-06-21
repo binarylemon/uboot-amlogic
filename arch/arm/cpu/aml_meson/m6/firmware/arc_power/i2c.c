@@ -574,9 +574,9 @@ void power_on_ddr15()
 	udelay(100);
 }
 
-unsigned char get_vcin_state()
+unsigned char get_charging_state()
 {
-	return (i2c_axp202_read(0x0) & 0x80);
+	return (i2c_axp202_read(0x0) & 0xa0);
 }
 
 void shut_down()

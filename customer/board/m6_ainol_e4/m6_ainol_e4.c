@@ -416,6 +416,7 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 	CONFIG_M6_USBPORT_BASE,
 	USB_ID_MODE_SW_HOST,
 	gpio_set_vbus_power, //set_vbus_power
+	NULL,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
@@ -439,7 +440,7 @@ int board_late_init(void)
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-	board_usb_init(&g_usb_config_m6_skt);
+	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 //#ifdef CONFIG_AW_AXP20
