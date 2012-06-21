@@ -262,6 +262,7 @@ void enter_power_down()
 {
 	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
+	unsigned char vcin_state;
 
 	//	disp_pctl();
 	//	test_ddr(0);
@@ -315,7 +316,6 @@ void enter_power_down()
 	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
 	//APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
-	mmc_sleep();
 	// enable retention
 	//only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
 	//but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
@@ -365,11 +365,11 @@ void enter_power_down()
 
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
-// ee use 32k, So interrup status can be accessed.
 #ifdef CONFIG_ARC_SARDAC_ENABLE
 	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
 #endif
 	{
+	// ee use 32k, So interrup status can be accessed.
 		writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
 		switch_to_rtc();
 		udelay(1000);
@@ -389,7 +389,10 @@ void enter_power_down()
 #endif
 
 	// gate off REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+	if(uboot_cmd_flag == 0x87654321)
+		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
+	else
+		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
 #if 1
 //	udelay(200000);//Drain power
@@ -399,10 +402,19 @@ void enter_power_down()
 		power_off_ddr15();
 
 #ifdef CONFIG_ARC_SARDAC_ENABLE
-		do{udelay(2000);}
-		while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
+		do{
+			udelay(2000);
+			vcin_state=get_vcin_state();
+			if(!vcin_state)
+				break;
+		}while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
 #else
-		do{udelay(2000);}while(!(readl(0xc1109860)&0x100));
+		do{
+			udelay(2000);
+			vcin_state=get_vcin_state();
+			if(!vcin_state)
+				break;
+		}while(!(readl(0xc1109860)&0x100));
 #endif//CONFIG_ARC_SARDAC_ENABLE
 		power_on_ddr15();
 	}
@@ -424,7 +436,10 @@ void enter_power_down()
 	writel(0x100,0xc1109860);//clear int
 
 // gate on REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+	if(uboot_cmd_flag == 0x87654321)
+		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
+	else
+		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(1);
@@ -502,13 +517,25 @@ void enter_power_down()
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
 //		writel(readl(P_HHI_SYS_PLL_CNTL)&(~1<<30),P_HHI_SYS_PLL_CNTL);//power on sys pll
-		writel(0,P_AO_RTI_STATUS_REG2);
-		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
-		clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-		writel(10,0xc1109904);
-		writel(1<<22|3<<24,0xc1109900);
+		if(!vcin_state)//plug out ACIN
+		{
+			shut_down();
+			do{
+				udelay(20000);
+				f_serial_puts("wait shutdown...\n");
+				wait_uart_empty();
+			}while(1);
+		}
+		else
+		{
+			writel(0,P_AO_RTI_STATUS_REG2);
+			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+			writel(10,0xc1109904);
+			writel(1<<22|3<<24,0xc1109900);
 
-	    do{udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+		    do{udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+		}
 	}
 
 #endif   //pwr_ddr_off
