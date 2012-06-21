@@ -113,5 +113,31 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_wait_tx_empty();
 #endif
 
+#ifdef CONFIG_M6_TEST_CPU_SWITCH
+	
+
+	extern int get_cup_id(void);
+	__udelay(10000);
+	serial_puts("\n*************************************\n");
+	__udelay(10000);
+	serial_puts("CPU switch : CPU #");
+	__udelay(10000);
+	serial_put_hex(get_cpu_id(),4);
+	__udelay(10000);
+	serial_puts(" is sleeping\n");
+	__udelay(10000);
+	serial_puts("*************************************\n\n");	
+	__udelay(10000);
+
+
+	writel(__TEXT_BASE,0xd901ff84);
+	writel(1|1<<1,0xd901ff80);
+	asm volatile ("": : :"memory");
+	asm  volatile("dsb");
+	asm volatile ("sev");
+	while(1);
+	
+#endif//CONFIG_M6_TEST_CPU_SWITCH
+
     return 0;
 }
