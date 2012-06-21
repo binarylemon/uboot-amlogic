@@ -390,10 +390,10 @@ void enter_power_down()
 #endif
 
 	// gate off REMOTE, UART
-	if(uboot_cmd_flag == 0x87654321)
+//	if(uboot_cmd_flag == 0x87654321)
 		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
-	else
-		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
+//	else
+//		writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0xF)),P_AO_RTI_GEN_CNTL_REG0);
 
 #if 1
 //	udelay(200000);//Drain power
@@ -420,7 +420,11 @@ void enter_power_down()
 		power_on_ddr15();
 	}
 	else
-		do{udelay(200);}while(!(readl(0xc1109860)&0x100));
+		do{
+			udelay(200);
+			if(get_vbus_state())
+				break;
+		}while(!(readl(0xc1109860)&0x100));
 
 //	while(!(readl(0xc1109860)&0x100)){break;}
 #else
@@ -437,10 +441,10 @@ void enter_power_down()
 	writel(0x100,0xc1109860);//clear int
 
 // gate on REMOTE, UART
-	if(uboot_cmd_flag == 0x87654321)
+//	if(uboot_cmd_flag == 0x87654321)
 		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
-	else
-		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+//	else
+//		writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(1);

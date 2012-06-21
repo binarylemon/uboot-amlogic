@@ -579,6 +579,11 @@ unsigned char get_vcin_state()
 	return (i2c_axp202_read(0x0) & 0x80);
 }
 
+unsigned char get_vbus_state()
+{
+	return (i2c_axp202_read(0x0) & 0x20);
+}
+
 void shut_down()
 {
 	i2c_axp202_write(0x32,i2c_axp202_read(0x32) | 0x80);
