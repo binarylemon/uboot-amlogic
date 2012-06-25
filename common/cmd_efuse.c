@@ -10,22 +10,13 @@
 #define EFUSE_DUMP 2
 //#define EFUSE_VERSION 3
 
-int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+int cmd_efuse(int argc, char * const argv[], char *buf)
 {
-	int ret = 0 ;
-	int i;
-	char addr[EFUSE_BYTES];
+	int i, action = -1;
+	efuseinfo_item_t info;
 	char *title;
-	char *op;	
 	char *s;
 	char *end;
-	efuseinfo_item_t info;
-	int action = -1;	
-		
-	if(argc < 2){
-		cmd_usage(cmdtp);
-		return -1;
-	}
 	
 	if(strncmp(argv[1], "read", 4) == 0)
 		action=EFUSE_READ;
@@ -42,16 +33,17 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				
 	// efuse dump
 	if(action == EFUSE_DUMP){
-		op = efuse_dump();		
+		memcpy(buf, efuse_dump(), EFUSE_BYTES);
 		printf("Raw efuse data: \n");
 		for(i=0; i<EFUSE_BYTES; i++){
 			if(i%16 == 0)
 				printf("%03x:  ", i);
-			printf("%02x ", op[i]);
+			printf("%02x ", buf[i]);
 			if(i%16 == 15)
 				printf("\n");
 		}	
 		printf("efuse raw data dump finish \n");
+		return 0;
 	}
 	
 	// efuse version
@@ -61,15 +53,15 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				return -1;
 		}
 		efuse_getinfo_version(&info);
-		memset(addr, 0, sizeof(addr));	
+		memset(buf, 0, info.data_len);	
 		s=argv[2];
 		for(i=0; i<info.data_len; i++){
-			addr[i] = s ? simple_strtoul(s, &end, 16) : 0;
+			buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
 			
-		if(efuse_write_usr(&info, addr)){
+		if(efuse_write_usr(&info, buf)){
 			printf("error: efuse version has been selected.\n");
 			return -1;
 		}
@@ -84,11 +76,11 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if(efuse_getinfo(title, &info) < 0)		
 			return -1;
 		
-		memset(addr, 0, EFUSE_BYTES);
-		efuse_read_usr(addr, info.data_len, (loff_t *)&info.offset);		
+		memset(buf, 0, EFUSE_BYTES);
+		efuse_read_usr(buf, info.data_len, (loff_t *)&info.offset);		
 		printf("%s is: ", title);
 		for(i=0; i<(info.data_len); i++)
-			printf(":%02x", addr[i]);
+			printf(":%02x", buf[i]);
 		printf("\n");
 	}
 	
@@ -106,10 +98,10 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return -1;
 		}
 		
-		memset(addr, 0, sizeof(addr));	
+		memset(buf, 0, info.data_len);	
 		s=argv[3];
 		for(i=0; i<info.data_len; i++){
-			addr[i] = s ? simple_strtoul(s, &end, 16) : 0;
+			buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
@@ -119,7 +111,7 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return -1;
 		}
 		
-		if(efuse_write_usr(addr, info.data_len, (loff_t*)&info.offset)<0){
+		if(efuse_write_usr(buf, info.data_len, (loff_t*)&info.offset)<0){
 			printf("error: efuse write fail.\n");
 			return -1;
 		}
@@ -131,8 +123,22 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("arg error\n");
 		return -1;	
 	}
+	
+	return 0;
+}
+
+
+int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0 ;
+	char buf[EFUSE_BYTES];
+	
+	if(argc < 2){
+		cmd_usage(cmdtp);
+		return -1;
+	}
 		
-	return ret ;		
+	return cmd_efuse(argc, argv, buf);		
 }
 
 U_BOOT_CMD(

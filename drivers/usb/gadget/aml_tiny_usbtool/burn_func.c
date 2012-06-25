@@ -94,6 +94,19 @@ int usb_run_command (const char *cmd, char* buff)
 			strcpy(buff, "okay");
 		}
 	}
+	else if(strncmp(cmd,"efuse",(sizeof("efuse")-1)) == 0){
+		int argc;
+		char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
+		/* Extract arguments */
+		if ((argc = parse_line (cmd, argv)) == 0) {
+			return -1;	/* no command at all */
+		}
+		if(cmd_efuse(argc, argv, buff))
+		{
+			strcpy(buff, "fail");
+			return -1;
+		}
+	}
 	else
 	{
 		if(run_command(cmd, flag))
@@ -106,7 +119,7 @@ int usb_run_command (const char *cmd, char* buff)
 			strcpy(buff, "okay");
 		}
 	}
-
+	return 0;
 }
 
 
