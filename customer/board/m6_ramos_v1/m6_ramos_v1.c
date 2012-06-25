@@ -379,6 +379,7 @@ struct aml_nand_device aml_nand_mid_device = {
 //GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
 static void gpio_set_vbus_power(char is_power_on)
 {
+#if 0
 	if(is_power_on)
 	{
 		//@WA-AML8726-M3_REF_V1.0.pdf
@@ -401,20 +402,37 @@ static void gpio_set_vbus_power(char is_power_on)
 		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
+#endif	
 }
+static int usb_charging_detect_call_back(char bc_mode)
+{
+	switch(bc_mode){
+		case BC_MODE_DCP:
+		case BC_MODE_CDP:
+			//Pull up chargging current > 500mA
+			break;
 
+		case BC_MODE_UNKNOWN:
+		case BC_MODE_SDP:
+		default:
+			//Limit chargging current <= 500mA
+			//Or detet dec-charger
+			break;
+	}
+	return 0;
+}
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
 //USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 27(336MHz); @Rev2663 M3 SKT board DDR is 336MHz
 //                                                            43 (528MHz); M3 SKT board DDR not stable for 528MHz
-struct amlogic_usb_config g_usb_config_m6_skt={
+struct amlogic_usb_config g_usb_config_m6_ramos_v1={
 	USB_PHY_CLK_SEL_XTAL,
 	1, //PLL divider: (clock/12 -1)
-	CONFIG_M6_USBPORT_BASE,
+	CONFIG_M6_USBPORT_BASE_A,
 	USB_ID_MODE_SW_HOST,
 	gpio_set_vbus_power, //set_vbus_power
-	NULL,
+	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
@@ -438,7 +456,8 @@ int board_late_init(void)
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_ramos_v1,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_ramos_v1,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 	return 0;
