@@ -410,6 +410,7 @@ static int usb_charging_detect_call_back(char bc_mode)
 		case BC_MODE_DCP:
 		case BC_MODE_CDP:
 			//Pull up chargging current > 500mA
+			axp_charger_set_usbcur_limit(900);
 			break;
 
 		case BC_MODE_UNKNOWN:
@@ -417,6 +418,7 @@ static int usb_charging_detect_call_back(char bc_mode)
 		default:
 			//Limit chargging current <= 500mA
 			//Or detet dec-charger
+			axp_charger_set_usbcur_limit(500);
 			break;
 	}
 	return 0;

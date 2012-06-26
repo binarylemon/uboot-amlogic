@@ -228,7 +228,7 @@ int axp_charger_get_charging_percent()
 
 void axp_set_charging_current(int current)
 {
-	char reg_val = 0;
+	uint8_t reg_val = 0;
 	axp_read(POWER20_CHARGE1, &reg_val);
 	if(current == 0)
 	{
@@ -248,6 +248,36 @@ void axp_set_charging_current(int current)
 		axp_write(POWER20_CHARGE1, reg_val);
 		printf("%s: set charge current to %d Reg value %x!\n",__FUNCTION__, current, reg_val);		
 	}
+}
+
+int axp_charger_set_usbcur_limit(int usbcur_limit)
+{
+    uint8_t val;
+
+	axp_read(AXP20_CHARGE_VBUS, &val);
+
+	switch(usbcur_limit)
+	{
+		case 0:
+			val |= 0x3;
+			break;
+		case 100:
+			val |= 0x2;
+			break;
+		case 500:
+			val |= 0x1;
+			break;
+		case 900:
+			val |= 0x0;
+			break;
+		default:
+			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n");
+			return -1;
+			break;
+	}
+	axp_write(AXP20_CHARGE_VBUS, val);
+	
+    return 0;
 }
 
 
