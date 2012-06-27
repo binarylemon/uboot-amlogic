@@ -2340,7 +2340,8 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 	unsigned char *oob_buffer = chip->oob_poi;
 	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 	unsigned nand_page_size = (1 << chip->page_shift);
-	unsigned nand_read_size = ((readlen /( aml_chip->user_byte_mode * aml_chip->plane_num)) * chip->ecc.size);
+	//unsigned nand_read_size = ((readlen /( aml_chip->user_byte_mode * aml_chip->plane_num)) * chip->ecc.size);
+	unsigned nand_read_size = ((readlen /aml_chip->user_byte_mode) * chip->ecc.size);
 	unsigned read_chip_num = (((nand_read_size + (aml_chip->plane_num * nand_page_size) - 1) / (aml_chip->plane_num * nand_page_size)));
 	int readretry_failed_cnt = 0;
 #if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
