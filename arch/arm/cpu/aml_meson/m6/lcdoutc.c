@@ -416,49 +416,90 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
 	// WRITE_MPEG_REG(L_VCOM_VE_ADDR, pConf->vcom_ve_addr);
 }
 
-static void set_video_spread_spectrum(int video_ss_level)
+static void set_video_spread_spectrum(int video_pll_sel, int video_ss_level)
 { 
-    switch (video_ss_level)
-	{
-		case 0:  // disable ss
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL2, 0x814d3928 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL3, 0x6b425012 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL4, 0x110 );
-			break;
-		case 1:  //about 1%
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x4d625012);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
-			break;
-		case 2:  //about 2%
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x2d425012);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
-			break;
-		case 3:  //about 3%
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x1d425012);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
-			break;		
-		case 4:  //about 4%
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x0d125012);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
-			break;
-		case 5:  //about 5%
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x0e425012);
-			WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
-			break;	
-		default:  //disable ss
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL2, 0x814d3928 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL3, 0x6b425012 );
-			WRITE_MPEG_REG( HHI_VID_PLL_CNTL4, 0x110 );		
-	}	
+    if (video_pll_sel){
+	    switch (video_ss_level)
+		{
+			case 0:  // disable ss
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x814d3928 );
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x6b425012 );
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x110 );
+				break;
+			case 1:  //about 1%
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x4d625012);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
+				break;
+			case 2:  //about 2%
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x2d425012);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
+				break;
+			case 3:  //about 3%
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x1d425012);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
+				break;		
+			case 4:  //about 4%
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x0d125012);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
+				break;
+			case 5:  //about 5%
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x0e425012);
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x130);
+				break;	
+			default:  //disable ss
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL2, 0x814d3928 );
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL3, 0x6b425012 );
+				WRITE_MPEG_REG(HHI_VIID_PLL_CNTL4, 0x110 );		
+		}
+	}
+	else{
+		switch (video_ss_level)
+		{
+			case 0:  // disable ss
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x814d3928 );
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x6b425012 );
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x110 );
+				break;
+			case 1:  //about 1%
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x4d625012);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x130);
+				break;
+			case 2:  //about 2%
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x2d425012);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x130);
+				break;
+			case 3:  //about 3%
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x1d425012);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x130);
+				break;		
+			case 4:  //about 4%
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x0d125012);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x130);
+				break;
+			case 5:  //about 5%
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x16110696);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x0e425012);
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x130);
+				break;	
+			default:  //disable ss
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x814d3928 );
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0x6b425012 );
+				WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x110 );		
+		}
+	}
 	//debug("set video spread spectrum %d%%.\n", video_ss_level);	
 }
 
-static void vclk_set_lcd(int lcd_type, int ss_level, int pll_sel, int pll_div_sel, int vclk_sel, unsigned long pll_reg, unsigned long vid_div_reg, unsigned int xd)
+static void vclk_set_lcd(int lcd_type, int pll_sel, int pll_div_sel, int vclk_sel, unsigned long pll_reg, unsigned long vid_div_reg, unsigned int xd)
 {
     debug("setup lcd clk.\n");
     vid_div_reg |= (1 << 16) ; // turn clock gate on
@@ -477,9 +518,11 @@ static void vclk_set_lcd(int lcd_type, int ss_level, int pll_sel, int pll_div_se
 	udelay(2);
 
     if(pll_sel){
-        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<29) );
-        set_video_spread_spectrum(ss_level);  //set pll_ctrl2, pll_ctrl3, pll_ctrl4 reg and spread_spectrum
-        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg );
+        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg|(1<<29) );        
+        WRITE_MPEG_REG( HHI_VIID_PLL_CNTL2, 0x814d3928 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL3, 0x6b425012 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL4, 0x110 );
+		WRITE_MPEG_REG( HHI_VIID_PLL_CNTL, pll_reg );
     }
     else{
         WRITE_MPEG_REG( HHI_VID_PLL_CNTL, pll_reg|(1<<29) );
@@ -608,8 +651,9 @@ static void set_pll_ttl(Lcd_Config_t *pConf)
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-	vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);	
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+	vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);	
+	set_video_spread_spectrum(pll_sel, ss_level);
 }
 
 static void clk_util_lvds_set_clk_div(  unsigned long   divn_sel,
@@ -644,9 +688,11 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
     div_reg = pConf->lcd_timing.div_ctrl | 0x3;    
 	ss_level = ((pConf->lcd_timing.clk_ctrl) >>16) & 0xf;
     pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
-    pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+    //pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+	pll_div_sel = 1;
     vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;
-	xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	//xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	xd = 1;
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 	
@@ -655,8 +701,9 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
     phy_clk_div2 = 0;
 	
 	div_reg = (div_reg | (1 << 8) | (1 << 11) | ((pll_div_post-1) << 12) | (phy_clk_div2 << 10));
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-    vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);		 
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+    vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);		 
+	set_video_spread_spectrum(pll_sel, ss_level);
 	
 	clk_util_lvds_set_clk_div(1, pll_div_post, phy_clk_div2);
 	
@@ -704,9 +751,11 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     div_reg = pConf->lcd_timing.div_ctrl | 0x3;    
 	ss_level = ((pConf->lcd_timing.clk_ctrl) >>16) & 0xf;
     pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
-    pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+    //pll_div_sel = ((pConf->lcd_timing.clk_ctrl) >>8) & 0x1;
+	pll_div_sel = 1;
     vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;
-	xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	//xd = pConf->lcd_timing.clk_ctrl & 0xf;
+	xd = 1;
 	
 	lcd_type = pConf->lcd_basic.lcd_type;
 
@@ -759,8 +808,9 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     phy_clk_div2 = (test_pair_num != 3);
 	
 	div_reg = (div_reg | (1 << 8) | (1 << 11) | ((pll_div_post-1) << 12) | (phy_clk_div2 << 10));
-	debug("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
-    vclk_set_lcd(lcd_type, ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd); 					 
+	printf("ss_level=%d, pll_sel=%d, pll_div_sel=%d, vclk_sel=%d, pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd);
+    vclk_set_lcd(lcd_type, pll_sel, pll_div_sel, vclk_sel, pll_reg, div_reg, xd); 					 
+	set_video_spread_spectrum(pll_sel, ss_level);
 	
 	clk_util_lvds_set_clk_div(1, pll_div_post, phy_clk_div2);	
 	
