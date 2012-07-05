@@ -106,9 +106,9 @@ static void backlight_power_ctrl(Bool_t status)
 	{
 		mdelay(20);	
 		//BL_EN -> GPIOD_1: 0	
-	    WRITE_MPEG_REG(PWM_MISC_REG_CD, READ_MPEG_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
-		set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
-	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);	    
+	    set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
+	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
+		WRITE_MPEG_REG(PWM_MISC_REG_CD, READ_MPEG_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 	}
 }
 
@@ -130,8 +130,8 @@ void set_backlight_level(unsigned level)
 		WRITE_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
 #elif (BL_CTL==BL_CTL_PWM)
 		level = (PWM_MAX - PWM_MIN) * (level - 15) / (BL_MAX_LEVEL - 15) + PWM_MIN;	//BL_MIN_LEVEL(20) mapping to 15
-		WRITE_CBUS_REG_BITS(PWM_PWM_D, (PWM_CNT - level), 0, 16);  //pwm low
-    	WRITE_CBUS_REG_BITS(PWM_PWM_D, level, 16, 16);  //pwm high
+		WRITE_MPEG_REG(PWM_PWM_D, (level << 16) | (PWM_CNT - level));  //pwm duty
+
 #endif	
 }
 

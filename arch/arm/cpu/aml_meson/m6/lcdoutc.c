@@ -936,6 +936,7 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
 static void venc_set_ttl(Lcd_Config_t *pConf)
 {
     debug("%s.\n",__FUNCTION__);
+	WRITE_MPEG_REG(ENCT_VIDEO_EN,           0);
     WRITE_MPEG_REG(VPU_VIU_VENC_MUX_CTRL,
        (3<<0) |    // viu1 select enct
        (3<<2)      // viu2 select enct
@@ -1262,9 +1263,37 @@ static inline void _init_display_driver(Lcd_Config_t *pConf)
 			set_tcon_mlvds(pConf);  	
 			break;
 		default:
-            printf("Not valid LCD type.\n");
+            printf("Invalid LCD type.\n");
 			break;			
 	}	
+}
+
+static inline void _disable_display_driver(Lcd_Config_t *pConf)
+{	
+    int pll_sel, vclk_sel;	    
+    
+    pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
+    vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;	
+	
+	WRITE_MPEG_REG_BITS(HHI_VIID_DIVIDER_CNTL, 0, 11, 1);	//close lvds phy clk gate: 0x104c[11]
+	
+	WRITE_MPEG_REG(ENCT_VIDEO_EN, 0);	//disable enct
+	WRITE_MPEG_REG(ENCL_VIDEO_EN, 0);	//disable encl
+	
+	if (vclk_sel)
+		WRITE_MPEG_REG_BITS(HHI_VIID_CLK_CNTL, 0, 0, 5);		//close vclk2 gate: 0x104b[4:0]
+	else
+		WRITE_MPEG_REG_BITS(HHI_VID_CLK_CNTL, 0, 0, 5);		//close vclk1 gate: 0x105f[4:0]
+	
+	if (pll_sel){	
+		WRITE_MPEG_REG_BITS(HHI_VIID_DIVIDER_CNTL, 0, 16, 1);	//close vid2_pll gate: 0x104c[16]
+		WRITE_MPEG_REG_BITS(HHI_VIID_PLL_CNTL, 1, 30, 1);		//power down vid2_pll: 0x1047[30]
+	}
+	else{
+		WRITE_MPEG_REG_BITS(HHI_VID_DIVIDER_CNTL, 0, 16, 1);	//close vid1_pll gate: 0x1066[16]
+		WRITE_MPEG_REG_BITS(HHI_VID_PLL_CNTL, 1, 30, 1);		//power down vid1_pll: 0x105c[30]
+	}
+	printf("disable lcd display driver.\n");
 }
 
 static inline void _enable_vsync_interrupt(void)
@@ -1352,7 +1381,7 @@ static void _init_vout(lcd_dev_t *pDev)
 static void _lcd_init(Lcd_Config_t *pConf)
 {
 	_init_vout(pDev);
-    	_lcd_module_enable();
+    	//_lcd_module_enable();		//remove repeatedly lcd_module_enable
 	lcd_set_current_vmode(VMODE_LCD);
 }
 
@@ -1372,6 +1401,7 @@ int lcd_probe(void)
 
 int lcd_remove(void)
 {
-    free(pDev);
+    _disable_display_driver(&pDev->conf);
+	free(pDev);
     return 0;
 }
