@@ -384,10 +384,10 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
                   );
 
     // for channel 4-7, set second setting same as first
-    WRITE_MPEG_REG(L_DE_HS_ADDR, (0xf << 12) | ext_pixel);   // 0xf -- enable double_tcon fir channel7:4
-    WRITE_MPEG_REG(L_DE_HE_ADDR, (0xf << 12) | ext_pixel);   // 0xf -- enable double_tcon fir channel3:0
-    WRITE_MPEG_REG(L_DE_VS_ADDR, 0);
-    WRITE_MPEG_REG(L_DE_VE_ADDR, 0);
+    WRITE_MPEG_REG(L_DE_HS_ADDR, (0x3 << 14) | ext_pixel);   // 0x3 -- enable double_tcon fir channel7:6
+    WRITE_MPEG_REG(L_DE_HE_ADDR, (0x3 << 14) | ext_pixel);   // 0x3 -- enable double_tcon fir channel5:4
+    WRITE_MPEG_REG(L_DE_VS_ADDR, (0x3 << 14) | 0);	// 0x3 -- enable double_tcon fir channel3:2
+    WRITE_MPEG_REG(L_DE_VE_ADDR, (0x3 << 14) | 0);	// 0x3 -- enable double_tcon fir channel1:0
 
     dual_wr_rd_start = 0x5d;
     WRITE_MPEG_REG(MLVDS_DUAL_GATE_WR_START, dual_wr_rd_start);
@@ -409,11 +409,6 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
     {
 		write_tcon_double(&mlvds_tconfig_l[i]);
     }
-
-	//set vcom
-	// WRITE_MPEG_REG(L_VCOM_HSWITCH_ADDR, pConf->vcom_hswitch_addr);
-	// WRITE_MPEG_REG(L_VCOM_VS_ADDR, pConf->vcom_vs_addr);
-	// WRITE_MPEG_REG(L_VCOM_VE_ADDR, pConf->vcom_ve_addr);
 }
 
 static void set_video_spread_spectrum(int video_pll_sel, int video_ss_level)
