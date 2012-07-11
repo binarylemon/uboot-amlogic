@@ -214,6 +214,10 @@ void restart_arm()
 	//4. Release ISO for A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
 
+	//use sys pll for speed up
+	clrbits_le32(P_HHI_SYS_PLL_CNTL, (1 << 30));
+	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL , (1 << 7));
+
 	//reset A9
 	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
 	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
