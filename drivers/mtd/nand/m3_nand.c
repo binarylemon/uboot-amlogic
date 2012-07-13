@@ -69,7 +69,7 @@ static void m3_nand_select_chip(struct aml_nand_chip *aml_chip, int chipnr)
 					if (!((aml_chip->chip_enable[i] >> 10) & 8))
 						SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));
 
-					if ((aml_chip->ops_mode & AML_CHIP_NONE_RB) == 0){ 
+					if (((aml_chip->ops_mode & AML_CHIP_NONE_RB) == 0) && (aml_chip->rb_enable[i])){ 
 						if (!((aml_chip->rb_enable[i] >> 10) & 1))
 							SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 17));
 						if (!((aml_chip->rb_enable[i] >> 10) & 2))
@@ -219,7 +219,7 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct aml_nand_bch_desc *ecc_supports = aml_chip->bch_desc;
 	unsigned max_bch_mode = aml_chip->max_bch_mode;
-	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define;
+	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define, valid_chip_num = 0;
 	int error = 0, i, j;
 
 	options_selected = (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK);
@@ -320,27 +320,6 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 			break;
 	}
 
-	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
-	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
-	if (options_selected > options_define) {
-		printk("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
-		options_selected = options_define;
-	}
-
-	switch (options_selected) {
-
-		case NAND_TWO_PLANE_MODE:
-			aml_chip->plane_num = 2;
-			mtd->erasesize *= 2;
-			mtd->writesize *= 2;
-			mtd->oobsize *= 2;
-			break;
-
-		default:
-			aml_chip->plane_num = 1;
-			break;
-	}
-
 	options_selected = (plat->platform_nand_data.chip.options & NAND_INTERLEAVING_OPTIONS_MASK);
 	options_define = (aml_chip->options & NAND_INTERLEAVING_OPTIONS_MASK);
 	if (options_selected > options_define) {
@@ -360,7 +339,43 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 		default:		
 			break;
 	}
+    
+	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
+	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
+	if (options_selected > options_define) {
+		printk("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
+		options_selected = options_define;
+	}
 
+	valid_chip_num = 0;
+	for (i=0; i<aml_chip->chip_num; i++) {
+		if (aml_chip->valid_chip[i]) {
+		    valid_chip_num++;
+		}
+    	}
+    
+	if (aml_chip->ops_mode & AML_INTERLEAVING_MODE)
+		valid_chip_num *= aml_chip->internal_chipnr;	
+	
+	if(valid_chip_num > 2){
+	    printk("detect valid_chip_num:%d over 2, and aml_chip->internal_chipnr:%d, disable NAND_TWO_PLANE_MODE here\n", valid_chip_num, aml_chip->internal_chipnr);
+	}
+	else{	
+    	switch (options_selected) {
+    
+    		case NAND_TWO_PLANE_MODE:
+    			aml_chip->plane_num = 2;
+    			mtd->erasesize *= 2;
+    			mtd->writesize *= 2;
+    			mtd->oobsize *= 2;
+    			break;
+    
+    		default:
+    			aml_chip->plane_num = 1;
+    			break;
+    	}  
+    }
+	  
 	return error;
 }
 
@@ -880,6 +895,7 @@ static int m3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 	aml_chip->aml_nand_dma_write = m3_nand_dma_write;
 	aml_chip->aml_nand_hwecc_correct = m3_nand_hwecc_correct;
 	aml_chip->ran_mode = plat->ran_mode; 	
+    	aml_chip->rbpin_detect = plat->rbpin_detect; 	
 
 	err = aml_nand_init(aml_chip);
 	if (err)

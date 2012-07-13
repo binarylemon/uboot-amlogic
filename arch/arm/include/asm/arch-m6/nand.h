@@ -511,6 +511,7 @@ struct aml_nand_chip {
 	unsigned internal_chip_shift;
 	unsigned int 	       ran_mode; 				//def close, for all part
 	unsigned int          rbpin_mode;
+	unsigned int          rbpin_detect;
     unsigned int          short_pgsz;				//zero means no short 
 	
 	unsigned bch_mode;
@@ -576,6 +577,7 @@ struct aml_nand_platform {
          unsigned int          T_RHOH;							// not equal of  (nandchip->delay, which is for dev ready func) 
 		 unsigned int 	       ran_mode; 				//def close, for all part
 	     unsigned int          rbpin_mode;					//may get from romboot 
+		 unsigned int		rbpin_detect;
 		 unsigned int          short_pgsz;				//zero means no short 
 		 		
 		 struct aml_nand_chip  *aml_chip;
