@@ -6,14 +6,14 @@
 #include "dwc_pcd.c"
 #include "dwc_pcd_irq.c"
 
-int usb_boot(int clk_cfg)
+int usb_boot(int clk_cfg, int time_out)
 {
 	int cfg = INT_CLOCK;
 	if(clk_cfg)
 		cfg = EXT_CLOCK;
 	set_usb_phy_config(cfg);
 
-	usb_parameter_init();
+	usb_parameter_init(time_out);
 		
 	if(usb_pcd_init())
 		return 0;
@@ -29,7 +29,13 @@ int usb_boot(int clk_cfg)
 
 int do_tiny_usbtool (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	return usb_boot(1);
+	int time_out = 0;
+	if(argc > 1)
+	{
+		time_out = simple_strtol(argv[1], NULL, 10);
+	}
+
+	return usb_boot(1, time_out);
 }
 
 
