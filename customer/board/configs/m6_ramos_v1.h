@@ -138,9 +138,9 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=chk_all_regulators; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
-	"upgrade_check=if itest ${upgrade_step} == 0; then run usb_burning; defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; fi\0" \
-	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else if test ${reboot_mode} = usb_burning; then run usb_burning; else run charging_or_not; fi; fi; fi\0" \
+	"preboot=chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4;run updatekey_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then tiny_usbtool 1000; defenv; save; run update; else if itest ${upgrade_step} == 1; then if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; defenv; setenv upgrade_step 2; save; fi; fi\0" \
+	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
 	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi; nand read recovery ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm\0" \
 	"recovery=run prepare; bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; else echo no uImage_recovery in NAND; fi\0" \
@@ -152,11 +152,10 @@
 	"into_sleep=suspend; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev enable; video dev bl_on\0" \
 	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then setenv sleep_enable 0; fi; fi; if saradc get_in_range 0x0 0x380; then msleep 100; if saradc get_in_range 0x0 0x380; then setenv sleep_enable 0; fi; fi\0" \
 	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
-	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then run usb_burning; run update; fi; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then tiny_usbtool 1000; run update; fi; fi; fi\0" \
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
-	"usb_burning=tiny_usbtool\0"
 //Elvis Test!
 //"sleep_get_key=suspend; run aconline_or_not; setenv sleep_enable 0\0" \
 

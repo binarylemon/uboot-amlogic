@@ -159,7 +159,7 @@ typedef __u64    __be64;
 
 
 // 32 bit TimerE, 1us
-#define USB_ROM_CONN_TIMEOUT		5*1000*1000  //us (5s timeout,)
+#define USB_ROM_CONN_TIMEOUT		1000  //ms (1s timeout,)
 
 
 /* Meet with spec */
