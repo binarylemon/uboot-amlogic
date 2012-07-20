@@ -326,6 +326,29 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	while( !(readl(P_PUB_PGSR_ADDR) & 1)) {}
 
     ret |= readl(P_PUB_PGSR_ADDR) & (3<<5);
+    
+    if(ret){
+        serial_puts("\nPGSR: ");
+        serial_put_hex(readl(P_PUB_PGSR_ADDR), 8);
+
+        writel(0x1e9 | (1<<28), P_PUB_PIR_ADDR);
+
+	    while( !(readl(P_PUB_PGSR_ADDR) & 1)) {}
+
+	    ret &= ~(3<<5);
+	    ret |= readl(P_PUB_PGSR_ADDR) & (3<<5);
+	    serial_puts("\nPGSR: ");
+        serial_put_hex(readl(P_PUB_PGSR_ADDR), 8);
+        
+        serial_puts("\n");
+        serial_put_hex(readl(P_PUB_DX0GSR0_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(readl(P_PUB_DX1GSR0_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(readl(P_PUB_DX2GSR0_ADDR), 32);
+        serial_puts("\n");
+        serial_put_hex(readl(P_PUB_DX3GSR0_ADDR), 32);
+    }
 
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
