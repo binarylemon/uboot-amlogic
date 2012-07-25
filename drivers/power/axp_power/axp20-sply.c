@@ -139,6 +139,168 @@ static int axp_get_coulomb(void)
 
 
 
+//add OCV Measurement by wch
+#if defined(CONFIG_AXP_USE_OCV)
+#define AXP_CAP_REG 	0xB9
+#define AXP_CAP_NUM	 20
+static signed char get_ocv_batteryCap(int init_yes)
+{
+	int battery_ocv, charging_status, is_ac_online;
+  	unsigned int    i, capTotal=0;
+  	unsigned char capValue, capTmp;
+  	static int axp_cap_lastValue=0, cnt=1;
+	static unsigned char cap_buffer[AXP_CAP_NUM], cap_index=0;
+
+  	//初始化求的第一次的电量值
+	if(init_yes)
+	{
+		if(init_yes==2)  
+			cnt = 1;
+		if(cnt)
+		{
+		 	memset(cap_buffer, 0, AXP_CAP_NUM);
+			axp_read( AXP_CAP_REG, &capValue);
+			capTmp = capValue;
+			while(1)
+			{
+				mdelay(5);
+				axp_read(AXP_CAP_REG, &capValue);
+//				printf("\n###capTmp=%d,capValue=%d\n",capTmp,capValue);
+				if(ABS(capTmp-capValue) > 5)
+					capTmp = capValue;
+				else
+				{
+					capValue = (capTmp+capValue) /2;
+					break;
+				}
+			}
+			memset(cap_buffer, capValue, AXP_CAP_NUM);
+			capTotal	= AXP_CAP_NUM*capValue;
+			capValue = capTotal /AXP_CAP_NUM;
+			if(!(capValue & (1<<7)))					//OCV Measurement normal work
+			{
+				capValue &= 0x7f;
+				if(capValue >= 100)  
+					capValue = 100;
+				axp_cap_lastValue = capValue;
+			}
+			else										//OCV Measurement not normal work
+			{ 
+				printf("OCV Measurement not normal work.\n");
+				cnt = 0;
+				cap_index = 0;
+				capTotal   = 0;	
+				return -1;
+			}
+			cnt = 0;
+			cap_index = 0;
+			capTotal   = 0;
+			printf("########################################:%d,%d\n",axp_cap_lastValue, capValue);
+		}	
+	}
+
+
+	//求电量平均值
+	axp_read( AXP_CAP_REG, &capValue);
+	capTmp = capValue;
+	while(1)
+	{
+		mdelay(100);
+		axp_read(AXP_CAP_REG, &capValue);
+//		printf("\n####capTmp=%d,capValue=%d\n",capTmp,capValue);
+		if(ABS(capTmp-capValue) > 5)
+			capTmp = capValue;
+		else
+		{
+			capValue = (capTmp+capValue) /2;
+			break;
+		}
+	}
+	
+	cap_buffer[cap_index] = capValue;
+	for(i=0; i<AXP_CAP_NUM; i++)
+		capTotal  += cap_buffer[i];
+	capValue = capTotal /AXP_CAP_NUM;
+	cap_index ++;
+	if(cap_index >= AXP_CAP_NUM)
+		cap_index = 0;
+
+
+	//状态
+	battery_ocv      = axp_get_ocv();
+	charging_status = axp_charger_get_charging_status();
+	is_ac_online      = axp_charger_is_ac_online();
+  	
+
+	//拔插电源处理
+	if(is_ac_online /*charger->ac_valid*/)				//AC online
+	{
+		printf("\nAC online, actual cap percent: %d%\n",capValue);
+		if(!(capValue & (1<<7)))						//OCV Measurement normal work
+		{
+			capValue &= 0x7f;
+			if(capValue >= 100)  
+				capValue = 100;
+				
+			if(capValue < axp_cap_lastValue)
+				capValue = axp_cap_lastValue;
+			else
+				axp_cap_lastValue = capValue;	
+
+		}
+		else											//OCV Measurement not normal work
+		{ 
+			printf("OCV Measurement not normal work.\n");
+			return -1;
+		}
+				
+	}
+	else												//AC not online
+	{
+		printf("\nAC not online, actual cap percent: %d%\n",capValue);
+		if(!(capValue & (1<<7)))						//OCV Measurement normal work
+		{
+			capValue &= 0x7f;
+			if(capValue >= 100)  
+				capValue = 100;
+				
+			if(capValue > axp_cap_lastValue)
+				capValue = axp_cap_lastValue;
+			else
+				axp_cap_lastValue = capValue;
+		}
+		else											//OCV Measurement not normal work
+		{ 
+			printf("OCV Measurement not normal work.\n");
+			return -1;
+		}
+	}
+
+
+	//判断
+	if((battery_ocv >= 4090) /*&& (capValue < 100)*/ && (charging_status == 0) && is_ac_online)
+	{
+		capValue = 100;
+		axp_cap_lastValue = capValue;
+	}
+
+	if((capValue >= 100) && (charging_status==1))
+	{
+		capValue = 99;
+		axp_cap_lastValue = capValue;
+	}		
+
+	printf("battery_ocv=%d,charging_status=%d,is_ac_online=%d\n",battery_ocv,charging_status,is_ac_online);	
+	printf("OCV Measurement normal work,percent: %d%\n\n",capValue);
+	
+	return capValue;
+	
+}
+#endif
+
+
+
+
 int axp_charger_get_charging_percent()
 {
 
@@ -158,6 +320,7 @@ int axp_charger_get_charging_percent()
 
 	DBG_PSY_MSG("icharging = %d\n", icharging);
 
+#ifndef 	CONFIG_AXP_USE_OCV
 	if((val & 0x80) >> 7)
 	{
 
@@ -221,7 +384,11 @@ int axp_charger_get_charging_percent()
 			rest_vol = 100;
 		}
 	}
-	
+
+#else  //define	CONFIG_AXP_USE_OCV				
+	rest_vol = get_ocv_batteryCap(1);
+#endif
+
     return rest_vol;
 }
 
