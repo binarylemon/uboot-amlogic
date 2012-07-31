@@ -2047,6 +2047,6 @@ int dwc_otg_ep_req_start(pcd_struct_t * _pcd,int ep_num);
 void dwc_otg_ep_start_transfer(dwc_ep_t *_ep);
 static void dwc_otg_bulk_ep_activate(dwc_ep_t *ep);
 void dwc_otg_power_off_phy(void);
-
+void dwc_otg_pullup(int is_on);
 
 #endif

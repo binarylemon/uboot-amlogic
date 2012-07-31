@@ -516,6 +516,9 @@ void do_vendor_out_complete( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 		else if(w_index == 1){
 			char cmd[CMD_BUFF_SIZE];
 			memcpy(cmd, buff, CMD_BUFF_SIZE);
+			if(strncmp(cmd,"usb_bootm",(sizeof("usb_bootm")-1)) == 0){
+				dwc_otg_pullup(0);//disconnect
+			}
 			usb_run_command(cmd, buff);
 		}
 		break;
