@@ -120,7 +120,12 @@ static struct nand_ecclayout aml_nand_oob_640 = {
 		 .length = 16}}
 };
 
-
+static struct nand_ecclayout aml_nand_oob_1280 = {
+	.eccbytes = 1200,
+	.oobfree = {
+		{.offset = 0,
+		 .length = 32}}
+};
 
 static uint8_t nand_mode_time[6] = {9, 7, 6, 5, 5, 4};
 static uint8_t nand_boot_flag = 0;
@@ -158,6 +163,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 #ifdef NEW_NAND_SUPPORT
 	{"F serials NAND 4GiB TC58NVG5D2HTA00", {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56}, 8192, 4096, 0x100000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
 	{"F serials NAND 8GiB TC58NVG6D2GTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56}, 8192, 8192, 0x200000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
+	{"F serials NAND 8GiB TC58NVG7DCJTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},  //need readretry, disable two plane mode
 #endif
 
 	{"M Generation NAND 2GiB K9GAG08U0M", {NAND_MFR_SAMSUNG, 0xD5, 0x14, 0xb6, 0x74}, 4096, 2048, 0x80000, 128, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE)},
@@ -1361,7 +1367,7 @@ static void aml_nand_base_command(struct aml_nand_chip *aml_chip, unsigned comma
 {
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &aml_chip->mtd;
-	unsigned command_temp, pages_per_blk_shift, plane_page_addr = 0, plane_blk_addr = 0;
+	unsigned command_temp, pages_per_blk_shift, plane_page_addr = 0, plane_blk_addr = 0, cmd_time_cnt = 0;
 	pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 
 	if (page_addr != -1) {
@@ -1620,7 +1626,9 @@ static void aml_nand_base_command(struct aml_nand_chip *aml_chip, unsigned comma
 			printk ("couldn`t found selected chip: %d ready\n", chipnr);
 		chip->cmd_ctrl(mtd, NAND_CMD_STATUS, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
 		chip->cmd_ctrl(mtd, NAND_CMD_NONE, NAND_NCE | NAND_CTRL_CHANGE);
-		while (!(chip->read_byte(mtd) & NAND_STATUS_READY)) ;
+		while (!(chip->read_byte(mtd) & NAND_STATUS_READY) && (cmd_time_cnt++<0x1000)) {
+			udelay(20);
+		}
 		return;
 
 	default:
@@ -2758,6 +2766,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_hynix_26nm_4g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xd7, 0x94, 0xda, 0x74, 0xc3};	
 	u8 dev_id_toshiba_24nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56};	
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
+	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};	
 #endif
 	//int tmp_id, tmp_manf;
 
@@ -2925,7 +2934,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	
 	}
 	else  if((!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))
-	            ||(!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
+	            ||(!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
+	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 		aml_chip->new_nand_info.type =  TOSHIBA_24NM;
 
 		aml_chip->new_nand_info.read_rety_info.reg_addr[0] = 0x04;
@@ -4403,7 +4413,9 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 				case 640:
 					chip->ecc.layout = &aml_nand_oob_640;
 					break;					
-
+				case 1280:
+					chip->ecc.layout = &aml_nand_oob_1280;
+					break;		
 				default:
 					printk("havn`t found any oob layout use nand base oob layout " "oobsize %d\n", mtd->oobsize);
 					chip->ecc.layout = kzalloc(sizeof(struct nand_ecclayout), GFP_KERNEL);
