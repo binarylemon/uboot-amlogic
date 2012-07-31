@@ -41,7 +41,12 @@
 #include <kgdb.h>
 
 #endif
-
+#ifdef CONFIG_ENABLE_WATCHDOG
+void reset_chip()
+{
+			writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+}
+#endif
 #ifdef CONFIG_USE_IRQ
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -102,22 +107,30 @@ void show_regs (struct pt_regs *regs)
 
 void do_undefined_instruction (struct pt_regs *pt_regs)
 {
-
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 
 void do_software_interrupt (struct pt_regs *pt_regs)
 {
-	
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 
 void do_prefetch_abort (struct pt_regs *pt_regs)
 {
-	
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 
 void do_data_abort (struct pt_regs *pt_regs)
 {
-	
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 
 void do_not_used (struct pt_regs *pt_regs)
@@ -127,12 +140,16 @@ void do_not_used (struct pt_regs *pt_regs)
 
 void do_fiq (struct pt_regs *pt_regs)
 {
-	
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 
 #ifndef CONFIG_USE_IRQ
 void do_irq (struct pt_regs *pt_regs)
 {
-	
+#ifdef CONFIG_ENABLE_WATCHDOG
+		reset_chip();
+#endif
 }
 #endif
