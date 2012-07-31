@@ -78,7 +78,7 @@ static int axp_get_basecap()
 {
 	uint8_t val;
 
-	axp_read(POWER20_DATA_BUFFER5, &val);
+	axp_read(POWER20_DATA_BUFFER4, &val);
 	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
 
 	if((val & 0x80) >> 7)
