@@ -84,6 +84,7 @@ static void pcd_setup( pcd_struct_t *_pcd )
 
 //	_pcd->setup_pkt.d32[0] = 0;
 //	_pcd->setup_pkt.d32[1] = 0;
+	unsigned short status = 0;
 	_pcd->request_enable = 0;
 
         doeptsize0.d32 = dwc_read_reg32( DWC_REG_OUT_EP_TSIZE(0));
@@ -109,15 +110,20 @@ static void pcd_setup( pcd_struct_t *_pcd )
         /** @todo NGS: Handle bad setup packet? */
 
         switch (ctrl.bRequest) {
-#if 0
+
         case USB_REQ_GET_STATUS:
 
                 switch (ctrl.bRequestType & USB_RECIP_MASK) {
                 case USB_RECIP_DEVICE:
-                        *status = 0x1; /* Self powered */
-                        *status |= _pcd->remote_wakeup_enable << 1; 
+                        status = 0x1; /* Self powered */
+                        status |= 0;//_pcd->remote_wakeup_enable << 1; 
                         break;
-
+		}
+		_pcd->buf = &status;
+		_pcd->length = 2;
+		dwc_otg_ep_req_start(_pcd,0);
+		break;
+#if 0
                 case USB_RECIP_INTERFACE:
                         *status = 0;
                         break;                        

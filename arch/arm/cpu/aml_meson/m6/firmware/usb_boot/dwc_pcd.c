@@ -66,7 +66,13 @@ dwc_otg_core_init()
  //   gi2cctl_data_t  i2cctl = {.d32 = 0 };
 //    hcfg_data_t     hcfg;
     dcfg_data_t     dcfg;
+#ifndef USE_FULL_SPEED
+	usbcfg.d32 = dwc_read_reg32(DWC_REG_GUSBCFG);
 
+	usbcfg.b.ulpi_ext_vbus_drv = 0;
+	usbcfg.b.term_sel_dl_pulse = 0;
+	dwc_write_reg32(DWC_REG_GUSBCFG,usbcfg.d32);
+#endif
 	/*
 	* Reset the Controller 
 	*/
@@ -93,7 +99,7 @@ dwc_otg_core_init()
 #else
 	DBG("Core work on High Speed\n");
 	usbcfg.b.ulpi_utmi_sel = 1;
-	usbcfg.b.phyif = 1; // 16 bit
+	usbcfg.b.phyif = 0; // 16 bit
 	usbcfg.b.ddrsel = 0;
 	dwc_write_reg32(DWC_REG_GUSBCFG, usbcfg.d32);
 
@@ -258,7 +264,11 @@ static void dwc_otg_core_dev_init()
         
         /* Device configuration register */
 	dcfg.d32 = dwc_read_reg32(DWC_REG_DCFG);
+#ifdef USE_FULL_SPEED
 	dcfg.b.devspd = 1;//Hi speed phy run at Full speed
+#else
+	dcfg.b.devspd = 0;
+#endif
 	dcfg.b.perfrint = DWC_DCFG_FRAME_INTERVAL_80;
 	dwc_write_reg32(DWC_REG_DCFG, dcfg.d32);
 	
