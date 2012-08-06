@@ -133,9 +133,9 @@
 	"preboot=run switch_bootmode\0" \
 	"outputmode=480p\0" \
 	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
-	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000;bootm\0" \
+	"nandboot=echo Booting from nand ...;nand read boot ${loadaddr} 0 400000; nand read aml_logo 0x84100000 0 400000; bootm\0" \
 	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputmode} androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m\0" \
 
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"
