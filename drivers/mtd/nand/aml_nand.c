@@ -2408,14 +2408,16 @@ static int aml_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip, int p
 	for (i=0; i<read_chip_num; i++) {
 		if (aml_chip->valid_chip[i]) {
 			readretry_failed_cnt = 0;
-read_retry:
+
 
 			page_addr = aml_chip->page_addr;
 			if (i > 0) {
 				aml_chip->aml_nand_select_chip(aml_chip, i);
 				aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, 0, page_addr, i);
 			}
+read_retry:
 
+			page_addr = aml_chip->page_addr;
 			for (j=0; j<internal_chipnr; j++) {
 
 				if (j > 0) {
