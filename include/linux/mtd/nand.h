@@ -390,7 +390,9 @@ struct nand_chip {
 	int		(*errstat)(struct mtd_info *mtd, struct nand_chip *this, int state, int status, int page);
 	int		(*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
 				      const uint8_t *buf, int page, int cached, int raw);
-
+	
+	int		(*nand_block_bad_scrub_update_bbt)(struct mtd_info *mtd);
+	
 	int		chip_delay;
 	unsigned int	options;
 
@@ -441,6 +443,8 @@ struct nand_chip {
 #define NAND_MFR_MICRON		0x2c
 #define NAND_MFR_AMD		0x01
 #define NAND_MFR_INTEL		0x89
+#define NAND_MFR_SANDISK		0x45 
+
 /**
  * struct nand_flash_dev - NAND Flash Device ID Structure
  * @name:	Identify the device type

@@ -396,6 +396,7 @@ struct aml_nand_chip {
 	int		(*aml_nand_dma_read)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_dma_write)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_hwecc_correct)(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf);
+	int   (*aml_nand_block_bad_scrub)(struct mtd_info *mtd);
 };
 
 struct aml_nand_platform {
