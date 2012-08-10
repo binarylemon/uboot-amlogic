@@ -369,6 +369,58 @@ static void aml_platform_set_user_byte(struct aml_nand_chip *aml_chip, unsigned 
 	}
 }
 
+/***********************************************
+*aml_nand_block_bad_scrub: this function only for scrub_safe cmd;
+*			   the purpose is to protect the shipped bad blocks;
+*
+*/
+
+static int aml_nand_block_bad_scrub_update_bbt(struct mtd_info *mtd)
+{
+	struct nand_chip * chip = mtd->priv;	
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct aml_nand_platform *plat = aml_chip->platform;
+	int32_t i, ret = 0;
+	int  start_blk, total_blk, j, phys_erase_shift;
+	loff_t addr, offset ;
+
+	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) /*&& ((chip->ecc.read_page == aml_nand_read_page_hwecc) || (!getchip))*/)
+		return 0;
+
+	if (nand_boot_flag)
+		offset = (1024 * mtd->writesize / aml_chip->plane_num);
+	else {
+		offset = 0;
+	}
+	phys_erase_shift = fls(mtd->erasesize) - 1;
+	start_blk = (int)(offset >> phys_erase_shift);	
+	total_blk = (int)(mtd->size >> phys_erase_shift);
+	
+	for (i=start_blk; i<total_blk; i++) {
+				aml_chip->block_status[i] = NAND_BLOCK_GOOD;
+				for (j=50; j<MAX_BAD_BLK_NUM; j++) {
+					if ((aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] &0x7fff)== i) {    
+					
+						if((aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] &0x8000)) {
+						aml_chip->block_status[i] = NAND_FACTORY_BAD;	
+						//printk(" NAND bbt detect factory Bad block[%d] when scrub_safe \n", i);
+						}
+						else	 {
+							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j]= 0;
+						//printk(" NAND bbt detect Bad block[%d] when scrub_safe  \n", i);
+						}
+						break;
+					}
+				}
+			}
+	
+	if(aml_nand_update_env(mtd))
+		printk("update  bbt  when scrub_safe\n");	
+			
+	return 0;
+
+}
+
 #ifdef NEW_NAND_SUPPORT
 uint8_t aml_nand_get_reboot_mode(void)
 {
@@ -2649,6 +2701,10 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 			printk(" NAND bbt detect Bad block at %llx \n", (uint64_t)ofs);
 			return EFAULT;
 		}
+		if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD) {
+			printk(" NAND bbt detect factory Bad block at %llx \n", (uint64_t)ofs);
+			return EFAULT;  //159
+		}
 		else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD) {
 			return 0;
 		}
@@ -2724,12 +2780,12 @@ static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 	mtd_erase_shift = fls(mtd->erasesize) - 1;
 	blk_addr = (int)(ofs >> mtd_erase_shift);
 	if (aml_chip->block_status != NULL) {
-		if (aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD) {
+		if ((aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD)||(aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD)) {
 			return 0;
 		}
 		else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD) {
 			aml_chip->block_status[blk_addr] = NAND_BLOCK_BAD;
-			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
+			for (j=50; j<MAX_BAD_BLK_NUM; j++) {
 				if (aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] == 0) {
 					aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] = blk_addr;
 					if (aml_nand_update_env(mtd))
@@ -3488,7 +3544,7 @@ static int aml_nand_write_env(struct mtd_info *mtd, loff_t offset, u_char *buf)
 			return 1;
 		}
 
-		addr += mtd->writesize;;
+		addr += mtd->writesize;
 		amount_saved += mtd->writesize;
 	}
 	if (amount_saved < CONFIG_ENV_SIZE)
@@ -3590,7 +3646,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct env_oobinfo_t *env_oobinfo;
 	struct env_free_node_t *env_free_node, *env_tmp_node, *env_prev_node;
-	int error = 0, start_blk, total_blk, env_blk, i, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift;
+	int error = 0, ret, start_blk, total_blk, env_blk, i, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift;
 	loff_t offset;
 	unsigned char *data_buf;
 	struct mtd_oob_ops aml_oob_ops;
@@ -3730,8 +3786,8 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 		if ((env_blk >= max_env_blk) && (aml_chip->aml_nandenv_info->env_valid == 1))
 			break;
 
-	} while ((++start_blk) < total_blk);
-	if (start_blk >= total_blk) {
+	} while ((++start_blk) < ENV_NAND_SCAN_BLK); //total_blk  ENV_NAND_SCAN_BLK
+	if (start_blk >= ENV_NAND_SCAN_BLK) {  //total_blk  ENV_NAND_SCAN_BLK
 		memcpy(aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, BBT_HEAD_MAGIC, 4);
 		memcpy(aml_chip->aml_nandenv_info->nand_bbt_info.bbt_tail_magic, BBT_TAIL_MAGIC, 4);
 	}
@@ -3769,6 +3825,10 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 		i = (CONFIG_ENV_SIZE + mtd->writesize - 1) / mtd->writesize;
 		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr -= (i - 1);
 	}
+		//scan_bbt
+	if(aml_chip->aml_nandenv_info->env_valid == 0)
+		ret = aml_nand_scan_shipped_bbt (mtd);
+		
 
 	offset = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
 	offset *= mtd->erasesize;
@@ -3857,8 +3917,16 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 			for (i=start_blk; i<total_blk; i++) {
 				aml_chip->block_status[i] = NAND_BLOCK_GOOD;
 				for (j=0; j<MAX_BAD_BLK_NUM; j++) {
-					if (nand_bbt_info->nand_bbt[j] == i) {
+					if ((nand_bbt_info->nand_bbt[j] &0x7fff)== i) {    
+					
+						if((nand_bbt_info->nand_bbt[j] &0x8000)) {
+						aml_chip->block_status[i] = NAND_FACTORY_BAD;	
+						//	printk("aml_nand_env_check init the block_status factory bbt blk=%d,aml_chip->block_status[%d] =%d\n",i,i,aml_chip->block_status[i]);
+						}
+						else	 {
 						aml_chip->block_status[i] = NAND_BLOCK_BAD;
+							//printk("aml_nand_env_check init the block_status bbt blk=%d\n",i);
+						}
 						break;
 					}
 				}
@@ -3955,6 +4023,215 @@ exit:
 
 static int aml_nand_scan_bbt(struct mtd_info *mtd)
 {
+	return 0;
+}
+
+
+//only read bad block  labeled ops
+ int aml_nand_scan_shipped_bbt(struct mtd_info *mtd)
+{
+	struct nand_chip * chip = mtd->priv;	
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct aml_nand_platform *plat = aml_chip->platform;
+	int32_t ret = 0, read_cnt, page, mtd_erase_shift, blk_addr, pages_per_blk;
+	loff_t addr, offset;
+	int  start_blk, total_blk, i,  bad_blk_cnt = 50, phys_erase_shift;
+	int chipnr, realpage, col0_data, col0_oob, valid_page_num = 1, internal_chip; 
+	int col_data_sandisk[6], bad_sandisk_flag=0, j; //this for sandisk
+	
+	//printk("aml_chip->page_size=%d\n",aml_chip->page_size);
+	printk("aml_nand_scan_bbt:\n");
+	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) && ((chip->ecc.read_page == aml_nand_read_page_hwecc) ))
+		return 0;
+	
+	if (nand_boot_flag)
+		offset = (1024 * mtd->writesize / aml_chip->plane_num);
+	else {
+		offset = 0;
+	}
+	phys_erase_shift = fls(mtd->erasesize) - 1;
+	chip->pagebuf = -1;
+	start_blk = (int)(offset >> phys_erase_shift);
+	total_blk = (int)(mtd->size >> phys_erase_shift);
+	pages_per_blk = (1 << (chip->phys_erase_shift - chip->page_shift));
+
+		
+	do{
+		offset = mtd->erasesize;
+		offset *= start_blk;
+		for (i=0; i<aml_chip->chip_num; i++){
+				
+			if (aml_chip->valid_chip[i]) {
+				
+				for (read_cnt=0; read_cnt<2; read_cnt++) {
+
+				if(aml_chip->mfr_type  == NAND_MFR_SANDISK){
+					addr = offset + read_cnt*mtd->writesize;
+				}else
+					addr = offset + (pages_per_blk - 1) * read_cnt * mtd->writesize;
+					
+
+				//chipnr = (int)(addr >> chip->chip_shift);
+			
+				realpage = (int)(addr >> chip->page_shift);
+				page = realpage & chip->pagemask;
+	
+				if (page != -1) {
+					valid_page_num = (mtd->writesize >> chip->page_shift);
+					valid_page_num /= aml_chip->plane_num;
+
+					aml_chip->page_addr = page/ valid_page_num;
+				if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
+					internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums; 
+					aml_chip->page_addr -= aml_chip->internal_page_nums;
+					aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chip;
+					}
+				}
+				
+				if (aml_chip->plane_num == 2){
+				
+					chip->select_chip(mtd, i);
+					aml_chip->aml_nand_wait_devready(aml_chip, i);
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, 0x00,aml_chip->page_addr, i);
+
+					if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
+						printk ("%s, %d, read couldn`t found selected chip: %d ready\n", __func__, __LINE__, i);
+
+					}  
+									
+					if (aml_chip->ops_mode & AML_CHIP_NONE_RB) 
+					chip->cmd_ctrl(mtd, NAND_CMD_READ0 & 0xff, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
+					//chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);  //aml_nand_command				
+					udelay(2);
+					
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_TWOPLANE_READ1, 0x00, aml_chip->page_addr, i);
+					udelay(2);
+
+					if(aml_chip->mfr_type  == NAND_MFR_SANDISK){
+						for(j=0; j<6; j++){
+							col_data_sandisk[j] = chip->read_byte(mtd);
+						}
+					}else
+						col0_data = chip->read_byte(mtd);
+					//printk("col0_data=%x\n",col0_data);
+
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_TWOPLANE_READ2,  aml_chip->page_size, aml_chip->page_addr, i);
+					//aml_chip->aml_nand_wait_devready(aml_chip, i);
+					udelay(2);
+
+					if(aml_chip->mfr_type  == NAND_MFR_SANDISK){
+						col0_oob = 0x0;
+					}else
+						col0_oob = chip->read_byte(mtd);
+					//printk("col0_oob=%x\n",col0_oob);
+
+				}
+				else if (aml_chip->plane_num == 1){
+					chip->select_chip(mtd, i);
+					//nand_get_chip();
+					//aml_chip->aml_nand_select_chip(aml_chip, i);
+			
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, 0x00, aml_chip->page_addr , i);
+					udelay(2);
+
+					if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
+						printk ("%s, %d, read couldn`t found selected chip: %d ready\n", __func__, __LINE__, i);
+
+					} 
+									
+					if (aml_chip->ops_mode & AML_CHIP_NONE_RB) 
+					chip->cmd_ctrl(mtd, NAND_CMD_READ0 & 0xff, NAND_NCE | NAND_CLE | NAND_CTRL_CHANGE);
+					//chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);  //aml_nand_command				
+					udelay(2);
+
+					if(aml_chip->mfr_type  == NAND_MFR_SANDISK){
+						for(j=0; j<6; j++){
+							col_data_sandisk[j] = chip->read_byte(mtd);
+							//printk("aml_nand_scan_shipped_bbt: col_data_sandisk[%d]=%x\n", j, col_data_sandisk[j]);
+						}
+					}else
+						col0_data = chip->read_byte(mtd);
+					//printk("col0_data =%x\n",col0_data);			
+
+					aml_chip->aml_nand_command(aml_chip, NAND_CMD_RNDOUT, aml_chip->page_size, -1, i);
+					//chip->cmdfunc(mtd, NAND_CMD_RNDOUT, aml_chip->page_size, -1);
+					udelay(2);
+
+					if(aml_chip->mfr_type  == NAND_MFR_SANDISK){
+						col0_oob = 0x0;
+					}else
+						col0_oob = chip->read_byte(mtd);
+					//printk("col0_oob =%x\n",col0_oob);
+				}
+
+				if ((col0_oob == 0xFF))
+						continue;  
+				
+				if(col0_oob != 0xFF){
+
+					if((aml_chip->mfr_type  == NAND_MFR_SANDISK) ){ 
+
+						for(j=0; j<6; j++){
+							if(col_data_sandisk[j] == 0x0){
+								bad_sandisk_flag = 1;
+								break;
+							}
+						}
+						if (bad_sandisk_flag ){
+							printk("NAND_MFR_SANDISK  NAND detect factory Bad block at %llx and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
+							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000; 
+							aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;
+							bad_sandisk_flag=0;
+							break;  
+						}
+					}
+				
+					if((aml_chip->mfr_type  == NAND_MFR_SAMSUNG ) ){ 
+							
+						if ((col0_oob != 0xFF) && (col0_data != 0xFF)){
+							printk("NAND_MFR_SAMSUNG  NAND detect factory Bad block at %llx and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
+							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000; 
+							aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;	
+							break;  
+						}
+					}
+
+					if((aml_chip->mfr_type  == NAND_MFR_TOSHIBA )  ){  
+							
+						if ((col0_oob != 0xFF) && (col0_data != 0xFF)){
+							printk("NAND_MFR_TOSHIBA NAND detect factory Bad block at %llx and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
+							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000; 
+								aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;	
+							break;  
+						}
+					}
+
+				if(aml_chip->mfr_type  == NAND_MFR_MICRON ){
+					
+					if (col0_oob == 0x0){
+						printk("NAND_MFR_MICRON NAND detect factory Bad block at %llx  and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
+						aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000; 
+							aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;	
+						break;   
+					}
+				}
+
+				if(aml_chip->mfr_type  == NAND_MFR_HYNIX ){
+
+					if (col0_oob != 0xFF){
+							printk("NAND_MFR_HYNIX NAND detect factory Bad block at %llx  and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
+							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000; 
+								aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;	
+							break;  
+							}
+						}
+					}
+				}
+			}
+		}
+	}while((++start_blk)< total_blk);
+	printk("aml_nand_scan_bbt: factory Bad block bad_blk_cnt=%d\n",bad_blk_cnt-50);
+	printk("aml_nand_scan_bbt: total_blk=%d\n",start_blk);
 	return 0;
 }
 
@@ -4214,7 +4491,10 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		aml_chip->aml_nand_dma_write = aml_platform_dma_write;
 	if (!aml_chip->aml_nand_hwecc_correct)
 		aml_chip->aml_nand_hwecc_correct = aml_platform_hwecc_correct;
-
+	
+	if (!aml_chip->aml_nand_block_bad_scrub)
+		aml_chip->aml_nand_block_bad_scrub = aml_nand_block_bad_scrub_update_bbt; 
+	
 	if (!chip->IO_ADDR_R)
 		chip->IO_ADDR_R = (void __iomem *) CBUS_REG_ADDR(NAND_BUF);
 	if (!chip->IO_ADDR_W)
@@ -4234,6 +4514,8 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	//chip->dev_ready = aml_nand_dev_ready;
 	chip->verify_buf = aml_nand_verify_buf;
 	chip->read_byte = aml_platform_read_byte;
+
+	chip->nand_block_bad_scrub_update_bbt = aml_nand_block_bad_scrub_update_bbt;
 
 	aml_chip->chip_num = plat->platform_nand_data.chip.nr_chips;
 	if (aml_chip->chip_num > MAX_CHIP_NUM) {

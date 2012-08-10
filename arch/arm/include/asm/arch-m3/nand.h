@@ -342,6 +342,7 @@
 
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
+#define NAND_FACTORY_BAD					2
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
@@ -353,6 +354,9 @@
 #define MTD_PART_MAGIC					"anpt"
 
 #define NAND_SYS_PART_SIZE				0x10000000
+
+#define ENV_NAND_SCAN_BLK                            50 
+
 
 struct aml_nand_flash_dev {
 	char *name;
@@ -531,6 +535,7 @@ struct aml_nand_chip {
 	u8 ecc_cnt_limit;
 	u8 ecc_cnt_cur;
 	u8 ecc_max;
+	unsigned  max_ecc_per_page;
     unsigned zero_cnt;
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
@@ -563,6 +568,7 @@ struct aml_nand_chip {
 	int		(*aml_nand_dma_read)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_dma_write)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_hwecc_correct)(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf);
+	int              (*aml_nand_block_bad_scrub)(struct mtd_info *mtd);
 };
 
 struct aml_nand_platform {
