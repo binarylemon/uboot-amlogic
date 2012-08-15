@@ -8,6 +8,9 @@
  */
 #ifndef __USB_PCD_H__
 #define __USB_PCD_H__
+#include <asm/types.h>
+
+#define CMD_BUFF_SIZE		512
 
 int usb_pcd_init();
 int usb_pcd_irq();
@@ -25,6 +28,8 @@ int usb_pcd_irq();
 #define AM_REQ_RD_LARGE_MEM	0x12
 #define AM_REQ_IDENTIFY_HOST	0x20
 
-static  void do_modify_memory(u16 opcode,char * inbuff);
+#define AM_REQ_TPL_CMD	0x30
+#define AM_REQ_TPL_STAT 0x31
+static void do_modify_memory(u16 opcode, char *inbuff);
 
 #endif 

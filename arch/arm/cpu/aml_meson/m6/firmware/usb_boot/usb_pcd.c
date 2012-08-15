@@ -412,6 +412,13 @@ void do_vendor_request( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	  	_pcd->length = w_length;
 	  	need_check_timeout = 0;
 		break;
+	case AM_REQ_TPL_CMD:
+	  case AM_REQ_TPL_STAT:
+	  	serial_puts("w_length=");
+		serial_put_hex(w_length, 32);
+		_pcd->buf = buff;
+		_pcd->length = w_length;
+		break;
 	  default:
 		USB_ERR("--unknown vendor req %02x.%02x v%04x i%04x l%u\n",
 			ctrl->bRequestType, ctrl->bRequest,
@@ -486,7 +493,14 @@ void do_vendor_out_complete( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	  	_pcd->bulk_data_len = (*(unsigned int*) &buff[4]); // data length
 	  	start_bulk_transfer(_pcd);
 	  	break;
-
+	  case AM_REQ_TPL_CMD:
+		  /* this is an example for any command */
+		if(w_index == 1){/* assume subcode is 0 */
+			char cmd[CMD_BUFF_SIZE];
+			memcpy(cmd, buff, CMD_BUFF_SIZE);
+			usb_run_command(cmd, buff);
+		}
+		break;
 	  default:
 		USB_ERR("--unknown vendor req comp %02x.%02x v%04x i%04x l%u\n",
 			ctrl->bRequestType, ctrl->bRequest,

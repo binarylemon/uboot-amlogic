@@ -7,6 +7,8 @@
 #include "platform.c"
 #include "dwc_pcd.c"
 #include "dwc_pcd_irq.c"
+#include "burn_func.c"
+
 
 int usb_boot(int clk_cfg)
 {
