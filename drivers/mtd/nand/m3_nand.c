@@ -466,7 +466,8 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	}
 
 	if(bch_mode == NAND_ECC_NONE)
-		NFC_SEND_CMD_N2M_RAW(aml_chip->ran_mode,len);
+		//NFC_SEND_CMD_N2M_RAW(aml_chip->ran_mode,len);
+		NFC_SEND_CMD_N2M_RAW(0, len);
 	else
 		NFC_SEND_CMD_N2M(aml_chip->ran_mode, ((bch_mode == NAND_ECC_BCH_SHORT)?NAND_ECC_BCH60_1K:bch_mode), ((bch_mode == NAND_ECC_BCH_SHORT)?1:0), dma_unit_size, count);
 

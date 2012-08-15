@@ -354,9 +354,7 @@
 #define MTD_PART_MAGIC					"anpt"
 
 #define NAND_SYS_PART_SIZE				0x20000000
-
-#define ENV_NAND_SCAN_BLK           50 
-
+#define ENV_NAND_SCAN_BLK                            50 
 
 struct aml_nand_flash_dev {
 	char *name;
@@ -434,7 +432,7 @@ struct aml_nand_bch_desc{
 #define RETRY_NAND_COPY_NUM	4
 
 #define	READ_RETRY_REG_NUM   	8
-#define	READ_RETRY_CNT   		6
+#define	READ_RETRY_CNT   		8
 
 
 #define	ENHANCE_SLC_REG_NUM   	5
@@ -449,7 +447,7 @@ struct aml_nand_bch_desc{
 #define	NAND_CMD_TOSHIBA_SET_VALUE			0x55
 #define	NAND_CMD_TOSHIBA_BEF_COMMAND1		0x26
 #define	NAND_CMD_TOSHIBA_BEF_COMMAND2		0x5d
-
+#define   NAND_CMD_SAMSUNG_SET_VALUE			0XA1
 
 //for Hynix
 #define	HYNIX_26NM_8GB 		1		//H27UCG8T2M
@@ -460,6 +458,7 @@ struct aml_nand_bch_desc{
 #define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
 										//TC58NVG6D2GTA00
 
+#define	SUMSUNG_2XNM 			30	
 
 
 struct aml_nand_read_retry{
@@ -470,7 +469,7 @@ struct aml_nand_read_retry{
 	u8	cur_cnt[MAX_CHIP_NUM];
 	u8	reg_addr[READ_RETRY_REG_NUM];
 	u8	reg_default_value[MAX_CHIP_NUM][READ_RETRY_REG_NUM];	
-	char	reg_offset_value[READ_RETRY_CNT][READ_RETRY_REG_NUM];	
+	char	reg_offset_value[MAX_CHIP_NUM][READ_RETRY_CNT][READ_RETRY_REG_NUM];	
 	void	(*get_default_value)(struct mtd_info *mtd);
 	void	(*set_default_value)(struct mtd_info *mtd);
 	void	(*save_default_value)(struct mtd_info *mtd);
@@ -568,7 +567,7 @@ struct aml_nand_chip {
 	int		(*aml_nand_dma_read)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_dma_write)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_hwecc_correct)(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf);
-	int   (*aml_nand_block_bad_scrub)(struct mtd_info *mtd);
+	int              (*aml_nand_block_bad_scrub)(struct mtd_info *mtd);
 };
 
 struct aml_nand_platform {
