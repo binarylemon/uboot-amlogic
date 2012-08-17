@@ -432,7 +432,7 @@ struct aml_nand_bch_desc{
 #define RETRY_NAND_COPY_NUM	4
 
 #define	READ_RETRY_REG_NUM   	8
-#define	READ_RETRY_CNT   		8
+#define	READ_RETRY_CNT   		20
 
 
 #define	ENHANCE_SLC_REG_NUM   	5
