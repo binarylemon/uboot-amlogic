@@ -31,15 +31,4 @@ int usb_boot(int clk_cfg)
 	return 0;
 }
 
-void relocate_init(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
-{
-	writel(0,P_WATCHDOG_TC);//disable Watchdog
-	reboot_mode = MESON_USB_BURNER_REBOOT;
-	while(1)
-	{
-		//usb_boot(0);	//Elvis
-		usb_boot(1);
-	}
-}
-
 
