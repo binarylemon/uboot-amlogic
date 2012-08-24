@@ -11,8 +11,8 @@
 #include <mtddevices.c>
 #include <sdio.c>
 #include <debug_rom.c>
-
 #include <usb_boot/usb_boot.c>
+#include <asm/arch/reboot.h>
 
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
