@@ -308,6 +308,21 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		return 0;
 	}
+//cmd for nand test , if nand is ok , then trigger power off
+	if (strcmp(cmd, "test") == 0) {
+		int ret=-1;
+		puts("\ntest the nand flash ***\n");
+		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {
+			nand = nand_info[i];
+			if (!nand) {
+				ret=nand_test_init();
+				printf("\n***nand_test_init()in NAND DEVICE %d returned:%d***\n ", i,ret);
+				if (ret)
+					return -1;	
+			}
+		}		
+		return 0;
+	}
 
 	if (strcmp(cmd, "scrub_detect") == 0) {
 
@@ -788,6 +803,7 @@ usage:
 U_BOOT_CMD(nand, CONFIG_SYS_MAXARGS, 1, do_nand,
 	"NAND sub-system",
 	"info - show available NAND devices\n"
+	"test - test available NAND devices\n"
 	"nand device [dev] - show or set current device\n"
 	"nand read - addr off|partition size\n"
 	"nand write - addr off|partition size\n"

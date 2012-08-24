@@ -956,6 +956,31 @@ void nand_init(void)
 		nand_curr_device = 0;
 	return;
 }
+
+//just for nand test command
+ int nand_test_init(void)
+{
+	struct aml_nand_platform *plat = NULL;
+	int i, ret;
+	printk("%s, Version %s (c) 2012 factory nand test .\n", DRV_DESC, DRV_VERSION);
+
+	for (i=0; i<aml_nand_mid_device.dev_num; i++) {
+		plat = &aml_nand_mid_device.aml_nand_platform[i];
+		if (!plat) {
+			printk("error in nand test for not platform data \n");
+			continue;
+		}
+		ret = m3_nand_probe(plat, i);
+		if (ret) {
+			printk("nand init faile in nand test: %d\n", ret);
+			continue;
+		}
+	}
+	if (ret) {
+			return -1;
+		}
+	return 0;
+}
 /*
 int nand_probe(int dev)
 {

@@ -114,6 +114,12 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
+//#define PCB_TEST
+#ifdef PCB_TEST
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"preboot=if nand test; then poweroff; fi; echo nand test failed!!!\0"
+
+#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
@@ -155,9 +161,12 @@
 	"updatekey_or_not=if saradc get_in_range 0x50 0xf0; then msleep 500; if getkey; then if saradc get_in_range 0x50 0xf0; then tiny_usbtool 1000; run update; fi; fi; fi\0" \
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
-	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
+	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" 
+
+#endif
 //Elvis Test!
-//"sleep_get_key=suspend; run aconline_or_not; setenv sleep_enable 0\0" \
+//"sleep_get_key=suspend; run aconline_or_not; setenv sleep_enable 0\0" 
+
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=1320000000; bootm"
