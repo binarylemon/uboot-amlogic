@@ -403,6 +403,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	int ret = 0;
 	unsigned dma_unit_size = 0, count = 0;
 	struct nand_chip *chip = &aml_chip->chip;
+    struct mtd_info *mtd = &aml_chip->mtd;  
 
 	if (bch_mode == NAND_ECC_NONE)
 		count = 1;
@@ -422,7 +423,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);	
 
 	if(aml_chip->ran_mode){
-		NFC_SEND_CMD_SEED(aml_chip->page_addr);
+	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
 	}
 	if(!bch_mode)
 		NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, len);
@@ -442,6 +443,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	struct nand_chip *chip = &aml_chip->chip;
 	unsigned dma_unit_size = 0, count = 0, info_times_int_len;
 	int ret = 0;
+    struct mtd_info *mtd = &aml_chip->mtd;  
 
 	info_times_int_len = PER_INFO_BYTE/sizeof(unsigned int);
 	if (bch_mode == NAND_ECC_NONE)
@@ -462,7 +464,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	NFC_SEND_CMD_AIL((int)aml_chip->user_info_buf);
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);
 	if(aml_chip->ran_mode){
-		NFC_SEND_CMD_SEED(aml_chip->page_addr);
+	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
 	}
 
 	if(bch_mode == NAND_ECC_NONE)
