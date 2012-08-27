@@ -34,7 +34,7 @@ int do_tiny_usbtool (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	{
 		time_out = simple_strtol(argv[1], NULL, 10);
 	}
-
+	printf("Enter USB burning.\n");
 	return usb_boot(1, time_out);
 }
 
@@ -42,6 +42,6 @@ int do_tiny_usbtool (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 U_BOOT_CMD(
 	tiny_usbtool,	2,	1,	do_tiny_usbtool,
 	"start tiny USB tool for PC burner",
-	"srcaddr dstaddr [dstsize]"
+	"tiny_usbtool timeout"
 );
 
