@@ -395,18 +395,18 @@ static int aml_nand_block_bad_scrub_update_bbt(struct mtd_info *mtd)
 	start_blk = (int)(offset >> phys_erase_shift);	
 	total_blk = (int)(mtd->size >> phys_erase_shift);
 	
-	for (i=start_blk; i<total_blk; i++) {
+	for (i= 0; i<total_blk; i++) {
 				aml_chip->block_status[i] = NAND_BLOCK_GOOD;
-				for (j=50; j<MAX_BAD_BLK_NUM; j++) {
+				for (j = 0; j<MAX_BAD_BLK_NUM; j++) {
 					if ((aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] &0x7fff)== i) {    
 					
 						if((aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] &0x8000)) {
 						aml_chip->block_status[i] = NAND_FACTORY_BAD;	
-						//printk(" NAND bbt detect factory Bad block[%d] when scrub_safe \n", i);
+						//printk(" NAND bbt detect factory Bad block[%d] when scrub safe \n", i);
 						}
 						else	 {
 							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j]= 0;
-						//printk(" NAND bbt detect Bad block[%d] when scrub_safe  \n", i);
+						//printk(" NAND bbt detect Bad block[%d] when scrub safe  \n", i);
 						}
 						break;
 					}
@@ -414,7 +414,7 @@ static int aml_nand_block_bad_scrub_update_bbt(struct mtd_info *mtd)
 			}
 	
 	if(aml_nand_update_env(mtd))
-		printk("update  bbt  when scrub_safe\n");	
+		printk("update  bbt  when scrub safe\n");	
 			
 	return 0;
 
@@ -3075,7 +3075,7 @@ static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 		}
 		else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD) {
 			aml_chip->block_status[blk_addr] = NAND_BLOCK_BAD;
-			for (j=50; j<MAX_BAD_BLK_NUM; j++) {
+			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
 				if (aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] == 0) {
 					aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] = blk_addr;
 					if (aml_nand_update_env(mtd))
@@ -4236,7 +4236,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct env_oobinfo_t *env_oobinfo;
 	struct env_free_node_t *env_free_node, *env_tmp_node, *env_prev_node;
-	int error = 0, ret, start_blk, total_blk, env_blk, i, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift;
+	int error = 0, ret, start_blk, total_blk, env_blk, i, j, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift;
 	loff_t offset;
 	unsigned char *data_buf;
 	struct mtd_oob_ops aml_oob_ops;
@@ -4284,7 +4284,14 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 		offset *= start_blk;
 		error = mtd->block_isbad(mtd, offset);
 		if (error) {
-			aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk;
+			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
+				if (aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] == 0) {
+					aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] = start_blk;
+					bad_blk_cnt++;
+					break;
+				}
+			}
+			//aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk;
 			continue;
 		}
 
@@ -4625,15 +4632,16 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 	struct aml_nand_platform *plat = aml_chip->platform;
 	int32_t ret = 0, read_cnt, page, mtd_erase_shift, blk_addr, pages_per_blk;
 	loff_t addr, offset;
-	int  start_blk, total_blk, i,  bad_blk_cnt = 50, phys_erase_shift;
+	int  start_blk, total_blk, i, j, bad_blk_cnt = 0, phys_erase_shift;
 	int chipnr, realpage, col0_data, col0_oob, valid_page_num = 1, internal_chip; 
-	int col_data_sandisk[6], bad_sandisk_flag=0, j; //this for sandisk
+	int col_data_sandisk[6], bad_sandisk_flag=0; //this for sandisk
 	
-	//printk("aml_chip->page_size=%d\n",aml_chip->page_size);
 	printk("aml_nand_scan_bbt:\n");
 	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) && ((chip->ecc.read_page == aml_nand_read_page_hwecc) ))
 		return 0;
 	
+	memset(&aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[0], 0, MAX_BAD_BLK_NUM);
+
 	if (nand_boot_flag)
 		offset = (1024 * mtd->writesize / aml_chip->plane_num);
 	else {
@@ -4820,8 +4828,7 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 			}
 		}
 	}while((++start_blk)< total_blk);
-	printk("aml_nand_scan_bbt: factory Bad block bad_blk_cnt=%d\n",bad_blk_cnt-50);
-	printk("aml_nand_scan_bbt: total_blk=%d\n",start_blk);
+	printk("aml_nand_scan_bbt: factory Bad block bad_blk_cnt=%d\n",bad_blk_cnt);
 	return 0;
 }
 
