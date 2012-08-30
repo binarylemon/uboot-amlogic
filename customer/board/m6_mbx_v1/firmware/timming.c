@@ -40,10 +40,32 @@ static struct ddr_set __ddr_setting={
                 #ifdef DDR3_9_9_9
                     .cl             =   9,
                     .t_faw          =  20,//30:page size 2KB; 20:page size 1KB
+                    .t_ras          =  24,
+                    .t_rc           =  33,
+                    .t_rcd          =   9,
+                    .t_rfc          = 107,//4Gb:174~200; 2Gb:107; 1Gb:74
+                    .t_rp           =   9,
+                    .t_rrd          =   4,//6 or 5:page size 2KB; 4:page size 1KB
+                    .t_rtp          =   5,
+                    .t_wr           =  10,
+                    .t_wtr          =   5,
+                    .t_cwl          =   7,
+                    .t_mod          =  10,
                 #endif
                 #ifdef DDR3_7_7_7
                     .cl             =   7,
                     .t_faw          =  20,//27:page size 2KB; 20:page size 1KB
+                    .t_ras          =  20,
+                    .t_rc           =  27,
+                    .t_rcd          =   7,
+                    .t_rfc          =  86,//4Gb:139~160; 2Gb:86; 1Gb:59
+                    .t_rp           =   7,
+                    .t_rrd          =   4,//6 or 5:page size 2KB; 4:page size 1KB
+                    .t_rtp          =   4,
+                    .t_wr           =   8,
+                    .t_wtr          =   4,
+                    .t_cwl          =   6,
+                    .t_mod          =   8,
                 #endif
                     .t_mrd          =   4,
                     .t_1us_pck      = (M6_DDR_CLK),
@@ -51,52 +73,19 @@ static struct ddr_set __ddr_setting={
                     .t_init_us      = 512,
                     .t_rsth_us      = 500,
                     .t_rstl_us      = 100,
-                #ifdef DDR3_9_9_9
-                    .t_ras          =  24,
-                    .t_rc           =  33,
-                    .t_rcd          =   9,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_ras          =  20,
-                    .t_rc           =  27,
-                    .t_rcd          =   7,
-                #endif
-                    .t_refi_100ns   =  39,//78 for temperature over 85 degrees 39
-                #ifdef DDR3_9_9_9
-                    .t_rfc          = 107,
-                    .t_rp           =   9,
-                    .t_rrd          =   4,
-                    .t_rtp          =   5,
-                    .t_wr           =   10,
-                    .t_wtr          =   5,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_rfc          =  86,
-                    .t_rp           =   7,
-                    .t_rrd          =   4,               
-                    .t_rtp          =   4,
-                    .t_wr           =   8,
-                    .t_wtr          =   4,
-                #endif
-                    .t_xp           =   4,
+                    .t_refi_100ns   =  39,//78 for temperature over 85 degrees
+                    .t_xp           =   3,//4,
                     .t_xsrd         =   0,
                     .t_xsnr         =   0,
                     .t_exsr         = 512,
                     .t_al           =   0,
                     .t_clr          =   8,
                     .t_dqs          =   2,
-               #ifdef DDR3_9_9_9
-                    .t_cwl          =   7,
-               #endif
-			   #ifdef DDR3_7_7_7
-			        .t_cwl          =   6,
-			   #endif
-                    .t_mod          =  12,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
-                    .t_cksrx        =   7,
-                    .t_cksre        =   7,
-                    .t_cke          =   4,
+                    .t_cksrx        =   5,//7,
+                    .t_cksre        =   5,//7,
+                    .t_cke          =   3,//4,
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
                     			(5 <<  9) |//(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     						  //001 = 5
@@ -120,13 +109,15 @@ static struct ddr_set __ddr_setting={
                     			(0 << 2 ) |   //[B2]cas latency bit 0.
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                            [1]=(0 << 9)|(1 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
                                 (0 <<3 ),					//@@[B4,B3]AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
                                 							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved
                                 
                                                                 	
-                            [2]=(1<<3),//(2<<3),	//@@CWL:(B5,B4,B3)
+                            [2]=(2 << 9)|     //[B10,B9]Rtt_WR. 00:off. 01:Rzq/4. 02:Rzq/2
+                                //(3 << 6)|     //[B6]Auto self refresh. [B7]Self refresh temperature range. 0:Normal. 1:Extended
+                                (1 << 3),//(2<<3),	//@@CWL:(B5,B4,B3)
 	                            		//000 = 5 (tCK = 2.5ns) 
     	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
         	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
@@ -142,14 +133,12 @@ static struct ddr_set __ddr_setting={
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
-                           #ifndef CONFIG_DDR_LOW_POWER
-                              (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
-                           #else
+                                                   // always enable auto power down.  Disable this only
+                                                   // if you care about bandwidth/efficiency.
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
-						   #endif //CONFIG_DDR_LOW_POWER
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zq0cr1 = 0x1b,   //auto ZQCR
+                    .zq0cr1 = 0x1d,//0x18,   //PUB ZQ0CR1
          .ddr_pll_cntl = 0x10200 | (M6_DDR_CLK/12), //528MHz
          .ddr_clk = (M6_DDR_CLK),
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
