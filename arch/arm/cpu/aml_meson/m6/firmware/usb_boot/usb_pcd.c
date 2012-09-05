@@ -28,7 +28,11 @@ static const struct usb_device_descriptor
 device_desc = {
 	sizeof device_desc,		//__u8  bLength;
         USB_DT_DEVICE,			//__u8  bDescriptorType;
+#ifdef USE_FULL_SPEED
         __constant_cpu_to_le16(0x0110),	//__u16 bcdUSB;
+#else
+	__constant_cpu_to_le16(0x0200),	//__u16 bcdUSB;
+#endif
         USB_CLASS_PER_INTERFACE,	//__u8  bDeviceClass;
         0,				//__u8  bDeviceSubClass;
         0,				//__u8  bDeviceProtocol;
@@ -38,7 +42,7 @@ device_desc = {
         __constant_cpu_to_le16(0x0007),	//__u16 bcdDevice;
         STRING_MANUFACTURER,		//__u8  iManufacturer;
         STRING_PRODUCT,			//__u8  iProduct;
-        STRING_SERIAL,			//__u8  iSerialNumber;
+        0,//STRING_SERIAL,			//__u8  iSerialNumber;
         1				//__u8  bNumConfigurations;
 };
 #define INTF_CONFIG_DESC_LEN  23
@@ -84,16 +88,26 @@ static const unsigned char intf_desc[INTF_CONFIG_DESC_LEN]={
 	0x05,//USB_DT_ENDPOINT
 	0x80 | BULK_IN_EP_NUM,// 1 -- IN
 	0x02,// Bulk
+#ifndef USE_FULL_SPEED
+	0x00,//
+	0x02,// 64 bytes MPS
+#else
 	0x40,//
 	0x00,// 64 bytes MPS
+#endif
 	0x00,
 	
 	0x07,//Length
 	0x05,//USB_DT_ENDPOINT
 	0x00 | BULK_OUT_EP_NUM,// 2 -- OUT
 	0x02,// Bulk
+#ifndef USE_FULL_SPEED
+	0x00,//
+	0x02,// 64 bytes MPS
+#else
 	0x40,//
 	0x00,// 64 bytes MPS
+#endif
 	0x00	
 };
 
@@ -142,6 +156,7 @@ static const char dt_string_pid[DT_STRING_PID_LEN]={
 	'P',
 	0
 };
+#if 0
 #define DT_STRING_SERIAL_LEN	18
 static const char dt_string_serial[DT_STRING_SERIAL_LEN]={
 	DT_STRING_SERIAL_LEN,
@@ -163,6 +178,7 @@ static const char dt_string_serial[DT_STRING_SERIAL_LEN]={
 	'6',
 	0
 };
+#endif
 int usb_pcd_init()
 {
 	return dwc_core_init();
@@ -260,9 +276,11 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 					case 2://STRING_PRODUCT
 						usb_memcpy(buff,(void*)dt_string_pid,DT_STRING_PID_LEN);
 						break;
+#if 0
 					case 3://STRING_SERIAL
 						usb_memcpy(buff,(void*)dt_string_serial,DT_STRING_SERIAL_LEN);
 						break;
+#endif
 					default:
 						USB_ERR("Error string id!\n");
 						buff[0] = 0;
@@ -394,6 +412,13 @@ void do_vendor_request( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	  	_pcd->length = w_length;
 	  	need_check_timeout = 0;
 		break;
+	case AM_REQ_TPL_CMD:
+	  case AM_REQ_TPL_STAT:
+	  	serial_puts("w_length=");
+		serial_put_hex(w_length, 32);
+		_pcd->buf = buff;
+		_pcd->length = w_length;
+		break;
 	  default:
 		USB_ERR("--unknown vendor req %02x.%02x v%04x i%04x l%u\n",
 			ctrl->bRequestType, ctrl->bRequest,
@@ -468,7 +493,14 @@ void do_vendor_out_complete( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	  	_pcd->bulk_data_len = (*(unsigned int*) &buff[4]); // data length
 	  	start_bulk_transfer(_pcd);
 	  	break;
-
+	  case AM_REQ_TPL_CMD:
+		  /* this is an example for any command */
+		if(w_index == 1){/* assume subcode is 0 */
+			char cmd[CMD_BUFF_SIZE];
+			memcpy(cmd, buff, CMD_BUFF_SIZE);
+			usb_run_command(cmd, buff);
+		}
+		break;
 	  default:
 		USB_ERR("--unknown vendor req comp %02x.%02x v%04x i%04x l%u\n",
 			ctrl->bRequestType, ctrl->bRequest,

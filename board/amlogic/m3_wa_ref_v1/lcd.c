@@ -20,7 +20,7 @@
  */
 
 /*
-For Ramos MID use 8726M */ 
+For Ramos MID use 8726M */
 #include <common.h>
 #include <asm/arch/io.h>
 #include <asm/arch/pinmux.h>
@@ -30,6 +30,7 @@ For Ramos MID use 8726M */
 #include <asm/arch/osd_hw.h>
 #include <aml_i2c.h>
 #include <amlogic/aml_lcd.h>
+#include <amlogic/vinfo.h>
 #include <sn7325.h>
 #include <video_fb.h>
 
@@ -39,8 +40,8 @@ extern GraphicDevice aml_gdev;
 vidinfo_t panel_info;
 
 /*
-For 8726M, cpt CLAA070MA22BW panel 7" */ 
-#define LCD_WIDTH       800 
+For 8726M, cpt CLAA070MA22BW panel 7" */
+#define LCD_WIDTH       800
 #define LCD_HEIGHT      600
 #define MAX_WIDTH       1010
 #define MAX_HEIGHT      660
@@ -70,8 +71,8 @@ int  video_dac_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
 	SET_CBUS_REG_MASK(VENC_VDAC_SETTING, 0x1f);
-    return 0;    
-}   
+    return 0;
+}
 
 lcdConfig_t lcd_config =
 {
@@ -196,25 +197,25 @@ static void power_on_lcd(void)
     set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);
     set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
     //mdelay(30);
-    
+
     //GPIOC2 -> VCCx3_EN: 1
     set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 1);
     set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE);
     //mdelay(30);
-    
+
 }
 
 static void power_off_lcd(void)
 {
 	debug("%s\n", __FUNCTION__);
 	power_off_backlight();
-    //mdelay(50);	
-    
+    //mdelay(50);
+
     //GPIOC2 -> VCCx3_EN: 0
     set_gpio_val(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), 0);
     set_gpio_mode(GPIOC_bank_bit0_15(2), GPIOC_bit_bit0_15(2), GPIO_OUTPUT_MODE);
     //mdelay(30);
-    
+
     //GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
     set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
     set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
@@ -239,7 +240,7 @@ static void lcd_power_on(void)
 	debug("%s\n", __FUNCTION__);
 	video_dac_disable();
     set_tcon_pinmux();
-    power_on_lcd();        
+    power_on_lcd();
 }
 static void lcd_power_off(void)
 {
@@ -253,7 +254,7 @@ static void lcd_io_init(void)
     debug("\n\nT13 LCD Init.\n\n");
 
     set_tcon_pinmux();
-    power_on_lcd();    
+    power_on_lcd();
     set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
@@ -261,31 +262,31 @@ static int lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
 	char envstr[20];
-	
+
 	lcd_setup_gama_table(&lcd_config);
     lcd_io_init();
     tcon_probe();
-	
+
 	setenv("video_dev", "panel");
-	sprintf(envstr, "%x", panel_info.lcd_base);
-	setenv("fb_addr", envstr);		
+	sprintf(envstr, "%x", panel_info.vd_base);
+	setenv("fb_addr", envstr);
 	sprintf(envstr, "%d", LCD_WIDTH);
 	setenv("display_width", envstr);
 	sprintf(envstr, "%d", LCD_HEIGHT);
 	setenv("display_height", envstr);
 	sprintf(envstr, "%d", COLOR_INDEX_24_RGB);
-	setenv("display_bpp", envstr);	
+	setenv("display_bpp", envstr);
 	if(CURRENT_OSD == OSD1)
-		setenv("display_layer", "osd1");	
+		setenv("display_layer", "osd1");
 	if(CURRENT_OSD == OSD2)
-		setenv("display_layer", "osd2");	
-	
+		setenv("display_layer", "osd2");
+
 	setenv("video_dev", "panel");
 	setenv("panel", "panel_m3");
-	aml_gdev.fg	=	panel_info.lcd_color_fg;
-	aml_gdev.bg	=	panel_info.lcd_color_fg;
-		
-	video_hw_init();	    
+	aml_gdev.fg	=	panel_info.vd_color_fg;
+	aml_gdev.bg	=	panel_info.vd_color_fg;
+
+	video_hw_init();
     return 0;
 }
 
@@ -297,21 +298,21 @@ void lcd_disable(void)
     tcon_remove();
 }
 
-vidinfo_t panel_info = 
+vidinfo_t panel_info =
 {
 	.vl_col	=	LCD_WIDTH,		/* Number of columns (i.e. 160) */
 	.vl_row	=	LCD_HEIGHT,		/* Number of rows (i.e. 100) */
 
 	.vl_bpix	=	COLOR_INDEX_24_RGB,				/* Bits per pixel, 24bpp */
 
-	.lcd_base	=	0, //FB_ADDR,		/* Start of framebuffer memory	*/
+	.vd_base	=	0, //FB_ADDR,		/* Start of framebuffer memory	*/
 
-	.lcd_console_address	=	NULL,	/* Start of console buffer	*/
+	.vd_console_address	=	NULL,	/* Start of console buffer	*/
 	.console_col	=	0,
 	.console_row	=	0,
-	
-	.lcd_color_fg	=	0xffffff,
-	.lcd_color_bg	=	0,
+
+	.vd_color_fg	=	0xffffff,
+	.vd_color_bg	=	0,
 	.max_bl_level	=	255,
 
 	.cmap	=	NULL,		/* Pointer to the colormap */
@@ -326,7 +327,7 @@ struct panel_operations panel_oper =
 	.bl_on	=	power_on_backlight,
 	.bl_off	=	power_off_backlight,
 	.set_bl_level	=	set_backlight_level,
-	.get_bl_level = get_backlight_level,	
+	.get_bl_level = get_backlight_level,
 	.power_on=lcd_power_on,
     .power_off=lcd_power_off,
 };

@@ -79,6 +79,20 @@ static int nand_block_bad_scrub(struct mtd_info *mtd, loff_t ofs, int getchip)
 	return 0;
 }
 
+/*
+*nand_block_bad_scrub_update_bbt: this function is in order to protect the factory bad blocks
+*					change the bbt but reserve factory bad blocks
+*/
+static int nand_block_bad_scrub_update_bbt(struct mtd_info *meminfo)
+{	
+	//struct nand_chip *chip = mtd->priv;
+	struct nand_chip *priv_nand = meminfo->priv;
+	int ret;
+	ret = priv_nand->nand_block_bad_scrub_update_bbt(meminfo); 
+	
+	return ret;
+}
+
 
 static inline void translate_oob2spare(yaffs_Spare *spare, __u8 *oob)
 {
@@ -154,7 +168,7 @@ int nand_erase_opts(nand_info_t *meminfo, const nand_erase_options_t *opts)
 	 * check from erase() method, set block check method to dummy
 	 * and disable bad block table while erasing.
 	 */
-	if (opts->scrub) {
+	if (opts->scrub == 1) {
 		struct nand_chip *priv_nand = meminfo->priv;
 
 		nand_block_bad_old = priv_nand->block_bad;
@@ -166,6 +180,9 @@ int nand_erase_opts(nand_info_t *meminfo, const nand_erase_options_t *opts)
 			kfree(priv_nand->bbt);
 		}
 		priv_nand->bbt = NULL;
+	}
+	else if (opts->scrub == 2) {
+		nand_block_bad_scrub_update_bbt(meminfo);
 	}
 
 	if (erase_length < meminfo->erasesize) {
@@ -181,7 +198,7 @@ int nand_erase_opts(nand_info_t *meminfo, const nand_erase_options_t *opts)
 	
 		WATCHDOG_RESET ();
 
-		if (!opts->scrub && bbtest) {
+		if ((opts->scrub ==2) && bbtest) {
 			int ret = meminfo->block_isbad(meminfo, erase.addr);
 			if (ret > 0) {
 				if (!opts->quiet)

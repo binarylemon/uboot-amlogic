@@ -58,7 +58,12 @@ dwc_otg_irq()
 	dwc_pcd_irq();
 	return 0;
 }
-
+void dwc_otg_pullup(int is_on)
+{
+	if(is_on)
+		dwc_modify_reg32(DWC_REG_DCTL,2,0);// connect data line
+    else dwc_modify_reg32(DWC_REG_DCTL,0,2);// disconnect data line
+}
 static void dwc_otg_core_init() //Elvis Fool, add 'static'
 {
     gahbcfg_data_t  ahbcfg = {.d32 = 0 };

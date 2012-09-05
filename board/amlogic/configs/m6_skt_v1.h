@@ -70,6 +70,7 @@
  */
 /* #define CONFIG_MUSB_UDC		1 */
 #define CONFIG_M6_USBPORT_BASE	0xC90C0000
+#define CONFIG_M6_USBPORT_BASE_A	0xC9040000
 #define CONFIG_USB_STORAGE      1
 #define CONFIG_USB_DWC_OTG_HCD  1
 #define CONFIG_USB_DWC_OTG_294	1
@@ -268,5 +269,11 @@
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
+
+
+/*
+* CPU switch test for uboot
+*/
+//#define CONFIG_M6_TEST_CPU_SWITCH 1
 
 #endif //__CONFIG_M6_SKT_V1_H__

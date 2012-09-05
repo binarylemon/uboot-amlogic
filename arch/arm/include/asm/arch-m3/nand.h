@@ -342,6 +342,7 @@
 
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
+#define NAND_FACTORY_BAD					2
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
@@ -352,7 +353,10 @@
 #define BBT_TAIL_MAGIC					"bbte"
 #define MTD_PART_MAGIC					"anpt"
 
-#define NAND_SYS_PART_SIZE				0x20000000
+#define NAND_SYS_PART_SIZE				0x10000000
+
+#define ENV_NAND_SCAN_BLK                            50 
+
 
 struct aml_nand_flash_dev {
 	char *name;
@@ -422,6 +426,75 @@ struct aml_nand_bch_desc{
     unsigned user_byte_mode;
 };
 
+#define	NEW_NAND_SUPPORT	
+
+#ifdef NEW_NAND_SUPPORT
+#define RETRY_NAND_MAGIC		"refv"
+#define RETRY_NAND_BLK_NUM		2
+#define RETRY_NAND_COPY_NUM	4
+
+#define	READ_RETRY_REG_NUM   	8
+#define	READ_RETRY_CNT   		6
+
+
+#define	ENHANCE_SLC_REG_NUM   	5
+
+#define	READ_RETRY_ZERO   		((char)-1)
+#define	NAND_CMD_HYNIX_GET_VALUE				0x37
+#define	NAND_CMD_HYNIX_SET_VALUE_START		0x36
+#define	NAND_CMD_HYNIX_SET_VALUE_END		0x16
+
+#define	NAND_CMD_TOSHIBA_PRE_CON1			0x5c
+#define	NAND_CMD_TOSHIBA_PRE_CON2			0xc5
+#define	NAND_CMD_TOSHIBA_SET_VALUE			0x55
+#define	NAND_CMD_TOSHIBA_BEF_COMMAND1		0x26
+#define	NAND_CMD_TOSHIBA_BEF_COMMAND2		0x5d
+
+
+//for Hynix
+#define	HYNIX_26NM_8GB 		1		//H27UCG8T2M
+#define	HYNIX_26NM_4GB 		2		//H27UBG8T2BTR
+#define	HYNIX_20NM_8GB 		3		//
+#define	HYNIX_20NM_4GB 		4		//
+//for Toshiba
+#define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
+										//TC58NVG6D2GTA00
+
+
+
+struct aml_nand_read_retry{
+	u8	flag;
+	u8	reg_cnt;
+	u8	retry_cnt;
+	u8	default_flag;
+	u8	cur_cnt[MAX_CHIP_NUM];
+	u8	reg_addr[READ_RETRY_REG_NUM];
+	u8	reg_default_value[MAX_CHIP_NUM][READ_RETRY_REG_NUM];	
+	char	reg_offset_value[READ_RETRY_CNT][READ_RETRY_REG_NUM];	
+	void	(*get_default_value)(struct mtd_info *mtd);
+	void	(*set_default_value)(struct mtd_info *mtd);
+	void	(*save_default_value)(struct mtd_info *mtd);
+	void	(*read_retry_handle)(struct mtd_info *mtd, int chipnr);
+	void	(*read_retry_exit)(struct mtd_info *mtd, int chipnr);
+};
+
+struct aml_nand_slc_program{
+	u8	flag;
+	u8	reg_cnt;
+	u8	reg_addr[ENHANCE_SLC_REG_NUM];
+	u8	reg_default_value[MAX_CHIP_NUM][ENHANCE_SLC_REG_NUM];	
+	char	reg_offset_value[ENHANCE_SLC_REG_NUM];
+	void	(*get_default_value)(struct mtd_info *mtd);
+	void	(*exit_enslc_mode)(struct mtd_info *mtd);
+	void	(*enter_enslc_mode)(struct mtd_info *mtd);
+};
+
+struct new_tech_nand_t{
+    u8	type;
+    struct aml_nand_slc_program slc_program_info;
+    struct aml_nand_read_retry read_rety_info;
+};
+#endif
 struct aml_nand_chip {
 	/* mtd info */
 	u8 mfr_type;
@@ -459,11 +532,18 @@ struct aml_nand_chip {
 	unsigned int *user_info_buf;
 	int8_t *block_status;
 
+	u8 ecc_cnt_limit;
+	u8 ecc_cnt_cur;
+	u8 ecc_max;
+	unsigned  max_ecc_per_page;
+    unsigned zero_cnt;
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
 	struct aml_nandenv_info_t *aml_nandenv_info;
 	struct aml_nand_bch_desc 	*bch_desc;
-
+#ifdef NEW_NAND_SUPPORT
+	struct new_tech_nand_t  new_nand_info;
+#endif
 	/* platform info */
 	struct aml_nand_platform	*platform;
 
@@ -488,6 +568,7 @@ struct aml_nand_chip {
 	int		(*aml_nand_dma_read)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_dma_write)(struct aml_nand_chip *aml_chip, unsigned char *buf, int len, unsigned bch_mode);
 	int		(*aml_nand_hwecc_correct)(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf);
+	int              (*aml_nand_block_bad_scrub)(struct mtd_info *mtd);
 };
 
 struct aml_nand_platform {
@@ -522,7 +603,7 @@ static void inline  nand_get_chip(void )
 	SET_CBUS_REG_MASK(PREG_PAD_GPIO3_EN_N, 0x3ffff);
 	SET_CBUS_REG_MASK(PAD_PULL_UP_REG3, (0xff | (1<<16)));
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_5, ((1<<7) | (1 << 8) | (1 << 9)));
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0xf<<18) | (1 << 17) | (0x3 << 25)));
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0xf<<18) | (1 << 17) | (0x7 << 25)));
 }
 static void inline nand_release_chip(void)
 {

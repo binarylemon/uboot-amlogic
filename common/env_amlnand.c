@@ -503,8 +503,18 @@ int readenv (size_t offset, u_char * buf)
 		for (i=start_blk; i<total_blk; i++) {
 			aml_chip->block_status[i] = NAND_BLOCK_GOOD;
 			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
-				if (nand_bbt_info->nand_bbt[j] == i) {
-					aml_chip->block_status[i] = NAND_BLOCK_BAD;
+				if ((nand_bbt_info->nand_bbt[j]&0x7fff) == i) {
+
+					if((nand_bbt_info->nand_bbt[j] &0x8000)){
+						aml_chip->block_status[i] = NAND_FACTORY_BAD;
+						//printk("readenv : init the aml_chip->block_status[%d] to NAND_FACTORY_BAD\n",i);
+						}
+						else	{
+						aml_chip->block_status[i] = NAND_BLOCK_BAD;
+						//printk("readenv : init the aml_chip->block_status[%d] to BAD\n",i);
+						}
+						
+					//aml_chip->block_status[i] = NAND_BLOCK_BAD;
 					break;
 				}
 			}

@@ -214,7 +214,7 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE, //0,
 	},
 	{
-		.title = "machid",   // include machid
+		.title = "customerid",   // include machid
 		.offset = 4,
 		.enc_len = 4,
 		.data_len = 4,
@@ -279,6 +279,15 @@ static efuseinfo_item_t efuseinfo_v2[] =
 		.we=0,
 		.bch_en = V2_EFUSE_USID_BCH_EN, //0,
 		.bch_reverse = V2_EFUSE_USID_BCH_REVERSE, //0,
+	},
+	{
+		.title = "machineid", 
+		.offset = 502,
+		.enc_len = 4,
+		.data_len = 4,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
 	},
 };
 

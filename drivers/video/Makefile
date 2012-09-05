@@ -43,9 +43,15 @@ COBJS-$(CONFIG_VIDEO_SMI_LYNXEM) += smiLynxEM.o videomodes.o
 COBJS-$(CONFIG_VIDEO_VCXK) += bus_vcxk.o
 
 ifdef CONFIG_AML_MESON
+ifdef CONFIG_M3_WA_REF_V1
+COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
+	osd/canvas.o \
+	osd/m3_osd_hw.o
+else
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
 	osd/osd_hw.o
+endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/tv_out.o \

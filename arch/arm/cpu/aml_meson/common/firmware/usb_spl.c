@@ -11,8 +11,8 @@
 #include <mtddevices.c>
 #include <sdio.c>
 #include <debug_rom.c>
-
 #include <usb_boot/usb_boot.c>
+#include <asm/arch/reboot.h>
 
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
@@ -77,6 +77,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     ddr_init_test();
     // load uboot
     writel(0,P_WATCHDOG_TC);//disable Watchdog
+    reboot_mode = MESON_USB_BURNER_REBOOT;
     serial_puts("\nUSB boot Start\n");
 		while(1)
 		{

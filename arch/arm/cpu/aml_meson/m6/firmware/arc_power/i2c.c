@@ -424,7 +424,7 @@ void init_I2C()
 	//---------------------------------
 	//config	  
  	//v=20; //(32000/speed) >>2) speed:400K
- 	v = 12; //for saving time cost
+	v = 12; //for saving time cost
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
 	reg |= (v <<12);
@@ -453,6 +453,7 @@ void init_I2C()
 #define POWER20_LDO3OUT_VOL         (0x29)
 
 unsigned char vddio;
+unsigned char vdd25;
 unsigned char avdd33;
 unsigned char _3gvcc;
 unsigned char ddr15_reg12;//reg=0x12
@@ -476,8 +477,8 @@ void dump_pmu_reg()
 void power_off_avdd25()
 {
 	unsigned char data;
-	data = i2c_axp202_read(0x12);
-	data &= ~(1<<6);//ldo3
+	vdd25 = i2c_axp202_read(0x12);
+	data = vdd25 & (~(1<<6));//ldo3
 	i2c_axp202_write(0x12,data);
 	
 	udelay(100);
@@ -486,8 +487,7 @@ void power_off_avdd25()
 void power_on_avdd25()
 {
 	unsigned char data;
-	data = i2c_axp202_read(0x12);
-	data |= 1<<6;//ldo3
+	data = vdd25 | 1<<6;//ldo3
 	i2c_axp202_write(0x12,data);
 	
 	udelay(100);
@@ -572,6 +572,16 @@ void power_on_ddr15()
 {	
 	i2c_axp202_write(0x12,i2c_axp202_read(0x12) | 0x10);	
 	udelay(100);
+}
+
+unsigned char get_charging_state()
+{
+	return (i2c_axp202_read(0x0) & 0xa0);
+}
+
+void shut_down()
+{
+	i2c_axp202_write(0x32,i2c_axp202_read(0x32) | 0x80);
 }
 
 void dc_dc_pwm_switch(unsigned int flag)

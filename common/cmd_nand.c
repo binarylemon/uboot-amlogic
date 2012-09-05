@@ -37,7 +37,7 @@ static int nand_dump(nand_info_t *nand, loff_t off, int only_oob)
 	int i;
 	loff_t addr;
 	u_char *datbuf, *oobbuf, *p;
-    printf("%s\n", __func__);
+
 	if(off < nand_info[0]->writesize*256*4)
 	{
 	    nand = nand_info[0];
@@ -308,6 +308,21 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		return 0;
 	}
+//cmd for nand test , if nand is ok , then trigger power off
+	if (strcmp(cmd, "test") == 0) {
+		int ret=-1;
+		puts("\ntest the nand flash ***\n");
+		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {
+			nand = nand_info[i];
+			if (!nand) {
+				ret=nand_test_init();
+				printf("\n***nand_test_init()in NAND DEVICE %d returned:%d***\n ", i,ret);
+				if (ret)
+					return -1;	
+			}
+		}		
+		return 0;
+	}
 
 	if (strcmp(cmd, "scrub_detect") == 0) {
 
@@ -359,7 +374,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	    strcmp(cmd, "biterr") != 0 && strncmp(cmd, "rom_protect", 11) != 0 &&
 	    strncmp(cmd, "wr_rd_cmp", 9) != 0 && strncmp(cmd, "rom_write", 9) != 0 && (strncmp(cmd, "rom_read", 8) != 0) &&
 	    strcmp(cmd, "lock") != 0 && strcmp(cmd, "unlock") != 0 &&
-	    strcmp(cmd, "factory_info") != 0 && strcmp(cmd, "show_para_page")) 
+	    strcmp(cmd, "factory_info") != 0 && strcmp(cmd, "show_para_page")&& strncmp(cmd, "scrub_all", 9) != 0) 
 	
 			goto usage;
 
@@ -386,7 +401,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	 *   0    1     2       3    4
 	 *   nand erase [clean] [off size]
 	 */
-	if (strcmp(cmd, "erase") == 0 || strcmp(cmd, "scrub") == 0) {
+	if (strcmp(cmd, "erase") == 0 || strcmp(cmd, "scrub") == 0 || strcmp(cmd, "scrub_all") == 0) { 
 		nand_erase_options_t opts;
 		int argc_cnt = 2;
         //printk("%s\n", argv[2]);
@@ -406,9 +421,14 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			argc_cnt++;
 		int o = argc_cnt;
 
-		int scrub = !strcmp(cmd, "scrub");
-
-		printf("\nNAND %s: ", scrub ? "scrub" : "erase");
+		int scrub = !strncmp(cmd, "scrub",9);
+		int scrub_all =  !strncmp(cmd, "scrub_all",9);
+		
+		if(scrub_all)			
+			printf("\nNAND %s: ", scrub_all ? "scrub_all" : "erase"); 
+		else
+			printf("\nNAND %s: ", scrub ? "scrub" : "erase");
+		
 		if(!strcmp(argv[argc_cnt], "whole"))
 		{
 			off = 0;
@@ -434,7 +454,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		opts.jffs2  = clean;
 		opts.quiet  = quiet;
 
-		if (scrub) {
+		if (scrub_all) {
 			puts("Warning: "
 			     "scrub option will erase all factory set "
 			     "bad blocks!\n"
@@ -465,6 +485,12 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			{
 				opts.scrub = 1;
 			}
+		}
+		else if(scrub){
+			puts("Warning: "
+			     "scrub_safe option will erase all "
+			     "bad blocks except factory bad blocks!\n");
+			opts.scrub = 2; 	// indicate scrub_safe
 		}
 		ret = nand_erase_opts(nand, &opts);
 		printf("%s\n", ret ? "ERROR" : "OK");
@@ -777,6 +803,7 @@ usage:
 U_BOOT_CMD(nand, CONFIG_SYS_MAXARGS, 1, do_nand,
 	"NAND sub-system",
 	"info - show available NAND devices\n"
+	"test - test available NAND devices\n"
 	"nand device [dev] - show or set current device\n"
 	"nand read - addr off|partition size\n"
 	"nand write - addr off|partition size\n"
@@ -785,9 +812,13 @@ U_BOOT_CMD(nand, CONFIG_SYS_MAXARGS, 1, do_nand,
 	"nand erase [clean|whole] [off size] - erase 'size' bytes from\n"
 	"    offset 'off' (entire device if not specified)\n"
 	"nand bad - show bad blocks\n"
+	"nand scrub_all- really clean NAND erasing bad blocks (UNSAFE)\n"	
 	"nand dump[.oob] off - dump page\n"
 	"nand scrub_detect - detect bad blk again\n"
-	"nand scrub - really clean NAND erasing bad blocks (UNSAFE)\n"
+	"clean NAND erasing bad blocks except factory bad blocks\n"	
+	"       -just do it (SAFE)!!\n"
+	"nand scrub - clean NAND erasing bad blocks except factory bad blocks\n"	
+	"       -just do it (SAFE)!!\n"
 	"nand markbad off [...] - mark bad block(s) at offset (UNSAFE)\n"
 	"nand biterr off - make a bit error at offset (UNSAFE)"
 #ifdef CONFIG_CMD_NAND_LOCK_UNLOCK

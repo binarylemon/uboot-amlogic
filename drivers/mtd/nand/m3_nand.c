@@ -69,7 +69,7 @@ static void m3_nand_select_chip(struct aml_nand_chip *aml_chip, int chipnr)
 					if (!((aml_chip->chip_enable[i] >> 10) & 8))
 						SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));
 
-					if ((aml_chip->ops_mode & AML_CHIP_NONE_RB) == 0){ 
+					if (((aml_chip->ops_mode & AML_CHIP_NONE_RB) == 0) && (aml_chip->rb_enable[i])){ 
 						if (!((aml_chip->rb_enable[i] >> 10) & 1))
 							SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 17));
 						if (!((aml_chip->rb_enable[i] >> 10) & 2))
@@ -219,7 +219,7 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct aml_nand_bch_desc *ecc_supports = aml_chip->bch_desc;
 	unsigned max_bch_mode = aml_chip->max_bch_mode;
-	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define;
+	unsigned options_selected = 0, options_support = 0, ecc_bytes, options_define, valid_chip_num = 0;
 	int error = 0, i, j;
 
 	options_selected = (plat->platform_nand_data.chip.options & NAND_ECC_OPTIONS_MASK);
@@ -320,27 +320,6 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 			break;
 	}
 
-	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
-	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
-	if (options_selected > options_define) {
-		printk("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
-		options_selected = options_define;
-	}
-
-	switch (options_selected) {
-
-		case NAND_TWO_PLANE_MODE:
-			aml_chip->plane_num = 2;
-			mtd->erasesize *= 2;
-			mtd->writesize *= 2;
-			mtd->oobsize *= 2;
-			break;
-
-		default:
-			aml_chip->plane_num = 1;
-			break;
-	}
-
 	options_selected = (plat->platform_nand_data.chip.options & NAND_INTERLEAVING_OPTIONS_MASK);
 	options_define = (aml_chip->options & NAND_INTERLEAVING_OPTIONS_MASK);
 	if (options_selected > options_define) {
@@ -360,7 +339,44 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 		default:		
 			break;
 	}
+    
+	options_selected = (plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK);
+	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
+	if (options_selected > options_define) {
+		printk("multi plane error for selected plane mode: %s force plane to : %s\n", aml_nand_plane_string[options_selected >> 4], aml_nand_plane_string[options_define >> 4]);
+		options_selected = options_define;
+	}
 
+	valid_chip_num = 0;
+	for (i=0; i<aml_chip->chip_num; i++) {
+		if (aml_chip->valid_chip[i]) {
+		    valid_chip_num++;
+		}
+    	}
+    
+	if (aml_chip->ops_mode & AML_INTERLEAVING_MODE)
+		valid_chip_num *= aml_chip->internal_chipnr;	
+	
+	if(valid_chip_num > 2){
+		aml_chip->plane_num = 1;
+	    	printk("detect valid_chip_num:%d over 2, and aml_chip->internal_chipnr:%d, disable NAND_TWO_PLANE_MODE here\n", valid_chip_num, aml_chip->internal_chipnr);
+	}
+	else{	
+    	switch (options_selected) {
+    
+    		case NAND_TWO_PLANE_MODE:
+    			aml_chip->plane_num = 2;
+    			mtd->erasesize *= 2;
+    			mtd->writesize *= 2;
+    			mtd->oobsize *= 2;
+    			break;
+    
+    		default:
+    			aml_chip->plane_num = 1;
+    			break;
+    	}  
+    }
+	  
 	return error;
 }
 
@@ -387,6 +403,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	int ret = 0;
 	unsigned dma_unit_size = 0, count = 0;
 	struct nand_chip *chip = &aml_chip->chip;
+    struct mtd_info *mtd = &aml_chip->mtd;  
 
 	if (bch_mode == NAND_ECC_NONE)
 		count = 1;
@@ -406,7 +423,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);	
 
 	if(aml_chip->ran_mode){
-		NFC_SEND_CMD_SEED(aml_chip->page_addr);
+	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
 	}
 	if(!bch_mode)
 		NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, len);
@@ -426,6 +443,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	struct nand_chip *chip = &aml_chip->chip;
 	unsigned dma_unit_size = 0, count = 0, info_times_int_len;
 	int ret = 0;
+    struct mtd_info *mtd = &aml_chip->mtd;  
 
 	info_times_int_len = PER_INFO_BYTE/sizeof(unsigned int);
 	if (bch_mode == NAND_ECC_NONE)
@@ -446,11 +464,12 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	NFC_SEND_CMD_AIL((int)aml_chip->user_info_buf);
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);
 	if(aml_chip->ran_mode){
-		NFC_SEND_CMD_SEED(aml_chip->page_addr);
+	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
 	}
 
 	if(bch_mode == NAND_ECC_NONE)
-		NFC_SEND_CMD_N2M_RAW(aml_chip->ran_mode,len);
+		//NFC_SEND_CMD_N2M_RAW(aml_chip->ran_mode,len);
+		NFC_SEND_CMD_N2M_RAW(0, len);
 	else
 		NFC_SEND_CMD_N2M(aml_chip->ran_mode, ((bch_mode == NAND_ECC_BCH_SHORT)?NAND_ECC_BCH60_1K:bch_mode), ((bch_mode == NAND_ECC_BCH_SHORT)?1:0), dma_unit_size, count);
 
@@ -538,8 +557,12 @@ static int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *
 	int bch_mode = aml_chip->bch_mode, ran_mode;
 	int error = 0, i = 0, stat = 0;
 	int ecc_size, configure_data_w, pages_per_blk_w, configure_data, pages_per_blk, read_page_tmp, read_page;
-	int en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
-    
+	int en_slc = 0;
+	
+#ifdef NEW_NAND_SUPPORT	
+	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+ #endif
+ 
 	if (page >= (M3_BOOT_PAGES_PER_COPY*M3_BOOT_COPY_NUM)) 
 	{
 		memset(buf, 0, (1 << chip->page_shift));
@@ -736,14 +759,21 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	int status, i, write_page, configure_data, pages_per_blk, write_page_tmp, ran_mode;
-	int new_nand_type = aml_chip->new_nand_info.type;
-	int en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+	int new_nand_type = 0;
+	int en_slc = 0;
+
+#ifdef NEW_NAND_SUPPORT
+	new_nand_type = aml_chip->new_nand_info.type;
+	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+#endif
 
 	if(en_slc){
 		if (page >= (M3_BOOT_PAGES_PER_COPY/2 - 3))
 			return 0;
+#ifdef NEW_NAND_SUPPORT			
 		 if(page > 3)
 			aml_chip->new_nand_info.slc_program_info.enter_enslc_mode(mtd);
+#endif			
 	}
 	else{
 		if (page >= (M3_BOOT_PAGES_PER_COPY - 1))
@@ -814,8 +844,10 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 			if (status & NAND_STATUS_FAIL){
                 		printk("uboot wr page=0x%x, status =  0x%x\n", page,status);
+#ifdef NEW_NAND_SUPPORT                		
                 		if(en_slc && (page > 3))
                 			aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
+ #endif               		
 				return -EIO;
 			}
 		} else {
@@ -823,8 +855,10 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 			status = chip->waitfunc(mtd, chip);
 		}
 	}
+#ifdef NEW_NAND_SUPPORT	
 	if(en_slc && (page > 3))
 		aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
+#endif
 	return 0;
 }
 
@@ -865,6 +899,7 @@ static int m3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 	aml_chip->aml_nand_dma_write = m3_nand_dma_write;
 	aml_chip->aml_nand_hwecc_correct = m3_nand_hwecc_correct;
 	aml_chip->ran_mode = plat->ran_mode; 	
+    	aml_chip->rbpin_detect = plat->rbpin_detect; 	
 
 	err = aml_nand_init(aml_chip);
 	if (err)
@@ -922,6 +957,31 @@ void nand_init(void)
 	else
 		nand_curr_device = 0;
 	return;
+}
+
+//just for nand test command
+ int nand_test_init(void)
+{
+	struct aml_nand_platform *plat = NULL;
+	int i, ret;
+	printk("%s, Version %s (c) 2012 factory nand test .\n", DRV_DESC, DRV_VERSION);
+
+	for (i=0; i<aml_nand_mid_device.dev_num; i++) {
+		plat = &aml_nand_mid_device.aml_nand_platform[i];
+		if (!plat) {
+			printk("error in nand test for not platform data \n");
+			continue;
+		}
+		ret = m3_nand_probe(plat, i);
+		if (ret) {
+			printk("nand init faile in nand test: %d\n", ret);
+			continue;
+		}
+	}
+	if (ret) {
+			return -1;
+		}
+	return 0;
 }
 /*
 int nand_probe(int dev)

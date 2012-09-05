@@ -1713,7 +1713,7 @@ usb_lowlevel_init(void)
     
     printf("dwc_usb driver version: %s\n",DWC_DRIVER_VERSION);
     
-    usb_config = board_usb_start();
+    usb_config = board_usb_start(BOARD_USB_MODE_HOST);
 
     if(!usb_config || !usb_config->base_addr){
 	    	ERR("Bad usb config or base addr! Need call board_usb_init() in board init\n");
@@ -1809,7 +1809,7 @@ usb_lowlevel_stop(void)
 #endif
 
     dwc_otg_hcd_stop(core_if);
-    board_usb_stop();
+    board_usb_stop(BOARD_USB_MODE_HOST);
 #if 0
     if(core_if->temp_buffer) {
         kfree(core_if->temp_buffer);

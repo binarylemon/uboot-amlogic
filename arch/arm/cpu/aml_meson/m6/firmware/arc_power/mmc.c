@@ -725,6 +725,18 @@ void init_pctl(void)
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
 	dbg_out("d",9);
+	
+	if(MMC_Rd(PUB_PGSR_ADDR) & (3<<5)){
+        f_serial_puts("PUB_PGSR=");
+	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
+	    f_serial_puts("\n");
+        MMC_Wr( PUB_PIR_ADDR, 0x1e9 | (1<<28));
+        while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
+        dbg_out("d",0x91);
+        f_serial_puts("PUB_PGSR=");
+	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
+	    f_serial_puts("\n");
+	}
 
 	//check ZQ calibraration status.
 	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
@@ -893,7 +905,7 @@ void enable_retention(void)
 {
 	 //RENT_N/RENT_EN_N switch from 01 to 10 (2'b10 = ret_enable)
 	writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(2<<16),P_AO_RTI_PWR_CNTL_REG0);
-	__udelay(200);
+	__udelay(200000);
 
 	//writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<20),P_AO_RTI_PIN_MUX_REG);
 }

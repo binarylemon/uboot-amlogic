@@ -706,6 +706,20 @@ int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return cmd_usage(cmdtp);
 }
 
+#ifdef CONFIG_M6
+#include <asm/arch/usb.h>
+int do_usbbc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	board_usb_start(BOARD_USB_MODE_CHARGER);
+	board_usb_stop(BOARD_USB_MODE_CHARGER);
+}
+U_BOOT_CMD(
+	usbbc,	3,	1,	do_usbbc,
+	"test usb bc",
+	"loadAddr dev:part"
+);
+#endif //CONFIG_M6
+
 #ifdef CONFIG_USB_STORAGE
 U_BOOT_CMD(
 	usb,	5,	1,	do_usb,

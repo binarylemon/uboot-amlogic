@@ -10,13 +10,17 @@
 #ifndef __DWC_PCD_H__
 #define __DWC_PCD_H__
 
-#define USE_FULL_SPEED
+//#define USE_FULL_SPEED
 
 #define NUM_EP	4
 
 #define BULK_IN_EP_NUM		1
 #define BULK_OUT_EP_NUM	2
+#ifdef USE_FULL_SPEED
 #define BULK_EP_MPS	(64)		//only for full speed
+#else
+#define BULK_EP_MPS (512)
+#endif
 
 
 #define DWC_REG_GOTGCTL	0x000 /** OTG Control and Status Register.  <i>Offset: 000h</i> */

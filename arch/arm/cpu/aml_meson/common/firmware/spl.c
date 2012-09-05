@@ -24,10 +24,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_M6
 	#define AML_M6_JTAG_ENABLE
 	#define AML_M6_JTAG_SET_ARM
-	
+
 	//for M6 only. And it will cause M3 fail to boot up.
 	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
-	
+
 #endif
 
 #ifdef AML_M6_JTAG_ENABLE
@@ -35,18 +35,18 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		//A9 JTAG enable
 		writel(0x80000510,0xda004004);
 		//TDO enable
-		writel(0x4000,0xc8100014);	
+		writel(0x4000,0xc8100014);
 	#elif AML_M6_JTAG_SET_ARC
 		//ARC JTAG enable
-		writel(0x80051001,0xda004004);		
+		writel(0x80051001,0xda004004);
 		//ARC bug fix disable
 		writel((readl(0xc8100040)|1<<24),0xc8100040);
-	#endif	//AML_M6_JTAG_SET_ARM	
+	#endif	//AML_M6_JTAG_SET_ARM
 
 	//Watchdog disable
 	writel(0,0xc1109900);
 	//asm volatile ("wfi");
-	
+
 #endif //AML_M6_JTAG_ENABLE
 
 #if defined(WA_AML8726_M3_REF_V10) || defined(SHUTTLE_M3_MID_V1)
@@ -59,31 +59,31 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 	int i;
-		
+
     //Adjust 1us timer base
     timer_init();
     //default uart clock.
     serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
-    
+
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	unsigned spl_boot_start,spl_boot_end;
 	spl_boot_start = TIMERE_GET();
 #endif
 
-#ifdef CONFIG_M6    
+#ifdef CONFIG_M6
     writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
     __udelay(1000);
-#endif    
+#endif
 
     // initial pll
     pll_init(&__plls);
-    
+
 #ifdef ENTRY_DEBUG_ROM
-    __udelay(100000);//wait for a uart input 
+    __udelay(100000);//wait for a uart input
 #else
-    //__udelay(100);//wait for a uart input 
+    //__udelay(100);//wait for a uart input
 #endif
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
@@ -93,7 +93,14 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     ddr_init_test();
 
     // load uboot
-    load_uboot(__TEXT_BASE,__TEXT_SIZE);
+#ifdef CONFIG_ENABLE_WATCHDOG
+	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
+   		serial_puts("\nload uboot error,now reset the chip");
+		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+	}
+#else
+    	load_uboot(__TEXT_BASE,__TEXT_SIZE);
+#endif
     serial_puts("\nSystem Started\n");
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
@@ -112,6 +119,32 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
 	serial_wait_tx_empty();
 #endif
+
+#ifdef CONFIG_M6_TEST_CPU_SWITCH
+
+
+	extern int get_cup_id(void);
+	__udelay(10000);
+	serial_puts("\n*************************************\n");
+	__udelay(10000);
+	serial_puts("CPU switch : CPU #");
+	__udelay(10000);
+	serial_put_hex(get_cpu_id(),4);
+	__udelay(10000);
+	serial_puts(" is sleeping\n");
+	__udelay(10000);
+	serial_puts("*************************************\n\n");
+	__udelay(10000);
+
+
+	writel(__TEXT_BASE,0xd901ff84);
+	writel(1|1<<1,0xd901ff80);
+	asm volatile ("": : :"memory");
+	asm  volatile("dsb");
+	asm volatile ("sev");
+	while(1);
+
+#endif//CONFIG_M6_TEST_CPU_SWITCH
 
     return 0;
 }

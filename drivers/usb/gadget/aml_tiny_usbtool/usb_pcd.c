@@ -188,13 +188,20 @@ int usb_pcd_init()
 static unsigned int need_check_timeout;
 static unsigned int time_out_val;
 
-void usb_parameter_init()
+void usb_parameter_init(int time_out)
 {
 	need_check_timeout = 0;
 	/* clear utimer */
 	need_check_timeout=get_timer(need_check_timeout)?get_timer(need_check_timeout):1;
-	//time_out_val = USB_ROM_CONN_TIMEOUT; // wait PC GetDescriptor command 
-	time_out_val = 1000; // wait PC GetDescriptor command for 1us changed by Elvis
+	if(time_out)
+	{
+		time_out_val = time_out; // wait PC GetDescriptor command for 1us changed by Elvis
+
+	}
+	else
+	{
+		time_out_val = USB_ROM_CONN_TIMEOUT; // wait PC GetDescriptor command 
+	}
 }
 
 int usb_pcd_irq()
@@ -509,6 +516,9 @@ void do_vendor_out_complete( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 		else if(w_index == 1){
 			char cmd[CMD_BUFF_SIZE];
 			memcpy(cmd, buff, CMD_BUFF_SIZE);
+			if(strncmp(cmd,"bootm",(sizeof("bootm")-1)) == 0){
+				dwc_otg_pullup(0);//disconnect
+			}
 			usb_run_command(cmd, buff);
 		}
 		break;
