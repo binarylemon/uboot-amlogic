@@ -1196,14 +1196,17 @@ void aml_nand_read_retry_exit_samsung(struct mtd_info *mtd, int chipnr)
 
 void aml_nand_set_reg_default_hynix(void)
 {
-	struct mtd_info *mtd = nand_info[1];
+	struct mtd_info *mtd = nand_info[nand_curr_device];
+
+		if(strcmp(mtd->name,NAND_BOOT_NAME)){
 #ifdef NEW_NAND_SUPPORT
-	if(mtd){
+	//if(mtd){
 		aml_nand_set_readretry_default_value_hynix(mtd);
 
 		aml_nand_exit_enslc_mode_hynix(mtd);
-	}
+	
 #endif
+	}
 }
 
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
