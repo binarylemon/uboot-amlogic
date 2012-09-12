@@ -172,7 +172,8 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"2 Generation NAND 4GiB K9GBG08U0A", {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7a, 0x54, 0x43}, 8192, 4152, 0x100000, 640, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
 	{"2 Generation NAND 8GiB K9LCG08U0A", {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7a, 0x58, 0x43}, 8192, 8304, 0x100000, 640, 2, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
 #ifdef NEW_NAND_SUPPORT
-	{"2 Generation NAND 8GiB K9GCG08U0A", {NAND_MFR_SAMSUNG, 0xDE, 0xA4, 0x7A, 0x68, 0xC4}, 8192, 8192, 0x100000, 640, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
+	{"2 Generation NAND 4GiB K9GBG08U0B", {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44}, 8192, 4096, 0x100000, 640, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
+	{"2 Generation NAND 8GiB K9LCG08U0B", {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7e, 0x68, 0x44}, 8192, 8192, 0x100000, 640, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
 #endif
 	{NULL,}
 };
@@ -1195,14 +1196,17 @@ void aml_nand_read_retry_exit_samsung(struct mtd_info *mtd, int chipnr)
 
 void aml_nand_set_reg_default_hynix(void)
 {
-	struct mtd_info *mtd = nand_info[1];
+	struct mtd_info *mtd = nand_info[nand_curr_device];
+
+		if(strcmp(mtd->name,NAND_BOOT_NAME)){
 #ifdef NEW_NAND_SUPPORT
-	if(mtd){
+	//if(mtd){
 		aml_nand_set_readretry_default_value_hynix(mtd);
 
 		aml_nand_exit_enslc_mode_hynix(mtd);
-	}
+	
 #endif
+	}
 }
 
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
@@ -3117,7 +3121,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_toshiba_24nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56};
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
 	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};
-	u8 dev_id_samsung_2xnm_8g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xDE, 0xA4, 0x7A, 0x68, 0xC4};
+	u8 dev_id_samsung_2xnm_8g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7E, 0x68, 0x44};	
+	u8 dev_id_samsung_2xnm_4g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44};		
 #endif
 	//int tmp_id, tmp_manf;
 
@@ -3387,7 +3392,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.slc_program_info.get_default_value = aml_nand_get_slc_default_value_hynix;
 
 	}
-	else  if(!strncmp((char*)type->id, (char*)dev_id_hynix_20nm_4g, strlen((const char*)aml_nand_flash_ids[i].id))){
+		else  if((!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))||
+		(!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 		aml_chip->new_nand_info.type = HYNIX_20NM_4GB;
 		printk("aml_chip->hynix_new_nand_type =: %d \n", aml_chip->new_nand_info.type);
 
