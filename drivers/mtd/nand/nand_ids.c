@@ -142,5 +142,6 @@ const struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_HYNIX, "Hynix"},
 	{NAND_MFR_MICRON, "Micron"},
 	{NAND_MFR_AMD, "AMD"},
+	{NAND_MFR_SANDISK, "Sandisk"},
 	{0x0, "Unknown"}
 };
