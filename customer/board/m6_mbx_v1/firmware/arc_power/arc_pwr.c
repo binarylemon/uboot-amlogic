@@ -127,7 +127,7 @@ void copy_reboot_code()
 
 //for mbox
 #define POWER_OFF_VCCK_VDDIO
-//#define POWER_OFF_VCC5V
+#define POWER_OFF_VCC5V
 
 
 /***********************
@@ -405,6 +405,10 @@ void enter_power_down()
 	power_off_vcck_vddio();
 #endif
 
+#ifdef POWER_OFF_VCC5V
+  power_off_vcc5v();
+#endif
+
 #ifdef POWER_DOWN_DDR15
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
@@ -420,7 +424,7 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
-    udelay(10000);
+    udelay(100000);
 
     //set the detect gpio
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
@@ -483,6 +487,9 @@ void enter_power_down()
 	power_on_vcck_vddio(); 
 #endif
 
+#ifdef POWER_OFF_VCC5V
+  power_on_vcc5v();
+#endif 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
