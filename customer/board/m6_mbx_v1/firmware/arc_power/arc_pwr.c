@@ -424,7 +424,7 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
-    udelay(100000);
+    udelay(10000);
 
     //set the detect gpio
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
