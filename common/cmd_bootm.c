@@ -298,6 +298,11 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	     (images.os.type == IH_TYPE_MULTI)) &&
 	    (images.os.os == IH_OS_LINUX)) {
 		/* find ramdisk */
+#if defined(CONFIG_AML_MESON_FIT)
+		//call boot_get_ramdisk() here for get ramdisk start addr
+		boot_get_ramdisk (argc, argv, &images, IH_INITRD_ARCH,
+						&images.rd_start, &images.rd_end);
+#endif
 		ret = boot_get_ramdisk (argc, argv, &images, IH_INITRD_ARCH,
 				&images.rd_start, &images.rd_end);
 		if (ret) {
@@ -492,7 +497,6 @@ int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	int state;
 	cmd_tbl_t *c;
 	boot_os_fn *boot_fn;
-
 	c = find_cmd_tbl(argv[1], &cmd_bootm_sub[0], ARRAY_SIZE(cmd_bootm_sub));
 
 	if (c) {

@@ -53,6 +53,10 @@ help_customer:
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "MBX_AML8726_MX_REF_A"
 	@echo config command: \"make m6_mbx_v1_config\"
+	
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "DUOKAN_MBX_AML8726_MX_REF_A"
+	@echo config command: \"make m6_duokan_mbx_g19ref_config\"
 
 	@echo customer defined board end
 	@echo

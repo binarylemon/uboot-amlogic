@@ -117,7 +117,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
-	"machid=4e27\0" \
+	"machid=4e28\0" \
 	"video_dev=tvout\0" \
 	"display_width=720\0" \
 	"display_height=480\0" \
@@ -153,7 +153,7 @@
 #define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
-//#define CONFIG_NAND_BOOT 1
+	//#define CONFIG_NAND_BOOT 1
 #endif
 
 //#ifdef CONFIG_NAND_BOOT
@@ -265,7 +265,7 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6_DDR_CLK (516)
+#define M6_DDR_CLK (528)
 
 //#define CONFIG_DDR_LOW_POWER
 

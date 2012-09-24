@@ -405,10 +405,6 @@ void enter_power_down()
 	power_off_vcck_vddio();
 #endif
 
-#ifdef POWER_OFF_VCC5V
-  power_off_vcc5v();
-#endif
-
 #ifdef POWER_DOWN_DDR15
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
@@ -487,9 +483,6 @@ void enter_power_down()
 	power_on_vcck_vddio(); 
 #endif
 
-#ifdef POWER_OFF_VCC5V
-  power_on_vcc5v();
-#endif 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
