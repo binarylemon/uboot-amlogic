@@ -315,5 +315,5 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CMD_IMI 1
-//#define CONFIG_ANDROID_IMG 1
+#define CONFIG_ANDROID_IMG 1
 #endif //__CONFIG_M6_REF_H__
