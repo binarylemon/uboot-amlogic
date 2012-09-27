@@ -2875,8 +2875,8 @@ dma_retry_3:
 						aml_chip->ran_mode = ran_mode;
 #endif					
 #ifdef NEW_NAND_SUPPORT						
-						if((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)) &&
-							((aml_chip->new_nand_info.type < 40) ||(aml_chip->new_nand_info.type  == MICRON_20NM)))){
+						if(aml_chip->new_nand_info.type &&((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)) &&
+							((aml_chip->new_nand_info.type < 40) ||(aml_chip->new_nand_info.type  == MICRON_20NM))))){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 
@@ -3306,8 +3306,8 @@ dma_retry:
 						aml_chip->ran_mode = ran_mode;
 #endif						
 #ifdef NEW_NAND_SUPPORT						
-						if((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2))
-							&& ((aml_chip->new_nand_info.type < 40) ||(aml_chip->new_nand_info.type == MICRON_20NM) ))){
+						if(aml_chip->new_nand_info.type && ((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2))
+							&& ((aml_chip->new_nand_info.type < 40) ||(aml_chip->new_nand_info.type == MICRON_20NM) )))){
 							printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 											__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 					
