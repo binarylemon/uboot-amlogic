@@ -55,11 +55,14 @@ static struct _tx_desc*	g_tx = NULL;
 static struct _rx_desc*	g_current_rx = NULL;
 static struct _tx_desc*	g_current_tx = NULL;
 static int g_nInitialized = 0 ;
-static unsigned long g_phy_Identifier = 0;
+static unsigned int g_phy_Identifier = 0;
+static unsigned int   g_speed_enforce=0;
+static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_SMSC_8700			0x7c0c4
 #define PHY_SMSC_8720			0x7c0f1
 #define PHY_ATHEROS_8032		0x004dd023
 #define PHY_ATHEROS_8035		0x004dd072
+#define PHY_IC_IP101ALF         0x02430c54
 
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
@@ -96,7 +99,7 @@ static void phy_reg_wr(int phyad, unsigned int reg, unsigned int val)
 	phyaddr = phyad << ETH_MAC_4_GMII_Addr_PA_P;
 	phyreg  = reg << ETH_MAC_4_GMII_Addr_GR_P;
 
-	reg4 = phyaddr | phyreg | ETH_MAC_4_GMII_Addr_CR_100_150 | ETH_MAC_4_GMII_Addr_GW | ETH_MAC_4_GMII_Addr_GB;
+	reg4 = phyaddr | phyreg | g_mdc_clock_range | ETH_MAC_4_GMII_Addr_GW | ETH_MAC_4_GMII_Addr_GB;
 	writel(val, ETH_MAC_5_GMII_Data);
 	writel(reg4, ETH_MAC_4_GMII_Addr);
 	busy = 1;
@@ -115,8 +118,7 @@ static unsigned int phy_reg_rd(int phyad, unsigned int reg)
 
 	phyaddr = phyad << ETH_MAC_4_GMII_Addr_PA_P;
 	phyreg  = reg << ETH_MAC_4_GMII_Addr_GR_P;
-	reg4 = phyaddr | phyreg | ETH_MAC_4_GMII_Addr_CR_100_150 | ETH_MAC_4_GMII_Addr_GB;
-
+	reg4 = phyaddr | phyreg | g_mdc_clock_range | ETH_MAC_4_GMII_Addr_GB;
 	writel(reg4, ETH_MAC_4_GMII_Addr);
 
 	busy = 1;
@@ -198,6 +200,12 @@ static void netdev_chk(void)
 	speed = full = 0;
 	id = detect_phyad();
 	rint2 = 3000;
+	if(g_speed_enforce)
+	{
+		//printf("use enforce net speed\n");
+		rint=phy_reg_rd(id,PHY_SR);
+		
+	}else{
 	do {
 		rint = phy_reg_rd(id, PHY_SR);
 		if ((rint & PHY_SR_ANCOMPLETE)) {
@@ -208,7 +216,7 @@ static void netdev_chk(void)
 	if (!(rint & PHY_SR_ANCOMPLETE)) {
 		printf("phy auto link failed\n");
 	}
-
+	}
 	if (old_rint != rint) {
 		if (g_debug > 1)
 			printf("netdev_chk() g_phy_Identifier: 0x%x\n", g_phy_Identifier);
@@ -289,7 +297,7 @@ static void netdev_chk(void)
 	}
 }
 
-static void set_phy_mode()
+static void set_phy_mode(void)
 {
 	unsigned int phyad = -1;
 	unsigned int val;
@@ -319,14 +327,15 @@ static void set_phy_mode()
 static int eth_reset(struct _gStruct* emac_config)
 {
 	int i, k, phyad;
-	unsigned int val;
-	struct _gStruct* m = emac_config;
+	unsigned int val,ori_ctl_val=0;
+	struct _gStruct* m=emac_config;
 
 #ifdef CONFIG_M6
 	/* make sure PHY power-on */
 	set_phy_mode();
 #endif
 #define NET_MAX_RESET_TEST 1000
+	 if(g_speed_enforce) ori_ctl_val=phy_reg_rd(1, PHY_CR);
 	for (i = 0; i < NET_MAX_RESET_TEST; i++) {
 		/* Software Reset MAC */
 		writel(ETH_DMA_0_Bus_Mode_SWR, ETH_DMA_0_Bus_Mode);
@@ -387,7 +396,13 @@ static int eth_reset(struct _gStruct* emac_config)
 
 	val = PHY_CR_AN | PHY_CR_RSTAN;
 	phy_reg_wr(phyad, PHY_CR, val);
-
+	if(g_speed_enforce==1)
+	{
+		while(!(phy_reg_rd(1,1)&(1<<2))){}; //wait line status stable
+		phy_reg_wr(phyad, PHY_CR, ori_ctl_val);
+		while(!(phy_reg_rd(1,1)&(1<<2))){}; //wait new state stable
+		
+	}
 	udelay(10);
 
 	set_mac_mode();
@@ -400,7 +415,7 @@ static int eth_reset(struct _gStruct* emac_config)
 	writel(0, ETH_DMA_7_Interrupt_Enable);					/* disable all interrupt */
 	writel((8 << ETH_DMA_0_Bus_Mode_PBL_P) | ETH_DMA_0_Bus_Mode_FB, ETH_DMA_0_Bus_Mode);
 
-	printf("final_addr[rx-tx]: 0x%x-0x%x\n", m->rx, m->tx);
+	printf("final_addr[rx-tx]: 0x%x-0x%x\n", (unsigned int)m->rx, (unsigned int)m->tx);
 	writel((long)m->rx, ETH_DMA_3_Re_Descriptor_List_Addr);
 	writel((long)m->tx, ETH_DMA_4_Tr_Descriptor_List_Addr);
 
@@ -694,7 +709,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 		printf("netdma:[0x%x-0x%x]\n", net_dma_start_addr, net_dma_end_addr);
 		printf("tx_buf_num:%d \t rx_buf_num:%d buf_size:%d\n", CTX_BUFFER_NUM, CRX_BUFFER_NUM, CBUFFER_SIZE);
 		printf("[===dma_tx] 0x%x-0x%x\n", tx_start, rx_start);
-		printf("[===dma_rx] 0x%x-0x%x\n", rx_start, g_rx);
+		printf("[===dma_rx] 0x%x-0x%x\n", rx_start,(unsigned int) g_rx);
 	}
 	/* init RX desc */
 	pRDesc = gS->rx;
@@ -726,7 +741,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 	bufptr = (unsigned char *)gS->tx_buf_addr;
 	for (i = 0; i < gS->tx_len - 1; i++) {
 		if (g_debug > 1) {
-			printf("[tx-descriptor%d] 0x%x\n", i, bufptr);
+			printf("[tx-descriptor%d] 0x%x\n", i, (unsigned int)bufptr);
 		}
 		pTDesc->tdes0 = 0;
 		pTDesc->tdes1 = TDES1_TCH | TDES1_IC;
@@ -895,8 +910,8 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 static int do_cbusreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int reg, value;
-	unsigned char *cmd = NULL;
-	unsigned int i;
+	char *cmd = NULL;
+
 
 	if (argc < 3) {
 		return cmd_usage(cmdtp);
@@ -909,7 +924,7 @@ static int do_cbusreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return cmd_usage(cmdtp);
 		}
 		printf("=== cbus register read:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
+		reg = simple_strtoul(argv[2], NULL, 16);
 		printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
 
 		break;
@@ -918,7 +933,7 @@ static int do_cbusreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return cmd_usage(cmdtp);
 		}
 		printf("=== cbus register write:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
+		reg = simple_strtoul(argv[2], NULL, 16);
 		value = simple_strtoul(argv[3], NULL, 16);
 		WRITE_CBUS_REG(reg, value);
 		printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
@@ -959,7 +974,19 @@ static int do_autoping(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	}
 	return 0;
 }
+static int do_mdc_clk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned int value;
+	char buffer[40];
 
+	if (argc  < 2) {
+		return cmd_usage(cmdtp);
+	}
+
+	g_mdc_clock_range=((simple_strtoul(argv[1], NULL, 16)&0xf)<<2);
+	printf("set value:0x%x\n",g_mdc_clock_range);
+	return 0;
+}
 int do_ethchk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	netdev_chk();
@@ -1164,7 +1191,66 @@ static int do_clkmsr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	return 0;
 }
+static int  do_netspeed(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int speed=100;
+	int full=0;
+	int data=0;
+	
+	if (argc  < 2) {
 
+		switch(g_phy_Identifier)
+	    	{
+	    	case PHY_ATHEROS_8032:
+		break;
+		case PHY_IC_IP101ALF:
+		break;
+		case PHY_SMSC_8700:
+		default:
+		data = phy_reg_rd(1,31);
+		speed = data & (1<<3);
+		full = ((data >>4) & 1);
+		printf("status: %sM %s-duplex\n",(speed?"100":"10"),(full?"full":"half"));
+		break;
+	    	}
+		return cmd_usage(cmdtp);
+	}
+	speed = simple_strtoul(argv[1], NULL, 10);
+	if((speed!=0)&&(speed!=100)&&(speed!=10)) return -1;
+	data= phy_reg_rd(1,0);
+	if(speed == 0)//disable net speed enforce mode,ie.  we enable A/N
+	{
+		g_speed_enforce=0;
+		data |=(1<<12)|(1<<9); 
+	}else{
+		g_speed_enforce=1;
+		data &=~(1<<12); 
+		if(speed==100)//100M
+		{
+			data |= (1<<13) ;
+		}else if(speed == 10 ){ //10M
+			data &=~(1<<13);
+		}
+		if(strncmp(argv[2],"fu",2)==0)
+		{
+			data |= (1<<8);
+		}else{
+			data &=~(1<<8);
+		}
+	}
+	phy_reg_wr(1, 0, data);
+	return 0;
+	
+}
+U_BOOT_CMD(
+	netspd_f, 3, 1, do_netspeed,
+	"enforce eth speed",
+	"0            - disable enforce mode,enable A/N\n"
+	"10  full   - enforce 10M full duplex mode\n"
+	"10  half   - enforce 10M half duplex mode\n"
+	"100 full   - enforce 100M full duplexmode\n"
+	"100 half   - enforce 100M half duplexmode\n"
+);
 U_BOOT_CMD(
 	phyreg, 4, 1, do_phyreg,
 	"ethernet phy register read/write/dump",
@@ -1187,7 +1273,11 @@ U_BOOT_CMD(
 	"r reg        - read cbus register\n"
 	"        w reg val    - write cbus register"
 );
-
+U_BOOT_CMD(
+	mdc_clk, 2, 1, do_mdc_clk,
+	"do mdc clock",
+	"mdc  data-- data is ETH_MAC_4_GMII_Addr[2..5]  "
+);
 U_BOOT_CMD(
 	autoping, 2, 1, do_autoping,
 	"do auto ping test",
