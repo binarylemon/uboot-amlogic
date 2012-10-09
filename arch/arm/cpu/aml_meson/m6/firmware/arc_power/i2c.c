@@ -492,7 +492,7 @@ unsigned short i2c_pmu_read_w(unsigned int reg, unsigned short val)
         {
             .addr = I2C_AML_PMU_ADDR,
             .flags = I2C_M_RD,
-            .len = 1,
+            .len = 2,
             .buf = &val,
         }
     };
