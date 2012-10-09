@@ -215,6 +215,10 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 {
 	void		*os_hdr;
 	int		ret;
+#if defined(CONFIG_ANDROID_IMG)
+	void	*temp_os_hdr = NULL;
+	boot_img_hdr *temp_android_hdr = NULL;
+#endif
 
 	memset ((void *)&images, 0, sizeof (images));
 	images.verify = getenv_yesno ("verify");
@@ -272,6 +276,22 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		}
 		break;
 #endif
+#if defined(CONFIG_ANDROID_IMG)
+	case IMAGE_FORMAT_ANDROID:
+		temp_os_hdr = os_hdr + 0x800;//shift 0x800 Android format head
+		temp_android_hdr = (void *) os_hdr;
+		images.os.type = image_get_type (temp_os_hdr);
+		images.os.comp = image_get_comp (temp_os_hdr);
+		images.os.os = image_get_os (temp_os_hdr);
+
+		images.os.end = image_get_image_end (temp_os_hdr);
+		images.os.load = image_get_load (temp_os_hdr);
+		images.rd_start = ((ulong)temp_android_hdr->kernel_size + 0x800 + (ulong)os_hdr 
+			+  ((ulong)temp_android_hdr->page_size - 1)) & (~((ulong)temp_android_hdr->page_size - 1));
+		images.rd_end = images.rd_start + (ulong)temp_android_hdr->ramdisk_size;
+		printf("	Ramdisk start addr = 0x%x, len = 0x%x\n",images.rd_start,temp_android_hdr->ramdisk_size );
+		break;
+#endif
 	default:
 		puts ("ERROR: unknown image format type!\n");
 		return 1;
@@ -298,16 +318,24 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	     (images.os.type == IH_TYPE_MULTI)) &&
 	    (images.os.os == IH_OS_LINUX)) {
 		/* find ramdisk */
+#ifndef CONFIG_ANDROID_IMG
 #if defined(CONFIG_AML_MESON_FIT)
 		//call boot_get_ramdisk() here for get ramdisk start addr
 		boot_get_ramdisk (argc, argv, &images, IH_INITRD_ARCH,
 						&images.rd_start, &images.rd_end);
 #endif
-		ret = boot_get_ramdisk (argc, argv, &images, IH_INITRD_ARCH,
-				&images.rd_start, &images.rd_end);
-		if (ret) {
-			puts ("Ramdisk image is corrupt or invalid\n");
-			return 1;
+#endif
+
+#if defined(CONFIG_ANDROID_IMG)
+		if(!images.rd_start)
+#endif
+		{
+			ret = boot_get_ramdisk (argc, argv, &images, IH_INITRD_ARCH,
+					&images.rd_start, &images.rd_end);
+			if (ret) {
+				puts ("Ramdisk image is corrupt or invalid\n");
+				return 1;
+			}
 		}
 
 #if defined(CONFIG_OF_LIBFDT)
@@ -323,7 +351,12 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 #endif
 	}
 
+#if defined(CONFIG_ANDROID_IMG)
+	images.os.start = (ulong)temp_os_hdr;
+#else
 	images.os.start = (ulong)os_hdr;
+#endif
+	
 	images.state = BOOTM_STATE_START;
 
 	return 0;
@@ -852,6 +885,8 @@ static void *boot_get_kernel (cmd_tbl_t *cmdtp, int flag, int argc, char * const
 	int		cfg_noffset;
 	int		os_noffset;
 #endif
+	ulong	temp_img_addr;
+
 
 	/* find out kernel image address */
 	if (argc < 2) {
@@ -877,14 +912,19 @@ static void *boot_get_kernel (cmd_tbl_t *cmdtp, int flag, int argc, char * const
 
 	/* copy from dataflash if needed */
 	img_addr = genimg_get_image (img_addr);
+	temp_img_addr = img_addr;
 
 	/* check image type, for FIT images get FIT kernel node */
 	*os_data = *os_len = 0;
 	switch (genimg_get_format ((void *)img_addr)) {
+#if defined(CONFIG_ANDROID_IMG)
+	case IMAGE_FORMAT_ANDROID:
+		temp_img_addr = img_addr + 0x800;//Not break, just shift addr and go forward.
+#endif
 	case IMAGE_FORMAT_LEGACY:
 		printf ("## Booting kernel from Legacy Image at %08lx ...\n",
 				img_addr);
-		hdr = image_get_kernel (img_addr, images->verify);
+		hdr = image_get_kernel (temp_img_addr, images->verify);
 		if (!hdr)
 			return NULL;
 		show_boot_progress (5);
@@ -1095,6 +1135,9 @@ int do_iminfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 static int image_info (ulong addr)
 {
 	void *hdr = (void *)addr;
+#if defined(CONFIG_ANDROID_IMG)	
+	boot_img_hdr *hdr_andr = (void *) addr;
+#endif
 
 	printf ("\n## Checking Image at %08lx ...\n", addr);
 
@@ -1120,6 +1163,16 @@ static int image_info (ulong addr)
 		}
 		puts ("OK\n");
 		return 0;
+#if defined(CONFIG_ANDROID_IMG)
+	case IMAGE_FORMAT_ANDROID:
+		puts("ANDROID!\n");
+		printf ("kernel addr = 0x%x\n",hdr_andr->kernel_addr);
+		printf ("kernel size = 0x%x\n",hdr_andr->kernel_size);
+		printf ("ramdisk addr = 0x%x\n",hdr_andr->ramdisk_addr);
+		printf ("ramdisk size = 0x%x\n",hdr_andr->ramdisk_size);
+		printf ("page size = 0x%x\n", hdr_andr->page_size);
+		return 0;
+#endif
 #if defined(CONFIG_FIT)
 	case IMAGE_FORMAT_FIT:
 		puts ("   FIT image found\n");
