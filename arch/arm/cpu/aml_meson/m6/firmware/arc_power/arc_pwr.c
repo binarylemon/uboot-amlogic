@@ -698,13 +698,13 @@ int main(void)
 		}
 		else if(c == 'q')
 		{
-				serial_puts(" - quit command loop\n");
+				f_serial_puts(" - quit command loop\n");
 				writel(0,P_AO_RTI_STATUS_REG0);
 			  break;
 		}
 		else
 		{
-				serial_puts(" - cmd no support (ARC)\n");
+				f_serial_puts(" - cmd no support (ARC)\n");
 		}
 		//command executed
 		writel(0,P_AO_RTI_STATUS_REG0);
