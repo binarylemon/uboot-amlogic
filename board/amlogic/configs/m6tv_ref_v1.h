@@ -1,5 +1,5 @@
-#ifndef __CONFIG_M6_REF_H__
-#define __CONFIG_M6_REF_H__
+#ifndef __CONFIG_M6TV_REF_H__
+#define __CONFIG_M6TV_REF_H__
 
 
 #define CONFIG_AML_MESON_6 1
@@ -318,4 +318,4 @@
 #define CONFIG_FIT 1
 #define CONFIG_FIT_VERBOSE 1
 #define CONFIG_AML_MESON_FIT 1
-#endif //__CONFIG_M6_REF_H__
+#endif //__CONFIG_M6TV_REF_H__
