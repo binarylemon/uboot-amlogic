@@ -3551,6 +3551,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	memset(&aml_chip->new_nand_info, 0, sizeof(struct new_tech_nand_t));
 	if(!strncmp((char*)type->id, (char*)dev_id_hynix_26nm_8g, strlen((const char*)aml_nand_flash_ids[i].id))){
 		aml_chip->new_nand_info.type = HYNIX_26NM_8GB;
+		aml_chip->ran_mode = 1;	
 		printk("aml_chip->hynix_new_nand_type =: %d \n", aml_chip->new_nand_info.type);
 
 		//read retry
@@ -3618,6 +3619,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	}
 	else  if(!strncmp((char*)type->id, (char*)dev_id_hynix_26nm_4g, strlen((const char*)aml_nand_flash_ids[i].id))){
 		aml_chip->new_nand_info.type = HYNIX_26NM_4GB;
+		aml_chip->ran_mode = 1;
 		printk("aml_chip->hynix_new_nand_type =: %d \n", aml_chip->new_nand_info.type);
 
 		//read retry
@@ -3684,6 +3686,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	}
 	else  if(!strncmp((char*)type->id, (char*)dev_id_hynix_20nm_8g, strlen((const char*)aml_nand_flash_ids[i].id))){
 		aml_chip->new_nand_info.type = HYNIX_20NM_8GB;
+		aml_chip->ran_mode = 1;
 		printk("aml_chip->hynix_new_nand_type =: %d \n", aml_chip->new_nand_info.type);
 
 		//read retry
@@ -3788,6 +3791,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	else  if(!strncmp((char*)type->id, (char*)dev_id_hynix_20nm_4g, strlen((const char*)aml_nand_flash_ids[i].id))){
 
 		aml_chip->new_nand_info.type = HYNIX_20NM_4GB;
+		aml_chip->ran_mode = 1;
 		printk("aml_chip->hynix_new_nand_type =: %d \n", aml_chip->new_nand_info.type);
 
 		//read retry
@@ -3893,6 +3897,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	            ||(!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
 	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 		aml_chip->new_nand_info.type =  TOSHIBA_24NM;
+		aml_chip->ran_mode = 1;
 
 		aml_chip->new_nand_info.read_rety_info.reg_addr[0] = 0x04;
 		aml_chip->new_nand_info.read_rety_info.reg_addr[1] = 0x05;
@@ -3938,6 +3943,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	}
 	else  if((!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 	aml_chip->new_nand_info.type =  SUMSUNG_2XNM;
+	aml_chip->ran_mode = 1;
 
 	aml_chip->new_nand_info.read_rety_info.reg_addr[0] = 0xA7;
 	aml_chip->new_nand_info.read_rety_info.reg_addr[1] = 0xA4;
@@ -4028,7 +4034,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 }
 	else  if((!strncmp((char*)type->id, (char*)dev_id_sandisk_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id))) ||
 		(!strncmp((char*)type->id, (char*)dev_id_sandisk_19nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))){
-		aml_chip->new_nand_info.type =  SANDISK_19NM;		
+		aml_chip->new_nand_info.type =  SANDISK_19NM;	
+		aml_chip->ran_mode = 1;	
 		aml_chip->new_nand_info.dynamic_read_info.dynamic_read_flag = 0; //DRF
 		
 		aml_chip->new_nand_info.dynamic_read_info.slc_flag = 0; //slc_mode
@@ -4213,7 +4220,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.dynamic_read_info.exit_slc_mode= aml_nand_exit_slc_mode_sandisk;
 	}
 	else  if(!strncmp((char*)type->id, (char*)dev_id_micron_20nm_8g, strlen((const char*)aml_nand_flash_ids[i].id))){
-		aml_chip->new_nand_info.type =  MICRON_20NM;	
+		aml_chip->new_nand_info.type =  MICRON_20NM;
+		aml_chip->ran_mode = 1;	
 		
 		aml_chip->new_nand_info.read_rety_info.reg_addr[0] = 0x89;
 
