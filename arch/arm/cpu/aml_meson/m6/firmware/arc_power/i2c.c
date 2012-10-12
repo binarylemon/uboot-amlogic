@@ -402,7 +402,7 @@ unsigned char i2c_act8942_read(unsigned char reg)
 }
 #endif//CONFIG_ACT8942QJ233_PMU
 
-#if CONFIG_AML_PMU
+#ifdef CONFIG_AML_PMU
 #define I2C_AML_PMU_ADDR   (0x6a >> 1)
 void i2c_pmu_write_b(unsigned int reg, unsigned char val)
 {
@@ -557,6 +557,12 @@ void init_I2C()
 /*******AXP202 PMU*********/
 /**************************/
 #ifdef CONFIG_AW_AXP20
+#define POWER_OFF_AVDD25
+#define POWER_OFF_AVDD33
+//#define POWER_OFF_VCCK12
+#define POWER_OFF_VDDIO
+#define DCDC_SWITCH_PWM
+
 #define POWER20_DCDC_MODESET        (0x80)
 #define POWER20_DC2OUT_VOL          (0x23)
 #define POWER20_DC3OUT_VOL          (0x27)
@@ -977,7 +983,7 @@ void reg6_on()
 
 //Separate PMU from arc_pwr.c 
 //todo...
-void power_off_at_24M()
+inline void power_off_at_24M()
 {
 #ifdef POWER_OFF_3GVCC
 	power_off_3gvcc();
@@ -987,7 +993,7 @@ void power_off_at_24M()
 #endif
 }
 
-void power_on_at_24M()
+inline void power_on_at_24M()
 {
 #ifdef POWER_OFF_AVDD33
 	power_on_avdd33();
@@ -997,7 +1003,7 @@ void power_on_at_24M()
 #endif
 }
 
-void power_off_at_32K()
+inline void power_off_at_32K_1()
 {
 #ifdef POWER_OFF_AVDD25
 	power_off_avdd25();
@@ -1005,17 +1011,10 @@ void power_off_at_32K()
 #ifdef POWER_OFF_VDDIO
 	power_off_vddio();
 #endif
-#ifdef DCDC_SWITCH_PWM
-	dc_dc_pwm_switch(0);//Put here is ok???
-#endif
-
 }
 
-void power_on_at_32k()//need match the power_off_at_32k
+inline void power_on_at_32k_1()//need match the power_off_at_32k
 {
-#ifdef DCDC_SWITCH_PWM
-	dc_dc_pwm_switch(1);
-#endif
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
@@ -1023,3 +1022,18 @@ void power_on_at_32k()//need match the power_off_at_32k
 	power_on_avdd25();
 #endif
 }
+
+inline void power_off_at_32K_2()//If has nothing to do, just let null
+{
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(0);
+#endif
+}
+
+inline void power_on_at_32k_2()//need match the power_off_at_32k
+{
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(1);
+#endif
+}
+
