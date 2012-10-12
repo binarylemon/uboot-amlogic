@@ -448,26 +448,37 @@ ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
-else 
+else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif	
-else
+endif #END CONFIG_IMPROVE_UCL_DEC
+else #NOT CONFIG_M3
 ifeq ($(CONFIG_M6),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
-else 
+else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif	
-else
+endif #END CONFIG_IMPROVE_UCL_DEC
+else #NOT CONFIG_M6
+ifeq ($(CONFIG_M6TV),y)
+ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+else #NOT CONFIG_IMPROVE_UCL_DEC
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+endif #END CONFIG_IMPROVE_UCL_DEC
+else #NOT CONFIG_M6TV
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk 
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
-endif	
-endif
-endif
+endif #END CONFIG_M6TV
+endif #END CONFIG_M6
+endif #END CONFIG_M3
+endif #END CONFIG_AML_MESON
 
 $(obj)u-boot.ldr:	$(obj)u-boot
 		$(CREATE_LDR_ENV)
