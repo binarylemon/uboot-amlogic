@@ -88,7 +88,7 @@ SPL_STATIC_FUNC void serial_putc(const char c)
  * Read a single byte from the serial port. Returns 1 on success, 0
  * otherwise 0.
  */
-
+#if 0
 SPL_STATIC_FUNC
 int serial_tstc(void)
 {
@@ -126,7 +126,7 @@ void serial_puts(const char *s)
     }
     delay_tick(32*1000);
 }
-
+#endif
 void f_serial_puts(const char *s)
 {
     while (*s != '\0') {
@@ -151,7 +151,7 @@ void wait_uart_empty()
         count++;
     }while(count<20000);
 }
-
+/*
 SPL_STATIC_FUNC
 void serial_puts_no_delay(const char *s)
 {
@@ -166,7 +166,7 @@ void k_delay(void)
 {
    delay_tick(32*1000);
 }
-
+*/
 void serial_put_hex(unsigned int data,unsigned bitlen)
 {
 	int i;
@@ -183,7 +183,7 @@ void serial_put_hex(unsigned int data,unsigned bitlen)
             serial_putc(0x61+s-10);
     }
 }
-
+/*
 void do_exception(unsigned reason)
 {
     serial_puts("Enter Exception:");
@@ -202,4 +202,4 @@ void disp_uart_ctrl(void)
 unsigned get_uart_ctrl(void)
 {
 	return (readl(P_UART_CONTROL(UART_PORT_CONS)) & 0xFFF);
-}
+}*/

@@ -57,9 +57,9 @@ static void setup_net_chip(void)
 	
 	/* hardware reset ethernet phy */
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-	udelay(2000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	//CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	//udelay(2000);
+	//SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 }
 
 int board_eth_init(bd_t *bis)
