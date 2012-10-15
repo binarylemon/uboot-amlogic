@@ -28,7 +28,7 @@
 
 #define CONFIG_L2_OFF			1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
@@ -209,18 +209,27 @@
 		}	
 #endif   /*end ifdef CONFIG_POST*/
 
+//----------------------------------------------------------------------
+//Please set the M6TV CPU clock(unit: MHz)
+//legal value: 700, 800,900,1000,1200,1296
+#define M6TV_CPU_CLK 		(900)
+#define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
+//----------------------------------------------------------------------
+
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map
  */
 //Please just define m6tv DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6TV_DDR_CLK (480)
+#define M6TV_DDR_CLK   (480)
+#define CONFIG_DDR_CLK (M6TV_DDR_CLK)
+
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-//#define DDR3_11_11_11
-#define DDR3_7_7_7
+#define DDR3_11_11_11
+//#define DDR3_7_7_7
 //above setting must be set for ddr_set __ddr_setting in file
 //board/amlogic/m6tv_skt_v1/firmware/timming.c 
 

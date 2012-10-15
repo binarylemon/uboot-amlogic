@@ -25,8 +25,6 @@ static unsigned ddr_start_again=1;
 
 #define APB_Wr(addr, data) WRITE_APB_REG(addr,data)
 #define APB_Rd(addr) READ_APB_REG(addr)
-#define Wr           WRITE_CBUS_REG
-#define Rd           READ_CBUS_REG
 
 //#include "ddr_init_sw.c"
 #include "ddr_init_hw.c"

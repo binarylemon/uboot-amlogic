@@ -33,7 +33,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define ddr3_col_size 2
 #endif
 
-
 static struct ddr_set __ddr_setting={
 
                 #ifdef DDR3_11_11_11
@@ -45,8 +44,8 @@ static struct ddr_set __ddr_setting={
                     .t_faw          =  27,
                 #endif
                     .t_mrd          =   4,
-                    .t_1us_pck      = ((M6TV_DDR_CLK/12)*12),
-                    .t_100ns_pck    = ((M6TV_DDR_CLK/12)*12)/10,
+                    .t_1us_pck      = ((CONFIG_DDR_CLK/12)*12),
+                    .t_100ns_pck    = ((CONFIG_DDR_CLK/12)*12)/10,
                     .t_init_us      = 512,// 2 ??
                     .t_rsth_us      = 500, // 5 ??
                     .t_rstl_us      = 100,
@@ -150,8 +149,8 @@ static struct ddr_set __ddr_setting={
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
                     .zq0cr1 = 0x18,   //PUB ZQ0CR1
-         .ddr_pll_cntl=0x10200 | (M6TV_DDR_CLK/12), //504MHz 1022a
-         .ddr_clk=((M6TV_DDR_CLK/12)*12),
+         .ddr_pll_cntl=0x10200 | (CONFIG_DDR_CLK/12), //504MHz 1022a
+         .ddr_clk=((CONFIG_DDR_CLK/12)*12),
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 
          .ddr_ctrl= (0x7f << 16) |   // bit 25:16  ddr command filter bank and read write over timer limit
                     (1 << 7 ) |      // bit 7         ddr command filter bank policy. 1 = keep open. 0 : close bank if no request.
@@ -162,25 +161,43 @@ static struct ddr_set __ddr_setting={
          .init_pctl=init_pctl_ddr3        
 };
 
+//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V
+//PLL=1296MHz: PD=0,RESET=0,OD=0,N=1,M=54
+//PLL=1200MHz: PD=0,RESET=0,OD=0,N=1,M=50
+//PLL=1000MHz: PD=0,RESET=0,OD=0,N=3,M=125
+//PLL=900MHz:   PD=0,RESET=0,OD=0,N=2,M=75
+//PLL=800MHz:   PD=0,RESET=0,OD=0,N=3,M=100
+//PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
+//0x1098[0xc1104260]
+#if   (700 == CONFIG_SYS_CPU_CLK)
+	#define	M6TV_SYS_PLL_N (6)
+	#define	M6TV_SYS_PLL_M (175)
+#elif (800 == CONFIG_SYS_CPU_CLK)
+    #define	M6TV_SYS_PLL_N (3)
+	#define	M6TV_SYS_PLL_M (100)	
+#elif (900 == CONFIG_SYS_CPU_CLK)
+	#define	M6TV_SYS_PLL_N (2)
+	#define	M6TV_SYS_PLL_M (75)
+#elif (1000 == CONFIG_SYS_CPU_CLK)
+	#define	M6TV_SYS_PLL_N (3)
+	#define	M6TV_SYS_PLL_M (125)
+#elif (1200 == CONFIG_SYS_CPU_CLK)
+	#define	M6TV_SYS_PLL_N (1)
+	#define	M6TV_SYS_PLL_M (50)
+#elif (1296 == CONFIG_SYS_CPU_CLK)
+	#define	M6TV_SYS_PLL_N (1)
+	#define	M6TV_SYS_PLL_M (54)
+#else
+	#error "CONFIG_SYS_CPU_CLK is not set! Please set M6TV CPU clock first!\n"
+#endif
+
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
 ={
-	/*
-	* SYS_PLL setting:
-	* 24MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=50, PLL_FOUT= (24*(50/1))/2 = 600MHz
-	* 25MHz: [30]:PD=0, [29]:RESET=0, [17:16]OD=1, [13:9]N=1, [8:0]M=48, PLL_FOUT= (25*(48/1))/2 = 600MHz
-	*/
-	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V
-	//PLL=1296MHz: PD=0,RESET=0,OD=0,N=1,M=54
-	//PLL=1200MHz: PD=0,RESET=0,OD=0,N=1,M=50
-	//PLL=1000MHz: PD=0,RESET=0,OD=0,N=3,M=125
-	//PLL=900MHz:   PD=0,RESET=0,OD=0,N=2,M=75
-	//PLL=800MHz:   PD=0,RESET=0,OD=0,N=3,M=100
-	//PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
-	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50
+	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V	
 	//0x1098[0xc1104260]
 	.sys_pll_cntl=	(0   << 16) | //OD
-					(3   << 9 ) | //N
-					(100 << 0 ),  //M
+					(M6TV_SYS_PLL_N  << 9 ) | //N
+					(M6TV_SYS_PLL_M  << 0 ),  //M
 	//A9 clock setting
 	//0x1067[0xc110419c]
     .sys_clk_cntl=	(1 << 7) | // 0:oscin 1:scale out
