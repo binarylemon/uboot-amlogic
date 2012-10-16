@@ -90,7 +90,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr(HHI_VIID_PLL_CNTL2, M6_VIID_PLL_CNTL_2 );
 	Wr(HHI_VIID_PLL_CNTL3, M6_VIID_PLL_CNTL_3 );
 	Wr(HHI_VIID_PLL_CNTL4, M6_VIID_PLL_CNTL_4 );
-	Wr(HHI_VIID_PLL_CNTL,  0x20242 );
+	//Wr(HHI_VIID_PLL_CNTL,  0x20242 ); //change PLL from 1.584GHz to 1.512GHz
+	Wr(HHI_VIID_PLL_CNTL,  0x2023F ); //change PLL from 1.584GHz to 1.512GHz
 	M6_PLL_WAIT_FOR_LOCK(HHI_VIID_PLL_CNTL);
 
 	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
@@ -128,7 +129,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		Wr(HHI_VID_PLL_CNTL2, M6_VID_PLL_CNTL_2 );
 		Wr(HHI_VID_PLL_CNTL3, M6_VID_PLL_CNTL_3 );
 		Wr(HHI_VID_PLL_CNTL4, M6_VID_PLL_CNTL_4 );
-		Wr(HHI_VID_PLL_CNTL,  0xb0442 );
+		//Wr(HHI_VID_PLL_CNTL,  0xb0442 ); //change PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  0xb043F ); //change PLL from 1.584GHz to 1.512GHz
 		//M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
 
 		__udelay(500); //wait 100us for PLL lock
