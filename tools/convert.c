@@ -29,6 +29,11 @@ struct romboot_s support_socs[]={
         .write_ex=m6_write_ex,
     },
     {
+        .cpu="m6tv",
+        .write=m6_write,
+        .write_ex=m6_write_ex,
+    },
+    {
         .cpu=NULL,
         .write=NULL,
     }

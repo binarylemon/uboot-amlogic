@@ -327,7 +327,7 @@ void i2c_axp202_write(unsigned char reg, unsigned char val)
     };
 
     if (do_msgs(msg, 1) < 0) {
-        serial_puts("i2c transfer failed\n");
+        f_serial_puts("i2c transfer failed\n");
     }
 }
 unsigned char i2c_axp202_read(unsigned char reg)
@@ -349,13 +349,12 @@ unsigned char i2c_axp202_read(unsigned char reg)
     };
 
     if (do_msgs(msgs, 2)< 0) {
-       serial_puts("<error>");
+       f_serial_puts("<error>");
     }
 
     return val;
 }
 #endif//CONFIG_AW_AXP20
-
 #ifdef CONFIG_ACT8942QJ233_PMU
 #define I2C_ACT8942QJ233_ADDR   (0x5B)
 void i2c_act8942_write(unsigned char reg, unsigned char val)
@@ -374,7 +373,7 @@ void i2c_act8942_write(unsigned char reg, unsigned char val)
     };
 
     if (do_msgs(msg, 1) < 0) {
-        serial_puts("i2c transfer failed\n");
+        f_serial_puts("i2c transfer failed\n");
     }
 }
 unsigned char i2c_act8942_read(unsigned char reg)
@@ -396,12 +395,116 @@ unsigned char i2c_act8942_read(unsigned char reg)
     };
 
     if (do_msgs(msgs, 2)< 0) {
-       serial_puts("<error>");
+       f_serial_puts("<error>");
     }
 
     return val;
 }
 #endif//CONFIG_ACT8942QJ233_PMU
+
+#ifdef CONFIG_AML_PMU
+#define I2C_AML_PMU_ADDR   (0x6a >> 1)
+void i2c_pmu_write_b(unsigned int reg, unsigned char val)
+{
+	unsigned char buff[3];
+	buff[0] = reg & 0xff;
+	buff[1] = (reg >> 8) & 0x0f;
+	buff[2] = val;
+
+	struct i2c_msg msg[] = {
+        {
+        .addr  = I2C_AML_PMU_ADDR,
+        .flags = 0,
+        .len   = 3,
+        .buf   = buff,
+        }
+    };
+
+    if (do_msgs(msg, 1) < 0) {
+        f_serial_puts("i2c transfer failed\n");
+    }
+}
+
+void i2c_pmu_write_w(unsigned int reg, unsigned short val)
+{
+	unsigned char buff[4];
+	buff[0] = reg & 0xff;
+	buff[1] = (reg >> 8) & 0x0f;
+	buff[2] = val & 0xff;
+	buff[3] = (val >> 8) & 0xff;
+
+	struct i2c_msg msg[] = {
+        {
+        .addr  = I2C_AML_PMU_ADDR,
+        .flags = 0,
+        .len   = 4,
+        .buf   = buff,
+        }
+    };
+
+    if (do_msgs(msg, 1) < 0) {
+        f_serial_puts("i2c transfer failed\n");
+    }
+}
+
+unsigned char i2c_pmu_read_b(unsigned int reg)
+{
+	unsigned char buff[2];
+	buff[0] = reg & 0xff;
+	buff[1] = (reg >> 8) & 0x0f;
+
+    unsigned char val = 0;
+    struct i2c_msg msgs[] = {
+        {
+            .addr = I2C_AML_PMU_ADDR,
+            .flags = 0,
+            .len = 2,
+            .buf = buff,
+        },
+        {
+            .addr = I2C_AML_PMU_ADDR,
+            .flags = I2C_M_RD,
+            .len = 1,
+            .buf = &val,
+        }
+    };
+
+    if (do_msgs(msgs, 2)< 0) {
+       f_serial_puts("<error>");
+    }
+
+    return val;
+}
+
+unsigned short i2c_pmu_read_w(unsigned int reg, unsigned short val)
+{
+	unsigned char buff[2];
+	buff[0] = reg & 0xff;
+	buff[1] = (reg >> 8) & 0x0f;
+
+    struct i2c_msg msgs[] = {
+        {
+            .addr = I2C_AML_PMU_ADDR,
+            .flags = 0,
+            .len = 2,
+            .buf = buff,
+        },
+        {
+            .addr = I2C_AML_PMU_ADDR,
+            .flags = I2C_M_RD,
+            .len = 2,
+            .buf = &val,
+        }
+    };
+
+    if (do_msgs(msgs, 2)< 0) {
+       f_serial_puts("<error>");
+    }
+
+    return val;
+}
+
+#endif//CONFIG_AML_PMU
 
 void init_I2C()
 {
@@ -424,7 +527,11 @@ void init_I2C()
 	//---------------------------------
 	//config	  
  	//v=20; //(32000/speed) >>2) speed:400K
+#ifdef CONFIG_AML_PMU
+	v = 400; //low speed 
+#else
 	v = 12; //for saving time cost
+#endif
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
 	reg |= (v <<12);
@@ -439,13 +546,23 @@ void init_I2C()
 	v = i2c_axp202_read(0x12);
 	if(v != 0x5F )
 #endif
-		serial_puts("Error: I2C init failed!\n");
+#ifdef CONFIG_AML_PMU
+	v = i2c_axp202_read(0x30);
+	if(v != 0x78 )
+#endif
+		f_serial_puts("Error: I2C init failed!\n");
 }
 
 /***************************/
 /*******AXP202 PMU*********/
 /**************************/
 #ifdef CONFIG_AW_AXP20
+#define POWER_OFF_AVDD25
+#define POWER_OFF_AVDD33
+//#define POWER_OFF_VCCK12
+#define POWER_OFF_VDDIO
+#define DCDC_SWITCH_PWM
+
 #define POWER20_DCDC_MODESET        (0x80)
 #define POWER20_DC2OUT_VOL          (0x23)
 #define POWER20_DC3OUT_VOL          (0x27)
@@ -863,4 +980,60 @@ void reg6_on()
 	i2c_act8942_write(0x61,data);
 }
 #endif //CONFIG_ACT8942QJ233_PMU
+
+//Separate PMU from arc_pwr.c 
+//todo...
+inline void power_off_at_24M()
+{
+#ifdef POWER_OFF_3GVCC
+	power_off_3gvcc();
+#endif	
+#ifdef POWER_OFF_AVDD33
+	power_off_avdd33();
+#endif
+}
+
+inline void power_on_at_24M()
+{
+#ifdef POWER_OFF_AVDD33
+	power_on_avdd33();
+#endif
+#ifdef POWER_OFF_3GVCC
+	power_on_3gvcc();
+#endif
+}
+
+inline void power_off_at_32K_1()
+{
+#ifdef POWER_OFF_AVDD25
+	power_off_avdd25();
+#endif
+#ifdef POWER_OFF_VDDIO
+	power_off_vddio();
+#endif
+}
+
+inline void power_on_at_32k_1()//need match the power_off_at_32k
+{
+#ifdef POWER_OFF_VDDIO
+	power_on_vddio();
+#endif
+#ifdef POWER_OFF_AVDD25
+	power_on_avdd25();
+#endif
+}
+
+inline void power_off_at_32K_2()//If has nothing to do, just let null
+{
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(0);
+#endif
+}
+
+inline void power_on_at_32k_2()//need match the power_off_at_32k
+{
+#ifdef DCDC_SWITCH_PWM
+	dc_dc_pwm_switch(1);
+#endif
+}
 

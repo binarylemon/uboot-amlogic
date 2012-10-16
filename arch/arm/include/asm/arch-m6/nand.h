@@ -4,10 +4,6 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/partitions.h>
-//#include <common.h>
-//#include "regs.h"
-#include "register.h"
-#include "reg_addr.h"
 #include "io.h"
 
 /*fixme container_of this function is in common.h, but if include it, it
@@ -476,12 +472,15 @@ struct aml_nand_bch_desc{
 //for SANDISK
 #define      SANDISK_19NM			40
 
-#define      MICRON_20NM			50
+#define      MICRON_20NM			10
 
-#define      DYNAMIC_REG_NUM        2
+#define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
-#define      DYNAMIC_READ_CNT_LOWER       16 
-#define      DYNAMIC_READ_CNT_UPPER       20
+#define      DYNAMIC_READ_CNT_LOWER       15
+#define      DYNAMIC_READ_CNT_UPPER       19
+#define      DYNAMIC_CNT_LOWER       16
+#define      DYNAMIC_CNT_UPPER       20
+
 
 #define      DYNAMIC_READ_CASE_NUM        20
 
@@ -538,8 +537,8 @@ struct aml_nand_dynamic_read{
 	u8	reg_addr_init[DYNAMIC_REG_INIT_NUM];
 	u8	reg_addr_lower_page[DYNAMIC_REG_NUM];	
 	u8	reg_addr_upper_page[DYNAMIC_REG_NUM];	
-	char	reg_offset_value_lower_page[MAX_CHIP_NUM][DYNAMIC_READ_CNT_LOWER][DYNAMIC_REG_NUM];		
-	char	reg_offset_value_upper_page[MAX_CHIP_NUM][DYNAMIC_READ_CNT_UPPER][DYNAMIC_REG_NUM];	
+	char	reg_offset_value_lower_page[DYNAMIC_CNT_LOWER][DYNAMIC_REG_NUM];		
+	char	reg_offset_value_upper_page[DYNAMIC_CNT_UPPER][DYNAMIC_REG_NUM];	
 	void	(*dynamic_read_init)(struct mtd_info *mtd);
 	void	(*dynamic_read_handle)(struct mtd_info *mtd, int page, int chipnr);
 	void	(*dynamic_read_exit)(struct mtd_info *mtd, int chipnr);

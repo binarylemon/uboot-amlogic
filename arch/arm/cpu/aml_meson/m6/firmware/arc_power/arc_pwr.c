@@ -10,8 +10,9 @@
 #include "boot_code.dat"
 
 //#define CONFIG_ARC_SARDAC_ENABLE
+#ifdef CONFIG_ARC_SARDAC_ENABLE
 #include "sardac_arc.c"
-
+#endif
 
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
@@ -145,15 +146,9 @@ void disp_code()
 #endif
 }
 
-#define POWER_OFF_AVDD25
-#define POWER_OFF_AVDD33
-#define POWER_OFF_VCCK12
-#define POWER_OFF_VDDIO
-#define DCDC_SWITCH_PWM
 #define CHECK_ALL_REGULATORS
 
-//#define POWER_OFF_WIFI_VCC
-//#define POWER_OFF_3GVCC
+
 
 static void enable_iso_ee()
 {
@@ -261,6 +256,7 @@ void test_ddr(int i)
 	wait_uart_empty();
 #endif			
 }
+
 #define pwr_ddr_off 
 void enter_power_down()
 {
@@ -361,13 +357,8 @@ void enter_power_down()
 
 	f_serial_puts("Pwr off domains\n");
  	wait_uart_empty();
-#ifdef POWER_OFF_3GVCC
-	power_off_3gvcc();
-#endif
 
-#ifdef POWER_OFF_AVDD33
-	power_off_avdd33();
-#endif
+	power_off_at_24M();
 
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
@@ -380,19 +371,10 @@ void enter_power_down()
 		switch_to_rtc();
 		udelay(1000);
 
-#ifdef POWER_OFF_AVDD25
-		power_off_avdd25();
-#endif
-
-#ifdef POWER_OFF_VDDIO
-		power_off_vddio();
-#endif
+		power_off_at_32K_1();
 	}
 
-
-#ifdef DCDC_SWITCH_PWM
-	dc_dc_pwm_switch(0);
-#endif
+	power_off_at_32K_2();
 
 	// gate off REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
@@ -448,20 +430,14 @@ void enter_power_down()
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
 
-#ifdef DCDC_SWITCH_PWM
-	dc_dc_pwm_switch(1);
-#endif
+	power_on_at_32k_2();
+
 #ifdef CONFIG_ARC_SARDAC_ENABLE
 	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
 #endif
 	{
-#ifdef POWER_OFF_VDDIO
-		power_on_vddio();
-#endif
+		power_on_at_32k_1();
 
-#ifdef POWER_OFF_AVDD25
-		power_on_avdd25();
-#endif
 	//  In 32k mode, we had better not print any log.
 		store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
@@ -477,13 +453,7 @@ void enter_power_down()
 	f_serial_puts("Pwr up avdd33/3gvcc\n");
 	wait_uart_empty();
 	
-#ifdef POWER_OFF_AVDD33
-	power_on_avdd33();
-#endif
-
-#ifdef POWER_OFF_3GVCC
-	power_on_3gvcc();
-#endif
+	power_on_at_24M();
 
  	uart_reset();
 
@@ -688,7 +658,7 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
+#if (defined(CONFIG_AW_AXP20) || defined(CONFIG_ACT8942QJ233_PMU) || defined(CONFIG_AML_PMU))
 			init_I2C();
 #endif
 			copy_reboot_code();
@@ -698,13 +668,13 @@ int main(void)
 		}
 		else if(c == 'q')
 		{
-				serial_puts(" - quit command loop\n");
+				f_serial_puts(" - quit command loop\n");
 				writel(0,P_AO_RTI_STATUS_REG0);
 			  break;
 		}
 		else
 		{
-				serial_puts(" - cmd no support (ARC)\n");
+				f_serial_puts(" - cmd no support (ARC)\n");
 		}
 		//command executed
 		writel(0,P_AO_RTI_STATUS_REG0);
