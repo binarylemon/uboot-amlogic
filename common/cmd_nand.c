@@ -152,7 +152,7 @@ static inline int str2longlong(char *p, unsigned long long *num)
 static int
 arg_off_size(int argc, char *argv[], nand_info_t *nand, loff_t *off, loff_t *size)
 {
-	int idx = nand_curr_device;
+//	int idx = nand_curr_device;
 /*#if defined(CONFIG_CMD_MTDPARTS)
 	struct mtd_device *dev;
 	struct part_info *part;
@@ -634,7 +634,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		s = strchr(cmd, '.');
 		if (!s ||!strcmp(s, ".e") || !strcmp(s, ".i")) {
 			if (read){
-				ret = romboot_nand_read(nand, off, &size,
+				ret = romboot_nand_read(nand, off, (size_t *)&size,
 							 (u_char *)addr);
 			}
 			else
@@ -775,7 +775,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
         }
         b_all = b_all? 1: 0;
         
-        ret = nand_raw_read_nand_dev(nand,b_offset,&b_count,(u_char *)addr ,b_all,1);
+        ret = nand_raw_read_nand_dev(nand,b_offset,(loff_t *)&b_count,(u_char *)addr ,b_all,1);
         return ret == 0 ? 0 : 1;
     }
 #ifdef CONFIG_PARAMETER_PAGE

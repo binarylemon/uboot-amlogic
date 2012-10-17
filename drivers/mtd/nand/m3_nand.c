@@ -6,6 +6,7 @@
 #include <linux/err.h>
 #include <asm/cache.h>
 #include <asm/arch/pinmux.h>
+#include <asm/arch/clock.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
@@ -488,7 +489,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 static int m3_nand_hwecc_correct(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf)
 {
 	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
+//	struct mtd_info *mtd = &aml_chip->mtd;
 	unsigned ecc_step_num;
 	unsigned info_times_int_len = PER_INFO_BYTE/sizeof(unsigned int);
 		
@@ -963,7 +964,7 @@ void nand_init(void)
  int nand_test_init(void)
 {
 	struct aml_nand_platform *plat = NULL;
-	int i, ret;
+	int i, ret=0;
 	printk("%s, Version %s (c) 2012 factory nand test .\n", DRV_DESC, DRV_VERSION);
 
 	for (i=0; i<aml_nand_mid_device.dev_num; i++) {

@@ -41,7 +41,7 @@ __ucl_ptr_linear(const ucl_voidp ptr)
 #if (ACC_OS_DOS16 || ACC_OS_OS216 || ACC_OS_WIN16)
     p = (((ucl_uintptr_t)(ACC_FP_SEG(ptr))) << (16 - ACC_MM_AHSHIFT)) + (ACC_FP_OFF(ptr));
 #else
-    p = PTR_LINEAR(ptr);
+    p = PTR_LINEAR((unsigned long)ptr);
 #endif
 
     return p;

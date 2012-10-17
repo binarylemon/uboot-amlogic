@@ -144,7 +144,7 @@ static ucl_bool ptr_check(void)
         k += __ucl_align_gap(&x[k],n);
         p0 = (ucl_bytep) &x[k];
 #if defined(PTR_LINEAR)
-        r &= __ucl_assert((PTR_LINEAR(p0) & (n-1)) == 0);
+        r &= __ucl_assert((PTR_LINEAR((unsigned long)p0) & (n-1)) == 0);
 #else
         r &= __ucl_assert(n == 4);
         r &= __ucl_assert(PTR_ALIGNED_4(p0));
@@ -152,11 +152,11 @@ static ucl_bool ptr_check(void)
 
         r &= __ucl_assert(k >= 1);
         p1 = (ucl_bytep) &x[1];
-        r &= __ucl_assert(PTR_GE(p0,p1));
+        r &= __ucl_assert(PTR_GE((unsigned long)p0,(unsigned long)p1));
 
         r &= __ucl_assert(k < 1u+n);
         p1 = (ucl_bytep) &x[1+n];
-        r &= __ucl_assert(PTR_LT(p0,p1));
+        r &= __ucl_assert(PTR_LT((unsigned long)p0,(unsigned long)p1));
 
         /* now check that aligned memory access doesn't core dump */
         if (r == 1)

@@ -54,8 +54,8 @@ static unsigned short zqcr = 0;
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
-	int i;
-	int ret = 0;
+//	int i;
+//	int ret = 0;
 
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
@@ -261,7 +261,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         writel( (0x18 | (0x0 <<12) | (7 << 28)) 
                 ,P_PUB_DTAR3_ADDR ); 
 
-        writel( (readl(P_PUB_DTCR_ADDR) & 0xf0ffffff | (3 << 24) )
+        writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (3 << 24) )
                 ,P_PUB_DTCR_ADDR);
 
 	// DDR PHY initialization 

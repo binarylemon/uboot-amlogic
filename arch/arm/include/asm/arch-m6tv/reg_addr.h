@@ -2707,11 +2707,11 @@ APB Bus registers
 // ---------------------------
 // RTC (4)
 // ---------------------------
-#define P_AO_RTC_ADDR0               (0xc8100000 | (0x01 << 10) | (0xd0 << 2))
-#define P_AO_RTC_ADDR1               (0xc8100000 | (0x01 << 10) | (0xd1 << 2))
-#define P_AO_RTC_ADDR2               (0xc8100000 | (0x01 << 10) | (0xd2 << 2))
-#define P_AO_RTC_ADDR3               (0xc8100000 | (0x01 << 10) | (0xd3 << 2))
-#define P_AO_RTC_ADDR4               (0xc8100000 | (0x01 << 10) | (0xd4 << 2))
+//#define P_AO_RTC_ADDR0               (0xc8100000 | (0x01 << 10) | (0xd0 << 2))
+//#define P_AO_RTC_ADDR1               (0xc8100000 | (0x01 << 10) | (0xd1 << 2))
+//#define P_AO_RTC_ADDR2               (0xc8100000 | (0x01 << 10) | (0xd2 << 2))
+//#define P_AO_RTC_ADDR3               (0xc8100000 | (0x01 << 10) | (0xd3 << 2))
+//#define P_AO_RTC_ADDR4               (0xc8100000 | (0x01 << 10) | (0xd4 << 2))
 #define P_SYS_CPU_0_IRQ_IN0_INTR_MASK CBUS_REG_ADDR(SYS_CPU_0_IRQ_IN0_INTR_MASK)
 #define P_SYS_CPU_0_IRQ_IN0_INTR_STAT CBUS_REG_ADDR(SYS_CPU_0_IRQ_IN0_INTR_STAT)
 #endif

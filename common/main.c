@@ -294,7 +294,7 @@ void main_loop (void)
 
 #ifdef CONFIG_EFUSE
 	//char *r_addr;
-	char *r_efus;
+//	char *r_efus;
 	char addr[20];
 	char efuse_data[20];
 	efuseinfo_item_t info;

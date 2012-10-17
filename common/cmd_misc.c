@@ -26,7 +26,7 @@
  */
 #include <common.h>
 #include <command.h>
-static int ms_count = -1;
+//static int ms_count = -1;
 
 
 int do_sleep (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -60,7 +60,7 @@ int do_msleep (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong start = get_timer(0);
 	ulong delay;
-	char str_val[32];
+//	char str_val[32];
 
 	if (argc != 2)
 		return cmd_usage(cmdtp);

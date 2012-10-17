@@ -108,7 +108,7 @@ static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if(nKeyVal > 1000)
 			continue;
 		
-		printf("SARADC CH-4 Get key : %d [%d\%]\n", nKeyVal,(100*nKeyVal)/1024);
+		printf("SARADC CH-4 Get key : %d [%d]\n", nKeyVal,(100*nKeyVal)/1024);
 		nCnt++;
 	}
 	saradc_disable();

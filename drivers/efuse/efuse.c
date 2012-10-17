@@ -91,7 +91,7 @@ static int cpu_is_before_m6(void)
 
 static int efuse_readversion(void)
 {
-	loff_t ppos;
+//	loff_t ppos;
 	char ver_buf[4], buf[4];
 	efuseinfo_item_t info;
 	
@@ -103,7 +103,7 @@ static int efuse_readversion(void)
 	memset(ver_buf, 0, sizeof(ver_buf));		
 	memset(buf, 0, sizeof(buf));
 	
-	efuse_read(buf, info.enc_len, &info.offset);
+	efuse_read(buf, info.enc_len, (loff_t *)(&info.offset));
 	if(info.bch_en)
 		efuse_bch_dec(buf, info.enc_len, ver_buf, info.bch_reverse);
 	else
@@ -217,7 +217,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 	unsigned enc_len ;		
 	
 	if(efuse_getinfo_byPOS(pos, &info) < 0){
-		printf("not found the position:%d.\n", pos);
+		printf("not found the position:%d.\n", (int)pos);
 		return -1;
 	}
 	 if(count>info.data_len){
@@ -247,7 +247,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 {	
 	char data[EFUSE_BYTES];
-	int ret;
+//	int ret;
 	unsigned enc_len;			
 	char *penc = NULL;
 	char *pdata = NULL;		
@@ -298,7 +298,7 @@ int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 {
 	char data[EFUSE_BYTES];
-	int ret;		
+//	int ret;		
 	char *pdata = NULL;
 	char *penc = NULL;			
 	unsigned enc_len,data_len, reverse;

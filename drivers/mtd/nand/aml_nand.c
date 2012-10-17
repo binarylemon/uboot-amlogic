@@ -11,6 +11,7 @@
 #include <asm/cache.h>
 #include <asm/arch/pinmux.h>
 #include <asm/arch/reboot.h>
+#include <asm/arch/clock.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
@@ -140,7 +141,7 @@ static uint8_t nand_boot_flag = 0;
 unsigned default_environment_size = (ENV_SIZE - sizeof(struct aml_nand_bbt_info));
 static int aml_nand_update_env(struct mtd_info *mtd);
 static int aml_nand_free_valid_env(struct mtd_info *mtd);
-
+int aml_nand_scan_shipped_bbt(struct mtd_info *mtd);
 struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 
 	{"A revision NAND 2GiB H27UAG8T2A",	{NAND_MFR_HYNIX, 0xd5, 0x94, 0x25, 0x44, 0x41}, 4096, 2048, 0x80000, 224, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE | NAND_TWO_PLANE_MODE)},
@@ -397,12 +398,12 @@ static void aml_platform_set_user_byte(struct aml_nand_chip *aml_chip, unsigned 
 
 static int aml_nand_block_bad_scrub_update_bbt(struct mtd_info *mtd)
 {
-	struct nand_chip * chip = mtd->priv;
+//	struct nand_chip * chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_platform *plat = aml_chip->platform;
-	int32_t i, ret = 0;
+	int32_t i;
 	int  start_blk, total_blk, j, phys_erase_shift;
-	loff_t addr, offset ;
+	loff_t offset ;
 
 	if ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) /*&& ((chip->ecc.read_page == aml_nand_read_page_hwecc) || (!getchip))*/)
 		return 0;
@@ -893,7 +894,7 @@ void aml_nand_get_read_default_value_hynix(struct mtd_info *mtd)
 		aml_oob_ops.ooblen = 4;
 		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
 		aml_oob_ops.datbuf = data_buf;
-		aml_oob_ops.oobbuf = oob_buf;
+		aml_oob_ops.oobbuf = (uint8_t *)oob_buf;
 
 		memset(oob_buf, 0, 4);
 		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
@@ -1044,7 +1045,7 @@ void aml_nand_save_read_default_value_hynix(struct mtd_info *mtd)
 		aml_oob_ops.ooblen = 4;
 		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
 		aml_oob_ops.datbuf = data_buf;
-		aml_oob_ops.oobbuf = oob_buf;
+		aml_oob_ops.oobbuf = (uint8_t *)oob_buf;
 		memcpy(oob_buf, RETRY_NAND_MAGIC, 4);
 		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
 		memcpy((unsigned char *)aml_oob_ops.datbuf, &aml_chip->new_nand_info.read_rety_info.reg_default_value[0][0], MAX_CHIP_NUM*READ_RETRY_REG_NUM);
@@ -1125,7 +1126,7 @@ void aml_nand_read_retry_handle_toshiba(struct mtd_info *mtd, int chipnr)
 	cur_cnt = aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr];
 	printk("TOSHIBA NAND set partmeters here and read_retry_cnt:%d\n", cur_cnt);
 
-	aml_nand_set_reg_value_toshiba(aml_chip, &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
+	aml_nand_set_reg_value_toshiba(aml_chip, (uint8_t *)&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
 	udelay(10);
 
 	cur_cnt++;
@@ -1191,7 +1192,7 @@ void aml_nand_read_retry_handle_samsung(struct mtd_info *mtd, int chipnr)
 	cur_cnt = aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr];
 	printk("SAMSUNG NAND set partmeters here and read_retry_cnt:%d\n", cur_cnt);
 
-	aml_nand_set_reg_value_samsung(aml_chip, &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
+	aml_nand_set_reg_value_samsung(aml_chip, (uint8_t *)&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
 	udelay(10);
 
 	cur_cnt++;
@@ -1205,7 +1206,7 @@ void aml_nand_read_retry_exit_samsung(struct mtd_info *mtd, int chipnr)
 	if(aml_chip->new_nand_info.type != SUMSUNG_2XNM)
 		return;
 
-	aml_nand_set_reg_value_samsung(aml_chip, &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
+	aml_nand_set_reg_value_samsung(aml_chip, (uint8_t *)&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
 	udelay(10);
 }
 
@@ -1269,7 +1270,7 @@ void aml_nand_read_retry_handle_micron(struct mtd_info *mtd, int chipnr)
 	cur_cnt = aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr];
 	printk("MICRON NAND set partmeters here and read_retry_cnt:%d\n", cur_cnt +1);
 
-	aml_nand_set_reg_value_micron(aml_chip, &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], 
+	aml_nand_set_reg_value_micron(aml_chip, (uint8_t *)&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][cur_cnt][0], 
 		&aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
 	udelay(10); 	
 
@@ -1291,7 +1292,7 @@ void aml_nand_read_retry_exit_micron(struct mtd_info *mtd, int chipnr)
 
 	int default_val = 0;
 	
-	aml_nand_set_reg_value_micron(aml_chip, &default_val,
+	aml_nand_set_reg_value_micron(aml_chip, (uint8_t *)&default_val,
 		&aml_chip->new_nand_info.read_rety_info.reg_addr[0], chipnr, aml_chip->new_nand_info.read_rety_info.reg_cnt);
 	udelay(10); 
 
@@ -1337,11 +1338,11 @@ uint8_t aml_nand_dynamic_read_init_start(struct aml_nand_chip *aml_chip, int chi
 void aml_nand_dynamic_read_init(struct mtd_info *mtd)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct nand_chip *chip = mtd->priv;
+//	struct nand_chip *chip = mtd->priv;
 	int i;
 
 	if((aml_chip->new_nand_info.type < SANDISK_19NM))
-		return 0;	
+		return;	
 	
 	//printk("Enter %s\n", __func__);
 	aml_chip->new_nand_info.dynamic_read_info.dynamic_read_flag = 1; //DRF
@@ -1508,8 +1509,8 @@ void aml_nand_exit_slc_mode_sandisk(struct mtd_info *mtd)
 /****************************************************************************/
 static void aml_platform_hw_init(struct aml_nand_chip *aml_chip)
 {
-	struct mtd_info *mtd = &aml_chip->mtd;
-	struct nand_chip *chip = &aml_chip->chip;
+//	struct mtd_info *mtd = &aml_chip->mtd;
+//	struct nand_chip *chip = &aml_chip->chip;
 	int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, time_mode, adjust, Tcycle, T_REA = DEFAULT_T_REA, T_RHOH = DEFAULT_T_RHOH, i;
 
 #if ((defined CONFIG_NAND_AML_M1) || (defined CONFIG_NAND_AML_M2))
@@ -2667,7 +2668,7 @@ static int aml_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip
 	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 	int user_byte_num = (((nand_page_size + chip->ecc.size - 1) / chip->ecc.size) * aml_chip->user_byte_mode);
 	int error = 0, i = 0, stat = 0, j = 0, page_addr, internal_chipnr = 1;
-	uint8_t *buf_tmp = buf;
+//	uint8_t *buf_tmp = buf;
 	int readretry_failed_cnt = 0, pages_per_blk =  (1 << (chip->phys_erase_shift - chip->page_shift));
 	int page_temp ;
 #if ((defined CONFIG_NAND_AML_M3) || (defined CONFIG_NAND_AML_M6))
@@ -3279,7 +3280,7 @@ dma_retry:
 							goto read_retry;
 						}
 						page_temp = page_addr -pages_per_blk* (page_addr >> pages_per_blk_shift);
-						if((aml_chip->new_nand_info.type == SANDISK_19NM) && ((page_temp % 2 == 0) && (page_temp !=0) ||(page_temp == (pages_per_blk-1)))){
+						if((aml_chip->new_nand_info.type == SANDISK_19NM) && (((page_temp % 2 == 0) && (page_temp !=0)) ||(page_temp == (pages_per_blk-1)))){
 							if((aml_chip->new_nand_info.type) && (readretry_failed_cnt++ < DYNAMIC_CNT_UPPER)){
 								printk("aml nand read data ecc failed at page:%d  blk %d chip %d, readretry_failed_cnt:%d\n", 
 																page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
@@ -3316,7 +3317,7 @@ dma_retry:
 							mtd->ecc_stats.corrected++;
 						}
 						page_temp = page_addr -pages_per_blk* (page_addr >> pages_per_blk_shift);
-						if((aml_chip->new_nand_info.type == SANDISK_19NM) &&((page_temp % 2 == 0) && (page_temp !=0) ||(page_temp == (pages_per_blk-1)))){
+						if((aml_chip->new_nand_info.type == SANDISK_19NM) &&(((page_temp % 2 == 0) && (page_temp !=0)) ||(page_temp == (pages_per_blk-1)))){
 							if((aml_chip->ecc_cnt_cur > aml_chip->ecc_cnt_limit) ||((readretry_failed_cnt > DYNAMIC_CNT_UPPER) && aml_chip->new_nand_info.type)){
 								printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 												__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
@@ -3512,7 +3513,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
 	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};
 	u8 dev_id_samsung_2xnm_8g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7E, 0x68, 0x44};	
-	u8 dev_id_samsung_2xnm_4g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44};		
+//	u8 dev_id_samsung_2xnm_4g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44};		
 	u8 dev_id_sandisk_19nm_8g[MAX_ID_LEN] = {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57};	
 	u8 dev_id_sandisk_19nm_4g[MAX_ID_LEN] =  {NAND_MFR_SANDISK, 0xD7, 0x84, 0x93, 0x72, 0x57};
 	u8 dev_id_micron_20nm_8g[MAX_ID_LEN] = {NAND_MFR_MICRON, 0x64, 0x44, 0x4B, 0xA9};
@@ -4339,7 +4340,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 
 static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 {
-	int i, busw, nand_maf_id, valid_chip_num = 1, j;
+	int i, busw, nand_maf_id, valid_chip_num = 1;
 	struct nand_chip *chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_flash_dev *aml_type;
@@ -4639,6 +4640,7 @@ static int aml_nand_free_valid_env(struct mtd_info *mtd)
 		}
 		env_tmp_node->next = env_free_node;
 	}
+	return 0;
 }
 
 static int aml_nand_read_env (struct mtd_info *mtd, size_t offset, u_char * buf)
@@ -5090,7 +5092,7 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 	struct aml_nand_bbt_info *nand_bbt_info;
 	struct aml_nand_part_info *aml_nand_part;
 	struct mtd_partition *parts;
-	struct menson_key *aml_menson_key;
+//	struct menson_key *aml_menson_key;
 	env_t *env_ptr;
 	int error = 0, start_blk, total_blk, i, j, nr, phys_erase_shift;
 	loff_t offset;
@@ -5257,10 +5259,10 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 	struct nand_chip * chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_platform *plat = aml_chip->platform;
-	int32_t ret = 0, read_cnt, page, mtd_erase_shift, blk_addr, pages_per_blk;
+	int32_t read_cnt, page, pages_per_blk;
 	loff_t addr, offset;
 	int  start_blk, total_blk, i, j, bad_blk_cnt = 0, phys_erase_shift;
-	int chipnr, realpage, col0_data, col0_oob, valid_page_num = 1, internal_chip;
+	int realpage, col0_data=0, col0_oob=0, valid_page_num = 1, internal_chip;
 	int col_data_sandisk[6], bad_sandisk_flag=0; //this for sandisk
 
 	printk("aml_nand_scan_bbt:\n");
@@ -5801,7 +5803,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			if(por_cfg&4){
 				if(por_cfg&1){
 					printk("%s detect without RB pin here\n", __func__);
-					aml_chip->rb_enable[0] = NULL;
+					aml_chip->rb_enable[0] = (unsigned)NULL;
 				}
 				else{
 					printk("%s detect with RB pin here\n", __func__);
@@ -5809,7 +5811,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			}
 			else{
 				printk("%s power config ERROR and force using NO RB mode here\n", __func__);
-				aml_chip->rb_enable[0] = NULL;
+				aml_chip->rb_enable[0] = (unsigned)NULL;
 			}
 		}
 
@@ -6051,4 +6053,3 @@ exit_error:
 #define DRV_VERSION	"1.1"
 #define DRV_AUTHOR	"xiaojun_yoyo"
 #define DRV_DESC	"Amlogic nand flash host controll driver for M1"
-

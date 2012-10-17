@@ -188,7 +188,7 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
 {
     unsigned long offset;
     unsigned long nWords = nBytes / sizeof(datum);
-    int i;
+//	int i;
     datum pattern;
     datum antipattern;
     serial_puts("\nTotal Size ");serial_put_dword(nBytes);serial_putc('\n');

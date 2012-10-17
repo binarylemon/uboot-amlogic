@@ -130,7 +130,7 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 
 int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int ret = 0 ;
+//	int ret = 0 ;
 	char buf[EFUSE_BYTES];
 	
 	if(argc < 2){
