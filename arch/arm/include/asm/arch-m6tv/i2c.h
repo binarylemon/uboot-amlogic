@@ -5,8 +5,6 @@
 #define __AML_MACH_I2C__
 
 #include <asm/arch/io.h>
-#include <asm/arch/ao_reg.h>
-
 
 /**
  * struct i2c_msg - an I2C transaction segment beginning with START

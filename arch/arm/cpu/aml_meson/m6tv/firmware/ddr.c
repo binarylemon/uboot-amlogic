@@ -1,32 +1,12 @@
-
 #include <asm/arch/io.h>
 #include <asm/arch/uart.h>
-#include <asm/arch/timing.h>
-#define DDR_RSLR_LEN 3
-#define DDR_RDGR_LEN 4
-#define DDR_MAX_WIN_LEN (DDR_RSLR_LEN*DDR_RDGR_LEN)
-#define PHYS_MEMORY_START 0x80000000
 
-#define DDR_RANK  3   // 2'b11 means 2 rank.
-#define DDR_LANE  2
 
+//#define PHYS_MEMORY_START 0x80000000
 #define RESET_MMC_FOR_DTU_TEST
-
-#define NOP_CMD  0
-#define PREA_CMD  1
-#define REF_CMD  2
-#define MRS_CMD  3
-#define ZQ_SHORT_CMD 4
-#define ZQ_LONG_CMD  5
-#define SFT_RESET_CMD 6
-
 
 static unsigned ddr_start_again=1;
 
-#define APB_Wr(addr, data) WRITE_APB_REG(addr,data)
-#define APB_Rd(addr) READ_APB_REG(addr)
-
-//#include "ddr_init_sw.c"
 #include "ddr_init_hw.c"
 #include "ddr_init_pctl.c"
 
