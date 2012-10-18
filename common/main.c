@@ -48,6 +48,15 @@
 DECLARE_GLOBAL_DATA_PTR;
 #endif
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+#ifdef CONFIG_AW_AXP20
+#include <axp-mfd.h>
+#endif
+#ifdef CONFIG_AML_PMU
+#include <amlogic/aml_pmu.h>
+#endif
+#endif
+
 /*
  * Board-specific Platform code can reimplement show_boot_progress () if needed
  */
@@ -212,6 +221,9 @@ static int menukey = 0;
 static __inline__ int abortboot(int bootdelay)
 {
 	int abort = 0;
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+    char key;
+#endif
 
 #ifdef CONFIG_MENUPROMPT
 	printf(CONFIG_MENUPROMPT);
@@ -244,8 +256,15 @@ static __inline__ int abortboot(int bootdelay)
 				bootdelay = 0;	/* no more delay	*/
 # ifdef CONFIG_MENUKEY
 				menukey = getc();
+            #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+                key = menukey;
+            #endif
 # else
-				(void) getc();  /* consume input	*/
+            #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+				key = getc();  /* consume input	*/
+            #else
+                getc();
+            #endif
 # endif
 				break;
 			}
@@ -260,6 +279,18 @@ static __inline__ int abortboot(int bootdelay)
 #ifdef CONFIG_SILENT_CONSOLE
 	if (abort)
 		gd->flags &= ~GD_FLG_SILENT;
+#endif
+
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+    if (key == 'b' || key == 'B') {
+        printf("\nNow will go to battery calibrate mode\n");
+    #ifdef CONFIG_AW_AXP20
+        axp_battery_calibrate();
+    #endif
+    #ifdef CONFIG_AML_PMU
+        aml_battery_calibrate();
+    #endif
+    }
 #endif
 
 	return abort;

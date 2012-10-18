@@ -476,12 +476,13 @@ unsigned char i2c_pmu_read_b(unsigned int reg)
     return val;
 }
 
-unsigned short i2c_pmu_read_w(unsigned int reg, unsigned short val)
+unsigned short i2c_pmu_read_w(unsigned int reg)
 {
 	unsigned char buff[2];
+    unsigned short val;
 	buff[0] = reg & 0xff;
 	buff[1] = (reg >> 8) & 0x0f;
-
+    
     struct i2c_msg msgs[] = {
         {
             .addr = I2C_AML_PMU_ADDR,
@@ -528,7 +529,7 @@ void init_I2C()
 	//config	  
  	//v=20; //(32000/speed) >>2) speed:400K
 #ifdef CONFIG_AML_PMU
-	v = 400; //low speed 
+	v = 40; //low speed 
 #else
 	v = 12; //for saving time cost
 #endif
@@ -547,8 +548,8 @@ void init_I2C()
 	if(v != 0x5F )
 #endif
 #ifdef CONFIG_AML_PMU
-	v = i2c_axp202_read(0x30);
-	if(v != 0x78 )
+	v = i2c_pmu_read_b(0x0086);
+	if(v != 0x4d)
 #endif
 		f_serial_puts("Error: I2C init failed!\n");
 }
@@ -981,6 +982,348 @@ void reg6_on()
 }
 #endif //CONFIG_ACT8942QJ233_PMU
 
+#ifdef CONFIG_AML_PMU
+/*
+ * Amlogic PMU suspend/resume interface
+ */
+#define OTP_BOOST_CONTROL_ADDR      0x19
+#define GEN_CNTL1_ADDR              0x81
+#define PWR_UP_SW_ENABLE_ADDR       0x82
+#define PWR_DN_SW_ENABLE_ADDR       0x84
+#define SP_CHARGER_STATUS2_ADDR     0xE0
+#define GPIO_OUT_CTRL_ADDR          0xC3
+
+#define AML_PMU_DCDC1               0
+#define AML_PMU_DCDC2               1
+#define AML_PMU_DCDC3               2
+#define AML_PMU_BOOST               3
+#define AML_PMU_LDO1                4
+#define AML_PMU_LDO2                5
+#define AML_PMU_LDO3                6
+#define AML_PMU_LDO4                7
+#define AML_PMU_LDO5                8
+
+unsigned char gpio_out = 0;
+
+void power_off_avdd25(void)
+{
+    unsigned short sw_power_down = (1 << 7);                    // ldo5
+    /*
+     * Check with Harry, registers of PWR_DN_SW_ENABLE_ADDR & PWR_UP_SW_ENABLE_ADDR
+     * are puls bits, read always return 0
+     */
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+	udelay(100);
+}
+
+void power_on_avdd25(void)
+{
+    unsigned short sw_power_up = (1 << 7);                      // ldo5
+	
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+	udelay(100);
+}
+
+void power_off_avdd30(void)
+{
+    unsigned short sw_power_down = (1 << 5);                    // ldo3
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_avdd30(void)
+{
+    unsigned short sw_power_up = (1 << 5);                      // ldo3
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_avdd18(void)
+{
+    unsigned short sw_power_down = (1 << 6);                    // ldo4
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_avdd18(void)
+{
+    unsigned short sw_power_up = (1 << 6);                      // ldo4
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_vcc33(void)
+{
+    unsigned short sw_power_down = (1 << 3);                    // dcdc3 
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_vcc33(void)
+{
+    unsigned short sw_power_up = (1 << 3);                      // dcdc3 
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_vcc50(void)
+{
+    unsigned short sw_power_down = (1 << 0);                    // Boost DCDC
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_vcc50(void)
+{
+    unsigned short sw_power_up = (1 << 0);                      // Boost DCDC
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_ddr15(void)
+{
+    unsigned short sw_power_down = (1 << 2);                    // dcdc2 
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_ddr15(void)
+{
+    unsigned short sw_power_up = (1 << 2);                      // dcdc2 
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_vcck12(void)
+{
+    unsigned short sw_power_down = (1 << 11);                   // EXT_DCDC_EN 
+
+    i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, sw_power_down);
+    udelay(100);
+}
+
+void power_on_vcck12(void)
+{
+    unsigned short sw_power_up = (1 << 11);                     // EXT_DCDC_EN
+
+    i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, sw_power_up);
+    udelay(100);
+}
+
+void power_off_3gvcc()
+{
+    // nothing todo, not used right now
+}
+
+void power_on_3gvcc()
+{
+    // nothing todo, not used right now
+}
+
+void power_off_hdmi3v()
+{
+    gpio_out  = i2c_pmu_read_b(GPIO_OUT_CTRL_ADDR);
+    gpio_out |= (1 << 2);                                       // clear GPIO3
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+void power_on_hdmi3v()
+{
+    gpio_out &= ~(1 << 2);                                      // set GPIO3
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+void power_off_vccx2()
+{
+    gpio_out  = i2c_pmu_read_b(GPIO_OUT_CTRL_ADDR);
+    gpio_out |= (1 << 1);                                       // clear GPIO2
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+void power_on_vccx2()
+{
+    gpio_out &= ~(1 << 1);                                      // set GPIO2    
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+void power_off_vccx3()
+{
+    gpio_out  = i2c_pmu_read_b(GPIO_OUT_CTRL_ADDR);
+    gpio_out |= (1 << 0);                                       // clear GPIO1
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+void power_on_vccx3()
+{
+    gpio_out &= ~(1 << 1);                                      // set GPIO1    
+    i2c_pmu_write_b(GPIO_OUT_CTRL_ADDR, gpio_out);
+    udelay(100);
+}
+
+unsigned char get_charging_state()
+{
+    unsigned char status;
+
+    status = i2c_pmu_read_b(SP_CHARGER_STATUS2_ADDR);
+    if (status & 0x04) {
+        return 1;                                               // charging    
+    } else {
+        return 0;                                               // not charging
+    }
+}
+
+void shut_down()
+{
+    unsigned char sw_shut_down = (1 << 5);                      // PMU move to OFF state
+    i2c_pmu_write_b(GEN_CNTL1_ADDR, sw_shut_down);
+}
+
+void cut_usb_out(void)                                          // cut usb_power out path
+{
+    i2c_pmu_write_b(OTP_BOOST_CONTROL_ADDR, 0x10);              // disable boost output 
+    udelay(100);
+}
+
+static unsigned int dcdc12_voltage_table[] = {                  // voltage table of DCDC1 & DCDC2
+    2100, 2080, 2060, 2040, 2020, 2000, 1980, 1960,
+    1940, 1920, 1900, 1880, 1860, 1840, 1820, 1800,
+    1780, 1760, 1740, 1720, 1700, 1680, 1660, 1640,
+    1620, 1600, 1580, 1560, 1540, 1520, 1500, 1480,
+    1460, 1440, 1420, 1400, 1380, 1360, 1340, 1320,
+    1300, 1280, 1260, 1240, 1220, 1200, 1180, 1160,
+    1140, 1120, 1100, 1080, 1060, 1040, 1020, 1000,
+     980,  960,  940,  920,  900,  880,  860,  840
+};
+
+int find_idx_by_voltage(int voltage)
+{
+    int i;
+
+    /*
+     * under this section divide(/ or %) can not be used, may cause exception
+     */
+    for (i = 0; i < 64; i++) {
+        if (voltage >= dcdc12_voltage_table[i]) {
+            break;    
+        }
+    }
+    if (voltage == dcdc12_voltage_table[i]) {
+        return i;    
+    }
+    return i - 1;
+}
+
+void aml_pmu_set_voltage(int dcdc, int voltage)
+{
+    int idx_to = 0xff;
+    int idx_cur;
+    unsigned char val;
+    unsigned char addr;
+    if (dcdc < 0 || dcdc > AML_PMU_DCDC2 || voltage > 2100 || voltage < 840) {
+        return ;                                                // current only support DCDC1&2 voltage adjust
+    }
+    if (dcdc == AML_PMU_DCDC1) {
+        addr = 0x2f; 
+    } else if (dcdc = AML_PMU_DCDC2) {
+        addr = 0x38;    
+    }
+    val = i2c_pmu_read_b(addr);
+    idx_cur = ((val & 0xfc) >> 2);
+    idx_to = find_idx_by_voltage(voltage);
+#if 0                                                           // for debug
+	f_serial_puts("voltage set from 0x");
+    wait_uart_empty();
+	serial_put_hex(idx_cur, 8);
+    wait_uart_empty();
+    f_serial_puts(" to 0x");
+    wait_uart_empty();
+	serial_put_hex(idx_to, 8);
+    wait_uart_empty();
+    f_serial_puts("\n");
+    wait_uart_empty();
+#endif
+    while (idx_cur != idx_to) {
+        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
+            idx_cur++;    
+        } else {
+            idx_cur--;
+        }
+        val &= ~0xfc;
+        val |= (idx_cur << 2);
+        i2c_pmu_write_b(addr, val);
+        udelay(100);                                            // atleast delay 100uS
+    }
+}
+
+void aml_pmu_set_pfm(int dcdc, int en)
+{
+    unsigned char val;
+    if (dcdc < 0 || dcdc > AML_PMU_DCDC3 || en > 1 || en < 0) {
+        return ;    
+    }
+    switch(dcdc) {
+    case AML_PMU_DCDC1:
+        val = i2c_pmu_read_b(0x0036);
+        if (en) {
+            val |=  (1 << 4);                                   // pfm mode
+        } else {
+            val &= ~(1 << 4);                                   // pwm mode
+        }
+        i2c_pmu_write_b(0x0036, val);
+        break;
+
+    case AML_PMU_DCDC2:
+        val = i2c_pmu_read_b(0x003f);
+        if (en) {
+            val |=  (1 << 4);    
+        } else {
+            val &= ~(1 << 4);   
+        }
+        i2c_pmu_write_b(0x003f, val);
+        break;
+
+    case AML_PMU_DCDC3:
+        val = i2c_pmu_read_b(0x0049);
+        if (en) {
+            val |=  (1 << 7);    
+        } else {
+            val &= ~(1 << 7);   
+        }
+        i2c_pmu_write_b(0x0049, val);
+        break;
+
+    case AML_PMU_BOOST:
+        val = i2c_pmu_read_b(0x0028);
+        if (en) {
+            val |=  (1 << 0);    
+        } else {
+            val &= ~(1 << 0);   
+        }
+        i2c_pmu_write_b(0x0028, val);
+        break;
+
+    default:
+        break;
+    }
+    udelay(100);
+}
+#endif          /* CONFIG_AML_PMU */
+
 //Separate PMU from arc_pwr.c 
 //todo...
 inline void power_off_at_24M()
@@ -991,6 +1334,20 @@ inline void power_off_at_24M()
 #ifdef POWER_OFF_AVDD33
 	power_off_avdd33();
 #endif
+
+#ifdef CONFIG_AML_PMU
+    cut_usb_out();                                  // cut usb boost out path, make usb as input
+    aml_pmu_set_voltage(AML_PMU_DCDC1, 960);        // DCDC1 set to 960mV, pfm mode
+    aml_pmu_set_pfm(AML_PMU_DCDC1, 1);
+    aml_pmu_set_voltage(AML_PMU_DCDC2, 1420);       // DCDC2 set to 1420mV, pfm mode
+    aml_pmu_set_pfm(AML_PMU_DCDC2, 1);
+    power_off_vcc50();
+    power_off_vccx2();
+    power_off_vccx3();
+    power_off_vcc33();
+    power_off_avdd30();
+    power_off_avdd18();
+#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_on_at_24M()
@@ -1001,6 +1358,19 @@ inline void power_on_at_24M()
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
+
+#ifdef CONFIG_AML_PMU
+    power_on_avdd18();
+    power_on_avdd30();
+    power_on_vccx3();
+    power_on_vccx2();
+    udelay(1000);               					// wait stable before applay power to boost 
+    power_on_vcc50();
+    aml_pmu_set_voltage(AML_PMU_DCDC1, 1120);       // DCDC1 set to 1120mV, pwm mode
+    aml_pmu_set_pfm(AML_PMU_DCDC1, 0);
+    aml_pmu_set_voltage(AML_PMU_DCDC2, 1520);       // DCDC2 set to 1520mV, pwm mode
+    aml_pmu_set_pfm(AML_PMU_DCDC2, 0);
+#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_off_at_32K_1()
@@ -1011,6 +1381,11 @@ inline void power_off_at_32K_1()
 #ifdef POWER_OFF_VDDIO
 	power_off_vddio();
 #endif
+
+#ifdef CONFIG_AML_PMU
+    power_off_avdd25();
+    power_off_vcck12();
+#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_on_at_32k_1()//need match the power_off_at_32k
@@ -1021,6 +1396,12 @@ inline void power_on_at_32k_1()//need match the power_off_at_32k
 #ifdef POWER_OFF_AVDD25
 	power_on_avdd25();
 #endif
+
+#ifdef CONFIG_AML_PMU
+    power_on_vcc33();               // vcc3 must be open before core power
+    power_on_vcck12();
+    power_on_avdd25();
+#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_off_at_32K_2()//If has nothing to do, just let null
@@ -1028,6 +1409,10 @@ inline void power_off_at_32K_2()//If has nothing to do, just let null
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(0);
 #endif
+
+#ifdef CONFIG_AML_PMU
+    // add other code here
+#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_on_at_32k_2()//need match the power_off_at_32k
@@ -1035,5 +1420,9 @@ inline void power_on_at_32k_2()//need match the power_off_at_32k
 #ifdef DCDC_SWITCH_PWM
 	dc_dc_pwm_switch(1);
 #endif
+
+#ifdef CONFIG_AML_PMU
+    // add other code here
+#endif /* CONFIG_AML_PMU */
 }
 

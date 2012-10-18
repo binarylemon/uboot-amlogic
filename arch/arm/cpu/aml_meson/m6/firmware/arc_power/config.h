@@ -10,6 +10,10 @@
 #define CONFIG_BAUDRATE 115200
 #define CONFIG_CRYSTAL_MHZ 24
 
+/*
+ * PMU device select, CONFIG_AML_PMU and CONFIG_AW_AXP20 should not be both existed
+ */
+//#define CONFIG_AML_PMU 
 #define CONFIG_AW_AXP20
 
 #ifdef CONFIG_AW_AXP20
@@ -22,6 +26,9 @@
 #define CONFIG_LDO4_VOLTAGE	3300
 #endif
 
+#if defined(CONFIG_AML_PMU) && defined(CONFIG_AW_AXP20)
+#error You should only select one of CONFIG_AML_PMU and CONFIG_AW_AXP20
+#endif
 
 #ifndef __ASSEMBLY__
 void serial_init_with_clk(unsigned clk);

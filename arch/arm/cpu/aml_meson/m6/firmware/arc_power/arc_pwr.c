@@ -146,8 +146,9 @@ void disp_code()
 #endif
 }
 
+#ifdef CONFIG_AW_AXP20
 #define CHECK_ALL_REGULATORS
-
+#endif
 
 
 static void enable_iso_ee()
