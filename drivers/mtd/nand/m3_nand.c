@@ -424,7 +424,10 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);	
 
 	if(aml_chip->ran_mode){
-	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		if(aml_chip->plane_num == 2)
+	      NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		else		
+				NFC_SEND_CMD_SEED(aml_chip->page_addr);
 	}
 	if(!bch_mode)
 		NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, len);
@@ -465,7 +468,10 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	NFC_SEND_CMD_AIL((int)aml_chip->user_info_buf);
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);
 	if(aml_chip->ran_mode){
-	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		if(aml_chip->plane_num == 2)
+	      NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		else		
+				NFC_SEND_CMD_SEED(aml_chip->page_addr);
 	}
 
 	if(bch_mode == NAND_ECC_NONE)
