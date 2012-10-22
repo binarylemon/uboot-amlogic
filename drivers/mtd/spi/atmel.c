@@ -97,7 +97,7 @@ static const struct atmel_spi_flash_params atmel_spi_flash_table[] = {
 		.idcode1		= 0x27,
 		.l2_page_size		= 9,
 		.pages_per_block	= 8,
-		.blocks_per_sector	= 64,
+		.blocks_per_sector	= 16,
 		.nr_sectors		= 64,
 		.name			= "AT45DB321D",
 	},
