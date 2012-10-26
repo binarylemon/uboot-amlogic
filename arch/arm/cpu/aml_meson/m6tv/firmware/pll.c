@@ -13,21 +13,70 @@
 	#define PLL_TIMES 4
 	int pll_times=0;
 #endif
-unsigned long    clk_util_clk_msr(unsigned long   clk_mux);
 
-static void wait_pll(unsigned clk,unsigned dest)
+unsigned long    clk_util_clk_msr(unsigned long   clk_mux)
 {
+
+	unsigned long   measured_val;
+	unsigned long   uS_gate_time=64;
+	unsigned long   dummy_rd;
+
+	//Clear all msr first
+	writel(0,P_MSR_CLK_REG0);
+
+	//Set the measurement gate to 64uS
+	setbits_le32(P_MSR_CLK_REG0,(uS_gate_time-1));
+
+	setbits_le32(P_MSR_CLK_REG0,(clk_mux<<20) |(1<<19)|(1<<16));
+
+	//dummy read
+	{ dummy_rd = readl(P_MSR_CLK_REG0); }
+
+	//Wait for the measurement to be done
+	while( (readl(P_MSR_CLK_REG0) & (1 << 31)) ) {}
+
+	//Disable measuring
+	clrbits_le32(P_MSR_CLK_REG0, 1<<16 );
+
+	measured_val = readl(P_MSR_CLK_REG2)&0x000FFFFF;
+	    
+    //Return Mhz
+    return (measured_val>>6);
+}
+
+
+static void wait_clock(unsigned clk,unsigned dest)
+{
+	char * pszCLK[] = {
+		NULL,NULL,NULL,"DDR PLL","USB0 CLK","USB1 CLK",
+		"VID PLL","CLK81",NULL,NULL,NULL,"ETH RMII","VID2 PLL",
+		};
     unsigned cur;
     do{
         cur=clk_util_clk_msr(clk);
-        serial_puts("wait pll-0x");
-        serial_put_hex(clk,8);
-        serial_puts(" target is ");
-        serial_put_hex(dest,16);
-        serial_puts(" now it is ");
-        serial_put_dword(cur);
+		serial_puts("\nSet [");
+		if(clk < (sizeof(pszCLK)/sizeof(pszCLK[0])) &&
+			pszCLK[clk])
+			serial_puts(pszCLK[clk]);
+		else
+			serial_puts("N/A");
+		
+		serial_puts("] to ");
+        serial_put_dec(dest);
+        serial_puts("MHz now it is ");
+
+		//tolerance +/- 1
+		if((cur == dest-1) || (cur == dest+1))
+			serial_put_dec(dest);
+		else
+			serial_put_dec(cur);
+		
+		serial_puts("MHz");
         __udelay(100);
     }while(cur<dest-1 || cur >dest+1);
+
+	serial_puts(" --> OK!\n");
+	
 }
 
 SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
@@ -64,6 +113,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
 
 		__udelay(500); //wait 100us for PLL lock
+		
 #ifdef CONFIG_ENABLE_WATCHDOG
 		pll_times++;
 		serial_puts("pll_times:");
@@ -146,34 +196,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
  	__udelay(100);
 
 }
-unsigned long    clk_util_clk_msr(unsigned long   clk_mux)
-{
 
-    unsigned long   measured_val;
-    unsigned long   uS_gate_time=64;
-    unsigned long dummy_rd;
-    writel(0,P_MSR_CLK_REG0);
-    // Set the measurement gate to 64uS
-    clrsetbits_le32(P_MSR_CLK_REG0,0xffff,(uS_gate_time-1));
-    // Disable continuous measurement
-    // disable interrupts
-    clrbits_le32(P_MSR_CLK_REG0,(1 << 18) | (1 << 17));
-//    Wr(MSR_CLK_REG0, (Rd(MSR_CLK_REG0) & ~((1 << 18) | (1 << 17))) );
-    clrsetbits_le32(P_MSR_CLK_REG0,
-        (0xf << 20)|(1<<19)|(1<<16),
-        (clk_mux<<20) |(1<<19)|(1<<16));
-    { dummy_rd = readl(P_MSR_CLK_REG0); }
-    // Wait for the measurement to be done
-    while( (readl(P_MSR_CLK_REG0) & (1 << 31)) ) {}
-    // disable measuring
-    clrbits_le32(P_MSR_CLK_REG0, 1<<16 );
 
-    measured_val = readl(P_MSR_CLK_REG2)&0x000FFFFF;
-    // Return value in Hz*measured_val
-    // Return Mhz
-    return (measured_val>>6);
-    // Return value in Hz*measured_val
-}
 
 STATIC_PREFIX void pll_clk_list(void)
 {

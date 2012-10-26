@@ -60,9 +60,9 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     writel(0xffffffff, P_MMC_SOFT_RST1);
 	
 #ifndef CONFIG_CMD_DDR_TEST
-	wait_pll(3,timing_reg->ddr_clk);
+	wait_clock(3,timing_reg->ddr_clk);
 #endif
-    serial_puts("set ddr clock ok!\n");
+
 }
 
 #ifdef DDR_ADDRESS_TEST_FOR_DEBUG

@@ -108,6 +108,23 @@ void serial_put_hex(unsigned int data,unsigned bitlen)
     }
 
 }
+
+SPL_STATIC_FUNC void serial_put_dec(unsigned int data)
+{
+	char szTxt[10];
+	szTxt[0] = 0x30;
+	int i = 0;
+	while(data)
+	{
+		szTxt[i++] = (data % 10) + 0x30;
+		data = data / 10;
+	}
+
+	for(--i;i >=0;--i)	
+		serial_putc(szTxt[i]);
+}
+
+
 #define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_putc('\n')
 #define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_putc('\n')
 void do_exception(unsigned reason,unsigned lr)
