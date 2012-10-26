@@ -136,7 +136,7 @@
 	"outputtemp=720p\0" \
 	"cvbsenable=false\0" \
 	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run switch_bootmode\0" \
-	"upgrade_check=if itest ${upgrade_step} == 1; then defenv;setenv upgrade_step 2; save; fi\0" \
+	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
 	"nandargs=run cvbscheck;nand read aml_logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
