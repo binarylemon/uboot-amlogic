@@ -251,6 +251,8 @@ LIBS += drivers/efuse/libefuse.o
 ifdef CONFIG_SARADC
 LIBS += drivers/adc/libadc.o
 endif
+LIBS += drivers/securitkey/libsecuritykey.o
+
 LIBS += common/libcommon.o
 
 ifdef CONFIG_SUPPORT_CUSOTMER_BOARD

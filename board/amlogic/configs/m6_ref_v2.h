@@ -7,6 +7,10 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
+#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#endif
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1

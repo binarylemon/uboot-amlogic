@@ -45,7 +45,7 @@ COBJS-$(CONFIG_CMD_BOOTM) += cmd_bootm.o
 COBJS-y += cmd_help.o
 COBJS-y += cmd_nvedit.o
 COBJS-y += cmd_version.o
-
+//COBJS-y += cmd_tmp.o
 # environment
 COBJS-y += env_common.o
 COBJS-$(CONFIG_ENV_IS_IN_DATAFLASH) += env_dataflash.o
@@ -64,7 +64,7 @@ COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
-
+COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
 # command
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
 COBJS-$(CONFIG_CMD_AUTOSCRIPT) += cmd_autoscript.o

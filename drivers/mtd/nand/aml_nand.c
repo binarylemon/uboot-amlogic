@@ -1661,7 +1661,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	u8 part_num = 0;
 	loff_t offset;
     loff_t adjust_offset = 0;
-	uint64_t mini_part_size = ((mtd->erasesize > NAND_MINI_PART_SIZE) ? mtd->erasesize : NAND_MINI_PART_SIZE);
+	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
 	parts = plat->platform_nand_data.chip.partitions;
@@ -1691,7 +1691,12 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 			mini_part_blk_num = 2;
 		else
 			mini_part_blk_num = (NAND_MINI_PART_SIZE >> phys_erase_shift);
-
+#ifdef CONFIG_AML_NAND_KEY
+		if ((NAND_MINIKEY_PART_SIZE / mtd->erasesize) < NAND_MINIKEY_PART_BLOCKNUM)
+			mini_part_blk_num += NAND_MINIKEY_PART_BLOCKNUM; //for nand key
+		else
+			mini_part_blk_num += (NAND_MINIKEY_PART_SIZE >> phys_erase_shift);
+#endif
 		start_blk = 0;
 		do {
 			offset = adjust_offset + start_blk * mtd->erasesize;
@@ -5096,13 +5101,6 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 	env_t *env_ptr;
 	int error = 0, start_blk, total_blk, i, j, nr, phys_erase_shift;
 	loff_t offset;
-#ifdef CONFIG_AML_NAND_KEY
-	printk("###########################################\n");
-	printk("add new member meson_key in nand bbt info!\n");
-	printk("you should enable nand_key in kernel in menuconfig!\n");
-	printk("disable nand_key in uboot and kernel if you don't use it!\n");
-	printk("###########################################\n");
-#endif
 	error = aml_nand_env_init(mtd);
 	if (error)
 		return error;
@@ -5221,14 +5219,6 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 					}
 				}
 			}
-#ifdef CONFIG_AML_NAND_KEY
-			aml_menson_key = &nand_bbt_info->aml_mensonkey;
-			if(!memcmp(aml_menson_key->key_magic_name, KEY_MAGIC_NAME, 4))
-				printk("read key ok!\n");
-			else{
-				printk("there is no key in nand.\n");
-			}
-#endif
 			memcpy((unsigned char *)aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, (unsigned char *)nand_bbt_info, sizeof(struct aml_nand_bbt_info));
 		}
 	}
@@ -6012,6 +6002,11 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		memset(aml_chip->block_status, 0xff, (mtd->size >> phys_erase_shift));
 
 		err = aml_nand_env_check(mtd);
+
+#ifdef CONFIG_AML_NAND_KEY
+		extern int aml_key_init(struct aml_nand_chip *aml_chip);
+		aml_key_init(aml_chip);
+#endif
 		if (err)
 			printk("invalid nand env\n");
 #ifdef NEW_NAND_SUPPORT
@@ -6019,6 +6014,8 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			aml_chip->new_nand_info.read_rety_info.save_default_value(mtd);
 		}
 #endif
+
+		
 	}
 
 	if (aml_nand_add_partition(aml_chip) != 0) {
