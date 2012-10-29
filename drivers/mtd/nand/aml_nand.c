@@ -6002,13 +6002,14 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		memset(aml_chip->block_status, 0xff, (mtd->size >> phys_erase_shift));
 
 		err = aml_nand_env_check(mtd);
-
-#ifdef CONFIG_AML_NAND_KEY
-		extern int aml_key_init(struct aml_nand_chip *aml_chip);
-		aml_key_init(aml_chip);
-#endif
 		if (err)
 			printk("invalid nand env\n");
+#ifdef CONFIG_AML_NAND_KEY
+		extern int aml_key_init(struct aml_nand_chip *aml_chip);
+		err=aml_key_init(aml_chip);
+		if(err)
+			printk("aml key init error");
+#endif		
 #ifdef NEW_NAND_SUPPORT
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10) && (aml_chip->new_nand_info.read_rety_info.default_flag == 0)){
 			aml_chip->new_nand_info.read_rety_info.save_default_value(mtd);

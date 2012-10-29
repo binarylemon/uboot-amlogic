@@ -16,7 +16,9 @@
 
 
 
-
+#define debug(fmt,args...) do { printk("[DEBUG]: FILE:%s:%d, FUNC:%s--- "fmt"\n",\
+                                                     __FILE__,__LINE__,__func__,## args);} \
+                                         while (0)
 #define NAND_KEY_RD_ERR         2
 #define NAND_KEY_CONFIG_ERR     3
 
@@ -501,7 +503,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	if (data_buf == NULL)
 		return -ENOMEM;
 
-	aml_chip->aml_nandkey_info = kzalloc(sizeof(struct aml_nandenv_info_t), GFP_KERNEL);
+	aml_chip->aml_nandkey_info = kzalloc(sizeof(struct aml_nandkey_info_t), GFP_KERNEL);
 	if (aml_chip->aml_nandkey_info == NULL)
 		return -ENOMEM;
 
@@ -561,6 +563,10 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 			{
 				printk("bad block too much,%s\n",__func__);
 				return -ENOMEM;
+			}
+			if(key_blk<max_key_blk){
+			aml_chip->aml_nandkey_info->end_block++;
+			printk("end_block=%d\n",aml_chip->aml_nandkey_info->end_block);
 			}
 			continue;
 		}

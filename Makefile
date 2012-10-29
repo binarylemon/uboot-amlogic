@@ -254,7 +254,7 @@ endif
 LIBS += drivers/securitkey/libsecuritykey.o
 
 LIBS += common/libcommon.o
-
+LIBS += drivers/secure/lib_secure.o
 ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
 LIBS += customer/common/lib_customer_cmd.o
 LIBS += customer/drivers/lib_customer_drivers.o
@@ -365,22 +365,22 @@ $(obj)u-boot.hex:	$(obj)u-boot
 
 $(obj)u-boot.srec:	$(obj)u-boot
 		$(OBJCOPY) -O srec $< $@
-		
-		
+
+
 ifneq ($(CONFIG_AML_MESON),y)
 $(obj)u-boot.bin:	$(obj)u-boot
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-		$(BOARD_SIZE_CHECK)		
+		$(BOARD_SIZE_CHECK)
 else   #ELSE CONFIG_AML_MESON
 
 #################
 ifneq ($(CONFIG_SELF_COMPRESS),y)
-$(obj)u-boot.bin:	$(obj)u-boot-orig.bin  $(obj)firmware.bin 
+$(obj)u-boot.bin:	$(obj)u-boot-orig.bin  $(obj)firmware.bin
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 $(obj)u-boot-orig.bin:	$(obj)u-boot
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-	$(BOARD_SIZE_CHECK)			
-else  
+	$(BOARD_SIZE_CHECK)
+else
 ###################
 ifneq ($(CONFIG_UCL),y)
 $(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
@@ -395,7 +395,7 @@ endif   # end CONFIG_UCL
 
 $(obj)u-boot-orig.bin:	$(obj)u-boot
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-	$(BOARD_SIZE_CHECK)			
+	$(BOARD_SIZE_CHECK)
 
 ifneq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
@@ -406,11 +406,11 @@ else
 	$(obj)tools/convert --soc $(SOC) -s $(obj)firmware.enc -i $< -o $@
 	@rm -fr $(obj)firmware.enc
 endif
-	
+
 else
 $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
-	
+
 $(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 
@@ -431,13 +431,13 @@ $(obj)u-boot-comp-comp: $(obj)u-boot-comp.bin $(UCL_BOOTLIBS) $(LIBS)  firmware
 			--start-group $(UCL_BOOTLIBS)  $(UCL_LIBS) \
 			--end-group  $(PLATFORM_LIBGCC) \
 			-Map $(obj)u-boot-ucl_a.map -o $@
-			
-endif #end CONFIG_IMPROVE_UCL_DEC	
+
+endif #end CONFIG_IMPROVE_UCL_DEC
 
 endif  #END CONFIG_SELF_COMPRESS
-endif #end CONFIG_AML_MESON		
-		
-		
+endif #end CONFIG_AML_MESON
+
+
 ifeq ($(CONFIG_AML_MESON),y)
 firmware:$(obj)firmware.bin
 .PHONY :	$(obj)firmware.bin libucl
@@ -449,7 +449,7 @@ ifeq ($(CONFIG_M3),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
 else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
@@ -459,7 +459,7 @@ ifeq ($(CONFIG_M6),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
 else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
@@ -469,14 +469,14 @@ ifeq ($(CONFIG_M6TV),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
 else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif #END CONFIG_IMPROVE_UCL_DEC
 else #NOT CONFIG_M6TV
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk 
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ 
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
 endif #END CONFIG_M6TV
 endif #END CONFIG_M6
 endif #END CONFIG_M3
@@ -536,7 +536,7 @@ $(OBJS):	depend
 
 $(LIBS):	depend $(SUBDIRS) $(obj)firmware.bin
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
-		
+
 $(UCL_BOOTLIBS):	$(obj)u-boot-comp.bin depend $(SUBDIRS)
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 
@@ -1184,7 +1184,7 @@ versatile_config	\
 versatileab_config	\
 versatilepb_config :	unconfig
 	@board/armltd/versatile/split_by_variant.sh $@
-	
+
 #########################################################################
 ## Amlogic -- CORTEX A9
 #########################################################################

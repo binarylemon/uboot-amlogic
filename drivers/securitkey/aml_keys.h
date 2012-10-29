@@ -13,7 +13,7 @@
 #include <linux/types.h>
 #include <amlogic/securitykey.h>
 #include <ubi_uboot.h>
-
+#include <asm/types.h>
 
 /***
  * Inner exchanged

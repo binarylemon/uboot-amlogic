@@ -18,7 +18,7 @@ static char secure_device[PATH_MAX];
 
 #define KEYS_V3_MAX_COUNT 4
 #define Keys_V4_MAX_COUNT  32
-#pragma pack(1)
+//#pragma pack(1)
 struct v3_key_storage{
     char name[AML_KEY_NAMELEN];
 #ifdef KEY_NEW_METHOD
@@ -65,7 +65,7 @@ struct v3_key_storage_head storage_head={
 	.version = 1,
 };
 
-#pragma pack()
+//#pragma pack()
 
 static aml_keys_schematic_t version3;
 
@@ -560,8 +560,8 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
 				prov->read(prov,head,headsize,0);
 			}
 			key_item_parse(head);
-			kfree(head);
 		}
+		kfree(head);
 #endif
 #else
         key_schem_print("#load from media!!!\n");
@@ -752,8 +752,8 @@ static aml_keys_schematic_t version3 =
 int v3_keys_init(void)
 {
     int err=0;
-		memset(secure_device,0,sizeof(secure_device));
-		memset(storage_v4,0,sizeof(storage_v4));
+	memset(secure_device,0,sizeof(secure_device));
+	memset(storage_v4,0,sizeof(storage_v4));
     err = aml_keys_register(3,&version3);
     return err;
 }

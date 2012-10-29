@@ -21,9 +21,9 @@
 #include <linux/types.h>
 #include <div64.h>
 #include <linux/err.h>
-char namebuf[18];
-char databuf[16];
-char listkey[16];
+char namebuf[20];
+char databuf[4096];
+char listkey[1024];
 int inited=0;
 extern ssize_t uboot_key_init();
 extern ssize_t uboot_get_keylist(char *keyname);

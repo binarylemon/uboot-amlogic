@@ -324,23 +324,36 @@ static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
     return ret;
 }
 #else
+extern int do_aes_internal(unsigned char bEncryptFlag,unsigned char * pIN, int nINLen, unsigned char *pOUT, int * pOUTLen);
+
 static int aml_key_encrypt(void *dst, uint16_t * dst_len, const void *src,
                            uint16_t src_len)
 {
-	size_t dstlen = src_len;
-	memcpy(dst,src,src_len);
-	* dst_len = (uint16_t)dstlen;
-	return 0;
+	printk("%s,%d\n",__FUNCTION__,__LINE__);
+    int ret=0;
+    size_t srclen = src_len;
+    size_t dstlen = src_len;
+    unsigned char bEncryptFlag = 1;
+    //size_t zero_padding = (0x10 - (src_len & 0x0f));
+    srclen = ((srclen+15)>>4)<<4;
+    //memset(&src[],
+    ret = do_aes_internal(bEncryptFlag,src, srclen, dst,&dstlen);
+    *dst_len = dstlen;
+    return ret;
+	
 }
 static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
                            size_t src_len)
 {
-	size_t dstlen = src_len;
-	memcpy(dst,src,src_len);
-	__udelay(100);
-	*dst_len = (size_t)dstlen;
-	__udelay(100);
-	return 0;
+	printk("%s,%d\n",__FUNCTION__,__LINE__);
+    int ret=0;
+    size_t srclen = src_len;
+    size_t dstlen=src_len;
+    unsigned char bEncryptFlag = 0;
+    srclen = ((srclen+15)>>4)<<4;
+    ret = do_aes_internal(bEncryptFlag,src, src_len, dst,&dstlen);
+    *dst_len = dstlen;
+    return ret;
 }
 #endif
 /**
@@ -522,10 +535,10 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
     }
     if (aml_key_decrypt(dec_data, &size,data, key->storage_size))
         aml_key_show_error_return(-EINVAL, core_show_return);
-	__udelay(100);
+	
+#ifdef CRYPTO_DEPEND_ON_KERENL
     if(size!=key->valid_size)
         aml_key_show_error_return(-EINVAL, core_show_return);
-#ifdef CRYPTO_DEPEND_ON_KERENL
     aml_key_hash(data, dec_data, key->valid_size);
     aml_key_read_hash(key, &data[64]);
     if (memcmp(data, &data[64], 32))
