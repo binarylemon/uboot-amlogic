@@ -339,6 +339,7 @@
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
 #define NAND_FACTORY_BAD					2
+#define	FACTORY_BAD_BLOCK_ERROR  159
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
