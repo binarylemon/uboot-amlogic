@@ -1726,8 +1726,8 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 			if ((temp_parts->size >= mtd->erasesize) || (i == (nr - 1)))
 				mini_part_size = temp_parts->size;
 			temp_parts->offset = adjust_offset;
-			if ((mini_part_size < NAND_SYS_PART_SIZE) && (file_system_part == 0)) {
-
+			//if ((mini_part_size < NAND_SYS_PART_SIZE) && (file_system_part == 0)) {
+			if (i < (nr -1)) {
 				start_blk = 0;
 				do {
 					offset = adjust_offset + start_blk * mtd->erasesize;
@@ -1736,7 +1736,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
                         break;
                     }
 					error = mtd->block_isbad(mtd, offset);
-					if (error) {
+					if (error == FACTORY_BAD_BLOCK_ERROR) {
 						adjust_offset += mtd->erasesize;
 						continue;
 					}
@@ -3388,7 +3388,7 @@ static int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 		}
 		if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD) {
 			printk(" NAND bbt detect factory Bad block at %llx \n", (uint64_t)ofs);
-			return EFAULT;  //159
+			return FACTORY_BAD_BLOCK_ERROR;  //159  EFAULT
 		}
 		else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD) {
 			return 0;
@@ -5450,6 +5450,16 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 							printk("NAND_MFR_HYNIX NAND detect factory Bad block at %llx  and block =%d and chip =%d\n", (uint64_t)addr, start_blk, i);
 							aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000;
 								aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;
+							if ((start_blk % 2) == 0 ){	// if  plane 0 is bad block,just set plane 1 to bad 
+								start_blk+=1;
+								aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk|0x8000;						
+								aml_chip->block_status[start_blk] = NAND_FACTORY_BAD;
+								printk(" plane 0 is bad block,just set plane 1 to bad:\n");
+							}else{
+								aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = (start_blk -1)|0x8000;				
+								aml_chip->block_status[start_blk -1] = NAND_FACTORY_BAD;								
+								printk(" plane 1 is bad block,just set plane 0 to bad:\n");
+							}
 							break;
 							}
 						}
