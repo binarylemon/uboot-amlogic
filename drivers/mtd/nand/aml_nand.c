@@ -2351,7 +2351,7 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 	struct nand_chip *chip = mtd->priv;
 	unsigned pages_per_blk_shift = (chip->phys_erase_shift - chip->page_shift);
 	unsigned vt_page_num, i = 0, j = 0, internal_chipnr = 1, page_addr, valid_page_num;
-
+	unsigned block_addr;
 	vt_page_num = (mtd->writesize / (1 << chip->page_shift));
 	vt_page_num *= (1 << pages_per_blk_shift);
 	if (page % vt_page_num)
@@ -2359,9 +2359,28 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 
 	/* Send commands to erase a block */
 	valid_page_num = (mtd->writesize >> chip->page_shift);
-    if(((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
-         aml_nand_free_valid_env(mtd);
-    }
+
+	block_addr = ((page / valid_page_num) >> pages_per_blk_shift);
+#ifdef CONFIG_AML_NAND_KEY
+		//never erase env_valid_node and aml_nandkey_info blocks if aml_nandkey_info valid.
+		if(aml_chip->aml_nandkey_info->env_valid){
+			if(( block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)
+				||((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr	<= aml_chip->aml_nandkey_info->end_block))){
+					return;
+				}
+		}
+		else{
+			if(block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
+				 aml_nand_free_valid_env(mtd);
+			}
+		}
+			
+#else
+		if(((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
+			 aml_nand_free_valid_env(mtd);
+		}
+#endif
+
 	valid_page_num /= aml_chip->plane_num;
 
 	aml_chip->page_addr = page / valid_page_num;
