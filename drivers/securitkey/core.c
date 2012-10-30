@@ -326,34 +326,64 @@ static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
 #else
 extern int do_aes_internal(unsigned char bEncryptFlag,unsigned char * pIN, int nINLen, unsigned char *pOUT, int * pOUTLen);
 
-static int aml_key_encrypt(void *dst, uint16_t * dst_len, const void *src,
-                           uint16_t src_len)
+static int aml_key_encrypt(void *dst, size_t * dst_len, const void *src,
+                           size_t src_len)
 {
-	printk("%s,%d\n",__FUNCTION__,__LINE__);
-    int ret=0;
-    size_t srclen = src_len;
-    size_t dstlen = src_len;
-    unsigned char bEncryptFlag = 1;
-    //size_t zero_padding = (0x10 - (src_len & 0x0f));
-    srclen = ((srclen+15)>>4)<<4;
-    //memset(&src[],
-    ret = do_aes_internal(bEncryptFlag,src, srclen, dst,&dstlen);
-    *dst_len = dstlen;
-    return ret;
+	
+	int ret=0;
+	int keydatalen,buf_len;
+	char *data;
+	unsigned char bEncryptFlag = 1;
+	size_t dstlen;
+	keydatalen = src_len + 4;
+	buf_len = ((keydatalen+15)>>4)<<4;
+	dstlen = buf_len;
+	
+	data = kzalloc(buf_len, GFP_KERNEL);
+	if(data == NULL){
+		printk("malloc mem fail,%s:%d\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	memset(data,0,buf_len);
+	memcpy(&data[0],&src_len,4);
+	memcpy(&data[4],src,src_len);
+	ret = do_aes_internal(bEncryptFlag,data, buf_len, dst,&dstlen);
+	*dst_len = dstlen;
+	kfree(data);
+	return ret;
 	
 }
 static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
                            size_t src_len)
 {
-	printk("%s,%d\n",__FUNCTION__,__LINE__);
-    int ret=0;
-    size_t srclen = src_len;
-    size_t dstlen=src_len;
-    unsigned char bEncryptFlag = 0;
-    srclen = ((srclen+15)>>4)<<4;
-    ret = do_aes_internal(bEncryptFlag,src, src_len, dst,&dstlen);
-    *dst_len = dstlen;
-    return ret;
+	
+	int ret=0;
+	size_t srclen = src_len;
+	size_t dstlen;
+	size_t keydatalen;
+	char *data;
+	unsigned char bEncryptFlag = 0;
+	srclen = ((src_len+15)>>4)<<4;
+	if(src_len != ((src_len+15)>>4)<<4)
+	{
+		printf("hisun error!\n");
+		return -ENOMEM; 
+	}
+	data = kzalloc(srclen, GFP_KERNEL);
+	if(data == NULL){
+		printk("malloc mem fail,%s:%d\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	dstlen=srclen;
+	memset(data,0,srclen);
+	ret = do_aes_internal(bEncryptFlag,src, srclen, data,&dstlen);
+	memcpy(&keydatalen,data,4);
+	memcpy(dst,&data[4],keydatalen);
+	*dst_len = keydatalen;
+	
+	kfree(data);
+	return ret;
+	
 }
 #endif
 /**
@@ -598,7 +628,7 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     char * data = NULL;
     char * enc_data = NULL;
     char * temp = NULL;
-    uint16_t in_key_len=0;
+    size_t in_key_len=0;
 
     err = count;
 #if 0
@@ -1354,10 +1384,10 @@ ssize_t uboot_key_write(char *keyname, char *keydata)
 	ssize_t ret=0;
 	struct device dev;
 	struct device_attribute attr;
-	ret = key_name_store(&dev, &attr,(const char *)keyname, sizeof(keyname));
+	ret = key_name_store(&dev, &attr,(const char *)keyname, strlen(keyname));
 	if(ret >=0)
 	{
-		ret = key_write_store(&dev, &attr,(const char *)keydata, sizeof(keydata));
+		ret = key_write_store(&dev, &attr,(const char *)keydata, strlen(keydata));
 		if(ret < 0){
 			printk("keydata err,%s:%d\n",__func__,__LINE__);
 		}

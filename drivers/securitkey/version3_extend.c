@@ -18,7 +18,8 @@ static char secure_device[PATH_MAX];
 
 #define KEYS_V3_MAX_COUNT 4
 #define Keys_V4_MAX_COUNT  32
-//#pragma pack(1)
+#pragma pack(1)
+
 struct v3_key_storage{
     char name[AML_KEY_NAMELEN];
 #ifdef KEY_NEW_METHOD
@@ -32,8 +33,9 @@ struct v3_key_storage{
 #endif
 #ifdef KEY_NEW_METHOD
 	uint16_t state;
+	uint16_t checksum;
     char hash[36];
-    int  reserve;
+    char  reserve[60];
     char *content;
 #endif
 };
@@ -45,7 +47,7 @@ struct v3_key_storage storage[KEYS_V3_MAX_COUNT+1];
 
 #if 1
 struct key_head_item{
-	uint64_t position;
+	uint32_t position;
 	uint32_t state;
 	uint32_t reserve;
 };
@@ -54,10 +56,10 @@ struct v3_key_storage_head{
 	uint32_t version;
 	uint32_t inver; //inver = ~version + 1
 	uint32_t tag;
-	uint64_t size; //tatol size
+	uint32_t size; //tatol size
 	uint32_t item_cnt;
-	uint32_t reserve;
 	struct key_head_item item[Keys_V4_MAX_COUNT];
+	char reserve[92];
 };
 #define KEY_HEAD_MARK	"keyexist"
 struct v3_key_storage_head storage_head={
@@ -65,7 +67,7 @@ struct v3_key_storage_head storage_head={
 	.version = 1,
 };
 
-//#pragma pack()
+#pragma pack()
 
 static aml_keys_schematic_t version3;
 
@@ -437,12 +439,15 @@ static int32_t key_item_parse(struct v3_key_storage_head *head)
 	tmp_node = &storage_v4[0];
 	aml_key = version4_keys;
 	item_cnt = head->item_cnt;
+	printk("item_cnt:%d,%s:%d\n",item_cnt,__func__,__LINE__);
 	for(i=0;i<item_cnt;i++){
 		tmp_content_storage = (struct v3_key_storage *)&temp_content[head->item[i].position];
 		if(tmp_node->content == NULL){
 			item_content = kzalloc(tmp_content_storage->storage_size, GFP_KERNEL);
-			if(item_content == NULL)
+			if(item_content == NULL){
+				printk("malloc mem fail,%s:%d\n",__func__,__LINE__);
 				return -ENOMEM;
+			}
 			tmp_node->content = item_content;
 		}
 		tmp_node->slot = tmp_content_storage->slot;
@@ -452,6 +457,7 @@ static int32_t key_item_parse(struct v3_key_storage_head *head)
 		tmp_node->type = tmp_content_storage->type;
 		strcpy(tmp_node->name,tmp_content_storage->name);
 		strcpy(aml_key->name,tmp_content_storage->name);
+		printk("aml_key->name:%s,%s:%d\n",aml_key->name,__func__,__LINE__);
 		memcpy(tmp_node->hash,tmp_content_storage->hash,sizeof(tmp_node->hash));
 		memcpy(tmp_node->content,&temp_content[head->item[i].position + sizeof(struct v3_key_storage)],tmp_node->storage_size);
 		//memcpy(tmp_node,temp_content[head->item[i].position],sizeof(struct v3_key_storage));
@@ -465,12 +471,12 @@ static int32_t key_item_parse(struct v3_key_storage_head *head)
 	return err;
 }
 
-static int32_t key_item_merge(char **mem,uint64_t *size)
+static int32_t key_item_merge(char **mem,uint32_t *size)
 {
 	struct v3_key_storage *tmp_node;
 	struct v3_key_storage_head *key_head,*sv_head;
 	char *room,*temp_content;
-	uint64_t tatol_size=0,position;
+	uint32_t tatol_size=0,position;
 	int i,item_cnt;
 	tatol_size += sizeof(struct v3_key_storage_head);
 	tmp_node = &storage_v4[0];
@@ -486,6 +492,7 @@ static int32_t key_item_merge(char **mem,uint64_t *size)
 		}
 	}
 	item_cnt = i;
+	printk("item_cnt:%d,%s:%d\n",item_cnt,__func__,__LINE__);
 	room = kzalloc(tatol_size, GFP_KERNEL);
 	if(room == NULL){
 		printk("kzalloc mem fail,%s\n",__func__);
@@ -497,8 +504,10 @@ static int32_t key_item_merge(char **mem,uint64_t *size)
 	tmp_node = &storage_v4[0];
 	key_head = &storage_head;
 	for(i=0;i<item_cnt;i++){
+		printk("position:%d,%s:%d\n",position,__func__,__LINE__);
 		key_head->item[i].position = position;
 		memcpy(&temp_content[position],tmp_node,sizeof(struct v3_key_storage));
+		printk("tmp_node->name:%s,starage_size:%d,valid_size:%d,%s:%d\n",tmp_node->name,tmp_node->storage_size,tmp_node->valid_size,__func__,__LINE__);
 		position += sizeof(struct v3_key_storage);
 		memcpy(&temp_content[position],tmp_node->content,tmp_node->storage_size);
 		position += tmp_node->storage_size;
@@ -507,6 +516,12 @@ static int32_t key_item_merge(char **mem,uint64_t *size)
 	key_head->item_cnt = item_cnt;
 	key_head->size = tatol_size;
 	memcpy(sv_head,key_head,sizeof(struct v3_key_storage_head));
+	//sv_head->size = key_head->size;
+	//sv_head->item_cnt = key_head->item_cnt;
+	//sv_head->tag = key_head->tag;
+	//sv_head->version = key_head->version;
+	//sv_head->inver = key_head->inver;
+	//strcpy(sv_head->mark,key_head->mark);
 	*mem = room;
 	*size = tatol_size;
 	return 0;
@@ -517,7 +532,7 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
 	aml_keybox_provider_t * prov= aml_keybox_provider_get(secure_dev);
     int i,j;
     struct v3_key_storage_head *head;
-    uint64_t headsize;
+    uint32_t headsize;
     if (IS_ERR_OR_NULL(prov))
     {
     	printk("device name=%s open error \n",secure_dev);
@@ -631,7 +646,7 @@ static int32_t version3_flush(aml_keys_schematic_t * schematic)
 	aml_keybox_provider_t * prov = aml_keybox_provider_get(secure_device);
 	int i, j,err=0;
 	uint16_t st=0;
-	uint64_t size=0;
+	uint32_t size=0;
 	char *room=NULL;
 
 	if (IS_ERR_OR_NULL(prov)) {

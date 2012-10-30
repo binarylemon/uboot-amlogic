@@ -21,48 +21,42 @@
 #include <linux/types.h>
 #include <div64.h>
 #include <linux/err.h>
-char namebuf[20];
-char databuf[4096];
-char listkey[1024];
 int inited=0;
+int flag=-1;
 extern ssize_t uboot_key_init();
 extern ssize_t uboot_get_keylist(char *keyname);
 extern ssize_t uboot_key_read(char *keyname, char *keydata);
 extern ssize_t uboot_key_write(char *keyname, char *keydata);
 extern int nandkey_provider_register();
 extern int key_set_version(char *device);
+#define debug(fmt,args...) do { printk("[DEBUG]: FILE:%s:%d, FUNC:%s--- "fmt"\n",\
+                                                     __FILE__,__LINE__,__func__,## args);} \
+                                         while (0)
+
 /* ------------------------------------------------------------------------- */
 int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 {
-	int i, ret = 0,error;
+	//
+	int i, ret = 0,error,num=0;
 	char *cmd;
 	char *name;
 	char *data;
+	char namebuf[20];
+	char databuf[4096];
+	char listkey[1024];
+	memset(namebuf,0,sizeof(namebuf));
+	memset(databuf,0,sizeof(databuf));
+	memset(listkey,0,sizeof(listkey));
+	unsigned long addr;
 	/* at least two arguments please */
 	if (argc < 2)
 		goto usage;
 	cmd = argv[1];
+	
 	//first read nand key
-	if(argc==2)
+	if(2==argc)
 	{
-		if(inited){
-			if(!strcmp(cmd,"list"))
-			{
-				error=uboot_get_keylist(listkey);
-				if (error>=0){
-					printk("the key name list are:\n%s",listkey);
-					return 0;
-				}
-				else{
-					printk("key list error!!check the key  name first!!\n");
-					return -1;
-				}
-					
-			}
-		} else if (inited==0)
-		{
 			if (!strcmp(cmd,"nand") ) {
-				
 				error=uboot_key_init();
 				if(error>=0){
 					error=nandkey_provider_register();
@@ -82,24 +76,49 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				printk("invalid device!!\n");
 				return -1;
 			}
-		}
-		else{
-			printk("should be inited first!\n");
-			return -1;
+	}
+	if(3==argc){
+		if(inited){
+			if(!strcmp(cmd,"list"))
+			{
+				addr = (ulong)simple_strtoul(argv[2], NULL, 16);
+				error=uboot_get_keylist(listkey);
+				if (error>=0){
+					printk("the key name list are:\n%s",listkey);
+					for (i=0;i<strlen(listkey);i++){
+						if(listkey[i]==0x0a)
+							num++;
+						}
+					flag=num;
+					*((unsigned int *)addr)=flag;
+					flag=-1;
+					memcpy((char *)(addr+sizeof(int)),listkey,strlen(listkey));
+					return 0;
+				}
+				else{
+					printk("key list error!!check the key  name first!!\n");
+					return -1;
+				}
+			}
 		}
 	}
 	if (inited){
 		printk("%s,%d\n",__func__,__LINE__);
 		if (argc > 2&&argc<5){
 			if(!strcmp(cmd,"read")){
-				if (argc>3)
-					goto usage;
 				name=argv[2];
-				strcpy(namebuf,name);
+				addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+				memcpy(namebuf,name,strlen(name));
+				printk("hisun log 1\n");
 				error=uboot_key_read(namebuf, databuf);
+				printk("hisun log 2\n");
 				if(error>=0){
 					printk("the key name is :%s\n",namebuf);
 					printk("the key data is :%s\n",databuf);
+					flag=strlen(databuf)-1;
+					*((unsigned int *)addr)=flag;
+					memcpy((char *)(addr+sizeof(int)),databuf,4096);
+					flag=-1;
 					return 0;
 				}
 				else{
@@ -112,9 +131,8 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					goto usage;
 				name=argv[2];
 				data=argv[3];
-				strcpy(namebuf,name);
-				strcpy(databuf,data);
-				printk("right here!!!\n");
+				memcpy(namebuf,name,strlen(name));
+				memcpy(databuf,data,strlen(data));
 				error=uboot_key_write(namebuf, databuf);
 				if(error>=0){
 					printk("write key ok!!\n");
@@ -136,9 +154,9 @@ usage:
 
 U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"NAND KEY sub-system",
-	"list - show available NAND key name\n"
+	"list addr - show available NAND key name\n"
 	"secukey  device - init key in device\n"
 	"secukey write keyname data - wirte key data to nand\n"
-	"secukey read keyname - read the key data\n"	
+	"secukey read keyname addr- read the key data\n"	
 );
 
