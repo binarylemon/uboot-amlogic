@@ -339,6 +339,7 @@
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
 #define NAND_FACTORY_BAD					2
+#define	FACTORY_BAD_BLOCK_ERROR  159
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
@@ -351,6 +352,7 @@
 
 #define NAND_SYS_PART_SIZE				0x20000000
 #define ENV_NAND_SCAN_BLK                            50
+#define NAND_KEY_SAVE_MULTI_BLOCK
 
 struct aml_nand_flash_dev {
 	char *name;
@@ -537,8 +539,8 @@ struct aml_nand_dynamic_read{
 	u8	reg_addr_init[DYNAMIC_REG_INIT_NUM];
 	u8	reg_addr_lower_page[DYNAMIC_REG_NUM];	
 	u8	reg_addr_upper_page[DYNAMIC_REG_NUM];	
-	char	reg_offset_value_lower_page[DYNAMIC_READ_CNT_LOWER][DYNAMIC_REG_NUM];		
-	char	reg_offset_value_upper_page[DYNAMIC_READ_CNT_UPPER][DYNAMIC_REG_NUM];	
+	char	reg_offset_value_lower_page[DYNAMIC_CNT_LOWER][DYNAMIC_REG_NUM];		
+	char	reg_offset_value_upper_page[DYNAMIC_CNT_UPPER][DYNAMIC_REG_NUM];	
 	void	(*dynamic_read_init)(struct mtd_info *mtd);
 	void	(*dynamic_read_handle)(struct mtd_info *mtd, int page, int chipnr);
 	void	(*dynamic_read_exit)(struct mtd_info *mtd, int chipnr);
