@@ -339,6 +339,7 @@
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
 #define NAND_FACTORY_BAD					2
+#define	FACTORY_BAD_BLOCK_ERROR  159
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
@@ -351,6 +352,7 @@
 
 #define NAND_SYS_PART_SIZE				0x20000000
 #define ENV_NAND_SCAN_BLK                            50
+#define NAND_KEY_SAVE_MULTI_BLOCK
 
 struct aml_nand_flash_dev {
 	char *name;
@@ -373,24 +375,23 @@ struct aml_nand_part_info {
 	uint64_t offset;
 	u_int32_t mask_flags;
 };
-//#define CONFIG_AML_NAND_KEY
-#define KEYSIZE (CONFIG_KEYSIZE - 2*(sizeof(uint32_t)))
-#define CONFIG_KEYSIZE         		0x1000
-#define  KEY_MAGIC_NAME    "nkey"
-struct menson_key{
-	char key_magic_name[4];
-	uint32_t	crc;					/* CRC32 over data bytes	*/
-	unsigned char	data[KEYSIZE]; 	/* key data		*/
-};
 
 struct aml_nand_bbt_info {
 	char bbt_head_magic[4];
 	int16_t nand_bbt[MAX_BAD_BLK_NUM];
 	struct aml_nand_part_info aml_nand_part[MAX_MTD_PART_NUM];
-#ifdef CONFIG_AML_NAND_KEY
-	struct menson_key aml_mensonkey;
-#endif
 	char bbt_tail_magic[4];
+};
+struct aml_nandkey_info_t {
+         struct mtd_info *mtd;
+         struct env_valid_node_t *env_valid_node;
+         struct env_free_node_t *env_free_node;
+         u_char env_valid;
+         u_char env_init;
+         u_char part_num_before_sys;
+         struct aml_nand_bbt_info nand_bbt_info;
+         int start_block;
+         int end_block;
 };
 
 struct env_valid_node_t {
@@ -398,6 +399,10 @@ struct env_valid_node_t {
 	int16_t	phy_blk_addr;
 	int16_t	phy_page_addr;
 	int timestamp;
+#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+        int rd_flag;
+        struct env_valid_node_t *next;
+#endif
 };
 
 struct env_free_node_t {
@@ -496,6 +501,15 @@ struct aml_nand_bch_desc{
 #define 	NAND_CMD_SANDISK_SLC  						0xA2     
 
 
+#define NAND_MINIKEY_PART_SIZE                0x800000
+#define NAND_MINIKEY_PART_NUM                4
+//#define NAND_MINIKEY_PART_BLOCKNUM            CONFIG_NAND_KEY_BLOCK_NUM
+#define NAND_MINIKEY_PART_BLOCKNUM            4
+//#define CONFIG_KEYSIZE                 (0x4000*1)
+#define CONFIG_KEYSIZE                 (0x4000*4)
+#define ENV_KEY_MAGIC                    "keyx"
+
+#define NAND_MINI_PART_BLOCKNUM			2
 
 
 
@@ -598,6 +612,7 @@ struct aml_nand_chip {
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
 	struct aml_nandenv_info_t *aml_nandenv_info;
+	struct aml_nandkey_info_t *aml_nandkey_info;
 	struct aml_nand_bch_desc 	*bch_desc;
 #ifdef NEW_NAND_SUPPORT
 	struct new_tech_nand_t  new_nand_info;
