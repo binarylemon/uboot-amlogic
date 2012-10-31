@@ -25,7 +25,7 @@
 static unsigned long efuse_status;
 #define EFUSE_IS_OPEN           (0x01)
 
-#define TEST_NAND_KEY_WR
+//#define TEST_NAND_KEY_WR
 
 //#define KEY_NODE_CREATE
 
@@ -273,6 +273,18 @@ static int aml_key_hash(unsigned char *hash, const char *data, unsigned int len)
 static int aml_key_hash(unsigned char *hash, const char *data, unsigned int len)
 {
 }
+static uint16_t aml_key_checksum(char *data,int lenth)
+{
+	uint16_t checksum;
+	uint8_t *pdata;
+	int i;
+	checksum = 0;
+	pdata = (uint8_t*)data;
+	for(i=0;i<lenth;i++){
+		checksum += pdata[i];
+	}
+	return checksum;
+}	
 #endif
 
 static struct
@@ -541,6 +553,8 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
 {
 #define aml_key_show_error_return(error,label) {printk("%s:%d",__func__,__LINE__);n=error;goto label;}
     ssize_t n = 0;
+    uint16_t checksum=0;
+    size_t readbuff_validlen;
     int i;
     aml_key_t * key = (aml_key_t *) attr;
     size_t size;
@@ -553,11 +567,15 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
     dec_data = kzalloc(i, GFP_KERNEL);
 
     size=i;
-
+#ifdef TEST_NAND_KEY_WR
 	printk("key->name:%s,key->valid_size:%d,key->storage_size:%d,%s:%d\n",key->name,key->valid_size,key->storage_size,__func__,__LINE__);
-
+#endif
     if (IS_ERR_OR_NULL(data) || IS_ERR_OR_NULL(dec_data))
         aml_key_show_error_return(-EINVAL, core_show_return);
+
+    memset(data,0,i);
+    memset(dec_data,0,i);
+
     if(key->read(key, data))
     {
         printk("can't get valid key,%s,%d\n",__func__,__LINE__);
@@ -565,7 +583,14 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
     }
     if (aml_key_decrypt(dec_data, &size,data, key->storage_size))
         aml_key_show_error_return(-EINVAL, core_show_return);
-	
+	readbuff_validlen = ((key->valid_size+1)>>1);
+	checksum = aml_key_checksum( dec_data,readbuff_validlen);
+	if(checksum != key->checksum){
+		#ifdef TEST_NAND_KEY_WR
+		printk("checksum error: %d,%d,%s:%d\n",checksum,key->checksum,__func__,__LINE__);
+		#endif
+		aml_key_show_error_return(-EINVAL, core_show_return);
+	}
 #ifdef CRYPTO_DEPEND_ON_KERENL
     if(size!=key->valid_size)
         aml_key_show_error_return(-EINVAL, core_show_return);
@@ -596,9 +621,6 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
         n += sprintf(&buf[n], "%x", (dec_data[i]&0xf0)>>4);
         //printk("data[%d]:0x%x\n",i,(dec_data[i]&0xf0)>>4);
     }
-#ifdef TEST_NAND_KEY_WR
-    n += sprintf(&buf[n], "\n");
-#endif
 #if 0
     // key hash valid don't output
     n += sprintf(&buf[n], "\n");
@@ -629,6 +651,8 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     char * enc_data = NULL;
     char * temp = NULL;
     size_t in_key_len=0;
+    uint16_t checksum=0;
+    size_t readbuff_validlen;
 
     err = count;
 #if 0
@@ -657,6 +681,8 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
 		printk("key size is too much, count:%d,valid:%d\n",count,CONFIG_MAX_VALID_KEYSIZE);
 		aml_key_store_error_return(-EINVAL, store_error_return);
     }
+    memset(data,0,i);
+    memset(enc_data,0,i);
     /**
      * if key is not
      */
@@ -699,6 +725,7 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
         #endif
     }
     key->valid_size = in_key_len;
+	
 #ifdef CRYPTO_DEPEND_ON_KERENL
 	PRINT_HASH(data);
     aml_key_hash(enc_data, data, key->valid_size);
@@ -722,8 +749,11 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     }
 #endif
     ///printk("xxxxxxjjjddddddd %d\n",key->storage_size);
+    readbuff_validlen = ((key->valid_size+1)>>1);
+    checksum = aml_key_checksum( data,readbuff_validlen);
+    key->checksum = checksum;
 
-    if(aml_key_encrypt(enc_data, &key->storage_size, data, key->valid_size))
+    if(aml_key_encrypt(enc_data, &key->storage_size, data, readbuff_validlen))
         aml_key_store_error_return(-EINVAL, store_error_return);
 #ifdef TEST_NAND_KEY_WR
 	printk("key:valid_size:%d,storage_size:%d,%s\n",key->valid_size,key->storage_size,__func__);
@@ -773,10 +803,12 @@ static ssize_t key_core_store(struct device *dev, struct device_attribute *attr,
     //if( aml_key_store((aml_key_t*) attr, buf, count)>=0)
     if(err >= 0)
     {
+#ifdef KEY_NODE_CREATE
 		#ifndef TEST_NAND_KEY_WR
 		attr->attr.mode &= (~KEY_WRITE_ATTR);
 		sysfs_chmod_file(&dev->kobj,attr,KEY_READ_ATTR);
 		#endif
+#endif
 		//printk("%s,attr WR change to RD\n",__func__);
     }
     return err;
