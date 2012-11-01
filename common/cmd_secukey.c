@@ -52,11 +52,16 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	if (argc < 2)
 		goto usage;
 	cmd = argv[1];
-	
 	//first read nand key
-	if(2==argc)
+	if(!inited)
 	{
-			if (!strcmp(cmd,"nand") ) {
+			if (argc!=2)
+			{
+				printk("wrong command!!\n");
+				goto usage;
+			} 
+			if (!strcmp(cmd,"nand") ) 
+			{
 				error=uboot_key_init();
 				if(error>=0){
 					error=nandkey_provider_register();
@@ -77,11 +82,18 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				return -1;
 			}
 	}
-	if(3==argc){
-		if(inited){
+	else if (inited)
+	{
 			if(!strcmp(cmd,"list"))
 			{
-				addr = (ulong)simple_strtoul(argv[2], NULL, 16);
+				if (2==argc)
+					addr = 0x82000000;
+				else if(3==argc)
+					addr = (ulong)simple_strtoul(argv[2], NULL, 16);
+				else {
+					printk("wrong command!!\n");
+					goto usage;
+				}
 				error=uboot_get_keylist(listkey);
 				if (error>=0){
 					printk("the key name list are:\n%s",listkey);
@@ -90,9 +102,10 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 							num++;
 						}
 					flag=num;
+					memset((char *)(addr),0,4096);
 					*((unsigned int *)addr)=flag;
 					flag=-1;
-					memcpy((char *)(addr+sizeof(int)),listkey,strlen(listkey));
+					memcpy((char *)(addr+sizeof(int)),listkey,strlen(listkey)+1);
 					return 0;
 				}
 				else{
@@ -100,25 +113,30 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					return -1;
 				}
 			}
-		}
-	}
-	if (inited){
-		printk("%s,%d\n",__func__,__LINE__);
-		if (argc > 2&&argc<5){
-			if(!strcmp(cmd,"read")){
+			if(!strcmp(cmd,"read"))
+			{
 				name=argv[2];
-				addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+				if(4==argc)
+					addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+				else if(3==argc)
+					addr = 0x82000000;
+				else{
+					printk("wrong command!!\n");
+					goto usage; 
+				}
 				memcpy(namebuf,name,strlen(name));
-				printk("hisun log 1\n");
 				error=uboot_key_read(namebuf, databuf);
-				printk("hisun log 2\n");
 				if(error>=0){
+					printk("read count=%d\n",error);
 					printk("the key name is :%s\n",namebuf);
 					printk("the key data is :%s\n",databuf);
+					#if 0
 					flag=strlen(databuf)-1;
 					*((unsigned int *)addr)=flag;
-					memcpy((char *)(addr+sizeof(int)),databuf,4096);
-					flag=-1;
+					#endif
+					memset((char *)(addr),0,4096);
+					memcpy((char *)(addr),databuf,4096);
+					//flag=-1;
 					return 0;
 				}
 				else{
@@ -126,7 +144,8 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					return -1;
 				}
 			}
-			if(!strcmp(cmd,"write")){
+			if(!strcmp(cmd,"write"))
+			{
 				if (argc!=4)
 					goto usage;
 				name=argv[2];
@@ -144,7 +163,6 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				}	
 			}
 		}
-	}
 	else
 		goto usage ;
 usage:
@@ -154,9 +172,9 @@ usage:
 
 U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"NAND KEY sub-system",
-	"list addr - show available NAND key name\n"
+	"list [addr] - show available NAND key name\n"
 	"secukey  device - init key in device\n"
 	"secukey write keyname data - wirte key data to nand\n"
-	"secukey read keyname addr- read the key data\n"	
+	"secukey read keyname [addr]- read the key data\n"
 );
 

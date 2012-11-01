@@ -174,6 +174,7 @@ static int32_t v3_key_write(aml_key_t * key, uint8_t *data)
     key_storage->type=key->type;
     key_storage->storage_size=key->storage_size;
     key_storage->valid_size=key->valid_size;
+    key_storage->checksum = key->checksum;
     key_schem_print("%s:%d %x %x",__func__,__LINE__,key_storage->type,key->type);
     memcpy(key_storage->content,data,key_storage->storage_size);
     key->st|=AML_KEY_ST_DIRTY;
@@ -210,6 +211,7 @@ static int32_t v3_key_read(aml_key_t * key, uint8_t *data)
     key->valid_size = key_storage->valid_size;
     key->storage_size = key_storage->storage_size;
     key->type = key_storage->type;
+    key->checksum = key_storage->checksum;
     memcpy(data, key_storage->content, key_storage->storage_size);
 
     printk("key_storage->name:%s,key_storage->valid_size:%d,key_storage->storage_size:%d,%s:%d\n",
@@ -455,6 +457,7 @@ static int32_t key_item_parse(struct v3_key_storage_head *head)
 		tmp_node->storage_size = tmp_content_storage->storage_size;
 		tmp_node->valid_size = tmp_content_storage->valid_size;
 		tmp_node->type = tmp_content_storage->type;
+		tmp_node->checksum = tmp_content_storage->checksum;
 		strcpy(tmp_node->name,tmp_content_storage->name);
 		strcpy(aml_key->name,tmp_content_storage->name);
 		printk("aml_key->name:%s,%s:%d\n",aml_key->name,__func__,__LINE__);

@@ -18,8 +18,8 @@
 /***
  * Inner exchanged
  */
-#define CONFIG_MAX_STORAGE_KEYSIZE 3584 //3.5k
-#define CONFIG_MAX_VALID_KEYSIZE    (CONFIG_MAX_STORAGE_KEYSIZE - 16)
+#define CONFIG_MAX_STORAGE_KEYSIZE 4096 //4k
+#define CONFIG_MAX_VALID_KEYSIZE    (CONFIG_MAX_STORAGE_KEYSIZE)
 typedef struct aml_key_s aml_key_t;
 #define AML_KEY_NAMELEN  16
 struct aml_key_s{
@@ -30,6 +30,7 @@ struct aml_key_s{
     uint16_t valid_size;///output size
     uint16_t storage_size;///the size in media
     uint16_t st;
+    uint16_t checksum;
 
     int32_t (* update_status)(aml_key_t * key);
     int32_t (* write)(aml_key_t * key,uint8_t *data);
