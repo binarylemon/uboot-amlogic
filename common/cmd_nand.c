@@ -309,8 +309,9 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		return 0;
 	}
 //cmd for nand test , if nand is ok , then trigger power off
+#ifdef NAND_STATUS_TEST
 	if (strcmp(cmd, "test") == 0) {
-		int ret=-1;
+		/*int ret=-1;
 		puts("\ntest the nand flash ***\n");
 		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {
 			nand = nand_info[i];
@@ -321,8 +322,37 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					return -1;	
 			}
 		}		
-		return 0;
+		return 0;*/
+		printk("nand test start \n");
+			int chip_num , tmp_chip_num, error;
+			nand = nand_info[nand_curr_device];
+			struct mtd_info *mtd =nand;
+			struct aml_nand_chip *aml_chip = mtd_to_nand_chip(nand);
+			
+			arg_off_size(argc - 2, argv + 2, nand, &off, &size);
+			
+			chip_num = off;
+			//printk("chip_num=%d\n",chip_num);
+			if(!aml_chip->aml_nand_status.id_status){		
+				printk("nand id is worng!\n");		
+				error = -1;//EID;
+			}
+			if(aml_chip->aml_nand_status.valid_chip_num != chip_num){
+				printk("nand chip_num is wrong!\n");
+				error = -1;//ECHIPNUM;
+			}
+			if(aml_chip->aml_nand_status.boot_bad_block_status){
+				printk("nand device 0 has %d bad blocks\n",aml_chip->aml_nand_status.boot_bad_block_status);
+				error = -1;//EBADBLOCK;
+			}
+			if(aml_chip->aml_nand_status.bad_block_status){
+				printk("nand device 1 has too many bad blocks\n");
+				error = -1;//EBADBLOCK;
+			}			
+			printk("nand test complete: \n");	
+			return error;
 	}
+#endif
 
 	if (strcmp(cmd, "scrub_detect") == 0) {
 

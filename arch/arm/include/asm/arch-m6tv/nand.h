@@ -339,6 +339,7 @@
 #define NAND_BLOCK_GOOD					0
 #define NAND_BLOCK_BAD					1
 #define NAND_FACTORY_BAD					2
+#define BAD_BLK_LEVEL						2  
 #define	FACTORY_BAD_BLOCK_ERROR  159
 #define NAND_MINI_PART_SIZE				0x800000
 #define NAND_MINI_PART_NUM				4
@@ -555,6 +556,16 @@ struct new_tech_nand_t{
     struct aml_nand_dynamic_read dynamic_read_info;
 };
 #endif
+
+#ifdef NAND_STATUS_TEST
+struct test_status{
+	char id_status;
+	int valid_chip_num;
+	int bad_block_status;
+	int boot_bad_block_status;
+};
+#endif
+
 struct aml_nand_chip {
 	/* mtd info */
 	u8 mfr_type;
@@ -597,6 +608,10 @@ struct aml_nand_chip {
 	u8 ecc_cnt_cur;
 	u8 ecc_max;
     unsigned zero_cnt;
+#ifdef NAND_STATUS_TEST
+	struct test_status  aml_nand_status;
+#endif
+	
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
 	struct aml_nandenv_info_t *aml_nandenv_info;
