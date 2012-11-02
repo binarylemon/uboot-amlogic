@@ -363,7 +363,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		addr = tail_valid_node->phy_blk_addr;
 		addr *= mtd->erasesize;
 		addr += tail_valid_node->phy_page_addr * mtd->writesize;
-		printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
+		//printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
 		if (tail_valid_node->phy_page_addr == 0) {
 
 			memset(&aml_key_erase_info, 0, sizeof(struct erase_info));
@@ -544,7 +544,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	start_blk = (int)(offset >> phys_erase_shift);
 	total_blk = (int)(mtd->size >> phys_erase_shift);
 	aml_chip->aml_nandkey_info->start_block=start_blk;
-	printk("start_blk=%d\n",aml_chip->aml_nandkey_info->start_block);
+	//printk("start_blk=%d\n",aml_chip->aml_nandkey_info->start_block);
 	aml_chip->aml_nandkey_info->end_block=start_blk;
 	pages_per_blk = (1 << (chip->phys_erase_shift - chip->page_shift));
 	key_oobinfo = (struct env_oobinfo_t *)key_oob_buf;
@@ -601,7 +601,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 
 					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
-					printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					//printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
 
 					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 					while (tmp_valid_node != NULL) {
@@ -616,7 +616,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 							mult_free_tmp_node = mult_free_tmp_node->next;
 						}
 						mult_free_tmp_node->next = multi_free_node;
-						printk("free:phy_page_addr:%d,%s,%d\n",multi_free_node->phy_blk_addr,__func__,__LINE__);
+						//printk("free:phy_page_addr:%d,%s,%d\n",multi_free_node->phy_blk_addr,__func__,__LINE__);
 						tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 					}
 					aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = start_blk;
@@ -624,7 +624,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					aml_chip->aml_nandkey_info->env_valid_node->ec = key_oobinfo->ec;
 					aml_chip->aml_nandkey_info->env_valid_node->timestamp = key_oobinfo->timestamp;	
 					aml_chip->aml_nandkey_info->env_valid_node->next = NULL;
-					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr,__func__,__LINE__);
+					//printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr,__func__,__LINE__);
 
 				}
 				else if(key_oobinfo->timestamp == aml_chip->aml_nandkey_info->env_valid_node->timestamp){
@@ -640,7 +640,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 						tmp_valid_node = tmp_valid_node->next;
 					}
 					tmp_valid_node->next = env_valid_node;
-					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",env_valid_node->phy_blk_addr,env_valid_node->phy_page_addr,__func__,__LINE__);
+					//printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",env_valid_node->phy_blk_addr,env_valid_node->phy_page_addr,__func__,__LINE__);
 				}
 				else {
 					env_free_node->phy_blk_addr = start_blk;
@@ -751,7 +751,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 				tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 				while(tmp_valid_node != NULL){
 					tmp_valid_node->phy_page_addr = i;
-					printk("valid page:phy_page_addr:%d,%s,%d\n",tmp_valid_node->phy_page_addr,__func__,__LINE__);
+					//printk("valid page:phy_page_addr:%d,%s,%d\n",tmp_valid_node->phy_page_addr,__func__,__LINE__);
 					tmp_valid_node = tmp_valid_node->next;
 				}
 			}
