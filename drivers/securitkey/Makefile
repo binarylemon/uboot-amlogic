@@ -26,7 +26,7 @@ include $(TOPDIR)/config.mk
 LIB	:= $(obj)libsecuritykey.o
 
 COBJS-$(CONFIG_SECURITYKEY) += core.o version3_extend.o
-//COBJS-$(CONFIG_SECURITYKEY) += test.o
+#COBJS-$(CONFIG_SECURITYKEY) += test.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
