@@ -76,6 +76,17 @@
 #define MMC_CMD_WRITE_MULTIPLE_BLOCK	25
 #define MMC_CMD_APP_CMD			55
 
+#define MMC_TAG_SECTOR_START            32	// R1
+#define MMC_TAG_SECTOR_END              33	// R1
+#define MMC_UNTAG_SECTOR                34	// R1
+#define MMC_TAG_ERASE_GROUP_START       35	// R1
+#define MMC_TAG_ERASE_GROUP_END         36	// R1
+#define MMC_UNTAG_ERASE_GROUP           37	// R1
+#define SD_MMC_ERASE                    38	// R1b
+
+#define SD_ERASE_WR_BLK_START           32	//  R1
+#define SD_ERASE_WR_BLK_END             33	//   R1
+
 #define SD_CMD_SEND_RELATIVE_ADDR	3
 #define SD_CMD_SWITCH_FUNC		6
 #define SD_CMD_SEND_IF_COND		8
