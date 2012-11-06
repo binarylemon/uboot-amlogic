@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2006
+# (C) Copyright 2000-2007
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 # See file CREDITS for list of people who contributed to this
@@ -23,41 +23,10 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	:= $(obj)libnand.o
+LIB	:= $(obj)libsecuritykey.o
 
-ifdef CONFIG_CMD_NAND
-ifeq ($(CONFIG_NAND_AML),)
-COBJS-y += nand.o
-endif
-COBJS-y += nand_base.o
-COBJS-y += nand_bbt.o
-COBJS-y += nand_ecc.o
-COBJS-y += nand_ids.o
-COBJS-y += nand_util.o
-
-COBJS-$(CONFIG_NAND_ATMEL) += atmel_nand.o
-COBJS-$(CONFIG_DRIVER_NAND_BFIN) += bfin_nand.o
-COBJS-$(CONFIG_NAND_DAVINCI) += davinci_nand.o
-COBJS-$(CONFIG_NAND_FSL_ELBC) += fsl_elbc_nand.o
-COBJS-$(CONFIG_NAND_FSL_UPM) += fsl_upm.o
-COBJS-$(CONFIG_NAND_KB9202) += kb9202_nand.o
-COBJS-$(CONFIG_NAND_KIRKWOOD) += kirkwood_nand.o
-COBJS-$(CONFIG_NAND_KMETER1) += kmeter1_nand.o
-COBJS-$(CONFIG_NAND_MPC5121_NFC) += mpc5121_nfc.o
-COBJS-$(CONFIG_NAND_MXC) += mxc_nand.o
-COBJS-$(CONFIG_NAND_NDFC) += ndfc.o
-COBJS-$(CONFIG_NAND_NOMADIK) += nomadik.o
-COBJS-$(CONFIG_NAND_S3C2410) += s3c2410_nand.o
-COBJS-$(CONFIG_NAND_S3C64XX) += s3c64xx.o
-COBJS-$(CONFIG_NAND_SPEAR) += spr_nand.o
-COBJS-$(CONFIG_NAND_OMAP_GPMC) += omap_gpmc.o
-COBJS-$(CONFIG_NAND_PLAT) += nand_plat.o
-COBJS-$(CONFIG_NAND_AML_M1) += aml_nand.o m1_nand.o
-COBJS-$(CONFIG_NAND_AML_M2) += aml_nand.o m2_nand.o
-COBJS-$(CONFIG_NAND_AML_M3) += aml_nand.o m3_nand.o
-COBJS-$(CONFIG_AML_NAND_KEY) += nand_key.o
-COBJS-$(CONFIG_NAND_AML_A3) += aml_nand.o a3_nand.o
-endif
+COBJS-$(CONFIG_SECURITYKEY) += core.o version3_extend.o
+//COBJS-$(CONFIG_SECURITYKEY) += test.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
