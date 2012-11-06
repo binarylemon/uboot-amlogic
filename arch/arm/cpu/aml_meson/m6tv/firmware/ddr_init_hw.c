@@ -130,6 +130,26 @@ void init_dmc(struct ddr_set * ddr_setting)
 
 	writel(0xff, P_MMC_REQ_CTRL);
 
+	//re read write DDR SDRAM several times to make sure the AXI2DDR bugs dispear.
+	//refer from arch\arm\cpu\aml_meson\m6\firmware\kreboot.s	
+	int nCnt,nMax,nVal;
+	for(nCnt=0,nMax= 9;nCnt<nMax;++nCnt)
+	{
+		//asm volatile ("LDR  r0, =0x55555555");
+		//asm volatile ("LDR  r1, =0x9fffff00");
+		//asm volatile ("STR  r0, [r1]");
+		writel(0x55555555, 0x9fffff00);
+	}		
+	for(nCnt=0,nMax= 12;nCnt<nMax;++nCnt)
+	{
+		//asm volatile ("LDR  r1, =0x9fffff00");
+		//asm volatile ("LDR  r0, [r1]");		
+		nVal = readl(0x9fffff00);
+	}	
+	asm volatile ("dmb");
+	asm volatile ("isb");	
+	//
+
 }
 int ddr_init_hw(struct ddr_set * timing_reg)
 {
