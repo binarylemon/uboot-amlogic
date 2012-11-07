@@ -125,7 +125,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(timing_reg->mcfg & (~(3<<18)))
 		, P_UPCTL_MCFG_ADDR);
 	  
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
     writel(0x8,0xc8000244);
 	#endif
 	  
@@ -173,7 +173,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(8 <<18))
 		, P_PUB_PTR0_ADDR);	   //tITMSRST 
 
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
 	writel(0x17, P_PUB_PIR_ADDR);//INIT,DLLSRST,DLLLOCK,ITMSRST
 	#endif
 	__udelay(10);	
@@ -187,14 +187,14 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)
-	#ifdef TURN_OFF_ODT
+	#ifdef CONFIG_TURN_OFF_ODT
 		writel(zqcr, P_PUB_ZQ0CR0_ADDR);
 	#else
 	    writel(zqcr, P_PUB_ZQ0CR1_ADDR);
 	#endif
 	else
 #endif
-#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	 writel(0x1ef | (1<<28), P_PUB_ZQ0CR0_ADDR);
      writel(0x16b| (1<<20), 0xc8006440);
 #else
@@ -207,20 +207,20 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//MMC_Wr(PUB_PTR2_ADDR,  (10000 | 		  //tdinit2    DDR3 : 200us for power up. LPDDR2 : 11us.  
 	//					(40 << 17)));		  //tdinit3    LPDDR2 : 1us. 
 
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
 	writel(0x9, P_PUB_PIR_ADDR); ////INIT,ZCAL ??
 	#endif
     __udelay(10);
 	//wait DDR3_ZQ_DONE: 
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
 	while(!(readl(P_PUB_PGSR_ADDR) & (1<< 2))) {}
 	#endif
 	// wait DDR3_PHY_INIT_WAIT : 
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
 	while (!(readl(P_PUB_PGSR_ADDR) & 1 )) {}
 	#endif
 	// Monitor DFI initialization status.
-	#ifndef TURN_OFF_ODT
+	#ifndef CONFIG_TURN_OFF_ODT
 	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 	#endif
 	writel(1, P_UPCTL_POWCTL_ADDR);
@@ -336,7 +336,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	// DDR PHY initialization 
 	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);
-	#ifdef TURN_OFF_ODT
+	#ifdef CONFIG_TURN_OFF_ODT
 	writel(0x1e1, P_PUB_PIR_ADDR);
 	#else
 	writel(0x1e9, P_PUB_PIR_ADDR);

@@ -27,8 +27,8 @@
 //#endif
 #define CONFIG_CMD_SF    1
 
-#define TURN_OFF_ODT
-#define PWM_CORE_VOLTAGE
+#define CONFIG_TURN_OFF_ODT
+#define CONFIG_PWM_CORE_VOLTAGE
 #if defined(CONFIG_CMD_SF)
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1

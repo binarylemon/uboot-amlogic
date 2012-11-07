@@ -416,7 +416,7 @@ void save_ddr_settings()
 	v_dx8dqstr = MMC_Rd(PUB_DX8DQSTR_ADDR); 
 
 	v_zq0cr1   = MMC_Rd(PUB_ZQ0CR1_ADDR);
-#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	v_zq0cr0   = MMC_Rd(PUB_ZQ0CR0_ADDR);
 	v_cmdzq    = MMC_Rd(MMC_CMDZQ_CTRL);
 #endif
@@ -580,7 +580,7 @@ void init_pctl(void)
 
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
-#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	if(v_zq0cr0 & (1<<28))
 	    MMC_Wr( PUB_ZQ0CR0_ADDR, v_zq0cr0);
     else
@@ -600,18 +600,18 @@ void init_pctl(void)
 
    __udelay(20);
 	//wait DDR3_ZQ_DONE: 
-#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
 #endif
 	
 	dbg_out("d",3);
 	// wait DDR3_PHY_INIT_WAIT : 
-#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
 #endif
 		dbg_out("d",4);
 	// Monitor DFI initialization status.
-#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
 #endif
 	dbg_out("d",5);
@@ -737,7 +737,7 @@ void init_pctl(void)
 	
 	//start trainning.
 	// DDR PHY initialization 
-#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	if(v_zq0cr0 & (1<<28))
 		MMC_Wr( PUB_PIR_ADDR, 0x1e1);
   else
@@ -754,7 +754,7 @@ void init_pctl(void)
         f_serial_puts("PUB_PGSR=");
 	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
 	    f_serial_puts("\n");
-#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
         MMC_Wr( PUB_PIR_ADDR, 0x1e1 | (1<<28));
 #else
 		MMC_Wr( PUB_PIR_ADDR, 0x1e9 | (1<<28));
