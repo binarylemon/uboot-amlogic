@@ -626,6 +626,7 @@ struct aml_nand_chip {
 	
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
+	u8 key_protect;
 	struct aml_nandenv_info_t *aml_nandenv_info;
 	struct aml_nandkey_info_t *aml_nandkey_info;
 	struct aml_nand_bch_desc 	*bch_desc;

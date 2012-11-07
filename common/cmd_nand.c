@@ -284,6 +284,13 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 #endif
 	const char *quiet_str = getenv("quiet");
 
+#ifdef CONFIG_AML_NAND_KEY
+	int chip_num , tmp_chip_num, error;
+	nand = nand_info[nand_curr_device];
+	struct mtd_info *mtd =nand;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(nand);
+#endif
+
 	/* at least two arguments please */
 	if (argc < 2)
 		goto usage;
@@ -292,6 +299,12 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		quiet = simple_strtoul(quiet_str, NULL, 0) != 0;
 
 	cmd = argv[1];
+#ifdef CONFIG_AML_NAND_KEY
+	if (strcmp(cmd, "key") == 0){
+		aml_chip->key_protect = 1;		//force nand key can be erased 
+		return 0;
+	}
+#endif
 
 	if (strcmp(cmd, "info") == 0) {
 
@@ -524,6 +537,9 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		ret = nand_erase_opts(nand, &opts);
 		printf("%s\n", ret ? "ERROR" : "OK");
+	#ifdef CONFIG_AML_NAND_KEY
+		aml_chip->key_protect = 0;		//protect nand key can not be erased 
+	#endif
 
 		return ret == 0 ? 0 : 1;
 	}
