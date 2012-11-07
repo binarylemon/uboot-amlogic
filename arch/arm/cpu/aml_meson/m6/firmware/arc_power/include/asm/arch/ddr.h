@@ -123,7 +123,11 @@
 #define dfiodrcfg_adr 90
 #define zq0cr1 91
 
-#define DDR_SETTING_COUNT 92
+#define zq0cr0 92
+#define cmdzq  93
+
+#define DDR_SETTING_COUNT 94
+
 
 #define 	v_rslr0          ddr_settings[ rslr0 ]    
 #define 	v_rdgr0          ddr_settings[ rdgr0 ]   
@@ -228,6 +232,9 @@
 
 #define v_dfiodrcfg_adr ddr_settings[ dfiodrcfg_adr ] 
 #define v_zq0cr1   ddr_settings[zq0cr1]
+
+#define v_zq0cr0   ddr_settings[zq0cr0]
+#define v_cmdzq   ddr_settings[cmdzq]
 
 extern unsigned ddr_settings[];
 extern int init_pctl_ddr2(void);
