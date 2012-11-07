@@ -164,9 +164,9 @@ COBJS-$(CONFIG_CMD_IMGPACK) += cmd_imgpack.o
 COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
 
-
 # others
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o
+COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_d2pll.o
 COBJS-$(CONFIG_DDR_SPD) += ddr_spd.o
 COBJS-$(CONFIG_HWCONFIG) += hwconfig.o
 COBJS-$(CONFIG_CONSOLE_MUX) += iomux.o
