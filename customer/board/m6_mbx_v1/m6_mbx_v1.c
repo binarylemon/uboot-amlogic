@@ -72,9 +72,13 @@ int board_eth_init(bd_t *bis)
 
     udelay(1000);
 		
-	extern int aml_eth_init(bd_t *bis);
-
+#ifdef	CONFIG_USB_ETHER
+    extern int usb_eth_initialize(bd_t *bi);
+    usb_eth_initialize(bis);
+#else
+    extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);
+#endif
 
 	return 0;
 }
