@@ -12,11 +12,6 @@
 #define WRITE_TO_EFUSE_ENABLE	
 //#define WRITE_TO_NAND_ENABLE
 
-#if defined(WRITE_TO_NAND_ENABLE)
-#define CONFIG_SECURITYKEY 1
-#define CONFIG_AML_NAND_KEY 1
-#endif
-
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
 #error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
 #endif
