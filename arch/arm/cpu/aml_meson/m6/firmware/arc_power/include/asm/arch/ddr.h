@@ -126,8 +126,11 @@
 #define zq0cr0 92
 #define cmdzq  93
 
+#ifndef CONFIG_TURN_OFF_ODT
+#define DDR_SETTING_COUNT 92
+#else
 #define DDR_SETTING_COUNT 94
-
+#endif
 
 #define 	v_rslr0          ddr_settings[ rslr0 ]    
 #define 	v_rdgr0          ddr_settings[ rdgr0 ]   
