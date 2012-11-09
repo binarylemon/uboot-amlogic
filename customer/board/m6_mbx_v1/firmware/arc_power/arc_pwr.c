@@ -7,7 +7,9 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
+//#include <asm/arch/register.h>
 #include "boot_code.dat"
+#include "cec_tx_reg.h"
 
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
@@ -281,6 +283,8 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
+    //unsigned char cec_key=0;
+    hdmi_cec_func_config = readl(P_AO_DEBUG_REG0);    	
 #ifdef smp_test
 	//ignore ddr problems.
 //	for(i = 0; i < 1000; i++)
@@ -292,6 +296,7 @@ void enter_power_down()
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
 	f_serial_puts("step 1\n");
+	f_serial_puts("cec\n");
 
 
 #ifdef pwr_ddr_off
@@ -321,10 +326,10 @@ void enter_power_down()
 
 
 #ifdef pwr_ddr_off
- 	f_serial_puts("step 2\n");
- 	wait_uart_empty();
-  // Next, we sleep
-  mmc_sleep();
+    f_serial_puts("step 2\n");
+    wait_uart_empty();
+    // Next, we sleep
+    mmc_sleep();
 
 #if 1
   //Clear PGCR CK
@@ -332,10 +337,10 @@ void enter_power_down()
   APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
   //APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
-  // enable retention
-  //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
-  //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
-  enable_retention();
+    // enable retention
+    //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
+    //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
+    enable_retention();
 
     // save ddr power
     // before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
@@ -424,18 +429,26 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
+    
+    cec_power_on();
+    remote_cec_hw_reset();  
+    cec_node_init();   
     udelay(10000);
-
+       
     //set the detect gpio
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
     while(1)
     {
-    	//detect remote key
+    	//detect remote key    	  
 		  power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
 		  if(power_key==0x1a)  //the reference remote power key code
         		break;
-        		  
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
+         	  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
 		  power_key=power_key&(1<<3);
@@ -488,7 +501,7 @@ void enter_power_down()
 #endif
 
 #ifdef POWER_OFF_VCC5V
-  power_on_vcc5v();
+    power_on_vcc5v();
 #endif 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
@@ -519,41 +532,48 @@ void enter_power_down()
 // 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
  	uart_reset();
 
+	
+    f_serial_puts("step 7\n");   
+    wait_uart_empty();
+    store_restore_plls(0);
 
 
 
- 	
-  f_serial_puts("step 7\n");
- 	wait_uart_empty();
-	store_restore_plls(0);
 	
 #ifdef pwr_ddr_off    
-  f_serial_puts("step 8\n");
-	wait_uart_empty();  
-  init_ddr_pll();
+    f_serial_puts("step 8\n");
+    wait_uart_empty();  
+    init_ddr_pll();
 
-   // Next, we reset all channels 
-  reset_mmc();
-  f_serial_puts("step 9\n");
- 	wait_uart_empty();
+    // Next, we reset all channels 
+    reset_mmc();
+    f_serial_puts("step 9\n");
+    wait_uart_empty();
 
-  // disable retention
-  // disable retention before init_pctl is because init_pctl you need to data training stuff.
-  disable_retention();
-
-  // initialize mmc and put it to sleep
-  init_pctl();
-  f_serial_puts("step 10\n");
-  wait_uart_empty();
-
-  //print some useful information to help debug.
-   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-   f_serial_puts("  MMC_LP_CTRL1\n");
-   wait_uart_empty();
-
-   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-   f_serial_puts("  MCFG\n");
-   wait_uart_empty();
+    // disable retention
+    // disable retention before init_pctl is because init_pctl you need to data training stuff.
+    disable_retention();    
+    // initialize mmc and put it to sleep
+    init_pctl();
+    f_serial_puts("step 10\n");
+    wait_uart_empty();
+    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+    serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+    f_serial_puts("\n");   
+    f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
+    serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
+    f_serial_puts("\n");       
+    f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
+    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
+    f_serial_puts("\n");  
+    //print some useful information to help debug.
+    serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+    f_serial_puts("  MMC_LP_CTRL1\n");
+    wait_uart_empty();
+    
+    serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+    f_serial_puts("  MCFG\n");
+    wait_uart_empty();
 
 #endif   //pwr_ddr_off
   // Moved the enable mmc req and SEC to ARM code.
@@ -570,7 +590,8 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-
+	
+	
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();
@@ -695,9 +716,9 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
-			init_I2C();
-#endif
+//#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
+//			init_I2C();
+//#endif
 			copy_reboot_code();
 			enter_power_down();
 			//test_arc_core();

@@ -320,6 +320,6 @@
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
-
+#define CONFIG_CEC_WAKE_UP 1
 
 #endif //__CONFIG_M6_REF_V1_H__
