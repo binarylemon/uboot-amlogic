@@ -7,11 +7,10 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
-//#include "../../../../../../../customer/board/configs/mx_dongle_g02.h"
 
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
 #define dbg_puts(s) f_serial_puts(s);wait_uart_empty();
-??????
+
 #if 0
 void __udelay(int n)
 {	
@@ -417,10 +416,10 @@ void save_ddr_settings()
 	v_dx8dqstr = MMC_Rd(PUB_DX8DQSTR_ADDR); 
 
 	v_zq0cr1   = MMC_Rd(PUB_ZQ0CR1_ADDR);
-	#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	v_zq0cr0   = MMC_Rd(PUB_ZQ0CR0_ADDR);
 	v_cmdzq    = MMC_Rd(MMC_CMDZQ_CTRL);
-	#endif
+#endif
 }
 
 #if 0
@@ -581,7 +580,7 @@ void init_pctl(void)
 
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
-	#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
 	if(v_zq0cr0 & (1<<28))
 	    MMC_Wr( PUB_ZQ0CR0_ADDR, v_zq0cr0);
     else
@@ -589,9 +588,9 @@ void init_pctl(void)
 
     if(v_cmdzq)
 	    MMC_Wr( MMC_CMDZQ_CTRL,  v_cmdzq);
-   #else
+#else
 		MMC_Wr( PUB_ZQ0CR1_ADDR, v_zq0cr1);
-   #endif
+#endif
 	//for simulation to reduce the init time.
 //	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
 //	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
@@ -601,20 +600,20 @@ void init_pctl(void)
 
    __udelay(20);
 	//wait DDR3_ZQ_DONE: 
-	#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
-	#endif
+#endif
 	
 	dbg_out("d",3);
 	// wait DDR3_PHY_INIT_WAIT : 
-	#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
-	#endif
+#endif
 		dbg_out("d",4);
 	// Monitor DFI initialization status.
-	#ifndef TURN_OFF_ODT
+#ifndef CONFIG_TURN_OFF_ODT
 	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
-	#endif
+#endif
 	dbg_out("d",5);
 
 	MMC_Wr(UPCTL_POWCTL_ADDR, 1);
@@ -738,16 +737,15 @@ void init_pctl(void)
 	
 	//start trainning.
 	// DDR PHY initialization 
-	#ifdef TURN_OFF_ODT
-	?????
+#ifdef CONFIG_TURN_OFF_ODT
 	if(v_zq0cr0 & (1<<28))
 		MMC_Wr( PUB_PIR_ADDR, 0x1e1);
-    else
+  else
 		MMC_Wr( PUB_PIR_ADDR, 0x1e9);
 	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
-	#else
+#else
 		MMC_Wr( PUB_PIR_ADDR, 0x1e9);
-	#endif
+#endif
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
 	dbg_out("d",9);
@@ -756,11 +754,11 @@ void init_pctl(void)
         f_serial_puts("PUB_PGSR=");
 	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
 	    f_serial_puts("\n");
-		#ifdef TURN_OFF_ODT
+#ifdef CONFIG_TURN_OFF_ODT
         MMC_Wr( PUB_PIR_ADDR, 0x1e1 | (1<<28));
-		#else
+#else
 		MMC_Wr( PUB_PIR_ADDR, 0x1e9 | (1<<28));
-		#endif
+#endif
         while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
         dbg_out("d",0x91);
         f_serial_puts("PUB_PGSR=");
