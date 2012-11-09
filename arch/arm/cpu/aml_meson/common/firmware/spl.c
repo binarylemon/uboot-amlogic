@@ -73,7 +73,12 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 #ifdef CONFIG_M6
+	#ifdef CONFIG_PWM_CORE_VOLTAGE
+	writel(0x632000, P_VGHL_PWM_REG0);
+	writel(0x632000, P_LED_PWM_REG0);
+	#else
     writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
+    #endif
     __udelay(1000);
 #endif
 

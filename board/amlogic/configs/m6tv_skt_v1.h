@@ -3,6 +3,9 @@
 
 #define CONFIG_MACH_MESON6_SKT  // generate m6tv SKT machid number
 
+//ddrtest and d2pll command support
+#define CONFIG_CMD_DDR_TEST	1	//ddrtest & d2pll
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 

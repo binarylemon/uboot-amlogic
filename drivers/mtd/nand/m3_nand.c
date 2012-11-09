@@ -12,6 +12,7 @@
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
 
+#include "version.h"
 int nand_curr_device = -1;
 //extern struct aml_nand_platform aml_nand_platform[];
 extern struct aml_nand_device aml_nand_mid_device;
@@ -936,10 +937,7 @@ exit_error:
 	return err;
 }
 
-#define DRV_NAME	"aml_m3_nand"
-#define DRV_VERSION	"1.1"
-#define DRV_AUTHOR	"xiaojun_yoyo"
-#define DRV_DESC	"Amlogic nand flash uboot driver for M3"
+
 
 void nand_init(void)
 {

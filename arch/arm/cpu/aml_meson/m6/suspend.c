@@ -56,8 +56,9 @@ static void wait_uart_empty()
 
 
 
-
+#ifndef CONFIG_PWM_CORE_VOLTAGE
 #define ADJUST_CORE_VOLTAGE
+#endif
 #define CONFIG_MESON_SUSPEND
 
 
