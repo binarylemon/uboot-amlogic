@@ -1237,7 +1237,7 @@ static ssize_t key_read_show(struct device *dev, struct device_attribute *attr,
                             char *buf)
 {
 	int err;
-	if(curkey == NULL){
+	if((curkey == NULL)||(curkey->name[0] == 0)){
 		printk("unkown current key-name,%s:%d\n",__func__,__LINE__);
 		return -EINVAL;
 	}
