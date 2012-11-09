@@ -14,7 +14,7 @@
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
 
-
+//#define TEST_ERROR_ADDRESS_BLOCK
 
 #define debug(fmt,args...) do { printk("[DEBUG]: FILE:%s:%d, FUNC:%s--- "fmt"\n",\
                                                      __FILE__,__LINE__,__func__,## args);} \
@@ -258,19 +258,33 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		}
 		
 		if ((aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr + i) > pages_per_blk) {
-
 			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
 			if (env_free_node == NULL)
 				return -ENOMEM;
 
 			env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 			env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+			env_free_node->next = NULL;
+		#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("free:  env_valid_node->phy_blk_addr:%d,%s:%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,__func__,__LINE__);
+			printk("free:  env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+		#endif
 			key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 			if(aml_chip->aml_nandkey_info->env_free_node == NULL){
 				aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("aml_chip->aml_nandkey_info->env_free_node: NULL,%s:%d\n",__func__,__LINE__);
+				#endif
 			}
 			else{
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				struct env_free_node_t *test22_env_free_node;
+				#endif
 				while (key_tmp_node->next != NULL) {
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				test22_env_free_node =key_tmp_node->next;
+					printk("free:  key_tmp_node->phy_blk_addr:%d,%s:%d\n",test22_env_free_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 					key_tmp_node = key_tmp_node->next;
 				}
 				key_tmp_node->next = env_free_node;
@@ -281,7 +295,12 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 				if (env_free_node == NULL)
 					return -ENOMEM;
 				env_free_node->phy_blk_addr = tail_valid_node->phy_blk_addr;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("free: tail_valid_node->phy_blk_addr:%d,%s:%d\n",tail_valid_node->phy_blk_addr,__func__,__LINE__);
+				printk("free: env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 				env_free_node->ec = tail_valid_node->ec;
+				env_free_node->next = NULL;
 				aml_chip->aml_nandkey_info->env_valid_node->next = tail_valid_node->next;
 				kfree(tail_valid_node);
 				tail_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
@@ -295,6 +314,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 
 			key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 			aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("valid: key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+			printk("valid: aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr:%d,%s:%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,__func__,__LINE__);
+			#endif
 			aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
 			aml_chip->aml_nandkey_info->env_valid_node->ec = key_tmp_node->ec;
 			aml_chip->aml_nandkey_info->env_valid_node->timestamp += 1;
@@ -311,6 +334,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 					return -ENOMEM;
 				tmp_valid_node->ec = key_tmp_node->ec;
 				tmp_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("free:  key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+				printk("valid:  tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 				tmp_valid_node->phy_page_addr = 0;
 				tmp_valid_node->timestamp += 1;
 				tmp_valid_node->next = NULL;
@@ -330,6 +357,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 		aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
 		aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
+		#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("valid: key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+				//printk("tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+		#endif
 		aml_chip->aml_nandkey_info->env_valid_node->ec = key_tmp_node->ec;
 		aml_chip->aml_nandkey_info->env_valid_node->timestamp += 1;
 		aml_chip->aml_nandkey_info->env_valid_node->next = NULL;
@@ -343,6 +374,9 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 			tmp_valid_node = kzalloc(sizeof(struct env_valid_node_t), GFP_KERNEL);
 			tmp_valid_node->ec = key_tmp_node->ec;
 			tmp_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("valid: tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+			#endif
 			tmp_valid_node->phy_page_addr = 0;
 			tmp_valid_node->timestamp += 1;
 			tmp_valid_node->next = NULL;
@@ -495,6 +529,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
 	struct env_valid_node_t *env_valid_node,*tmp_valid_node;
 	struct env_free_node_t  *multi_free_node,*mult_free_tmp_node;
+	int have_env_free_node_flag;
 	#endif
 	int error = 0, start_blk, total_blk, key_blk, i, pages_per_blk, bad_blk_cnt = 0, max_key_blk, max_env_blk,phys_erase_shift;
 	uint64_t offset, env_offset;
@@ -516,6 +551,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	if (aml_chip->aml_nandkey_info->env_valid_node == NULL)
 		return -ENOMEM;
 	aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = -1;
+	aml_chip->aml_nandkey_info->env_free_node = NULL;
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
 	max_key_blk = (NAND_MINIKEY_PART_SIZE >> phys_erase_shift);
@@ -630,11 +666,16 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 
 				env_free_node->dirty_flag = 1;
 				#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+				have_env_free_node_flag = 0;
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
 
 					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
-					//printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					env_free_node->next = NULL;
+					have_env_free_node_flag = 1;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					#endif
 
 					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 					while (tmp_valid_node != NULL) {
@@ -642,6 +683,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 						multi_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
 						multi_free_node->phy_blk_addr = tmp_valid_node->phy_blk_addr;
 						multi_free_node->ec = tmp_valid_node->ec;
+						multi_free_node->next = NULL;
 						kfree(tmp_valid_node);
 						multi_free_node->dirty_flag = 1;
 						mult_free_tmp_node = env_free_node;
@@ -649,7 +691,9 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 							mult_free_tmp_node = mult_free_tmp_node->next;
 						}
 						mult_free_tmp_node->next = multi_free_node;
-						//printk("free:phy_page_addr:%d,%s,%d\n",multi_free_node->phy_blk_addr,__func__,__LINE__);
+						#ifdef TEST_ERROR_ADDRESS_BLOCK
+						printk("free:phy_page_addr:%d,%s,%d\n",multi_free_node->phy_blk_addr,__func__,__LINE__);
+						#endif
 						tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 					}
 					aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = start_blk;
@@ -657,7 +701,9 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					aml_chip->aml_nandkey_info->env_valid_node->ec = key_oobinfo->ec;
 					aml_chip->aml_nandkey_info->env_valid_node->timestamp = key_oobinfo->timestamp;	
 					aml_chip->aml_nandkey_info->env_valid_node->next = NULL;
-					//printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr,__func__,__LINE__);
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr,__func__,__LINE__);
+					#endif
 
 				}
 				else if(key_oobinfo->timestamp == aml_chip->aml_nandkey_info->env_valid_node->timestamp){
@@ -667,17 +713,39 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 						return -ENOMEM;
 					env_valid_node->phy_blk_addr = start_blk;
 					env_valid_node->phy_page_addr = 0;
+					env_valid_node->next = NULL;
 					env_valid_node->timestamp = key_oobinfo->timestamp;
 					env_valid_node->ec = key_oobinfo->ec;
 					while (tmp_valid_node->next != NULL) {
 						tmp_valid_node = tmp_valid_node->next;
 					}
 					tmp_valid_node->next = env_valid_node;
-					//printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",env_valid_node->phy_blk_addr,env_valid_node->phy_page_addr,__func__,__LINE__);
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",env_valid_node->phy_blk_addr,env_valid_node->phy_page_addr,__func__,__LINE__);
+					#endif
 				}
 				else {
 					env_free_node->phy_blk_addr = start_blk;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					#endif
 					env_free_node->ec = key_oobinfo->ec;
+					have_env_free_node_flag = 1;
+				}
+				if(have_env_free_node_flag){
+					if (aml_chip->aml_nandkey_info->env_free_node == NULL){
+						aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+					}
+					else {
+						key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+						while (key_tmp_node->next != NULL) {
+							key_tmp_node = key_tmp_node->next;
+						}
+						key_tmp_node->next = env_free_node;
+					}
+				}
+				else{
+					kfree(env_free_node);
 				}
 				#else
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
@@ -693,9 +761,9 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					env_free_node->phy_blk_addr = start_blk;
 					env_free_node->ec = key_oobinfo->ec;
 				}
-				#endif
-				if (aml_chip->aml_nandkey_info->env_free_node == NULL)
+				if (aml_chip->aml_nandkey_info->env_free_node == NULL){
 					aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+				}
 				else {
 					key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 					while (key_tmp_node->next != NULL) {
@@ -703,6 +771,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					}
 					key_tmp_node->next = env_free_node;
 				}
+				#endif
 			}
 			else {
 
@@ -719,6 +788,10 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 
 			env_free_node->phy_blk_addr = start_blk;
 			env_free_node->ec = key_oobinfo->ec;
+			env_free_node->next = NULL;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("free:  env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+			#endif
 			if (aml_chip->aml_nandkey_info->env_free_node == NULL)
 				aml_chip->aml_nandkey_info->env_free_node = env_free_node;
 			else {
@@ -846,6 +919,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
 	struct env_valid_node_t *env_valid_node,*tmp_valid_node;
 	struct env_free_node_t  *multi_free_node,*mult_free_tmp_node;
+	int have_env_free_node_flag;
 	#endif
 	int error = 0, start_blk, total_blk, key_blk, i, pages_per_blk, bad_blk_cnt = 0, max_key_blk, max_env_blk,phys_erase_shift;
 	uint64_t offset, env_offset;
@@ -951,10 +1025,13 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 
 				env_free_node->dirty_flag = 1;
 				#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+				have_env_free_node_flag = 0;
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
 
 					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+					env_free_node->next = NULL;
+					have_env_free_node_flag = 1;
 					//printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
 
 					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
@@ -999,6 +1076,21 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 				else {
 					env_free_node->phy_blk_addr = start_blk;
 					env_free_node->ec = key_oobinfo->ec;
+					have_env_free_node_flag = 1;
+				}
+				if(have_env_free_node_flag){
+					if (aml_chip->aml_nandkey_info->env_free_node == NULL)
+						aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+					else {
+						key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+						while (key_tmp_node->next != NULL) {
+							key_tmp_node = key_tmp_node->next;
+						}
+						key_tmp_node->next = env_free_node;
+					}
+				}
+				else{
+					kfree(env_free_node);
 				}
 				#else
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
@@ -1014,7 +1106,6 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					env_free_node->phy_blk_addr = start_blk;
 					env_free_node->ec = key_oobinfo->ec;
 				}
-				#endif
 				if (aml_chip->aml_nandkey_info->env_free_node == NULL)
 					aml_chip->aml_nandkey_info->env_free_node = env_free_node;
 				else {
@@ -1024,6 +1115,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					}
 					key_tmp_node->next = env_free_node;
 				}
+				#endif
 			}
 			else {
 
