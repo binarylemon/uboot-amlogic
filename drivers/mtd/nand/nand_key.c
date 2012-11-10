@@ -404,6 +404,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 			aml_key_erase_info.mtd = mtd;
 			aml_key_erase_info.addr = addr;
 			aml_key_erase_info.len = mtd->erasesize;
+			aml_chip->key_protect = 1;
 
 			error = mtd->erase(mtd, &aml_key_erase_info);
 			if (error) {
@@ -411,6 +412,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 				mtd->block_markbad(mtd, addr);
 				return error;
 			}
+			aml_chip->key_protect = 0;
 			tail_valid_node->ec++;
 		}
 
@@ -492,6 +494,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		aml_key_erase_info.mtd = mtd;
 		aml_key_erase_info.addr = addr;
 		aml_key_erase_info.len = mtd->erasesize;
+		aml_chip->key_protect = 1;
 
 		error = mtd->erase(mtd, &aml_key_erase_info);
 		if (error) {
@@ -499,6 +502,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 			mtd->block_markbad(mtd, addr);
 			return error;
 		}
+		aml_chip->key_protect = 0;
 		aml_chip->aml_nandkey_info->env_valid_node->ec++;
 	}
 
