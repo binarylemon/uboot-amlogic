@@ -9,7 +9,7 @@
 #include <asm/arch/pctl.h>
 //#include <asm/arch/register.h>
 #include "boot_code.dat"
-#include "cec_tx_reg.h"
+#include <asm/arch/cec_tx_reg.h>
 
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
