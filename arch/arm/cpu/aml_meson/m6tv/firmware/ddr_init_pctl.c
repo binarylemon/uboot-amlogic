@@ -43,7 +43,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
     
     
     //CWL
-    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3) | (1 << 6 );
+    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3);// | (1 << 6 );
             	
     return nMR2;
 }
@@ -53,8 +53,8 @@ static unsigned short zqcr = 0;
 #endif
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
-	int nTempVal;
-//	int i;
+	int nTempVal = 0;
+	int i;
 //	int ret = 0;
 
 	//UPCTL memory timing registers
@@ -67,16 +67,17 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(timing_reg->t_rsth_us, P_UPCTL_TRSTH_ADDR);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
 	writel(timing_reg->t_rstl_us, P_UPCTL_TRSTL_ADDR);
 	
-	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
-	if(nTempVal<4) nTempVal = 4;
-	if(nTempVal>6) nTempVal = 6;
-	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
-	//MMC_Wr(UPCTL_MCFG_ADDR,(nTempVal <<18)|(timing_reg->mcfg & (~(3<<18))));
-	writel(((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
+    for(i=4;(i)*timing_reg->t_rrd<timing_reg->t_faw&&i<6;i++);
+
+	writel(((i-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
 		(timing_reg->mcfg & (~(3<<18)))
 		, P_UPCTL_MCFG_ADDR);
+    if((i)*timing_reg->t_rrd > timing_reg->t_faw)
+    {
+        nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) > 7 ? 7 : ((i)*timing_reg->t_rrd - timing_reg->t_faw);
+    }
 	
-	writel( 0x80000000, P_UPCTL_MCFG1_ADDR );  //enable hardware c_active_in;
+	writel( 0x80000000, P_UPCTL_MCFG1_ADDR | (nTempVal << 8));  //enable hardware c_active_in;
 	  
 	  
     writel(0x8,P_UPCTL_DFIODTCFG_ADDR);
@@ -265,7 +266,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
                 ,P_PUB_DTCR_ADDR);
 
 	// DDR PHY initialization 
+#ifdef ENABLE_WRITE_LEVELING
+    writel(0xf5f3, P_PUB_PIR_ADDR);
+#else
 	writel(0xfff3, P_PUB_PIR_ADDR);
+#endif
 
 	//DDR3_SDRAM_INIT_WAIT : 
 	while( !(readl(P_PUB_PGSR0_ADDR) & 1)) {}
@@ -276,10 +281,10 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 
-        if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
+    if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
 	    return nTempVal;
-        } else {
-            return 0;
-        }
-
+    }
+    else{
+        return 0;
+    }
 }

@@ -36,66 +36,53 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 static struct ddr_set __ddr_setting={
 
                 #ifdef DDR3_11_11_11
-                    .cl             =  10,
-                    .t_faw          =  30,
+                    .cl             =  11,
+                    .t_faw          =  32,//X16:32; X8:24
+                    .t_ras          =  28,
+                    .t_rc           =  39,
+                    .t_rcd          =  11,
+                    .t_rfc          = 128,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
+                    .t_rp           =  11,
+                    .t_rrd          =   6, //X16:6 ; X8:5
+                    .t_wr           =  12,
+                    .t_cwl          =   8,
+                    .t_mod          =  12,
                 #endif
                 #ifdef DDR3_7_7_7
                     .cl             =   7,
-                    .t_faw          =  27,
+                    .t_faw          =  20,//X16:27; X8:20
+                    .t_ras          =  20,
+                    .t_rc           =  27,
+                    .t_rcd          =   7,
+                    .t_rfc          =  86,//4Gb:160(GT:139); 2Gb:86; 1Gb:59
+                    .t_rp           =   7,
+                    .t_rrd          =   4,//X16:6 ; X8:4
+                    .t_wr           =   8,
+                    .t_cwl          =   6,
+                    .t_mod          =   8,
                 #endif
                     .t_mrd          =   4,
                     .t_1us_pck      = ((CONFIG_DDR_CLK/12)*12),
                     .t_100ns_pck    = ((CONFIG_DDR_CLK/12)*12)/10,
-                    .t_init_us      = 512,// 2 ??
-                    .t_rsth_us      = 500, // 5 ??
+                    .t_init_us      = 512,
+                    .t_rsth_us      = 500,
                     .t_rstl_us      = 100,
-                #ifdef DDR3_11_11_11
-                    .t_ras          =  28, // 24,
-                    .t_rc           =  38, // 33,
-                    .t_rcd          =  10, //  9,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_ras          =  20,
-                    .t_rc           =  27,
-                    .t_rcd          =   7,
-                #endif
                     .t_refi_100ns   =  39,//78 for temperature over 85 degrees
-                #ifdef DDR3_11_11_11
-                    .t_rfc          = 128, // 107,
-                    .t_rp           =  10, //  9,
-                    .t_rrd          =   6, //  5,
-                    .t_rtp          =   6, // 5,
-                    .t_wr           =  12, // 10,
-                    .t_wtr          =   6, //  5,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_rfc          =  86,
-                    .t_rp           =   7,
-                    .t_rrd          =   6,
-                    .t_rtp          =   4,
-                    .t_wr           =   8,
-                    .t_wtr          =   4,
-                #endif                    
-                    .t_xp           =   5, // 4,
-                    .t_xpdll        =   20,
                     .t_xsrd         =   0,
                     .t_xsnr         =   0,
                     .t_exsr         = 512,
                     .t_al           =   0,
                     .t_clr          =   8,
-                    .t_dqs          =   4, // 2,
-                #ifdef DDR3_11_11_11
-                    .t_cwl          =   8, // 7,
-                #endif
-				#ifdef DDR3_7_7_7
-                    .t_cwl          =   6,
-                #endif				
-                    .t_mod          =  12,
+                    .t_dqs          =   2,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
-                    .t_cksrx        =   5, // 7,
-                    .t_cksre        =   5, // 7,
-                    .t_cke          =   4,
+                    .t_rtp          =   4,//FIXED
+                    .t_wtr          =   4,//FIXED
+                    .t_xp           =   3,//FIXED
+                    .t_cksrx        =   5,//FIXED
+                    .t_cksre        =   5,//FIXED
+                    .t_cke          =   3,//FIXED
+                    
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
                     			(6<<9)| //(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     						  //001 = 5
@@ -120,16 +107,18 @@ static struct ddr_set __ddr_setting={
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
                             [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+#ifdef ENABLE_WRITE_LEVELING
+                                (1 << 7)|     // Write leveling enable
+#endif
                                 (0 << 3 ),					//@@[B4,B3]AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
                                 							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved
                                 
-                                                                	
-                            [2]=(3<<3),//(2<<3),	//@@CWL:(B5,B4,B3)
-	                            		//000 = 5 (tCK = 2.5ns) 
-    	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
-        	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
-            	                		//011 = 8 (1.5ns > tCK = 1.25ns)
+#ifdef ENABLE_WRITE_LEVELING
+                            [2]=0,
+#else
+                            [2]=(1 << 10)|(0 <<9 ),//(A10:A9) 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2
+#endif
                             [3]=0
                         },
                     .mcfg =   1 |				   //[B0] burst length: 0 for 4; 1 for 8
@@ -156,8 +145,8 @@ static struct ddr_set __ddr_setting={
                     (1 << 7 ) |      // bit 7         ddr command filter bank policy. 1 = keep open. 0 : close bank if no request.
                     (1 << 6 ) |      // bit 6         ddr address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.
                     (2 << 4 ) |      // bit 5:4      ddr rank size.  0, 1, one rank.  2 : 2 ranks. 
-                    (2 << 2 ) |      // bit 3:2      ddr row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
-                    (2 << 0 ),       // bit 1:0      ddr col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
+                    (ddr3_row_size << 2 ) |      // bit 3:2      ddr row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+                    (ddr3_col_size << 0 ),       // bit 1:0      ddr col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
          .init_pctl=init_pctl_ddr3        
 };
 
