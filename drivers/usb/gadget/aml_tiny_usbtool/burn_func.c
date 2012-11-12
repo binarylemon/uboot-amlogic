@@ -751,7 +751,7 @@ int usb_run_command (const char *cmd, char* buff)
 
 //efuse write success, test efuse read
 #if defined( WRITE_TO_EFUSE_ENABLE) && defined(EFUSE_READ_TEST_ENABLE)
-				printf("#####efuse write %s ok\n",argv[2]);
+				printf("#####efuse write %s success,now test efuse read %s:\n",argv[2], argv[2]);
 				memset(test_buff,0,sizeof(test_buff));
 				argv[0] 	= "efuse";	
 				argv[1]  	= "read";	
@@ -771,22 +771,26 @@ int usb_run_command (const char *cmd, char* buff)
 						#elif defined(CONFIG_AML_MESON6) 
 							sprintf(efuse_data, "%02x", test_buff[0]);
 						#endif	
-						printf("test efuse read version success, version=%s\n", efuse_data);
+						printf("test success,version=%s\n", efuse_data);
 					}	
 					else if( !strncmp(argv[2],"mac",sizeof("mac")) || 
 					     !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) ||
 					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )	
 					{
 						sprintf(efuse_data, "%02x:%02x:%02x:%02x:%02x:%02x", test_buff[0],test_buff[1],test_buff[2],test_buff[3],test_buff[4],test_buff[5]);
-						printf("test efuse read %s success,%s=%s\n", argv[2], argv[2], efuse_data);
+						printf("test success,%s=%s\n", argv[2], efuse_data);
 					}	
-					else if( (!strncmp(argv[2],"usid",sizeof("usid"))) || (!strncmp(argv[2],"hdcp",sizeof("hdcp"))) )	
+					else if( !strncmp(argv[2],"usid",sizeof("usid")) ) 
 					{
-						printf("test efuse read %s success,%s=", argv[2], argv[2]);
+						printf("test success,%s=%s\n", argv[2], test_buff);
+					}
+					else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) ) 
+					{
+						printf("test success,%s=", argv[2]);
 						for(i=0;i<512;i++)
 							printf("%02x:", test_buff[i]);
 						printf("\n");
-					}
+					}						
 				}
 				else
 					printf("test efuse read %s fail\n", argv[2]);	
