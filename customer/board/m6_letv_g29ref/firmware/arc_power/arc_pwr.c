@@ -145,14 +145,14 @@ static void power_off_via_gpio()
 	  stored in backup_remote_register()
 	*/	
 	clrbits_le32(P_AO_RTI_PIN_MUX_REG ,(0x3ff<<1)|(0xf<<23));//clear 1~10,23~26 bit
-	setbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
+	clrbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 L VCC5V_EN
 	clrbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
 	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
 }
 
 static void power_on_via_gpio()
 {
-	clrbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
+	setbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
 	setbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
 	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
 	udelay(1000);
@@ -178,7 +178,7 @@ static void power_off_vcck_vddio(void)
 static void power_on_vcck_vddio(void)
 {
 	//GPIOAO_2
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2,3 output
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2 output
 	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 H VCCK_EN
 	udelay(100);
 }
@@ -187,17 +187,17 @@ static void power_on_vcck_vddio(void)
 #ifdef POWER_OFF_VCC5V
 static void power_off_vcc5v(void)
 {
-	//GPIOAO_3
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
-	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 2 H VCCK_EN
-	udelay(100);
+    //GPIOAO_3
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 L VCCK_EN
+    udelay(100);
 }
 static void power_on_vcc5v(void)
 {
-	//GPIOAO_3
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 H VCC5V_EN
-	udelay(100);
+    //GPIOAO_3
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
+    setbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 H VCC5V_EN
+    udelay(100);
 }
 #endif
 
