@@ -15,9 +15,9 @@ static void wait_pll(unsigned clk,unsigned dest);
 void set_ddr_clock(struct ddr_set * timing_reg)
 {
 	M6_PLL_RESET(HHI_DDR_PLL_CNTL);
-	Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
-	Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
-	Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
+	Wr(HHI_DDR_PLL_CNTL2,M6TV_DDR_PLL_CNTL_2);
+	Wr(HHI_DDR_PLL_CNTL3,M6TV_DDR_PLL_CNTL_3);
+	Wr(HHI_DDR_PLL_CNTL4,M6TV_DDR_PLL_CNTL_4);
 	
 #ifdef CONFIG_CMD_DDR_TEST
 	if((Rd(PREG_STICKY_REG0) & 0xffff) == 0x2012){
