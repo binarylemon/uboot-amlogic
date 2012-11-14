@@ -76,12 +76,12 @@ struct pll_clk_settings{
 }__attribute__ ((packed));
 
 //M6 all pll controler use bit 29 as reset bit
-#define M6_PLL_RESET(pll) \
+#define M6TV_PLL_RESET(pll) \
 	Wr(pll,Rd(pll) | (1<<29));
 
 //wait for pll lock
 //must wait first (100us+) then polling lock bit to check
-#define M6_PLL_WAIT_FOR_LOCK(pll) \
+#define M6TV_PLL_WAIT_FOR_LOCK(pll) \
 	do{\
 		__udelay(1000);\
 	}while((Rd(pll)&0x80000000)==0);

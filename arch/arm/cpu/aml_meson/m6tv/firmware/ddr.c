@@ -14,7 +14,7 @@ static void wait_pll(unsigned clk,unsigned dest);
 
 void set_ddr_clock(struct ddr_set * timing_reg)
 {
-	M6_PLL_RESET(HHI_DDR_PLL_CNTL);
+	M6TV_PLL_RESET(HHI_DDR_PLL_CNTL);
 	Wr(HHI_DDR_PLL_CNTL2,M6TV_DDR_PLL_CNTL_2);
 	Wr(HHI_DDR_PLL_CNTL3,M6TV_DDR_PLL_CNTL_3);
 	Wr(HHI_DDR_PLL_CNTL4,M6TV_DDR_PLL_CNTL_4);
@@ -30,7 +30,7 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 #endif
 
 	Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
-	M6_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
+	M6TV_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
 
 
 	//#define P_MMC_CLK_CNTL        0xc800641c
@@ -100,8 +100,7 @@ addr_start:
 static inline unsigned lowlevel_ddr(unsigned tag,struct ddr_set * timing_reg)
 {
     set_ddr_clock(timing_reg);
-    //if(tag)
-    //    return ddr_init_sw(timing_reg);
+    
     return ddr_init_hw(timing_reg);
 }
 static inline unsigned lowlevel_mem_test_device(unsigned tag,struct ddr_set * timing_reg)
@@ -162,9 +161,12 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #define DDR_TEST_DATA   (1<<2)
 #define DDR_TEST_DEVICE (1<<3)
 
-#define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
-#define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
+//normal DDR init setting
+#define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
+
+//complete DDR init setting with a full memory test
+#define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
 	if(m6_ddr_init_test(DDR_TEST_BASEIC))
     {

@@ -19,7 +19,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #elif defined(M6TV_DDR3_512M)
 	#define DDR3_2Gbx16
 #else
-	#error "Please define DDR3 memory capacity first in file aml_tv_m2c.h!\n"
+	#error "Please define DDR3 memory capacity first in file m6tv_skt_v1.h!\n"
 #endif
 
 
@@ -159,23 +159,29 @@ static struct ddr_set __ddr_setting={
 //PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
 //0x1098[0xc1104260]
 #if   (700 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (6)
-	#define	M6TV_SYS_PLL_M (175)
+	#define	M6TV_SYS_PLL_N  (6)
+	#define	M6TV_SYS_PLL_M  (175)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (800 == CONFIG_SYS_CPU_CLK)
-    #define	M6TV_SYS_PLL_N (3)
-	#define	M6TV_SYS_PLL_M (100)	
+	#define	M6TV_SYS_PLL_N  (3)
+	#define	M6TV_SYS_PLL_M  (100)	
+	#define M6TV_SYS_PLL_OD (0)
 #elif (900 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (2)
-	#define	M6TV_SYS_PLL_M (75)
+	#define	M6TV_SYS_PLL_N  (2)
+	#define	M6TV_SYS_PLL_M  (75)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1000 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (3)
-	#define	M6TV_SYS_PLL_M (125)
+	#define	M6TV_SYS_PLL_N  (3)
+	#define	M6TV_SYS_PLL_M  (125)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1200 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (1)
-	#define	M6TV_SYS_PLL_M (50)
+	#define	M6TV_SYS_PLL_N  (1)
+	#define	M6TV_SYS_PLL_M  (50)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1296 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (1)
-	#define	M6TV_SYS_PLL_M (54)
+	#define	M6TV_SYS_PLL_N  (1)
+	#define	M6TV_SYS_PLL_M  (54)
+	#define M6TV_SYS_PLL_OD (0)
 #else
 	#error "CONFIG_SYS_CPU_CLK is not set! Please set M6TV CPU clock first!\n"
 #endif
@@ -184,7 +190,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 ={
 	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V	
 	//0x1098[0xc1104260]
-	.sys_pll_cntl=	(0   << 16) | //OD
+	.sys_pll_cntl=	(M6TV_SYS_PLL_OD << 16) | //OD
 					(M6TV_SYS_PLL_N  << 9 ) | //N
 					(M6TV_SYS_PLL_M  << 0 ),  //M
 	//A9 clock setting
