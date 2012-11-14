@@ -77,7 +77,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) > 7 ? 7 : ((i)*timing_reg->t_rrd - timing_reg->t_faw);
     }
 	
-	writel( 0x80000000, P_UPCTL_MCFG1_ADDR | (nTempVal << 8));  //enable hardware c_active_in;
+	writel( 0x80000000 | (nTempVal << 8), P_UPCTL_MCFG1_ADDR );  //enable hardware c_active_in;
 	  
 	  
     writel(0x8,P_UPCTL_DFIODTCFG_ADDR);
