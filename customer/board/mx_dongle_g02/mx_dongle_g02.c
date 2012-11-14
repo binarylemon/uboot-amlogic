@@ -457,6 +457,34 @@ set_dcdc3(1100);	//set DC-DC3 to 1100mV
 }
 #endif
 
+void into_recovery(void)
+{
+    int	i = 0;
+    char	str[128];
+    
+    printf("Recovery Start...\n");
+    //run_command ("nand read 84100000 ${logo_start} ${logo_size}", 0);
+    if(!run_command ("mmcinfo", 0))
+    {
+        for(i = 0; i < SCAN_DEVICE_PARTITION; i++)
+        {
+            sprintf(str, "fatexist mmc 0:%d ${recovery_path}", (i + 1));
+            if(!run_command (str, 0))
+            {
+                printf("recovery in SD Card!!!\n");
+                sprintf(str, "fatload mmc 0:%d ${loadaddr} ${recovery_path}", (i + 1));
+                run_command (str, 0);
+                run_command ("bootm", 0);
+            }
+        }
+    }
+
+    printf("recovery in nand!!!\n");
+    run_command ("nand read ${recovery_name} ${loadaddr} 0 ${recovery_size}", 0);
+
+    run_command ("bootm", 0);
+}
+
 
 //POWER key
 inline void key_init(void)
@@ -467,9 +495,46 @@ inline void key_init(void)
 
 inline int get_key(void)
 {
+	//return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
+#ifdef CONFIG_SWITCH_BOOT_MODE	
+	int val;
+	SET_CBUS_REG_MASK(PAD_PULL_UP_REG2, (1<<14)); //enable internal pullup
+	set_gpio_mode(GPIOC_bank_bit0_15(14), GPIOC_bit_bit0_15(14), GPIO_INPUT_MODE);
+	val = get_gpio_val(GPIOC_bank_bit0_15(14), GPIOC_bit_bit0_15(14));
+	printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
+	return !val;
+#else
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
+#endif
 }
 
+int switch_boot_mode(void)
+{
+	unsigned long hold_time = 50000, polling_time = 10000, tmp;
+	//unsigned long upgrade_step;
+
+
+	while(hold_time > 0)
+	{
+		udelay(polling_time);
+		tmp = get_key();
+		printf("get_key(): %d\n", tmp);
+		if(!tmp)  break;
+		hold_time -= polling_time;
+	}
+
+	if(hold_time > 0)
+	{
+		printf("Normal Start...\n");
+		return	1;
+	}
+	else
+	{
+		printf("upgrading... please wait\n");
+		into_recovery();
+	}
+
+}
 
 /*//AC online
 inline void ac_online_init(void)

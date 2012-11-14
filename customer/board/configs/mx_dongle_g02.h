@@ -144,6 +144,9 @@
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
 	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; bootm\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"recovery_path=uImage_recovery\0" \
+	"recovery_name=recovery\0" \
+	"recovery_size=0x800000\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m hdmitx=unplug_powerdown\0" \
 
 #define CONFIG_BOOTCOMMAND \
@@ -206,6 +209,9 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 26))
 #define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
 						/* initial data */
+
+#define  CONFIG_SWITCH_BOOT_MODE
+#define   SCAN_DEVICE_PARTITION  4
 
 
 #define BOARD_LATE_INIT
