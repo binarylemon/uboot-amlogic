@@ -510,4 +510,12 @@ void power_off(void)
 	}
 #endif
 
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode()
+{
+    //extern int aml_autoscript(void);
+    //aml_autoscript();
+}
+#endif
+
 

@@ -42,6 +42,11 @@
 //#define CONFIG_ICACHE_OFF	1
 //#define CONFIG_DCACHE_OFF	1
 
+#define CONFIG_SWITCH_BOOT_MODE
+#define CONFIG_AML_AUTOSCRIPT
+#define AML_AUTOSCRIPT  "aml_autoscript"
+#define SCAN_MMC_PARTITION 1
+#define SCAN_USB_PARTITION 1
 
 #define CONFIG_CMD_NET   1
 
@@ -311,7 +316,7 @@
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */
 #define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */
-#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
+//#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
 

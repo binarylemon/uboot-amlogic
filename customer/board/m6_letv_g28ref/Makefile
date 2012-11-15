@@ -25,7 +25,8 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
 
-CSRCS	:= $(wildcard *.c */*.c)
+#CSRCS	:= $(wildcard *.c */*.c)
+CSRCS	:= $(wildcard *.c) firmware/uartpin.c
 COBJS	:= $(CSRCS:%.c=%.o)
 
 SRCS	:= $(COBJS:.o=.c)
