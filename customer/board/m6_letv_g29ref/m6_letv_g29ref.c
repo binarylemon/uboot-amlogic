@@ -435,6 +435,8 @@ int board_init(void)
     nand_init();
     
 #endif    
+
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N L, Init standby Led
     
 	return 0;
 }
