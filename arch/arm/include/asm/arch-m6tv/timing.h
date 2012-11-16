@@ -86,14 +86,12 @@ struct pll_clk_settings{
 		__udelay(1000);\
 	}while((Rd(pll)&0x80000000)==0);
 
-//M6 PLL control value 
+//M6TV PLL control value 
 #define M6TV_PLL_CNTL_CST2 (0x814d3928)
 #define M6TV_PLL_CNTL_CST3 (0x6b425012)
-#define M6TV_PLL_CNTL_CST4 (0x110)
-#define M6TV_PLL_CNTL_CST5 (0x0)
-#define M6TV_PLL_CNTL_CST6 (0x0)
-
-
+#define M6TV_PLL_CNTL_CST4 (0x101)
+#define M6TV_PLL_CNTL_CST5 (0x08550d20)
+#define M6TV_PLL_CNTL_CST6 (0x04515400)
 
 #define M6TV_PLL_CNTL_CST12 (0x04294000)
 #define M6TV_PLL_CNTL_CST13 (0x026e1250)
