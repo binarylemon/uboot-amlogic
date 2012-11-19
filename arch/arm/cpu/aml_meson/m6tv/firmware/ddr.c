@@ -172,7 +172,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
     {
 	    serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
+		//writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
 		while(1);
 	}
 

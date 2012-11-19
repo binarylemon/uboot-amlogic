@@ -30,6 +30,16 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif
 
+#ifdef CONFIG_M6TV
+	#define AML_M6_JTAG_ENABLE
+	#define AML_M6_JTAG_SET_ARM
+
+	//for M6 only. And it will cause M3 fail to boot up.
+	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+
+#endif
+
+
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
@@ -57,13 +67,13 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 #endif
-
+		
 //	int i;
 
     //Adjust 1us timer base
     timer_init();
     //default uart clock.
-    serial_init(__plls.uart);
+    //serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
 
@@ -85,18 +95,28 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     // initial pll
     pll_init(&__plls);
 
+	//asm volatile ("wfi");
+	serial_init(__plls.uart);
+
+	__udelay(100000);//wait for a uart input
+	
 #ifdef ENTRY_DEBUG_ROM
     __udelay(100000);//wait for a uart input
 #else
     //__udelay(100);//wait for a uart input
 #endif
+
+	/*
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
 	 }
+	 */
 
     // initial ddr
     ddr_init_test();
 
+	//asm volatile ("wfi");
+	
     // load uboot
 #ifdef CONFIG_ENABLE_WATCHDOG
 	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){

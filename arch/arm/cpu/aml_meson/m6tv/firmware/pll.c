@@ -90,6 +90,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	//*P_HHI_MPLL_CNTL5   |= 0x1; // Enable Both MPLL and SYS_PLL enable pin
 	//move to following SYS PLL init
 
+	Wr(HHI_MPLL_CNTL, 0x4000067d );
+	
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
     Wr( HHI_A9_CLK_CNTL, 0);
 	__udelay(100);
@@ -133,6 +135,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	//enable A9 clock
 	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl | (1<<7)));
 
+	/*
 	//AUDIO PLL
 	M6TV_PLL_RESET(HHI_AUDCLK_PLL_CNTL);
 	Wr(HHI_AUDCLK_PLL_CNTL2, M6TV_AUD_PLL_CNTL_2 );
@@ -142,7 +145,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr(HHI_AUDCLK_PLL_CNTL6, M6TV_AUD_PLL_CNTL_6 );
 	Wr(HHI_AUDCLK_PLL_CNTL,  0x20242 );
 	M6TV_PLL_WAIT_FOR_LOCK(HHI_AUDCLK_PLL_CNTL);
-
+	*/
+	
 	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
 	M6TV_PLL_RESET(HHI_MPLL_CNTL);
 	Wr(HHI_MPLL_CNTL2, M6TV_MPLL_CNTL_2 );
@@ -154,7 +158,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr(HHI_MPLL_CNTL8, M6TV_MPLL_CNTL_8 );
 	Wr(HHI_MPLL_CNTL9, M6TV_MPLL_CNTL_9 );
 	Wr(HHI_MPLL_CNTL10,M6TV_MPLL_CNTL_10);
-	Wr(HHI_MPLL_CNTL, 0x67d );
+	Wr(HHI_MPLL_CNTL, 0x4000067d );
 	M6TV_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL);
 
 	//clk81=fclk_div5 /2=400/2=200M
@@ -163,6 +167,13 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		pll_times=0;
 #endif
 
+	Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
+	__udelay(10);
+	Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
+	__udelay(1000); //1ms for bandgap bootup
+
+			
+	//asm volatile ("wfi");
 	//VID PLL
 	do{
 		//BANDGAP reset for VID_PLL,DDR_PLL lock fail
@@ -175,10 +186,11 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		__udelay(1000); //1ms for bandgap bootup
 
 		M6TV_PLL_RESET(HHI_VID_PLL_CNTL);
+		Wr(HHI_VID_PLL_CNTL,  0x600b0442 );
 		Wr(HHI_VID_PLL_CNTL2, M6TV_VID_PLL_CNTL_2 );
 		Wr(HHI_VID_PLL_CNTL3, M6TV_VID_PLL_CNTL_3 );
 		Wr(HHI_VID_PLL_CNTL4, M6TV_VID_PLL_CNTL_4 );
-		Wr(HHI_VID_PLL_CNTL,  0xb0442 );
+		Wr(HHI_VID_PLL_CNTL,  0x400b0442 );
 		//M6TV_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
 
 		__udelay(500); //wait 100us for PLL lock
