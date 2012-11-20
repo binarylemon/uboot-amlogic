@@ -56,6 +56,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	int nTempVal = 0;
 	int i;
 //	int ret = 0;
+	//asm volatile ("wfi"); //debug 11.20
 
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
@@ -85,7 +86,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
-	writel(0x3 | (1 << 3), P_PUB_DCR_ADDR);
+	writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
 	//writel(0x01842e04, P_PUB_PGCR0_ADDR); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.	
@@ -156,11 +157,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	//for simulation to reduce the initial time.
 	// real value should be based on the DDR3 SDRAM clock cycles.
-	writel((20000   | 	  //tDINIT0  CKE low time with power and lock stable. 500us.
+	writel((299401   | 	  //tDINIT0  CKE low time with power and lock stable. 500us.
 		 (136 << 20))	  //tDINIT1. CKE high time to first command(tRFC + 10ns).
 		 ,P_PUB_PTR3_ADDR); 
-	writel( (10000 |		//tDINIT2. RESET low time,	200us. 
-		   (80 << 18))	 //tDINIT3. ZQ initialization command to first command. 1us.
+	writel( (119760 |		//tDINIT2. RESET low time,	200us. 
+		   (625 << 18))	 //tDINIT3. ZQ initialization command to first command. 1us.
 		  ,P_PUB_PTR4_ADDR); 
 
 
@@ -225,16 +226,26 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel((0xf0 << 1), P_UPCTL_PPCFG_ADDR);
 	writel(0x4, P_UPCTL_DFISTCFG0_ADDR);
 	writel(0x1, P_UPCTL_DFISTCFG1_ADDR);
-	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR);
-	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR);
-	writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR);    //(WL -4)/2,  2 if CWL = 8 
-	writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);     //(CL -4)/2,  3 if RL = 10.
-	writel(13, P_UPCTL_DFITPHYRDLAT_ADDR);
-	writel(1, P_UPCTL_DFITDRAMCLKDIS_ADDR);
-	writel(1, P_UPCTL_DFITDRAMCLKEN_ADDR);
-	writel(0x10, P_UPCTL_DFITCTRLUPDMIN_ADDR);
-	writel(0x10, P_UPCTL_DFITPHYUPDTYPE0_ADDR);
-	writel(1600, P_UPCTL_DFITPHYUPDTYPE1_ADDR);
+	//writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20
+	writel(3, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20// 0x240
+	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR); //0x250 debug 11.20
+
+	//writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+	nTempVal = timing_reg->t_cwl+timing_reg->t_al;
+	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2;
+	writel(nTempVal , P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+
+	//writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
+	nTempVal = timing_reg->cl+timing_reg->t_al; //debug 11.20
+	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2; //debug 11.20
+	writel(nTempVal, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
+	
+	writel(13, P_UPCTL_DFITPHYRDLAT_ADDR);   //0x264
+	writel(1, P_UPCTL_DFITDRAMCLKDIS_ADDR);  //0x2d4
+	writel(1, P_UPCTL_DFITDRAMCLKEN_ADDR);   //0x2d0
+	writel(0x10, P_UPCTL_DFITCTRLUPDMIN_ADDR); //0x280
+	writel(0x10, P_UPCTL_DFITPHYUPDTYPE0_ADDR); //0270
+	writel(1600, P_UPCTL_DFITPHYUPDTYPE1_ADDR); //0x274
 
        
 
@@ -262,24 +273,32 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         writel( (0x18 | (0x0 <<12) | (7 << 28)) 
                 ,P_PUB_DTAR3_ADDR ); 
 
-        writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (3 << 24) )
+        writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
                 ,P_PUB_DTCR_ADDR);
 
+	//debug 11.20 begin
+	/*
 	// DDR PHY initialization 
 #ifdef ENABLE_WRITE_LEVELING
     writel(0xf5f3, P_PUB_PIR_ADDR);
 #else
 	writel(0xfff3, P_PUB_PIR_ADDR);
-#endif
+	*/
+	writel((1 |(1<<7)|(1<<8)|(1<<10)),
+	P_PUB_PIR_ADDR);
+	//debug 11.20 end
 
-	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(readl(P_PUB_PGSR0_ADDR) & 1)) {}
+	//asm volatile ("wfi"); //debug 11.20
+
+	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
 	nTempVal = readl(P_PUB_PGSR0_ADDR);
 	
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
+
+	//asm volatile ("wfi"); //debug 11.20
 
     if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
 	    return nTempVal;

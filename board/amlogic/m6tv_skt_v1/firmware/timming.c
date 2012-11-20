@@ -35,35 +35,20 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 static struct ddr_set __ddr_setting={
 
-                #ifdef DDR3_11_11_11
-                    .cl             =  11,
-                    .t_faw          =  32,//X16:32; X8:24
-                    .t_ras          =  28,
-                    .t_rc           =  39,
-                    .t_rcd          =  11,
-                    .t_rfc          = 128,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
-                    .t_rp           =  11,
-                    .t_rrd          =   6, //X16:6 ; X8:5
+                    .cl             =  9,
+                    .t_faw          =  30,//X16:32; X8:24
+                    .t_ras          =  24,
+                    .t_rc           =  33,
+                    .t_rcd          =  9,
+                    .t_rfc          = 107,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
+                    .t_rp           =  9,
+                    .t_rrd          =   5, //X16:6 ; X8:5
                     .t_wr           =  12,
                     .t_cwl          =   8,
                     .t_mod          =  12,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .cl             =   7,
-                    .t_faw          =  20,//X16:27; X8:20
-                    .t_ras          =  20,
-                    .t_rc           =  27,
-                    .t_rcd          =   7,
-                    .t_rfc          =  86,//4Gb:160(GT:139); 2Gb:86; 1Gb:59
-                    .t_rp           =   7,
-                    .t_rrd          =   4,//X16:6 ; X8:4
-                    .t_wr           =   8,
-                    .t_cwl          =   6,
-                    .t_mod          =   8,
-                #endif
                     .t_mrd          =   4,
-                    .t_1us_pck      = ((CONFIG_DDR_CLK/12)*12),
-                    .t_100ns_pck    = ((CONFIG_DDR_CLK/12)*12)/10,
+                    .t_1us_pck      = ((CONFIG_DDR_CLK/12)*24),
+                    .t_100ns_pck    = ((CONFIG_DDR_CLK/12)*24)/10,
                     .t_init_us      = 512,
                     .t_rsth_us      = 500,
                     .t_rstl_us      = 100,

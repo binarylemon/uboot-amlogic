@@ -215,7 +215,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(900)
+#define M6TV_CPU_CLK 		(800)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -225,7 +225,7 @@
  */
 //Please just define m6tv DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6TV_DDR_CLK   (480)
+#define M6TV_DDR_CLK   (324)
 #define CONFIG_DDR_CLK (M6TV_DDR_CLK)
 
 

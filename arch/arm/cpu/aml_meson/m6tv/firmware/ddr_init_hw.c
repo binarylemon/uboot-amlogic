@@ -32,11 +32,19 @@ static inline int end_ddr_config(void)
 static void dtu_test_for_debug_training_result(struct ddr_set * timing_reg)
 {
     int i;
-    
-    reg(P_UPCTL_DTUWD0_ADDR) = 0xdd22ee11;
-    reg(P_UPCTL_DTUWD1_ADDR) = 0x7788bb44;
+	//debug 11.20
+	/*
+	reg(P_UPCTL_DTUWD0_ADDR) = 0xdd22ee11;
+	reg(P_UPCTL_DTUWD1_ADDR) = 0x7788bb44;
+	reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
+	reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+	*/
+    reg(P_UPCTL_DTUWD0_ADDR) = 0x55AA55AA;
+    reg(P_UPCTL_DTUWD1_ADDR) = 0xAA55AA55;
     reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
     reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+	//debug 11.20
+	
     reg(P_UPCTL_DTUWACTL_ADDR) = 0;
     reg(P_UPCTL_DTURACTL_ADDR) = 0;
     for(i = 0; i < ((timing_reg->ddr_ctrl&(1<<7))?0x2:0x4); i++)
@@ -77,6 +85,7 @@ static void display_training_result(struct ddr_set * timing_reg)
     serial_put_hex(reg(P_PUB_DX1DQTR_ADDR), 32);
     serial_puts("\nDX1DQSTR:");
     serial_put_hex(reg(P_PUB_DX1DQSTR_ADDR), 32);
+	/*
     if(!(timing_reg->ddr_ctrl&(1<<7))){
         serial_puts("\nDX2DLLCR:");
         serial_put_hex(reg(P_PUB_DX2DLLCR_ADDR), 32);
@@ -91,6 +100,7 @@ static void display_training_result(struct ddr_set * timing_reg)
         serial_puts("\nDX3DQSTR:");
         serial_put_hex(reg(P_PUB_DX3DQSTR_ADDR), 32);
     }
+    */
 }
 
 void init_dmc(struct ddr_set * ddr_setting)
@@ -146,8 +156,8 @@ void init_dmc(struct ddr_set * ddr_setting)
 		//asm volatile ("LDR  r0, [r1]");		
 		nVal = readl(0x9fffff00);
 	}	
-	asm volatile ("dmb");
-	asm volatile ("isb");	
+	//asm volatile ("dmb"); //debug 11.20
+	//asm volatile ("isb");	 //debug 11.20
 	//
 
 }
@@ -156,19 +166,24 @@ int ddr_init_hw(struct ddr_set * timing_reg)
     int ret = 0;
     
     ret = timing_reg->init_pctl(timing_reg);
-    if(ret){
+    //if(ret) //debug 11.20
+    {
         dtu_test_for_debug_training_result(timing_reg);
         __udelay(10);        
 		serial_puts("\nPUB init fail! Reset...\n");
 		__udelay(10000); 
-		//writel((1<<22) | (3<<24), P_WATCHDOG_TC);
-		//while(1);		
-        return ret;
+		//writel((1<<22) | (3<<24), P_WATCHDOG_TC); //debug 11.20
+		//while(1);		//debug 11.20
+        // return ret;          //debug 11.20
     }
-    
+
+	asm volatile("wfi");
+		
     display_training_result(timing_reg);
     
     init_dmc(timing_reg);
 
+	while(1); //debug 11.20
+	
     return 0;
 }

@@ -48,13 +48,22 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	//bit 1:0.  clock divider selection.2'b00 = /2. 2'b01 = /4. 2'b10 = /8. 2'b11 = /16.
   
 
-  	//Enable DDR DLL clock input from PLL.
+	/*
+	//Enable DDR DLL clock input from PLL.
+	writel(0x00000008, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
+	writel(0x0000004c, P_MMC_CLK_CNTL);
+
+	//enable the clock.
+	writel(0x0000014c, P_MMC_CLK_CNTL);
+     	*/
+     	
     writel(0x00000080, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
     writel(0x000000c0, P_MMC_CLK_CNTL);
 
     //enable the clock.
     writel(0x000001c0, P_MMC_CLK_CNTL);
-     
+
+	
     // release the DDR DLL reset pin.    
 	writel(0xffffffff, P_MMC_SOFT_RST);
     writel(0xffffffff, P_MMC_SOFT_RST1);
