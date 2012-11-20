@@ -442,6 +442,8 @@ void enter_power_down()
 		  if(!power_key)
 		    break;
 		  */
+	    if(readl(0xc1109860)&0x100)
+            break;
 		  
 	  }
 //	power_on_via_gpio();
