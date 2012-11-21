@@ -31,7 +31,7 @@
 
 #define CONFIG_L2_OFF			1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
@@ -241,8 +241,8 @@
 	#error "Please set DDR3 property first in file m6tv_skt_v1.h\n"
 #endif
 
-#define M6TV_DDR3_512M
-//#define M6TV_DDR3_1G
+//#define M6TV_DDR3_512M
+#define M6TV_DDR3_1GB
 //above setting will affect following:
 //board/amlogic/m6tv_skt_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6tv/mmutable.s

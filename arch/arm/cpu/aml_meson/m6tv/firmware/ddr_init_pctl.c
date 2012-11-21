@@ -227,7 +227,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(0x4, P_UPCTL_DFISTCFG0_ADDR);
 	writel(0x1, P_UPCTL_DFISTCFG1_ADDR);
 	//writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20
-	writel(3, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20// 0x240
+	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20// 0x240
 	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR); //0x250 debug 11.20
 
 	//writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
@@ -284,7 +284,9 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 #else
 	writel(0xfff3, P_PUB_PIR_ADDR);
 	*/
+//	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
 	writel((1 |(1<<7)|(1<<8)|(1<<10)),
+
 	P_PUB_PIR_ADDR);
 	//debug 11.20 end
 

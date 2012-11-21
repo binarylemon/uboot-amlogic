@@ -62,12 +62,14 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 
     //enable the clock.
     writel(0x000001c0, P_MMC_CLK_CNTL);
-
 	
     // release the DDR DLL reset pin.    
 	writel(0xffffffff, P_MMC_SOFT_RST);
     writel(0xffffffff, P_MMC_SOFT_RST1);
-	
+
+	//debug 11.21 temp code
+    writel(0, P_MMC_CLKG_CNTL0);
+
 #ifndef CONFIG_CMD_DDR_TEST
 	wait_clock(3,timing_reg->ddr_clk);
 #endif

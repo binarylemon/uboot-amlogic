@@ -40,11 +40,11 @@ static struct ddr_set __ddr_setting={
                     .t_ras          =  24,
                     .t_rc           =  33,
                     .t_rcd          =  9,
-                    .t_rfc          = 107,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
+                    .t_rfc          = 200,//107,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
                     .t_rp           =  9,
                     .t_rrd          =   5, //X16:6 ; X8:5
                     .t_wr           =  12,
-                    .t_cwl          =   8,
+                    .t_cwl          =   7,
                     .t_mod          =  12,
                     .t_mrd          =   4,
                     .t_1us_pck      = ((CONFIG_DDR_CLK/12)*24),
@@ -102,7 +102,7 @@ static struct ddr_set __ddr_setting={
 #ifdef ENABLE_WRITE_LEVELING
                             [2]=0,
 #else
-                            [2]=(1 << 10)|(0 <<9 ),//(A10:A9) 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2
+                            [2]=(1 << 10)|(0 <<9 ),//(A10:A9) 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
 #endif
                             [3]=0
                         },
@@ -110,7 +110,7 @@ static struct ddr_set __ddr_setting={
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              (1 << 3) |    	            //[B3]2T mode, default is disable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
