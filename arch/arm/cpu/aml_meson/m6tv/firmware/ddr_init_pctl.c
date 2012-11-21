@@ -285,7 +285,10 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(0xfff3, P_PUB_PIR_ADDR);
 	*/
 //	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
-	writel((1 |(1<<7)|(1<<8)|(1<<10)),
+
+pub_retry:
+
+	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)),
 
 	P_PUB_PIR_ADDR);
 	//debug 11.20 end
@@ -295,6 +298,17 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
 	nTempVal = readl(P_PUB_PGSR0_ADDR);
+
+	serial_puts("\n==============PGSR0: 0x");
+	serial_put_hex(readl(P_PUB_PGSR0_ADDR),32);
+	serial_puts("=================\n");
+
+	serial_puts("==============PGSR1: 0x");
+	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
+	serial_puts("=================\n");
+
+	if(0x80000fff != nTempVal)
+		goto pub_retry;
 	
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 

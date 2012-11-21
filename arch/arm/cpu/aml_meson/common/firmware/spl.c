@@ -95,26 +95,31 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     // initial pll
     pll_init(&__plls);
 
-	//asm volatile ("wfi");
 	serial_init(__plls.uart);
 
-	__udelay(100000);//wait for a uart input
-	
 #ifdef ENTRY_DEBUG_ROM
     __udelay(100000);//wait for a uart input
 #else
-    //__udelay(100);//wait for a uart input
+    __udelay(100);//wait for a uart input
 #endif
-
-	/*
+	
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
-	 }
-	 */
+	 }	 
 
     // initial ddr
     ddr_init_test();
 
+#if 0
+	serial_puts("\nMSR clk list:\n");
+	int i;
+	for(i=0;i<46;i++)
+	{
+		serial_put_hex(i,8);
+		serial_puts("=");
+		serial_put_dword(clk_util_clk_msr(i));
+   }
+#endif
 	//asm volatile ("wfi");
 	
     // load uboot

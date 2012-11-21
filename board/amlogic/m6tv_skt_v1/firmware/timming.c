@@ -12,6 +12,8 @@
 #define STATIC_PREFIX_DATA static
 #endif
 
+#define ENABLE_WRITE_LEVELING 1
+
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 #if defined(M6TV_DDR3_1GB)
