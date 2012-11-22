@@ -448,7 +448,8 @@ void enter_power_down()
           if(cec_msg.cec_power == 0x1){  //cec power key
                 break;
             }
-         	  
+      if(readl(0xc1109860)&0x100)
+      	break;	  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
 		  power_key=power_key&(1<<3);
