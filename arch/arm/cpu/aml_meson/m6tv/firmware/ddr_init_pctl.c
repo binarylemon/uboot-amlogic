@@ -58,6 +58,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 //	int ret = 0;
 	//asm volatile ("wfi"); //debug 11.20
 
+pub_retry:
+
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
 
@@ -86,7 +88,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
-	writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
+	//writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
+	writel(0x3 | (1 << 3), P_PUB_DCR_ADDR);
 	//writel(0x01842e04, P_PUB_PGCR0_ADDR); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.	
@@ -273,8 +276,9 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         writel( (0x18 | (0x0 <<12) | (7 << 28)) 
                 ,P_PUB_DTAR3_ADDR ); 
 
-        writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
-                ,P_PUB_DTCR_ADDR);
+        //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
+       //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
+       writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
 
 	//debug 11.20 begin
 	/*
@@ -286,9 +290,10 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	*/
 //	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
 
-pub_retry:
 
-	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)),
+
+	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
+		(1<<1)|(1<<4)|(1<<5)|(1<<6)),
 
 	P_PUB_PIR_ADDR);
 	//debug 11.20 end
@@ -307,7 +312,7 @@ pub_retry:
 	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
 	serial_puts("=================\n");
 
-	if(0x80000fff != nTempVal)
+	if(0x80000fff != readl(P_PUB_PGSR0_ADDR))
 		goto pub_retry;
 	
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4

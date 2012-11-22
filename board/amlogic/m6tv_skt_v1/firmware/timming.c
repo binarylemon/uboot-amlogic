@@ -37,16 +37,16 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 static struct ddr_set __ddr_setting={
 
-                    .cl             =  9,
-                    .t_faw          =  30,//X16:32; X8:24
-                    .t_ras          =  24,
-                    .t_rc           =  33,
-                    .t_rcd          =  9,
-                    .t_rfc          = 200,//107,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
-                    .t_rp           =  9,
-                    .t_rrd          =   5, //X16:6 ; X8:5
-                    .t_wr           =  12,
-                    .t_cwl          =   7,
+                    .cl             =  7,//9,
+                    .t_faw          =  27,//30,//X16:32; X8:24
+                    .t_ras          =  20,//24,
+                    .t_rc           =  27,//33,
+                    .t_rcd          =  7,//9,
+                    .t_rfc          = 160,//200,//107,//4Gb:240(GT:208); 2Gb:128; 1Gb:88
+                    .t_rp           =  7,//9,
+                    .t_rrd          =  6,//5, //X16:6 ; X8:5
+                    .t_wr           =  8,//12,
+                    .t_cwl          =  6,// 7,
                     .t_mod          =  12,
                     .t_mrd          =   4,
                     .t_1us_pck      = ((CONFIG_DDR_CLK/12)*24),
