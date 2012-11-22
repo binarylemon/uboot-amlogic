@@ -27,6 +27,12 @@ static int do_ddr2pll(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
         zqcr = 0;
     }
 
+#ifdef CONFIG_M6TV
+		//temp code 2012.11.22
+		//if not clear, uboot command reset will fail -> blocked
+		*((volatile unsigned long *)0xc8100000) = 0;
+#endif
+
     WRITE_CBUS_REG(PREG_STICKY_REG0, 0x2012 | (zqcr << 16));
     WRITE_CBUS_REG(PREG_STICKY_REG1, pll);
     printf("Set pll done [0x%08x]\n", READ_CBUS_REG(PREG_STICKY_REG1));
