@@ -110,8 +110,8 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
-	"machid=F81\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"machid=1124\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt lpj=8000\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -224,22 +224,10 @@
  * Physical Memory Map
  */
 //Please just define m6tv DDR clock here only
-//current DDR clock range (300~600)MHz
-#define M6TV_DDR_CLK   (300)
-#define CONFIG_DDR_CLK (M6TV_DDR_CLK)
-
+//current DDR clock range (400~800)MHz
+#define CFG_M6TV_DDR_CLK (528)
 
 //#define CONFIG_DDR_LOW_POWER 1
-
-#define DDR3_11_11_11
-//#define DDR3_7_7_7
-//above setting must be set for ddr_set __ddr_setting in file
-//board/amlogic/m6tv_skt_v1/firmware/timming.c 
-
-//note: please DO NOT remove following check code
-#if !defined(DDR3_11_11_11) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6tv_skt_v1.h\n"
-#endif
 
 //#define M6TV_DDR3_512M
 #define M6TV_DDR3_1GB
