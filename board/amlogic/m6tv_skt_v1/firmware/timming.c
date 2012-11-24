@@ -65,12 +65,12 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_RFC 200
 	#define CFG_M6TV_DDR_RP  9
 	#define CFG_M6TV_DDR_RRD 5
-	#define CFG_M6TV_DDR_WR  12
+	#define CFG_M6TV_DDR_WR  10
 	#define CFG_M6TV_DDR_CWL 7
 	#define CFG_M6TV_DDR_MOD 12
-	#define CFG_M6TV_DDR_MRD 4
+	#define CFG_M6TV_DDR_MRD 7
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x18
+	#define CFG_M6TV_DDR_ZQ0CR1 0x16
 
 #endif
 
@@ -139,13 +139,13 @@ static struct ddr_set __ddr_setting={
                     .t_dqs          =   2,
                     .t_zqcl         = 512,
                     .t_rtw          =   2,
-                    .t_rtp          =   4,//FIXED
-                    .t_wtr          =   4,//FIXED
-                    .t_xp           =   3,//FIXED
-                    .t_xpdll        =   20,
-                    .t_cksrx        =   5,//FIXED
-                    .t_cksre        =   5,//FIXED
-                    .t_cke          =   4,//FIXED
+                    .t_rtp          =   6,//8,//4,//8,//FIXED
+                    .t_wtr          =   6,//8,//4,//8,//FIXED
+                    .t_xp           =   5,//26,//3,//26,//FIXED
+                    .t_xpdll        =   20,//26,//20,//26,
+                    .t_cksrx        =   5,//8,//5,//8,//FIXED
+                    .t_cksre        =   5,//8,//5,//8,//FIXED
+                    .t_cke          =   4,//6,//4,//6,//FIXED
                     
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
                     			(6<<9)| //(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
