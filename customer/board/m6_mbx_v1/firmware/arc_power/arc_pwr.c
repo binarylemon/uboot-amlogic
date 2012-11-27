@@ -458,6 +458,7 @@ void enter_power_down()
 		  */
 		  
 	  }
+	remote_cec_hw_off();
 //	power_on_via_gpio();
 //	resume_remote_register();
 

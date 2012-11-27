@@ -167,6 +167,51 @@ void remote_cec_hw_reset(void)
     
 }
 
+void remote_cec_hw_off(void)
+{
+    //unsigned char index = cec_global_info.my_node_index;
+//#ifdef CONFIG_ARCH_MESON6
+//    aml_write_reg32(APB_REG_ADDR(HDMI_CNTL_PORT), aml_read_reg32(APB_REG_ADDR(HDMI_CNTL_PORT))|(1<<16));
+//#else 
+//    WRITE_APB_REG(HDMI_CNTL_PORT, READ_APB_REG(HDMI_CNTL_PORT)|(1<<16));
+//#endif
+    //Enable HDMI Clock Gate 
+    writel(readl(P_HHI_HDMI_CLK_CNTL) | (0x1<<8), P_HHI_HDMI_CLK_CNTL);
+    writel(readl(P_HHI_GCLK_MPEG2) | (0x1<<4), P_HHI_GCLK_MPEG2);
+    
+    writel(readl(P_HDMI_CNTL_PORT) | (0x1<<15), P_HDMI_CNTL_PORT);//APB err_en    
+    writel(readl(P_HDMI_CNTL_PORT) | (0x1<<16), P_HDMI_CNTL_PORT);//soft reset enable
+
+    cec_wr_reg(OTHER_BASE_ADDR+HDMI_OTHER_CTRL0, 0xc); //[3]cec_creg_sw_rst [2]cec_sys_sw_rst
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_CLEAR_BUF, 0x1);
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_RX_CLEAR_BUF, 0x1);
+        
+    //mdelay(10);
+    //{//Delay some time
+    //	int i = 10;
+    //	while(i--);
+    //}
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_CLEAR_BUF, 0x0);
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_RX_CLEAR_BUF, 0x0);
+    cec_wr_reg(OTHER_BASE_ADDR+HDMI_OTHER_CTRL0, 0x0);
+//    WRITE_APB_REG(HDMI_CNTL_PORT, READ_APB_REG(HDMI_CNTL_PORT)&(~(1<<16)));
+//#ifdef CONFIG_ARCH_MESON6
+//    aml_write_reg32(APB_REG_ADDR(HDMI_CNTL_PORT), aml_read_reg32(APB_REG_ADDR(HDMI_CNTL_PORT))&(~(1<<16)));
+//#else
+    //WRITE_APB_REG(HDMI_CNTL_PORT, READ_APB_REG(HDMI_CNTL_PORT)&(~(1<<16)));
+    //WRITE_APB_REG(HDMI_DATA_PORT, READ_APB_REG(HDMI_DATA_PORT)|(1<<16));    
+//#endif
+
+    writel(P_HDMI_CNTL_PORT, readl(P_HDMI_CNTL_PORT) & (~(0x1<<16)));//soft reset disable
+    
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_CLOCK_DIV_H, 0x00 );
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_CLOCK_DIV_L, 0x00 );
+
+    //cec_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, (0x1 << 4) | 0x4);
+    cec_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, 0x00);
+    
+}
+
 //unsigned char remote_cec_ll_rx(unsigned char *msg, unsigned char *len)
 unsigned char remote_cec_ll_rx(void)
 {
@@ -259,9 +304,10 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
 void cec_report_physical_address(void)
 {
     unsigned char msg[5];
-    unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xf;
-    unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xf;
-            
+    unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xff;
+    unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xff;
+    //unsigned char phy_addr_ab = 0x20;
+    //unsigned char phy_addr_cd = 0x00;            
     msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
     msg[1] = CEC_OC_REPORT_PHYSICAL_ADDRESS;
     msg[2] = phy_addr_ab;
@@ -286,8 +332,8 @@ void cec_set_stream_path(void)
 {
     unsigned char msg[4];
     
-    unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xf;
-    unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xf;
+    unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xff;
+    unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xff;
          
     if((hdmi_cec_func_config >> CEC_FUNC_MSAK) & 0x1){    
         if((hdmi_cec_func_config >> AUTO_POWER_ON_MASK) & 0x1)
@@ -305,6 +351,19 @@ void cec_set_stream_path(void)
             }
         }
     }    
+}
+
+void cec_device_vendor_id(void)
+{
+    unsigned char msg[5];
+          
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
+    msg[1] = CEC_OC_DEVICE_VENDOR_ID;
+    msg[2] = 'A';
+    msg[3] = 'M';
+    msg[4] = 'L';
+
+    remote_cec_ll_tx(msg, 5);     
 }
 
 void cec_menu_status_smp(void)
@@ -331,24 +390,20 @@ void cec_give_deck_status(void)
 
 void cec_set_osd_name(void)
 {
-        unsigned char msg[14];
+        unsigned char msg[10];
         //"PHILIPS HMP"
         msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
         msg[1] = CEC_OC_SET_OSD_NAME;
-        msg[2] = 'P';
-        msg[3] = 'H';
-        msg[4] = 'I';
-        msg[5] = 'L';
-        msg[6] = 'I';
-        msg[7] = 'P';
-        msg[8] = 'S';
-        msg[9] = ' ';
-        msg[10] = 'H';
-        msg[11] = 'M';
-        msg[12] = 'P';
-        msg[13] = '\0';
+        msg[2] = 'H';
+        msg[3] = 'M';
+        msg[4] = 'P';
+        msg[5] = '8';
+        msg[6] = '1';
+        msg[7] = '0';
+        msg[8] = '0';
+        msg[9] = '\0';
               
-        remote_cec_ll_tx(msg, 14);
+        remote_cec_ll_tx(msg, 10);
 }
 
 //void register_cec_rx_msg(unsigned char *msg, unsigned char len )
@@ -408,11 +463,11 @@ void cec_handle_message(void)
         case CEC_OC_GIVE_PHYSICAL_ADDRESS:
             cec_report_physical_address();
             break;
-        //case CEC_OC_GIVE_DEVICE_VENDOR_ID:
-        //    //cec_device_vendor_id(pcec_message);
+        case CEC_OC_GIVE_DEVICE_VENDOR_ID:
+             cec_device_vendor_id();
         //    //cec_give_device_vendor_id(pcec_message);
         //    cec_usrcmd_set_device_vendor_id();
-        //    break;
+            break;
         case CEC_OC_GIVE_OSD_NAME:
             cec_set_osd_name();
             break;

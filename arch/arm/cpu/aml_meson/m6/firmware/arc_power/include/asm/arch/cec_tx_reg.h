@@ -492,14 +492,14 @@ void WRITE_APB_REG(unsigned long addr, unsigned long data);
 //#define	CEC_OC_CLEAR_EXTERNAL_TIMER 			0xA1
 //#define	CEC_OC_DECK_CONTROL 					0x42
 #define	CEC_OC_DECK_STATUS 						0x1B
-//#define	CEC_OC_DEVICE_VENDOR_ID 				0x87
+#define	CEC_OC_DEVICE_VENDOR_ID 				0x87
 //#define	CEC_OC_FEATURE_ABORT 					0x00
 //#define	CEC_OC_GET_CEC_VERSION 					0x9F
 //#define	CEC_OC_GET_MENU_LANGUAGE 				0x91
 //#define	CEC_OC_GIVE_AUDIO_STATUS 				0x71
 #define	CEC_OC_GIVE_DECK_STATUS 				0x1A
 #define	CEC_OC_GIVE_DEVICE_POWER_STATUS 		0x8F
-//#define	CEC_OC_GIVE_DEVICE_VENDOR_ID 			0x8C
+#define	CEC_OC_GIVE_DEVICE_VENDOR_ID 			0x8C
 #define	CEC_OC_GIVE_OSD_NAME 					0x46
 #define	CEC_OC_GIVE_PHYSICAL_ADDRESS 			0x83
 //#define	CEC_OC_GIVE_SYSTEM_AUDIO_MODE_STATUS 	0x7D
