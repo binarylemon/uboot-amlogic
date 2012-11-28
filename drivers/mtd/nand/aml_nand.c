@@ -1259,7 +1259,7 @@ void aml_nand_set_reg_default_hynix(void)
 {
 	struct mtd_info *mtd = nand_info[nand_curr_device];
 
-		if(strcmp(mtd->name,NAND_BOOT_NAME)){
+		if(!strcmp(mtd->name,NAND_BOOT_NAME)){
 #ifdef NEW_NAND_SUPPORT
 	//if(mtd){
 		aml_nand_set_readretry_default_value_hynix(mtd);
