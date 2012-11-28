@@ -802,25 +802,11 @@ int usb_run_command (const char *cmd, char* buff)
 		{
 			//read version/mac/bt_mac/wifi_mac/usid/hdcp fail
 			if(!strncmp(argv[1],"read",sizeof("read")))
-			{
-				if( !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) )
-					sprintf(buff, "%s", "failed:(read bt_mac failed)");
-				else if( !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )
-					sprintf(buff, "%s", "failed:(read wifi_mac failed)");	
-				else
-					sprintf(buff, "failed:(read %s failed)", argv[2]);
-			}
+				sprintf(buff, "failed:(read %s failed)", argv[2]);
 									
 			//write version/mac/bt_mac/wifi_mac/usid/hdcp fail
 			else if(!strncmp(argv[1],"write",sizeof("write")))
-			{
-				if( !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) )
-					sprintf(buff, "%s", "failed:(write bt_mac failed)");
-				else if( !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )
-					sprintf(buff, "%s", "failed:(write wifi_mac failed)");	
-				else
-					sprintf(buff, "failed:(write %s failed)", argv[2]);
-			}				
+				sprintf(buff, "failed:(write %s failed)", argv[2]);				
 			
 			printf("%s\n",buff);
 			return -1;
