@@ -626,7 +626,9 @@ int usb_run_command (const char *cmd, char* buff)
 					}
 					if(usid_flag)
 					{
-						sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
+						//sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
+						memcpy(efuse_data, buff, strlen(buff));
+						sprintf(buff, "success:(%s)", efuse_data);	
 					}
 					else
 						sprintf(buff, "%s", "failed:(usid has been not writen)");	//haven't write usid	
@@ -695,7 +697,9 @@ int usb_run_command (const char *cmd, char* buff)
 					{
 						printf("usid_len=%d\n",usid_len/2);
 						printf("usid_data=%s\n",buff);	
-						sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
+						//sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
+						memcpy(efuse_data, buff, strlen(buff));
+						sprintf(buff, "success:(%s)", efuse_data);	
 					}	
 					else if(usid_len<0)
 					{
@@ -745,7 +749,8 @@ int usb_run_command (const char *cmd, char* buff)
 					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )
 					sprintf(buff, "success:(%s)", argv[3]);
 				else if( !strncmp(argv[2],"usid",sizeof("usid")) )	
-					sprintf(buff, "%s", "success:(write usid success)");
+					//sprintf(buff, "%s", "success:(write usid success)");
+					sprintf(buff, "success:(%s)", argv[3]);
 				else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) )	
 					sprintf(buff, "%s", "success:(write hdcp success)");
 
