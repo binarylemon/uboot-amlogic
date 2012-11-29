@@ -284,7 +284,10 @@ void enter_power_down()
 	unsigned gate;
 	unsigned power_key;
     //unsigned char cec_key=0;
-    hdmi_cec_func_config = readl(P_AO_DEBUG_REG0);    	
+    hdmi_cec_func_config = readl(P_AO_DEBUG_REG0); 
+    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+    serial_put_hex(hdmi_cec_func_config,32);
+    f_serial_puts("\n");        	
 #ifdef smp_test
 	//ignore ddr problems.
 //	for(i = 0; i < 1000; i++)
@@ -429,10 +432,11 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
-    
-    cec_power_on();
-    remote_cec_hw_reset();  
-    cec_node_init();   
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        remote_cec_hw_reset();  
+        cec_node_init();
+    }  
     udelay(10000);
        
     //set the detect gpio
@@ -444,10 +448,12 @@ void enter_power_down()
 		  power_key = (power_key>>16)&0xff;
 		  if(power_key==0x1a)  //the reference remote power key code
         		break;
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
-            }
+          if(hdmi_cec_func_config & 0x1){
+              cec_handler();	
+              if(cec_msg.cec_power == 0x1){  //cec power key
+                    break;
+                }
+          }
       if(readl(0xc1109860)&0x100)
       	break;	  
 		  //detect IO key
@@ -457,8 +463,10 @@ void enter_power_down()
 		    break;
 		  */
 		  
-	  }
-	remote_cec_hw_off();
+    }
+    if(hdmi_cec_func_config & 0x1){
+        remote_cec_hw_off();
+    }
 //	power_on_via_gpio();
 //	resume_remote_register();
 
@@ -559,15 +567,18 @@ void enter_power_down()
     init_pctl();
     f_serial_puts("step 10\n");
     wait_uart_empty();
-    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
-    serial_put_hex(readl(P_AO_DEBUG_REG0),32);
-    f_serial_puts("\n");   
-    f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
-    serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
-    f_serial_puts("\n");       
-    f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
-    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
-    f_serial_puts("\n");  
+    
+    if(hdmi_cec_func_config & 0x1){
+        f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+        serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+        f_serial_puts("\n");   
+        f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
+        serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
+        f_serial_puts("\n");       
+        //f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
+        //serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
+        //f_serial_puts("\n");
+    }
     //print some useful information to help debug.
     serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
     f_serial_puts("  MMC_LP_CTRL1\n");
