@@ -53,7 +53,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x16
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
 #endif
 
 #ifdef DDR3_9_9_9
@@ -70,7 +70,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 7
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x16
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
 
 #endif
 
@@ -88,7 +88,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x16
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
 #endif
 
 #if defined(M6TV_DDR3_1GB)

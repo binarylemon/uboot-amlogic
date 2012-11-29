@@ -154,7 +154,7 @@ pub_retry:
 		
 
 	//configure for phy update request and ack.
-    writel( 0x7f |	//enalbe controller update ack enable and DQS gate Extension.
+    writel( 0x7b |	//enalbe controller update ack enable and DQS gate Extension.
 			  (0x8 << 8 ) |  //PHY update ack delay.
 			  (0xf0006 << 12),
 			  P_PUB_DSGCR_ADDR );	//other bits.
