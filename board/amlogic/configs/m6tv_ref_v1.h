@@ -31,9 +31,10 @@
 
 #define CONFIG_L2_OFF			1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
+	#define CONFIG_M6 1
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
 	#define CONFIG_CMD_PING 1
