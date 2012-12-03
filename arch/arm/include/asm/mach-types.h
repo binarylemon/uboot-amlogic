@@ -2936,6 +2936,9 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_MESON6_SKT           3969
 #define MACH_TYPE_MESON6_REF           3970
 
+#define MACH_TYPE_MESON6TV_SKT         4388
+#define MACH_TYPE_MESON6TV_REF         4389
+
 #define MACH_TYPE_MESON6_MBX   20007
 
 #ifdef CONFIG_ARCH_EBSA110
@@ -38037,6 +38040,31 @@ extern unsigned int __machine_arch_type;
 #else
 # define machine_is_meson6_mbx()        (0)
 #endif
+
+#ifdef CONFIG_MACH_MESON6TV_SKT
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type     __machine_arch_type
+# else
+#  define machine_arch_type     MACH_TYPE_MESON6TV_SKT
+# endif
+# define machine_is_meson6tv_skt()        (machine_arch_type == MACH_TYPE_MESON6TV_SKT)
+#else
+# define machine_is_meson6tv_skt()        (0)
+#endif
+
+#ifdef CONFIG_MACH_MESON6TV_REF
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type     __machine_arch_type
+# else
+#  define machine_arch_type     MACH_TYPE_MESON6TV_REF
+# endif
+# define machine_is_meson6tv_ref()        (machine_arch_type == MACH_TYPE_MESON6TV_REF)
+#else
+# define machine_is_meson6tv_ref()        (0)
+#endif
+
 
 
 /*

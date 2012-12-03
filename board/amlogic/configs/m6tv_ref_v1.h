@@ -1,7 +1,7 @@
-#ifndef __CONFIG_M6TV_SKT_V1_H__
-#define __CONFIG_M6TV_SKT_V1_H__
+#ifndef __CONFIG_M6TV_REF_V1_H__
+#define __CONFIG_M6TV_REF_V1_H__
 
-#define CONFIG_MACH_MESON6TV_SKT  // generate M6TV SKT machid number
+#define CONFIG_MACH_MESON6TV_REF  // generate M6TV REF machid number
 
 //ddrtest and d2pll command support
 #define CONFIG_CMD_DDR_TEST	1	//ddrtest & d2pll
@@ -231,12 +231,12 @@
 //#define M6TV_DDR3_512M
 #define M6TV_DDR3_1GB
 //above setting will affect following:
-//board/amlogic/m6tv_skt_v1/firmware/timming.c
+//board/amlogic/m6tv_ref_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6tv/mmutable.s
 
 //note: please DO NOT remove following check code
 #if !defined(M6TV_DDR3_1GB) && !defined(M6TV_DDR3_512M)
-	#error "Please set DDR3 capacity first in file m6tv_skt_v1.h\n"
+	#error "Please set DDR3 capacity first in file m6tv_ref_v1.h\n"
 #endif
 
 
@@ -272,4 +272,4 @@
 */
 //#define CONFIG_M6_TEST_CPU_SWITCH 1
 
-#endif //__CONFIG_M6_SKT_V1_H__
+#endif //__CONFIG_M6_REF_V1_H__
