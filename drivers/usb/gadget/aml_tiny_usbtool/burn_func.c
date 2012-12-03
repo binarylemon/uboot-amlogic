@@ -2,11 +2,40 @@
 #include "usb_pcd.h"
 
 
+#if defined(WRITE_TO_NAND_ENABLE)
+#include <common.h>
+#include <linux/ctype.h>
+#include <linux/mtd/mtd.h>
+#include <command.h>
+#include <watchdog.h>
+#include <malloc.h>
+#include <asm/byteorder.h>
+#include <jffs2/jffs2.h>
+#include <nand.h>
+#include <asm/arch/nand.h>
+#include <linux/types.h>
+#include <div64.h>
+#include <linux/err.h>
+char namebuf[20];
+char databuf[4096];
+//char listkey[1024];
+int secukey_inited=0;
+extern ssize_t uboot_key_init();
+extern ssize_t uboot_get_keylist(char *keyname);
+extern ssize_t uboot_key_read(char *keyname, char *keydata);
+extern ssize_t uboot_key_write(char *keyname, char *keydata);
+extern int nandkey_provider_register();
+extern int key_set_version(char *device);
+int secukey_init(int argc, char * const argv[]);
+int cmd_secukey(int argc, char * const argv[], char *buf);
+#endif
+
 #if defined(WRITE_TO_EFUSE_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 #define WRITE_TO_EFUSE_OR_NAND_ENABLE  1
 #endif
 
 #define SECUKEY_BYTES     512
+static int init_nand = 0;
 #if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
 //test efuse read
 #define EFUSE_READ_TEST_ENABLE									//enable efuse read test after efuse write success
@@ -215,8 +244,6 @@ typedef struct
     unsigned char sha[20];
 }hdcp_llc_file;
 #endif    /* WRITE_TO_EFUSE_OR_NAND_ENABLE */
-
-
 
 int burn_board(const char *dev, void *mem_addr, u64 offset, u64 size)
 {
@@ -539,6 +566,15 @@ int usb_run_command (const char *cmd, char* buff)
 #endif
 #elif defined(WRITE_TO_NAND_ENABLE)
 		//write to nand
+		ret = ensure_secukey_init();
+		if (ret)
+		{	
+			//init failed!!
+			sprintf(buff, "failed:(write version failed)");	
+			printf("init nand failed!!\n");
+			printf("%s\n",buff);
+			return -1;
+		}
 		if ((!strncmp(argv[1],"read",sizeof("read"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
 		{
 			sprintf(buff, "%s", "failed:(version is not writen)");
@@ -547,28 +583,14 @@ int usb_run_command (const char *cmd, char* buff)
 		}
 		else if ((!strncmp(argv[1],"write",sizeof("write"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
 		{
-			ret = secukey_init(argc, argv);
-			if (!ret){
-				#ifdef CONFIG_AML_MESON3
-					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
-				#elif defined(CONFIG_AML_MESON6) 
-					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
-				#endif	
-				
-				//init success!!
-				printf("init nand success!!\n");
-				printf("%s\n",buff);
-				return 0;
-			}
-			else{
-				sprintf(buff, "failed:(write %s failed)", argv[2]);	
-				
-				//init failed!!
-				printf("init nand failed!!\n");
-				printf("%s\n",buff);
-				return -1;
-			}
+			#ifdef CONFIG_AML_MESON3
+				sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
+			#elif defined(CONFIG_AML_MESON6) 
+				sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
+			#endif	
+			return 0;
 		}
+
 		ret = cmd_secukey(argc, argv, buff);									
 #endif
 
@@ -834,3 +856,134 @@ int usb_run_command (const char *cmd, char* buff)
 	printf("%s\n",buff);
 	return 0;
 }
+
+
+
+#if defined(WRITE_TO_NAND_ENABLE)
+int ensure_secukey_init(void)
+{
+	int error;
+	char *cmd;
+
+	if (secukey_inited){
+		printk("nand already inited!!\n");
+		return 0;
+	}
+	
+	printk("should be inited first!\n");
+
+	error = uboot_key_init();
+	if(error >= 0){
+		error = nandkey_provider_register();
+		if(error >= 0){
+			 error = key_set_version("nand");
+			 if(error >= 0){
+				printk("init key ok!!\n");
+				secukey_inited = 1;
+				return 0;
+			}
+		}
+	}	
+	else
+	{
+		printk("init error\n");
+		return -1;
+	}
+	
+	return 1;
+}
+
+char i_to_asc(char para)
+{
+	if(para>=0 && para<=9)
+		para = para+'0';
+	else if(para>=0xa && para<=0xf)
+		para = para+'a'-0xa;
+		
+		return para;
+}
+
+char asc_to_i(char para)
+{
+	if(para>='0' && para<='9')
+		para = para-'0';
+	else if(para>='a' && para<='f')
+		para = para-'a'+0xa;
+	else if(para>='A' && para<='F')
+		para = para-'A'+0xa;
+		
+		return para;
+}
+
+int cmd_secukey(int argc, char * const argv[], char *buf)
+{
+	int i,j, ret = 0,error;
+	char *cmd;
+	char *name;
+	char *data;
+	/* at least two arguments please */
+	if (argc < 2)
+		goto usage;
+	cmd = argv[1];
+	
+	memset(buf, 0, CMD_BUFF_SIZE);
+	memset(databuf, 0, sizeof(databuf));
+	if (secukey_inited){
+		if (argc > 2&&argc<5){
+			if(!strcmp(cmd,"read")){
+				if (argc>3)
+					goto usage;
+				name=argv[2];
+				strcpy(namebuf,name);
+				error=uboot_key_read(namebuf, databuf);
+                for(i=0; i<CMD_BUFF_SIZE*2; i++)
+                    printf(":%c", databuf[i]);
+                printf("\n");
+				if(error>=0){
+					for (i=0,j=0; i<CMD_BUFF_SIZE*2; i++,j++){
+							buf[j]= (((asc_to_i(databuf[i]))<<4) | (asc_to_i(databuf[++i])));
+					}
+					printf("%s is: ", namebuf);
+					for(i=0; i<CMD_BUFF_SIZE; i++)
+						printf(":%02x", buf[i]);
+					printf("\n");
+					return 0;
+				}
+				else{
+					printk("read error!!\n");
+					return -1;
+				}
+			}
+			if(!strcmp(cmd,"write")){
+				if (argc!=4)
+					goto usage;
+				name=argv[2];
+				data=argv[3];
+				strcpy(namebuf,name);
+				
+				for (i=0,j=0; i<SECUKEY_BYTES; i++,j++){
+						databuf[j]= i_to_asc((data[i]>>4) & 0x0f);
+						databuf[++j]= i_to_asc((data[i]) & 0x0f);
+						printk("%02x:%02x:", databuf[j-1], databuf[j]);
+				}
+				printk("right here!!!\n");
+				//memcpy(buf,databuf,SECUKEY_BYTES*2);
+				error=uboot_key_write(namebuf, databuf);
+				if(error>=0){
+					printk("write key ok!!\n");
+					return 0;
+				}
+				else{
+					printk("write error!!\n");
+					return -1;
+				}	
+			}
+		}
+	}
+	else
+		goto usage ;
+		
+usage:
+	return 1;
+}
+#endif
