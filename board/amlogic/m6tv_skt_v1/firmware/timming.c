@@ -138,7 +138,7 @@ static struct ddr_set __ddr_setting={
                     .t_clr          =   8,
                     .t_dqs          =   2,
                     .t_zqcl         = 512,
-                    .t_rtw          =   2,
+                    .t_rtw          =   4,
                     .t_rtp          =   6,//8,//4,//8,//FIXED
                     .t_wtr          =   6,//8,//4,//8,//FIXED
                     .t_xp           =   5,//26,//3,//26,//FIXED
@@ -203,7 +203,7 @@ static struct ddr_set __ddr_setting={
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
                     .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
-         .ddr_clk= CFG_M6TV_DDR_CLK,
+         .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 
          .ddr_ctrl= (0x7f << 16) |   // bit 25:16  ddr command filter bank and read write over timer limit
                     (1 << 7 ) |      // bit 7         ddr command filter bank policy. 1 = keep open. 0 : close bank if no request.
