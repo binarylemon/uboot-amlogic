@@ -26,7 +26,7 @@ extern ssize_t uboot_key_read(char *keyname, char *keydata);
 extern ssize_t uboot_key_write(char *keyname, char *keydata);
 extern int nandkey_provider_register();
 extern int key_set_version(char *device);
-int ensure_secukey_init(int argc, char * const argv[]);
+int ensure_secukey_init(void);
 int cmd_secukey(int argc, char * const argv[], char *buf);
 #endif
 
