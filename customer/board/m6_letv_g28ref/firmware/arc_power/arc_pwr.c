@@ -281,6 +281,8 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
+    int gpio_key = 0;
+        
 #ifdef smp_test
 	//ignore ddr problems.
 //	for(i = 0; i < 1000; i++)
@@ -442,10 +444,11 @@ void enter_power_down()
 		  if(!power_key)
 		    break;
 		  */
-	    if(readl(0xc1109860)&0x100)
+	    if(readl(0xc1109860)&0x100){
+            gpio_key = 1;
             break;
-		  
-	  }
+        }
+	 }
 //	power_on_via_gpio();
 //	resume_remote_register();
 
@@ -547,7 +550,6 @@ void enter_power_down()
   init_pctl();
   f_serial_puts("step 10\n");
   wait_uart_empty();
-
   //print some useful information to help debug.
    serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
    f_serial_puts("  MMC_LP_CTRL1\n");
@@ -573,7 +575,13 @@ void enter_power_down()
 	wait_uart_empty();
 	restart_arm();
 
+    if(1 == gpio_key){
+        setbits_le32(P_WATCHDOG_TC,1<<22);
+	    writel((1<<22) | (3<<24), P_WATCHDOG_TC);
+        while(1);
+    }
 
+    
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();
 #endif
