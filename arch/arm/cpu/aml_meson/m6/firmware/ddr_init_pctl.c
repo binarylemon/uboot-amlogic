@@ -153,7 +153,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		, P_PUB_DTPR0_ADDR);	//tCCD
 
 	writel(((timing_reg->t_faw << 3) |   //tFAW
-		(timing_reg->t_mod << 9) |   //tMOD
+		//(timing_reg->t_mod << 9) |   //tMOD
 		(0 << 11) |   //tRTODT
 		( timing_reg->t_rfc << 16) |   //tRFC
 		( 0 << 24) |   //tDQSCK
@@ -276,7 +276,8 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(timing_reg->t_cksrx, P_UPCTL_TCKSRX_ADDR);
 	//wr_reg UPCTL_TCKSRX_ADDR, 5 
 
-	writel(timing_reg->t_mod, P_UPCTL_TMOD_ADDR);
+	//writel(timing_reg->t_mod, P_UPCTL_TMOD_ADDR);
+	writel(12, P_UPCTL_TMOD_ADDR);
 	//wr_reg UPCTL_TMOD_ADDR, 8
 
 	writel(timing_reg->t_cke, P_UPCTL_TCKE_ADDR);
