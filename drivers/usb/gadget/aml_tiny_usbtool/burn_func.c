@@ -35,7 +35,6 @@ int cmd_secukey(int argc, char * const argv[], char *buf);
 #endif
 
 #define SECUKEY_BYTES     512
-static int init_nand = 0;
 #if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
 //test efuse read
 #define EFUSE_READ_TEST_ENABLE									//enable efuse read test after efuse write success
@@ -421,6 +420,11 @@ int usb_run_command (const char *cmd, char* buff)
 			return -1;	/* no command at all */
 		}
 
+#ifdef  WRITE_TO_EFUSE_ENABLE
+		printf("usb_burning to efuse\n");
+#elif defined(WRITE_TO_NAND_ENABLE)	
+		printf("usb_burning to nand\n");
+#endif
 		memset(efuse_data,0,sizeof(efuse_data));
 		memset(hdcp_verify_data,0,sizeof(hdcp_verify_data));
 		
@@ -566,15 +570,6 @@ int usb_run_command (const char *cmd, char* buff)
 #endif
 #elif defined(WRITE_TO_NAND_ENABLE)
 		//write to nand
-		ret = ensure_secukey_init();
-		if (ret)
-		{	
-			//init failed!!
-			sprintf(buff, "failed:(write version failed)");	
-			printf("init nand failed!!\n");
-			printf("%s\n",buff);
-			return -1;
-		}
 		if ((!strncmp(argv[1],"read",sizeof("read"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
 		{
 			sprintf(buff, "%s", "failed:(version is not writen)");
@@ -583,13 +578,25 @@ int usb_run_command (const char *cmd, char* buff)
 		}
 		else if ((!strncmp(argv[1],"write",sizeof("write"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
 		{
-			#ifdef CONFIG_AML_MESON3
-				sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
-			#elif defined(CONFIG_AML_MESON6) 
-				sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
-			#endif	
-			return 0;
-		}
+			ret = ensure_secukey_init();
+			if (ret==0 || ret==1)						//init nand success or already inited.
+			{
+				#ifdef CONFIG_AML_MESON3
+					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
+				#elif defined(CONFIG_AML_MESON6) 
+					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
+				#endif	
+				printf("%s\n",buff);
+				return 0;				
+			}		
+			else	 									//init nand failed!!
+			{	
+				printf("init nand failed!!\n");
+				sprintf(buff, "failed:(write version failed)");	
+				printf("%s\n",buff);	
+				return -1;
+			}
+		}		
 
 		ret = cmd_secukey(argc, argv, buff);									
 #endif
@@ -867,7 +874,7 @@ int ensure_secukey_init(void)
 
 	if (secukey_inited){
 		printk("nand already inited!!\n");
-		return 0;
+		return 1;
 	}
 	
 	printk("should be inited first!\n");
@@ -890,7 +897,7 @@ int ensure_secukey_init(void)
 		return -1;
 	}
 	
-	return 1;
+	return -1;
 }
 
 char i_to_asc(char para)
