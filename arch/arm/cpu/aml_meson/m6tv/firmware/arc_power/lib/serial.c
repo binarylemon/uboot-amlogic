@@ -10,7 +10,7 @@
  *******************************************************************/
 
 #include <config.h>
-#include <asm/arch/cpu.h>
+//#include <asm/arch/cpu.h>
 #include <asm/arch/uart.h>
 
 unsigned delay_tick(unsigned count);
@@ -18,6 +18,20 @@ void delay_ms(int usec);
 
 #ifndef CONFIG_AML_ROMBOOT_SPL
 #define UART_PORT_CONS UART_PORT_AO
+
+#define SPL_STATIC_FUNC
+
+#define SPL_STATIC_VAR
+
+void __udelay(int n)
+{
+        int i;
+        for(i=0;i<n;i++)
+        {
+            asm("mov r0,r0");
+        }
+}
+
 SPL_STATIC_FUNC int serial_set_pin_port(unsigned port_base)
 {
     setbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);
@@ -36,8 +50,8 @@ SPL_STATIC_FUNC void uart_reset()
 {
 	unsigned uart_cfg = readl(P_UART_CONTROL(UART_PORT_CONS));
 	unsigned uart_misc = readl(P_AO_UART_MISC);
-	setbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
-	clrbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
+	setbits_le32(P_AO_RTI_GEN_CTNL_REG0,1<<17);
+	clrbits_le32(P_AO_RTI_GEN_CTNL_REG0,1<<17);
 	__udelay(100);
 	writel(uart_cfg,P_UART_CONTROL(UART_PORT_CONS));
 	writel(uart_misc,P_AO_UART_MISC);
@@ -47,8 +61,8 @@ SPL_STATIC_FUNC void serial_init(unsigned set,unsigned tag)
     /* baud rate */
     unsigned baud_para=0;
     if(tag){//reset uart.
-	    setbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
-	    clrbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
+	    setbits_le32(P_AO_RTI_GEN_CTNL_REG0,1<<17);
+	    clrbits_le32(P_AO_RTI_GEN_CTNL_REG0,1<<17);
 	    delay_ms(10);
 			//delay_tick(32*1000);
 			//delay_tick(32*1000);

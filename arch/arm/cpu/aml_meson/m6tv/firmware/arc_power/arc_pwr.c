@@ -51,10 +51,10 @@ void store_restore_plls(int flag);
 
 #define TICK_OF_ONE_SECOND 32000
 
-#define f_serial_puts(a)
-#define serial_put_hex(a,b)
-#define wait_uart_empty()
-#define udelay(a)
+//#define f_serial_puts(a)
+//#define serial_put_hex(a,b)
+//#define wait_uart_empty()
+//#define udelay(a)
 
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts('\n');wait_uart_empty();
 
@@ -99,6 +99,15 @@ void delay_ms(int ms)
 		delay_tick(32);
 		ms--;
 	}
+}
+
+void udelay(int i)
+{
+    int delays = 0;
+    for(delays=0;delays<i;delays++)
+    {
+        asm("mov r0,r0");
+    }
 }
 
 #define delay_1s() delay_tick(TICK_OF_ONE_SECOND);
@@ -380,24 +389,19 @@ void enter_power_down()
 
 	//power_off_at_24M();
 
-	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
+//	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
-#ifdef CONFIG_ARC_SARDAC_ENABLE
-	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
-#endif
-	{
-	// ee use 32k, So interrup status can be accessed.
-		writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-		switch_to_rtc();
-		udelay(1000);
+// ee use 32k, So interrup status can be accessed.
+//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+//	switch_to_rtc();
+	udelay(1000);
 
-		//power_off_at_32K_1();
-	}
+	//power_off_at_32K_1();
 
 //	power_off_at_32K_2();
 
 	// gate off REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CTNL_REG0)&(~(0x9)),P_AO_RTI_GEN_CTNL_REG0);
+	writel(readl(P_AO_RTI_GEN_CTNL_REG0)&(~(0x8)),P_AO_RTI_GEN_CTNL_REG0);
 
 #if 0
 //	udelay(200000);//Drain power
@@ -443,29 +447,26 @@ void enter_power_down()
 #endif
 
 	//disable power_key int
-	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
+/*	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
 	writel(readl(0xc8100080)&(~0x1),0xc8100080);
 	writel(0x100,0xc1109860);//clear int
-
+*/
 // gate on REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CTNL_REG0)|0x9,P_AO_RTI_GEN_CTNL_REG0);
+	writel(readl(P_AO_RTI_GEN_CTNL_REG0)|0x8,P_AO_RTI_GEN_CTNL_REG0);
 
 //	power_on_at_32k_2();
 
-#ifdef CONFIG_ARC_SARDAC_ENABLE
-	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
-#endif
 	{
 //		power_on_at_32k_1();
 
 	//  In 32k mode, we had better not print any log.
-		store_restore_plls(0);//Before switch back to clk81, we need set PLL
+//		store_restore_plls(0);//Before switch back to clk81, we need set PLL
 
 	//	dump_pmu_reg();
 	
-		switch_to_81();
+//		switch_to_81();
 	  // ee go back to clk81
-		writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+//		writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 		udelay(10000);
 	}
 

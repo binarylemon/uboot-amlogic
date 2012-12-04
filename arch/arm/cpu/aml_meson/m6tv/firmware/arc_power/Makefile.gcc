@@ -36,6 +36,8 @@ ARCCC_FLAGS += $(VPATH_LIST:%=-I%)
 vpath %.c $(VPATH_LIST)
 
 ARCCC_FLAGS += -I.
+ARCCC_FLAGS += -I$(OBJTREE)/include -I$(OBJTREE)/include/asm/arch
+
 
 ARCASM_FLAGS = -D__ASSEMBLY__ $(CC_FLAGS)
 
@@ -53,7 +55,7 @@ endef
 
 
 #CSRCS = $(wildcard *.c lib/*.c)
-CSRCS = suspend.c 
+CSRCS = suspend.c lib/*.c
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
 #all : clean $(obj)code_elf.out 
@@ -87,9 +89,6 @@ $(obj)%.S:	%.s
 	$(ARCCPP) -I. -ansi -D__ASSEMBLY__ -MD -MT $@ -E $< -o $@	
 	
 $(obj)%.o:	%.c
-	@if [ ! -f ./include/asm/arch/ao_reg.h ]; then ln -s $(TOPDIR)/arch/arm/include/asm/arch-m6tv/ao_reg.h ./include/asm/arch/ao_reg.h; fi
-	@if [ ! -f ./include/asm/arch/reg_addr.h ]; then ln -s $(TOPDIR)/arch/arm/include/asm/arch-m6tv/reg_addr.h ./include/asm/arch/reg_addr.h; fi
-	@if [ ! -f ./include/asm/arch/register.h ]; then ln -s $(TOPDIR)/arch/arm/include/asm/arch-m6tv/register.h ./include/asm/arch/register.h; fi
 	@$(call MKDIR, $(@D))
 	$(ARCCC)  $(ARCCC_FLAGS) -o $@ $< -c
 	
