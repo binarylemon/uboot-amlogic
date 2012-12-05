@@ -12,15 +12,93 @@
 #define STATIC_PREFIX_DATA static
 #endif
 
+#define ENABLE_WRITE_LEVELING 1
+
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
+
+/////////////////////////////////////////////////////////////////////////////
+//DDR timming fine tune code 2012.11.23
+//
+#if (CFG_M6TV_DDR_CLK >= 400) && (CFG_M6TV_DDR_CLK < 750)
+	#define CFG_M6TV_PLL_OD 2
+	#define CFG_M6TV_PLL_N  1
+	#define CFG_M6TV_PLL_M  (((CFG_M6TV_DDR_CLK/6)*6)/12)
+#elif (CFG_M6TV_DDR_CLK >= 750) && (CFG_M6TV_DDR_CLK <= 800)
+	#define CFG_M6TV_PLL_OD 1
+	#define CFG_M6TV_PLL_N  1
+	#define CFG_M6TV_PLL_M  (((CFG_M6TV_DDR_CLK/12)*12)/24)
+#else
+	#error "Over PLL range! Please check CFG_M6TV_DDR_CLK with file m6tv_skt_v1.h! \n"
+#endif
+
+#if (CFG_M6TV_DDR_CLK >= 400 ) && (CFG_M6TV_DDR_CLK <533)
+	#define DDR3_7_7_7
+#elif  (CFG_M6TV_DDR_CLK >= 533 ) && (CFG_M6TV_DDR_CLK <667)
+	#define DDR3_9_9_9 
+#elif  (CFG_M6TV_DDR_CLK >= 667 ) && (CFG_M6TV_DDR_CLK <800)
+	#define DDR3_11_11_11
+#endif
+
+#ifdef DDR3_11_11_11
+	#define CFG_M6TV_DDR_CL  11
+	#define CFG_M6TV_DDR_FAW 32
+	#define CFG_M6TV_DDR_RAS 28
+	#define CFG_M6TV_DDR_RC  39
+	#define CFG_M6TV_DDR_RCD 11
+	#define CFG_M6TV_DDR_RFC 240
+	#define CFG_M6TV_DDR_RP  11
+	#define CFG_M6TV_DDR_RRD 6
+	#define CFG_M6TV_DDR_WR  12
+	#define CFG_M6TV_DDR_CWL 8
+	#define CFG_M6TV_DDR_MOD 12
+	#define CFG_M6TV_DDR_MRD 4
+	#define CFG_M6TV_DDR_AL  0
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
+#endif
+
+#ifdef DDR3_9_9_9
+	#define CFG_M6TV_DDR_CL  10
+	#define CFG_M6TV_DDR_FAW 30
+	#define CFG_M6TV_DDR_RAS 24
+	#define CFG_M6TV_DDR_RC  33
+	#define CFG_M6TV_DDR_RCD 9
+	#define CFG_M6TV_DDR_RFC 200
+	#define CFG_M6TV_DDR_RP  9
+	#define CFG_M6TV_DDR_RRD 5
+	#define CFG_M6TV_DDR_WR  10
+	#define CFG_M6TV_DDR_CWL 7
+	#define CFG_M6TV_DDR_MOD 12
+	#define CFG_M6TV_DDR_MRD 7
+	#define CFG_M6TV_DDR_AL  0
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
+
+#endif
+
+#ifdef DDR3_7_7_7
+	#define CFG_M6TV_DDR_CL  7
+	#define CFG_M6TV_DDR_FAW 27
+	#define CFG_M6TV_DDR_RAS 20
+	#define CFG_M6TV_DDR_RC  27
+	#define CFG_M6TV_DDR_RCD 7
+	#define CFG_M6TV_DDR_RFC 160
+	#define CFG_M6TV_DDR_RP  7
+	#define CFG_M6TV_DDR_RRD 6
+	#define CFG_M6TV_DDR_WR  8
+	#define CFG_M6TV_DDR_CWL 6
+	#define CFG_M6TV_DDR_MOD 12
+	#define CFG_M6TV_DDR_MRD 4
+	#define CFG_M6TV_DDR_AL  0
+	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
+#endif
 
 #if defined(M6TV_DDR3_1GB)
 	#define DDR3_4Gbx16
 #elif defined(M6TV_DDR3_512M)
 	#define DDR3_2Gbx16
 #else
-	#error "Please define DDR3 memory capacity first in file aml_tv_m2c.h!\n"
+	#error "Please define DDR3 memory capacity first in file m6tv_skt_v1.h!\n"
 #endif
+/////////////////////////////////////////////////////////////////////////////
 
 
 //row_size 00 : A0~A15.  01 : A0~A12, 10 : A0~A13, 11 : A0~A14. 
@@ -35,67 +113,40 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 static struct ddr_set __ddr_setting={
 
-                #ifdef DDR3_11_11_11
-                    .cl             =  10,
-                    .t_faw          =  30,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .cl             =   7,
-                    .t_faw          =  27,
-                #endif
-                    .t_mrd          =   4,
-                    .t_1us_pck      = ((CONFIG_DDR_CLK/12)*12),
-                    .t_100ns_pck    = ((CONFIG_DDR_CLK/12)*12)/10,
-                    .t_init_us      = 512,// 2 ??
-                    .t_rsth_us      = 500, // 5 ??
+                    .cl             =  CFG_M6TV_DDR_CL,
+                    .t_faw          =  CFG_M6TV_DDR_FAW,
+                    .t_ras          =  CFG_M6TV_DDR_RAS,
+                    .t_rc           =  CFG_M6TV_DDR_RC,
+                    .t_rcd          =  CFG_M6TV_DDR_RCD,
+                    .t_rfc          =  CFG_M6TV_DDR_RFC,
+                    .t_rp           =  CFG_M6TV_DDR_RP,
+                    .t_rrd          =  CFG_M6TV_DDR_RRD,
+                    .t_wr           =  CFG_M6TV_DDR_WR,
+                    .t_cwl          =  CFG_M6TV_DDR_CWL,
+                    .t_mod          =  CFG_M6TV_DDR_MOD,
+                    .t_mrd          =  CFG_M6TV_DDR_MRD,
+                    .t_1us_pck      =  CFG_M6TV_DDR_CLK,
+                    .t_100ns_pck    =  CFG_M6TV_DDR_CLK/10,
+                    .t_init_us      = 512,
+                    .t_rsth_us      = 500,
                     .t_rstl_us      = 100,
-                #ifdef DDR3_11_11_11
-                    .t_ras          =  28, // 24,
-                    .t_rc           =  38, // 33,
-                    .t_rcd          =  10, //  9,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_ras          =  20,
-                    .t_rc           =  27,
-                    .t_rcd          =   7,
-                #endif
                     .t_refi_100ns   =  39,//78 for temperature over 85 degrees
-                #ifdef DDR3_11_11_11
-                    .t_rfc          = 128, // 107,
-                    .t_rp           =  10, //  9,
-                    .t_rrd          =   6, //  5,
-                    .t_rtp          =   6, // 5,
-                    .t_wr           =  12, // 10,
-                    .t_wtr          =   6, //  5,
-                #endif
-                #ifdef DDR3_7_7_7
-                    .t_rfc          =  86,
-                    .t_rp           =   7,
-                    .t_rrd          =   6,
-                    .t_rtp          =   4,
-                    .t_wr           =   8,
-                    .t_wtr          =   4,
-                #endif                    
-                    .t_xp           =   5, // 4,
-                    .t_xpdll        =   20,
                     .t_xsrd         =   0,
                     .t_xsnr         =   0,
                     .t_exsr         = 512,
-                    .t_al           =   0,
+                    .t_al           =  CFG_M6TV_DDR_AL,//0
                     .t_clr          =   8,
-                    .t_dqs          =   4, // 2,
-                #ifdef DDR3_11_11_11
-                    .t_cwl          =   8, // 7,
-                #endif
-				#ifdef DDR3_7_7_7
-                    .t_cwl          =   6,
-                #endif				
-                    .t_mod          =  12,
+                    .t_dqs          =   2,
                     .t_zqcl         = 512,
-                    .t_rtw          =   2,
-                    .t_cksrx        =   5, // 7,
-                    .t_cksre        =   5, // 7,
-                    .t_cke          =   4,
+                    .t_rtw          =   4,
+                    .t_rtp          =   6,//8,//4,//8,//FIXED
+                    .t_wtr          =   6,//8,//4,//8,//FIXED
+                    .t_xp           =   5,//26,//3,//26,//FIXED
+                    .t_xpdll        =   20,//26,//20,//26,
+                    .t_cksrx        =   5,//8,//5,//8,//FIXED
+                    .t_cksre        =   5,//8,//5,//8,//FIXED
+                    .t_cke          =   4,//6,//4,//6,//FIXED
+                    
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
                     			(6<<9)| //(4 <<  9) |   //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c
                     						  //001 = 5
@@ -120,23 +171,25 @@ static struct ddr_set __ddr_setting={
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
                             [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+#ifdef ENABLE_WRITE_LEVELING
+                                (1 << 7)|     // Write leveling enable
+#endif
                                 (0 << 3 ),					//@@[B4,B3]AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
                                 							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved
                                 
-                                                                	
-                            [2]=(3<<3),//(2<<3),	//@@CWL:(B5,B4,B3)
-	                            		//000 = 5 (tCK = 2.5ns) 
-    	                        		//001 = 6 (2.5ns > tCK = 1.875ns)
-        	                    		//010 = 7 (1.875ns > tCK = 1.5ns)
-            	                		//011 = 8 (1.5ns > tCK = 1.25ns)
+#ifdef ENABLE_WRITE_LEVELING
+                            [2]=0,
+#else
+                            [2]=(1 << 10)|(0 <<9 ),//(A10:A9) 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
+#endif
                             [3]=0
                         },
                     .mcfg =   1 |				   //[B0] burst length: 0 for 4; 1 for 8
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              (1 << 3) |    	            //[B3]2T mode, default is disable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
@@ -148,16 +201,16 @@ static struct ddr_set __ddr_setting={
 						   #endif //CONFIG_DDR_LOW_POWER
                            ,
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zq0cr1 = 0x18,   //PUB ZQ0CR1
-         .ddr_pll_cntl=0x10200 | (CONFIG_DDR_CLK/12), //504MHz 1022a
-         .ddr_clk=((CONFIG_DDR_CLK/12)*12),
+                    .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
+         .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
+         .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 
          .ddr_ctrl= (0x7f << 16) |   // bit 25:16  ddr command filter bank and read write over timer limit
                     (1 << 7 ) |      // bit 7         ddr command filter bank policy. 1 = keep open. 0 : close bank if no request.
                     (1 << 6 ) |      // bit 6         ddr address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.
                     (2 << 4 ) |      // bit 5:4      ddr rank size.  0, 1, one rank.  2 : 2 ranks. 
-                    (2 << 2 ) |      // bit 3:2      ddr row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
-                    (2 << 0 ),       // bit 1:0      ddr col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
+                    (ddr3_row_size << 2 ) |      // bit 3:2      ddr row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+                    (ddr3_col_size << 0 ),       // bit 1:0      ddr col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
          .init_pctl=init_pctl_ddr3        
 };
 
@@ -170,23 +223,29 @@ static struct ddr_set __ddr_setting={
 //PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
 //0x1098[0xc1104260]
 #if   (700 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (6)
-	#define	M6TV_SYS_PLL_M (175)
+	#define	M6TV_SYS_PLL_N  (6)
+	#define	M6TV_SYS_PLL_M  (175)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (800 == CONFIG_SYS_CPU_CLK)
-    #define	M6TV_SYS_PLL_N (3)
-	#define	M6TV_SYS_PLL_M (100)	
+	#define	M6TV_SYS_PLL_N  (3)
+	#define	M6TV_SYS_PLL_M  (100)	
+	#define M6TV_SYS_PLL_OD (0)
 #elif (900 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (2)
-	#define	M6TV_SYS_PLL_M (75)
+	#define	M6TV_SYS_PLL_N  (2)
+	#define	M6TV_SYS_PLL_M  (75)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1000 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (3)
-	#define	M6TV_SYS_PLL_M (125)
+	#define	M6TV_SYS_PLL_N  (3)
+	#define	M6TV_SYS_PLL_M  (125)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1200 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (1)
-	#define	M6TV_SYS_PLL_M (50)
+	#define	M6TV_SYS_PLL_N  (1)
+	#define	M6TV_SYS_PLL_M  (50)
+	#define M6TV_SYS_PLL_OD (0)
 #elif (1296 == CONFIG_SYS_CPU_CLK)
-	#define	M6TV_SYS_PLL_N (1)
-	#define	M6TV_SYS_PLL_M (54)
+	#define	M6TV_SYS_PLL_N  (1)
+	#define	M6TV_SYS_PLL_M  (54)
+	#define M6TV_SYS_PLL_OD (0)
 #else
 	#error "CONFIG_SYS_CPU_CLK is not set! Please set M6TV CPU clock first!\n"
 #endif
@@ -195,7 +254,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 ={
 	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V	
 	//0x1098[0xc1104260]
-	.sys_pll_cntl=	(0   << 16) | //OD
+	.sys_pll_cntl=	(M6TV_SYS_PLL_OD << 16) | //OD
 					(M6TV_SYS_PLL_N  << 9 ) | //N
 					(M6TV_SYS_PLL_M  << 0 ),  //M
 	//A9 clock setting

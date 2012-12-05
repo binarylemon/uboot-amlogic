@@ -1,13 +1,26 @@
 #ifndef __CONFIG_M6_REF_H__
 #define __CONFIG_M6_REF_H__
 
-
 #define CONFIG_AML_MESON_6 1
 #define M6_REF_V2 1
 
+/*
+ *  write to efuse/nand when usb_burning 
+ *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
+ */
+#define CONFIG_AML_MESON6
+#define WRITE_TO_EFUSE_ENABLE	
+//#define WRITE_TO_NAND_ENABLE
+
+#if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
+#error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
+#endif
+
+
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-#define CONFIG_SECURITYKEY
+//#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif

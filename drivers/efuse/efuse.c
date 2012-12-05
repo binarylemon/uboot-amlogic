@@ -355,18 +355,21 @@ int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 void efuse_set_versioninfo(efuseinfo_item_t *info)
 {
 	strcpy(info->title, "version");			
-	info->bch_reverse = 0;
 	if(cpu_is_before_m6()){
 			info->offset = EFUSE_VERSION_OFFSET; //380;		
 			info->data_len = EFUSE_VERSION_DATA_LEN; //3;	
 			info->enc_len = EFUSE_VERSION_ENC_LEN; //4;
 			info->bch_en = EFUSE_VERSION_BCH_EN; //1;		
-		}
+			info->we = 1;									//add 
+			info->bch_reverse = EFUSE_VERSION_BCH_REVERSE;
+	}
 		else{
 			info->offset = V2_EFUSE_VERSION_OFFSET; //3;		
 			info->data_len = V2_EFUSE_VERSION_DATA_LEN; //1;		
 			info->enc_len = V2_EFUSE_VERSION_ENC_LEN; //1;
 			info->bch_en = V2_EFUSE_VERSION_BCH_EN; //0;
+			info->we = 1;									//add 
+			info->bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE;
 		}
 }
 
@@ -381,7 +384,7 @@ int efuse_getinfo(char *title, efuseinfo_item_t *info)
 	int ret = -1;		
 	
 	if(strcmp(title, "version") == 0){
-		efuse_set_versioninfo(info);
+		efuse_set_versioninfo(info);		
 		return 0;	
 	}
 	
@@ -424,7 +427,6 @@ int efuse_getinfo(char *title, efuseinfo_item_t *info)
 				break;
 			}
 		}
-		
 		
 		if(ret < 0)
 			printf("%s is not found.\n", title);			

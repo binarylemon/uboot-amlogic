@@ -50,6 +50,11 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	udelay (50000);				/* wait 50 ms */
 
+#ifdef CONFIG_M6TV
+	//temp code 2012.11.22
+	//if not clear, uboot command reset will fail -> blocked
+	*((volatile unsigned long *)0xc8100000) = 0;
+#endif
 	disable_interrupts();
 	reset_cpu(0);
 

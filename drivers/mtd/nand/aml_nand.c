@@ -1259,7 +1259,7 @@ void aml_nand_set_reg_default_hynix(void)
 {
 	struct mtd_info *mtd = nand_info[nand_curr_device];
 
-		if(strcmp(mtd->name,NAND_BOOT_NAME)){
+		if(!strcmp(mtd->name,NAND_BOOT_NAME)){
 #ifdef NEW_NAND_SUPPORT
 	//if(mtd){
 		aml_nand_set_readretry_default_value_hynix(mtd);
@@ -1705,8 +1705,9 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	int nr, i, error = 0, part_save_in_env = 1, file_system_part = 0, phys_erase_shift;
 	u8 part_num = 0;
 	loff_t offset;
-    loff_t adjust_offset = 0;
-	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
+    loff_t adjust_offset = 0,key_block;
+	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE )) ? mtd->erasesize : (NAND_MINI_PART_SIZE ));
+	//uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
 	parts = plat->platform_nand_data.chip.partitions;
@@ -1737,10 +1738,10 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 		else
 			mini_part_blk_num = (NAND_MINI_PART_SIZE >> phys_erase_shift);
 #ifdef CONFIG_AML_NAND_KEY
-		if ((NAND_MINIKEY_PART_SIZE / mtd->erasesize) < NAND_MINIKEY_PART_BLOCKNUM)
-			mini_part_blk_num += NAND_MINIKEY_PART_BLOCKNUM; //for nand key
-		else
-			mini_part_blk_num += (NAND_MINIKEY_PART_SIZE >> phys_erase_shift);
+		//if ((NAND_MINIKEY_PART_SIZE / mtd->erasesize) < NAND_MINIKEY_PART_BLOCKNUM)
+		//	mini_part_blk_num += NAND_MINIKEY_PART_BLOCKNUM; //for nand key
+		//else
+		//	mini_part_blk_num += (NAND_MINIKEY_PART_SIZE >> phys_erase_shift);
 #endif
 		start_blk = 0;
 		do {
@@ -1810,6 +1811,17 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 				sprintf(temp_parts->name, "mtd%d", part_num++);
 			}
 		}
+#ifdef CONFIG_AML_NAND_KEY
+		temp_parts = parts + (nr-1);
+		key_block = aml_chip->aml_nandkey_info->end_block - aml_chip->aml_nandkey_info->start_block + 1;
+
+		if(temp_parts->size == MTDPART_SIZ_FULL){
+			temp_parts->size = mtd->size - temp_parts->offset - key_block*mtd->erasesize;
+		}
+		else{
+			temp_parts->size -= key_block*mtd->erasesize;
+		}
+#endif
 	}
 
 	return add_mtd_partitions(mtd, parts, nr);
@@ -2006,7 +2018,7 @@ static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	int status[MAX_CHIP_NUM], state = chip->state, i = 0, time_cnt = 0;
-
+	struct aml_nand_platform *plat = aml_chip->platform; 
 	/* Apply this short delay always to ensure that we do wait tWB in
 	 * any case on any machine. */
 	ndelay(100);
@@ -2045,7 +2057,8 @@ static int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 			status[0] |= status[i];
 		}
 	}
-
+     if (!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))
+         status[0] = 0xe0;
 	return status[0];
 }
 /*
@@ -2408,7 +2421,7 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 	block_addr = ((page / valid_page_num) >> pages_per_blk_shift);
 #ifdef CONFIG_AML_NAND_KEY
 		//never erase env_valid_node and aml_nandkey_info blocks if aml_nandkey_info valid.
-		if(aml_chip->aml_nandkey_info->env_valid){
+		if(aml_chip->aml_nandkey_info->env_valid &&( !aml_chip->key_protect)){
 			if(( block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)
 				||((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr	<= aml_chip->aml_nandkey_info->end_block))){
 					return;

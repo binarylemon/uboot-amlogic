@@ -127,9 +127,16 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				memcpy(namebuf,name,strlen(name));
 				error=uboot_key_read(namebuf, databuf);
 				if(error>=0){
+					char outputdata[2];
 					printk("read count=%d\n",error);
 					printk("the key name is :%s\n",namebuf);
-					printk("the key data is :%s\n",databuf);
+					printk("the key data is :");
+					memset(outputdata,0,2);
+					for(i=0;i<error;i++){
+						outputdata[0]=databuf[i];
+						printk("%c",outputdata[0]);
+					}
+					printk("\n");
 					#if 0
 					flag=strlen(databuf)-1;
 					*((unsigned int *)addr)=flag;

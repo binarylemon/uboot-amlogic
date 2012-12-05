@@ -32,15 +32,38 @@ static inline int end_ddr_config(void)
 static void dtu_test_for_debug_training_result(struct ddr_set * timing_reg)
 {
     int i;
-    
-    reg(P_UPCTL_DTUWD0_ADDR) = 0xdd22ee11;
-    reg(P_UPCTL_DTUWD1_ADDR) = 0x7788bb44;
+	//debug 11.20
+	/*
+	reg(P_UPCTL_DTUWD0_ADDR) = 0xdd22ee11;
+	reg(P_UPCTL_DTUWD1_ADDR) = 0x7788bb44;
+	reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
+	reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+	*/
+    reg(P_UPCTL_DTUWD0_ADDR) = 0x55AA55AA;
+    reg(P_UPCTL_DTUWD1_ADDR) = 0xAA55AA55;
     reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
     reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+	//debug 11.20
+	
     reg(P_UPCTL_DTUWACTL_ADDR) = 0;
     reg(P_UPCTL_DTURACTL_ADDR) = 0;
-    for(i = 0; i < ((timing_reg->ddr_ctrl&(1<<7))?0x2:0x4); i++)
+    for(i = 0; i < 4; i++)
     {
+    	if(i%2)
+    	{
+	    	reg(P_UPCTL_DTUWD0_ADDR) = 0xaa55aa55;
+	    	reg(P_UPCTL_DTUWD1_ADDR) = 0x33445566;
+		    reg(P_UPCTL_DTUWD2_ADDR) = 0x77889900;
+	    	reg(P_UPCTL_DTUWD3_ADDR) = 0x11223344;
+    	}
+		else
+		{
+			reg(P_UPCTL_DTUWD0_ADDR) = 0x55AA55AA;
+		    reg(P_UPCTL_DTUWD1_ADDR) = 0xAA55AA55;
+		    reg(P_UPCTL_DTUWD2_ADDR) = 0xdd22ee11;
+		    reg(P_UPCTL_DTUWD3_ADDR) = 0x7788bb44;
+		}
+		
         serial_puts("\n\n");
         serial_put_hex(i, 8);
         serial_puts(" byte lane:\n");
@@ -60,36 +83,6 @@ static void dtu_test_for_debug_training_result(struct ddr_set * timing_reg)
         serial_puts("\n");
         serial_put_hex(reg(P_UPCTL_DTUPDES_ADDR), 32);
 
-    }
-}
-
-static void display_training_result(struct ddr_set * timing_reg)
-{
-    serial_puts("\nDX0DLLCR:");
-    serial_put_hex(reg(P_PUB_DX0DLLCR_ADDR), 32);
-    serial_puts("\nDX0DQTR:");
-    serial_put_hex(reg(P_PUB_DX0DQTR_ADDR), 32);
-    serial_puts("\nDX0DQSTR:");
-    serial_put_hex(reg(P_PUB_DX0DQSTR_ADDR), 32);
-    serial_puts("\nDX1DLLCR:");
-    serial_put_hex(reg(P_PUB_DX1DLLCR_ADDR), 32);
-    serial_puts("\nDX1DQTR:");
-    serial_put_hex(reg(P_PUB_DX1DQTR_ADDR), 32);
-    serial_puts("\nDX1DQSTR:");
-    serial_put_hex(reg(P_PUB_DX1DQSTR_ADDR), 32);
-    if(!(timing_reg->ddr_ctrl&(1<<7))){
-        serial_puts("\nDX2DLLCR:");
-        serial_put_hex(reg(P_PUB_DX2DLLCR_ADDR), 32);
-        serial_puts("\nDX2DQTR:");
-        serial_put_hex(reg(P_PUB_DX2DQTR_ADDR), 32);
-        serial_puts("\nDX2DQSTR:");
-        serial_put_hex(reg(P_PUB_DX2DQSTR_ADDR), 32);
-        serial_puts("\nDX3DLLCR:");
-        serial_put_hex(reg(P_PUB_DX3DLLCR_ADDR), 32);
-        serial_puts("\nDX3DQTR:");
-        serial_put_hex(reg(P_PUB_DX3DQTR_ADDR), 32);
-        serial_puts("\nDX3DQSTR:");
-        serial_put_hex(reg(P_PUB_DX3DQSTR_ADDR), 32);
     }
 }
 
@@ -128,8 +121,10 @@ void init_dmc(struct ddr_set * ddr_setting)
 #endif
 
 
-	writel(0xff, P_MMC_REQ_CTRL);
+	writel(0x1ff, P_MMC_REQ_CTRL);
 
+	//asm volatile ("wfi");
+	
 	//re read write DDR SDRAM several times to make sure the AXI2DDR bugs dispear.
 	//refer from arch\arm\cpu\aml_meson\m6\firmware\kreboot.s	
 	int nCnt,nMax,nVal;
@@ -140,15 +135,19 @@ void init_dmc(struct ddr_set * ddr_setting)
 		//asm volatile ("STR  r0, [r1]");
 		writel(0x55555555, 0x9fffff00);
 	}		
+
+	//asm volatile ("wfi");
+	
 	for(nCnt=0,nMax= 12;nCnt<nMax;++nCnt)
 	{
 		//asm volatile ("LDR  r1, =0x9fffff00");
 		//asm volatile ("LDR  r0, [r1]");		
 		nVal = readl(0x9fffff00);
 	}	
-	asm volatile ("dmb");
-	asm volatile ("isb");	
+	asm volatile ("dmb"); //debug 11.20
+	asm volatile ("isb");	 //debug 11.20
 	//
+	//asm volatile ("wfi");	
 
 }
 int ddr_init_hw(struct ddr_set * timing_reg)
@@ -156,19 +155,23 @@ int ddr_init_hw(struct ddr_set * timing_reg)
     int ret = 0;
     
     ret = timing_reg->init_pctl(timing_reg);
-    if(ret){
+	
+	if(ret)
+    {
         dtu_test_for_debug_training_result(timing_reg);
         __udelay(10);        
 		serial_puts("\nPUB init fail! Reset...\n");
 		__udelay(10000); 
 		writel((1<<22) | (3<<24), P_WATCHDOG_TC);
-		while(1);		
+		while(1);
         return ret;
-    }
-    
-    display_training_result(timing_reg);
-    
-    init_dmc(timing_reg);
+    }    
 
+	//asm volatile("wfi");
+		
+    //display_training_result(timing_reg);//M6 only, M6TV no need
+       
+    init_dmc(timing_reg);
+	
     return 0;
 }

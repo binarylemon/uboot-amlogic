@@ -475,10 +475,10 @@ struct aml_nand_bch_desc{
 //for SAMSUNG
 #define	SUMSUNG_2XNM 			30	
 
-//for SANDISK
-#define      SANDISK_19NM			40
+#define   MICRON_20NM			40
 
-#define      MICRON_20NM			10
+//for SANDISK
+#define    SANDISK_19NM			50
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -626,6 +626,7 @@ struct aml_nand_chip {
 	
 	struct mtd_info			mtd;
 	struct nand_chip		chip;
+	u8 key_protect;
 	struct aml_nandenv_info_t *aml_nandenv_info;
 	struct aml_nandkey_info_t *aml_nandkey_info;
 	struct aml_nand_bch_desc 	*bch_desc;

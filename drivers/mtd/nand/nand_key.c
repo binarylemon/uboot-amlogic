@@ -14,7 +14,7 @@
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
 
-
+//#define TEST_ERROR_ADDRESS_BLOCK
 
 #define debug(fmt,args...) do { printk("[DEBUG]: FILE:%s:%d, FUNC:%s--- "fmt"\n",\
                                                      __FILE__,__LINE__,__func__,## args);} \
@@ -31,11 +31,11 @@ typedef	struct  {
 #define NAND_KEY_DEVICE_NAME	"nand_key"
 
 static int  default_keyironment_size =  (KEYSIZE - sizeof(struct aml_nand_bbt_info));
-static int aml_nand_read_key (struct mtd_info *mtd, size_t offset, u_char * buf)
+static int aml_nand_read_key (struct mtd_info *mtd, uint64_t offset, u_char * buf)
 {
 	struct env_oobinfo_t *key_oobinfo;
 	int error = 0;
-	size_t addr = offset;
+	uint64_t addr = offset;
 	size_t amount_loaded = 0;
 	size_t len;
 	struct mtd_oob_ops aml_oob_ops;
@@ -93,7 +93,7 @@ static int aml_nand_get_key(struct mtd_info *mtd, u_char * buf)
 {
 	struct aml_nand_bbt_info *nand_bbt_info;
 	int error = 0,flag=0;
-	loff_t addr = 0;
+	uint64_t addr = 0;
 	mesonkey_t *key_ptr = (mesonkey_t *)buf;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct env_valid_node_t *cur_valid_node,*tail_valid_node;
@@ -150,7 +150,7 @@ static int aml_nand_get_key(struct mtd_info *mtd, u_char * buf)
 {
 	struct aml_nand_bbt_info *nand_bbt_info;
 	int error = 0;
-	loff_t addr = 0;
+	uint64_t addr = 0;
 	mesonkey_t *key_ptr = (mesonkey_t *)buf;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 
@@ -171,11 +171,11 @@ exit:
 }
 #endif  //NAND_KEY_SAVE_MULTI_BLOCK
 
-static int aml_nand_write_key(struct mtd_info *mtd, loff_t offset, u_char *buf)
+static int aml_nand_write_key(struct mtd_info *mtd, uint64_t offset, u_char *buf)
 {
 	struct env_oobinfo_t *key_oobinfo;
 	int error = 0;
-	loff_t addr = 0;
+	uint64_t addr = 0;
 	size_t amount_saved = 0;
 	size_t len;
 	struct mtd_oob_ops aml_oob_ops;
@@ -235,7 +235,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 	struct aml_nand_bbt_info *nand_bbt_info;
 	struct env_free_node_t *env_free_node, *key_tmp_node;
 	int error = 0, pages_per_blk, i = 1;
-	loff_t addr = 0;
+	uint64_t addr = 0;
 	struct erase_info aml_key_erase_info;
 	mesonkey_t *key_ptr = (mesonkey_t *)buf;
 	int group_block_count=0,group_max_block = NAND_MINIKEY_PART_BLOCKNUM;
@@ -258,19 +258,33 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		}
 		
 		if ((aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr + i) > pages_per_blk) {
-
 			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
 			if (env_free_node == NULL)
 				return -ENOMEM;
 
 			env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 			env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+			env_free_node->next = NULL;
+		#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("free:  env_valid_node->phy_blk_addr:%d,%s:%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,__func__,__LINE__);
+			printk("free:  env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+		#endif
 			key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 			if(aml_chip->aml_nandkey_info->env_free_node == NULL){
 				aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("aml_chip->aml_nandkey_info->env_free_node: NULL,%s:%d\n",__func__,__LINE__);
+				#endif
 			}
 			else{
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				struct env_free_node_t *test22_env_free_node;
+				#endif
 				while (key_tmp_node->next != NULL) {
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				test22_env_free_node =key_tmp_node->next;
+					printk("free:  key_tmp_node->phy_blk_addr:%d,%s:%d\n",test22_env_free_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 					key_tmp_node = key_tmp_node->next;
 				}
 				key_tmp_node->next = env_free_node;
@@ -281,7 +295,12 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 				if (env_free_node == NULL)
 					return -ENOMEM;
 				env_free_node->phy_blk_addr = tail_valid_node->phy_blk_addr;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("free: tail_valid_node->phy_blk_addr:%d,%s:%d\n",tail_valid_node->phy_blk_addr,__func__,__LINE__);
+				printk("free: env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 				env_free_node->ec = tail_valid_node->ec;
+				env_free_node->next = NULL;
 				aml_chip->aml_nandkey_info->env_valid_node->next = tail_valid_node->next;
 				kfree(tail_valid_node);
 				tail_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
@@ -295,6 +314,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 
 			key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 			aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("valid: key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+			printk("valid: aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr:%d,%s:%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,__func__,__LINE__);
+			#endif
 			aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
 			aml_chip->aml_nandkey_info->env_valid_node->ec = key_tmp_node->ec;
 			aml_chip->aml_nandkey_info->env_valid_node->timestamp += 1;
@@ -311,6 +334,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 					return -ENOMEM;
 				tmp_valid_node->ec = key_tmp_node->ec;
 				tmp_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+				#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("free:  key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+				printk("valid:  tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+				#endif
 				tmp_valid_node->phy_page_addr = 0;
 				tmp_valid_node->timestamp += 1;
 				tmp_valid_node->next = NULL;
@@ -330,6 +357,10 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
 		aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
 		aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
+		#ifdef TEST_ERROR_ADDRESS_BLOCK
+				printk("valid: key_tmp_node->phy_blk_addr:%d,%s:%d\n",key_tmp_node->phy_blk_addr,__func__,__LINE__);
+				//printk("tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+		#endif
 		aml_chip->aml_nandkey_info->env_valid_node->ec = key_tmp_node->ec;
 		aml_chip->aml_nandkey_info->env_valid_node->timestamp += 1;
 		aml_chip->aml_nandkey_info->env_valid_node->next = NULL;
@@ -343,6 +374,9 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 			tmp_valid_node = kzalloc(sizeof(struct env_valid_node_t), GFP_KERNEL);
 			tmp_valid_node->ec = key_tmp_node->ec;
 			tmp_valid_node->phy_blk_addr = key_tmp_node->phy_blk_addr;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("valid: tmp_valid_node->phy_blk_addr:%d,%s:%d\n",tmp_valid_node->phy_blk_addr,__func__,__LINE__);
+			#endif
 			tmp_valid_node->phy_page_addr = 0;
 			tmp_valid_node->timestamp += 1;
 			tmp_valid_node->next = NULL;
@@ -363,13 +397,14 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		addr = tail_valid_node->phy_blk_addr;
 		addr *= mtd->erasesize;
 		addr += tail_valid_node->phy_page_addr * mtd->writesize;
-		//printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
+		printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
 		if (tail_valid_node->phy_page_addr == 0) {
 
 			memset(&aml_key_erase_info, 0, sizeof(struct erase_info));
 			aml_key_erase_info.mtd = mtd;
 			aml_key_erase_info.addr = addr;
 			aml_key_erase_info.len = mtd->erasesize;
+			aml_chip->key_protect = 1;
 
 			error = mtd->erase(mtd, &aml_key_erase_info);
 			if (error) {
@@ -377,6 +412,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 				mtd->block_markbad(mtd, addr);
 				return error;
 			}
+			aml_chip->key_protect = 0;
 			tail_valid_node->ec++;
 		}
 
@@ -401,7 +437,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 	struct aml_nand_bbt_info *nand_bbt_info;
 	struct env_free_node_t *env_free_node, *key_tmp_node;
 	int error = 0, pages_per_blk, i = 1;
-	loff_t addr = 0;
+	uint64_t addr = 0;
 	struct erase_info aml_key_erase_info;
 	mesonkey_t *key_ptr = (mesonkey_t *)buf;
 
@@ -458,6 +494,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		aml_key_erase_info.mtd = mtd;
 		aml_key_erase_info.addr = addr;
 		aml_key_erase_info.len = mtd->erasesize;
+		aml_chip->key_protect = 1;
 
 		error = mtd->erase(mtd, &aml_key_erase_info);
 		if (error) {
@@ -465,6 +502,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 			mtd->block_markbad(mtd, addr);
 			return error;
 		}
+		aml_chip->key_protect = 0;
 		aml_chip->aml_nandkey_info->env_valid_node->ec++;
 	}
 
@@ -483,6 +521,9 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 }
 #endif  //NAND_KEY_SAVE_MULTI_BLOCK
 
+#define KEY_SAVE_NAND_TAIL
+
+#ifdef KEY_SAVE_NAND_TAIL
 static int aml_nand_key_init(struct mtd_info *mtd)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
@@ -492,9 +533,400 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
 	struct env_valid_node_t *env_valid_node,*tmp_valid_node;
 	struct env_free_node_t  *multi_free_node,*mult_free_tmp_node;
+	int have_env_free_node_flag;
 	#endif
 	int error = 0, start_blk, total_blk, key_blk, i, pages_per_blk, bad_blk_cnt = 0, max_key_blk, max_env_blk,phys_erase_shift;
-	loff_t offset, env_offset;
+	uint64_t offset, env_offset;
+	unsigned char *data_buf;
+	struct mtd_oob_ops aml_oob_ops;
+	unsigned char key_oob_buf[sizeof(struct env_oobinfo_t)];
+
+	data_buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	if (data_buf == NULL)
+		return -ENOMEM;
+
+	aml_chip->aml_nandkey_info = kzalloc(sizeof(struct aml_nandkey_info_t), GFP_KERNEL);
+	if (aml_chip->aml_nandkey_info == NULL)
+		return -ENOMEM;
+
+	aml_chip->aml_nandkey_info->env_init = 0;
+	aml_chip->aml_nandkey_info->mtd = mtd;
+	aml_chip->aml_nandkey_info->env_valid_node = kzalloc(sizeof(struct env_valid_node_t), GFP_KERNEL);
+	if (aml_chip->aml_nandkey_info->env_valid_node == NULL)
+		return -ENOMEM;
+	aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = -1;
+	aml_chip->aml_nandkey_info->env_free_node = NULL;
+
+	phys_erase_shift = fls(mtd->erasesize) - 1;
+	max_key_blk = (NAND_MINIKEY_PART_SIZE >> phys_erase_shift);
+	if (max_key_blk < NAND_MINIKEY_PART_BLOCKNUM)
+		max_key_blk = NAND_MINIKEY_PART_BLOCKNUM;
+//	if (nand_boot_flag)
+//		offset = (NAND_MINI_PART_SIZE + 1024 * mtd->writesize) / aml_chip->plane_num;
+#if 0
+	offset = (1024 * mtd->writesize) / aml_chip->plane_num;
+	//env size
+	max_env_blk = (NAND_MINI_PART_SIZE >> phys_erase_shift);
+	if(max_env_blk < NAND_MINI_PART_BLOCKNUM)
+		max_env_blk = NAND_MINI_PART_BLOCKNUM;
+	start_blk = 0;
+	do{
+		env_offset = offset + start_blk * mtd->erasesize;
+		error = mtd->block_isbad(mtd, env_offset);
+		if (error) {
+			offset += mtd->erasesize;
+			continue;
+		}
+		start_blk++;
+	}while(start_blk < max_env_blk);
+	offset += max_env_blk * mtd->erasesize;
+#endif
+#ifdef NEW_NAND_SUPPORT
+	if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
+		offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
+#endif
+
+	//start_blk = (int)(offset >> phys_erase_shift);
+	//total_blk = (int)(mtd->size >> phys_erase_shift);
+	//aml_chip->aml_nandkey_info->start_block=start_blk;
+	//printk("start_blk=%d\n",aml_chip->aml_nandkey_info->start_block);
+	//aml_chip->aml_nandkey_info->end_block=start_blk;
+	pages_per_blk = (1 << (chip->phys_erase_shift - chip->page_shift));
+	key_oobinfo = (struct env_oobinfo_t *)key_oob_buf;
+	//if ((default_keyironment_size + sizeof(struct aml_nand_bbt_info)) > KEYSIZE)
+	//	total_blk = start_blk + max_key_blk;
+
+#define REMAIN_TAIL_BLOCK_NUM		8
+	offset = mtd->size - mtd->erasesize;
+	int remain_block=0;
+	int remain_start_block;
+	int remain_tatol_block;
+	remain_start_block = (int)(offset >> phys_erase_shift);
+	remain_tatol_block = REMAIN_TAIL_BLOCK_NUM;
+	aml_chip->aml_nandkey_info->start_block=remain_start_block;
+	aml_chip->aml_nandkey_info->end_block=remain_start_block;
+	bad_blk_cnt=0;
+	do{
+		offset = mtd->erasesize;
+		offset *= remain_start_block;
+		error = mtd->block_isbad(mtd, offset);
+		if (error) {
+			aml_chip->aml_nandkey_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = remain_start_block;
+			if(bad_blk_cnt >= MAX_BAD_BLK_NUM)
+			{
+				printk("bad block too much,%s\n",__func__);
+				return -ENOMEM;
+			}
+			aml_chip->aml_nandkey_info->start_block--;
+			remain_start_block--;
+			continue;
+		}
+		remain_start_block--;
+	}while(++remain_block< remain_tatol_block);
+	aml_chip->aml_nandkey_info->start_block -= (remain_block-1);
+	printk("key start_blk=%d,end_blk=%d,%s:%d\n",aml_chip->aml_nandkey_info->start_block,aml_chip->aml_nandkey_info->end_block,__func__,__LINE__);
+
+	key_blk = 0;
+	start_blk = aml_chip->aml_nandkey_info->start_block;
+	do {
+
+		offset = mtd->erasesize;
+		offset *= start_blk;
+		error = mtd->block_isbad(mtd, offset);
+		if (error) {
+			//aml_chip->aml_nandkey_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk;
+			//if(bad_blk_cnt >= MAX_BAD_BLK_NUM)
+			//{
+			//	printk("bad block too much,%s\n",__func__);
+			//	return -ENOMEM;
+			//}
+			start_blk++;
+			continue;
+		}
+
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = mtd->writesize;
+		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+		aml_oob_ops.datbuf = data_buf;
+		aml_oob_ops.oobbuf = key_oob_buf;
+
+		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
+		memset((unsigned char *)aml_oob_ops.oobbuf, 0x0, aml_oob_ops.ooblen);
+
+		error = mtd->read_oob(mtd, offset, &aml_oob_ops);
+		if ((error != 0) && (error != -EUCLEAN)) {
+			printk("blk check good but read failed: %llx, %d\n", (uint64_t)offset, error);
+			continue;
+		}
+
+		aml_chip->aml_nandkey_info->env_init = 1;
+		if (!memcmp(key_oobinfo->name, ENV_KEY_MAGIC, 4)) {
+			aml_chip->aml_nandkey_info->env_valid = 1;
+			if (aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr >= 0) {
+				env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+				if (env_free_node == NULL)
+					return -ENOMEM;
+
+				env_free_node->dirty_flag = 1;
+				#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+				have_env_free_node_flag = 0;
+				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
+
+					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
+					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+					env_free_node->next = NULL;
+					have_env_free_node_flag = 1;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					#endif
+
+					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
+					while (tmp_valid_node != NULL) {
+						aml_chip->aml_nandkey_info->env_valid_node->next = tmp_valid_node->next;
+						multi_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+						multi_free_node->phy_blk_addr = tmp_valid_node->phy_blk_addr;
+						multi_free_node->ec = tmp_valid_node->ec;
+						multi_free_node->next = NULL;
+						kfree(tmp_valid_node);
+						multi_free_node->dirty_flag = 1;
+						mult_free_tmp_node = env_free_node;
+						while(mult_free_tmp_node->next != NULL){
+							mult_free_tmp_node = mult_free_tmp_node->next;
+						}
+						mult_free_tmp_node->next = multi_free_node;
+						#ifdef TEST_ERROR_ADDRESS_BLOCK
+						printk("free:phy_page_addr:%d,%s,%d\n",multi_free_node->phy_blk_addr,__func__,__LINE__);
+						#endif
+						tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
+					}
+					aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = start_blk;
+					aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
+					aml_chip->aml_nandkey_info->env_valid_node->ec = key_oobinfo->ec;
+					aml_chip->aml_nandkey_info->env_valid_node->timestamp = key_oobinfo->timestamp;	
+					aml_chip->aml_nandkey_info->env_valid_node->next = NULL;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr,aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr,__func__,__LINE__);
+					#endif
+
+				}
+				else if(key_oobinfo->timestamp == aml_chip->aml_nandkey_info->env_valid_node->timestamp){
+					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node;
+					env_valid_node = kzalloc(sizeof(struct env_valid_node_t), GFP_KERNEL);
+					if (env_valid_node == NULL)
+						return -ENOMEM;
+					env_valid_node->phy_blk_addr = start_blk;
+					env_valid_node->phy_page_addr = 0;
+					env_valid_node->next = NULL;
+					env_valid_node->timestamp = key_oobinfo->timestamp;
+					env_valid_node->ec = key_oobinfo->ec;
+					while (tmp_valid_node->next != NULL) {
+						tmp_valid_node = tmp_valid_node->next;
+					}
+					tmp_valid_node->next = env_valid_node;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("valid:phy_blk_addr:%d,phy_page_addr:%d,%s,%d\n",env_valid_node->phy_blk_addr,env_valid_node->phy_page_addr,__func__,__LINE__);
+					#endif
+				}
+				else {
+					env_free_node->phy_blk_addr = start_blk;
+					#ifdef TEST_ERROR_ADDRESS_BLOCK
+					printk("env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+					#endif
+					env_free_node->ec = key_oobinfo->ec;
+					have_env_free_node_flag = 1;
+				}
+				if(have_env_free_node_flag){
+					if (aml_chip->aml_nandkey_info->env_free_node == NULL){
+						aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+					}
+					else {
+						key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+						while (key_tmp_node->next != NULL) {
+							key_tmp_node = key_tmp_node->next;
+						}
+						key_tmp_node->next = env_free_node;
+					}
+				}
+				else{
+					kfree(env_free_node);
+				}
+				#else
+				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
+
+					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
+					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+					aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = start_blk;
+					aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
+					aml_chip->aml_nandkey_info->env_valid_node->ec = key_oobinfo->ec;
+					aml_chip->aml_nandkey_info->env_valid_node->timestamp = key_oobinfo->timestamp;	
+				}
+				else {
+					env_free_node->phy_blk_addr = start_blk;
+					env_free_node->ec = key_oobinfo->ec;
+				}
+				if (aml_chip->aml_nandkey_info->env_free_node == NULL){
+					aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+				}
+				else {
+					key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+					while (key_tmp_node->next != NULL) {
+						key_tmp_node = key_tmp_node->next;
+					}
+					key_tmp_node->next = env_free_node;
+				}
+				#endif
+			}
+			else {
+
+				aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr = start_blk;
+				aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = 0;
+				aml_chip->aml_nandkey_info->env_valid_node->ec = key_oobinfo->ec;
+				aml_chip->aml_nandkey_info->env_valid_node->timestamp = key_oobinfo->timestamp;	
+			}
+		}
+		else if (key_blk < max_key_blk) {
+			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+			if (env_free_node == NULL)
+				return -ENOMEM;
+
+			env_free_node->phy_blk_addr = start_blk;
+			env_free_node->ec = key_oobinfo->ec;
+			env_free_node->next = NULL;
+			#ifdef TEST_ERROR_ADDRESS_BLOCK
+			printk("free:  env_free_node->phy_blk_addr:%d,%s:%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
+			#endif
+			if (aml_chip->aml_nandkey_info->env_free_node == NULL)
+				aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+			else {
+				key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+				key_prev_node = key_tmp_node;
+				while (key_tmp_node != NULL) {
+					if (key_tmp_node->dirty_flag == 1)
+						break;
+					key_prev_node = key_tmp_node;
+					key_tmp_node = key_tmp_node->next;
+				}
+				if (key_prev_node == key_tmp_node) {
+					env_free_node->next = key_tmp_node;
+					aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+				}
+				else {
+					key_prev_node->next = env_free_node;
+					env_free_node->next = key_tmp_node;
+				}
+			}
+		}
+		key_blk++;
+		if ((key_blk >= max_key_blk) && (aml_chip->aml_nandkey_info->env_valid == 1))
+			break;
+
+	} while ((++start_blk) < (remain_tatol_block+aml_chip->aml_nandkey_info->start_block)); //total_blk  ENV_NAND_SCAN_BLK
+	if (start_blk >= (remain_tatol_block + aml_chip->aml_nandkey_info->start_block)) {  //total_blk  ENV_NAND_SCAN_BLK
+		memcpy(aml_chip->aml_nandkey_info->nand_bbt_info.bbt_head_magic, BBT_HEAD_MAGIC, 4);
+		memcpy(aml_chip->aml_nandkey_info->nand_bbt_info.bbt_tail_magic, BBT_TAIL_MAGIC, 4);
+	}
+
+	if (aml_chip->aml_nandkey_info->env_valid == 1) {
+
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = mtd->writesize;
+		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+		aml_oob_ops.datbuf = data_buf;
+		aml_oob_ops.oobbuf = key_oob_buf;
+
+		for (i=0; i<pages_per_blk; i++) {
+
+			memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
+			memset((unsigned char *)aml_oob_ops.oobbuf, 0x0, aml_oob_ops.ooblen);
+
+			offset = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
+			offset *= mtd->erasesize;
+			offset += i * mtd->writesize;
+			error = mtd->read_oob(mtd, offset, &aml_oob_ops);
+			if ((error != 0) && (error != -EUCLEAN)) {
+				printk("blk check good but read failed: %llx, %d\n", (uint64_t)offset, error);
+				continue;
+			}
+
+			#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+			if (!memcmp(key_oobinfo->name, ENV_KEY_MAGIC, 4)){
+				aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = i;
+				tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
+				while(tmp_valid_node != NULL){
+					tmp_valid_node->phy_page_addr = i;
+					//printk("valid page:phy_page_addr:%d,%s,%d\n",tmp_valid_node->phy_page_addr,__func__,__LINE__);
+					tmp_valid_node = tmp_valid_node->next;
+				}
+			}
+			else
+				break;
+			#else
+			if (!memcmp(key_oobinfo->name, ENV_KEY_MAGIC, 4))
+				aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr = i;
+			else
+				break;
+			#endif
+		}
+	}
+	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+	if ((mtd->writesize < CONFIG_KEYSIZE) && (aml_chip->aml_nandkey_info->env_valid == 1)) {
+		i = (CONFIG_KEYSIZE + mtd->writesize - 1) / mtd->writesize;
+		aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr -= (i - 1);
+		
+		tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
+		while(tmp_valid_node != NULL){
+			tmp_valid_node->phy_page_addr -= (i - 1);
+			tmp_valid_node = tmp_valid_node->next;
+		}
+	}
+	#else
+	if ((mtd->writesize < CONFIG_KEYSIZE) && (aml_chip->aml_nandkey_info->env_valid == 1)) {
+		i = (CONFIG_KEYSIZE + mtd->writesize - 1) / mtd->writesize;
+		aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr -= (i - 1);
+	}
+	#endif
+
+	offset = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
+	offset *= mtd->erasesize;
+	offset += aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr * mtd->writesize;
+	//printk("aml nand key valid addr: %llx \n", (uint64_t)offset);
+	if(aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr < 0){
+		printk("aml nand key not have valid addr: not wrote\n");
+	}
+	else{
+		printk("aml nand key valid addr: %llx \n", offset);
+	}
+	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+	tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
+	while(tmp_valid_node != NULL){
+		offset = tmp_valid_node->phy_blk_addr;
+		offset *= mtd->erasesize;
+		offset += tmp_valid_node->phy_page_addr * mtd->writesize;
+		printk("aml nand key valid addr: %llx \n", (uint64_t)offset);
+		tmp_valid_node = tmp_valid_node->next;
+	}
+	#endif
+	printk(KERN_DEBUG "CONFIG_KEYSIZE=0x%x; KEYSIZE=0x%x; bbt=0x%x; default_keyironment_size=0x%x\n",
+		CONFIG_KEYSIZE, KEYSIZE, sizeof(struct aml_nand_bbt_info), default_keyironment_size);
+	kfree(data_buf);
+	return 0;
+}
+#else  //KEY_SAVE_NAND_TAIL
+static int aml_nand_key_init(struct mtd_info *mtd)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct nand_chip *chip = &aml_chip->chip;
+	struct env_oobinfo_t *key_oobinfo;
+	struct env_free_node_t *env_free_node, *key_tmp_node, *key_prev_node;
+	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+	struct env_valid_node_t *env_valid_node,*tmp_valid_node;
+	struct env_free_node_t  *multi_free_node,*mult_free_tmp_node;
+	int have_env_free_node_flag;
+	#endif
+	int error = 0, start_blk, total_blk, key_blk, i, pages_per_blk, bad_blk_cnt = 0, max_key_blk, max_env_blk,phys_erase_shift;
+	uint64_t offset, env_offset;
 	unsigned char *data_buf;
 	struct mtd_oob_ops aml_oob_ops;
 	unsigned char key_oob_buf[sizeof(struct env_oobinfo_t)];
@@ -597,10 +1029,13 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 
 				env_free_node->dirty_flag = 1;
 				#ifdef NAND_KEY_SAVE_MULTI_BLOCK
+				have_env_free_node_flag = 0;
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
 
 					env_free_node->phy_blk_addr = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 					env_free_node->ec = aml_chip->aml_nandkey_info->env_valid_node->ec;
+					env_free_node->next = NULL;
+					have_env_free_node_flag = 1;
 					//printk("free:phy_page_addr:%d,%s,%d\n",env_free_node->phy_blk_addr,__func__,__LINE__);
 
 					tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
@@ -645,6 +1080,21 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 				else {
 					env_free_node->phy_blk_addr = start_blk;
 					env_free_node->ec = key_oobinfo->ec;
+					have_env_free_node_flag = 1;
+				}
+				if(have_env_free_node_flag){
+					if (aml_chip->aml_nandkey_info->env_free_node == NULL)
+						aml_chip->aml_nandkey_info->env_free_node = env_free_node;
+					else {
+						key_tmp_node = aml_chip->aml_nandkey_info->env_free_node;
+						while (key_tmp_node->next != NULL) {
+							key_tmp_node = key_tmp_node->next;
+						}
+						key_tmp_node->next = env_free_node;
+					}
+				}
+				else{
+					kfree(env_free_node);
 				}
 				#else
 				if (key_oobinfo->timestamp > aml_chip->aml_nandkey_info->env_valid_node->timestamp) {
@@ -660,7 +1110,6 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					env_free_node->phy_blk_addr = start_blk;
 					env_free_node->ec = key_oobinfo->ec;
 				}
-				#endif
 				if (aml_chip->aml_nandkey_info->env_free_node == NULL)
 					aml_chip->aml_nandkey_info->env_free_node = env_free_node;
 				else {
@@ -670,6 +1119,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 					}
 					key_tmp_node->next = env_free_node;
 				}
+				#endif
 			}
 			else {
 
@@ -786,7 +1236,13 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	offset = aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr;
 	offset *= mtd->erasesize;
 	offset += aml_chip->aml_nandkey_info->env_valid_node->phy_page_addr * mtd->writesize;
-	printk("aml nand key valid addr: %llx \n", (uint64_t)offset);
+	//printk("aml nand key valid addr: %llx \n", (uint64_t)offset);
+	if(aml_chip->aml_nandkey_info->env_valid_node->phy_blk_addr < 0){
+		printk("aml nand key not have valid addr: not wrote\n");
+	}
+	else{
+		printk("aml nand key valid addr: %llx \n", offset);
+	}
 	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
 	tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
 	while(tmp_valid_node != NULL){
@@ -802,6 +1258,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 	kfree(data_buf);
 	return 0;
 }
+#endif
 static int aml_nand_key_check(struct mtd_info *mtd)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
@@ -812,7 +1269,7 @@ static int aml_nand_key_check(struct mtd_info *mtd)
 	//struct mtd_partition *parts;
 	mesonkey_t *key_ptr;
 	int error = 0, start_blk, total_blk, update_key_flag = 0, i, j, nr, max_env_blk, phys_erase_shift;
-	loff_t offset, env_offset;
+	uint64_t offset, env_offset;
 
 	chip = chip;
 	nr = 0;
@@ -946,6 +1403,10 @@ static int aml_nand_key_check(struct mtd_info *mtd)
 			memcpy(nand_bbt_info->bbt_head_magic, BBT_HEAD_MAGIC, 4);
 			memcpy(nand_bbt_info->bbt_tail_magic, BBT_TAIL_MAGIC, 4);	
 			phys_erase_shift = fls(mtd->erasesize) - 1;
+#ifdef KEY_SAVE_NAND_TAIL
+			offset = aml_chip->aml_nandkey_info->start_block;
+			offset *= mtd->erasesize;
+#else
 			//offset = (NAND_MINI_PART_SIZE + 1024 * mtd->writesize / aml_chip->plane_num);
 			offset = (1024 * mtd->writesize / aml_chip->plane_num);
 
@@ -968,6 +1429,7 @@ static int aml_nand_key_check(struct mtd_info *mtd)
 			if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 				offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
 #endif			
+#endif  //KEY_SAVE_NAND_TAIL
 			start_blk = (int)(offset >> phys_erase_shift);
 			total_blk = (int)(mtd->size >> phys_erase_shift);
 			for (i=start_blk; i<total_blk; i++) {
@@ -1000,7 +1462,7 @@ static int aml_nand_update_key(struct mtd_info *mtd)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	mesonkey_t *key_ptr;
-	loff_t offset;
+	uint64_t offset;
 	int error = 0;
 
 	key_ptr = kzalloc(sizeof(mesonkey_t), GFP_KERNEL);
