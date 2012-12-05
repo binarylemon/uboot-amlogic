@@ -1,12 +1,29 @@
 #ifndef __CONFIG_M6_REF_H__
 #define __CONFIG_M6_REF_H__
 
-
 #define CONFIG_AML_MESON_6 1
 #define M6_REF_V2 1
 
+/*
+ *  write to efuse/nand when usb_burning 
+ *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
+ */
+#define CONFIG_AML_MESON6
+#define WRITE_TO_EFUSE_ENABLE	
+//#define WRITE_TO_NAND_ENABLE
+
+#if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
+#error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
+#endif
+
+
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
+//#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#endif
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
@@ -17,9 +34,20 @@
 //#define CONFIG_CMD_I2C    1
 //#define CONFIG_SYS_I2C_SPEED 400000
 
-#define CHECK_ALL_REGULATORS
+/*
+ * PMU selection, CONFIG_AML_PMU and CONFIG_AW_AXP20 should not 
+ * be both existed
+ */
+//#define CONFIG_AML_PMU                                          // Amlogic PMU support
+#ifdef CONFIG_AML_PMU
+#define CONFIG_UBOOT_BATTERY_PARAMETERS 
+#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+#endif  /* CONFIG_AML_PMU */
+
 #define CONFIG_AW_AXP20
 #ifdef CONFIG_AW_AXP20
+#define CONFIG_UBOOT_BATTERY_PARAMETERS 
+#define CHECK_ALL_REGULATORS
 #define CONFIG_CONST_PWM_FOR_DCDC
 #define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
 #define CONFIG_DCDC2_VOLTAGE	1500
@@ -29,6 +57,10 @@
 #define CONFIG_LDO4_VOLTAGE	3300
 
 #define BATTERYCAP				7700							//battery capability
+#endif /* CONFIG_AW_AXP20 */
+
+#if defined(CONFIG_AML_PMU) && defined(CONFIG_AW_AXP20)
+#error You should only select one of CONFIG_AML_PMU and CONFIG_AW_AXP20
 #endif
 
 //Enable storage devices
@@ -138,10 +170,10 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"preboot=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv_without reboot_mode; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
-	"prepare=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
+	"prepare=video open; video clear; video dev bl_on\0" \
 	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi; nand read recovery ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm\0" \
 	"recovery=run prepare; bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 400000; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; else echo no uImage_recovery in NAND; fi\0" \
 	"charging_or_not=if ac_online; then run prepare; run charging; else if getkey; then run prepare; bmp display ${poweron_offset}; run bootcmd; else poweroff; fi; fi\0" \

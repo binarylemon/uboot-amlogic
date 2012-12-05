@@ -138,8 +138,13 @@ static void lcd_power_ctrl(Bool_t status)
     if (status)
 	{
 		//GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
+    #ifdef CONFIG_AML_PMU
+	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);
+	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+    #else
 	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
 	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+    #endif
 	    mdelay(50);
 
 #ifdef CONFIG_AW_AXP20
@@ -166,8 +171,16 @@ static void lcd_power_ctrl(Bool_t status)
 	    mdelay(50);
 
 	    //GPIOA27 -> LCD_PWR_EN#: 0  lcd 3.3v
+    #ifdef CONFIG_AML_PMU
+        /*
+         * TODO, should set this pin to opendrain, not out put high
+         */
+	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 1);
+	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+    #else
 	    set_gpio_val(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), 0);
 	    set_gpio_mode(GPIOA_bank_bit0_27(27), GPIOA_bit_bit0_27(27), GPIO_OUTPUT_MODE);
+    #endif
 	    mdelay(50);
 	}
 }

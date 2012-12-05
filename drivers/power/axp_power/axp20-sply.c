@@ -1,11 +1,15 @@
 #include <common.h>
 #include <div64.h>
 #include "axp-sply.h"
+#include <asm/setup.h>
+
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+#include <amlogic/battery_parameter.h>
+#endif
 
 static int axp_debug = 0;
 
 #define DBG_PSY_MSG(format,args...)   if(axp_debug) printf("[AXP]"format,##args)
-
 
 #define ABS(x)				((x) >0 ? (x) : -(x) )
 
@@ -323,6 +327,75 @@ int axp_charger_get_charging_percent()
 	uint8_t val;
 	struct axp_adc_res axp_adc;
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+    int i;
+    int ocv = 0;
+    int ocv_diff, percent_diff, ocv_diff2;
+    int charge_status = axp_charger_get_charging_status();
+    static int ocv_full  = 0;
+    static int ocv_empty = 0;
+
+    if (get_battery_para_flag() == PARA_UNPARSED) {
+        /*
+         * this code runs earlier than get_battery_para(), 
+         * we need to know battery parameters first.
+         */
+        if (parse_battery_parameters() > 0) {
+            set_battery_para_flag(PARA_PARSE_SUCCESS);
+            for (i = 0; i < 16; i++) {                  	// find out full & empty ocv in battery curve
+                if (!ocv_empty && board_battery_para.pmu_bat_curve[i].discharge_percent > 0) {
+                    ocv_empty = board_battery_para.pmu_bat_curve[i - 1].ocv;    
+                }
+                if (!ocv_full && board_battery_para.pmu_bat_curve[i].discharge_percent == 100) {
+                    ocv_full = board_battery_para.pmu_bat_curve[i].ocv;    
+                }
+            }
+        } else {
+            set_battery_para_flag(PARA_PARSE_FAILED);
+        }
+    }
+    if (get_battery_para_flag() == PARA_PARSE_SUCCESS) {
+        for (i = 0; i < 8; i++) {                           // calculate average ocv
+            ocv += axp_get_ocv(); 
+            udelay(10000); 
+        }
+        ocv = ocv / 8;
+        if (ocv >= ocv_full) {
+            return 100;    
+        } else if (ocv <= ocv_empty) {
+            return 0;    
+        }
+        for (i = 0; i < 15; i++) {                          // find which range this ocv is in
+            if (ocv >= board_battery_para.pmu_bat_curve[i].ocv &&
+                ocv <  board_battery_para.pmu_bat_curve[i + 1].ocv) {
+                break;
+            }
+        }
+        if (charge_status) {                                // calculate capability of battery according curve
+            percent_diff = board_battery_para.pmu_bat_curve[i + 1].charge_percent -
+                           board_battery_para.pmu_bat_curve[i].charge_percent;
+        } else {
+            percent_diff = board_battery_para.pmu_bat_curve[i + 1].discharge_percent -
+                           board_battery_para.pmu_bat_curve[i].discharge_percent;
+        }
+        ocv_diff  = board_battery_para.pmu_bat_curve[i + 1].ocv -
+                    board_battery_para.pmu_bat_curve[i].ocv;
+        ocv_diff2 = ocv - board_battery_para.pmu_bat_curve[i].ocv;
+        rest_vol  = (percent_diff * ocv_diff2 + ocv_diff / 2)/ocv_diff;
+        if (charge_status) {
+            rest_vol += board_battery_para.pmu_bat_curve[i].charge_percent;
+        } else {
+            rest_vol += board_battery_para.pmu_bat_curve[i].discharge_percent;
+        }
+        if (rest_vol > 100) {
+            rest_vol = 100;    
+        } else if (rest_vol < 0) {
+            rest_vol = 0;    
+        }
+        return rest_vol;
+    }
+#endif      /* CONFIG_UBOOT_BATTERY_PARAMETERS */
+
 	axp_read_adc(&axp_adc);
 	battery_ocv = axp_get_ocv();
 	charging_status = axp_charger_get_charging_status();
@@ -540,4 +613,547 @@ U_BOOT_CMD(
 	"0-7\n"
 );
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+#warning >>>>>>>>>>>>>>> CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+////////////////////////////////////////////////////////////////////////
+//     This code is add for battery curve calibrate                   //
+////////////////////////////////////////////////////////////////////////
+// charecter attribute
+#define     NoneAttribute       0   
+#define     BoldFace            1   
+#define     UnderLine           4   
+#define     Flicker             5   
+#define     ReverseDisplay      7   
+#define     Hide                8   
+#define     Un_BoldFace         22  
+#define     Un_Flicker          25  
+#define     Un_ReverseDisplay   27  
+
+// background color
+#define     Back_Black          40 
+#define     Back_Red            41 
+#define     Back_Yellow         43 
+#define     Back_Blue           44 
+#define     Back_Purple         45 
+#define     Back_BottleGreen    46 
+#define     Back_White          47
+
+// front color
+#define     Font_Black          30
+#define     Font_Red            31
+#define     Font_Green          42
+#define     Font_Yellow         43
+#define     Font_Blue           44
+#define     Font_Purple         45
+#define     Font_BottleGreen    46
+#define     Font_White          47
+
+void terminal_print(int x, int y, char *str)
+{
+    char   buff[200] = {};
+    if (y == 35) {
+        sprintf(buff,
+                "\033[%d;%dH\033[0;%d;%dm%s\033[0m",
+                y, x, Back_Black, Font_Black, 
+                "                                                     "
+                "                                                     ");
+        printf(buff);
+        sprintf(buff,
+                "\033[%d;%dH\033[1;%d;%dm%s\033[0m",
+                y, x, Back_Black, Font_Red, str);
+    } else {
+        sprintf(buff,
+                "\033[%d;%dH\033[0;%d;%dm%s\033[0m",
+                y, x, Back_Black, Font_Green, str);
+    }
+    printf(buff);
+}
+
+int axp_battery_calibrate_init(void)
+{
+    uint8_t val;
+    axp_read(0x01, &val);
+    if (!(val & 0x20)) {
+        terminal_print(0, 35, "ERROR, NO battery is connected to system\n");
+        return 0;
+    }
+    axp_read(0x84, &val);
+    val &= ~0xc0;
+    val |= 0x80;
+    axp_write(0x84, val);                       // set ADC sample rate to 100KHz
+    axp_write(0x82, 0xff);                      // open all ADC
+    axp_write(0x31, 0x03);                      // shutdown when battery voltage < 2.9V
+    axp_write(0x33, 0xc8);                      // set charge current to 1.1A
+    axp_write(0xb8, 0x20);                      // clear coulomb counter
+    axp_write(0xb8, 0x80);                      // start coulomb counter
+    return 1;
+}
+
+int32_t coulomb = 0;
+int32_t ocv  = 0;
+int32_t ibat = 0;
+int32_t rdc_r  = 0;
+int32_t vbat_i = 0;
+
+int axp_calculate_rdc(void)
+{
+    struct axp_adc_res axp_adc;
+    char    buf[100];
+    int32_t i_lo, i_hi;
+    int32_t v_lo, v_hi;
+    int32_t rdc_cal = 0;
+
+    if (ocv > 4000) {                           // don't calculate rdc when ocv is too high
+        return 0;
+    }
+    axp_write(0x33, 0xc1);                      // set charge current to 400mA 
+    udelay(500000);
+    axp_read_adc(&axp_adc);
+    i_lo = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res)); 
+    v_lo = (axp_adc.vbat_res * 1100) / 1000;
+    axp_write(0x33, 0xc9);                      // set charge current to 1.2A
+    udelay(500000);
+    axp_read_adc(&axp_adc);
+    i_hi = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res)); 
+    v_hi = (axp_adc.vbat_res * 1100) / 1000;
+    rdc_cal = (v_hi - v_lo) * 1000 / (i_hi - i_lo);
+    sprintf(buf, "i_lo:%4d, i_hi:%4d, u_lo:%4d, u_hi:%4d, rdc:%4d\n", i_lo, i_hi, v_lo, v_hi, rdc_cal);
+    terminal_print(0, 36, buf);
+    if (rdc_cal < 0 || rdc_cal >= 300) {        // usually RDC will not greater than 300 mhom
+        return 0;
+    }
+    return rdc_cal;
+}
+
+int axp_update_calibrate(int charge)
+{
+    uint8_t val[2];
+    struct axp_adc_res axp_adc;
+    uint32_t tmp0, tmp1;
+
+    coulomb = axp_get_coulomb(); 
+    ocv = axp_get_ocv(); 
+    axp_read_adc(&axp_adc);
+    ibat = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res)); 
+    tmp0 = axp_adc.vbat_res;
+    vbat_i = (tmp0 * 1100) / 1000;
+
+    axp_reads(0xBA, 2, val);
+    tmp1 = ((val[0] & 0x1F) << 8) | val[1];
+    rdc_r = (tmp1  * 10742) / 10000;
+    if (charge) {
+        return axp_calculate_rdc();
+    }
+    return 0;
+}
+
+static struct energy_array {
+    int     ocv;                            // mV
+    int     coulomb;                        // mAh read from axp202
+    int     coulomb_p;                      // mAh @ 3700mV
+    int64_t energy;                         // mV * mAh
+    int     updated_flag;           
+};
+
+static struct energy_array battery_energy_charge[16] = {
+    {3132, 0, 0, 0, 0},                     // pmu_bat_para1
+    {3273, 0, 0, 0, 0},                     // pmu_bat_para2
+    {3414, 0, 0, 0, 0},                     // pmu_bat_para3
+    {3555, 0, 0, 0, 0},                     // pmu_bat_para4
+    {3625, 0, 0, 0, 0},                     // pmu_bat_para5
+    {3660, 0, 0, 0, 0},                     // pmu_bat_para6
+    {3696, 0, 0, 0, 0},                     // pmu_bat_para7
+    {3731, 0, 0, 0, 0},                     // pmu_bat_para8
+    {3766, 0, 0, 0, 0},                     // pmu_bat_para9
+    {3801, 0, 0, 0, 0},                     // pmu_bat_para10
+    {3836, 0, 0, 0, 0},                     // pmu_bat_para11
+    {3872, 0, 0, 0, 0},                     // pmu_bat_para12
+    {3942, 0, 0, 0, 0},                     // pmu_bat_para13
+    {4012, 0, 0, 0, 0},                     // pmu_bat_para14
+    {4083, 0, 0, 0, 0},                     // pmu_bat_para15
+    {4153, 0, 0, 0, 0}                      // pmu_bat_para16   
+};
+
+static struct energy_array battery_energy_discharge[16] = {
+    {3132, 0, 0, 0, 0},                     // pmu_bat_para1
+    {3273, 0, 0, 0, 0},                     // pmu_bat_para2
+    {3414, 0, 0, 0, 0},                     // pmu_bat_para3
+    {3555, 0, 0, 0, 0},                     // pmu_bat_para4
+    {3625, 0, 0, 0, 0},                     // pmu_bat_para5
+    {3660, 0, 0, 0, 0},                     // pmu_bat_para6
+    {3696, 0, 0, 0, 0},                     // pmu_bat_para7
+    {3731, 0, 0, 0, 0},                     // pmu_bat_para8
+    {3766, 0, 0, 0, 0},                     // pmu_bat_para9
+    {3801, 0, 0, 0, 0},                     // pmu_bat_para10
+    {3836, 0, 0, 0, 0},                     // pmu_bat_para11
+    {3872, 0, 0, 0, 0},                     // pmu_bat_para12
+    {3942, 0, 0, 0, 0},                     // pmu_bat_para13
+    {4012, 0, 0, 0, 0},                     // pmu_bat_para14
+    {4083, 0, 0, 0, 0},                     // pmu_bat_para15
+    {4153, 0, 0, 0, 0}                      // pmu_bat_para16   
+};
+
+static int32_t ocv_array[4] = {};
+
+static int32_t update_ocv(int32_t ocv)
+{
+    int32_t i = 0;
+    int32_t total = ocv * 4;
+
+    for (i = 0; i < 3; i++) {
+        total += ocv_array[i + 1] * (i+1);
+        ocv_array[i] = ocv_array[i+1];
+    }
+    ocv_array[3] = ocv;
+    return total / 10;
+}
+
+static void inline update_energy_charge(int ocv, int energy, int coulomb, int coulomb_p) 
+{
+    int i = 0;    
+    char    buf[100] = {};
+    for (i = 0; i < 16; i++) {
+        if (ocv >= battery_energy_charge[i].ocv && !battery_energy_charge[i].updated_flag) {
+            battery_energy_charge[i].energy = energy;
+            battery_energy_charge[i].coulomb = coulomb;
+            battery_energy_charge[i].coulomb_p = coulomb_p;
+            battery_energy_charge[i].updated_flag = 1;
+          //sprintf(buf, "update energy %9lld for %4d mV, index:%2d\n", 
+          //        battery_energy_charge[i].energy, battery_energy_charge[i].ocv, i);
+          //terminal_print(0, 35, buf);
+            sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,\n", 
+                    i,
+                    battery_energy_charge[i].ocv, 
+                    battery_energy_charge[i].energy, 
+                    battery_energy_charge[i].coulomb,
+                    battery_energy_charge[i].coulomb_p);
+            terminal_print(0, 12 + i, buf);
+        }
+    }
+}
+
+static void inline update_energy_discharge(int ocv, int energy, int coulomb, int coulomb_p) 
+{
+    int i = 0;
+    char    buf[100] = {};
+    for (i = 0; i < 16; i++) {
+        if (ocv < battery_energy_discharge[i].ocv && !battery_energy_discharge[i].updated_flag) {
+            battery_energy_discharge[i].energy = energy;
+            battery_energy_discharge[i].coulomb = coulomb;
+            battery_energy_discharge[i].coulomb_p = coulomb_p;
+            battery_energy_discharge[i].updated_flag = 1;
+          //sprintf(buf, "update energy %9lld for %4d mV, index:%2d\n", 
+          //       battery_energy_discharge[i].energy, battery_energy_discharge[i].ocv, i);
+          //terminal_print(0, 35, buf);
+            sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,\n", 
+                    i,
+                    battery_energy_discharge[i].ocv, 
+                    battery_energy_discharge[i].energy, 
+                    battery_energy_discharge[i].coulomb,
+                    battery_energy_discharge[i].coulomb_p);
+            terminal_print(60, 12 + i, buf);
+        }
+    }
+}
+
+void  ClearScreen(void)                                 // screen clear for terminal
+{
+    char    buff[15] = {};
+    int     length=0;
+                
+    sprintf(buff, "\033[2J\033[0m");
+    while (buff[length] != '\0') { 
+        length ++;
+    }
+    printf(buff);
+}
+
+void axp_set_rdc(int rdc)
+{
+    uint32_t rdc_tmp = (rdc * 10000 + 5371) / 10742;
+    char    buf[100];
+
+    axp_set_bits(0xB9, 0x80);                           // stop
+    axp_clr_bits(0xBA, 0x80);
+    axp_write(0xBB, rdc_tmp & 0xff);
+    axp_write(0xBA, (rdc_tmp >> 8) & 0x1F);
+    axp_clr_bits(0xB9, 0x80);                           // start
+}
+
+extern void set_backlight_level(unsigned level);
+
+int axp_battery_calibrate(void)
+{
+    int64_t energy_c = 0;
+    int64_t energy_p = 0;
+    int     prev_coulomb = 0;
+    int     prev_ocv  = 0;
+    int     prev_ibat = 0;
+    int     key;
+    int     ibat_cnt = 0;
+    int     i;
+    int64_t energy_top, energy_visible;
+    int     base, offset, range_charge, percent, range_discharge;
+    char    buf[200] = {};
+    int     size;
+    int     rdc_average = 0, rdc_total = 0, rdc_cnt = 0, rdc_update_flag = 0;
+    int     ocv_0 = 2;
+    int     rdc_tmp = 0;
+
+    ClearScreen();
+    terminal_print(0,  7, "=============================== WARNING ================================\n");
+    terminal_print(0,  8, "Battery calibrate will take several hours to finish. Before calibrate,  \n");
+    terminal_print(0,  9, "make sure you have discharge battery with voltage between to 3.0V ~ 3.05V.\n");
+    terminal_print(0, 10, "during test, you can press key 'Q' to quit this process.\n");
+    terminal_print(0, 11, "'R' = run calibration, 'Q' = quit. Your Choise:\n");
+
+    while (1) {
+        if (tstc()) {
+            key = getc();
+            if (key == 'r' || key == 'R') {
+                break;
+            }
+            if (key == 'q' || key == 'Q') {
+                goto out;
+            }
+        }
+        udelay(10000);
+    } 
+
+    /*
+     * Note: If you observed rdc readed from register had large 
+     * different with rdc calculated(more than +-15mohm), you should
+     * reset rdc with calculated value and redo this test.
+     */
+    prev_ocv = axp_get_ocv(); 
+    axp_read(0x00, buf);
+    if ((buf[0] & 0x50) && prev_ocv < 3800) {
+        terminal_print(0, 13, "Calibrate RDC now...\n");
+        for (i = 0; i < 10; i++) {
+            rdc_tmp = axp_calculate_rdc();
+            if (rdc_tmp) {
+                rdc_total += rdc_tmp;
+                rdc_cnt++;
+            }
+        }
+        if (rdc_cnt) {
+            rdc_average = rdc_total / rdc_cnt;
+            sprintf(buf, "RDC set to %d mohm\n", rdc_average);
+            terminal_print(0, 35, buf);
+            axp_set_rdc(rdc_average);           // update your calulated RDC here
+        } else {
+            terminal_print(0, 35, "WRONG with rdc calculate, we stop this test now!!!\n");     
+            goto out; 
+        }
+    }
+
+    if (!axp_battery_calibrate_init()) {
+        goto out;
+    }
+    ClearScreen(); 
+    terminal_print(0, 1, "'Q' = quit, 'S' = Skip this step\n");
+    terminal_print(0, 4, "coulomb     energy_c    ibat   prev_ibat    ocv"
+                         "     prev_ocv    coulomb_p   vbat    rdc\n");
+    axp_update_calibrate(0); 
+    prev_coulomb = coulomb;
+    prev_ocv = ocv;
+    prev_ibat = ibat;
+    for (i = 0; i < 4; i++) {
+        ocv_array[i] = prev_ocv;    
+    }
+    while (1) {
+        if (tstc()) {
+            key = getc();
+            if (key == 'Q' || key == 'q') {
+                terminal_print(0, 35, "You have aborted calibrate manually\n");
+                goto out;
+            }
+            if (key == 'S' || key == 's') {
+                terminal_print(0, 35, "Skip charging calibrate\n");
+                break;
+            }
+        }
+        rdc_tmp = axp_update_calibrate(1);
+        if (rdc_tmp) {
+            rdc_total += rdc_tmp; 
+            rdc_cnt++;
+        }
+        if (ocv > 3520 && !rdc_update_flag) {
+            if (rdc_cnt) {
+                rdc_average = rdc_total / rdc_cnt; 
+                axp_set_rdc(rdc_average); 
+                sprintf(buf, "RDC set to %d mohm, rdc_total:%d, cnt:%d\n", rdc_average, rdc_total, rdc_cnt);
+                terminal_print(0, 35, buf);
+                rdc_update_flag = 1;
+            } else {
+                terminal_print(0, 35, "WRONG with rdc calculate, we stop this test now!!!\n");     
+                goto out; 
+            }
+        }
+        energy_c += (coulomb - prev_coulomb) * ((ocv + prev_ocv) / 2);
+        energy_p = energy_c;
+        do_div(energy_p, 3700);
+        update_energy_charge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        size  = sprintf(buf, 
+                        "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
+                        coulomb, energy_c, ibat, prev_ibat, ocv, prev_ocv);
+        size += sprintf(buf + size,
+                        "        %4d,  %4d,  %4d\n",
+                        (int32_t)energy_p, vbat_i, rdc_r);
+        buf[size] = '\0';
+        terminal_print(0, 5, buf);
+        prev_coulomb = coulomb;
+        prev_ocv = ocv;
+        prev_ibat = ibat;
+        udelay(1000000);
+        if (ibat == 0) {                        // charging finished
+            ibat_cnt++;
+            if (ibat_cnt > 50) {
+                break;
+            }
+        }
+    }
+    size = sprintf(buf, "During charge, rdc_total=%d, rdc_cnt:%d, rdc_average:%d\n", 
+                   rdc_total, rdc_cnt, rdc_total / rdc_cnt);
+    terminal_print(0, 36, buf);
+
+    energy_top = energy_c;
+    terminal_print(0, 10, "============= RESULT FOR CHARGE ================\n");
+    terminal_print(0, 11, "i,    ocv,     energy,     c,   c_e,   off,    %%\n");
+    offset = battery_energy_charge[15].coulomb_p - battery_energy_charge[2].coulomb_p;
+    i = (battery_energy_charge[3].coulomb_p - battery_energy_charge[2].coulomb_p) * 100;
+    if ((i / offset) >= 3) {
+        ocv_0 = 2; 
+        terminal_print(0, 35, "We set zero reference ocv to 3414mV\n");
+    } else {
+        ocv_0 = 3;    
+        terminal_print(0, 35, "We set zero reference ocv to 3555mV\n");
+    }
+    base = battery_energy_charge[ocv_0].coulomb_p;
+    range_charge = battery_energy_charge[15].coulomb_p - base;
+    for (i = 0; i < 16; i++) {
+        energy_p = battery_energy_charge[i].energy * 100;
+        if (i <= ocv_0) {
+            offset  = 0;
+            percent = 0;
+        } else {
+            offset = battery_energy_charge[i].coulomb_p - base;
+            percent = 100 * (offset + range_charge / 200) / range_charge;
+        }
+        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d\n", 
+                       i,
+                       battery_energy_charge[i].ocv, 
+                       battery_energy_charge[i].energy, 
+                       battery_energy_charge[i].coulomb,
+                       battery_energy_charge[i].coulomb_p,
+                       offset,
+                       percent);
+        buf[size] = '\0';
+        terminal_print(0, 12 + i, buf);
+    }
+    energy_p = energy_top;
+    do_div(energy_p, 3700);
+    size = sprintf(buf, "Total charge energy:%9lld(mV * mAh) = %5dmAh@3700mV\n", 
+                   energy_top, (int32_t)energy_p);
+    buf[size] = '\0';
+    terminal_print(0, 30, buf);
+    size = sprintf(buf, "Energy visible:%5dmAh@3700mV, percent:%2d\n", 
+                   range_charge, range_charge * 100 / (int32_t)energy_p);
+    buf[size] = '\0';
+    terminal_print(0, 31, buf);
+
+    /*
+     * test for discharge
+     */
+    terminal_print(0, 35, "Please unplug DC power, then press 'R' to contine\n");
+    while (1) {
+        if (tstc()) {
+            key = getc();
+            if (key == 'r' || key == 'R') {
+                break;
+            }
+            if (key == 'q' || key == 'Q') {
+                goto out;
+            }
+        }
+        udelay(10000);
+    } 
+
+    terminal_print(0, 35, "do discharge calibration now, please don't plug DC power during test!\n");
+    set_backlight_level(255);
+    energy_c = 0;
+    while (1) {
+        if (tstc()) {
+            key = getc();
+            if (key == 'Q' || key == 'q') {
+                terminal_print(0, 35, "You have aborted calibrate manually\n");
+                goto out;
+            }
+            if (key == 'S' || key == 's') {
+                terminal_print(0, 35, "Skip discharging calibrate\n");
+                break;
+            }
+        }
+        axp_update_calibrate(0); 
+        energy_c += (prev_coulomb - coulomb) * ((ocv + prev_ocv) / 2);
+        energy_p = energy_c;
+        do_div(energy_p, 3700);
+        update_energy_discharge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        size  = sprintf(buf, 
+                        "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
+                        coulomb, energy_c, ibat, prev_ibat, ocv, prev_ocv);
+        size += sprintf(buf + size,
+                        "        %4d,  %4d,  %4d\n",
+                        (int32_t)energy_p, vbat_i, rdc_r);
+        buf[size] = '\0';
+        terminal_print(0, 5, buf);
+        prev_coulomb = coulomb;
+        prev_ocv = ocv;
+        prev_ibat = ibat;
+        udelay(1000000);
+        if (ocv < 3350) {
+            terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
+            break;
+        }
+    }
+
+    energy_top = energy_c;
+    terminal_print(60, 10, "============ RESULT FOR DISCHARGE ==============\n");
+    terminal_print(60, 11, "i,    ocv,     energy,     c,   c_e,   off,    %%\n");
+    base = battery_energy_discharge[15].coulomb_p;
+    range_discharge = battery_energy_discharge[ocv_0].coulomb_p - base;
+    for (i = 0; i < 16; i++) {
+        energy_p = battery_energy_discharge[i].energy * 100;
+        if (i < ocv_0) {
+            offset  = 0;
+            percent = 0;
+        } else {
+            offset = battery_energy_discharge[i].coulomb_p - base;
+            percent = 100 - 100 * (offset + range_discharge / 200) / range_discharge;
+        }
+        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d\n", 
+                       i,
+                       battery_energy_discharge[i].ocv, 
+                       battery_energy_discharge[i].energy, 
+                       battery_energy_discharge[i].coulomb,
+                       battery_energy_discharge[i].coulomb_p,
+                       offset,
+                       percent);
+        buf[size] = '\0';
+        terminal_print(60, 12 + i, buf);
+    }
+    energy_p = energy_top;
+    do_div(energy_p, 3700);
+    size = sprintf(buf, "Energy visible:%5dmAh@3700mV\n", range_discharge);
+    buf[size] = '\0';
+    terminal_print(60, 30, buf);
+    size = sprintf(buf, "Charging efficient:%d%%\n", (100 * (range_discharge + range_charge / 200)) / range_charge);
+    buf[size] = '\0';
+    terminal_print(60, 31, buf);
+
+out:
+    terminal_print(0, 38, "\n\n");
+    return 1;
+}
+#endif
 

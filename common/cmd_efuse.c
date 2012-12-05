@@ -100,16 +100,40 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		
 		memset(buf, 0, info.data_len);	
 		s=argv[3];
+
+#ifdef WRITE_TO_EFUSE_ENABLE
+		//usb_burning
+		if( !strncmp(title,"usid",sizeof("usid")) )				 	//efuse write usid data(data is string)
+			memcpy(buf, s, strlen(s));
+		else if( !strncmp(title,"hdcp",sizeof("hdcp")) )  			 //efuse write hdcp data(data is not string)
+			memcpy(buf, s, 288);
+		else													//efuse write version, mac, mac_bt, mac_wifi is data
+		{
+			for(i=0; i<info.data_len; i++){						
+				buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
+				if (s)
+					s = (*end) ? end+1 : end;
+			}
+
+			if(*s){
+				printf("error: The wriiten data length is too large.\n");
+				return -1;
+			}
+		}
+		
+#else
+
 		for(i=0; i<info.data_len; i++){
 			buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
 			if (s)
 				s = (*end) ? end+1 : end;
 		}
-		
+
 		if(*s){
 			printf("error: The wriiten data length is too large.\n");
 			return -1;
 		}
+#endif
 		
 		if(efuse_write_usr(buf, info.data_len, (loff_t*)&info.offset)<0){
 			printf("error: efuse write fail.\n");
@@ -130,15 +154,18 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 
 int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int ret = 0 ;
+//	int ret = 0 ;
 	char buf[EFUSE_BYTES];
+
+	memset(buf, 0, sizeof(buf));
 	
 	if(argc < 2){
 		cmd_usage(cmdtp);
 		return -1;
 	}
-		
-	return cmd_efuse(argc, argv, buf);		
+
+	return cmd_efuse(argc, argv, buf);
+	
 }
 
 U_BOOT_CMD(

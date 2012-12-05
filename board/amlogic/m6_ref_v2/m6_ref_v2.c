@@ -18,6 +18,9 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_AML_PMU
+#include <amlogic/aml_pmu.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -463,6 +466,10 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
+#ifdef CONFIG_AML_PMU
+    aml_pmu_init();                     // PMU must be initialized 
+#endif  /* CONFIG_AML_PMU */
+
 	return 0;
 }
 #endif
@@ -484,23 +491,43 @@ inline int get_key(void)
 
 inline int is_ac_online(void)
 {
+#ifdef CONFIG_AW_AXP20
 	return axp_charger_is_ac_online();
+#endif
+#ifdef CONFIG_AML_PMU
+    return aml_pmu_is_ac_online();
+#endif
 }
 
 //Power off
 void power_off(void)
 {
+#ifdef CONFIG_AW_AXP20
 	axp_power_off();
+#endif
+#ifdef CONFIG_AML_PMU
+    aml_pmu_power_off();
+#endif
 }
 
 inline int get_charging_percent(void)
 {
+#ifdef CONFIG_AW_AXP20
 	return axp_charger_get_charging_percent();
+#endif
+#ifdef CONFIG_AML_PMU
+    return aml_pmu_get_charging_percent();
+#endif
 }
 
 inline int set_charging_current(int current)
 {
+#ifdef CONFIG_AW_AXP20
 	return axp_set_charging_current(current);
+#endif
+#ifdef CONFIG_AML_PMU
+    return amp_pmu_set_charging_current(current);
+#endif
 }
 
 
@@ -526,7 +553,13 @@ int usb_get_update_result(void)
 
 inline int check_all_regulators(void)
 {
+#ifdef CONFIG_AW_AXP20
 	printf("Check all regulator\n");
 	return check_axp_regulator_for_m6_board();
+#endif
+#ifdef CONFIG_AML_PMU
+    // AML PMU need todo 
+    return 0;
+#endif
 }
 

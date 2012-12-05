@@ -126,9 +126,10 @@ STATIC_PREFIX short nfio_page_read(unsigned src,unsigned mem,unsigned ext)
 #endif
 STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned ext,unsigned area)
 {
-    int i, ecc_mode, short_mode, short_size, pages, page_size,pages_in_block, new_nand_type;
+    int i, ecc_mode, short_mode, short_size, pages, page_size,pages_in_block;
     int ret, data_size, page_base, read_size;
 	int total_page = 1024;
+	unsigned int new_nand_type;
     // nand parameters
     // when ecc_mode==1, page_size is 512 bytes.
     ecc_mode = ext>>14&7;
@@ -139,7 +140,7 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
 	    ecc_mode<2 ? 64 : 128; // unit: 8 bytes;
 	
 	pages_in_block = *(volatile int *)(NAND_TEMP_BUF+sizeof(int));
-	new_nand_type  = *(volatile int *)(NAND_TEMP_BUF+sizeof(int) + sizeof(int));
+	new_nand_type  = *(volatile unsigned int *)(NAND_TEMP_BUF+sizeof(int) + sizeof(int));
 	
 	serial_puts("pages_in_block=0x");
 	serial_put_hex(pages_in_block,32);

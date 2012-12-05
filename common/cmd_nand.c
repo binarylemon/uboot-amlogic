@@ -152,7 +152,7 @@ static inline int str2longlong(char *p, unsigned long long *num)
 static int
 arg_off_size(int argc, char *argv[], nand_info_t *nand, loff_t *off, loff_t *size)
 {
-	int idx = nand_curr_device;
+//	int idx = nand_curr_device;
 /*#if defined(CONFIG_CMD_MTDPARTS)
 	struct mtd_device *dev;
 	struct part_info *part;
@@ -284,6 +284,13 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 #endif
 	const char *quiet_str = getenv("quiet");
 
+#ifdef CONFIG_AML_NAND_KEY
+	int chip_num , tmp_chip_num, error;
+	nand = nand_info[nand_curr_device];
+	struct mtd_info *mtd =nand;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(nand);
+#endif
+
 	/* at least two arguments please */
 	if (argc < 2)
 		goto usage;
@@ -292,6 +299,12 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		quiet = simple_strtoul(quiet_str, NULL, 0) != 0;
 
 	cmd = argv[1];
+#ifdef CONFIG_AML_NAND_KEY
+	if (strcmp(cmd, "key") == 0){
+		aml_chip->key_protect = 1;		//force nand key can be erased 
+		return 0;
+	}
+#endif
 
 	if (strcmp(cmd, "info") == 0) {
 
@@ -309,8 +322,9 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		return 0;
 	}
 //cmd for nand test , if nand is ok , then trigger power off
+#ifdef NAND_STATUS_TEST
 	if (strcmp(cmd, "test") == 0) {
-		int ret=-1;
+		/*int ret=-1;
 		puts("\ntest the nand flash ***\n");
 		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {
 			nand = nand_info[i];
@@ -321,8 +335,37 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					return -1;	
 			}
 		}		
-		return 0;
+		return 0;*/
+		printk("nand test start \n");
+			int chip_num , tmp_chip_num, error;
+			nand = nand_info[nand_curr_device];
+			struct mtd_info *mtd =nand;
+			struct aml_nand_chip *aml_chip = mtd_to_nand_chip(nand);
+			
+			arg_off_size(argc - 2, argv + 2, nand, &off, &size);
+			
+			chip_num = off;
+			//printk("chip_num=%d\n",chip_num);
+			if(!aml_chip->aml_nand_status.id_status){		
+				printk("nand id is worng!\n");		
+				error = -1;//EID;
+			}
+			if(aml_chip->aml_nand_status.valid_chip_num != chip_num){
+				printk("nand chip_num is wrong!\n");
+				error = -1;//ECHIPNUM;
+			}
+			if(aml_chip->aml_nand_status.boot_bad_block_status){
+				printk("nand device 0 has %d bad blocks\n",aml_chip->aml_nand_status.boot_bad_block_status);
+				error = -1;//EBADBLOCK;
+			}
+			if(aml_chip->aml_nand_status.bad_block_status){
+				printk("nand device 1 has too many bad blocks\n");
+				error = -1;//EBADBLOCK;
+			}			
+			printk("nand test complete: \n");	
+			return error;
 	}
+#endif
 
 	if (strcmp(cmd, "scrub_detect") == 0) {
 
@@ -494,6 +537,9 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		ret = nand_erase_opts(nand, &opts);
 		printf("%s\n", ret ? "ERROR" : "OK");
+	#ifdef CONFIG_AML_NAND_KEY
+		aml_chip->key_protect = 0;		//protect nand key can not be erased 
+	#endif
 
 		return ret == 0 ? 0 : 1;
 	}
@@ -634,7 +680,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		s = strchr(cmd, '.');
 		if (!s ||!strcmp(s, ".e") || !strcmp(s, ".i")) {
 			if (read){
-				ret = romboot_nand_read(nand, off, &size,
+				ret = romboot_nand_read(nand, off, (size_t *)&size,
 							 (u_char *)addr);
 			}
 			else
@@ -775,7 +821,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
         }
         b_all = b_all? 1: 0;
         
-        ret = nand_raw_read_nand_dev(nand,b_offset,&b_count,(u_char *)addr ,b_all,1);
+        ret = nand_raw_read_nand_dev(nand,b_offset,(loff_t *)&b_count,(u_char *)addr ,b_all,1);
         return ret == 0 ? 0 : 1;
     }
 #ifdef CONFIG_PARAMETER_PAGE

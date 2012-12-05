@@ -432,6 +432,7 @@ int aml_rtc_write_time(struct rtc_time *tm)
       return 0;
 }
 
+extern void mdelay(unsigned long usec);
 int aml_rtc_init(void)
 {
 	printf("aml_rtc_init\n");

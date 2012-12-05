@@ -1,8 +1,8 @@
 #ifndef MMC_DEFINE
 #define MMC_DEFINE
 
-//#define APB_Wr(addr, data) *(volatile unsigned long *) (0xc8000000 + addr )=data
-//#define APB_Rd(addr) *(volatile unsigned long *) (0xc8000000 + addr )
+#define APB_Wr(addr, data) *(volatile unsigned long *) (0xc8000000 + addr )=data
+#define APB_Rd(addr) *(volatile unsigned long *) (0xc8000000 + addr )
 
 #define  UPCTL_STAT_ADDR 		0x0008
 #define  UPCTL_INTRSTAT_ADDR 		0x000c
@@ -386,6 +386,24 @@
   // bit 2.     write 1 to reset dmc request channel 2.   read 0 means the reset finished.
   // bit 1.     write 1 to reset dmc request channel 1.   read 0 means the reset finished.
   // bit 0.     write 1 to reset dmc request channel 0.   read 0 means the reset finished.
+/*
+	wire chan0_soft_reset_n   = mmc_soft_reset_n[0];
+	wire chan1_soft_reset_n   = mmc_soft_reset_n[1];
+	wire chan2_soft_reset_n   = mmc_soft_reset_n[2];
+	wire chan3_soft_reset_n   = mmc_soft_reset_n[3];
+	wire chan4_soft_reset_n   = mmc_soft_reset_n[4];
+	wire chan5_soft_reset_n   = mmc_soft_reset_n[5];
+	wire chan6_soft_reset_n   = mmc_soft_reset_n[6];
+	wire chan7_soft_reset_n   = mmc_soft_reset_n[7];
+	wire dmc_soft_reset_n     = mmc_soft_reset_n[8];
+	wire pctl_soft_reset_n    = mmc_soft_reset_n[9];
+	wire pctl_p_soft_reset_n  = mmc_soft_reset_n[10];
+	wire phy_soft_reset_n     = mmc_soft_reset_n[11];
+	wire lp_ctrl_soft_reset_n = mmc_soft_reset_n[12];
+	wire pub_soft_reset_n     = mmc_soft_reset_n[13];
+	wire dmc_p_soft_reset_n   = mmc_soft_reset_n[14];
+	wire phy_dll_soft_reset_n = mmc_soft_reset_n[15];
+*/
 
 #define MMC_RST_STS        0x6408
   // bit 23.    reset no hold for chan7.   when do mmc/dmc reset, don't wait chan7 reset finished. maybe there's no clock. active high. 
@@ -495,6 +513,57 @@
 #define MMC_LP_CTRL3       0x6430
 #define MMC_PCTL_STAT      0x6434 
 #define MMC_CMDZQ_CTRL     0x6438 
+
+#define UPCTL_RSLR0_ADDR 			0x24c
+#define UPCTL_RSLR1_ADDR 			0x250
+#define UPCTL_RSLR2_ADDR 			0x254
+#define UPCTL_RSLR3_ADDR 			0x258
+#define UPCTL_RDGR0_ADDR 			0x25c
+#define UPCTL_RDGR1_ADDR 			0x260
+#define UPCTL_RDGR2_ADDR 			0x264
+#define UPCTL_RDGR3_ADDR 			0x268
+
+
+#define  UPCTL_STAT_INIT          0 
+#define  UPCTL_STAT_CONFIG        1 
+#define  UPCTL_STAT_ACCESS        3
+#define  UPCTL_STAT_LOW_POWER     5 
+
+#define  SCTL_CMD_INIT          0 
+#define  SCTL_CMD_CONFIG        1 
+#define  SCTL_CMD_GO            2 
+#define  SCTL_CMD_SLEEP         3 
+#define  SCTL_CMD_WAKEUP        4 
+/*
+#define UPCTL_PHYCR_ADDR 			0x240
+#define UPCTL_PHYSR_ADDR 			0x244
+#define UPCTL_IOCR_ADDR 				0x248
+#define UPCTL_DLLCR_ADDR 			0x280
+#define UPCTL_DLLCR0_ADDR 			0x284
+#define UPCTL_DLLCR1_ADDR 			0x288
+#define UPCTL_DLLCR2_ADDR 			0x28c
+#define UPCTL_DLLCR3_ADDR 			0x290
+#define UPCTL_DLLCR4_ADDR 			0x294
+#define UPCTL_DLLCR5_ADDR 			0x298
+#define UPCTL_DLLCR6_ADDR 			0x29c
+#define UPCTL_DLLCR7_ADDR 			0x2a0
+#define UPCTL_DLLCR8_ADDR 			0x2a4
+#define UPCTL_DLLCR9_ADDR 			0x2a8
+#define UPCTL_DQTR0_ADDR 			0x2c0
+#define UPCTL_DQTR1_ADDR 			0x2c4
+#define UPCTL_DQTR2_ADDR 			0x2c8
+#define UPCTL_DQTR3_ADDR 			0x2cc
+#define UPCTL_DQTR4_ADDR 			0x2d0
+#define UPCTL_DQTR5_ADDR 			0x2d4
+#define UPCTL_DQTR6_ADDR 			0x2d8
+#define UPCTL_DQTR7_ADDR 			0x2dc
+#define UPCTL_DQTR8_ADDR 			0x2e0
+#define UPCTL_DQSTR_ADDR 			0x2e4
+#define UPCTL_DQSNTR_ADDR 			0x2e8
+#define UPCTL_ZQCR_ADDR 			0x26c
+*/
+
+
 
 #endif
 

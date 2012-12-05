@@ -40,6 +40,7 @@ int spi_flash_cmd_amlogic(struct spi_slave *spi, u32 cmd, void *response, size_t
 int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void *buf);
 int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, const void *buf);
 int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 sector_size);
+int spi_flash_erase_be_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 sector_size);
 #endif //CONFIG_AMLOGIC_SPI_FLASH
 
 /* Manufacturer-specific probe functions */

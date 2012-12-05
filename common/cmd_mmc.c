@@ -173,6 +173,21 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 			puts("get mmc type error!\n");
 			return 1;
+		}else if (strcmp(argv[1], "erase") == 0) {
+		  int dev = simple_strtoul(argv[2], NULL, 10);
+			u32 n;
+			struct mmc *mmc = find_mmc_device(dev);
+
+			if (!mmc)
+				return 1;
+
+			mmc_init(mmc);
+
+			n = mmc->block_dev.block_erase(dev, 0, 0);
+
+			printf("%d blocks erased: %s\n",
+				  mmc->block_dev.lba, (n == 0) ? "OK" : "ERROR");
+			return (n == 0) ? 0 : 1;
 		}
 
 	case 0:
@@ -233,6 +248,29 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("%d blocks written: %s\n",
 				n, (n == cnt) ? "OK" : "ERROR");
 			return (n == cnt) ? 0 : 1;
+		}
+		else if (strcmp(argv[1], "erase") == 0) {
+			int dev = simple_strtoul(argv[2], NULL, 10);			
+			u32 cnt = simple_strtoul(argv[4], NULL, 16);
+			u32 n = 0;
+			struct mmc *mmc = find_mmc_device(dev);
+
+			int blk = simple_strtoul(argv[3], NULL, 16);
+
+			if (!mmc)
+				return 1;
+
+			printf("\nMMC erase: dev # %d, group # %d, count %d ... ",
+				dev, blk, cnt);
+
+			mmc_init(mmc);
+
+      if (cnt != 0)
+			n = mmc->block_dev.block_erase(dev, blk, cnt);
+
+		  printf("%d groups erased: %s\n",
+			  cnt, (n == 0) ? "OK" : "ERROR");
+			return (n == 0) ? 0 : 1;
 		} else
 			rc = cmd_usage(cmdtp);
 
@@ -245,6 +283,8 @@ U_BOOT_CMD(
 	"MMC sub system",
 	"read <device num> addr blk# cnt\n"
 	"mmc write <device num> addr blk# cnt\n"
+	"mmc erase <device num> grp# cnt\n"
+	"mmc erase <device num>\n"
 	"mmc rescan <device num>\n"
 	"mmc part <device num> - lists available partition on mmc\n"
 	"mmc list - lists available devices");

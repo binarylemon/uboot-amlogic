@@ -234,6 +234,94 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 	return blkcnt;
 }
 
+static ulong
+mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
+{
+		struct mmc_cmd cmd;
+		int err;
+		struct mmc *mmc = find_mmc_device(dev_num);
+
+	    if (!mmc)
+		  return 0;
+
+		if (IS_SD(mmc)) {
+			int erase_blk_en = (mmc->csd[2]>>14) & 0x1;
+			int erase_ssize = ((mmc->csd[2]>>7) & 0x7f) + 1;
+			uint erase_factor = 1;
+
+			//printf("\nDATA_STAT_AFTER_ERASE is %d\n",(mmc->scr[0]>>23) & 0x1);
+			//printf("erase_blk_en = %d\n",erase_blk_en);
+			//printf("erase_ssize = %d\n",erase_ssize);
+
+			if (erase_blk_en == 1) {
+				uint erase_factor = mmc->write_bl_len / 512;
+				erase_ssize = 1; //blk cnt
+			}
+
+      if ((start + blkcnt) > (mmc->block_dev.lba/erase_ssize*erase_factor)) {
+		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
+			   start + blkcnt, mmc->block_dev.lba/erase_ssize*erase_factor);
+		     return 1;
+	    }
+
+			cmd.cmdidx = SD_ERASE_WR_BLK_START;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = start*erase_ssize;
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
+
+			cmd.cmdidx = SD_ERASE_WR_BLK_END;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_ssize - 1) : (mmc->block_dev.lba*erase_factor-1);
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
+
+		}else {
+
+		  int erase_gsize = (mmc->csd[2] >> 10) & 0x1f;
+		  int erase_gmult = (mmc->csd[2] >> 5) & 0x1f;
+		  int erase_unit = (erase_gsize + 1) * (erase_gmult + 1);//blk cnt
+		  //printf ("\nerase_gsize * erase_gmult = erase_unit\n");
+		 // printf ("%d * %d = %d\n", erase_gsize+1, erase_gmult+1, erase_unit);
+
+		  if ((start + blkcnt) > (mmc->block_dev.lba/erase_unit)) {
+		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
+			   start + blkcnt, mmc->block_dev.lba/erase_unit);
+		     return 1;
+	    }
+
+			cmd.cmdidx = MMC_TAG_ERASE_GROUP_START;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = start*erase_unit;
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
+
+			cmd.cmdidx = MMC_TAG_ERASE_GROUP_END;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_unit - 1) : (mmc->block_dev.lba-1);
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
+		}
+		cmd.cmdidx = SD_MMC_ERASE;
+		cmd.resp_type = MMC_RSP_R1b;
+		cmd.cmdarg = 0;
+		cmd.flags = 0;
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err)
+			return err;
+	return 0;
+
+}
+
+
 int mmc_go_idle(struct mmc* mmc)
 {
 	struct mmc_cmd cmd;
@@ -411,6 +499,7 @@ int mmc_change_freq(struct mmc *mmc)
 	mdelay(1);
 	if (err)
 		return err;
+    //printf("ERASED_MEM_CONT is %d\n",ext_csd[181]);
 
 	if (ext_csd[212] || ext_csd[213] || ext_csd[214] || ext_csd[215])
 	{
@@ -892,6 +981,7 @@ int mmc_register(struct mmc *mmc)
 	mmc->block_dev.removable = 1;
 	mmc->block_dev.block_read = mmc_bread;
 	mmc->block_dev.block_write = mmc_bwrite;
+	mmc->block_dev.block_erase = mmc_berase;
 
 	INIT_LIST_HEAD (&mmc->link);
 

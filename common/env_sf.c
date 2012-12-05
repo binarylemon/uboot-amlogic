@@ -91,7 +91,7 @@ void env_relocate_spec(void)
 	if (ret)
 		goto err_read;
 
-		env_import(&env_buf, 1);
+		env_import((const char *)&env_buf, 1);
 		gd->env_valid = 1;
 
 		return;
@@ -100,7 +100,7 @@ err_read:
 	spi_flash_free(env_flash);
 	env_flash = NULL;
 err_probe:
-err_crc:
+//err_crc:
 	set_default_env("!bad CRC");
 }
 
@@ -139,6 +139,7 @@ int saveenv(void)
 		if (CONFIG_ENV_SIZE % CONFIG_ENV_SECT_SIZE)
 			sector++;
 	
+	}
 	env_ptr = (env_t *)malloc (CONFIG_ENV_SIZE);			
 	// get env data from hash table	
 	memset(env_ptr->data, 0, ENV_SIZE);
@@ -150,7 +151,6 @@ int saveenv(void)
 		goto done;		
 	}
 	env_ptr->crc   = crc32(0, env_ptr->data, ENV_SIZE);			
-	}
 
 	puts("Erasing SPI flash...");
 	ret = spi_flash_erase(env_flash, CONFIG_ENV_OFFSET, sector * CONFIG_ENV_SECT_SIZE);
@@ -163,7 +163,8 @@ int saveenv(void)
 		goto done;
 
 	if (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE) {
-		ret = spi_flash_write(env_flash, saved_offset, saved_size, saved_buffer);
+		udelay(2000);
+                ret = spi_flash_write(env_flash, saved_offset, saved_size, saved_buffer);
 		if (ret)
 			goto done;
 	}

@@ -45,7 +45,7 @@ COBJS-$(CONFIG_CMD_BOOTM) += cmd_bootm.o
 COBJS-y += cmd_help.o
 COBJS-y += cmd_nvedit.o
 COBJS-y += cmd_version.o
-
+//COBJS-y += cmd_tmp.o
 # environment
 COBJS-y += env_common.o
 COBJS-$(CONFIG_ENV_IS_IN_DATAFLASH) += env_dataflash.o
@@ -64,8 +64,9 @@ COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
-
 # command
+COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
+#COBJS-$(CONFIG_SECURITYKEY) += cmd_tmp.o
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
 COBJS-$(CONFIG_CMD_AUTOSCRIPT) += cmd_autoscript.o
 COBJS-$(CONFIG_SOURCE) += cmd_source.o
@@ -163,9 +164,9 @@ COBJS-$(CONFIG_CMD_IMGPACK) += cmd_imgpack.o
 COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
 
-
 # others
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o
+COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_d2pll.o
 COBJS-$(CONFIG_DDR_SPD) += ddr_spd.o
 COBJS-$(CONFIG_HWCONFIG) += hwconfig.o
 COBJS-$(CONFIG_CONSOLE_MUX) += iomux.o

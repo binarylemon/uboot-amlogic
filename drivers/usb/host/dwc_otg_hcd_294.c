@@ -458,7 +458,7 @@ dwc_otg_core_init(dwc_otg_core_if_t * _core_if)
     // dwc_otg_dev_if_t *dev_if = _core_if->dev_if;
     gahbcfg_data_t  ahbcfg = {.d32 = 0 };
     gusbcfg_data_t  usbcfg = {.d32 = 0 };
-    gi2cctl_data_t  i2cctl = {.d32 = 0 };
+//	gi2cctl_data_t  i2cctl = {.d32 = 0 };
     gotgctl_data_t gotgctl = {.d32 = 0 };
 	
     DWC_DEBUGPL(DBG_CILV, "dwc_otg_core_init(%p)\n", _core_if);

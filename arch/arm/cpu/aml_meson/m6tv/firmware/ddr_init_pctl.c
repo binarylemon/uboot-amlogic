@@ -1,52 +1,3 @@
-void load_nop(void)
-{
-	writel((1 << 31) |
-		(DDR_RANK << 20) |   //rank select
-		NOP_CMD
-		, P_UPCTL_MCMD_ADDR);
-	__udelay(1000);
-	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
-}
-void load_prea(void)
-{
-	writel((1 << 31) |
-		(DDR_RANK << 20) |   //rank select
-		PREA_CMD
-		, P_UPCTL_MCMD_ADDR);
-	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
-}
-
-void load_mrs(int mrs_num, int mrs_value)
-{
-	writel((1 << 31) | 
-		(DDR_RANK << 20) |   //rank select
-		(mrs_num << 17) |
-		(mrs_value << 4) |
-		MRS_CMD
-		, P_UPCTL_MCMD_ADDR);
-	__udelay(1000);
-	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {};
-}
-
-void load_ref(void )
-{
-	writel((1 << 31) | 
-		(DDR_RANK << 20) |   //rank select
-		REF_CMD
-		, P_UPCTL_MCMD_ADDR);
-	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {}
-}
-
-void load_zqcl(int zqcl_value )
-{
-	writel((1 << 31) | 
-		(DDR_RANK << 20) |   //rank select
-		(zqcl_value << 4 ) |
-		ZQ_LONG_CMD
-		, P_UPCTL_MCMD_ADDR);
-	while ( readl(P_UPCTL_MCMD_ADDR) & 0x80000000 ) {};
-  
-}
 
 unsigned get_mrs0(struct ddr_set * timing_reg)
 {    
@@ -92,7 +43,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
     
     
     //CWL
-    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3) | (1 << 6 );
+    nMR2 |= (((timing_reg->t_cwl-5)&7)<<3);// | (1 << 6 ));
             	
     return nMR2;
 }
@@ -102,38 +53,37 @@ static unsigned short zqcr = 0;
 #endif
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
-	int nTempVal;
+	int nTempVal = 0;
 	int i;
-	int ret = 0;
+
+pub_retry:
 
 	//UPCTL memory timing registers
 	writel(timing_reg->t_1us_pck, P_UPCTL_TOGCNT1U_ADDR);	 //1us = nn cycles.
-
 	writel(timing_reg->t_100ns_pck, P_UPCTL_TOGCNT100N_ADDR);//100ns = nn cycles.
-
 	writel(timing_reg->t_init_us, P_UPCTL_TINIT_ADDR);  //200us.
-
 	writel(timing_reg->t_rsth_us, P_UPCTL_TRSTH_ADDR);  // 0 for ddr2;  2 for simulation; 500 for ddr3.
 	writel(timing_reg->t_rstl_us, P_UPCTL_TRSTL_ADDR);
+
+	for(i=4;(i)*timing_reg->t_rrd<timing_reg->t_faw&&i<6;i++);
+	// 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
+	writel(((i-4) <<18)|(timing_reg->mcfg & (~(3<<18))),P_UPCTL_MCFG_ADDR);
 	
-	nTempVal = timing_reg->t_faw / timing_reg->t_rrd;
-	if(nTempVal<4) nTempVal = 4;
-	if(nTempVal>6) nTempVal = 6;
-	//nTempVal -= (nTemp >= 4 ? 4: nTemp);
-	//MMC_Wr(UPCTL_MCFG_ADDR,(nTempVal <<18)|(timing_reg->mcfg & (~(3<<18))));
-	writel(((nTempVal-4) <<18)|  // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
-		(timing_reg->mcfg & (~(3<<18)))
-		, P_UPCTL_MCFG_ADDR);
+    if((i)*timing_reg->t_rrd > timing_reg->t_faw)
+    {
+        //nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) > 7 ? 7 : ((i)*timing_reg->t_rrd - timing_reg->t_faw);
+        nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) ;
+    }
 	
-	writel( 0x80000000, P_UPCTL_MCFG1_ADDR );  //enable hardware c_active_in;
-	  
+	writel( 0x80000000 | (nTempVal << 8), P_UPCTL_MCFG1_ADDR );  //enable hardware c_active_in;
 	  
     writel(0x8,P_UPCTL_DFIODTCFG_ADDR);
 	  
 	//configure DDR PHY PUBL registers.
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
-	writel(0x3 | (1 << 3), P_PUB_DCR_ADDR);
+	//writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
+	writel(0x3 | (1 << 3)|(1<<28), P_PUB_DCR_ADDR); //28: 2T mode
 	//writel(0x01842e04, P_PUB_PGCR0_ADDR); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.	
@@ -143,7 +93,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(0x0, P_PUB_MR3_ADDR);	
 
 	//program DDR SDRAM timing parameter.
-	writel( (timing_reg->t_rtp << 0)  |		//tRTP
+	writel( (timing_reg->t_rtp << 0)|	//tRTP
 		(timing_reg->t_wtr << 4)  |		//tWTR
 		(timing_reg->t_rp << 8)   |		//tRP
 		(timing_reg->t_rcd << 12) |		//tRCD
@@ -152,12 +102,12 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 		(timing_reg->t_rc <<26) 		//tRC
 		, P_PUB_DTPR0_ADDR);
 
-	writel(( (0 << 0) | 			//tMRD
-        (timing_reg->t_mod << 2 ) | //tMOD.
+	writel(( ((timing_reg->t_mrd - 4) << 0)| //tMRD - 4
+        ((timing_reg->t_mod -12) << 2 ) |     //tMOD-12.
         (timing_reg->t_faw << 5 ) | //tFAW.
 		(timing_reg->t_rfc << 11) | //tRFC
 		(40 << 20 )               | //tWLMRD
-		(6 << 26)                 | //tWLO
+		(8 << 26)                 | //tWLO
         (0 << 30 ) )                //tAOND  DDR2 only.
 		, P_PUB_DTPR1_ADDR);
 
@@ -173,12 +123,12 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	// initialization PHY.
 	writel(( 16 |	     //PHY RESET APB clock cycles.
-		(800 << 6) |	 //tPLLGS    APB clock cycles. 4us
-		(200 << 21))     //tPLLPD    APB clock cycles. 1us.
+		(1600 << 6) |	 //tPLLGS    APB clock cycles. 4us
+		(500 << 21))     //tPLLPD    APB clock cycles. 1us.
 		, P_PUB_PTR0_ADDR);
 
-	writel(( 1800 |	       //tPLLRST   APB clock cycles. 9us 
-		(20000 << 16))     //TPLLLOCK  APB clock cycles. 100us. 
+	writel(( 3600 |	       //tPLLRST   APB clock cycles. 9us 
+		(40000 << 16))     //TPLLLOCK  APB clock cycles. 100us. 
 		, P_PUB_PTR1_ADDR);	
 
 
@@ -189,31 +139,30 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
                ( 16 << 15)    //TWLDLYS
 		, P_PUB_PTR2_ADDR);	
 
-	
+	//for simulation to reduce the initial time.
+	// real value should be based on the DDR3 SDRAM clock cycles.
+	writel((533334	 |	  //tDINIT0  CKE low time with power and lock stable. 500us.
+		 (384 << 20))	  //tDINIT1. CKE high time to first command(tRFC + 10ns).
+		 ,P_PUB_PTR3_ADDR); 
+	writel( (212760 |		//tDINIT2. RESET low time,	200us. 
+		   (625 << 18))  //tDINIT3. ZQ initialization command to first command. 1us.
+		  ,P_PUB_PTR4_ADDR); 
 
+
+	writel((15<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
 	
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
 		
 
 	//configure for phy update request and ack.
-    writel( 0x7f |	//enalbe controller update ack enable and DQS gate Extension.
+    writel( 0x7b |	//enalbe controller update ack enable and DQS gate Extension.
 			  (0x8 << 8 ) |  //PHY update ack delay.
 			  (0xf0006 << 12),
 			  P_PUB_DSGCR_ADDR );	//other bits.
 
-	//for simulation to reduce the initial time.
-	// real value should be based on the DDR3 SDRAM clock cycles.
-	writel((20000   | 	  //tDINIT0  CKE low time with power and lock stable. 500us.
-		 (136 << 20))	  //tDINIT1. CKE high time to first command(tRFC + 10ns).
-		 ,P_PUB_PTR3_ADDR); 
-	writel( (10000 |		//tDINIT2. RESET low time,	200us. 
-		   (80 << 18))	 //tDINIT3. ZQ initialization command to first command. 1us.
-		  ,P_PUB_PTR4_ADDR); 
-
-
 	//wait PHY DLL LOCK
-	while(!(readl(P_PUB_PGSR0_ADDR) & 1)) {}
+	while(!(readl(P_PUB_PGSR0_ADDR) & 2)) {}
 
 	// Monitor DFI initialization status.
 	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
@@ -273,28 +222,39 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel((0xf0 << 1), P_UPCTL_PPCFG_ADDR);
 	writel(0x4, P_UPCTL_DFISTCFG0_ADDR);
 	writel(0x1, P_UPCTL_DFISTCFG1_ADDR);
-	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR);
-	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR);
-	writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR);    //(WL -4)/2,  2 if CWL = 8 
-	writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);     //(CL -4)/2,  3 if RL = 10.
-	writel(13, P_UPCTL_DFITPHYRDLAT_ADDR);
-	writel(1, P_UPCTL_DFITDRAMCLKDIS_ADDR);
-	writel(1, P_UPCTL_DFITDRAMCLKEN_ADDR);
-	writel(0x10, P_UPCTL_DFITCTRLUPDMIN_ADDR);
-	writel(0x10, P_UPCTL_DFITPHYUPDTYPE0_ADDR);
-	writel(1600, P_UPCTL_DFITPHYUPDTYPE1_ADDR);
+	//writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20
+	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20// 0x240
+	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR); //0x250 debug 11.20
+
+	//writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+	nTempVal = timing_reg->t_cwl+timing_reg->t_al;
+	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2;
+	writel(nTempVal , P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+
+	//writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
+	nTempVal = timing_reg->cl+timing_reg->t_al; //debug 11.20
+	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2; //debug 11.20
+	writel(nTempVal, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
+	
+	writel(13, P_UPCTL_DFITPHYRDLAT_ADDR);   //0x264
+	writel(1, P_UPCTL_DFITDRAMCLKDIS_ADDR);  //0x2d4
+	writel(1, P_UPCTL_DFITDRAMCLKEN_ADDR);   //0x2d0
+	writel(0x10, P_UPCTL_DFITCTRLUPDMIN_ADDR); //0x280
+	writel(0x10, P_UPCTL_DFITPHYUPDTYPE0_ADDR); //0270
+	writel(1600, P_UPCTL_DFITPHYUPDTYPE1_ADDR); //0x274
 
        
-
+#ifdef CONFIG_DDR_LOW_POWER
 	writel(( 1 | (3 << 4) | (1 << 8) | (3 << 12) | (7 <<16) | (1 <<24) | ( 3 << 28))
 		, P_UPCTL_DFILPCFG0_ADDR);
+#endif
 
-        writel( 5, P_UPCTL_DFITCTRLUPDI_ADDR); 
+	writel( 5, P_UPCTL_DFITCTRLUPDI_ADDR); 
 
 	writel(1, P_UPCTL_CMDTSTATEN_ADDR);
 	while (!(readl(P_UPCTL_CMDTSTAT_ADDR) & 1 )) {}
 
-        writel(readl(P_PUB_PGCR1_ADDR) & 0xffff83ff,    //set MDL LPF depth = 2.( bit 14:13 = 00). 
+    writel(readl(P_PUB_PGCR1_ADDR) & 0xffff83ff,    //set MDL LPF depth = 2.( bit 14:13 = 00). 
                    P_PUB_PGCR1_ADDR);
 
 	writel( (56250-400) | 
@@ -310,25 +270,53 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         writel( (0x18 | (0x0 <<12) | (7 << 28)) 
                 ,P_PUB_DTAR3_ADDR ); 
 
-        writel( (readl(P_PUB_DTCR_ADDR) & 0xf0ffffff | (3 << 24) )
-                ,P_PUB_DTCR_ADDR);
+        //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
+       //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
+       writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
 
+	//debug 11.20 begin
+	/*
 	// DDR PHY initialization 
+#ifdef ENABLE_WRITE_LEVELING
+    writel(0xf5f3, P_PUB_PIR_ADDR);
+#else
 	writel(0xfff3, P_PUB_PIR_ADDR);
+	*/
+//	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
 
-	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(readl(P_PUB_PGSR0_ADDR) & 1)) {}
+
+	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
+		(1<<1)|(1<<4)|(1<<5)|(1<<6)),
+		P_PUB_PIR_ADDR);
+	//debug 11.20 end
+
+	//asm volatile ("wfi"); //debug 11.20
+
+	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
 	nTempVal = readl(P_PUB_PGSR0_ADDR);
+
+	serial_puts("\n==============PGSR0: 0x");
+	serial_put_hex(readl(P_PUB_PGSR0_ADDR),32);
+	serial_puts("=================\n");
+
+	serial_puts("==============PGSR1: 0x");
+	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
+	serial_puts("=================\n");
+
+	if(0x80000fff != readl(P_PUB_PGSR0_ADDR))
+		goto pub_retry;
 	
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
 
-        if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
-	    return nTempVal;
-        } else {
-            return 0;
-        }
+	//asm volatile ("wfi"); //debug 11.20
 
+    if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
+	    return nTempVal;
+    }
+    else{
+        return 0;
+    }
 }

@@ -1,7 +1,10 @@
 #ifndef __CONFIG_M6TV_SKT_V1_H__
 #define __CONFIG_M6TV_SKT_V1_H__
 
-#define CONFIG_MACH_MESON6_SKT  // generate m6tv SKT machid number
+#define CONFIG_MACH_MESON6TV_SKT  // generate M6TV SKT machid number
+
+//ddrtest and d2pll command support
+#define CONFIG_CMD_DDR_TEST	1	//ddrtest & d2pll
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -12,7 +15,7 @@
 
 
 //Enable storage devices
-#define CONFIG_CMD_NAND  1
+//#define CONFIG_CMD_NAND  1	//waiting for nand support
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
@@ -28,9 +31,10 @@
 
 #define CONFIG_L2_OFF			1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 
 #if defined(CONFIG_CMD_NET)
+	#define CONFIG_M6 1
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
 	#define CONFIG_CMD_PING 1
@@ -38,7 +42,7 @@
 	#define CONFIG_CMD_RARP 1
 	
 	//#define CONFIG_NET_RGMII
-	#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
+//	#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
 	
 	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
 	#define CONFIG_HOSTNAME        arm_m6tv
@@ -96,19 +100,18 @@
 #endif
 
 /* Environment information */
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
-	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
-	"machid=F81\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"machid=1124\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 nohlt lpj=8000000\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -212,7 +215,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(900)
+#define M6TV_CPU_CLK 		(800)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -221,25 +224,13 @@
  * Physical Memory Map
  */
 //Please just define m6tv DDR clock here only
-//current DDR clock range (300~600)MHz
-#define M6TV_DDR_CLK   (480)
-#define CONFIG_DDR_CLK (M6TV_DDR_CLK)
-
+//current DDR clock range (400~800)MHz
+#define CFG_M6TV_DDR_CLK (648)
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-#define DDR3_11_11_11
-//#define DDR3_7_7_7
-//above setting must be set for ddr_set __ddr_setting in file
-//board/amlogic/m6tv_skt_v1/firmware/timming.c 
-
-//note: please DO NOT remove following check code
-#if !defined(DDR3_11_11_11) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6tv_skt_v1.h\n"
-#endif
-
-#define M6TV_DDR3_512M
-//#define M6TV_DDR3_1G
+//#define M6TV_DDR3_512M
+#define M6TV_DDR3_1GB
 //above setting will affect following:
 //board/amlogic/m6tv_skt_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6tv/mmutable.s
@@ -274,7 +265,7 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-//#define CONFIG_AML_SUSPEND 1
+#define CONFIG_AML_SUSPEND 1
 
 
 /*

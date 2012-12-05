@@ -198,7 +198,7 @@ int nand_erase_opts(nand_info_t *meminfo, const nand_erase_options_t *opts)
 	
 		WATCHDOG_RESET ();
 
-		if ((opts->scrub ==2) && bbtest) {
+		if (((!opts->scrub)||(opts->scrub == 2))&& bbtest) {
 			int ret = meminfo->block_isbad(meminfo, erase.addr);
 			if (ret > 0) {
 				if (!opts->quiet)
@@ -644,7 +644,7 @@ int nand_write_skip_bad(nand_info_t *nand, loff_t offset, loff_t *length,
 			rval = nand->write_oob (nand, offset, &oob_opts);
 			if (rval != 0) {
 				printf ("NAND write spare to offset %zx failed %d\n",
-					offset, rval);
+					(size_t)offset, rval);
 				*length -= left_to_write;
 				return rval;
 			}
@@ -653,7 +653,7 @@ int nand_write_skip_bad(nand_info_t *nand, loff_t offset, loff_t *length,
 			rval = nand_write (nand, offset, (size_t *)&write_size, p_buffer);
 			if (rval != 0) {
 				printf ("NAND write to offset %zx failed %d\n",
-					offset, rval);
+					(size_t)offset, rval);
 				*length -= left_to_write;
 				return rval;
 			}
@@ -805,7 +805,7 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 	struct mtd_oob_ops aml_oob_ops;
 	struct erase_info aml_uboot_erase_info;
 	loff_t addr;
-	int buf_offset = 0, writed_len = 0, error = 0, i, unit_size, pages_per_blk;
+	int buf_offset = 0, writed_len = 0, error = 0, unit_size, pages_per_blk;
 	unsigned char *data_buf;
 	struct mtd_info *mtd = nand;
 
@@ -968,7 +968,7 @@ int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t *plen, u_char *bu
 void aml_nand_stupid_dectect_badblock(struct mtd_info *mtd)
 {
 	int error, test_num = 0, i, blk_num, detect_start_blk, phys_erase_shift;
-	size_t pagesize, blocksize, len;
+	size_t pagesize, blocksize;
 	loff_t addr;
 	size_t retlen;
 	erase_info_t erase;
@@ -991,13 +991,13 @@ void aml_nand_stupid_dectect_badblock(struct mtd_info *mtd)
 
 	data_buf = kzalloc(pagesize, GFP_KERNEL);
 	if (data_buf == NULL) {
-		printk("data_buf malloc failed %d\n");
+		printk("data_buf malloc failed \n");
 		return;
 	}
 	old_bad_blk = kzalloc(blk_num, GFP_KERNEL);
 	new_bad_blk = kzalloc(blk_num, GFP_KERNEL);
 	if ((old_bad_blk == NULL) || (new_bad_blk == NULL)) {
-		printk("bad blk buf malloc failed %d\n");
+		printk("bad blk buf malloc failed \n");
 		return;
 	}
 	
@@ -1103,8 +1103,8 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
     struct  nand_chip *chip = nand->priv;
     size_t retlen;
     struct mtd_oob_ops volatile raw_ops;
-    loff_t addr_from;
-    u_char *p_buffer = buffer;
+    loff_t addr_from=0;
+//	u_char *p_buffer = buffer;
     u_char *tmp_buf=NULL;
     size_t page_no,block_num=0,bad_num=0;
 	//size_t read_length;
@@ -1120,7 +1120,7 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
 		return rval;
     }
     
-    memset(&raw_ops, 0, sizeof(raw_ops));
+    memset((void *)&raw_ops, 0, sizeof(raw_ops));
     raw_ops.len = nand->writesize;
     raw_ops.ooblen = nand->oobsize;
     raw_ops.ooboffs = 0;
@@ -1157,7 +1157,7 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
     	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,&raw_ops);
     	if (rval && rval != -EUCLEAN) {
     		printf ("NAND read from offset %zx failed %d\n",
-    			offset, rval);
+    			(size_t)offset, rval);
     		*length -= left_to_read;
     		return rval;
     	}
@@ -1175,7 +1175,7 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
     	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,&raw_ops);
     	if (rval && rval != -EUCLEAN) {
     		printf ("NAND read from offset %zx failed %d\n",
-    			offset, rval);
+    			(size_t)offset, rval);
     		*length -= left_to_read;
     		return rval;
     	}

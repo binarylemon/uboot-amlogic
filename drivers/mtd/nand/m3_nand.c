@@ -6,11 +6,13 @@
 #include <linux/err.h>
 #include <asm/cache.h>
 #include <asm/arch/pinmux.h>
+#include <asm/arch/clock.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
 
+#include "version.h"
 int nand_curr_device = -1;
 //extern struct aml_nand_platform aml_nand_platform[];
 extern struct aml_nand_device aml_nand_mid_device;
@@ -423,7 +425,10 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);	
 
 	if(aml_chip->ran_mode){
-	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		if(aml_chip->plane_num == 2)
+	      NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		else		
+				NFC_SEND_CMD_SEED(aml_chip->page_addr);
 	}
 	if(!bch_mode)
 		NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, len);
@@ -464,7 +469,10 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 	NFC_SEND_CMD_AIL((int)aml_chip->user_info_buf);
 	NFC_SEND_CMD_AIH((int)aml_chip->user_info_buf);
 	if(aml_chip->ran_mode){
-	        NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		if(aml_chip->plane_num == 2)
+	      NFC_SEND_CMD_SEED((aml_chip->page_addr/(mtd->writesize >> chip->page_shift)) * (mtd->writesize >> chip->page_shift));
+		else		
+				NFC_SEND_CMD_SEED(aml_chip->page_addr);
 	}
 
 	if(bch_mode == NAND_ECC_NONE)
@@ -488,7 +496,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip, unsigned char *buf, 
 static int m3_nand_hwecc_correct(struct aml_nand_chip *aml_chip, unsigned char *buf, unsigned size, unsigned char *oob_buf)
 {
 	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &aml_chip->mtd;
+//	struct mtd_info *mtd = &aml_chip->mtd;
 	unsigned ecc_step_num;
 	unsigned info_times_int_len = PER_INFO_BYTE/sizeof(unsigned int);
 		
@@ -929,10 +937,7 @@ exit_error:
 	return err;
 }
 
-#define DRV_NAME	"aml_m3_nand"
-#define DRV_VERSION	"1.1"
-#define DRV_AUTHOR	"xiaojun_yoyo"
-#define DRV_DESC	"Amlogic nand flash uboot driver for M3"
+
 
 void nand_init(void)
 {
@@ -963,7 +968,7 @@ void nand_init(void)
  int nand_test_init(void)
 {
 	struct aml_nand_platform *plat = NULL;
-	int i, ret;
+	int i, ret=0;
 	printk("%s, Version %s (c) 2012 factory nand test .\n", DRV_DESC, DRV_VERSION);
 
 	for (i=0; i<aml_nand_mid_device.dev_num; i++) {

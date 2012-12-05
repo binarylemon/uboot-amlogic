@@ -47,7 +47,7 @@ static char * g_clock_src_name_m6[]={
 
 extern void udelay(unsigned long usec);
 extern void mdelay(unsigned long usec);
-static int reset_count = 0;
+//static int reset_count = 0;
 //int set_usb_phy_clk(struct lm_device * plmdev,int is_enable)
 //{
 static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)

@@ -30,6 +30,16 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif
 
+#ifdef CONFIG_M6TV
+	#define AML_M6_JTAG_ENABLE
+	#define AML_M6_JTAG_SET_ARM
+
+	//for M6 only. And it will cause M3 fail to boot up.
+	setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+
+#endif
+
+
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
@@ -57,13 +67,13 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 #endif
-
-	int i;
+		
+//	int i;
 
     //Adjust 1us timer base
     timer_init();
     //default uart clock.
-    serial_init(__plls.uart);
+    //serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
 
@@ -73,25 +83,45 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 #ifdef CONFIG_M6
+	#ifdef CONFIG_PWM_CORE_VOLTAGE
+	writel(0x632000, P_VGHL_PWM_REG0);
+	writel(0x632000, P_LED_PWM_REG0);
+	#else
     writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
+    #endif
     __udelay(1000);
 #endif
 
     // initial pll
     pll_init(&__plls);
 
+	serial_init(__plls.uart);
+
 #ifdef ENTRY_DEBUG_ROM
     __udelay(100000);//wait for a uart input
 #else
-    //__udelay(100);//wait for a uart input
+    __udelay(100);//wait for a uart input
 #endif
+	
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
-	 }
+	 }	 
 
     // initial ddr
     ddr_init_test();
 
+#if 0
+	serial_puts("\nMSR clk list:\n");
+	int i;
+	for(i=0;i<46;i++)
+	{
+		serial_put_hex(i,8);
+		serial_puts("=");
+		serial_put_dword(clk_util_clk_msr(i));
+   }
+#endif
+	//asm volatile ("wfi");
+	
     // load uboot
 #ifdef CONFIG_ENABLE_WATCHDOG
 	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
