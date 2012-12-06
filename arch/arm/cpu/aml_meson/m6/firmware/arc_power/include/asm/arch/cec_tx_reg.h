@@ -493,7 +493,7 @@ void WRITE_APB_REG(unsigned long addr, unsigned long data);
 //#define	CEC_OC_DECK_CONTROL 					0x42
 #define	CEC_OC_DECK_STATUS 						0x1B
 #define	CEC_OC_DEVICE_VENDOR_ID 				0x87
-//#define	CEC_OC_FEATURE_ABORT 					0x00
+#define	CEC_OC_FEATURE_ABORT 					0x00
 //#define	CEC_OC_GET_CEC_VERSION 					0x9F
 //#define	CEC_OC_GET_MENU_LANGUAGE 				0x91
 //#define	CEC_OC_GIVE_AUDIO_STATUS 				0x71
@@ -578,6 +578,15 @@ enum _cec_log_dev_addr_e {
     CEC_FREE_USE_ADDR,
     CEC_UNREGISTERED_ADDR
 };
+
+typedef enum  {
+    CEC_UNRECONIZED_OPCODE = 0x0,
+    CEC_NOT_CORRECT_MODE_TO_RESPOND,
+    CEC_CANNOT_PROVIDE_SOURCE,
+    CEC_INVALID_OPERAND,
+    CEC_REFUSED,
+    CEC_UNABLE_TO_DETERMINE,
+} cec_feature_abort_e;
 
 typedef enum {
     DEVICE_MENU_ACTIVE = 0,

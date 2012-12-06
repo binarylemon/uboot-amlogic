@@ -568,17 +568,17 @@ void enter_power_down()
     f_serial_puts("step 10\n");
     wait_uart_empty();
     
-    if(hdmi_cec_func_config & 0x1){
-        f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
-        serial_put_hex(readl(P_AO_DEBUG_REG0),32);
-        f_serial_puts("\n");   
-        f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
-        serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
-        f_serial_puts("\n");       
-        //f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
-        //serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
-        //f_serial_puts("\n");
-    }
+    //if(hdmi_cec_func_config & 0x1){
+    //    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+    //    serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+    //    f_serial_puts("\n");   
+    //    f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
+    //    serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
+    //    f_serial_puts("\n");       
+    //    f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
+    //    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
+    //    f_serial_puts("\n");
+    //}
     //print some useful information to help debug.
     serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
     f_serial_puts("  MMC_LP_CTRL1\n");
