@@ -149,7 +149,7 @@ pub_retry:
 		  ,P_PUB_PTR4_ADDR); 
 
 
-	writel((15<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
+	writel((22<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
 	
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
