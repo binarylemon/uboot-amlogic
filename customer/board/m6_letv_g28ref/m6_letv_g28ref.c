@@ -517,6 +517,23 @@ int switch_boot_mode()
 {
     //extern int aml_autoscript(void);
     //aml_autoscript();
+
+    char* suspend;
+    char* s;
+	suspend = getenv ("suspend");
+    printf("suspend = %s\n", suspend);
+    if(!strcmp(suspend, "on")){
+        setenv("suspend", "off");
+        run_command("saveenv", 1);
+        setbits_le32(P_AO_GPIO_O_EN_N,1<<31);
+        run_command("suspend", 1);
+        //s = getenv ("bootcmd");
+        //run_command(s, 0);
+        run_command("reset", 1);
+        return 0;
+    }
+
+    return -1;
 }
 #endif
 

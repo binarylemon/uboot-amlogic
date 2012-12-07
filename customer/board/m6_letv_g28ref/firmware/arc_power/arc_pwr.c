@@ -281,7 +281,7 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
-    int gpio_key = 0;
+    //int gpio_key = 0;
         
 #ifdef smp_test
 	//ignore ddr problems.
@@ -445,7 +445,7 @@ void enter_power_down()
 		    break;
 		  */
 	    if(readl(0xc1109860)&0x100){
-            gpio_key = 1;
+            //gpio_key = 1;
             break;
         }
 	 }
@@ -574,12 +574,12 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-
+    /*
     if(1 == gpio_key){
         setbits_le32(P_WATCHDOG_TC,1<<22);
 	    writel((1<<22) | (3<<24), P_WATCHDOG_TC);
         while(1);
-    }
+    }*/
 
     
 #ifdef CONFIG_IR_REMOTE_WAKEUP
