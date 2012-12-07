@@ -7,6 +7,7 @@
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
+#define CONFIG_CMDLINE_EDITING 1       /* Command-line editing */
 
 
 //UART Sectoion
@@ -17,7 +18,7 @@
 //#define CONFIG_AML_I2C      1
 
 #define HAS_AO_MODULE
-#define CONFIG_AML_I2C	//add by Elvis Yu
+//#define CONFIG_AML_I2C	//add by Elvis Yu
 //#define CONFIG_AW_AXP20
 
 //Enable storage devices
@@ -64,10 +65,10 @@
 #endif /* (CONFIG_CMD_NET) */
 
 
-#define CONFIG_SDIO_B1   1
-#define CONFIG_SDIO_A    1
+//#define CONFIG_SDIO_B1   1
+//#define CONFIG_SDIO_A    1
 #define CONFIG_SDIO_B    1
-#define CONFIG_SDIO_C    1
+//#define CONFIG_SDIO_C    1
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 
@@ -305,7 +306,7 @@
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */
 #define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */
-#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
+//#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
 

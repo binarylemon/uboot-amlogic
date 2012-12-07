@@ -111,7 +111,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt lpj=8000000\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \

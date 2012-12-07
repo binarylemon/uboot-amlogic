@@ -113,7 +113,7 @@ void cec_wr_reg(unsigned long addr, unsigned long data)
 
 void cec_power_on(void)
 {
-	/*Enable GPIOD5*/
+	/*Enable GPIOD_5*/
 	writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_O)) | (1<<21)), CBUS_REG_ADDR(PREG_PAD_GPIO2_O));
 	writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N)) & (~(1<<21))), CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N));
 	
@@ -175,12 +175,13 @@ void remote_cec_hw_off(void)
 //#else 
 //    WRITE_APB_REG(HDMI_CNTL_PORT, READ_APB_REG(HDMI_CNTL_PORT)|(1<<16));
 //#endif
-    //Enable HDMI Clock Gate 
+    //enable HDMI Clock Gate 
+    //clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL, 1<<4); // disable APB_CLK
     writel(readl(P_HHI_HDMI_CLK_CNTL) | (0x1<<8), P_HHI_HDMI_CLK_CNTL);
     writel(readl(P_HHI_GCLK_MPEG2) | (0x1<<4), P_HHI_GCLK_MPEG2);
-    
-    writel(readl(P_HDMI_CNTL_PORT) | (0x1<<15), P_HDMI_CNTL_PORT);//APB err_en    
+     
     writel(readl(P_HDMI_CNTL_PORT) | (0x1<<16), P_HDMI_CNTL_PORT);//soft reset enable
+    writel(readl(P_HDMI_CNTL_PORT) | (0x1<<15), P_HDMI_CNTL_PORT);//APB err_en
 
     cec_wr_reg(OTHER_BASE_ADDR+HDMI_OTHER_CTRL0, 0xc); //[3]cec_creg_sw_rst [2]cec_sys_sw_rst
     cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_CLEAR_BUF, 0x1);
@@ -209,6 +210,9 @@ void remote_cec_hw_off(void)
 
     //cec_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, (0x1 << 4) | 0x4);
     cec_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, 0x00);
+    //disable HDMI Clock Gate
+    writel(readl(P_HHI_HDMI_CLK_CNTL)& ~(0x1<<8), P_HHI_HDMI_CLK_CNTL); 
+    writel(readl(P_HHI_GCLK_MPEG2) & ~(0x1<<4), P_HHI_GCLK_MPEG2); 
     
 }
 
@@ -225,7 +229,7 @@ unsigned char remote_cec_ll_rx(void)
 
     unsigned char rx_msg_length = cec_rd_reg(CEC0_BASE_ADDR + CEC_RX_MSG_LENGTH) + 1;
 
-    while (cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS) != TX_DONE){
+    while (cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS) != RX_DONE){
         {//Delay some time
     	    int i = 10;
     	    while(i--);
@@ -241,8 +245,8 @@ unsigned char remote_cec_ll_rx(void)
         //*msg = cec_rd_reg(CEC0_BASE_ADDR + CEC_RX_MSG_0_HEADER +i);
         //msg++;
         cec_msg.buf[i] = cec_rd_reg(CEC0_BASE_ADDR + CEC_RX_MSG_0_HEADER +i);
-        if(msg[i] == 0x44)
-            cec_msg.test = 0x44;
+        //if(msg[i] == 0x44)
+        //    cec_msg.test = 0x44;
                     
     }
     //*len = rx_msg_length;
@@ -276,7 +280,7 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
     int ret = 0;
     unsigned int n = 0;
 
-    while (cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS) == RX_BUSY){
+    while (cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_BUSY){
         {//Delay some time
     	    int i = 10;
     	    while(i--);
@@ -353,17 +357,35 @@ void cec_set_stream_path(void)
     }    
 }
 
-void cec_device_vendor_id(void)
-{
-    unsigned char msg[5];
-          
-    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
-    msg[1] = CEC_OC_DEVICE_VENDOR_ID;
-    msg[2] = 'A';
-    msg[3] = 'M';
-    msg[4] = 'L';
+//void cec_device_vendor_id(void)
+//{
+//    unsigned char msg[9];
+//    //"PHILIPS"
+//    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
+//    msg[1] = CEC_OC_DEVICE_VENDOR_ID;
+//    msg[2] = 'P';
+//    msg[3] = 'H';
+//    msg[4] = 'I';
+//    msg[5] = 'L';
+//    msg[6] = 'I';
+//    msg[7] = 'P';
+//    msg[8] = 'S';
+//
+//    remote_cec_ll_tx(msg, 9);     
+//}
 
-    remote_cec_ll_tx(msg, 5);     
+void cec_feature_abort(void)
+{    
+    if(cec_msg.buf[1] != 0xf){
+        unsigned char msg[4];
+        
+        msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
+        msg[1] = CEC_OC_FEATURE_ABORT;
+        msg[2] = cec_msg.buf[1];
+        msg[3] = CEC_UNRECONIZED_OPCODE;
+        
+        remote_cec_ll_tx(msg, 4);        
+    }
 }
 
 void cec_menu_status_smp(void)
@@ -390,20 +412,19 @@ void cec_give_deck_status(void)
 
 void cec_set_osd_name(void)
 {
-        unsigned char msg[10];
-        //"PHILIPS HMP"
-        msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
-        msg[1] = CEC_OC_SET_OSD_NAME;
-        msg[2] = 'H';
-        msg[3] = 'M';
-        msg[4] = 'P';
-        msg[5] = '8';
-        msg[6] = '1';
-        msg[7] = '0';
-        msg[8] = '0';
-        msg[9] = '\0';
-              
-        remote_cec_ll_tx(msg, 10);
+    unsigned char msg[8];
+    
+    //"PHILIPS HMP8100"
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
+    msg[1] = CEC_OC_SET_OSD_NAME;
+    msg[2] = 'H';
+    msg[3] = 'M';
+    msg[4] = 'P';
+    msg[5] = '8';
+    msg[6] = '1';
+    msg[7] = '0';
+    
+    remote_cec_ll_tx(msg, 8);
 }
 
 //void register_cec_rx_msg(unsigned char *msg, unsigned char len )
@@ -463,8 +484,8 @@ void cec_handle_message(void)
         case CEC_OC_GIVE_PHYSICAL_ADDRESS:
             cec_report_physical_address();
             break;
-        case CEC_OC_GIVE_DEVICE_VENDOR_ID:
-             cec_device_vendor_id();
+        //case CEC_OC_GIVE_DEVICE_VENDOR_ID:
+        //     cec_device_vendor_id();
         //    //cec_give_device_vendor_id(pcec_message);
         //    cec_usrcmd_set_device_vendor_id();
             break;
@@ -509,6 +530,7 @@ void cec_handle_message(void)
             cec_menu_status_smp();
             break;
         default:
+            cec_feature_abort();
             break;
         }
     }
@@ -532,11 +554,13 @@ unsigned int cec_handler(void)
                 //register_cec_rx_msg(rx_msg, rx_len);
             } else {
                 cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_CLEAR_BUF,  0x01);
+                cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_CLEAR_BUF,  0x00);
                 cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_MSG_CMD,  RX_NO_OP);
 
             }
         } else {
             cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_CLEAR_BUF,  0x01);
+            cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_CLEAR_BUF,  0x00);
             cec_wr_reg(CEC0_BASE_ADDR + CEC_RX_MSG_CMD,  RX_NO_OP);
         }
     } 

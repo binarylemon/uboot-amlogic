@@ -111,7 +111,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt lpj=8000000\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -130,10 +130,10 @@
 #define CONFIG_AUTO_COMPLETE	1
 
 #define CONFIG_SPI_BOOT 1
-//#define CONFIG_MMC_BOOT
-#ifndef CONFIG_JERRY_NAND_TEST
-	#define CONFIG_NAND_BOOT 1
-#endif
+#define CONFIG_MMC_BOOT
+//#ifndef CONFIG_JERRY_NAND_TEST
+//	#define CONFIG_NAND_BOOT 1
+//#endif
 
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1
@@ -163,7 +163,8 @@
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
+   // #define CONFIG_SYS_MMC_ENV_DEV        0	
+    #define CONFIG_SYS_MMC_ENV_DEV        1	
 	#define CONFIG_ENV_OFFSET       0x1000000		
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1

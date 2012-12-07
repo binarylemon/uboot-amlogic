@@ -1017,7 +1017,8 @@ int mmc_init(struct mmc *mmc)
 	
 	
 	// check SDCARD/EMMC to reduce EMMC load env data cycles	
-	if(mmc->block_dev.dev == SD_CARD_DEV) //sd card
+	//tsd could not init as emmc (cmd1)
+	if(mmc->block_dev.dev == SD_CARD_DEV || mmc->block_dev.if_type == IF_TYPE_SD)
 	{
 		/* Test for SD version 2 */
 		err = mmc_send_if_cond(mmc);

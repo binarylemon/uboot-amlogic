@@ -69,7 +69,7 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     writel(0xffffffff, P_MMC_SOFT_RST1);
 
 	//debug 11.21 temp code
-    writel(0, P_MMC_CLKG_CNTL0);
+    //writel(0, P_MMC_CLKG_CNTL0);   //Martin said, use default value can save power from DMC
 
 #ifndef CONFIG_CMD_DDR_TEST
 	wait_clock(3,timing_reg->ddr_clk);
