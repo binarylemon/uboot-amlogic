@@ -154,7 +154,7 @@ switch(port)
                   break;
             case SDIO_PORT_C:    	
                   //enable pull up
-	//		clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
+                  clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
                   break;
             case SDIO_PORT_XC_A:
                   break;
