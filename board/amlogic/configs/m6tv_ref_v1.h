@@ -125,7 +125,8 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+
+#define CONFIG_BOOTCOMMAND  "mmcinfo;mmc read 1 82000000 c000 2400;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
