@@ -12,8 +12,6 @@
 #define STATIC_PREFIX_DATA static
 #endif
 
-#define ENABLE_WRITE_LEVELING 1
-
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -200,8 +198,11 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
 						   #endif //CONFIG_DDR_LOW_POWER
                            ,
-                    .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
+                    .zq0cr0 = 0,
                     .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
+                    .cmdzq  = 0,
+                    .dqsres  = 0x4,
+                    .dqsnres = 0xc,
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

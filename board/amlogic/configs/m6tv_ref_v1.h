@@ -111,7 +111,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt mem=1024m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -241,6 +241,9 @@
 	#error "Please set DDR3 capacity first in file m6tv_ref_v1.h\n"
 #endif
 
+/***Other MARCO about DDR***/
+#define ENABLE_WRITE_LEVELING 1
+/***************************/
 
 #define CONFIG_NR_DRAM_BANKS    1   /* CS1 may or may not be populated */
 

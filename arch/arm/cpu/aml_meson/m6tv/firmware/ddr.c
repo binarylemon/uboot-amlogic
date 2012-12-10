@@ -20,8 +20,8 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	Wr(HHI_DDR_PLL_CNTL4,M6TV_DDR_PLL_CNTL_4);
 	
 #ifdef CONFIG_CMD_DDR_TEST
-	if((Rd(PREG_STICKY_REG0) & 0xffff) == 0x2012){
-        zqcr = (Rd(PREG_STICKY_REG0) >> 16);
+    if((Rd(PREG_STICKY_REG0) & 0xff000000) == 0x3c000000){
+        zqcr = Rd(PREG_STICKY_REG0) & 0xffffff;
 		Wr(HHI_DDR_PLL_CNTL, Rd(PREG_STICKY_REG1));
 		Wr(PREG_STICKY_REG0, 0);
         Wr(PREG_STICKY_REG1, 0);

@@ -281,7 +281,7 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
-    int gpio_key = 0;
+    //int gpio_key = 0;
         
 #ifdef smp_test
 	//ignore ddr problems.
@@ -434,18 +434,23 @@ void enter_power_down()
     {
     	//detect remote key
 		  power_key=readl(P_AO_IR_DEC_FRAME);
-		  power_key = (power_key>>16)&0xff;
-		  if(power_key==0x1a)  //the reference remote power key code
-        		break;
-        		  
+		  //power_key = (power_key>>16)&0xff;
+		  //if(power_key==0x1a)  //the reference remote power key code
+        	//	break;
+          
+        if(power_key==0xff00ff00)//letv ir power key
+            break;
+	  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
 		  power_key=power_key&(1<<3);
 		  if(!power_key)
 		    break;
 		  */
+		  
+		udelay(2000);
 	    if(readl(0xc1109860)&0x100){
-            gpio_key = 1;
+            //gpio_key = 1;
             break;
         }
 	 }
@@ -574,12 +579,12 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-
+    /*
     if(1 == gpio_key){
         setbits_le32(P_WATCHDOG_TC,1<<22);
 	    writel((1<<22) | (3<<24), P_WATCHDOG_TC);
         while(1);
-    }
+    }*/
 
     
 #ifdef CONFIG_IR_REMOTE_WAKEUP

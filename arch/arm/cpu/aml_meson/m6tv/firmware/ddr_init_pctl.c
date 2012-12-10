@@ -49,7 +49,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
 }
 
 #ifdef CONFIG_CMD_DDR_TEST
-static unsigned short zqcr = 0;
+static unsigned zqcr = 0;
 #endif
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
@@ -83,7 +83,7 @@ pub_retry:
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
 	//writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
-	writel(0x3 | (1 << 3)|(1<<28), P_PUB_DCR_ADDR); //28: 2T mode
+	writel(0x3 | (1 << 3) | (0<<28), P_PUB_DCR_ADDR); //28: 2T mode
 	//writel(0x01842e04, P_PUB_PGCR0_ADDR); //PUB_PGCR_ADDR: c8001008
 
 	// program PUB MRx registers.	
@@ -149,7 +149,7 @@ pub_retry:
 		  ,P_PUB_PTR4_ADDR); 
 
 
-	writel((15<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
+	writel((22<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
 	
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
@@ -162,22 +162,35 @@ pub_retry:
 			  P_PUB_DSGCR_ADDR );	//other bits.
 
 	//wait PHY DLL LOCK
-	while(!(readl(P_PUB_PGSR0_ADDR) & 2)) {}
+	//while(!(readl(P_PUB_PGSR0_ADDR) & 2)) {}
 
 	// Monitor DFI initialization status.
-	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
+	//while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {}
 
 	writel(1, P_UPCTL_POWCTL_ADDR);
 	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
 
+    writel((readl(P_PUB_DXCCR_ADDR) & (~(0xff<<5))) | ((timing_reg->dqsres<<5)|(timing_reg->dqsnres<<9)), P_PUB_DXCCR_ADDR);
 	
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+        writel(zqcr | (1<<28), P_PUB_ZQ0CR0_ADDR);
+#else
 	    writel(zqcr, P_PUB_ZQ0CR1_ADDR);
+#endif
 	else
 #endif
-    writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
 
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+    writel(timing_reg->zq0cr0 | (1<<28), P_PUB_ZQ0CR0_ADDR);
+#else
+    writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
+#endif
+
+#ifdef FORCE_CMDZQ_ENABLE
+    writel(timing_reg->cmdzq | (1<<20), MMC_CMDZQ_CTRL);
+#endif
 	//for simulation to reduce the init time.
 	//MMC_Wr(PUB_PTR1_ADDR,  (20000 | 		  // Tdinit0   DDR3 : 500us.  LPDDR2 : 200us.
 	//					  (192 << 19)));	  //tdinit1    DDR3 : tRFC + 10ns. LPDDR2 : 100ns.
@@ -257,6 +270,8 @@ pub_retry:
     writel(readl(P_PUB_PGCR1_ADDR) & 0xffff83ff,    //set MDL LPF depth = 2.( bit 14:13 = 00). 
                    P_PUB_PGCR1_ADDR);
 
+    writel(readl(P_PUB_PGCR1_ADDR) | (1<<2), P_PUB_PGCR1_ADDR); //WL step = 1
+
 	writel( (56250-400) | 
                 ( 0xf << 20 )  
                 , P_PUB_PGCR2_ADDR); 
@@ -274,23 +289,19 @@ pub_retry:
        //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
        writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
 
-	//debug 11.20 begin
-	/*
-	// DDR PHY initialization 
-#ifdef ENABLE_WRITE_LEVELING
-    writel(0xf5f3, P_PUB_PIR_ADDR);
-#else
-	writel(0xfff3, P_PUB_PIR_ADDR);
-	*/
-//	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
 
+    nTempVal = 1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
+		(1<<1)|(1<<4)|(1<<5)|(1<<6);
+		
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+    nTempVal &= ~(1<<1);
+#endif
 
-	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
-		(1<<1)|(1<<4)|(1<<5)|(1<<6)),
-		P_PUB_PIR_ADDR);
-	//debug 11.20 end
+#ifndef ENABLE_WRITE_LEVELING
+    nTempVal &= ~((1<<9) | (1<<11));
+#endif
 
-	//asm volatile ("wfi"); //debug 11.20
+	writel(nTempVal, P_PUB_PIR_ADDR);
 
 	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
