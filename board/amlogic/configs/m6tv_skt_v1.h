@@ -240,6 +240,9 @@
 	#error "Please set DDR3 capacity first in file m6tv_skt_v1.h\n"
 #endif
 
+/***Other MARCO about DDR***/
+#define ENABLE_WRITE_LEVELING 1
+/***************************/
 
 #define CONFIG_NR_DRAM_BANKS    1   /* CS1 may or may not be populated */
 

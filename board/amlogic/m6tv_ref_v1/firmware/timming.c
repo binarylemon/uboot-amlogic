@@ -12,8 +12,6 @@
 #define STATIC_PREFIX_DATA static
 #endif
 
-#define ENABLE_WRITE_LEVELING 1
-
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,7 +51,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 #endif
 
 #ifdef DDR3_9_9_9
@@ -70,7 +67,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 7
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 
 #endif
 
@@ -88,7 +84,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 #endif
 
 #if defined(M6TV_DDR3_1GB)
@@ -200,8 +195,9 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
 						   #endif //CONFIG_DDR_LOW_POWER
                            ,
-                    .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
+                    .zq0cr0 = 0x109ce,
+                    .zq0cr1 = 0x19,
+                    .cmdzq  = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

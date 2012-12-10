@@ -33,7 +33,11 @@ static int do_ddr2pll(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		*((volatile unsigned long *)0xc8100000) = 0;
 #endif
 
+#ifdef CONFIG_M6TV
+    WRITE_CBUS_REG(PREG_STICKY_REG0, zqcr | (0x3c << 24));
+#else
     WRITE_CBUS_REG(PREG_STICKY_REG0, 0x2012 | (zqcr << 16));
+#endif
     WRITE_CBUS_REG(PREG_STICKY_REG1, pll);
     printf("Set pll done [0x%08x]\n", READ_CBUS_REG(PREG_STICKY_REG1));
     WRITE_CBUS_REG(WATCHDOG_TC, 0x400001);
