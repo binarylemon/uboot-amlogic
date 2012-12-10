@@ -517,6 +517,59 @@ int switch_boot_mode()
 {
     //extern int aml_autoscript(void);
     //aml_autoscript();
+    int letv_resetcheck_0_total_times = 0;
+	int letv_resetcheck_1_total_times = 0;
+	int letv_resetcheck_0_continuous_times = 0;
+	int letv_resetcheck_1_continuous_times = 0;
+	int letv_resetcheck_delays = 0;
+
+    char* suspend;
+    char* s;
+    
+	suspend = getenv ("suspend");
+    printf("suspend = %s\n", suspend);
+    if(!strcmp(suspend, "on")){
+        setenv("suspend", "off");
+        run_command("saveenv", 1);
+        setbits_le32(P_AO_GPIO_O_EN_N,1<<31);
+        run_command("suspend", 1);
+        //s = getenv ("bootcmd");
+        //run_command(s, 0);
+        run_command("reset", 1);
+        return 0;
+    }
+
+	key_init();
+	while (letv_resetcheck_delays < 300)
+	{
+		if(get_key())
+		{
+			letv_resetcheck_1_total_times++;
+			letv_resetcheck_1_continuous_times++;
+			letv_resetcheck_0_continuous_times = 0;
+		}
+		else
+		{
+			letv_resetcheck_0_total_times++;
+			letv_resetcheck_0_continuous_times++;
+			letv_resetcheck_1_continuous_times = 0;
+		}
+			
+		
+		if (letv_resetcheck_0_continuous_times == 50)
+			break;
+		else if (letv_resetcheck_1_total_times > 200 && letv_resetcheck_1_continuous_times > 150)
+		{
+            run_command("run spi_recovery", 1);
+		}
+
+	//	printf("no reset input  %x!!!\n", get_key());
+
+		udelay(10000);
+		letv_resetcheck_delays++;
+	}
+    
+    return -1;
 }
 #endif
 

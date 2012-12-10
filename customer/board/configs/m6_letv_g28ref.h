@@ -142,14 +142,40 @@
 	"outputmode=720p\0" \
 	"outputtemp=720p\0" \
 	"cvbsenable=false\0" \
-	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run switch_bootmode\0" \
+	"preboot=if itest ${letv_factory_reset} == 1;then run letv_env_reset;fi;get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=run cvbscheck;nand read aml_logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"nandargs=run cvbscheck;nand read aml_logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 mac=${ethaddr} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
-	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000; bootm\0" \
+	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 800000; if bootm; then echo ok;fi; run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"spi_recovery=echo enter spi_recovery;run letv_env_reset;clear_rebootmode;run nandargs;if sf probe 2; then if sf read ${loadaddr} 88000 378000; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
+	"testmode=1\0" \
+	"manid=0x0a0a0a0a0b0b0b0b\0" \
+	"reserved_0=0x0000000000000000\0" \
+	"reserved_1=0x0000000000000000\0" \
+	"reserved_2=0x0000000000000000\0" \
+	"reserved_3=0x0000000000000000\0" \
+	"reserved_4=0x0000000000000000\0" \
+	"reserved_5=0x0000000000000000\0" \
+	"reserved_6=0x0000000000000000\0" \
+	"reserved_7=0x0000000000000000\0" \
+	"reserved_8=0x0000000000000000\0" \
+	"reserved_9=0x0000000000000000\0" \
+	"letv_persist0=0x0000000000000000\0" \
+	"letv_persist1=0x0000000000000000\0" \
+	"letv_persist2=0x0000000000000000\0" \
+	"letv_persist3=0x0000000000000000\0" \
+	"letv_persist4=0x0000000000000000\0" \
+	"letv_persist5=0x0000000000000000\0" \
+	"letv_persist6=0x0000000000000000\0" \
+	"letv_persist7=0x0000000000000000\0" \
+	"letv_persist8=0x0000000000000000\0" \
+	"letv_persist9=0x0000000000000000\0" \
+	"letv_factory_reset=0\0" \
+	"letv_env_reset=defenv_without reboot_mode ethaddr testmode manid letv_persist0 letv_persist1 letv_persist2 letv_persist3 letv_persist4 letv_persist5 letv_persist6 letv_persist7 letv_persist8 letv_persist9;save\0" \
+	"has.accelerometer=false\0" \
 
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"

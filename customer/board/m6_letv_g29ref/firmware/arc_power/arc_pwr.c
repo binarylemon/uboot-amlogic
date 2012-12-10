@@ -434,9 +434,12 @@ void enter_power_down()
     {
     	//detect remote key
 		  power_key=readl(P_AO_IR_DEC_FRAME);
-		  power_key = (power_key>>16)&0xff;
-		  if(power_key==0x1a)  //the reference remote power key code
-        		break;
+		  //power_key = (power_key>>16)&0xff;
+		  //if(power_key==0x1a)  //the reference remote power key code
+        	//	break;
+        if(power_key==0xff00ff00)//letv ir power key
+            break;
+
         		  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
@@ -444,6 +447,7 @@ void enter_power_down()
 		  if(!power_key)
 		    break;
 		  */
+		udelay(2000);  
 	    if(readl(0xc1109860)&0x100){
             gpio_key = 1;
             break;
