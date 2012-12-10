@@ -170,7 +170,7 @@ pub_retry:
 	writel(1, P_UPCTL_POWCTL_ADDR);
 	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
 
-    writel((readl(P_PUB_DXCCR_ADDR) & (~((0xf<<5)|(0xf<<9)))) | ((1<<5)|(2<<9)), P_PUB_DXCCR_ADDR);
+    writel((readl(P_PUB_DXCCR_ADDR) & (~(0xff<<5))) | ((timing_reg->dqsres<<5)|(timing_reg->dqsnres<<9)), P_PUB_DXCCR_ADDR);
 	
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)

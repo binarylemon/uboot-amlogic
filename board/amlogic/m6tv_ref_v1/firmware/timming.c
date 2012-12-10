@@ -195,9 +195,11 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
 						   #endif //CONFIG_DDR_LOW_POWER
                            ,
-                    .zq0cr0 = 0x109ce,
-                    .zq0cr1 = 0x19,
-                    .cmdzq  = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
+                    .zq0cr0  = 0x109ce,
+                    .zq0cr1  = 0x19,
+                    .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
+                    .dqsres  = 0x1,
+                    .dqsnres = 0x2,
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

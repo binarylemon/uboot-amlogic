@@ -201,6 +201,8 @@ static struct ddr_set __ddr_setting={
                     .zq0cr0 = 0,
                     .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
                     .cmdzq  = 0,
+                    .dqsres  = 0x4,
+                    .dqsnres = 0xc,
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 
