@@ -15,6 +15,13 @@
 #include "sardac_arc.c"
 #endif
 
+
+#define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
+
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+#include "irremote2arc.c"
+#endif
+
 //----------------------------------------------------
 unsigned UART_CONFIG_24M= (200000000/(115200*4)  );
 unsigned UART_CONFIG= (32*1000/(300*4));
@@ -293,7 +300,7 @@ void enter_power_down()
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned char vcin_state;
 	unsigned char charging_state;
-
+	unsigned power_key;
 	//	disp_pctl();
 	//	test_ddr(0);
 	// First, we disable all memory accesses.
@@ -395,14 +402,27 @@ void enter_power_down()
 //	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
 //	switch_to_rtc();
 	udelay(1000);
-
 	//power_off_at_32K_1();
 
 //	power_off_at_32K_2();
 
-	// gate off REMOTE, UART
+	// gate off UART
 	writel(readl(P_AO_RTI_GEN_CTNL_REG0)&(~(0x8)),P_AO_RTI_GEN_CTNL_REG0);
-
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+//backup the remote config (on arm)
+    backup_remote_register();
+	
+//	power_off_via_gpio();    
+    //set the ir_remote to 32k mode at ARC
+    //init_custom_trigger();
+	while(1){
+		udelay(2000);
+		power_key=readl(P_AO_IR_DEC_FRAME);
+		  power_key = (power_key>>16)&0xff;
+		  if(power_key==0x10)  //the reference remote power key code
+        		break;
+		}
+#endif
 #if 0
 //	udelay(200000);//Drain power
 
@@ -438,7 +458,7 @@ void enter_power_down()
 	}
 
 //	while(!(readl(0xc1109860)&0x100)){break;}
-#else
+//#else
 	for(i=0;i<200;i++)
    {
         udelay(1000);
