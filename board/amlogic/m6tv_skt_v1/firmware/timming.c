@@ -203,6 +203,8 @@ static struct ddr_set __ddr_setting={
                     .cmdzq  = 0,
                     .dqsres  = 0x4,
                     .dqsnres = 0xc,
+                    .t_acbdlr_ck0bd = 15, //PUB_ACBDLR[5:0]: ck0 bit delay
+                    .t_acbdlr_acbd  = 0,  //PUB_ACBDLR[23:18]: address/command bit delay
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

@@ -44,6 +44,8 @@ struct ddr_set{
         unsigned       zq0cr1;    //PUB_ZQ0CR1
         unsigned short dqsres;
         unsigned short dqsnres;
+        unsigned char  t_acbdlr_ck0bd; //PUB_ACBDLR[5:0]: ck0 bit delay
+        unsigned char  t_acbdlr_acbd;  //PUB_ACBDLR[23:18]: address/command bit delay
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;
         unsigned       ddr_clk;

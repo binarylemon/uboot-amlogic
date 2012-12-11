@@ -148,8 +148,9 @@ pub_retry:
 		   (625 << 18))  //tDINIT3. ZQ initialization command to first command. 1us.
 		  ,P_PUB_PTR4_ADDR); 
 
-
-	writel((22<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
+	//board depend param@firmware\timming.c 
+	writel((timing_reg->t_acbdlr_ck0bd <<0)|(timing_reg->t_acbdlr_acbd<<18),
+		P_PUB_ACBDLR_ADDR);
 	
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
