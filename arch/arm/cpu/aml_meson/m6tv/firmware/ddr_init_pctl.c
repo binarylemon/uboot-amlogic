@@ -305,15 +305,18 @@ pub_retry:
 
 	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
+#ifdef CONFIG_M6TV_DUMP_DDR_INFO
+
 	nTempVal = readl(P_PUB_PGSR0_ADDR);
 
-	serial_puts("\n==============PGSR0: 0x");
+	serial_puts("\nPGSR0: 0x");
 	serial_put_hex(readl(P_PUB_PGSR0_ADDR),32);
-	serial_puts("=================\n");
 
-	serial_puts("==============PGSR1: 0x");
+	serial_puts("\nPGSR1: 0x");
 	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
-	serial_puts("=================\n");
+	serial_puts("\n");
+
+#endif 
 
 	if(0x80000fff != readl(P_PUB_PGSR0_ADDR))
 		goto pub_retry;

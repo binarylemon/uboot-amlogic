@@ -241,6 +241,8 @@
 	#error "Please set DDR3 capacity first in file m6tv_ref_v1.h\n"
 #endif
 
+#define CONFIG_M6TV_DUMP_DDR_INFO 1
+
 /***Other MARCO about DDR***/
 #define ENABLE_WRITE_LEVELING 1
 /***************************/
