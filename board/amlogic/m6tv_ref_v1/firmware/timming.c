@@ -198,10 +198,16 @@ static struct ddr_set __ddr_setting={
                     .zq0cr0  = 0x109ce,
                     .zq0cr1  = 0x19,
                     .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
-                    .dqsres  = 0x1,
-                    .dqsnres = 0x2,
-                    .t_acbdlr_ck0bd = 22, //PUB_ACBDLR[5:0]: ck0 bit delay
-                    .t_acbdlr_acbd  = 0,  //PUB_ACBDLR[23:18]: address/command bit delay
+                    .t_dxccr_dqsres  = 0x1, //ODT: pull down, 688ohms
+                    					    //PUB_DXCCR[8:5]: DQS resister. DQSRES[3]: 0 - pull down, 1-pull up. 
+                    				        //DQSRES[2:0]:000-open, use extern ODT,
+                    				        //                      001-688ohms,010-611ohms,011-550ohms,
+                    				        //                      100-500ohms,101-458ohms,110-393ohms,
+                    				        //                      111-344ohms
+                    .t_dxccr_dqsnres = 0x2, //ODT: pull down,611ohms
+                    					    //PUB_DXCCR[12:9]: DQS# resister                    
+                    .t_acbdlr_ck0bd = 22,   //PUB_ACBDLR[5:0]: ck0 bit delay
+                    .t_acbdlr_acbd  = 0,    //PUB_ACBDLR[23:18]: address/command bit delay
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

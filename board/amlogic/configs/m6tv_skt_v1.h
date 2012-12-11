@@ -224,7 +224,7 @@
  * Physical Memory Map
  */
 //Please just define m6tv DDR clock here only
-//current DDR clock range (400~800)MHz
+//current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_M6TV_DDR_CLK (648)
 
 //#define CONFIG_DDR_LOW_POWER 1
