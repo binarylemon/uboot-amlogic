@@ -280,7 +280,7 @@ void enter_power_down()
 	int i;
 	unsigned addr;
 	unsigned gate;
-	unsigned power_key;
+	unsigned power_key, up_key;
     //int gpio_key = 0;
         
 #ifdef smp_test
@@ -433,13 +433,16 @@ void enter_power_down()
     while(1)
     {
     	//detect remote key
-		  power_key=readl(P_AO_IR_DEC_FRAME);
-		  //power_key = (power_key>>16)&0xff;
-		  //if(power_key==0x1a)  //the reference remote power key code
+    	if((readl(P_AO_IR_DEC_STATUS)>>3)&0x1 != 0)
+        {   
+		    power_key=readl(P_AO_IR_DEC_FRAME);
+		    //power_key = (power_key>>16)&0xff;
+		    //if(power_key==0x1a)  //the reference remote power key code
         	//	break;
-          
-        if(power_key==0xff00ff00)//letv ir power key
-            break;
+            up_key = power_key;
+            if(power_key==0xff00ff00)//letv ir power key
+                break;
+         }
 	  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
@@ -562,6 +565,10 @@ void enter_power_down()
 
    serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
    f_serial_puts("  MCFG\n");
+   wait_uart_empty();
+
+   serial_put_hex(up_key,32);
+   f_serial_puts("up_key\n");
    wait_uart_empty();
 
 #endif   //pwr_ddr_off
