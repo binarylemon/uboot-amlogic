@@ -53,6 +53,7 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/osd_hw.o
 endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
+COBJS-$(CONFIG_HDCP_PREFETCH) += tvout/hdmi_hdcp.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/tv_out.o \
 	tvout/hdmi_tx_meson.o \
