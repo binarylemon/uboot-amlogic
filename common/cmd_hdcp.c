@@ -133,17 +133,12 @@ static int do_hdcp_check(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
 }
 
 // copy the fetched data into HDMI IP
-static int init_hdcp_ram(unsigned char * dat)
+static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
 {
     int i, j;
     char value;
     void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data);
     unsigned int ram_addr;
-
-    if(!hdcp_ksv_valid(dat)) {
-        printf("AKSV invalid, hdcp init failed\n");
-        return -1;
-    }
 
     memset(hdcp_keys_reformat, 0, sizeof(hdcp_keys_reformat));
     // adjust the HDCP key's KSV & DPK position
@@ -156,7 +151,17 @@ static int init_hdcp_ram(unsigned char * dat)
         hdmi_hdcp_wr_reg(ram_addr, value);
         j = ((i % 7) == 6) ? j + 2: j + 1;
     }
-    printf("hdcp init done\n");
+
+    if(hdcp_ksv_valid(dat)) {
+        printf("hdcp init done\n");
+    }
+    else {
+        if(pre_clear == 0)
+            printf("AKSV invalid, hdcp init failed\n");
+        else
+            printf("pre-clear hdmi ram\n");
+    }
+
     return 1;
 }
 
@@ -167,6 +172,8 @@ static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 
 	if (argc == 1)
 		return cmd_usage(cmdtp);
+
+    init_hdcp_ram(hdcp_keys_prefetch, 1);
 
     ret = uboot_key_get(argv[1], "hdcp", hdcp_keys_prefetch, 308, 0);
     if(ret >= 0) {
@@ -184,7 +191,7 @@ static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 #endif
 
     if(prefetch_flag == 1) {
-        init_hdcp_ram(hdcp_keys_prefetch);
+        init_hdcp_ram(hdcp_keys_prefetch, 0);
         memset(hdcp_keys_reformat, 0, sizeof(hdcp_keys_reformat));  // clear the buffer to prevent reveal keys
         ret = 1;
     }
