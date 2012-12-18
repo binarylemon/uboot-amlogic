@@ -130,8 +130,9 @@
 
 #define CONFIG_AUTO_COMPLETE	1
 
-#define CONFIG_SPI_BOOT 1
-#define CONFIG_MMC_BOOT
+//#define CONFIG_SPI_BOOT
+//#define CONFIG_MMC_BOOT 1
+#define CONFIG_EMMC_BOOT 1
 //#ifndef CONFIG_JERRY_NAND_TEST
 //	#define CONFIG_NAND_BOOT 1
 //#endif
@@ -166,7 +167,14 @@
 	#define CONFIG_CMD_SAVEENV
    // #define CONFIG_SYS_MMC_ENV_DEV        0	
     #define CONFIG_SYS_MMC_ENV_DEV        1	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+	#define CONFIG_ENV_OFFSET       0x1000000
+#elif defined CONFIG_EMMC_BOOT
+        #define CONFIG_ENV_IS_IN_EMMC
+        #define CONFIG_CMD_SAVEENV
+   // #define CONFIG_SYS_EMMC_ENV_DEV        0   
+    //	#define CONFIG_SYS_EMMC_ENV_DEV        1 
+	#define CONFIG_ENV_DEVICE_ID 1    
+        #define CONFIG_ENV_OFFSET       0x200000		
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
