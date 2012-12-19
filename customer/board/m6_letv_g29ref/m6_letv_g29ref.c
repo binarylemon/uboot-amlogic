@@ -525,10 +525,15 @@ int switch_boot_mode()
 
     char* suspend;
     char* s;
+
+    unsigned reg2;
+
+    reg2 = readl(P_AO_RTI_STATUS_REG2);
+    printf("P_AO_RTI_STATUS_REG2: 0x%x\n", reg2);
     
 	suspend = getenv ("suspend");
     printf("suspend = %s\n", suspend);
-    if(!strcmp(suspend, "on")){
+    if(!strcmp(suspend, "on") || reg2 == 0x11223344){
         setenv("suspend", "off");
         run_command("saveenv", 1);
         setbits_le32(P_AO_GPIO_O_EN_N,1<<31);
