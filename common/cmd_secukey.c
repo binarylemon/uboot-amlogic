@@ -185,3 +185,102 @@ U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"secukey read keyname [addr]- read the key data\n"
 );
 
+ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);
+ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);
+int do_ssecukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+{
+	ssize_t error=-1;
+	char *cmd;
+	char *device,*keyname,*keydata;
+	ulong addr,lenth,i;
+	int ascii_flag;
+	cmd = argv[1];
+	if(!strcmp(cmd,"list")){
+		return 0;
+	}
+	if(!strcmp(cmd,"put")){
+		if(argc < 5){
+			printk("para too few\n");
+			goto usage;
+		}
+		device=argv[2];
+		keyname=argv[3];
+		keydata=argv[4];
+		ascii_flag = 0;
+		if(argc >=6){
+			if(argc == 6){
+				printk("para error\n");
+				goto usage;
+			}
+			addr = (ulong)simple_strtoul(argv[5], NULL, 16);
+			lenth = (ulong)simple_strtoul(argv[6], NULL, 16);
+			printk("addr:0x%x,lenth:%d",addr,lenth);
+			ascii_flag = 1;
+			#if 0 //test
+			char testhexdata[]={0x11,0x22,0x33,0xaa,0x55,0xff,0x77,0x88};
+			memcpy((char*)addr,testhexdata,lenth);
+			#endif
+		}
+		else{
+			addr = 0x82000000;
+		}
+		if(ascii_flag){
+			error = uboot_key_put(device,keyname,(char*)addr,lenth,0);
+		}
+		else{
+			error = uboot_key_put(device,keyname,keydata,sizeof(keydata),1);
+		}
+		return error;
+	}
+	if(!strcmp(cmd,"get")){
+		if(argc < 4){
+			printk("para too few\n");
+			goto usage;
+		}
+		device=argv[2];
+		keyname=argv[3];
+		ascii_flag = 0;
+		if(argc >=5){
+			if(argc ==5){
+				printk("para error\n");
+				goto usage;
+			}
+			addr = (ulong)simple_strtoul(argv[4], NULL, 16);
+			lenth = (ulong)simple_strtoul(argv[5], NULL, 16);
+			ascii_flag = 1;
+		}
+		else{
+			addr = 0x82000000;
+			lenth = 4096;
+		}
+		if(ascii_flag){
+			error = uboot_key_get(device,keyname,(char*)addr,lenth,0);
+			char *p=(char*)addr;
+			for(i=0;i<lenth;i++){
+				//printk();
+				printk("%02x ",p[i]);
+			}
+		}
+		else{
+			error = uboot_key_get(device,keyname,(char*)addr,lenth,1);
+			char outputdata[2];
+			char *pd=(char*)addr;
+			memset(outputdata,0,2);
+			for(i=0;i<lenth;i++){
+				outputdata[0]=pd[i];
+				printk("%c",outputdata[0]);
+			}
+		}
+		return error;
+	}
+usage:
+	cmd_usage(cmdtp);
+	return 1;
+}
+
+U_BOOT_CMD(ssecukey, CONFIG_SYS_MAXARGS, 1, do_ssecukey,
+	"NAND KEY sub-system",
+	"list [addr]\n"
+	"ssecukey put device keyname keydata [addr] [len] - put keydata in device\n"
+	"ssecukey get device keyname [addr] [len] - put keydata in device\n"
+);

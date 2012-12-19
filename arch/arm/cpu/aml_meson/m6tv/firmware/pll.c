@@ -211,24 +211,3 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 
 }
 
-
-
-STATIC_PREFIX void pll_clk_list(void)
-{
-
-
-    unsigned long   clk_freq;
-    unsigned char clk_list[]={3,10,11};
-    char *clk_list_name[]={"arm","ddr","other"};
-    unsigned long  i;
-	for(i=0;i<3;i++)
-	{
-		clk_freq = clk_util_clk_msr(clk_list[i]     // unsigned long   clk_mux,             // Measure A9 clock
-								);   // unsigned long   uS_gate_time )       // 50us gate time
-		serial_puts(clk_list_name[i]);
-		serial_puts("_clk=");
-		serial_put_dword(clk_freq);
-		serial_puts("\n");
-	}
-}
-#define CONFIG_AML_CLK_LIST_ENABLE 1

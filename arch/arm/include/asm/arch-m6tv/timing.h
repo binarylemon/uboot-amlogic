@@ -39,10 +39,13 @@ struct ddr_set{
         unsigned short pad;  
         unsigned short mrs[4];
         unsigned       mcfg;      //PCTL mcfg
-        unsigned       zqcr;      //PCTL zqcr
+        unsigned       cmdzq;
+        unsigned       zq0cr0;
         unsigned       zq0cr1;    //PUB_ZQ0CR1
-        unsigned       dllcr;
-        unsigned       iocr;
+        unsigned short t_dxccr_dqsres; //PUB_DXCCR[8:5]: DQS resister. DQSRES[3]: 0 - pull down, 1-pull up;DQSRES[2:0]:odt resister
+        unsigned short t_dxccr_dqsnres;//PUB_DXCCR[12:9]: DQS# resiste
+        unsigned char  t_acbdlr_ck0bd; //PUB_ACBDLR[5:0]: ck0 bit delay
+        unsigned char  t_acbdlr_acbd;  //PUB_ACBDLR[23:18]: address/command bit delay
         unsigned       ddr_ctrl;
         unsigned       ddr_pll_cntl;
         unsigned       ddr_clk;

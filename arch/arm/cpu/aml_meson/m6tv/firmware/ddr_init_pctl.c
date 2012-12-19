@@ -49,7 +49,7 @@ unsigned get_mrs2(struct ddr_set * timing_reg)
 }
 
 #ifdef CONFIG_CMD_DDR_TEST
-static unsigned short zqcr = 0;
+static unsigned zqcr = 0;
 #endif
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
@@ -70,10 +70,7 @@ pub_retry:
 	writel(((i-4) <<18)|(timing_reg->mcfg & (~(3<<18))),P_UPCTL_MCFG_ADDR);
 	
     if((i)*timing_reg->t_rrd > timing_reg->t_faw)
-    {
-        //nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) > 7 ? 7 : ((i)*timing_reg->t_rrd - timing_reg->t_faw);
-        nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) ;
-    }
+		nTempVal = ((i)*timing_reg->t_rrd - timing_reg->t_faw) ;
 	
 	writel( 0x80000000 | (nTempVal << 8), P_UPCTL_MCFG1_ADDR );  //enable hardware c_active_in;
 	  
@@ -83,8 +80,7 @@ pub_retry:
 	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
 	//  3:    8 bank. 
 	//writel(0x3 | (1 << 3)| (1 << 7), P_PUB_DCR_ADDR);
-	writel(0x3 | (1 << 3)|(1<<28), P_PUB_DCR_ADDR); //28: 2T mode
-	//writel(0x01842e04, P_PUB_PGCR0_ADDR); //PUB_PGCR_ADDR: c8001008
+	writel(0x3 | (1 << 3) | (0<<28), P_PUB_DCR_ADDR); //28: 2T mode
 
 	// program PUB MRx registers.	
 	writel(get_mrs0(timing_reg), P_PUB_MR0_ADDR);
@@ -148,8 +144,9 @@ pub_retry:
 		   (625 << 18))  //tDINIT3. ZQ initialization command to first command. 1us.
 		  ,P_PUB_PTR4_ADDR); 
 
-
-	writel((22<<0)|(0<<18),P_PUB_ACBDLR_ADDR);
+	//board depend param@firmware\timming.c 
+	writel((timing_reg->t_acbdlr_ck0bd <<0)|(timing_reg->t_acbdlr_acbd<<18),
+		P_PUB_ACBDLR_ADDR);
 	
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
@@ -161,30 +158,34 @@ pub_retry:
 			  (0xf0006 << 12),
 			  P_PUB_DSGCR_ADDR );	//other bits.
 
-	//wait PHY DLL LOCK
-	while(!(readl(P_PUB_PGSR0_ADDR) & 2)) {}
-
-	// Monitor DFI initialization status.
-	while(!(readl(P_UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
-
 	writel(1, P_UPCTL_POWCTL_ADDR);
 	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
 
+    writel((readl(P_PUB_DXCCR_ADDR) & (~(0xff<<5))) | 
+		((timing_reg->t_dxccr_dqsres<<5)|  //PUB_DXCCR[8:5]: DQSRES
+		(timing_reg->t_dxccr_dqsnres<<9)), //PUB_DXCCR[12:9]: DQSNRES
+		P_PUB_DXCCR_ADDR);
 	
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+        writel(zqcr | (1<<28), P_PUB_ZQ0CR0_ADDR);
+#else
 	    writel(zqcr, P_PUB_ZQ0CR1_ADDR);
+#endif
 	else
 #endif
+
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+    writel(timing_reg->zq0cr0 | (1<<28), P_PUB_ZQ0CR0_ADDR);
+#else
     writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
+#endif
 
-	//for simulation to reduce the init time.
-	//MMC_Wr(PUB_PTR1_ADDR,  (20000 | 		  // Tdinit0   DDR3 : 500us.  LPDDR2 : 200us.
-	//					  (192 << 19)));	  //tdinit1    DDR3 : tRFC + 10ns. LPDDR2 : 100ns.
-	//MMC_Wr(PUB_PTR2_ADDR,  (10000 | 		  //tdinit2    DDR3 : 200us for power up. LPDDR2 : 11us.  
-	//					(40 << 17)));		  //tdinit3    LPDDR2 : 1us. 
-
-	
+#ifdef FORCE_CMDZQ_ENABLE
+    writel(timing_reg->cmdzq | (1<<20), MMC_CMDZQ_CTRL);
+#endif
+		
 	// initial upctl ddr timing.
 	writel(timing_reg->t_refi_100ns, P_UPCTL_TREFI_ADDR); 
 	writel(timing_reg->t_mrd, P_UPCTL_TMRD_ADDR);
@@ -216,25 +217,25 @@ pub_retry:
 	writel(1, P_UPCTL_SCTL_ADDR);
 	while (!(readl(P_UPCTL_STAT_ADDR) & 1))  {}
 
-	//config the DFI interface. 
-        //in M6TV the UPCTL works as HDR mode. 
-        //please check DDR3/2 SDRAM PHY Utility Block(PUB) Data book table4-13. DFI timming Parameters.
+	//config the DFI interface.
+	//in M6TV the UPCTL works as HDR mode.
+	//please check DDR3/2 SDRAM PHY Utility Block(PUB) Data book table4-13. DFI timming Parameters.
 	writel((0xf0 << 1), P_UPCTL_PPCFG_ADDR);
 	writel(0x4, P_UPCTL_DFISTCFG0_ADDR);
 	writel(0x1, P_UPCTL_DFISTCFG1_ADDR);
-	//writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20
-	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //debug 11.20// 0x240
-	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR); //0x250 debug 11.20
 
-	//writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+	writel(2, P_UPCTL_DFITCTRLDELAY_ADDR); //0x240
+	writel(0x1, P_UPCTL_DFITPHYWRDATA_ADDR); //0x250
+
+	//writel( 0x2, P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 
 	nTempVal = timing_reg->t_cwl+timing_reg->t_al;
 	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2;
-	writel(nTempVal , P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8 //debug 11.20
+	writel(nTempVal , P_UPCTL_DFITPHYWRLAT_ADDR); //0x254   //(WL -4)/2,  2 if CWL = 8
 
-	//writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
-	nTempVal = timing_reg->cl+timing_reg->t_al; //debug 11.20
-	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2; //debug 11.20
-	writel(nTempVal, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10. //debug 11.20
+	//writel(0x3, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10
+	nTempVal = timing_reg->cl+timing_reg->t_al; 
+	nTempVal = (nTempVal - ((nTempVal%2) ? 3:4))/2; 
+	writel(nTempVal, P_UPCTL_DFITRDDATAEN_ADDR);  //0x260    //(CL -4)/2,  3 if RL = 10
 	
 	writel(13, P_UPCTL_DFITPHYRDLAT_ADDR);   //0x264
 	writel(1, P_UPCTL_DFITDRAMCLKDIS_ADDR);  //0x2d4
@@ -257,52 +258,43 @@ pub_retry:
     writel(readl(P_PUB_PGCR1_ADDR) & 0xffff83ff,    //set MDL LPF depth = 2.( bit 14:13 = 00). 
                    P_PUB_PGCR1_ADDR);
 
-	writel( (56250-400) | 
-                ( 0xf << 20 )  
-                , P_PUB_PGCR2_ADDR); 
-    
-        writel( (0x0 | (0x0 <<12) | (7 << 28))
-                ,P_PUB_DTAR0_ADDR );
-        writel( (0x8 | (0x0 <<12) | (7 << 28))
-                ,P_PUB_DTAR1_ADDR );
-        writel( (0x10 | (0x0 <<12) | (7 << 28))
-                ,P_PUB_DTAR2_ADDR ); 
-        writel( (0x18 | (0x0 <<12) | (7 << 28)) 
-                ,P_PUB_DTAR3_ADDR ); 
+    writel(readl(P_PUB_PGCR1_ADDR) | (1<<2), P_PUB_PGCR1_ADDR); //WL step = 1
 
-        //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
-       //writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24) | (1 << 6) ) //debug 11.20
-       writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
+    writel( (56250-400) | ( 0xf << 20 ), P_PUB_PGCR2_ADDR); 
+    writel( (0x0 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR0_ADDR );
+    writel( (0x8 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR1_ADDR );
+    writel( (0x10 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR2_ADDR );
+    writel( (0x18 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR3_ADDR ); 
 
-	//debug 11.20 begin
-	/*
-	// DDR PHY initialization 
-#ifdef ENABLE_WRITE_LEVELING
-    writel(0xf5f3, P_PUB_PIR_ADDR);
-#else
-	writel(0xfff3, P_PUB_PIR_ADDR);
-	*/
-//	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0x3f<<9)),
+    writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
 
+    nTempVal = 1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
+		(1<<1)|(1<<4)|(1<<5)|(1<<6);
+		
+#ifdef IMPEDANCE_OVER_RIDE_ENABLE
+    nTempVal &= ~(1<<1);
+#endif
 
-	writel((1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|
-		(1<<1)|(1<<4)|(1<<5)|(1<<6)),
-		P_PUB_PIR_ADDR);
-	//debug 11.20 end
+#ifndef ENABLE_WRITE_LEVELING
+    nTempVal &= ~((1<<9) | (1<<11));
+#endif
 
-	//asm volatile ("wfi"); //debug 11.20
+	writel(nTempVal, P_PUB_PIR_ADDR);
 
 	while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
 
+#ifdef CONFIG_M6TV_DUMP_DDR_INFO
+
 	nTempVal = readl(P_PUB_PGSR0_ADDR);
 
-	serial_puts("\n==============PGSR0: 0x");
+	serial_puts("\nPGSR0: 0x");
 	serial_put_hex(readl(P_PUB_PGSR0_ADDR),32);
-	serial_puts("=================\n");
 
-	serial_puts("==============PGSR1: 0x");
+	serial_puts("\nPGSR1: 0x");
 	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
-	serial_puts("=================\n");
+	serial_puts("\n");
+
+#endif 
 
 	if(0x80000fff != readl(P_PUB_PGSR0_ADDR))
 		goto pub_retry;
@@ -310,8 +302,6 @@ pub_retry:
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
 
 	while ((readl(P_UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-
-	//asm volatile ("wfi"); //debug 11.20
 
     if (( (nTempVal >> 20) & 0xfff ) != 0x800 ) {
 	    return nTempVal;

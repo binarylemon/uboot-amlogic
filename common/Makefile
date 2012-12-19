@@ -66,6 +66,7 @@ COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
 # command
 COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
+COBJS-$(CONFIG_HDCP_PREFETCH) += cmd_hdcp.o
 #COBJS-$(CONFIG_SECURITYKEY) += cmd_tmp.o
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
 COBJS-$(CONFIG_CMD_AUTOSCRIPT) += cmd_autoscript.o

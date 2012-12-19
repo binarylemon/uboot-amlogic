@@ -25,6 +25,10 @@ help: help_customer
 	@echo config command: \"make m6_ref_v2_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M6L_SKT_V1"
+	@echo config command: \"make m6l_skt_v1_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M6TV_SKT_V1"
 	@echo config command: \"make m6tv_skt_v1_config\"
 
