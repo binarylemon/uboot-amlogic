@@ -253,6 +253,9 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 		printk("oob size is not enough for selected bch mode: %s force bch to mode: %s\n", ecc_supports[j].name,ecc_supports[i].name);
 		options_selected = options_define;
 	}
+	
+	aml_chip->oob_fill_cnt = aml_chip->oob_size -(ecc_supports[i].bch_bytes + ecc_supports[i].user_byte_mode)*(aml_chip->page_size / ecc_supports[i].bch_unit_size);
+	printk("aml_chip->oob_fill_cnt =%d,aml_chip->oob_size =%d,bch_bytes =%d\n",aml_chip->oob_fill_cnt,aml_chip->oob_size,ecc_supports[i].bch_bytes);
 
 	switch (options_selected) {
 
@@ -436,7 +439,12 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 		NFC_SEND_CMD_M2N(aml_chip->ran_mode, ((bch_mode == NAND_ECC_BCH_SHORT)?NAND_ECC_BCH60_1K:bch_mode), ((bch_mode == NAND_ECC_BCH_SHORT)?1:0), dma_unit_size, count);
 
 	ret = aml_platform_dma_waiting(aml_chip);
+	
+	if(aml_chip->oob_fill_cnt >0) {
 
+	NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, aml_chip->oob_fill_cnt);
+	ret = aml_platform_dma_waiting(aml_chip);
+	}
 	return ret;	
 }
 
