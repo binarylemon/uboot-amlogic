@@ -54,7 +54,7 @@ void dwc_udelay(int dly)
  
 static struct dwc_otg_core_params dwc_otg_module_params_host = {
 	.otg_cap = DWC_OTG_CAP_PARAM_NO_HNP_SRP_CAPABLE,//NO HNP SRP
-	.dma_enable = 1,
+	.dma_enable = 0,
 	.dma_desc_enable = 0,
 	.dma_burst_size = 3,//DWC_GAHBCFG_INT_DMA_BURST_INCR4; 
 	.speed = DWC_SPEED_PARAM_HIGH,//0 Highspeed, 1 Fullspeed
@@ -1579,7 +1579,7 @@ dwc_otg_core_host_init(dwc_otg_core_if_t * _core_if)
         do {
             hcchar.d32 = dwc_read_reg32(&hc_regs->hcchar);
             if (++count > 1000) {
-                ERR("%s: Unable to clear halt on channel %d\n", "dwc_otg_core_host_init", i);
+               // ERR("%s: Unable to clear halt on channel %d\n", "dwc_otg_core_host_init", i);
                 break;
             }
         } while (hcchar.b.chen);
