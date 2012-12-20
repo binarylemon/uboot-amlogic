@@ -436,7 +436,7 @@ int board_init(void)
     
 #endif    
 
-    clrbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N L, Init standby Led
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<20);//GPIOAO_4, L, Init standby Led
     
 	return 0;
 }
@@ -537,6 +537,7 @@ int switch_boot_mode()
         setenv("suspend", "off");
         run_command("saveenv", 1);
         setbits_le32(P_AO_GPIO_O_EN_N,1<<31);
+        setbits_le32(P_AO_GPIO_O_EN_N,1<<20);
         run_command("suspend", 1);
         //s = getenv ("bootcmd");
         //run_command(s, 0);
