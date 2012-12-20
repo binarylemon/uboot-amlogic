@@ -172,6 +172,23 @@ int ddr_init_hw(struct ddr_set * timing_reg)
     //display_training_result(timing_reg);//M6 only, M6TV no need
        
     init_dmc(timing_reg);
+
+
+#ifdef CONFIG_M6TV_DUMP_DDR_INFO
+		int nPLL = readl(P_HHI_DDR_PLL_CNTL);
+		int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+		serial_puts("\nDDR clock is ");
+		serial_put_dec(nDDRCLK);
+		serial_puts("MHz with ");
+	#ifdef CONFIG_DDR_LOW_POWER
+		serial_puts("Low Power & ");
+	#endif
+		if(readl(P_UPCTL_MCFG_ADDR)& (1<<3))
+			serial_puts("2T mode\n");
+		else
+			serial_puts("1T mode\n");
+#endif
+
 	
     return 0;
 }

@@ -1467,3 +1467,146 @@ ssize_t uboot_get_keylist(char *keylist)
 	return ret;
 }
 
+#if defined(WRITE_TO_NAND_ENABLE)
+extern int secukey_inited;
+#endif
+int uboot_key_inited=0;
+static int uboot_key_initial(char *device)
+{
+	int error;
+	if(uboot_key_inited )
+	{
+		return 0;
+	}
+	if (!strcmp(device,"nand")){
+		#if defined(WRITE_TO_NAND_ENABLE)
+		if(secukey_inited){
+			return 0;
+		}
+		#endif
+		error=uboot_key_init();
+		if(error >= 0){
+			error = nandkey_provider_register();
+			if(error >= 0){
+				error = key_set_version(device);
+				if(error >= 0){
+					printk("init key ok!!\n");
+					uboot_key_inited = 1;
+					#if defined(WRITE_TO_NAND_ENABLE)
+					secukey_inited = 1;
+					#endif
+					return 0;
+				}
+			}
+		}
+		else
+		{
+			printk("init error\n");
+			return -1;
+		}
+		return -1;
+	}
+	
+}
+
+static char hex_to_asc(char para)
+{
+	if(para>=0 && para<=9)
+		para = para+'0';
+	else if(para>=0xa && para<=0xf)
+		para = para+'a'-0xa;
+		
+		return para;
+}
+
+static char asc_to_hex(char para)
+{
+	if(para>='0' && para<='9')
+		para = para-'0';
+	else if(para>='a' && para<='f')
+		para = para-'a'+0xa;
+	else if(para>='A' && para<='F')
+		para = para-'A'+0xa;
+		
+		return para;
+}
+
+
+/*
+ *  device: nand, emmc
+ *  key_name: key name, such as: key1, hdcp
+ *  key_data: key data, 
+ *  key_data_len: key data lenth
+ *  ascii_flag: 1,ASCII, 0: hex
+ * */
+
+ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag)
+{
+	char *data;
+	ssize_t error=-1;
+	int i,j;
+	if(uboot_key_inited == 0){
+		error=uboot_key_initial(device);
+		if(error < 0){
+			printk("%s:%d,uboot key init error\n",__func__,__LINE__);
+			return -1;
+		}
+	}
+	if (!strcmp(device,"nand")){
+		if(ascii_flag ){
+			error = uboot_key_write(key_name, key_data);
+		}
+		else{
+			data = kzalloc(key_data_len*2, GFP_KERNEL);
+			if(data == NULL){
+				return -1;
+			}
+			for(i=0,j=0;i<key_data_len;i++){
+				data[j++]=hex_to_asc((key_data[i]>>4) & 0x0f);
+				data[j++]=hex_to_asc((key_data[i]) & 0x0f);
+			}
+			error = uboot_key_write(key_name, data);
+			kfree(data);
+		}
+		return error;
+	} 
+}
+/*
+ *  device: nand, emmc
+ *  key_name: key name, such as: key1, hdcp
+ *  key_data: key data, 
+ *  key_data_len: key data lenth
+ *  ascii_flag: 1,ASCII, 0: hex
+ * */
+ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag)
+{
+	char *data;
+	ssize_t error=-1;
+	int i,j;
+	if(uboot_key_inited == 0){
+		error=uboot_key_initial(device);
+		if(error < 0){
+			printk("%s:%d,uboot key init error\n",__func__,__LINE__);
+			return -1;
+		}
+	}
+	if (!strcmp(device,"nand")){
+		if(ascii_flag ){
+			data = kzalloc(CONFIG_MAX_VALID_KEYSIZE, GFP_KERNEL);
+			error = uboot_key_read(key_name, data);
+			memcpy(key_data,data,key_data_len);
+			kfree(data);
+		}
+		else{
+			data = kzalloc(CONFIG_MAX_VALID_KEYSIZE, GFP_KERNEL);
+			error = uboot_key_read(key_name, data);
+			for(i=0,j=0;i<key_data_len;i++,j++){
+				key_data[i]= (((asc_to_hex(data[j]))<<4) | (asc_to_hex(data[++j])));
+			}
+			kfree(data);
+		}
+		return error;
+	}
+}
+
+

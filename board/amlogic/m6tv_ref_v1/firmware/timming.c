@@ -12,8 +12,6 @@
 #define STATIC_PREFIX_DATA static
 #endif
 
-#define ENABLE_WRITE_LEVELING 1
-
 static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -23,7 +21,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_PLL_OD 2
 	#define CFG_M6TV_PLL_N  1
 	#define CFG_M6TV_PLL_M  (((CFG_M6TV_DDR_CLK/6)*6)/12)
-#elif (CFG_M6TV_DDR_CLK >= 750) && (CFG_M6TV_DDR_CLK <= 800)
+#elif (CFG_M6TV_DDR_CLK >= 750) && (CFG_M6TV_DDR_CLK <= 900)
 	#define CFG_M6TV_PLL_OD 1
 	#define CFG_M6TV_PLL_N  1
 	#define CFG_M6TV_PLL_M  (((CFG_M6TV_DDR_CLK/12)*12)/24)
@@ -35,7 +33,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define DDR3_7_7_7
 #elif  (CFG_M6TV_DDR_CLK >= 533 ) && (CFG_M6TV_DDR_CLK <667)
 	#define DDR3_9_9_9 
-#elif  (CFG_M6TV_DDR_CLK >= 667 ) && (CFG_M6TV_DDR_CLK <800)
+#elif  (CFG_M6TV_DDR_CLK >= 667 ) && (CFG_M6TV_DDR_CLK <900)
 	#define DDR3_11_11_11
 #endif
 
@@ -53,7 +51,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 #endif
 
 #ifdef DDR3_9_9_9
@@ -70,7 +67,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 7
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 
 #endif
 
@@ -88,7 +84,6 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_MOD 12
 	#define CFG_M6TV_DDR_MRD 4
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x19
 #endif
 
 #if defined(M6TV_DDR3_1GB)
@@ -170,8 +165,8 @@ static struct ddr_set __ddr_setting={
                     			(0 << 2 ) |   //[B2]cas latency bit 0.
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                            [1]=(0 << 9)|(1 << 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 #ifdef ENABLE_WRITE_LEVELING
                                 (1 << 7)|     // Write leveling enable
 #endif
@@ -189,7 +184,7 @@ static struct ddr_set __ddr_setting={
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              (1 << 3) |    	            //[B3]2T mode, default is disable
+                              //(1 << 3) |    	            //[B3]2T mode, default is disable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
@@ -200,8 +195,19 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
 						   #endif //CONFIG_DDR_LOW_POWER
                            ,
-                    .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
-                    .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
+                    .zq0cr0  = 0x109ce,
+                    .zq0cr1  = 0x19,
+                    .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
+                    .t_dxccr_dqsres  = 0x1, //ODT: pull down, 688ohms
+                    					    //PUB_DXCCR[8:5]: DQS resister. DQSRES[3]: 0 - pull down, 1-pull up. 
+                    				        //DQSRES[2:0]:000-open, use extern ODT,
+                    				        //                      001-688ohms,010-611ohms,011-550ohms,
+                    				        //                      100-500ohms,101-458ohms,110-393ohms,
+                    				        //                      111-344ohms
+                    .t_dxccr_dqsnres = 0x2, //ODT: pull down,611ohms
+                    					    //PUB_DXCCR[12:9]: DQS# resister                    
+                    .t_acbdlr_ck0bd = 22,   //PUB_ACBDLR[5:0]: ck0 bit delay
+                    .t_acbdlr_acbd  = 0,    //PUB_ACBDLR[23:18]: address/command bit delay
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 

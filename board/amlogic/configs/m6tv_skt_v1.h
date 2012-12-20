@@ -111,7 +111,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt lpj=8000000\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -224,7 +224,7 @@
  * Physical Memory Map
  */
 //Please just define m6tv DDR clock here only
-//current DDR clock range (400~800)MHz
+//current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_M6TV_DDR_CLK (648)
 
 //#define CONFIG_DDR_LOW_POWER 1
@@ -240,6 +240,11 @@
 	#error "Please set DDR3 capacity first in file m6tv_skt_v1.h\n"
 #endif
 
+#define CONFIG_M6TV_DUMP_DDR_INFO 1
+
+/***Other MARCO about DDR***/
+#define ENABLE_WRITE_LEVELING 1
+/***************************/
 
 #define CONFIG_NR_DRAM_BANKS    1   /* CS1 may or may not be populated */
 

@@ -21,6 +21,44 @@ read one page only
 #define DEFAULT_ECC_MODE  ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
 
 #if 1
+STATIC_PREFIX short retry_micron_handle(unsigned retry_cnt)
+{
+	serial_puts("enter retry_cnt=0x");
+	serial_put_hex(retry_cnt,32);
+	serial_puts("\n");
+		
+    writel(CE0 | CLE  | 0xef,P_NAND_CMD); 
+    writel(CE0 | IDLE,P_NAND_CMD);   
+    writel(CE0 | ALE  | 0x89,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | (retry_cnt + 1),P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+}
+
+STATIC_PREFIX short retry_micron_exit()
+{
+    serial_puts("retry_micron_exit\n");
+    
+    writel(CE0 | CLE  | 0xef,P_NAND_CMD); 
+    writel(CE0 | IDLE,P_NAND_CMD);   
+    writel(CE0 | ALE  | 0x89,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);
+    writel(CE0 | IDLE,P_NAND_CMD);
+    writel(CE0 | DWR  | 0,P_NAND_CMD);	 
+    writel(CE0 | IDLE,P_NAND_CMD);    
+}
+
 STATIC_PREFIX short nfio_page_read(unsigned src,unsigned mem,unsigned ext)
 {
     int i, k, ecc_mode, short_mode, short_size, pages, page_size;
@@ -132,6 +170,7 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
     int ret, data_size, page_base, read_size;
 	int total_page = 1024;
 	unsigned int new_nand_type;
+	int retry_cnt = 0;
     // nand parameters
     // when ecc_mode==1, page_size is 512 bytes.
     ecc_mode = ext>>14&7;
@@ -158,21 +197,33 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
 
     for(i=0,read_size=0; i<total_page && read_size<count; i++, read_size+=data_size)
     {
+    			retry_cnt =0;
        // do{
        		if((new_nand_type) && (new_nand_type < 10)){		//for new nand
        			if((i+page_base)%4 == 0)
        				i += 2;
        		}
-       		ret = nfio_page_read(i+page_base, mem+read_size, ext);
+page_retry:       		
+	        ret = nfio_page_read(i+page_base, mem+read_size, ext);
 	        if (ret) 
-	        {	        	
-	        	page_base += pages_in_block;
-	        	i--;
-	        	total_page -= pages_in_block;
+	        {
+	        	if((new_nand_type == MICRON_20NM) && (retry_cnt < 7)) {
+	        		retry_micron_handle(retry_cnt);
+	        		 retry_cnt++;
+	        		 goto page_retry;
+	        	}
 	        	serial_puts("nand read addr=0x");	
 	        	serial_put_hex(i+page_base,32);
 	        	serial_puts("nfio_read read err here\n");
+	        		        	
+	        	page_base += pages_in_block;
+	        	i--;
+	        	//total_page -= pages_in_block;
+	        	read_size -= data_size;
 	        }
+        	if(retry_cnt && (new_nand_type == MICRON_20NM)){      	    
+	        	    retry_micron_exit();
+	        }	        
 	    //}while(ret!=ERROR_NONE);
     }
 

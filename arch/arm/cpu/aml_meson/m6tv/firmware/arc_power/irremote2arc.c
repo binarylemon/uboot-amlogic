@@ -15,9 +15,10 @@ unsigned backup_AO_IR_DEC_BIT_0;
 **
 ** func : ir_remote_init
 **       in this function will do pin configuration and and initialize for
-**       IR Remote hardware decoder mode at 32kHZ on ARC.
+**       IR Remote hardware decoder mode at 24MHZ on ARC.
 **
 ********************************************************************/
+#if 0
 void udelay(int i)
 {
 	int delays = i ;//* 24;
@@ -25,7 +26,7 @@ void udelay(int i)
 	//while(((readl(P_AO_TIMERE_REG)-base)&0xffffff) < (  delays&0xffffff)); //reg value is 24bit case
 	while(((readl(P_AO_TIMERE_REG)-base)) < (  delays));
 }
-
+#endif
 void backup_remote_register(void)
 {
     backup_AO_RTI_PIN_MUX_REG = readl(P_AO_RTI_PIN_MUX_REG);
@@ -92,7 +93,7 @@ void init_custom_trigger(void)
 	ir_remote_init_32k_mode();
 }
 
-
+#if 0
 unsigned long cec_rd_reg(unsigned long addr)
 {
     unsigned long data;
@@ -605,5 +606,5 @@ void cec_node_init(void)
 		}
 	}	
 }
-
+#endif
 #endif

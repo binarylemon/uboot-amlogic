@@ -1,0 +1,65 @@
+/*
+ * Amlogic MX
+ * frame buffer driver-----------HDMI_TX
+ * Copyright (C) 2010 Amlogic, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the named License,
+ * or any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ */
+
+#include <asm/arch/io.h>
+#include <common.h>
+#include "hdmi_tx_reg.h"
+
+// if the following bits are 0, then access HDMI IP Port will cause system hungup
+#define GATE_NUM    2
+
+static struct Hdmi_Gate_s{
+    unsigned short cbus_addr;
+    unsigned char gate_bit;
+}hdmi_gate[GATE_NUM] =   {   {HHI_HDMI_CLK_CNTL, 8},
+                            {HHI_GCLK_MPEG2   , 4},
+                            };
+
+// In order to prevent system hangup, add check_cts_hdmi_sys_clk_status() to check 
+static void check_cts_hdmi_sys_clk_status(void)
+{
+    int i;
+
+    for(i = 0; i < GATE_NUM; i++){
+        if(!(READ_CBUS_REG(hdmi_gate[i].cbus_addr) & (1<<hdmi_gate[i].gate_bit))){
+            printf("HDMI Gate Clock is off, turn on now\n");
+            WRITE_CBUS_REG_BITS(hdmi_gate[i].cbus_addr, 1, hdmi_gate[i].gate_bit, 1);
+        }
+    }
+}
+
+unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
+{
+    unsigned long data;
+    check_cts_hdmi_sys_clk_status();
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+
+    data = READ_APB_REG(HDMI_DATA_PORT);
+
+    return (data);
+}
+
+void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
+{
+    check_cts_hdmi_sys_clk_status();
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+
+    WRITE_APB_REG(HDMI_DATA_PORT, data);
+}
+

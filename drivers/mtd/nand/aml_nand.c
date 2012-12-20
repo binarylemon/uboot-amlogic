@@ -154,7 +154,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"A revision 20nm NAND 8GiB H27UCG8T2A", {NAND_MFR_HYNIX, 0xde, 0x94, 0xda, 0x74, 0xc4}, 8192, 8192, 0x200000, 640, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
 #endif
 #ifdef NEW_NAND_SUPPORT
-	{"B revision NAND 8GiB MT29F64G08CBABA", {NAND_MFR_MICRON, 0x64, 0x44, 0x4B, 0xA9}, 8192, 8192, 0x200000, 744, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )}, 
+	{"B revision NAND 8GiB MT29F64G08CBABA", {NAND_MFR_MICRON, 0x64, 0x44, 0x4B, 0xA9}, 8192, 8192, 0x200000, 744, 1, 16, 15, 5, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )}, 
 #endif
 	{"A revision NAND 4GiB MT29F32G-A", {NAND_MFR_MICRON, 0xd7, 0x94, 0x3e, 0x84}, 4096, 4096, 0x80000, 218, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE | NAND_TWO_PLANE_MODE)},
 	{"A revision NAND 16GiB MT29F128G-A", {NAND_MFR_MICRON, 0xd9, 0xd5, 0x3e, 0x88}, 4096, 16384, 0x80000, 218, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE | NAND_TWO_PLANE_MODE)},
@@ -177,7 +177,9 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 #ifdef NEW_NAND_SUPPORT
 	{"F serials NAND 4GiB TC58NVG5D2HTA00", {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56}, 8192, 4096, 0x100000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
 	{"F serials NAND 8GiB TC58NVG6D2GTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56}, 8192, 8192, 0x200000, 640, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
-	{"F serials NAND 8GiB TC58NVG7DCJTA00", {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},  //need readretry, disable two plane mode
+	{"F serials NAND 8GiB TC58TEG6DCJTA00",  {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57}, 16384, 8192, 0x400000, 1280, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},  //need readretry, disable two plane mode
+	{"A serials NAND 4GiB TC58TEG5DCJTA00 ", {NAND_MFR_TOSHIBA, 0xD7, 0x84, 0x93, 0x72, 0x57}, 16384, 4096, 0x400000, 1280, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
+
 #endif
 #ifdef NEW_NAND_SUPPORT
 	{"A serials NAND 8GiB SDTNQGAMA-008G ", {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	
@@ -1167,7 +1169,11 @@ void aml_nand_read_retry_handle_toshiba(struct mtd_info *mtd, int chipnr)
 
 	if(aml_chip->new_nand_info.type != TOSHIBA_24NM)
 		return;
-
+	
+	if(aml_chip->toggle_mode) {
+		NFC_EXIT_SYNC_ADJ() ; 
+		NFC_EXIT_TOSHIBA_TOGGLE_MODE();
+	}
 	cur_cnt = aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr];
 	printk("TOSHIBA NAND set partmeters here and read_retry_cnt:%d\n", cur_cnt);
 
@@ -1176,6 +1182,12 @@ void aml_nand_read_retry_handle_toshiba(struct mtd_info *mtd, int chipnr)
 
 	cur_cnt++;
 	aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr] = (cur_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-1)) ? 0 : cur_cnt;
+
+	if(aml_chip->toggle_mode) {
+		
+		NFC_SYNC_ADJ(); 
+		NFC_ENABLE_TOSHIBA_TOGGLE_MODE();
+	}
 }
 
 void aml_nand_read_retry_exit_toshiba(struct mtd_info *mtd, int chipnr)
@@ -1549,6 +1561,93 @@ void aml_nand_exit_slc_mode_sandisk(struct mtd_info *mtd)
 	return;
 }
 
+
+
+uint8_t aml_nand_set_featureReg_value_toshiba(struct aml_nand_chip *aml_chip,  uint8_t *buf, uint8_t addr, int chipnr, int cnt)
+{
+	struct nand_chip *chip = &aml_chip->chip;
+	struct mtd_info *mtd = &aml_chip->mtd;
+	int j;
+
+	//if(aml_chip->new_nand_info.type != SANDISK_19NM)
+	//	return 0;
+
+	//printk("Enter %s\n", __func__);
+	
+	chip->select_chip(mtd, chipnr);
+
+	aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
+
+	udelay(1);
+	
+	chip->cmd_ctrl(mtd, NAND_CMD_SANDISK_SET_VALUE, NAND_CTRL_CHANGE | NAND_NCE | NAND_CLE);
+													
+	udelay(1);
+	chip->cmd_ctrl(mtd, addr, NAND_CTRL_CHANGE | NAND_NCE | NAND_ALE);
+	
+	for (j=0; j<cnt; j++){
+		ndelay(200);
+		aml_chip->aml_nand_write_byte(aml_chip, buf[j]);			
+		printk("%s, REG(0x%x): 	value:0x%x\n", __func__, addr, buf[j]);
+	}
+
+	udelay(10);
+	aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
+
+	return 0;
+}
+void aml_nand_read_set_flash_feature_toshiba(struct mtd_info *mtd, int chipnr)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	uint8_t reg10h[4] ={4,0,0,0};
+	uint8_t reg80h[4] ={0,0,0,0};
+
+
+	aml_nand_set_featureReg_value_toshiba(aml_chip,reg10h,NAND_CMD_SANDISK_SET_OUTPUT_DRV,chipnr,4);
+
+	aml_nand_set_featureReg_value_toshiba(aml_chip,reg80h,NAND_CMD_SANDISK_SET_VENDOR_SPC,chipnr,4);
+
+	printk("set flash toggle mode end\n");	
+	
+}
+
+
+
+void aml_nand_set_toggle_mode_toshiba(struct mtd_info *mtd, int chipnr)
+{
+	//switch SDR to Toggle mode
+	//first send cmd to switch nand mode from SDR to toggle mode
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+
+	aml_nand_read_set_flash_feature_toshiba(mtd,chipnr);
+	
+	printk("##NAND CFG =0x%x before enable toggle mode \n",READ_CBUS_REG(NAND_CFG));
+	//second set nand controller pinmux and enable toggle mode
+	NFC_SYNC_ADJ();
+	NFC_ENABLE_TOSHIBA_TOGGLE_MODE();
+	aml_chip->toggle_mode = 1;
+	printk("NAND CFG =0x%x after enable toggle mode \n",READ_CBUS_REG(NAND_CFG));
+
+}
+
+
+
+void aml_nand_debug_toggle_flash(struct mtd_info *mtd, int chipnr)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct aml_nand_platform *plat = aml_chip->platform;
+	
+     if(aml_chip->mfr_type == NAND_MFR_TOSHIBA){
+
+		aml_nand_set_toggle_mode_toshiba(mtd,0);
+	}
+	 /*
+	else  if(aml_chip->mfr_type == NAND_MFR_MICRON) {
+
+			aml_nand_set_toggle_mode_micron(mtd,0);
+	}*/		
+
+}
 #endif
 
 /****************************************************************************/
@@ -3594,6 +3693,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_toshiba_24nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56};
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
 	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};
+	u8 dev_id_toshiba_19nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x84, 0x93, 0x72, 0x57};
 	u8 dev_id_samsung_2xnm_8g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7E, 0x68, 0x44};	
 //	u8 dev_id_samsung_2xnm_4g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44};		
 	u8 dev_id_sandisk_19nm_8g[MAX_ID_LEN] = {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57};	
@@ -3982,7 +4082,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	}
 	else  if((!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))
 	            ||(!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
-	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
+	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
+	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 		aml_chip->new_nand_info.type =  TOSHIBA_24NM;
 		aml_chip->ran_mode = 1;
 
@@ -5879,6 +5980,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	chip->chip_delay = 100;
 
 	aml_chip->aml_nand_hw_init(aml_chip);
+	aml_chip->toggle_mode =0;
 
 	if (nand_scan(mtd, aml_chip->chip_num) == -ENODEV) {
 		chip->options = 0;

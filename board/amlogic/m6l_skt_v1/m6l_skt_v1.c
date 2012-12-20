@@ -9,10 +9,6 @@
 #include <asm/arch/io.h>
 #endif /*(CONFIG_CMD_NET)*/
 
-#ifdef CONFIG_SARADC
-#include <asm/saradc.h>
-#endif /*CONFIG_SARADC*/
-
 #if defined(CONFIG_AML_I2C)
 #include <aml_i2c.h>
 #include <asm/arch/io.h>
@@ -27,7 +23,7 @@ DECLARE_GLOBAL_DATA_PTR;
 /*************************************************
   * Amlogic Ethernet controller operation
   * 
-  * Note: The LAN chip LAN8720 need to be reset by GPIOY_15
+  * Note: The LAN chip LAN8720 need to be reset
   *
   *************************************************/
 static void setup_net_chip(void)
@@ -61,19 +57,19 @@ static void setup_net_chip(void)
 	
 	/* hardware reset ethernet phy */
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-	udelay(2000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	//CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	//udelay(2000);
+	//SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 }
 
 int board_eth_init(bd_t *bis)
 {   	
+
     setup_net_chip();
 
     udelay(1000);
 		
 	extern int aml_eth_init(bd_t *bis);
-
     aml_eth_init(bis);
 
 	return 0;
@@ -81,68 +77,57 @@ int board_eth_init(bd_t *bis)
 #endif /* (CONFIG_CMD_NET) */
 
 #ifdef CONFIG_SARADC
-/*following key value are test with board 
-  [M3_SKT_V1 20110622]
-  ref doc:
-  1. m3_skt_v1.pdf(2011.06.22)
-  2. M3-Periphs-Registers.docx (Pg43-47)
-*/
-static struct adckey_info g_key_K1_info[] = {
-    {"K1", 6, 60},
-};
-static struct adckey_info g_key_K2_info[] = {
-    {"K2", 180, 60},
-};
-static struct adckey_info g_key_K3_info[] = {
-    {"K3", 400, 60},
-};
-static struct adckey_info g_key_K4_info[] = {
-    {"K4", 620, 60},
-};
-static struct adckey_info g_key_K5_info[] = {
-    {"K5", 850, 60},
-};
-
-static struct adc_info g_adc_info[] = {
-    {"Press Key K1", AML_ADC_CHAN_4, ADC_KEY,&g_key_K1_info},
-    {"Press Key K2", AML_ADC_CHAN_4, ADC_KEY,&g_key_K2_info},
-    {"Press Key K3", AML_ADC_CHAN_4, ADC_KEY,&g_key_K3_info},
-    {"Press Key K4", AML_ADC_CHAN_4, ADC_KEY,&g_key_K4_info},
-    {"Press Key K5", AML_ADC_CHAN_4, ADC_KEY,&g_key_K5_info},
-    {"Press Key N/A",AML_ADC_CHAN_5, ADC_OTHER, NULL},
-};
-
-struct adc_device aml_adc_devices={
-	.adc_device_info = g_adc_info,
-	.dev_num = sizeof(g_adc_info)/sizeof(struct adc_info)
-};
-
-/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
-/* void adc_init(struct adc_info *adc_info, unsigned int len) 
-     @trunk/common/sys_test.c */
-
-/*following is test code to test ADC & key pad*/
-/*
-#ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-	saradc_enable();	
+/*following key value are test with board 
+  [M6_SKT_V_1.0 20120112]
+  ref doc:
+  1. M6_SKT_V1.pdf
+*/
+/* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
+/*following is test code to test ADC & key pad*/
+static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if(argc > 2)
+		goto usage;
+	
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
-	while(nCnt < 3)
+	char *endp;
+	int nMaxCnt;
+	if(2 == argc)
+		nMaxCnt	= simple_strtoul(argv[1], &endp, 10);
+	else
+		nMaxCnt = 10;
+
+	saradc_enable();
+	while(nCnt < nMaxCnt)
 	{
 		udelay(nDelay);
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
 		
-		printf("get_key(): %d\n", nKeyVal);
+		printf("SARADC CH-4 Get key : %d [%d\%]\n", nKeyVal,(100*nKeyVal)/1024);
 		nCnt++;
 	}
 	saradc_disable();
-#endif
-*/
-#endif
+
+	return 0;
+	
+usage:
+	return cmd_usage(cmdtp);
+}
+
+U_BOOT_CMD(
+	adc,	2,	1,	do_adc,
+	"M6 ADC test",		
+	"[times] -  read `times' adc key through channel-4, default to read 10 times\n"
+	"		10bit ADC. key value: min=0; max=1024\n"
+	"		SKT BOARD #20: Key1=13 Key2=149 key3=274 key4=393 key5=514\n"
+);
+
+#endif //CONFIG_SARADC
 
 u32 get_board_rev(void)
 {
@@ -174,7 +159,6 @@ static void sdio_pwr_prepare(unsigned port)
 {
     /// @todo NOT FINISH
 	///do nothing here
-	cpu_sdio_pwr_prepare(port);
 }
 static void sdio_pwr_on(unsigned port)
 {
@@ -241,20 +225,21 @@ static void board_i2c_set_pinmux(void){
 	/*@M6_SKT_V1.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
     /*********************************************/
-    /*                | I2C_Master_AO        |I2C_Slave            |       */
+    /*                | I2C_Master_B        |I2C_Slave            |       */
     /*********************************************/
     /*                | I2C_SCK                | I2C_SCK_SLAVE  |      */
-    /* GPIOAO_4  | [AO_PIN_MUX: 6]     | [AO_PIN_MUX: 2]   |     */
+    /* GPIOX28  | [PIM_MUX5:30]     | [PIM_MUX5:28]   |     */
     /*********************************************/
     /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
-    /* GPIOAO_5  | [AO_PIN_MUX: 5]     | [AO_PIN_MUX: 1]   |     */
+    /* GPIOX27  | [PIM_MUX5:31]     | [PIM_MUX5:29]   |     */
     /*********************************************/	
+	//Wr(PAD_PULL_UP_REG4,Rd(PAD_PULL_UP_REG4) | (1 << 27)| (1 << 28) );
 
-	//disable all other pins which share with I2C_SDA_AO & I2C_SCK_AO
-    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1<<2)|(1<<24)|(1<<1)|(1<<23)));
-    //enable I2C MASTER AO pins
-	setbits_le32(P_AO_RTI_PIN_MUX_REG,
-	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
+	//disable all other pins which share with I2C_SDA_B & I2C_SCK_B
+    clrbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,((1<<28)|(1<<29)));
+    //enable I2C MASTER B pins
+	setbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,
+	(MESON_I2C_MASTER_B_GPIOX_27_BIT|MESON_I2C_MASTER_B_GPIOX_28_BIT));
 	
     udelay(10000);
 	
@@ -264,17 +249,93 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     .wait_ack_interval  = 5,
     .wait_read_interval = 5,
     .wait_xfer_interval = 5,
-    .master_no          = AML_I2C_MASTER_AO,
+    .master_no          = AML_I2C_MASTER_B,
     .use_pio            = 0,
     .master_i2c_speed   = AML_I2C_SPPED_400K,
-    .master_ao_pinmux = {
-        .scl_reg    = MESON_I2C_MASTER_AO_GPIOAO_4_REG,
-        .scl_bit    = MESON_I2C_MASTER_AO_GPIOAO_4_BIT,
-        .sda_reg    = MESON_I2C_MASTER_AO_GPIOAO_5_REG,
-        .sda_bit    = MESON_I2C_MASTER_AO_GPIOAO_5_BIT,
+    .master_b_pinmux = {
+        .scl_reg    = MESON_I2C_MASTER_B_GPIOX_28_REG,
+        .scl_bit    = MESON_I2C_MASTER_B_GPIOX_28_BIT,
+        .sda_reg    = MESON_I2C_MASTER_B_GPIOX_27_REG,
+        .sda_bit    = MESON_I2C_MASTER_B_GPIOX_27_BIT,
     }
 };
 
+#define I2C_ALC5631Q_ADDR   (0x1A)
+
+void i2c_ALC5631Q_write(unsigned char reg, unsigned short val)
+{
+    unsigned char buff[3];
+    buff[0] = reg;
+    buff[1] = (val >> 8) & 0xFF; //MSB
+	buff[2] = (val & 0xFF); //LSB
+
+	struct i2c_msg msg[] = {
+        {
+        .addr  = I2C_ALC5631Q_ADDR,
+        .flags = 0,
+        .len   = 3,
+        .buf   = buff,
+        }
+    };
+
+    if (aml_i2c_xfer(msg, 1) < 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+    }
+}
+
+unsigned short i2c_ALC5631Q_read(unsigned char reg)
+{
+    unsigned short val = 0;
+    struct i2c_msg msgs[] = {
+        {
+            .addr = I2C_ALC5631Q_ADDR,
+            .flags = 0,
+            .len = 1,
+            .buf = &reg,
+        },
+        {
+            .addr = I2C_ALC5631Q_ADDR,
+            .flags = I2C_M_RD,
+            .len = 2,
+            .buf = &val,
+        },		
+    };
+
+    if ( aml_i2c_xfer(msgs, 2)< 0) {
+        printf("%s: i2c transfer failed\n", __FUNCTION__);
+    }
+
+	/*@ALC5631Q-VE DataSheet_0.91.pdf Page31*/
+    return (val & 0xFF)<< 8 | ((val >> 8) & 0xFF);
+}
+void board_M6_SKT_V1_i2c_test(void)
+{
+	/*@M6_SKT_V1.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+	/*@ALC5631Q-VE DataSheet_0.91.pdf*/
+	int nMaxID = 0x20;
+	int nIdx = 0;
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
+	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
+		printf("Reg addr=0x%02x Val=0x%04x\n",
+		nIdx,i2c_ALC5631Q_read(nIdx));
+
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
+
+	//try to write some reg
+	/*
+	i2c_ALC5631Q_write(0x02,0xAA55);
+	i2c_ALC5631Q_write(0x04,0x0);
+
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump begin:\n");
+	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
+		printf("Reg addr=0x%02x Val=0x%04x\n",
+		nIdx,i2c_ALC5631Q_read(nIdx));
+	
+	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
+	*/
+		
+}
 
 static void board_i2c_init(void)
 {		
@@ -288,13 +349,26 @@ static void board_i2c_init(void)
 	aml_i2c_init();
 
 	//must call aml_i2c_init(); before any I2C operation	
-	/*M6 ref board*/
+	/*M6 socket board*/
+	board_M6_SKT_V1_i2c_test();	
 	//udelay(10000);	
 
 	udelay(10000);		
 }
-#endif /*CONFIG_AML_I2C*/
 
+//for sys_test only, not check yet
+static struct i2c_board_info aml_i2c_info[] = {
+    {
+        I2C_BOARD_INFO("I2C ALC5631Q", 000),
+        .device_init = board_i2c_init,
+    },
+};
+
+struct aml_i2c_device aml_i2c_devices={
+	.aml_i2c_boards = aml_i2c_info,
+	.dev_num = sizeof(aml_i2c_info)/sizeof(struct i2c_board_info)
+};
+#endif /*CONFIG_AML_I2C*/
 
 #if CONFIG_JERRY_NAND_TEST //temp test
 #include <amlogic/nand/platform.h>
@@ -337,7 +411,6 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
- /* 
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -354,15 +427,14 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     },
-*/    
     {
         .name = NAND_NORMAL_NAME,
-        .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
-        .ready_busy_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
+        .chip_enable_pad = (AML_NAND_CE0) ,  //| (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
+        .ready_busy_pad = (AML_NAND_CE0) ,  //| (AML_NAND_CE0 << 4) | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
         .platform_nand_data = {
             .chip =  {
-                .nr_chips = 2,
-                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_1K_MODE | NAND_TWO_PLANE_MODE),
+                .nr_chips = 1,
+                .options = (NAND_TIMING_MODE5| NAND_ECC_BCH30_1K_MODE),
             },
         },
         .rbpin_mode = 1,
@@ -376,7 +448,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = 1,
+    .dev_num = 2,
 };
 #endif
 
@@ -411,7 +483,23 @@ static void gpio_set_vbus_power(char is_power_on)
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
+static int usb_charging_detect_call_back(char bc_mode)
+{
+	switch(bc_mode){
+		case BC_MODE_DCP:
+		case BC_MODE_CDP:
+			//Pull up chargging current > 500mA
+			break;
 
+		case BC_MODE_UNKNOWN:
+		case BC_MODE_SDP:
+		default:
+			//Limit chargging current <= 500mA
+			//Or detet dec-charger
+			break;
+	}
+	return 0;
+}
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
@@ -422,160 +510,45 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M6_USBPORT_BASE,
 	USB_ID_MODE_SW_HOST,
-	gpio_set_vbus_power, //set_vbus_power
+	NULL,//gpio_set_vbus_power, //set_vbus_power
 	NULL,
+};
+struct amlogic_usb_config g_usb_config_m6_skt_a={
+	USB_PHY_CLK_SEL_XTAL,
+	1, //PLL divider: (clock/12 -1)
+	CONFIG_M6_USBPORT_BASE_A,
+	USB_ID_MODE_HARDWARE,
+	NULL,//gpio_set_vbus_power, //set_vbus_power
+	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 int board_init(void)
 {
-	gd->bd->bi_arch_number=MACH_TYPE_MESON6_REF;
+	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
     nand_init();
     
 #endif    
-
-    clrbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N L, Init standby Led
     
-	return 0;
-}
-
-#ifdef	BOARD_LATE_INIT
-int board_late_init(void)
-{
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AW_AXP20
-set_dcdc2(1500);	//set DC-DC2 to 1500mV
-set_dcdc3(1100);	//set DC-DC3 to 1100mV
-#endif
 
+#ifdef CONFIG_M6_TEST_CPU_SWITCH
+	extern int get_cup_id(void);
+	printf("\n*************************************\n");
+	printf("CPU switch : CPU #%d is running\n",get_cpu_id());
+	printf("*************************************\n\n");	
+#endif //CONFIG_M6_TEST_CPU_SWITCH
 	return 0;
 }
-#endif
-
-
-//POWER key
-inline void key_init(void)
-{
-	clrbits_le32(P_RTC_ADDR0, (1<<11));
-	clrbits_le32(P_RTC_ADDR1, (1<<3));
-}
-
-inline int get_key(void)
-{
-	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
-}
-
-
-/*//AC online
-inline void ac_online_init(void)
-{
-	axp_charger_open();
-}
-
-inline int is_ac_online(void)
-{
-	return axp_charger_is_ac_online();
-}
-
-//Power off
-void power_off(void)
-{
-	axp_power_off();
-}
-*/
-#ifdef CONFIG_AML_TINY_USBTOOL
-	int usb_get_update_result(void)
-	{
-		unsigned long upgrade_step;
-		upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
-		printf("upgrade_step = %d\n", upgrade_step);
-		if(upgrade_step == 1)
-		{
-			run_command("defenv", 1);
-			run_command("setenv upgrade_step 2", 1);
-			run_command("saveenv", 1);
-			return 0;
-		}
-		else
-		{
-			return -1;
-		}
-	}
-#endif
-
-#ifdef CONFIG_SWITCH_BOOT_MODE
-int switch_boot_mode()
-{
-    //extern int aml_autoscript(void);
-    //aml_autoscript();
-    int letv_resetcheck_0_total_times = 0;
-	int letv_resetcheck_1_total_times = 0;
-	int letv_resetcheck_0_continuous_times = 0;
-	int letv_resetcheck_1_continuous_times = 0;
-	int letv_resetcheck_delays = 0;
-
-    char* suspend;
-    char* s;
-
-    unsigned reg2;
-
-    reg2 = readl(P_AO_RTI_STATUS_REG2);
-    printf("P_AO_RTI_STATUS_REG2: 0x%x\n", reg2);
-    
-	suspend = getenv ("suspend");
-    printf("suspend = %s\n", suspend);
-    if(!strcmp(suspend, "on") || reg2 == 0x11223344){
-        setenv("suspend", "off");
-        run_command("saveenv", 1);
-        setbits_le32(P_AO_GPIO_O_EN_N,1<<31);
-        run_command("suspend", 1);
-        //s = getenv ("bootcmd");
-        //run_command(s, 0);
-        run_command("reset", 1);
-        return 0;
-    }
-
-	key_init();
-	while (letv_resetcheck_delays < 300)
-	{
-		if(get_key())
-		{
-			letv_resetcheck_1_total_times++;
-			letv_resetcheck_1_continuous_times++;
-			letv_resetcheck_0_continuous_times = 0;
-		}
-		else
-		{
-			letv_resetcheck_0_total_times++;
-			letv_resetcheck_0_continuous_times++;
-			letv_resetcheck_1_continuous_times = 0;
-		}
-			
-		
-		if (letv_resetcheck_0_continuous_times == 50)
-			break;
-		else if (letv_resetcheck_1_total_times > 200 && letv_resetcheck_1_continuous_times > 150)
-		{
-            run_command("run spi_recovery", 1);
-		}
-
-	//	printf("no reset input  %x!!!\n", get_key());
-
-		udelay(10000);
-		letv_resetcheck_delays++;
-	}
-    
-    return -1;
-}
-#endif
 
 
