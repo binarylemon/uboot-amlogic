@@ -222,7 +222,8 @@
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
 //#define M6_DDR_CLK (480)
-#define M6_DDR_CLK (504)
+//#define M6_DDR_CLK (504)   /*504M m6l socket board without socket, in other words, chip was woald board direct*/
+#define M6_DDR_CLK   (408)   /*408M m6l socket board with chip socket*/
 
 //#define CONFIG_DDR_LOW_POWER 1
 
