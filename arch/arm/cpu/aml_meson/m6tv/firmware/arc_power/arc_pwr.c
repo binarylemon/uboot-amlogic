@@ -187,17 +187,20 @@ static void ee_on()
 }
 static void switch_out_32k()
 {
+/*
 	switch_to_81();
 	// ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay(10000);
+*/
 }
 static void switch_in_32k()
 {
 	// ee use 32k, So interrup status can be accessed.
-	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+/*	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
 	switch_to_rtc();
 	udelay(1000);
+	*/
 }
 extern void power_off_at_24M();
 extern void power_on_at_24M();
