@@ -141,7 +141,7 @@
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif 
 
-#define CONFIG_ENV_SIZE         (64*1024)
+#define CONFIG_ENV_SIZE         (0x2000)
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
