@@ -152,6 +152,8 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
    	{"B revision 26nm NAND 8GiB H27UCG8T2M",	{NAND_MFR_HYNIX, 0xde, 0x94, 0xd2, 0x04, 0x43}, 8192, 8192, 0x200000, 448, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
 	{"C revision 20nm NAND 4GiB H27UBG8T2C", {NAND_MFR_HYNIX, 0xd7, 0x94, 0x91, 0x60, 0x44}, 8192, 4096, 0x200000, 640, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE)},	//need readretry, disable two plane mode
 	{"A revision 20nm NAND 8GiB H27UCG8T2A", {NAND_MFR_HYNIX, 0xde, 0x94, 0xda, 0x74, 0xc4}, 8192, 8192, 0x200000, 640, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	//need readretry, disable two plane mode
+	{"B revision 20nm NAND 8GiB H27UCG8T2B",	{NAND_MFR_HYNIX, 0xde, 0x94, 0xeb, 0x74, 0x44}, 16384, 8192, 0x400000, 1280, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE)},	//need readretry, disable two plane mode
+
 #endif
 #ifdef NEW_NAND_SUPPORT
 	{"B revision NAND 8GiB MT29F64G08CBABA", {NAND_MFR_MICRON, 0x64, 0x44, 0x4B, 0xA9}, 8192, 8192, 0x200000, 744, 1, 16, 15, 5, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )}, 
@@ -880,6 +882,32 @@ void aml_nand_read_retry_handle_hynix(struct mtd_info *mtd, int chipnr)
 	cur_cnt++;
 	aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr] = (cur_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-1)) ? 0 : cur_cnt;
 
+}
+
+
+void aml_nand_read_retry_exit_hynix(struct mtd_info *mtd, int chipnr)
+{
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	struct nand_chip *chip = mtd->priv;
+	int i;
+
+	if((aml_chip->new_nand_info.type == 0) ||(aml_chip->new_nand_info.type > 10))
+		return;
+
+	printk("Enter %s\n", __func__);
+
+	chip->select_chip(mtd, chipnr);
+	for (i=0; i<aml_chip->chip_num; i++) {
+
+		if (aml_chip->valid_chip[i]) {
+
+			aml_nand_set_reg_value_hynix(aml_chip, &aml_chip->new_nand_info.read_rety_info.reg_default_value[i][0], &aml_chip->new_nand_info.read_rety_info.reg_addr[0], i, aml_chip->new_nand_info.read_rety_info.reg_cnt);
+
+			udelay(10);
+			
+		}
+	}
+	aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr] =0;
 }
 
 void aml_nand_get_slc_default_value_hynix(struct mtd_info *mtd)
@@ -3690,6 +3718,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_hynix_26nm_4g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xd7, 0x94, 0xda, 0x74, 0xc3};
 	u8 dev_id_hynix_20nm_4g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xd7, 0x94, 0x91, 0x60, 0x44};
 	u8 dev_id_hynix_20nm_8g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xde, 0x94, 0xda, 0x74, 0xc4};
+	u8 dev_id_hynix_20nm_lga_8g[MAX_ID_LEN] = {NAND_MFR_HYNIX, 0xde, 0x94, 0xeb, 0x74, 0x44};
 	u8 dev_id_toshiba_24nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x94, 0x32, 0x76, 0x56};
 	u8 dev_id_toshiba_24nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x82, 0x76, 0x56};
 	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};
@@ -3969,7 +3998,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.read_rety_info.get_default_value = aml_nand_get_read_default_value_hynix;
 		aml_chip->new_nand_info.read_rety_info.save_default_value = aml_nand_save_read_default_value_hynix;
 		aml_chip->new_nand_info.read_rety_info.read_retry_handle = aml_nand_read_retry_handle_hynix;
-
+		aml_chip->new_nand_info.read_rety_info.read_retry_exit = aml_nand_read_retry_exit_hynix;
+		
 		aml_chip->new_nand_info.slc_program_info.enter_enslc_mode = aml_nand_enter_enslc_mode_hynix;
 		aml_chip->new_nand_info.slc_program_info.exit_enslc_mode = aml_nand_exit_enslc_mode_hynix;
 		aml_chip->new_nand_info.slc_program_info.get_default_value = aml_nand_get_slc_default_value_hynix;
@@ -4074,7 +4104,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.read_rety_info.get_default_value = aml_nand_get_read_default_value_hynix;
 		aml_chip->new_nand_info.read_rety_info.save_default_value = aml_nand_save_read_default_value_hynix;
 		aml_chip->new_nand_info.read_rety_info.read_retry_handle = aml_nand_read_retry_handle_hynix;
-
+		aml_chip->new_nand_info.read_rety_info.read_retry_exit = aml_nand_read_retry_exit_hynix;
+		
 		aml_chip->new_nand_info.slc_program_info.enter_enslc_mode = aml_nand_enter_enslc_mode_hynix;
 		aml_chip->new_nand_info.slc_program_info.exit_enslc_mode = aml_nand_exit_enslc_mode_hynix;
 		aml_chip->new_nand_info.slc_program_info.get_default_value = aml_nand_get_slc_default_value_hynix;
