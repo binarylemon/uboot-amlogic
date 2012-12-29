@@ -297,9 +297,9 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
 			//    int i = 10;
 			//    while(i--);
 		    //}
-		    udelay(3000);
+		    udelay(4000);
 		    n++;
-		    if(n >= 10){
+		    if(n >= 5){
 		        break;
 		    }
 		}
@@ -312,9 +312,9 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
 		ret = cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS); 
 		
         while (cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) != TX_DONE){     
-            udelay(10000);
+            udelay(5000);
             n++;
-            if(n >= 4){
+            if(n >= 6){
                 break;
             }
         }
@@ -325,9 +325,10 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
 		}
 
 		if(cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_ERROR){
-			repeat--;
+			//repeat--;
 		    remote_cec_hw_reset();
 		}
+        repeat--;
 	} while(repeat);
     return ret;
 }

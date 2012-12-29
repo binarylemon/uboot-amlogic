@@ -474,26 +474,28 @@ void enter_power_down()
         	power_key = (power_key>>16)&0xff;
         	if(power_key == 0x1a){	
         	    //poweronflag = 1;
-    		    for(i = 0;i<1000;i++)
-    		    {
-                    //readl(P_AO_IR_DEC_FRAME);
-    		    	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
-    		    	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && ((test_status_1>>7)&0x1))//ok
-    		    	{
-    		    		//readl(P_AO_IR_DEC_FRAME);
-    		    		cec_flag = 1;
-    		    	}
-    		    	//readl(P_AO_IR_DEC_FRAME);
+    		    //for(i = 0;i<1000;i++)
+    		    //{
+                //    //readl(P_AO_IR_DEC_FRAME);
+    		    //	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
+    		    //	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && ((test_status_1>>7)&0x1))//ok
+    		    //	{
+    		    //		//readl(P_AO_IR_DEC_FRAME);
+    		    //		cec_flag = 1;
+    		    //	}
+    		    //	//readl(P_AO_IR_DEC_FRAME);
+    		    //}
+    		    //if(cec_flag) {
+    		    //    writel(readl(P_AO_DEBUG_REG0) | (0x1<<4),P_AO_DEBUG_REG0);
+        		//    if(hdmi_cec_func_config & 0x1){
+        		//        //cec_imageview_on();
+        		//    }
+    		    //}else{
+        		//    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
+    		    //}
+    		    if(hdmi_cec_func_config & 0x1){
+    		        cec_imageview_on();
     		    }
-    		    if(cec_flag) {
-    		        writel(readl(P_AO_DEBUG_REG0) | (0x1<<4),P_AO_DEBUG_REG0);
-        		    if(hdmi_cec_func_config & 0x1){
-        		        //cec_imageview_on();
-        		    }
-    		    }else{
-        		    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
-    		    }
-    		    cec_imageview_on();
     		    break;
             }
         }
