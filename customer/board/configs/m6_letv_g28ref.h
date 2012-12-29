@@ -18,7 +18,7 @@
 //#define CONFIG_AML_I2C      1
 
 #define HAS_AO_MODULE
-#define CONFIG_AML_I2C	//add by Elvis Yu
+//#define CONFIG_AML_I2C	//add by Elvis Yu
 //#define CONFIG_AW_AXP20
 
 //Enable storage devices

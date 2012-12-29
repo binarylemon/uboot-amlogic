@@ -437,7 +437,10 @@ int board_init(void)
 #endif    
 
     clrbits_le32(P_AO_GPIO_O_EN_N,1<<20);//GPIOAO_4, L, Init standby Led
-    
+
+    //GPIOAO_5, net led
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<5);
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<21);
 	return 0;
 }
 
