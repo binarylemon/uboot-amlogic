@@ -189,11 +189,7 @@ static struct ddr_set __ddr_setting={
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
-                           #ifndef CONFIG_DDR_LOW_POWER
-                              (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
-                           #else
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
-						   #endif //CONFIG_DDR_LOW_POWER
                            ,
                     .zq0cr0  = 0x109ce,
                     .zq0cr1  = 0x19,

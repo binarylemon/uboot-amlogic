@@ -244,11 +244,8 @@ pub_retry:
 	writel(0x10, P_UPCTL_DFITPHYUPDTYPE0_ADDR); //0270
 	writel(1600, P_UPCTL_DFITPHYUPDTYPE1_ADDR); //0x274
 
-       
-#ifdef CONFIG_DDR_LOW_POWER
 	writel(( 1 | (3 << 4) | (1 << 8) | (3 << 12) | (7 <<16) | (1 <<24) | ( 3 << 28))
 		, P_UPCTL_DFILPCFG0_ADDR);
-#endif
 
 	writel( 5, P_UPCTL_DFITCTRLUPDI_ADDR); 
 
