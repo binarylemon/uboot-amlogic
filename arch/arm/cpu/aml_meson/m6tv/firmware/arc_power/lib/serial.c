@@ -48,7 +48,7 @@ SPL_STATIC_FUNC void serial_clr_err(void)
 void __udelay(int n);
 SPL_STATIC_FUNC void uart_reset()
 {
-	if(readl(P_UART_REG5(UART_PORT_CONS))==15)
+	if(readl(P_UART_REG5(UART_PORT_CONS))==0)
 	{
 	unsigned uart_cfg = readl(P_UART_CONTROL(UART_PORT_CONS));
 	unsigned uart_misc = readl(P_AO_UART_MISC);
@@ -57,7 +57,6 @@ SPL_STATIC_FUNC void uart_reset()
 	__udelay(100);
 	writel(uart_cfg,P_UART_CONTROL(UART_PORT_CONS));
 	writel(uart_misc,P_AO_UART_MISC);
-	while(1);
 	}else {
 	unsigned uart_cfg = readl(P_UART_CONTROL(UART_PORT_CONS));
 	unsigned uart_misc = readl(P_AO_UART_MISC);
