@@ -53,6 +53,7 @@
 #define UART_STATUS     (3<<2)
 
 #define UART_MISC       (4<<2)
+#define UART_REG5      (5<<2)
 
 #include "clock.h"
 
@@ -71,6 +72,8 @@
 
 
 #define P_UART_CONTROL(uart_base)    P_UART(uart_base,UART_CONTROL)
+
+#define P_UART_REG5(uart_base)    P_UART(uart_base,UART_REG5)
 
     #define UART_CNTL_MASK_BAUD_RATE                (0xfff)
 
