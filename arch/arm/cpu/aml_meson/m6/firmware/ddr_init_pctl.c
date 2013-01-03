@@ -181,7 +181,12 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 
 	// configure DDR3_rst pin.
 	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
-	writel(readl(P_PUB_DSGCR_ADDR) & 0xffffffef, P_PUB_DSGCR_ADDR); 
+	writel(readl(P_PUB_DSGCR_ADDR) & 0xffffffef, P_PUB_DSGCR_ADDR);
+
+    if(timing_reg->ddr_ctrl & (1<<7)){
+        writel(readl(P_PUB_DX2GCR_ADDR) & 0xfffffffe, P_PUB_DX2GCR_ADDR);
+        writel(readl(P_PUB_DX3GCR_ADDR) & 0xfffffffe, P_PUB_DX3GCR_ADDR);
+    }
 	
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)

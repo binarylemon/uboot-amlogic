@@ -577,6 +577,11 @@ void init_pctl(void)
 	// configure DDR3_rst pin.
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
 	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
+	
+    if(v_mmc_ddr_ctrl & (1<<7)){
+        MMC_Wr( PUB_DX2GCR_ADDR, MMC_Rd(PUB_DX2GCR_ADDR) & 0xfffffffe);
+        MMC_Wr( PUB_DX3GCR_ADDR, MMC_Rd(PUB_DX3GCR_ADDR) & 0xfffffffe);
+    }
 
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
