@@ -88,6 +88,18 @@
 #define CONFIG_USB_DWC_OTG_294	1
 #define CONFIG_CMD_USB 1
 
+//#define CONFIG_USB_ETHER
+#ifdef CONFIG_USB_ETHER
+#define IO_USB_A_BASE			0xc9040000
+#define CONFIG_USBPORT_BASE IO_USB_A_BASE
+#define CONFIG_SYS_CACHELINE_SIZE       64 
+#define CONFIG_USB_ETH_RNDIS
+#define CONFIG_USB_GADGET_S3C_UDC_OTG
+#define CONFIG_USB_GADGET_DUALSPEED
+#endif
+
+
+
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
@@ -145,6 +157,9 @@
 	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
+	"usbnet_devaddr=00:15:18:01:81:31" \
+	"usbnet_hostddr=00:15:18:01:a1:3b" \
+	"cdc_connect_timeout=9999999999" \
 
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"

@@ -166,7 +166,7 @@ static struct ddr_set __ddr_setting={
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
                             [1]=(0 << 9)|(1 << 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 #ifdef ENABLE_WRITE_LEVELING
                                 (1 << 7)|     // Write leveling enable
 #endif
@@ -189,11 +189,7 @@ static struct ddr_set __ddr_setting={
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
-                           #ifndef CONFIG_DDR_LOW_POWER
-                              (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
-                           #else
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
-						   #endif //CONFIG_DDR_LOW_POWER
                            ,
                     .zq0cr0  = 0x109ce,
                     .zq0cr1  = 0x19,

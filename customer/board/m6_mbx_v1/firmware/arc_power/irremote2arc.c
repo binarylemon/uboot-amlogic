@@ -10,6 +10,7 @@ unsigned backup_AO_IR_DEC_REG1;
 unsigned backup_AO_IR_DEC_LDR_ACTIVE;
 unsigned backup_AO_IR_DEC_LDR_IDLE;
 unsigned backup_AO_IR_DEC_BIT_0;
+unsigned bakeup_P_AO_IR_DEC_LDR_REPEAT;
 
 /*****************************************************************
 **
@@ -34,6 +35,7 @@ void backup_remote_register(void)
     backup_AO_IR_DEC_LDR_ACTIVE = readl(P_AO_IR_DEC_LDR_ACTIVE);
     backup_AO_IR_DEC_LDR_IDLE = readl(P_AO_IR_DEC_LDR_IDLE);
     backup_AO_IR_DEC_BIT_0 = readl(P_AO_IR_DEC_BIT_0);
+    bakeup_P_AO_IR_DEC_LDR_REPEAT = readl(P_AO_IR_DEC_LDR_REPEAT);
 }
 
 void resume_remote_register(void)
@@ -44,6 +46,7 @@ void resume_remote_register(void)
 	writel(backup_AO_IR_DEC_LDR_ACTIVE,P_AO_IR_DEC_LDR_ACTIVE);
 	writel(backup_AO_IR_DEC_LDR_IDLE,P_AO_IR_DEC_LDR_IDLE);
 	writel(backup_AO_IR_DEC_BIT_0,P_AO_IR_DEC_BIT_0);
+	writel(bakeup_P_AO_IR_DEC_LDR_REPEAT,P_AO_IR_DEC_LDR_REPEAT);
 
 	readl(P_AO_IR_DEC_FRAME);//abandon last key
 }
@@ -57,6 +60,7 @@ static int ir_remote_init_32k_mode(void)
 		writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
 		
 		control_value = 0x600ffe00;
+		//control_value = 0x600ffe40;
     writel( control_value,P_AO_IR_DEC_REG1 );
     
     control_value = (0xa3f << 12) | 0;
@@ -66,6 +70,7 @@ static int ir_remote_init_32k_mode(void)
 		// no filter
      writel((readl(P_AO_IR_DEC_REG0)& ~(0x7 << 28)) | (0 << 28),P_AO_IR_DEC_REG0);
     
+    //writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3ffffc << 10)) | (0x57 << 20) | (0x38 << 10) | (0x1 <<30),P_AO_IR_DEC_STATUS);
     // SCALE LEADER ACTIVE
     writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 16)) | ((unsigned)(294*1.1) << 16),P_AO_IR_DEC_LDR_ACTIVE);
     writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 0)) | ((unsigned)(294*0.9) << 0),P_AO_IR_DEC_LDR_ACTIVE);
@@ -73,8 +78,11 @@ static int ir_remote_init_32k_mode(void)
     // SCALE LEADER IDLE
     writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 16)) | ((unsigned)(147*1.1) << 16),P_AO_IR_DEC_LDR_IDLE);
     writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 0)) | ((unsigned)(147*0.9) << 16),P_AO_IR_DEC_LDR_IDLE);
-
-
+	
+	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
+    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
+	writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_IR_DEC_LDR_REPEAT);
+    writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_IR_DEC_LDR_REPEAT);
     // SCALE BIT 0 (1.11mS)
     writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 16)) | ((unsigned)(36*1.1) << 16),P_AO_IR_DEC_BIT_0);
     writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 0))  | ((unsigned)(36*0.9) << 0),P_AO_IR_DEC_BIT_0);
@@ -166,7 +174,7 @@ void remote_cec_hw_reset(void)
     cec_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, (0x1 << 4) | (cec_msg.log_addr & 0xf));
     
 }
-
+/*
 void remote_cec_hw_off(void)
 {
     //unsigned char index = cec_global_info.my_node_index;
@@ -215,7 +223,7 @@ void remote_cec_hw_off(void)
     writel(readl(P_HHI_GCLK_MPEG2) & ~(0x1<<4), P_HHI_GCLK_MPEG2); 
     
 }
-
+*/
 //unsigned char remote_cec_ll_rx(unsigned char *msg, unsigned char *len)
 unsigned char remote_cec_ll_rx(void)
 {
@@ -279,30 +287,60 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
     int i,j;
     int ret = 0;
     unsigned int n = 0;
-
-    while (cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_BUSY){
-        {//Delay some time
-    	    int i = 10;
-    	    while(i--);
-        }
-        n++;
-        if(n >= 1000){
+    unsigned char repeat = 3;
+	do {
+        if(cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_DONE)
             break;
+	    while ((cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) != TX_IDLE) || (cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS) != RX_IDLE)){
+		//while (cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_BUSY){
+		    //{//Delay some time
+			//    int i = 10;
+			//    while(i--);
+		    //}
+		    udelay(4000);
+		    n++;
+		    if(n >= 5){
+		        break;
+		    }
+		}
+		for (j = 0; j < len; j++) {
+		    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_0_HEADER + j, msg[j]);
+		}
+		cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_LENGTH, len-1);
+		cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_CMD, TX_REQ_CURRENT);//TX_REQ_NEXT
+		//cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_CMD, TX_REQ_CURRENT);//TX_REQ_NEXT
+		ret = cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS); 
+		
+        while (cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) != TX_DONE){     
+            udelay(5000);
+            n++;
+            if(n >= 6){
+                break;
+            }
         }
-    }
-    for (j = 0; j < len; j++) {
-        cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_0_HEADER + j, msg[j]);
-    }
-    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_LENGTH, len-1);
-    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_CMD, TX_REQ_CURRENT);//TX_REQ_NEXT
-    //cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_CMD, TX_REQ_CURRENT);//TX_REQ_NEXT
-    ret = cec_rd_reg(CEC0_BASE_ADDR+CEC_RX_MSG_STATUS); 
-    
-    if(cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_ERROR){
-        remote_cec_hw_reset();
-    }
-          
+
+		if(cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_DONE){
+		    cec_wr_reg(CEC0_BASE_ADDR+CEC_TX_MSG_CMD, TX_NO_OP);
+		    break;
+		}
+
+		if(cec_rd_reg(CEC0_BASE_ADDR+CEC_TX_MSG_STATUS) == TX_ERROR){
+			//repeat--;
+		    remote_cec_hw_reset();
+		}
+        repeat--;
+	} while(repeat);
     return ret;
+}
+
+void cec_imageview_on(void)
+{
+    unsigned char msg[2];
+  
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_TV_ADDR;
+    msg[1] = CEC_OC_IMAGE_VIEW_ON;
+    
+    remote_cec_ll_tx(msg, 2);
 }
 
 void cec_report_physical_address(void)
@@ -357,22 +395,22 @@ void cec_set_stream_path(void)
     }    
 }
 
-//void cec_device_vendor_id(void)
-//{
-//    unsigned char msg[9];
-//    //"PHILIPS"
-//    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
-//    msg[1] = CEC_OC_DEVICE_VENDOR_ID;
-//    msg[2] = 'P';
-//    msg[3] = 'H';
-//    msg[4] = 'I';
-//    msg[5] = 'L';
-//    msg[6] = 'I';
-//    msg[7] = 'P';
-//    msg[8] = 'S';
-//
-//    remote_cec_ll_tx(msg, 9);     
-//}
+void cec_device_vendor_id(void)
+{
+    unsigned char msg[9];
+    //"PHILIPS"
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
+    msg[1] = CEC_OC_DEVICE_VENDOR_ID;
+    msg[2] = 'P';
+    msg[3] = 'H';
+    msg[4] = 'I';
+    msg[5] = 'L';
+    msg[6] = 'I';
+    msg[7] = 'P';
+    msg[8] = 'S';
+
+    remote_cec_ll_tx(msg, 9);     
+}
 
 void cec_feature_abort(void)
 {    
@@ -412,7 +450,7 @@ void cec_give_deck_status(void)
 
 void cec_set_osd_name(void)
 {
-    unsigned char msg[8];
+    unsigned char msg[9];
     
     //"PHILIPS HMP8100"
     msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
@@ -423,8 +461,9 @@ void cec_set_osd_name(void)
     msg[5] = '8';
     msg[6] = '1';
     msg[7] = '0';
+    msg[8] = '0';
     
-    remote_cec_ll_tx(msg, 8);
+    remote_cec_ll_tx(msg, 9);
 }
 
 //void register_cec_rx_msg(unsigned char *msg, unsigned char len )
@@ -484,8 +523,9 @@ void cec_handle_message(void)
         case CEC_OC_GIVE_PHYSICAL_ADDRESS:
             cec_report_physical_address();
             break;
-        //case CEC_OC_GIVE_DEVICE_VENDOR_ID:
-        //     cec_device_vendor_id();
+        case CEC_OC_GIVE_DEVICE_VENDOR_ID:
+            cec_feature_abort();
+         //    cec_device_vendor_id();
         //    //cec_give_device_vendor_id(pcec_message);
         //    cec_usrcmd_set_device_vendor_id();
             break;
@@ -530,7 +570,7 @@ void cec_handle_message(void)
             cec_menu_status_smp();
             break;
         default:
-            cec_feature_abort();
+            //cec_feature_abort();
             break;
         }
     }

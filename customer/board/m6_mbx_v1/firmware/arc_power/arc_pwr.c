@@ -128,7 +128,7 @@ void copy_reboot_code()
 //#define POWER_OFF_3GVCC
 
 //for mbox
-#define POWER_OFF_VCCK_VDDIO
+//#define POWER_OFF_VCCK_VDDIO
 #define POWER_OFF_VCC5V
 
 
@@ -283,7 +283,16 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
-    //unsigned char cec_key=0;
+    //unsigned char cec_repeat = 0;
+    //unsigned char power_key_num = 0x0;
+    //unsigned long cec_key = 0;
+    //unsigned long cec_status;
+    unsigned long test_status_0;
+    unsigned long test_status_1;
+    //unsigned long test_reg_0;
+    //unsigned long test_reg_1;
+    //unsigned long poweronflag = 0;
+    unsigned long cec_flag = 0;
     hdmi_cec_func_config = readl(P_AO_DEBUG_REG0); 
     f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
     serial_put_hex(hdmi_cec_func_config,32);
@@ -300,7 +309,18 @@ void enter_power_down()
 	 // First, we disable all memory accesses.
 	f_serial_puts("step 1\n");
 	f_serial_puts("cec\n");
-
+	//f_serial_puts("readl(P_AO_IR_DEC_REG0):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_REG0),32);
+    //f_serial_puts("\n");
+	//f_serial_puts("readl(P_AO_IR_DEC_REG1):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_REG1),32);
+    //f_serial_puts("\n");
+    //f_serial_puts("readl(P_AO_IR_DEC_STATUS):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_STATUS),32);
+    //f_serial_puts("\n");
+    //f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
+    //f_serial_puts("\n");
 
 #ifdef pwr_ddr_off
    asm(".long 0x003f236f"); //add sync instruction.
@@ -432,6 +452,8 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
+    //test_reg_0 =readl(P_AO_IR_DEC_REG0);
+    //test_reg_1 =readl(P_AO_IR_DEC_REG1);
     if(hdmi_cec_func_config & 0x1){
         cec_power_on();
         remote_cec_hw_reset();  
@@ -443,30 +465,84 @@ void enter_power_down()
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
     while(1)
     {
-    	//detect remote key    	  
-		  power_key=readl(P_AO_IR_DEC_FRAME);
-		  power_key = (power_key>>16)&0xff;
-		  if(power_key==0x1a)  //the reference remote power key code
-        		break;
-          if(hdmi_cec_func_config & 0x1){
-              cec_handler();	
-              if(cec_msg.cec_power == 0x1){  //cec power key
-                    break;
-                }
-          }
-      if(readl(0xc1109860)&0x100)
-      	break;	  
-		  //detect IO key
-		  /*power_key=readl(P_AO_GPIO_I); 
-		  power_key=power_key&(1<<3);
-		  if(!power_key)
-		    break;
-		  */
+		//  power_key = readl(P_AO_IR_DEC_FRAME);
+		//  power_key = (power_key>>16)&0xff;
+		//  if(power_key==0x1a)  //the reference remote power key code
+        //		break;
+        if(((test_status_0 = readl(P_AO_IR_DEC_STATUS))>>3) & 0x1){
+        	power_key = readl(P_AO_IR_DEC_FRAME);
+        	power_key = (power_key>>16)&0xff;
+        	if(power_key == 0x1a){	
+        	    //poweronflag = 1;
+    		    //for(i = 0;i<1000;i++)
+    		    //{
+                //    //readl(P_AO_IR_DEC_FRAME);
+    		    //	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
+    		    //	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && ((test_status_1>>7)&0x1))//ok
+    		    //	{
+    		    //		//readl(P_AO_IR_DEC_FRAME);
+    		    //		cec_flag = 1;
+    		    //	}
+    		    //	//readl(P_AO_IR_DEC_FRAME);
+    		    //}
+    		    //if(cec_flag) {
+    		    //    writel(readl(P_AO_DEBUG_REG0) | (0x1<<4),P_AO_DEBUG_REG0);
+        		//    if(hdmi_cec_func_config & 0x1){
+        		//        //cec_imageview_on();
+        		//    }
+    		    //}else{
+        		//    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
+    		    //}
+    		    if(hdmi_cec_func_config & 0x1){
+    		        cec_imageview_on();
+    		    }
+    		    break;
+            }
+        }
+        //if(poweronflag == 1){
+        //
+        //    //udelay(100000);
+        //	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
+        //    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
+        //	writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_IR_DEC_LDR_REPEAT);//my change
+        //    writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_IR_DEC_LDR_REPEAT);//my change
+        //    //for(i = 0;i<200ms;i++)
+        //	    for(i = 0;i<5000;i++)
+        //	    {
+        //            //readl(P_AO_IR_DEC_FRAME);
+        //	    	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
+        //	    	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && (test_status_1>>7))
+        //	    	{
+        //	    		//readl(P_AO_IR_DEC_FRAME);
+        //	    		cec_flag = 1;
+        //	    		break;
+        //	    	}
+        //	    	//readl(P_AO_IR_DEC_FRAME);
+        //	    }
+        //	    cec_key++;
+        //	    break;
+        //}
+
+        if(hdmi_cec_func_config & 0x1){
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
+        }
+        if(readl(0xc1109860)&0x100)
+            break;
+        //detect IO key
+        /*power_key=readl(P_AO_GPIO_I); 
+        power_key=power_key&(1<<3);
+        if(!power_key)
+            break;
+        */
 		  
     }
-    if(hdmi_cec_func_config & 0x1){
-        remote_cec_hw_off();
-    }
+
+    //if(hdmi_cec_func_config & 0x1){
+    //    remote_cec_hw_off();
+    //}
 //	power_on_via_gpio();
 //	resume_remote_register();
 
@@ -578,6 +654,34 @@ void enter_power_down()
     //    f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
     //    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
     //    f_serial_puts("\n");
+
+        //f_serial_puts("CEC power_key:\n");      
+        //serial_put_hex(power_key,32);
+        //f_serial_puts("\n");
+        f_serial_puts("CEC readl(P_AO_DEBUG_REG0):\n");      
+        serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+        f_serial_puts("\n");
+        //f_serial_puts("CEC test_reg_0:\n");      
+        //serial_put_hex(test_reg_0,32);
+        //f_serial_puts("\n");
+        //f_serial_puts("CEC test_reg_1:\n");      
+        //serial_put_hex(test_reg_1,32);
+        //f_serial_puts("\n");
+        f_serial_puts("CEC test_status_0:\n");      
+        serial_put_hex(test_status_0,32);
+        f_serial_puts("\n");
+        f_serial_puts("CEC test_status_1:\n");      
+        serial_put_hex(test_status_1,32);
+        f_serial_puts("\n");
+        f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
+        serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
+        f_serial_puts("\n");
+        f_serial_puts("cec_flag:\n");      
+        serial_put_hex(cec_flag,32);
+        f_serial_puts("\n");
+        //f_serial_puts("poweronflag:\n");      
+        //serial_put_hex(poweronflag,32);
+        //f_serial_puts("\n");
     //}
     //print some useful information to help debug.
     serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);

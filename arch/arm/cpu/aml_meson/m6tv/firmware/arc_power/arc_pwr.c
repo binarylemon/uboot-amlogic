@@ -145,46 +145,6 @@ void copy_reboot_code()
 	}
 }
 
-void disp_code()
-{
-#if 0
-	int i;
-	int code_size;
-	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
-	unsigned addr;
-	code_size = sizeof(arm_reboot);
-	addr = 0;
-	//copy new code for ARM restart
-	for(i = 0; i < code_size; i++)
-	{
-	 	f_serial_puts(",");
-		serial_put_hex(*arm_base,8);
-		if(i == 32)
-			addr |= *arm_base;
-		else if(i == 33)
-			addr |= (*arm_base)<<8;
-		else if(i == 34)
-			addr |= (*arm_base)<<16;
-		else if(i == 35)
-			addr |= (*arm_base)<<24;
-			
-		arm_base++;
-	}
-	
-	f_serial_puts("\n addr:");
-	serial_put_hex(addr,32);
-	
-	f_serial_puts(" value:");
-	wait_uart_empty();
-	serial_put_hex(readl(addr),32);
-	wait_uart_empty();
-#endif
-}
-
-#ifdef CONFIG_AW_AXP20
-#define CHECK_ALL_REGULATORS
-#endif
-
 
 static void enable_iso_ee()
 {
@@ -225,6 +185,28 @@ static void ee_on()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x1<<9),P_AO_RTI_PWR_CNTL_REG0);
 }
+static void switch_out_32k()
+{
+/*
+	switch_to_81();
+	// ee go back to clk81
+	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+	udelay(10000);
+*/
+}
+static void switch_in_32k()
+{
+	// ee use 32k, So interrup status can be accessed.
+/*	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+	switch_to_rtc();
+	udelay(1000);
+	*/
+}
+extern void power_off_at_24M();
+extern void power_on_at_24M();
+extern void power_off_at_32k();
+extern void power_on_at_32k();
+
 void restart_arm()
 {
 	//------------------------------------------------------------------------
@@ -260,38 +242,6 @@ void restart_arm()
 }
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
-void test_ddr(int i)
-{
-#if 0
-	f_serial_puts("test_ddr...\n");
-
-	volatile unsigned addr = (volatile unsigned*)0x80000000;
-	unsigned v;
-	if(i == 0){
-		for(i = 0; i < 100; i++){
-//		v_outs("addr:",pAddr);
-//		v_outs("value:",*pAddr);
-			writel(i,addr);
-			addr+=4;
-		}
-	}
-	else if(i == 1){
-			for(i = 0; i < 100; i++){
-			//	writel(i,addr);
-				v = readl(addr);
-			//	if(v != i)
-				{
-			//		serial_put_hex(addr,32);
-					f_serial_puts(" , ");
-					serial_put_hex(v,32);
-				}
-				addr+=4;
-			}
-	}
-	f_serial_puts("\n");
-	wait_uart_empty();
-#endif			
-}
 
 #define pwr_ddr_off 
 void enter_power_down()
@@ -380,32 +330,22 @@ void enter_power_down()
 
 #endif
 #endif
- 	f_serial_puts("CPU off\n");
+ 	f_serial_puts("step 2: CPU off\n");
  	wait_uart_empty();
 	cpu_off();
-  
-   	f_serial_puts("Set up pwr key\n");
+
+	f_serial_puts("step 3: store pll\n");
  	wait_uart_empty();
-	//enable power_key int	
-	writel(0x100,0xc1109860);//clear int
- 	writel(readl(0xc1109868)|1<<8,0xc1109868);
-	writel(readl(0xc8100080)|0x1,0xc8100080);
+	//store_restore_plls(1);
 
-	f_serial_puts("Pwr off domains\n");
- 	wait_uart_empty();
+	f_serial_puts("step 4: power off domain\n");
+	wait_uart_empty();
+	power_off_at_24M();
 
-	//power_off_at_24M();
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
-//	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
-
-// ee use 32k, So interrup status can be accessed.
-//	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-//	switch_to_rtc();
-	udelay(1000);
-	//power_off_at_32K_1();
-
-//	power_off_at_32K_2();
-
+	switch_in_32k();
+	power_off_at_32k();
 	// gate off UART
 	writel(readl(P_AO_RTI_GEN_CTNL_REG0)&(~(0x8)),P_AO_RTI_GEN_CTNL_REG0);
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -466,45 +406,24 @@ void enter_power_down()
    }
 #endif
 
-	//disable power_key int
-/*	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
-	writel(readl(0xc8100080)&(~0x1),0xc8100080);
-	writel(0x100,0xc1109860);//clear int
-*/
+
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CTNL_REG0)|0x8,P_AO_RTI_GEN_CTNL_REG0);
 
-//	power_on_at_32k_2();
-
-	{
-//		power_on_at_32k_1();
-
-	//  In 32k mode, we had better not print any log.
-//		store_restore_plls(0);//Before switch back to clk81, we need set PLL
-
-	//	dump_pmu_reg();
+	power_on_at_32k();
+	switch_out_32k();
 	
-//		switch_to_81();
-	  // ee go back to clk81
-//		writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
-		udelay(10000);
-	}
+	power_on_at_24M();
+ 	uart_reset();
 
-	// power on even more domains
-	f_serial_puts("Pwr up avdd33/3gvcc\n");
+	f_serial_puts("step 7: restore pll\n");
 	wait_uart_empty();
-	
-//	power_on_at_24M();
-// 	uart_reset();
-
-//	f_serial_puts("step 7\n");
-//	wait_uart_empty();
-//	store_restore_plls(0);
+	//store_restore_plls(0);
 	
 #ifdef pwr_ddr_off    
-	f_serial_puts("step 8\n");
+	f_serial_puts("step 8: resume ddr\n");
 	wait_uart_empty();  
-#if 0
+#if 0 //resume ddr here
 	init_ddr_pll();
 
 	store_vid_pll();
@@ -559,23 +478,15 @@ void enter_power_down()
   // Moved the enable mmc req and SEC to ARM code.
   //enable_mmc_req();
 	
-//	disp_pctl();
-	
-//	test_ddr(1);
-//	test_ddr(0);
-//	test_ddr(1);
-	
-//	disp_code();	
-
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 
-	serial_put_hex(readl(P_VGHL_PWM_REG0),32);
+	/*serial_put_hex(readl(P_VGHL_PWM_REG0),32);
 	f_serial_puts("  VGHL_PWM before\n");
 	wait_uart_empty();
 	writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
 	udelay(1000);
-
+*/
 	restart_arm();
   
 }

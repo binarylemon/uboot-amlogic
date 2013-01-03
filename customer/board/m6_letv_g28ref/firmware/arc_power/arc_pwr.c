@@ -281,7 +281,19 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key, up_key;
-    //int gpio_key = 0;
+    int gpio_key = 0;
+    int gpio_key_reboot = 0;
+    unsigned reg2;
+
+    reg2 = readl(P_AO_RTI_STATUS_REG2);
+    if(reg2 == 0x87654321){
+        f_serial_puts("gpio power key\n");
+        gpio_key = 1;
+    }
+    serial_put_hex(reg2, 32);
+    f_serial_puts("  P_AO_RTI_STATUS_REG2.........\n");
+    //writel(0,P_AO_RTI_STATUS_REG2);
+        
         
 #ifdef smp_test
 	//ignore ddr problems.
@@ -432,17 +444,25 @@ void enter_power_down()
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
     while(1)
     {
-    	//detect remote key
-    	if((readl(P_AO_IR_DEC_STATUS)>>3)&0x1 != 0)
-        {   
-		    power_key=readl(P_AO_IR_DEC_FRAME);
-		    //power_key = (power_key>>16)&0xff;
-		    //if(power_key==0x1a)  //the reference remote power key code
-        	//	break;
-            up_key = power_key;
-            if(power_key==0xff00ff00)//letv ir power key
+        if(gpio_key == 0){
+        	//detect remote key
+        	if((readl(P_AO_IR_DEC_STATUS)>>3)&0x1 != 0)
+            {   
+    		    power_key=readl(P_AO_IR_DEC_FRAME);
+    		    //power_key = (power_key>>16)&0xff;
+    		    //if(power_key==0x1a)  //the reference remote power key code
+            	//	break;
+                up_key = power_key;
+                if(power_key==0xff00ff00)//letv ir power key
+                    break;
+             }
+
+            if(readl(0xc1109860)&0x100){
+                gpio_key_reboot = 1;
                 break;
-         }
+            }
+            
+        }else{
 	  
 		  //detect IO key
 		  /*power_key=readl(P_AO_GPIO_I); 
@@ -451,10 +471,10 @@ void enter_power_down()
 		    break;
 		  */
 		  
-		udelay(2000);
-	    if(readl(0xc1109860)&0x100){
-            //gpio_key = 1;
-            break;
+    		udelay(2000);
+    	    if(readl(0xc1109860)&0x100){
+                break;
+            }
         }
 	 }
 //	power_on_via_gpio();
@@ -586,12 +606,13 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-    /*
-    if(1 == gpio_key){
+    
+    if(1 == gpio_key_reboot){
+        writel(0x11223344, P_AO_RTI_STATUS_REG2);//reboot and goto suspend mode
         setbits_le32(P_WATCHDOG_TC,1<<22);
 	    writel((1<<22) | (3<<24), P_WATCHDOG_TC);
         while(1);
-    }*/
+    }
 
     
 #ifdef CONFIG_IR_REMOTE_WAKEUP

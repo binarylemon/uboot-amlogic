@@ -9,8 +9,8 @@
  *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
  */
 #define CONFIG_AML_MESON6
-#define WRITE_TO_EFUSE_ENABLE	
-//#define WRITE_TO_NAND_ENABLE
+//#define WRITE_TO_EFUSE_ENABLE	
+#define WRITE_TO_NAND_ENABLE
 
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
 #error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
@@ -20,7 +20,7 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-//#define CONFIG_SECURITYKEY
+#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif
@@ -170,7 +170,7 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=nand read logo ${loadaddr_misc} 0 40000; unpackimg ${loadaddr_misc}; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"preboot=nand read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc}; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv_without reboot_mode; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=video open; video clear; video dev bl_on\0" \

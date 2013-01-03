@@ -174,12 +174,8 @@ static struct ddr_set __ddr_setting={
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
-                              (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
-						#ifndef CONFIG_DDR_LOW_POWER
-                              (0 << 8)      	   // [B15-B8]nn cycles empty will entry power down mode.
-						#else
+                              (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit						
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
-						#endif //CONFIG_DDR_LOW_POWER
                            ,
                     .zq0cr0 = 0,
                     .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1

@@ -632,6 +632,7 @@ struct aml_nand_chip {
 	u8 ecc_cnt_cur;
 	u8 ecc_max;
     unsigned zero_cnt;
+	unsigned oob_fill_cnt;
 #ifdef NAND_STATUS_TEST
 	struct test_status  aml_nand_status;
 #endif

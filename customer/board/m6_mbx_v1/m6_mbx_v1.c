@@ -72,9 +72,13 @@ int board_eth_init(bd_t *bis)
 
     udelay(1000);
 		
-	extern int aml_eth_init(bd_t *bis);
-
+#ifdef	CONFIG_USB_ETHER
+    extern int usb_eth_initialize(bd_t *bi);
+    usb_eth_initialize(bis);
+#else
+    extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);
+#endif
 
 	return 0;
 }
@@ -386,29 +390,25 @@ struct aml_nand_device aml_nand_mid_device = {
 //@board schematic: m3_skt_v1.pdf
 //@pinmax: AppNote-M3-CorePinMux.xlsx
 //GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
+#define IO_AOBUS_BASE	0xc8100000
+#define AOBUS_REG_OFFSET(reg)   ((reg) )
+#define AOBUS_REG_ADDR(reg)	    (IO_AOBUS_BASE + AOBUS_REG_OFFSET(reg))
+static __inline__ void aml_set_reg32_bits( uint32_t _reg, const uint32_t _value,const uint32_t _start, const uint32_t _len)
+{
+	writel((readl(_reg) & ~((( 1L << (_len) )-1) << (_start)) | ((unsigned)((_value)&((1L<<(_len))-1)) << (_start))), _reg );
+}
+
 static void gpio_set_vbus_power(char is_power_on)
 {
 	if(is_power_on)
 	{
-		//@WA-AML8726-M3_REF_V1.0.pdf
-	    //GPIOA_26 -- VCCX2_EN
-		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
-	
-		//@WA-AML8726-M3_REF_V1.0.pdf
-		//GPIOD_9 -- USB_PWR_CTL
-		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
-		
-		udelay(100000);
+		aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0,  3, 1);
+		aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0, 19, 1);
+	//	aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0,  2, 1);
+	//	aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 1, 18, 1);
 	}
 	else
 	{
-		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
-
-		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
 
