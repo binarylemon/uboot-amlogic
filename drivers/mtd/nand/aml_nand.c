@@ -4161,7 +4161,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		aml_chip->new_nand_info.read_rety_info.read_retry_exit = aml_nand_read_retry_exit_toshiba;
 
 	}
-	else  if((!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))){
+	else  if((!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
+		||(!strncmp((char*)type->id, (char*)dev_id_samsung_2xnm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 	aml_chip->new_nand_info.type =  SUMSUNG_2XNM;
 	aml_chip->ran_mode = 1;
 
