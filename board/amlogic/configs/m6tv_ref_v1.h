@@ -8,7 +8,8 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-
+//
+#define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1

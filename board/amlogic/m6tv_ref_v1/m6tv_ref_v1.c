@@ -14,7 +14,7 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
-
+#define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
 
@@ -128,6 +128,19 @@ U_BOOT_CMD(
 );
 
 #endif //CONFIG_SARADC
+
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode(void)
+{
+    u32 reboot_mode_current = reboot_mode;
+    printf("reboot_mode_current=%x\n",reboot_mode_current);   
+    
+    if(reboot_mode_current == 0x02020202)
+    run_command("run recoveryinand",0);	
+    
+    return 0;
+}
+#endif
 
 u32 get_board_rev(void)
 {
