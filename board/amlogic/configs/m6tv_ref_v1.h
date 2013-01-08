@@ -125,6 +125,7 @@
 	"bootpath=u-boot-512M-UartB.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 
 
 #define CONFIG_BOOTCOMMAND  "mmcinfo;mmc read 1 82000000 c000 2400;bootm"
