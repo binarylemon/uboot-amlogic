@@ -6154,58 +6154,77 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	}
 	else {
 		oobmul = mtd->oobsize /aml_chip->oob_size ;
+		if (!chip->ecc.layout)
+			chip->ecc.layout = kzalloc(sizeof(struct nand_ecclayout), GFP_KERNEL);
+		if (!chip->ecc.layout) {
+			err = -ENOMEM;
+			goto exit_error ;
+		}	
 		if (!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME))) {
-			if (!chip->ecc.layout)
-				chip->ecc.layout = &aml_nand_uboot_oob;
+			//if (!chip->ecc.layout)
+			//	chip->ecc.layout = &aml_nand_uboot_oob;
+			memcpy(chip->ecc.layout, &aml_nand_uboot_oob,sizeof(struct nand_ecclayout));
 		}
 		else if (chip->ecc.mode != NAND_ECC_SOFT) {
 			//switch (mtd->oobsize)
 			switch (aml_chip->oob_size) {
 
 				case 64:
-					chip->ecc.layout = &aml_nand_oob_64_2info;
+					//chip->ecc.layout = &aml_nand_oob_64_2info;
+					memcpy(chip->ecc.layout, &aml_nand_oob_64_2info,sizeof(struct nand_ecclayout));
 					break;
 				case 128:
-					chip->ecc.layout = &aml_nand_oob_128;
+					//chip->ecc.layout = &aml_nand_oob_128;
+					memcpy(chip->ecc.layout, &aml_nand_oob_128,sizeof(struct nand_ecclayout));
 					break;
 				case 218:
-					chip->ecc.layout = &aml_nand_oob_218;
+					//chip->ecc.layout = &aml_nand_oob_218;
+					memcpy(chip->ecc.layout, &aml_nand_oob_218,sizeof(struct nand_ecclayout));
 					break;
 				case 224:
-					chip->ecc.layout = &aml_nand_oob_224;
+					//chip->ecc.layout = &aml_nand_oob_224;
+					memcpy(chip->ecc.layout, &aml_nand_oob_224,sizeof(struct nand_ecclayout));
 					break;
 				case 256:
-					chip->ecc.layout = &aml_nand_oob_256;
+					//chip->ecc.layout = &aml_nand_oob_256;
+					memcpy(chip->ecc.layout, &aml_nand_oob_256,sizeof(struct nand_ecclayout));
 					break;
 				case 376:
-					chip->ecc.layout = &aml_nand_oob_376;
+					//chip->ecc.layout = &aml_nand_oob_376;
+					memcpy(chip->ecc.layout, &aml_nand_oob_376,sizeof(struct nand_ecclayout));
 					break;
 				case 436:
-					chip->ecc.layout = &aml_nand_oob_436;
+					//chip->ecc.layout = &aml_nand_oob_436;
+					memcpy(chip->ecc.layout, &aml_nand_oob_436,sizeof(struct nand_ecclayout));
 					break;
 				case 448:
-					chip->ecc.layout = &aml_nand_oob_448;
+				//	chip->ecc.layout = &aml_nand_oob_448;
+				memcpy(chip->ecc.layout, &aml_nand_oob_448,sizeof(struct nand_ecclayout));
 					break;
 				case 640:
-					chip->ecc.layout = &aml_nand_oob_640;
+					//chip->ecc.layout = &aml_nand_oob_640;
+					memcpy(chip->ecc.layout, &aml_nand_oob_640,sizeof(struct nand_ecclayout));
 					break;	
 				case 744:
-					chip->ecc.layout = &aml_nand_oob_744;
+					//chip->ecc.layout = &aml_nand_oob_744;
+					memcpy(chip->ecc.layout, &aml_nand_oob_744,sizeof(struct nand_ecclayout));
 					break;			
 				case 1280:
-					chip->ecc.layout = &aml_nand_oob_1280;
+					//chip->ecc.layout = &aml_nand_oob_1280;
+					memcpy(chip->ecc.layout, &aml_nand_oob_1280,sizeof(struct nand_ecclayout));
 					break;		
 				default:
 					printk("havn`t found any oob layout use nand base oob layout " "oobsize %d\n", mtd->oobsize);
-					chip->ecc.layout = kzalloc(sizeof(struct nand_ecclayout), GFP_KERNEL);
-					if (!chip->ecc.layout)
-						chip->ecc.layout = &aml_nand_oob_64_2info;
-					else
+				//	chip->ecc.layout = kzalloc(sizeof(struct nand_ecclayout), GFP_KERNEL);
+				//	if (!chip->ecc.layout)
+				//		chip->ecc.layout = &aml_nand_oob_64_2info;
+				//	else
 						chip->ecc.layout->oobfree[0].length = ((mtd->writesize / chip->ecc.size) * aml_chip->user_byte_mode);
 					break;
 			}
 			chip->ecc.layout->oobfree[0].length *= oobmul;
 			chip->ecc.layout->eccbytes *= oobmul;
+			printk("%s:oobmul =%d,chip->ecc.layout->oobfree[0].length=%d,aml_chip->oob_size=%d\n",__func__,oobmul,chip->ecc.layout->oobfree[0].length,aml_chip->oob_size);
 		}
 	}
 
@@ -6321,6 +6340,10 @@ exit_error:
 	if (chip->buffers) {
 		kfree(chip->buffers);
 		chip->buffers = NULL;
+	}
+	if (chip->ecc.layout) {
+		kfree(chip->ecc.layout);
+		chip->ecc.layout = NULL;
 	}
 	if (aml_chip->aml_nand_data_buf) {
 		kfree(aml_chip->aml_nand_data_buf);
