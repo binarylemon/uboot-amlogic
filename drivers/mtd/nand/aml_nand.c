@@ -6341,10 +6341,11 @@ exit_error:
 		kfree(chip->buffers);
 		chip->buffers = NULL;
 	}
-	if (chip->ecc.layout) {
-		kfree(chip->ecc.layout);
-		chip->ecc.layout = NULL;
-	}
+	
+//	if (chip->ecc.layout) {
+//		kfree(chip->ecc.layout);
+//		chip->ecc.layout = NULL;
+//	}
 	if (aml_chip->aml_nand_data_buf) {
 		kfree(aml_chip->aml_nand_data_buf);
 		aml_chip->aml_nand_data_buf = NULL;
