@@ -109,5 +109,30 @@ U_BOOT_CMD(
 	"unit is mA\n"
 );
 
+static int do_set_usbcur_limit (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int current = simple_strtol(argv[1], NULL, 10);
+
+	if(!axp_charger_set_usbcur_limit(current))
+	{
+		printf("USB current limit: %smA\n", argv[1]);
+		setenv("usb_current_limit", argv[1]);
+		return 0;
+	}
+	else
+	{
+		printf("Set USB current limit failed!\n");
+		return -1;
+	}
+}
+
+
+U_BOOT_CMD(
+	set_usbcur_limit,	2,	0,	do_set_usbcur_limit,
+	"set USB current limit",
+	"/N\n"
+	"set_usbcur_limit <current>\n"
+	"unit is mA\n"
+);
 
 
