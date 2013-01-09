@@ -9,6 +9,7 @@ endif
 
 all:	  
 	$(MAKE) -f Makefile.$(targetComplier)
+	$(MAKE) -f Makefile.ddr_init
 ifeq ($(CONFIG_CMD_RUNARC),y)
 	$(MAKE) -f Makefile.rbt
 endif
