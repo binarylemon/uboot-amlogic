@@ -255,81 +255,14 @@ void enter_power_down()
 	//	test_ddr(0);
 	// First, we disable all memory accesses.
 
-	f_serial_puts("step 1\n");
-
-#if 0
-#ifdef pwr_ddr_off
-	asm(".long 0x003f236f"); //add sync instruction.
-
-	disable_mmc_req();
-
-	serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-	f_serial_puts("  LP_CTRL1\n");
-	wait_uart_empty();
-
-	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-	f_serial_puts("  MCFG\n");
-	wait_uart_empty();
-
-	store_restore_plls(1);
-
-	APB_Wr(UPCTL_SCTL_ADDR, 1);
-	APB_Wr(UPCTL_MCFG_ADDR, 0x60021 );
-	APB_Wr(UPCTL_SCTL_ADDR, 2);
-
-	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-	f_serial_puts("  MCFG\n");
-	wait_uart_empty();
-
-#endif
-
-#ifdef CHECK_ALL_REGULATORS
-	// Check regulator
-	f_serial_puts("Chk regulators\n");
+	f_serial_puts("step 1: DDR enter self-refresh\n");	
  	wait_uart_empty();
-	check_all_regulators();
-#endif
+	//DDR save setting
+	hx_save_ddr_settings();	
+	//DDR suspend
+	hx_enter_power_down();
 
-#ifdef pwr_ddr_off
-	// MMC sleep 
- 	f_serial_puts("Start DDR off\n");
-	wait_uart_empty();
-	// Next, we sleep
-	mmc_sleep();
 
-#if 1
-	//Clear PGCR CK
-	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<12)));
-	APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
-	//APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
-#endif
-	mmc_sleep();
-	// enable retention
-	//only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
-	//but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
-	enable_retention();
-
-    // save ddr power
-    // before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
-    // that will save the DLL analog power.
-#ifndef POWER_DOWN_DDRPHY
- 	f_serial_puts("mmc soft rst\n");
-	wait_uart_empty();
-	APB_Wr(MMC_SOFT_RST, 0x0);	 // keep all MMC submodules in reset mode
-#else
- 	f_serial_puts("pwr dn ddr\n");
-	wait_uart_empty();
-	power_down_ddr_phy();
-#endif
-
-  // shut down DDR PLL. 
-	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
-
-	f_serial_puts("Done DDR off\n");
-	wait_uart_empty();
-
-#endif
-#endif
  	f_serial_puts("step 2: CPU off\n");
  	wait_uart_empty();
 	cpu_off();
@@ -422,58 +355,8 @@ void enter_power_down()
 	
 #ifdef pwr_ddr_off    
 	f_serial_puts("step 8: resume ddr\n");
-	wait_uart_empty();  
-#if 0 //resume ddr here
-	init_ddr_pll();
-
-	store_vid_pll();
-   // Next, we reset all channels 
-	reset_mmc();
-	f_serial_puts("step 9\n");
 	wait_uart_empty();
-
-	// disable retention
-	// disable retention before init_pctl is because init_pctl you need to data training stuff.
-	disable_retention();
-
-	// initialize mmc and put it to sleep
-	init_pctl();
-	f_serial_puts("step 10\n");
-	wait_uart_empty();
-
-	//print some useful information to help debug.
-	serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-	f_serial_puts("  MMC_LP_CTRL1\n");
-	wait_uart_empty();
-
-	serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-	f_serial_puts("  MCFG\n");
-	wait_uart_empty();
-
-	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
-	{
-//		writel(readl(P_HHI_SYS_PLL_CNTL)&(~1<<30),P_HHI_SYS_PLL_CNTL);//power on sys pll
-		if(!vcin_state)//plug out ACIN
-		{
-			shut_down();
-			do{
-				udelay(20000);
-				f_serial_puts("wait shutdown...\n");
-				wait_uart_empty();
-			}while(1);
-		}
-		else
-		{
-			writel(0,P_AO_RTI_STATUS_REG2);
-			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
-			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-			writel(10,0xc1109904);
-			writel(1<<22|3<<24,0xc1109900);
-
-		    do{udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
-		}
-	}
-#endif
+	hx_leave_power_down();
 #endif   //pwr_ddr_off
   // Moved the enable mmc req and SEC to ARM code.
   //enable_mmc_req();

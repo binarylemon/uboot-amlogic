@@ -1,5 +1,3 @@
-#include <config.h>
-#include <asm/arch/io.h>
 #include <asm/arch/uart.h>
 #include <asm/arch/reg_addr.h>
 #include <asm/arch/pctl.h>
@@ -7,18 +5,28 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
+#include <m6tv_mmc.h>
+#include <config.h>
 
-#define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
-#define dbg_puts(s) f_serial_puts(s);wait_uart_empty();
+//following code not used currently
+#if 1
+	//M6 all pll controler use bit 29 as reset bit
+#define M6TV_PLL_RESET(pll) \
+	Wr(pll,Rd(pll) | (1<<29));
 
-#if 0
-void __udelay(int n)
-{	
-	unsigned base= get_tick(0);
-	while(get_tick(base) < n);
-}
-#else
-void __udelay(int n)
+//wait for pll lock
+//must wait first (100us+) then polling lock bit to check
+#define M6TV_PLL_WAIT_FOR_LOCK(pll) \
+	do{\
+		__udelayx(1000);\
+	}while((Rd(pll)&0x80000000)==0);
+	
+#endif
+
+//MMC LOW Power enable switch
+#define MMC_LOWPWR_ENABLE (0x5<<28)
+
+static void __udelayx(int n)
 {	
 	int i;
 	for(i=0;i<n;i++)
@@ -26,923 +34,1056 @@ void __udelay(int n)
 	    asm("mov r0,r0");
 	}
 }
-#endif
 
-void disable_mmc_req(void)
-{
-	APB_Wr(MMC_REQ_CTRL,0X0);
-  	while(APB_Rd(MMC_CHAN_STS) == 0){
-		__udelay(100);
+static void hx_disable_mmc_req(void)
+{	
+	f_serial_puts("hx_disable_mmc_req\n");
+	
+	writel(0, P_MMC_REQ_CTRL);
+  	
+  	//while(APB_Rd(MMC_CHAN_STS) == 0) //To check??
+  	{
+		__udelayx(100);
 	}
 }
 
-void disable_mmc_low_power(void)
+static void hx_enable_mmc_req(void)
 {
-    //disable mmc_low_power mode and force dmc clock and publ and pctl clock enabled.
-    APB_Wr(MMC_LP_CTRL1, 0x60a80000);
-    //__udelay(500);	// wait 2 refresh cycles.
+	f_serial_puts("hx_enable_mmc_req\n");
+	
+	writel(0x1ff, P_MMC_REQ_CTRL);
+	__udelayx(100);
 }
 
-void reset_mmc(void)
+static void hx_reset_mmc(void)
 {
-	// writel((1 <<3),  P_RESET1_REGISTER);  // reset the whole MMC modules. 
-#ifdef POWER_DOWN_DDRPHY
-    APB_Wr(MMC_SOFT_RST, 0x0);	 // keep all MMC submodules in reset mode.
-#endif
-  	//Enable DDR DLL clock input from PLL.
-    writel(0xc0000080, P_MMC_CLK_CNTL);  //  @@@ select the final mux from PLL output directly.
-    writel(0xc00000c0, P_MMC_CLK_CNTL);
-
-    //enable the clock.
-    writel(0x400000c0, P_MMC_CLK_CNTL);
-
-	__udelay(10);	// wait clock stable
-
+	f_serial_puts("hx_reset_mmc\n");
+	
 	//reset all sub module
-	APB_Wr(MMC_SOFT_RST, 0x0);
-	while((APB_Rd(MMC_RST_STS)&0xffff) != 0x0);
+	writel(0, P_MMC_SOFT_RST);
+	writel(0, P_MMC_SOFT_RST1); //To check??
+	while((readl(P_MMC_RST_STS)&0xffff) != 0x0);
+	//while((readl(P_MMC_RST_STS1)&0xffff) != 0x0); //To check??
+
+	__udelayx(100);// wait clock stable //To check??
 
 	//deseart all reset.
-	APB_Wr(MMC_SOFT_RST, 0xffff);
-	while((APB_Rd(MMC_RST_STS)&0xffff) != 0xffff);
-	__udelay(100);	// wait DLL lock.
+	writel((~0), P_MMC_SOFT_RST);
+	writel((~0), P_MMC_SOFT_RST1);//To check??
+	while((readl(P_MMC_RST_STS)) != (~0));
+	//while((readl(P_MMC_RST_STS1)) != (~0)); //To check??
+	__udelayx(100);	// wait DLL lock.
 
 }
 
-void enable_mmc_req(void)
+#define  UPCTL_STAT_MASK		(7)
+#define  UPCTL_STAT_INIT        (0)
+#define  UPCTL_STAT_CONFIG      (1)
+#define  UPCTL_STAT_ACCESS      (3)
+#define  UPCTL_STAT_LOW_POWER   (5)
+
+#define  UPCTL_CMD_INIT         (0) 
+#define  UPCTL_CMD_CONFIG       (1) 
+#define  UPCTL_CMD_GO           (2) 
+#define  UPCTL_CMD_SLEEP        (3) 
+#define  UPCTL_CMD_WAKEUP       (4) 
+
+
+static void hx_mmc_sleep(void)
 {
-	// Next, we enable all requests
-	APB_Wr(MMC_REQ_CTRL, 0xff);
-	__udelay(10);
-}
-void mmc_sleep(void)
-{
+	f_serial_puts("hx_mmc_sleep\n");
 	int stat;
 	do
-	{
-		stat = APB_Rd(UPCTL_STAT_ADDR);
-		stat &= 0x7;
+	{		
+		stat = readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_MASK;				
 		if(stat == UPCTL_STAT_INIT) {
-			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_CONFIG);
+			writel(UPCTL_CMD_CONFIG,P_UPCTL_SCTL_ADDR);
 		}
 		else if(stat == UPCTL_STAT_CONFIG) {
-			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_GO);
+			writel(UPCTL_CMD_GO,P_UPCTL_SCTL_ADDR);
 		}
 		else if(stat == UPCTL_STAT_ACCESS) {
-				APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_SLEEP);
+			writel(UPCTL_CMD_SLEEP,P_UPCTL_SCTL_ADDR);
 		}
+		
+		stat = readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_MASK;
+		
 	}while(stat != UPCTL_STAT_LOW_POWER);
+	
 }
 
-void mmc_wakeup(void)
+static void hx_mmc_wakeup(void)
 {
+	f_serial_puts("hx_mmc_wakeup\n");
 	int stat;
-	stat = APB_Rd(MMC_LP_CTRL1);
-	serial_put_hex(stat,32);
-	f_serial_puts("MMC_LP_CTRL1\n");
-	wait_uart_empty();
-
-	stat = APB_Rd(MMC_CLK_CNTL);
-	serial_put_hex(stat,32);
-	f_serial_puts("MMC_CLK_CNTL\n");
-	wait_uart_empty();
-
+	
 	do
 	{
-		stat = APB_Rd(UPCTL_STAT_ADDR);
-		stat &= 0x7;
+		stat = readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_MASK;		
 		if(stat == UPCTL_STAT_LOW_POWER) {
-			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_WAKEUP);
-			//while(stat != UPCTL_STAT_LOW_POWER);
+			writel(UPCTL_CMD_WAKEUP,P_UPCTL_SCTL_ADDR);
 		}
 		else if(stat == UPCTL_STAT_INIT) {
-			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_CONFIG);
-			//while(stat != UPCTL_STAT_CONFIG);
+			writel(UPCTL_CMD_CONFIG,P_UPCTL_SCTL_ADDR);
 		}
 		else if(stat == UPCTL_STAT_CONFIG) {
-			APB_Wr(UPCTL_SCTL_ADDR, SCTL_CMD_GO);
-			//while(stat != UPCTL_STAT_ACCESS);
+			writel(UPCTL_CMD_GO,P_UPCTL_SCTL_ADDR);
 		}
-		stat = APB_Rd(UPCTL_STAT_ADDR);
-		stat &= 0x7;
+		stat = readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_MASK;
+		
 	} while(stat != UPCTL_STAT_ACCESS);
 }
-/*
-#define DDR_RSLR_LEN 6
-#define DDR_RDGR_LEN 4
-#define PHYS_MEMORY_START 0x80000000
-#define DDR3_2Gbx16
-#define DDR_RANK  1   // 2'b11 means 2 rank.
-#define NOP_CMD  0
-#define PREA_CMD  1
-#define REF_CMD  2
-#define MRS_CMD  3
-#define ZQ_SHORT_CMD 4
-#define ZQ_LONG_CMD  5
-#define SFT_RESET_CMD 6
-*/
 
-#define MMC_Wr(addr,v) writel((v),(APB_REG_ADDR(addr)))
-#define MMC_Rd(addr) readl((APB_REG_ADDR(addr)))
-
-void disp_pctl(void)
-{
-#if 0
-#if 0
-	dbg_out("DDR_PLL_CNTL:",readl(P_HHI_DDR_PLL_CNTL));
-	dbg_out("DDR_PLL_CNTL2:",readl(P_HHI_DDR_PLL_CNTL2));
-	dbg_out("DDR_PLL_CNTL3:",readl(P_HHI_DDR_PLL_CNTL3));
-	dbg_out("DDR_PLL_CNTL4:", readl(P_HHI_DDR_PLL_CNTL4));
-	
-	dbg_out("MC_DDR_CTRL:",readl(P_MMC_DDR_CTRL));
-	dbg_out("MMC_PHY_CTRL:",readl(P_MMC_PHY_CTRL));
-	dbg_out("MMC_CLK_CNTL:",MMC_Rd(MMC_CLK_CNTL));
+//ddr training result
+typedef enum {
+	_UPCTL_TOGCNT1U  =0,																				//0
+	_UPCTL_TOGCNT100N,	_UPCTL_TINIT	,	_UPCTL_TRSTH	,	_UPCTL_TRSTL	,	_UPCTL_MCFG		,	//5
+	_UPCTL_MCFG1	,	_UPCTL_DFIODTCFG,																//7	
+	_PUB_DCR		,																					//8
+	_PUB_MR0		,	_PUB_MR1		, 	_PUB_MR2		,	_PUB_MR3		,						//12
+	_PUB_DTPR0		,	_PUB_DTPR1		,	_PUB_DTPR2		, 											//15	
+	_PUB_PTR0		,	_PUB_PTR1		,	_PUB_PTR2		,	_PUB_PTR3		,	_PUB_PTR4		,	//20	
+	_PUB_ACBDLR		,	_PUB_ACIOCR		,	_PUB_DSGCR      ,											//23	
+	_UPCTL_POWCTL   ,	_UPCTL_POWSTAT  , 																//25	
+	_PUB_DXCCR		,	_PUB_ZQ0CR1		,	_PUB_ZQ0CR0		,											//28
+	_UPCTL_TREFI	,	_UPCTL_TMRD		, 	_UPCTL_TRFC		,	_UPCTL_TRP		,	_UPCTL_TAL		,	//33	
+	_UPCTL_TCWL		,	_UPCTL_TCL		, 	_UPCTL_TRAS		,	_UPCTL_TRC		,	_UPCTL_TRCD		,	//38
+	_UPCTL_TRRD		,	_UPCTL_TRTP		, 	_UPCTL_TWR		,	_UPCTL_TWTR		,	_UPCTL_TEXSR	,	//43
+	_UPCTL_TXP		,	_UPCTL_TDQS		, 	_UPCTL_TRTW		,	_UPCTL_TCKSRE	,	_UPCTL_TCKSRX	,	//48
+	_UPCTL_TMOD		,	_UPCTL_TCKE		, 	_UPCTL_TZQCS	,	_UPCTL_TZQCL	,	_UPCTL_TXPDLL	,	//53
+	_UPCTL_TZQCSI	,	_UPCTL_SCFG		, 	_UPCTL_PPCFG	, 											//56
+	_UPCTL_DFISTCFG0		, _UPCTL_DFISTCFG1		, _UPCTL_DFITCTRLDELAY	, _UPCTL_DFITPHYWRDATA	, 	//60
+	_UPCTL_DFITPHYWRLAT		, _UPCTL_DFITRDDATAEN	, _UPCTL_DFITPHYRDLAT	, _UPCTL_DFITDRAMCLKDIS	, 	//64
+	_UPCTL_DFITDRAMCLKEN	, _UPCTL_DFITCTRLUPDMIN	, _UPCTL_DFITPHYUPDTYPE0, _UPCTL_DFITPHYUPDTYPE1, 	//68
+	_UPCTL_DFILPCFG0		, _UPCTL_DFITCTRLUPDI	, 													//70
+	_MMC_LP_CTRL1		,	_MMC_LP_CTRL2	,	_MMC_LP_CTRL3	,	_MMC_LP_CTRL4	,					//74
+	_UPCTL_CMDTSTATEN	,																				//71
+	_PUB_PGCR0	,	_PUB_PGCR1	,	_PUB_PGCR2	,														//74
+	_PUB_DTAR0	, 	_PUB_DTAR1	,	_PUB_DTAR2	,	_PUB_DTAR3	,										//78
+	_PUB_DTCR	, 																						//79
+	_MMC_DDR_CTRL	,																					//80
+	_HHI_SYS_PLL_CNTL    , _HHI_SYS_PLL_CNTL2	, _HHI_SYS_PLL_CNTL3	, _HHI_SYS_PLL_CNTL4	,	//84	
+	_HHI_DDR_PLL_CNTL    , _HHI_DDR_PLL_CNTL2 	, _HHI_DDR_PLL_CNTL3	, _HHI_DDR_PLL_CNTL4   	,	//88
+	_HHI_VID_PLL_CNTL    , _HHI_VID_PLL_CNTL2   , _HHI_VID_PLL_CNTL3    , _HHI_VID_PLL_CNTL4    ,	//92	
+	_HHI_MPLL_CNTL       , _HHI_MPLL_CNTL2      , _HHI_MPLL_CNTL3       , _HHI_MPLL_CNTL4       ,	//96 
+	_HHI_MPLL_CNTL5      , _HHI_MPLL_CNTL6      , _HHI_MPLL_CNTL7       , _HHI_MPLL_CNTL8       ,	//100
+	_HHI_MPLL_CNTL9      , _HHI_MPLL_CNTL10     , 													//102	
+	_HHI_AUDCLK_PLL_CNTL , _HHI_AUDCLK_PLL_CNTL2, _HHI_AUDCLK_PLL_CNTL3 , _HHI_AUDCLK_PLL_CNTL4 ,	//106
+	_HHI_AUDCLK_PLL_CNTL5,_HHI_AUDCLK_PLL_CNTL6,  													//108
 		
- 	 dbg_out("U_TOGCNT1U_ADDR ",MMC_Rd(UPCTL_TOGCNT1U_ADDR )); 
- 	 dbg_out("U_TOGCNT100N_ADDR ",MMC_Rd(UPCTL_TOGCNT100N_ADDR ));
- 	 dbg_out("U_TINIT_ADDR ",MMC_Rd(UPCTL_TINIT_ADDR )); 
- 	 dbg_out("U_TREFI:",MMC_Rd(UPCTL_TREFI_ADDR )); 
- 
-   dbg_out("U_TMRD:",MMC_Rd(UPCTL_TMRD_ADDR )); 
- 	 dbg_out("U_TRFC:",MMC_Rd(UPCTL_TRFC_ADDR )); 
- 	 dbg_out("U_TRP:",MMC_Rd(UPCTL_TRP_ADDR )); 
- 	 dbg_out("U_TAL:",MMC_Rd(UPCTL_TAL_ADDR )); 
- 	 dbg_out("U_TCL:",MMC_Rd(UPCTL_TCL_ADDR )); 
- 	 dbg_out("U_TRAS:",MMC_Rd(UPCTL_TRAS_ADDR )); 
- 	 dbg_out("U_TRC:",MMC_Rd(UPCTL_TRC_ADDR )); 
- 	 dbg_out("U_TRCD:",MMC_Rd(UPCTL_TRCD_ADDR )); 
- 	 dbg_out("U_TRRD:",MMC_Rd(UPCTL_TRRD_ADDR ));
- 	 dbg_out("U_TRTP:",MMC_Rd(UPCTL_TRTP_ADDR ));
- 	 dbg_out("U_TWR:",MMC_Rd(UPCTL_TWR_ADDR ));
- 	 dbg_out("U_TWTR:",MMC_Rd(UPCTL_TWTR_ADDR )); 
- 	 dbg_out("U_TEXSR:",MMC_Rd(UPCTL_TEXSR_ADDR )); 
- 	 dbg_out("U_TXP:",MMC_Rd(UPCTL_TXP_ADDR ));
- 	 dbg_out("U_TDQS:",MMC_Rd(UPCTL_TDQS_ADDR ));
- 	 dbg_out("U_TRTW:",MMC_Rd(UPCTL_TRTW_ADDR ));
- 	 dbg_out("U_TMOD:",MMC_Rd(UPCTL_TMOD_ADDR ));
- 	 dbg_out("U_TCWL:",MMC_Rd(UPCTL_TCWL_ADDR ));
-	
-	
-		dbg_out("U_MCFG:",MMC_Rd(UPCTL_MCFG_ADDR));
-		dbg_out("U_TZQCL:",MMC_Rd(UPCTL_TZQCL_ADDR));
-		
-		dbg_out("U_TRSTH:",MMC_Rd(UPCTL_TRSTH_ADDR));
-		dbg_out("U_TRSTL:",MMC_Rd(UPCTL_TRSTL_ADDR));
-		dbg_out("U_TCKE:",MMC_Rd(UPCTL_TCKE_ADDR));
-		dbg_out("U_TCKSRE:",MMC_Rd(UPCTL_TCKSRE_ADDR));
-		dbg_out("U_TCKSRX:",MMC_Rd(UPCTL_TCKSRX_ADDR));
-		
-		dbg_out("PUB_DTPR0:",MMC_Rd(PUB_DTPR0_ADDR));
-		dbg_out("PUB_DTPR1:",MMC_Rd(PUB_DTPR1_ADDR));
-		dbg_out("PUB_DTPR2:",MMC_Rd(PUB_DTPR2_ADDR));
-		dbg_out("PUB_PTR0:",MMC_Rd(PUB_PTR0_ADDR));
-		dbg_out("PUB_PTR1:",MMC_Rd(PUB_PTR1_ADDR));
-		dbg_out("PUB_PTR2:",MMC_Rd(PUB_PTR2_ADDR));
-		
-		dbg_out("PUB_MR0:",MMC_Rd( PUB_MR0_ADDR));
-		dbg_out("PUB_MR1:",MMC_Rd( PUB_MR1_ADDR));
-		dbg_out("PUB_MR2:",MMC_Rd( PUB_MR2_ADDR));
-		dbg_out("PUB_MR3:",MMC_Rd( PUB_MR3_ADDR));	
-
-    dbg_out("U_PPCFG:",MMC_Rd( UPCTL_PPCFG_ADDR));
-    dbg_out("U_DFISTCFG0:",MMC_Rd( UPCTL_DFISTCFG0_ADDR));
-    dbg_out("U_DFITPHYWRLAT:",MMC_Rd( UPCTL_DFITPHYWRLAT_ADDR));
-    dbg_out("U_DFITRDDATAEN:",MMC_Rd( UPCTL_DFITRDDATAEN_ADDR));
-    dbg_out("U_DFITPHYWRDATA:",MMC_Rd( UPCTL_DFITPHYWRDATA_ADDR));
-    dbg_out("U_DFITPHYRDLAT:",MMC_Rd( UPCTL_DFITPHYRDLAT_ADDR));
-    dbg_out("U_DFITDRAMCLKDIS:",MMC_Rd( UPCTL_DFITDRAMCLKDIS_ADDR));
-    dbg_out("U_DFITDRAMCLKEN:",MMC_Rd( UPCTL_DFITDRAMCLKEN_ADDR));
-    dbg_out("U_DFITCTRLDELAY:",MMC_Rd( UPCTL_DFITCTRLDELAY_ADDR));
-    dbg_out("U_DFITCTRLUPDMIN:",MMC_Rd( UPCTL_DFITCTRLUPDMIN_ADDR));
-    dbg_out("U_DFILPCFG0:",MMC_Rd( UPCTL_DFILPCFG0_ADDR)); 
-    dbg_out("PUB_PIR:",MMC_Rd( PUB_PIR_ADDR)); 
-    dbg_out("PUB_PGCR:",MMC_Rd( PUB_PGCR_ADDR)); 
-	
-		dbg_out("U_LPDDR2ZQCFG:",MMC_Rd(UPCTL_LPDDR2ZQCFG_ADDR));
-	  dbg_out("U_ZQCR:",MMC_Rd(UPCTL_ZQCR_ADDR));
-	  
-	  
-	  
-	dbg_out("PUB_ACIOCR:",MMC_Rd( PUB_ACIOCR_ADDR));
-	dbg_out("PUB_DSGCR:",MMC_Rd( PUB_DSGCR_ADDR)); 
-
-  dbg_out("PUB_ZQ0CR1:",MMC_Rd( PUB_ZQ0CR1_ADDR));
+} back_reg_index;
     
-	dbg_out("U_TZQCS:",MMC_Rd(UPCTL_TZQCS_ADDR));
-	dbg_out("U_TZQCL:",MMC_Rd(UPCTL_TZQCL_ADDR));
-
-	dbg_out("U_TXPDLL:",MMC_Rd(UPCTL_TXPDLL_ADDR));
-
-	dbg_out("U_TZQCSI:",MMC_Rd(UPCTL_TZQCSI_ADDR));
-
-	dbg_out("U_SCFG:",MMC_Rd(UPCTL_SCFG_ADDR));
-	dbg_out("PUB_DTAR:",MMC_Rd( PUB_DTAR_ADDR)); 
-
-	dbg_out("MMC_REQ_CTRL:",MMC_Rd(MMC_REQ_CTRL)); 
+#define DDR_SETTING_COUNT 128
+static unsigned int g_ddr_settings[DDR_SETTING_COUNT];
+void hx_save_ddr_settings()
+{	
+	f_serial_puts("hx_save_ddr_settings\n");
 	
-	dbg_out("U_DLLCR9:",MMC_Rd(UPCTL_DLLCR9_ADDR)); //2a8	
-	dbg_out("U_IOCR:",MMC_Rd(UPCTL_IOCR_ADDR)); //248
-#endif
+	//check & turn off
+	g_ddr_settings[_MMC_LP_CTRL1] = readl(P_MMC_LP_CTRL1);
+	if(g_ddr_settings[_MMC_LP_CTRL1] & MMC_LOWPWR_ENABLE)
+	{
+		//MMC LP switch off
+		writel( g_ddr_settings[_MMC_LP_CTRL1] & (~MMC_LOWPWR_ENABLE),P_MMC_LP_CTRL1 );		
+	}	
+
 	
-  dbg_out("U_DLLCR0:",MMC_Rd(UPCTL_DLLCR0_ADDR)); //284
-  dbg_out("U_DLLCR1:",MMC_Rd(UPCTL_DLLCR1_ADDR)); //288
-  dbg_out("U_DLLCR2:",MMC_Rd(UPCTL_DLLCR2_ADDR)); //28c
-  dbg_out("U_DLLCR3:",MMC_Rd(UPCTL_DLLCR3_ADDR)); //290
-  dbg_out("U_DQSTR:",MMC_Rd(UPCTL_DQSTR_ADDR));   //2e4
-  dbg_out("U_DQSNTR:",MMC_Rd(UPCTL_DQSNTR_ADDR)); //2e8
-  dbg_out("U_DQTR0:",MMC_Rd(UPCTL_DQTR0_ADDR));     //2c0
-  dbg_out("U_DQTR1:",MMC_Rd(UPCTL_DQTR1_ADDR));     //2c4
-  dbg_out("U_DQTR2:",MMC_Rd(UPCTL_DQTR2_ADDR));     //2c8
-  dbg_out("U_DQTR3:",MMC_Rd(UPCTL_DQTR3_ADDR));     //2cc
-
-	 dbg_out("U_RDGR0_ADDR      ",MMC_Rd(UPCTL_RDGR0_ADDR));
-	 dbg_out("U_RSLR0_ADDR     ",MMC_Rd(UPCTL_RSLR0_ADDR));
-
-
-  dbg_out("PUB_DX0GSR0:", MMC_Rd(PUB_DX0GSR0_ADDR)); 
-	dbg_out("PUB_DX0GSR1:", MMC_Rd(PUB_DX0GSR1_ADDR)); 
-	dbg_out("PUB_DX0DQSTR:",MMC_Rd(PUB_DX0DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX1GSR0:", MMC_Rd(PUB_DX1GSR0_ADDR)); 
-	dbg_out("PUB_DX1GSR1:", MMC_Rd(PUB_DX1GSR1_ADDR)); 
-	dbg_out("PUB_DX1DQSTR:",MMC_Rd(PUB_DX1DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX2GSR0:", MMC_Rd(PUB_DX2GSR0_ADDR)); 
-	dbg_out("PUB_DX2GSR1:", MMC_Rd(PUB_DX2GSR1_ADDR)); 
-	dbg_out("PUB_DX2DQSTR:",MMC_Rd(PUB_DX2DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX3GSR0:", MMC_Rd(PUB_DX3GSR0_ADDR)); 
-	dbg_out("PUB_DX3GSR1:", MMC_Rd(PUB_DX3GSR1_ADDR)); 
-	dbg_out("PUB_DX3DQSTR:",MMC_Rd(PUB_DX3DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX4GSR0:", MMC_Rd(PUB_DX4GSR0_ADDR)); 
-	dbg_out("PUB_DX4GSR1:", MMC_Rd(PUB_DX4GSR1_ADDR)); 
-	dbg_out("PUB_DX4DQSTR:",MMC_Rd(PUB_DX4DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX5GSR0:", MMC_Rd(PUB_DX5GSR0_ADDR)); 
-	dbg_out("PUB_DX5GSR1:", MMC_Rd(PUB_DX5GSR1_ADDR)); 
-	dbg_out("PUB_DX5DQSTR:",MMC_Rd(PUB_DX5DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX6GSR0:", MMC_Rd(PUB_DX6GSR0_ADDR)); 
-	dbg_out("PUB_DX6GSR1:", MMC_Rd(PUB_DX6GSR1_ADDR)); 
-	dbg_out("PUB_DX6DQSTR:",MMC_Rd(PUB_DX6DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX7GSR0:", MMC_Rd(PUB_DX7GSR0_ADDR)); 
-	dbg_out("PUB_DX7GSR1:", MMC_Rd(PUB_DX7GSR1_ADDR)); 
-	dbg_out("PUB_DX7DQSTR:",MMC_Rd(PUB_DX7DQSTR_ADDR)); 
-
-  dbg_out("PUB_DX8GSR0:", MMC_Rd(PUB_DX8GSR0_ADDR)); 
-	dbg_out("PUB_DX8GSR1:", MMC_Rd(PUB_DX8GSR1_ADDR)); 
-	dbg_out("PUB_DX8DQSTR:",MMC_Rd(PUB_DX8DQSTR_ADDR)); 
-
-#endif
-}
-
-unsigned ddr_settings[DDR_SETTING_COUNT];
-void save_ddr_settings()
-{
-	v_ddr_pll_cntl =  readl(P_HHI_DDR_PLL_CNTL);
-	v_ddr_pll_cntl2 = readl(P_HHI_DDR_PLL_CNTL2);
-	v_ddr_pll_cntl3 = readl(P_HHI_DDR_PLL_CNTL3);
-	v_ddr_pll_cntl4 = readl(P_HHI_DDR_PLL_CNTL4);
-	
-	v_mmc_ddr_ctrl = readl(P_MMC_DDR_CTRL);
-	v_mmc_phy_ctrl = readl(P_MMC_PHY_CTRL);
-	v_mmc_clk_cntl = MMC_Rd(MMC_CLK_CNTL);
-	
-	v_rdgr0 = MMC_Rd(UPCTL_RDGR0_ADDR);
-	v_rslr0 = MMC_Rd(UPCTL_RSLR0_ADDR);
-	
- 	v_t_1us_pck      = MMC_Rd(UPCTL_TOGCNT1U_ADDR ); 
- 	v_t_100ns_pck    = MMC_Rd(UPCTL_TOGCNT100N_ADDR );
- 	v_t_init_us      = MMC_Rd(UPCTL_TINIT_ADDR ); 
- 	v_t_refi_100ns   = MMC_Rd(UPCTL_TREFI_ADDR ); 
- 
-  v_t_mrd          = MMC_Rd(UPCTL_TMRD_ADDR ); 
- 	v_t_rfc          = MMC_Rd(UPCTL_TRFC_ADDR ); 
- 	v_t_rp           = MMC_Rd(UPCTL_TRP_ADDR ); 
- 	v_t_al           = MMC_Rd(UPCTL_TAL_ADDR ); 
- 	v_t_cl           = MMC_Rd(UPCTL_TCL_ADDR ); 
- 	v_t_ras          = MMC_Rd(UPCTL_TRAS_ADDR ); 
- 	v_t_rc           = MMC_Rd(UPCTL_TRC_ADDR ); 
- 	v_t_rcd          = MMC_Rd(UPCTL_TRCD_ADDR ); 
- 	v_t_rrd          = MMC_Rd(UPCTL_TRRD_ADDR );
- 	v_t_rtp          = MMC_Rd(UPCTL_TRTP_ADDR );
- 	v_t_wr           = MMC_Rd(UPCTL_TWR_ADDR );
- 	v_t_wtr          = MMC_Rd(UPCTL_TWTR_ADDR ); 
- 	v_t_exsr         = MMC_Rd(UPCTL_TEXSR_ADDR ); 
- 	v_t_xp           = MMC_Rd(UPCTL_TXP_ADDR );
- 	v_t_dqs          = MMC_Rd(UPCTL_TDQS_ADDR );
- 	v_t_trtw         = MMC_Rd(UPCTL_TRTW_ADDR );
- 	v_t_mod          = MMC_Rd(UPCTL_TMOD_ADDR );
- 	v_t_cwl          = MMC_Rd(UPCTL_TCWL_ADDR );
- 	
- 	v_mcfg           = MMC_Rd(UPCTL_MCFG_ADDR);
-	
-	v_dfiodrcfg_adr      = MMC_Rd(UPCTL_DFIODTCFG_ADDR);
-	
- 	v_t_zqcl         = MMC_Rd(UPCTL_TZQCL_ADDR);
-
-  v_t_rsth_us  = MMC_Rd(UPCTL_TRSTH_ADDR);
-  v_t_rstl_us  = MMC_Rd(UPCTL_TRSTL_ADDR);
-  v_t_cke      = MMC_Rd(UPCTL_TCKE_ADDR);
-  v_t_cksre    = MMC_Rd(UPCTL_TCKSRE_ADDR);
-  v_t_cksrx    = MMC_Rd(UPCTL_TCKSRX_ADDR);
-
-  v_pub_dtpr0   = MMC_Rd(PUB_DTPR0_ADDR);
-  v_pub_dtpr1   = MMC_Rd(PUB_DTPR1_ADDR);
-  v_pub_dtpr2   = MMC_Rd(PUB_DTPR2_ADDR);
-  v_pub_ptr0    = MMC_Rd(PUB_PTR0_ADDR);
-  v_pub_ptr1    = MMC_Rd(PUB_PTR1_ADDR);
-  v_pub_ptr2    = MMC_Rd(PUB_PTR2_ADDR);
-
-	v_msr0 = MMC_Rd( PUB_MR0_ADDR);
-	v_msr1 = MMC_Rd( PUB_MR1_ADDR);
-	v_msr2 = MMC_Rd( PUB_MR2_ADDR);
-	v_msr3 = MMC_Rd( PUB_MR3_ADDR);	
-
-	v_odtcfg = MMC_Rd( UPCTL_LPDDR2ZQCFG_ADDR);	
-/*	v_zqcr = MMC_Rd( UPCTL_ZQCR_ADDR);	
-	
-	v_dllcr9 = MMC_Rd(UPCTL_DLLCR9_ADDR); //2a8	
-	v_iocr = MMC_Rd(UPCTL_IOCR_ADDR); //248
-	
-  v_dllcr0 = MMC_Rd(UPCTL_DLLCR0_ADDR); //284
-  v_dllcr1 = MMC_Rd(UPCTL_DLLCR1_ADDR); //288
-  v_dllcr2 = MMC_Rd(UPCTL_DLLCR2_ADDR); //28c
-  v_dllcr3 = MMC_Rd(UPCTL_DLLCR3_ADDR); //290
-  v_dqscr = MMC_Rd(UPCTL_DQSTR_ADDR);   //2e4
-  v_dqsntr = MMC_Rd(UPCTL_DQSNTR_ADDR); //2e8
-  v_tr0 = MMC_Rd(UPCTL_DQTR0_ADDR);     //2c0
-  v_tr1 = MMC_Rd(UPCTL_DQTR1_ADDR);     //2c4
-  v_tr2 = MMC_Rd(UPCTL_DQTR2_ADDR);     //2c8
-  v_tr3 = MMC_Rd(UPCTL_DQTR3_ADDR);     //2cc
-  */
-  
-  v_dx0gsr0  = MMC_Rd(PUB_DX0GSR0_ADDR); 
-	v_dx0gsr1  = MMC_Rd(PUB_DX0GSR1_ADDR); 
-	v_dx0dqstr = MMC_Rd(PUB_DX0DQSTR_ADDR); 
-	
-  v_dx1gsr0  = MMC_Rd(PUB_DX1GSR0_ADDR); 
-	v_dx1gsr1  = MMC_Rd(PUB_DX1GSR1_ADDR); 
-	v_dx1dqstr = MMC_Rd(PUB_DX1DQSTR_ADDR); 
-
-  v_dx2gsr0  = MMC_Rd(PUB_DX2GSR0_ADDR); 
-	v_dx2gsr1  = MMC_Rd(PUB_DX2GSR1_ADDR); 
-	v_dx2dqstr = MMC_Rd(PUB_DX2DQSTR_ADDR); 
-
-  v_dx3gsr0  = MMC_Rd(PUB_DX3GSR0_ADDR); 
-	v_dx3gsr1  = MMC_Rd(PUB_DX3GSR1_ADDR); 
-	v_dx3dqstr = MMC_Rd(PUB_DX3DQSTR_ADDR); 
-
-  v_dx4gsr0  = MMC_Rd(PUB_DX4GSR0_ADDR); 
-	v_dx4gsr1  = MMC_Rd(PUB_DX4GSR1_ADDR); 
-	v_dx4dqstr = MMC_Rd(PUB_DX4DQSTR_ADDR); 
-
-  v_dx5gsr0  = MMC_Rd(PUB_DX5GSR0_ADDR); 
-	v_dx5gsr1  = MMC_Rd(PUB_DX5GSR1_ADDR); 
-	v_dx5dqstr = MMC_Rd(PUB_DX5DQSTR_ADDR); 
-
-  v_dx6gsr0  = MMC_Rd(PUB_DX6GSR0_ADDR); 
-	v_dx6gsr1  = MMC_Rd(PUB_DX6GSR1_ADDR); 
-	v_dx6dqstr = MMC_Rd(PUB_DX6DQSTR_ADDR); 
-
-  v_dx7gsr0  = MMC_Rd(PUB_DX7GSR0_ADDR); 
-	v_dx7gsr1  = MMC_Rd(PUB_DX7GSR1_ADDR); 
-	v_dx7dqstr = MMC_Rd(PUB_DX7DQSTR_ADDR); 
-
-  v_dx8gsr0  = MMC_Rd(PUB_DX8GSR0_ADDR); 
-	v_dx8gsr1  = MMC_Rd(PUB_DX8GSR1_ADDR); 
-	v_dx8dqstr = MMC_Rd(PUB_DX8DQSTR_ADDR); 
-
-	v_zq0cr1   = MMC_Rd(PUB_ZQ0CR1_ADDR);
-#ifdef CONFIG_TURN_OFF_ODT
-	v_zq0cr0   = MMC_Rd(PUB_ZQ0CR0_ADDR);
-	v_cmdzq    = MMC_Rd(MMC_CMDZQ_CTRL);
-#endif
-}
-
-#if 0
-#define sec_mmc_wr(addr,v) writel(v,addr)
-void init_dmc(void)
-{
-		dbg_puts("init dmc\n");
-		MMC_Wr(MMC_DDR_CTRL, v_mmc_ddr_ctrl);
-		dbg_out("p0:",readl(DMC_SEC_PORT0_RANGE0));
-		dbg_out("p1:",readl(DMC_SEC_PORT1_RANGE0));
-		dbg_out("p2:",readl(DMC_SEC_PORT2_RANGE0));
-		dbg_out("p3:",readl(DMC_SEC_PORT3_RANGE0));
-		dbg_out("p4:",readl(DMC_SEC_PORT4_RANGE0));
-		dbg_out("p5:",readl(DMC_SEC_PORT5_RANGE0));
-		dbg_out("p6:",readl(DMC_SEC_PORT6_RANGE0));
-		dbg_out("p7:",readl(DMC_SEC_PORT7_RANGE0));
-		dbg_out("sectrl:",readl(DMC_SEC_CTRL));
-	  sec_mmc_wr(DMC_SEC_PORT0_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT1_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT2_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT3_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT4_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT5_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT6_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_PORT7_RANGE0, 0xffff);
-    sec_mmc_wr(DMC_SEC_CTRL,         0x80000000);
-	
-		dbg_puts("init dmc\n");
-
-		//APB_Wr(MMC_REQ_CTRL,0xff); //hisun 2012.02.08
-		MMC_Wr(MMC_REQ_CTRL,0xff);   //hisun 2012.02.08
-		dbg_puts("init dmc\n");
-}
+#ifndef DDR_SUSPEND_SAVE
+	#define DDR_SUSPEND_SAVE(a)  {g_ddr_settings[a] = readl(P##a##_ADDR);}
 #endif
 
-void reset_ddr_dll(void) {
-	MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
-	MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);
-	//enable the clock.
-	MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
-	MMC_Wr( PUB_PIR_ADDR, (0x1 << 1));
-	// check bit 1, the DLL is LOCKED.
-	while( !(MMC_Rd(PUB_PGSR_ADDR & 0x2))) {}
-}
-
-void ddr_data_training(void) {
-	int stat;
-	//start trainning.
-	// DDR PHY initialization
-	// UPCTL enter cfg mode.
-	MMC_Wr(UPCTL_SCTL_ADDR, 1); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
-	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-
-	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
-
-	MMC_Wr( PUB_PIR_ADDR, 0x189);
-	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
-
-	//DDR3_SDRAM_INIT_WAIT :
-	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-	//check data training result
-	//check ZQ calibraration status.
-	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR0\n");
-	stat = MMC_Rd(PUB_ZQ0SR1_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR1\n");
-
-	//check data training result.
-	stat = MMC_Rd(PUB_DX0GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX0GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX1GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX1GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX2GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX2GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX3GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX3GSR0\n");
-	wait_uart_empty();
-
-	dbg_out("d",9);
-	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
-	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-}
-
-void init_pctl(void)
-{
-	int nTempVal;
-	int stat;
-  
-	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
-/*	MMC_Wr(UPCTL_DLLCR9_ADDR, v_dllcr9); //2a8	
-	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
-	MMC_Wr(UPCTL_PHYCR_ADDR, 2);//????
-*/
-
-  //wait to DDR PLL lock.
-	//while (!(MMC_Rd(MMC_CLK_CNTL) & (1<<29)) ) {}
-	//dbg_out("d",1);
-  //Enable DDR DLL clock input from PLL.
-//     MMC_Wr(MMC_CLK_CNTL, 0xc0000080);  //  @@@ select the final mux from PLL output directly.
-//     MMC_Wr(MMC_CLK_CNTL, 0xc00000c0);    
-    //enable the clock.
-	//MMC_Wr(MMC_CLK_CNTL, v_mmc_clk_cntl);
-     
-    // release the DDR DLL reset pin.
-//    MMC_Wr( MMC_SOFT_RST,  0xffff);
-	//__udelay(10);
-	//UPCTL memory timing registers
-	MMC_Wr(UPCTL_TOGCNT1U_ADDR, v_t_1us_pck);	 //1us = nn cycles.
-	MMC_Wr(UPCTL_TOGCNT100N_ADDR, v_t_100ns_pck);//100ns = nn cycles.
-	MMC_Wr(UPCTL_TINIT_ADDR, v_t_init_us);  //200us.
+	DDR_SUSPEND_SAVE(_UPCTL_TOGCNT1U);	       
+	DDR_SUSPEND_SAVE(_UPCTL_TOGCNT100N);
+	DDR_SUSPEND_SAVE(_UPCTL_TINIT);
+	DDR_SUSPEND_SAVE(_UPCTL_TRSTH);
+	DDR_SUSPEND_SAVE(_UPCTL_TRSTL);
+		
+	DDR_SUSPEND_SAVE(_UPCTL_MCFG);
+	DDR_SUSPEND_SAVE(_UPCTL_MCFG1);
+	DDR_SUSPEND_SAVE(_UPCTL_DFIODTCFG);
+	DDR_SUSPEND_SAVE(_PUB_DCR);
 	
-//  MMC_Wr(UPCTL_TRSTH_ADDR, 2);      // 0 for ddr2; 500 for ddr3. 2 for simulation.
-	MMC_Wr(UPCTL_TRSTH_ADDR, v_t_rsth_us);  // 0 for ddr2;  2 for simulation; 500 for ddr3. //???
-	MMC_Wr(UPCTL_TRSTL_ADDR, v_t_rstl_us);  //?????
+	DDR_SUSPEND_SAVE(_PUB_MR0);
+	DDR_SUSPEND_SAVE(_PUB_MR1);
+	DDR_SUSPEND_SAVE(_PUB_MR2);
+	DDR_SUSPEND_SAVE(_PUB_MR3);
 	
-	MMC_Wr(UPCTL_MCFG_ADDR,v_mcfg);
+	DDR_SUSPEND_SAVE(_PUB_DTPR0);
+	DDR_SUSPEND_SAVE(_PUB_DTPR1);
+	DDR_SUSPEND_SAVE(_PUB_DTPR2);
 	
-	MMC_Wr(UPCTL_DFIODTCFG_ADDR, v_dfiodrcfg_adr);//add for Eric fine-tune
-	
- 
-	//configure DDR PHY PUBL registers.
-	//  2:0   011: DDR3 mode.	 100:	LPDDR2 mode.
-	//  3:    8 bank. 
-	MMC_Wr(PUB_DCR_ADDR, 0x3 | (1 << 3));
-	MMC_Wr(PUB_PGCR_ADDR, 0x01842e04); //PUB_PGCR_ADDR: c8001008
+	DDR_SUSPEND_SAVE(_PUB_PTR0);
+	DDR_SUSPEND_SAVE(_PUB_PTR1);
+	DDR_SUSPEND_SAVE(_PUB_PTR2);
+	DDR_SUSPEND_SAVE(_PUB_PTR3);
+	DDR_SUSPEND_SAVE(_PUB_PTR4);
 
-	MMC_Wr( PUB_MR0_ADDR,v_msr0);
-	MMC_Wr( PUB_MR1_ADDR,v_msr1);
-	MMC_Wr( PUB_MR2_ADDR,v_msr2);
-	MMC_Wr( PUB_MR3_ADDR,v_msr3);	
-//	MMC_Wr( PUB_MR3_ADDR,0);	
+	DDR_SUSPEND_SAVE(_PUB_ACBDLR);
+	DDR_SUSPEND_SAVE(_PUB_ACIOCR);
 	
-	MMC_Wr(PUB_DTPR0_ADDR,v_pub_dtpr0);
-	MMC_Wr(PUB_DTPR1_ADDR,v_pub_dtpr1);
-	MMC_Wr(PUB_DTPR2_ADDR,v_pub_dtpr2);
-	MMC_Wr(PUB_PTR0_ADDR,v_pub_ptr0);
-
+	DDR_SUSPEND_SAVE(_PUB_DSGCR);
+	DDR_SUSPEND_SAVE(_UPCTL_POWCTL);
+	DDR_SUSPEND_SAVE(_UPCTL_POWSTAT);
 	
-//	MMC_Wr( PUB_PIR_ADDR, 0x17);//Add By Dai
+	DDR_SUSPEND_SAVE(_PUB_DXCCR);
+	DDR_SUSPEND_SAVE(_PUB_ZQ0CR1);
+	DDR_SUSPEND_SAVE(_PUB_ZQ0CR0);
 	
-	  __udelay(50);
-	//wait PHY DLL LOCK
-	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
-	dbg_out("d",2);
+	DDR_SUSPEND_SAVE(_UPCTL_TREFI);
+	DDR_SUSPEND_SAVE(_UPCTL_TMRD);
+	DDR_SUSPEND_SAVE(_UPCTL_TRFC);
+	DDR_SUSPEND_SAVE(_UPCTL_TRP);
+	DDR_SUSPEND_SAVE(_UPCTL_TAL);
+	
+	DDR_SUSPEND_SAVE(_UPCTL_TCWL);
+	DDR_SUSPEND_SAVE(_UPCTL_TCL);
+	DDR_SUSPEND_SAVE(_UPCTL_TRAS);
+	DDR_SUSPEND_SAVE(_UPCTL_TRC);
+	DDR_SUSPEND_SAVE(_UPCTL_TRCD);
+	DDR_SUSPEND_SAVE(_UPCTL_TRRD);
+	DDR_SUSPEND_SAVE(_UPCTL_TRTP);
+	DDR_SUSPEND_SAVE(_UPCTL_TWR);
+	DDR_SUSPEND_SAVE(_UPCTL_TWTR);
+	
+	DDR_SUSPEND_SAVE(_UPCTL_TEXSR);
+	DDR_SUSPEND_SAVE(_UPCTL_TXP);
+	DDR_SUSPEND_SAVE(_UPCTL_TDQS);
+	DDR_SUSPEND_SAVE(_UPCTL_TRTW);
+	DDR_SUSPEND_SAVE(_UPCTL_TCKSRE);
+	DDR_SUSPEND_SAVE(_UPCTL_TCKSRX);
+	DDR_SUSPEND_SAVE(_UPCTL_TMOD);
+	DDR_SUSPEND_SAVE(_UPCTL_TCKE);	
+	DDR_SUSPEND_SAVE(_UPCTL_TZQCS);
+	
+	DDR_SUSPEND_SAVE(_UPCTL_TZQCL);
+	DDR_SUSPEND_SAVE(_UPCTL_TXPDLL);
+	DDR_SUSPEND_SAVE(_UPCTL_TZQCSI);
+	DDR_SUSPEND_SAVE(_UPCTL_SCFG);
+		
+	DDR_SUSPEND_SAVE(_UPCTL_PPCFG);
+	DDR_SUSPEND_SAVE(_UPCTL_DFISTCFG0);
+	DDR_SUSPEND_SAVE(_UPCTL_DFISTCFG1);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITCTRLDELAY);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITPHYWRDATA);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITPHYWRLAT);		
+	DDR_SUSPEND_SAVE(_UPCTL_DFITRDDATAEN);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITPHYRDLAT);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITDRAMCLKDIS);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITDRAMCLKEN);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITCTRLUPDMIN);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITPHYUPDTYPE0);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITPHYUPDTYPE1);
+		
+	DDR_SUSPEND_SAVE(_UPCTL_DFILPCFG0);
+	DDR_SUSPEND_SAVE(_UPCTL_DFITCTRLUPDI);
+	DDR_SUSPEND_SAVE(_UPCTL_CMDTSTATEN);
+	
+	DDR_SUSPEND_SAVE(_PUB_PGCR0);
+	DDR_SUSPEND_SAVE(_PUB_PGCR1);
+	DDR_SUSPEND_SAVE(_PUB_PGCR2);
+	DDR_SUSPEND_SAVE(_PUB_DTAR0);
+	DDR_SUSPEND_SAVE(_PUB_DTAR1);
+	
+	DDR_SUSPEND_SAVE(_PUB_DTAR2);
+	DDR_SUSPEND_SAVE(_PUB_DTAR3);
+	DDR_SUSPEND_SAVE(_PUB_DTCR);
+		
+#undef DDR_SUSPEND_SAVE
 
-	// configure DDR3_rst pin.
-	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
-	MMC_Wr( PUB_DSGCR_ADDR,	MMC_Rd(PUB_DSGCR_ADDR) & 0xffffffef); 
-
-	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
-	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
-#ifdef CONFIG_TURN_OFF_ODT
-	if(v_zq0cr0 & (1<<28))
-	    MMC_Wr( PUB_ZQ0CR0_ADDR, v_zq0cr0);
-    else
-        MMC_Wr( PUB_ZQ0CR1_ADDR, v_zq0cr1);
-
-    if(v_cmdzq)
-	    MMC_Wr( MMC_CMDZQ_CTRL,  v_cmdzq);
-#else
-		MMC_Wr( PUB_ZQ0CR1_ADDR, v_zq0cr1);
+#ifndef DDR_SUSPEND_SAVE
+	#define DDR_SUSPEND_SAVE(a)  {g_ddr_settings[a] = readl(P##a);}
 #endif
-	//for simulation to reduce the init time.
-//	MMC_Wr(PUB_PTR1_ADDR,v_pub_ptr1);
-//	MMC_Wr(PUB_PTR2_ADDR,v_pub_ptr2);
 
+	//SYS PLL
+	DDR_SUSPEND_SAVE(_HHI_SYS_PLL_CNTL);
+	DDR_SUSPEND_SAVE(_HHI_SYS_PLL_CNTL2);
+	DDR_SUSPEND_SAVE(_HHI_SYS_PLL_CNTL3);
+	DDR_SUSPEND_SAVE(_HHI_SYS_PLL_CNTL4);
 
-//   MMC_Wr( PUB_PIR_ADDR, 0x9);//Add By Dai
-
-   __udelay(20);
-	//wait DDR3_ZQ_DONE: 
-#ifndef CONFIG_TURN_OFF_ODT
-	while( !(MMC_Rd( PUB_PGSR_ADDR) & (1<< 2))) {}
-#endif
+	//DDR PLL
+	DDR_SUSPEND_SAVE(_HHI_DDR_PLL_CNTL);
+	DDR_SUSPEND_SAVE(_HHI_DDR_PLL_CNTL2);
+	DDR_SUSPEND_SAVE(_HHI_DDR_PLL_CNTL3);
+	DDR_SUSPEND_SAVE(_HHI_DDR_PLL_CNTL4);
 	
-	dbg_out("d",3);
-	// wait DDR3_PHY_INIT_WAIT : 
-#ifndef CONFIG_TURN_OFF_ODT
-	while (!(MMC_Rd(PUB_PGSR_ADDR) & 1 )) {}
-#endif
-		dbg_out("d",4);
-	// Monitor DFI initialization status.
-#ifndef CONFIG_TURN_OFF_ODT
-	while(!(MMC_Rd(UPCTL_DFISTSTAT0_ADDR) & 1)) {} 
-#endif
-	dbg_out("d",5);
-
-	MMC_Wr(UPCTL_POWCTL_ADDR, 1);
-	while(!(MMC_Rd( UPCTL_POWSTAT_ADDR & 1) )) {}
-	dbg_out("d",6);
-
-	// initial upctl ddr timing.
-	MMC_Wr(UPCTL_TREFI_ADDR, v_t_refi_100ns);  // 7800ns to one refresh command.
-	// wr_reg UPCTL_TREFI_ADDR, 78
-
-	MMC_Wr(UPCTL_TMRD_ADDR, v_t_mrd);
-	//wr_reg UPCTL_TMRD_ADDR, 4
-
-	MMC_Wr(UPCTL_TRFC_ADDR, v_t_rfc);	//64: 400Mhz.  86: 533Mhz. 
-	// wr_reg UPCTL_TRFC_ADDR, 86
-
-	MMC_Wr(UPCTL_TRP_ADDR, v_t_rp);	// 8 : 533Mhz.
-	//wr_reg UPCTL_TRP_ADDR, 8
-
-	MMC_Wr(UPCTL_TAL_ADDR,	v_t_al);
-	//wr_reg UPCTL_TAL_ADDR, 0
-
-//  MMC_Wr(UPCTL_TCWL_ADDR,  v_t_cl-1 + v_t_al);
-  MMC_Wr(UPCTL_TCWL_ADDR,  v_t_cwl);
-	//wr_reg UPCTL_TCWL_ADDR, 6
-
-	MMC_Wr(UPCTL_TCL_ADDR, v_t_cl);	 //6: 400Mhz. 8 : 533Mhz.
-	// wr_reg UPCTL_TCL_ADDR, 8
-
-	MMC_Wr(UPCTL_TRAS_ADDR, v_t_ras); //16: 400Mhz. 20: 533Mhz.
-	//  wr_reg UPCTL_TRAS_ADDR, 20 
-
-	MMC_Wr(UPCTL_TRC_ADDR, v_t_rc);  //24 400Mhz. 28 : 533Mhz.
-	//wr_reg UPCTL_TRC_ADDR, 28
-
-	MMC_Wr(UPCTL_TRCD_ADDR, v_t_rcd);	//6: 400Mhz. 8: 533Mhz.
-	// wr_reg UPCTL_TRCD_ADDR, 8
-
-	MMC_Wr(UPCTL_TRRD_ADDR, v_t_rrd); //5: 400Mhz. 6: 533Mhz.
-	//wr_reg UPCTL_TRRD_ADDR, 6
-
-	MMC_Wr(UPCTL_TRTP_ADDR, v_t_rtp);
-	// wr_reg UPCTL_TRTP_ADDR, 4
-
-	MMC_Wr(UPCTL_TWR_ADDR, v_t_wr);
-	// wr_reg UPCTL_TWR_ADDR, 8
-
-	MMC_Wr(UPCTL_TWTR_ADDR, v_t_wtr);
-	//wr_reg UPCTL_TWTR_ADDR, 4
-
-	MMC_Wr(UPCTL_TEXSR_ADDR, v_t_exsr);
-	//wr_reg UPCTL_TEXSR_ADDR, 200
-
-	MMC_Wr(UPCTL_TXP_ADDR, v_t_xp);
-	//wr_reg UPCTL_TXP_ADDR, 4
-
-	MMC_Wr(UPCTL_TDQS_ADDR, v_t_dqs);
-	// wr_reg UPCTL_TDQS_ADDR, 2
-
-	MMC_Wr(UPCTL_TRTW_ADDR, v_t_trtw);
-	//wr_reg UPCTL_TRTW_ADDR, 2
-
-	//MMC_Wr(UPCTL_TCKSRE_ADDR, 5);
-	MMC_Wr(UPCTL_TCKSRE_ADDR, v_t_cksre);
-	//wr_reg UPCTL_TCKSRE_ADDR, 5 
-
-	//MMC_Wr(UPCTL_TCKSRX_ADDR, 5);
-	MMC_Wr(UPCTL_TCKSRX_ADDR, v_t_cksrx);
-	//wr_reg UPCTL_TCKSRX_ADDR, 5 
-
-	MMC_Wr(UPCTL_TMOD_ADDR, v_t_mod);
-	//wr_reg UPCTL_TMOD_ADDR, 8
-
-	//MMC_Wr(UPCTL_TCKE_ADDR, 4);
-	MMC_Wr(UPCTL_TCKE_ADDR, v_t_cke);
-	//wr_reg UPCTL_TCKE_ADDR, 4 
-
-	MMC_Wr(UPCTL_TZQCS_ADDR, 64);
-	//wr_reg UPCTL_TZQCS_ADDR , 64 
-
-//	MMC_Wr(UPCTL_TZQCL_ADDR, v_t_zqcl);
-	MMC_Wr(UPCTL_TZQCL_ADDR, 512);
-	//wr_reg UPCTL_TZQCL_ADDR , 512 
-
-	MMC_Wr(UPCTL_TXPDLL_ADDR, 10);
-	// wr_reg UPCTL_TXPDLL_ADDR, 10  
-
-	MMC_Wr(UPCTL_TZQCSI_ADDR, 1000);
-	// wr_reg UPCTL_TZQCSI_ADDR, 1000  
-
-	MMC_Wr(UPCTL_SCFG_ADDR, 0xf00);
-	// wr_reg UPCTL_SCFG_ADDR, 0xf00 
+	DDR_SUSPEND_SAVE(_MMC_DDR_CTRL);	
 	
-//	MMC_Wr(UPCTL_LPDDR2ZQCFG_ADDR,v_odtcfg); //????
-//	MMC_Wr(UPCTL_ZQCR_ADDR,v_zqcr); //?????
- 	
- 	MMC_Wr( UPCTL_SCTL_ADDR, 1);
-	while (!( MMC_Rd(UPCTL_STAT_ADDR) & 1))  {
-		MMC_Wr(UPCTL_SCTL_ADDR, 1);
+	if(g_ddr_settings[_MMC_LP_CTRL1])
+	{		
+		DDR_SUSPEND_SAVE(_MMC_LP_CTRL3);
+		DDR_SUSPEND_SAVE(_MMC_LP_CTRL4);
 	}
-	dbg_out("d",7);
-	//config the DFI interface.
-	MMC_Wr( UPCTL_PPCFG_ADDR, (0xf0 << 1) );
-	MMC_Wr( UPCTL_DFITCTRLDELAY_ADDR, 2 );
-	MMC_Wr( UPCTL_DFITPHYWRDATA_ADDR,  0x1 );
-	MMC_Wr( UPCTL_DFITPHYWRLAT_ADDR, v_t_cwl -1  );    //CWL -1
-	MMC_Wr( UPCTL_DFITRDDATAEN_ADDR, v_t_cl - 2  );    //CL -2
-	MMC_Wr( UPCTL_DFITPHYRDLAT_ADDR, 15 );
-	MMC_Wr( UPCTL_DFITDRAMCLKDIS_ADDR, 2 );
-	MMC_Wr( UPCTL_DFITDRAMCLKEN_ADDR, 2 );
-	MMC_Wr( UPCTL_DFISTCFG0_ADDR, 0x4  );
-	MMC_Wr( UPCTL_DFITCTRLUPDMIN_ADDR, 0x4000 );
-	MMC_Wr( UPCTL_DFILPCFG0_ADDR, ( 1 | (7 << 4) | (1 << 8) | (10 << 12) | (12 <<16) | (1 <<24) | ( 7 << 28)));
- 
-	MMC_Wr( UPCTL_CMDTSTATEN_ADDR, 1);
-	while (!(MMC_Rd(UPCTL_CMDTSTAT_ADDR) & 1 )) {}
-	dbg_out("d",8);
+	             
+	//VID PLL
+	DDR_SUSPEND_SAVE(_HHI_VID_PLL_CNTL);
+	DDR_SUSPEND_SAVE(_HHI_VID_PLL_CNTL2);
+	DDR_SUSPEND_SAVE(_HHI_VID_PLL_CNTL3);
+	DDR_SUSPEND_SAVE(_HHI_VID_PLL_CNTL4);	
+                     
+	//MPLL 
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL2);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL3);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL4);	
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL5);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL6);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL7);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL8);	
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL9);
+	DDR_SUSPEND_SAVE(_HHI_MPLL_CNTL10);
+	
+	//AUD PLL
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL);
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL2);
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL3);
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL4);
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL5);
+	DDR_SUSPEND_SAVE(_HHI_AUDCLK_PLL_CNTL6);
 
-	//MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0 <<12) | (7 << 28))); //training address is 0x90001800 not safe
-	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
+#undef DDR_SUSPEND_SAVE
 	
-	//start trainning.
-	// DDR PHY initialization 
-#ifdef CONFIG_TURN_OFF_ODT
-	if(v_zq0cr0 & (1<<28))
-		MMC_Wr( PUB_PIR_ADDR, 0x1e1);
-  else
-		MMC_Wr( PUB_PIR_ADDR, 0x1e9);
-	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
-#else
-		MMC_Wr( PUB_PIR_ADDR, 0x1e9);
-#endif
-	//DDR3_SDRAM_INIT_WAIT : 
-	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-	dbg_out("d",9);
-	
-	if(MMC_Rd(PUB_PGSR_ADDR) & (3<<5)){
-        f_serial_puts("PUB_PGSR=");
-	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
-	    f_serial_puts("\n");
-#ifdef CONFIG_TURN_OFF_ODT
-        MMC_Wr( PUB_PIR_ADDR, 0x1e1 | (1<<28));
-#else
-		MMC_Wr( PUB_PIR_ADDR, 0x1e9 | (1<<28));
-#endif
-        while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-        dbg_out("d",0x91);
-        f_serial_puts("PUB_PGSR=");
-	    serial_put_hex(MMC_Rd(PUB_PGSR_ADDR),8);
-	    f_serial_puts("\n");
+	/*
+	int i = 0;
+	int nMax = 100;
+	for(i = 0 ;i<nMax;++i)
+	{
+		serial_puts("\n0x");
+		serial_put_hex(g_ddr_settings[i],32);
 	}
+	serial_puts("\n");	
+	*/	
+}
+static void hx_dump_ddr_settings()
+{
+	f_serial_puts("hx_dump_ddr_settings\n");
+#ifndef DDR_SUSPEND_DUMP
+	#define DDR_SUSPEND_DUMP(a)  do{ f_serial_puts("\n[ 0x"); \
+		serial_put_hex(P##a##_ADDR,32); \
+		f_serial_puts(" ] : 0x"); \
+		serial_put_hex(readl(P##a##_ADDR),32);}while(0);
+#endif	
 
-	//check ZQ calibraration status.
-	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR0\n");
-	stat = MMC_Rd(PUB_ZQ0SR1_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR1\n");
-
-	//check data training result.
-	stat = MMC_Rd(PUB_DX0GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX0GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX1GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX1GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX2GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX2GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX3GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX3GSR0\n");
-	wait_uart_empty();
-
-
- 	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
-	while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-	dbg_out("d",10);
-	__udelay(200);
-
-//	MMC_Wr(MMC_DDR_CTRL,v_mmc_ddr_ctrl);
-//	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
-//	MMC_Wr(UPCTL_PHYCR_ADDR, 2);
-//	MMC_Wr(MMC_REQ_CTRL, 0xff );  //enable request in kreboot.s
-  
-//	udelay(50);	
-
-//	MMC_Wr(UPCTL_IOCR_ADDR, v_iocr); //248
-	//traning result
-/*
-	MMC_Wr(UPCTL_RDGR0_ADDR,v_rdgr0); 
-	MMC_Wr(UPCTL_RSLR0_ADDR,v_rslr0); 
-
-	MMC_Wr(PUB_DX0GSR0_ADDR,v_dx0gsr0); 
-	MMC_Wr(PUB_DX0GSR1_ADDR,v_dx0gsr1); 
-	MMC_Wr(PUB_DX0DQSTR_ADDR,v_dx0dqstr); 
+	DDR_SUSPEND_DUMP(_UPCTL_TOGCNT1U);	       
+	DDR_SUSPEND_DUMP(_UPCTL_TOGCNT100N);
+	DDR_SUSPEND_DUMP(_UPCTL_TINIT);
+	DDR_SUSPEND_DUMP(_UPCTL_TRSTH);
+	DDR_SUSPEND_DUMP(_UPCTL_TRSTL);
+		
+	DDR_SUSPEND_DUMP(_UPCTL_MCFG);
+	DDR_SUSPEND_DUMP(_UPCTL_MCFG1);
+	DDR_SUSPEND_DUMP(_UPCTL_DFIODTCFG);
+	DDR_SUSPEND_DUMP(_PUB_DCR);
 	
-	MMC_Wr(PUB_DX1GSR0_ADDR,v_dx1gsr0); 
-	MMC_Wr(PUB_DX1GSR1_ADDR,v_dx1gsr1); 
-	MMC_Wr(PUB_DX1DQSTR_ADDR,v_dx1dqstr); 
-
-	MMC_Wr(PUB_DX2GSR0_ADDR,v_dx2gsr0); 
-	MMC_Wr(PUB_DX2GSR1_ADDR,v_dx2gsr1); 
-	MMC_Wr(PUB_DX2DQSTR_ADDR,v_dx2dqstr); 
-
-	MMC_Wr(PUB_DX3GSR0_ADDR,v_dx3gsr0); 
-	MMC_Wr(PUB_DX3GSR1_ADDR,v_dx3gsr1); 
-	MMC_Wr(PUB_DX3DQSTR_ADDR,v_dx3dqstr); 
-
-	MMC_Wr(PUB_DX4GSR0_ADDR,v_dx4gsr0); 
-	MMC_Wr(PUB_DX4GSR1_ADDR,v_dx4gsr1); 
-	MMC_Wr(PUB_DX4DQSTR_ADDR,v_dx4dqstr); 
-
-	MMC_Wr(PUB_DX5GSR0_ADDR,v_dx5gsr0); 
-	MMC_Wr(PUB_DX5GSR1_ADDR,v_dx5gsr1); 
-	MMC_Wr(PUB_DX5DQSTR_ADDR,v_dx5dqstr); 
-
-	MMC_Wr(PUB_DX6GSR0_ADDR,v_dx6gsr0); 
-	MMC_Wr(PUB_DX6GSR1_ADDR,v_dx6gsr1); 
-	MMC_Wr(PUB_DX6DQSTR_ADDR,v_dx6dqstr); 
-
-	MMC_Wr(PUB_DX7GSR0_ADDR,v_dx7gsr0); 
-	MMC_Wr(PUB_DX7GSR1_ADDR,v_dx7gsr1); 
-	MMC_Wr(PUB_DX7DQSTR_ADDR,v_dx7dqstr); 
-
-	MMC_Wr(PUB_DX8GSR0_ADDR,v_dx8gsr0); 
-	MMC_Wr(PUB_DX8GSR1_ADDR,v_dx8gsr1); 
-	MMC_Wr(PUB_DX8DQSTR_ADDR,v_dx8dqstr); 
-*/
-//	MMC_Wr(MMC_REQ_CTRL, 0xff ); Already enable request in kreboot.s
+	DDR_SUSPEND_DUMP(_PUB_MR0);
+	DDR_SUSPEND_DUMP(_PUB_MR1);
+	DDR_SUSPEND_DUMP(_PUB_MR2);
+	DDR_SUSPEND_DUMP(_PUB_MR3);
 	
-	return 0;
+	DDR_SUSPEND_DUMP(_PUB_DTPR0);
+	DDR_SUSPEND_DUMP(_PUB_DTPR1);
+	DDR_SUSPEND_DUMP(_PUB_DTPR2);
+	
+	DDR_SUSPEND_DUMP(_PUB_PTR0);
+	DDR_SUSPEND_DUMP(_PUB_PTR1);
+	DDR_SUSPEND_DUMP(_PUB_PTR2);
+	DDR_SUSPEND_DUMP(_PUB_PTR3);
+	DDR_SUSPEND_DUMP(_PUB_PTR4);
+
+	DDR_SUSPEND_DUMP(_PUB_ACBDLR);
+	DDR_SUSPEND_DUMP(_PUB_ACIOCR);
+	
+	DDR_SUSPEND_DUMP(_PUB_DSGCR);
+	DDR_SUSPEND_DUMP(_UPCTL_POWCTL);
+	DDR_SUSPEND_DUMP(_UPCTL_POWSTAT);
+	
+	DDR_SUSPEND_DUMP(_PUB_DXCCR);
+	DDR_SUSPEND_DUMP(_PUB_ZQ0CR1);
+	DDR_SUSPEND_DUMP(_PUB_ZQ0CR0);
+	
+	DDR_SUSPEND_DUMP(_UPCTL_TREFI);
+	DDR_SUSPEND_DUMP(_UPCTL_TMRD);
+	DDR_SUSPEND_DUMP(_UPCTL_TRFC);
+	DDR_SUSPEND_DUMP(_UPCTL_TRP);
+	DDR_SUSPEND_DUMP(_UPCTL_TAL);
+	
+	DDR_SUSPEND_DUMP(_UPCTL_TCWL);
+	DDR_SUSPEND_DUMP(_UPCTL_TCL);
+	DDR_SUSPEND_DUMP(_UPCTL_TRAS);
+	DDR_SUSPEND_DUMP(_UPCTL_TRC);
+	DDR_SUSPEND_DUMP(_UPCTL_TRCD);
+	DDR_SUSPEND_DUMP(_UPCTL_TRRD);
+	DDR_SUSPEND_DUMP(_UPCTL_TRTP);
+	DDR_SUSPEND_DUMP(_UPCTL_TWR);
+	DDR_SUSPEND_DUMP(_UPCTL_TWTR);
+	
+	DDR_SUSPEND_DUMP(_UPCTL_TEXSR);
+	DDR_SUSPEND_DUMP(_UPCTL_TXP);
+	DDR_SUSPEND_DUMP(_UPCTL_TDQS);
+	DDR_SUSPEND_DUMP(_UPCTL_TRTW);
+	DDR_SUSPEND_DUMP(_UPCTL_TCKSRE);
+	DDR_SUSPEND_DUMP(_UPCTL_TCKSRX);
+	DDR_SUSPEND_DUMP(_UPCTL_TMOD);
+	DDR_SUSPEND_DUMP(_UPCTL_TCKE);	
+	DDR_SUSPEND_DUMP(_UPCTL_TZQCS);
+	
+	DDR_SUSPEND_DUMP(_UPCTL_TZQCL);
+	DDR_SUSPEND_DUMP(_UPCTL_TXPDLL);
+	DDR_SUSPEND_DUMP(_UPCTL_TZQCSI);
+	DDR_SUSPEND_DUMP(_UPCTL_SCFG);
+		
+	DDR_SUSPEND_DUMP(_UPCTL_PPCFG);
+	DDR_SUSPEND_DUMP(_UPCTL_DFISTCFG0);
+	DDR_SUSPEND_DUMP(_UPCTL_DFISTCFG1);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITCTRLDELAY);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITPHYWRDATA);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITPHYWRLAT);		
+	DDR_SUSPEND_DUMP(_UPCTL_DFITRDDATAEN);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITPHYRDLAT);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITDRAMCLKDIS);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITDRAMCLKEN);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITCTRLUPDMIN);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITPHYUPDTYPE0);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITPHYUPDTYPE1);
+	
+	DDR_SUSPEND_DUMP(_UPCTL_DFILPCFG0);
+	DDR_SUSPEND_DUMP(_UPCTL_DFITCTRLUPDI);
+	DDR_SUSPEND_DUMP(_UPCTL_CMDTSTATEN);
+	
+	DDR_SUSPEND_DUMP(_PUB_PGCR0);
+	DDR_SUSPEND_DUMP(_PUB_PGCR1);
+	DDR_SUSPEND_DUMP(_PUB_PGCR2);
+	DDR_SUSPEND_DUMP(_PUB_DTAR0);
+	DDR_SUSPEND_DUMP(_PUB_DTAR1);
+	
+	DDR_SUSPEND_DUMP(_PUB_DTAR2);
+	DDR_SUSPEND_DUMP(_PUB_DTAR3);
+	DDR_SUSPEND_DUMP(_PUB_DTCR);  
+	
+	DDR_SUSPEND_DUMP(_PUB_DTEDR0);  
+	DDR_SUSPEND_DUMP(_PUB_DTEDR1);  
+	
+	f_serial_puts("\n\n");
+#undef 	DDR_SUSPEND_DUMP	
+
 }
 
-void power_down_ddr_phy(void)
+static void hx_dump_pub_pctl_all()
 {
-	APB_Wr(PUB_DXCCR_ADDR,APB_Rd(PUB_DXCCR_ADDR)|(3<<2));
-	   
-	APB_Wr(PUB_DX0GCR_ADDR,APB_Rd(PUB_DX0GCR_ADDR)|(7<<4));	  
-	APB_Wr(PUB_DX1GCR_ADDR,APB_Rd(PUB_DX1GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX2GCR_ADDR,APB_Rd(PUB_DX2GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX3GCR_ADDR,APB_Rd(PUB_DX3GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX4GCR_ADDR,APB_Rd(PUB_DX4GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX5GCR_ADDR,APB_Rd(PUB_DX5GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX6GCR_ADDR,APB_Rd(PUB_DX6GCR_ADDR)|(7<<4));
-	APB_Wr(PUB_DX7GCR_ADDR,APB_Rd(PUB_DX7GCR_ADDR)|(7<<4));
-  
-	APB_Wr(PUB_DLLGCR_ADDR,APB_Rd(PUB_DLLGCR_ADDR)|(7<<2));
-   
-	//ACDLLCR   
-	APB_Wr(PUB_ACDLLCR_ADDR,APB_Rd(PUB_ACDLLCR_ADDR)|(1<<31));
-  
-	//ACIOCR 
-	APB_Wr(PUB_ACIOCR_ADDR,APB_Rd(PUB_ACIOCR_ADDR)|(1<<3)|(7<<8));
- 
-	//DLLBYP   
-	APB_Wr(PUB_PIR_ADDR,APB_Rd(PUB_PIR_ADDR)|(1<<17));
+	f_serial_puts("hx_dump_pub_pctl_all\n");
+#ifndef DDR_SUSPEND_DUMP_ALL
+	#define DDR_SUSPEND_DUMP_ALL(id,a)  do{ f_serial_puts("\n[ 0x"); \
+		serial_put_hex(id|(a<<2),32); \
+		f_serial_puts(" ] : 0x"); \
+		serial_put_hex(readl(id|(a<<2)),32);}while(0);
+#endif	
+
+	int i,nMax,id;
+	
+	f_serial_puts("\n============================================");
+	f_serial_puts("\nPUB dump : \n");
+	for(i = 0,nMax=254,id = 0xc8001000;i<nMax;++i)
+	{
+		DDR_SUSPEND_DUMP_ALL(id,i);
+	}
+	
+	f_serial_puts("\n============================================");
+	f_serial_puts("\nPCTL dump : \n");
+	
+	for(i = 0,nMax=254,id = 0xc8000000;i<nMax;++i)
+	{
+		DDR_SUSPEND_DUMP_ALL(id,i);
+	}
+	
+	f_serial_puts("\n============================================\n");
+
+#undef DDR_SUSPEND_DUMP_ALL 
 }
 
-#define P_AM_ANALOG_TOP_REG1                       0xc11081bc
-void init_ddr_pll(void)
+static void hx_dump_mmc_dmc_all()
 {
-#if 0
-	reset_ddrpll:
-	//reset pll
-	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<29),P_HHI_DDR_PLL_CNTL);
-	
-	writel(v_ddr_pll_cntl2,P_HHI_DDR_PLL_CNTL2);
-	writel(v_ddr_pll_cntl3,P_HHI_DDR_PLL_CNTL3);
-	writel(v_ddr_pll_cntl4,P_HHI_DDR_PLL_CNTL4);
-	writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
-    
-    __udelay(1000);
-    while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000) == 0)
-    {
-        clrbits_le32(P_AM_ANALOG_TOP_REG1,1);
-        setbits_le32(P_AM_ANALOG_TOP_REG1,1);
-        goto reset_ddrpll;
-    }
-#endif /* 0 */
+	f_serial_puts("hx_dump_mmc_dmc_all\n");
+#ifndef DDR_SUSPEND_DUMP_ALL
+	#define DDR_SUSPEND_DUMP_ALL(id,a)  do{ f_serial_puts("\n[ 0x"); \
+		serial_put_hex(id|(a<<2),32); \
+		f_serial_puts(" ] : 0x"); \
+		serial_put_hex(readl(id|(a<<2)),32);}while(0);
+#endif	
 
-// Mike's code
-	int i;
+	int i,nMax,id;
 	
-reset_ddrpll:
-	i=0;
-	// reset bandgap
-    clrbits_le32(P_AM_ANALOG_TOP_REG1,1);
-    setbits_le32(P_AM_ANALOG_TOP_REG1,1);
-    __udelay(1000);
+	f_serial_puts("\n============================================");
+	f_serial_puts("\nMMC dump : \n");
+	for(i = 0,nMax=278,id = 0xc8006000;i<nMax;++i)
+	{
+		DDR_SUSPEND_DUMP_ALL(id,i);
+	}
+	
+	f_serial_puts("\n============================================");
+	f_serial_puts("\nDMC SEC dump : \n");
+	
+	for(i = 0,nMax=71,id = 0xda002000;i<nMax;++i)
+	{
+		DDR_SUSPEND_DUMP_ALL(id,i);
+	}
+	
+	f_serial_puts("\n============================================\n");
 
-	//reset pll
-	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<29),P_HHI_DDR_PLL_CNTL);
-	// program the PLL	
-	writel(v_ddr_pll_cntl2,P_HHI_DDR_PLL_CNTL2);
-	writel(v_ddr_pll_cntl3,P_HHI_DDR_PLL_CNTL3);
-	writel(v_ddr_pll_cntl4,P_HHI_DDR_PLL_CNTL4);
-	
-	//writel(v_ddr_pll_cntl&0x7FFFFFFF,P_HHI_DDR_PLL_CNTL);
-	writel((v_ddr_pll_cntl & ~(1<<30))|1<<29,P_HHI_DDR_PLL_CNTL);	
-	writel(v_ddr_pll_cntl & ~(3<<29),P_HHI_DDR_PLL_CNTL);
-    
-    do {
-    	__udelay(1000);
-    	if (i++ >= 100000)
-    		goto reset_ddrpll;   // excessive error, let's try again
-    } while((readl(P_HHI_DDR_PLL_CNTL)&0x80000000) == 0);
-    
-	return;
+#undef DDR_SUSPEND_DUMP_ALL 
 }
 
-void enable_retention(void)
+static void hx_store_restore_plls(int flag)
 {
+	f_serial_puts("hx_store_restore_plls\n");
+	//store or load PLL setting
+	//note: bandgap !!!
+			
+}
+static void hx_enable_retention(void)
+{
+	f_serial_puts("hx_enable_retention\n");
 	 //RENT_N/RENT_EN_N switch from 01 to 10 (2'b10 = ret_enable)
 	writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(2<<16),P_AO_RTI_PWR_CNTL_REG0);
-	__udelay(200000);
-
-	//writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<20),P_AO_RTI_PIN_MUX_REG);
+	__udelayx(200000);
 }
 
-void disable_retention(void)
+static void hx_disable_retention(void)
 {
-//RENT_N/RENT_EN_N switch from 10 to 01
+	f_serial_puts("hx_disable_retention\n");
+	//RENT_N/RENT_EN_N switch from 10 to 01
 	writel((readl(P_AO_RTI_PWR_CNTL_REG0)&(~(3<<16)))|(1<<16),P_AO_RTI_PWR_CNTL_REG0);
-	__udelay(200);
-
-	//writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1<<20)),P_AO_RTI_PIN_MUX_REG);
+	__udelayx(200);
 }
+
+void hx_enter_power_down()
+{
+	f_serial_puts("hx_enter_power_down\n");
+
+	asm(".long 0x003f236f"); //add sync instruction.
+
+	hx_disable_mmc_req();
+
+	//serial_put_hex(readl(P_MMC_LP_CTRL1),32);
+	//serial_puts("  LP_CTRL1\n");
+	//wait_uart_empty();
+
+	//serial_put_hex(readl(P_UPCTL_MCFG_ADDR),32);
+	//serial_puts("  MCFG\n");
+	//wait_uart_empty();
+
+	hx_store_restore_plls(1);
+
+	//APB_Wr(UPCTL_SCTL_ADDR, 1);
+	//writel(SCTL_CMD_CONFIG,P_UPCTL_SCTL_ADDR);
+	//APB_Wr(UPCTL_MCFG_ADDR, 0x60021 );
+	//writel(0xa0029,P_UPCTL_MCFG_ADDR); //???
+	//APB_Wr(UPCTL_SCTL_ADDR, 2);
+	//writel(SCTL_CMD_GO,P_UPCTL_SCTL_ADDR);
+
+	//serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+	//serial_put_hex(readl(P_UPCTL_MCFG_ADDR),32);
+	//serial_puts("  MCFG\n");
+	//wait_uart_empty();
+
+	// MMC sleep 
+	f_serial_puts("Start DDR off\n");
+	//wait_uart_empty();
+	
+	//Next, we sleep
+	hx_mmc_sleep();
+
+	//Clear PGCR0 CK
+	writel(readl(P_PUB_PGCR0_ADDR)&(~(0x3F<<26)),P_PUB_PGCR0_ADDR);
+		
+	// enable retention
+	//only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
+	//but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
+	hx_enable_retention();
+
+	// save ddr power
+	// before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
+	// that will save the DLL analog power.
+	f_serial_puts("mmc soft rst\n");
+	writel(0, P_MMC_SOFT_RST);
+    writel(0, P_MMC_SOFT_RST1); //To check??
+
+	// shut down DDR PLL. 
+	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
+
+	f_serial_puts("Done DDR off\n");
+	//wait_uart_empty();
+}
+
+static int hx_init_pctl_ddr3()
+{	
+	int nTempVal = 0;	
+
+	//asm volatile ("wfi");	
+	
+#ifndef DDR_SUSPEND_LOAD
+	#define DDR_SUSPEND_LOAD(a)  {writel(g_ddr_settings[a],P##a##_ADDR);}
+#endif
+
+pub_retry:
+
+	//try to reset mmc ...
+	// bit 30.  lower power control module reset bit.
+	
+	// bit 29.  PHY IP reset bit.
+	
+	// bit 28.  uPCTL APB bus interface reset bit.
+	// bit 27.  uPCTL IP reset bit.
+	// bit 26.  PUBL  APB bus interface reset bit.
+	// bit 25.  PUBL IP reset bit
+  	
+#define MMC_RESET_SELECT (0x1f)
+
+	nTempVal = readl(P_MMC_SOFT_RST) & (~(MMC_RESET_SELECT<<25));			
+	writel(nTempVal, P_MMC_SOFT_RST);	
+	__udelayx(10000);
+	nTempVal |= (MMC_RESET_SELECT<<25);
+	writel(nTempVal, P_MMC_SOFT_RST);
+	__udelayx(10000);
+	
+	//UPCTL memory timing registers
+	DDR_SUSPEND_LOAD(_UPCTL_TOGCNT1U);
+	DDR_SUSPEND_LOAD(_UPCTL_TOGCNT100N);
+	DDR_SUSPEND_LOAD(_UPCTL_TINIT);
+	DDR_SUSPEND_LOAD(_UPCTL_TRSTH);
+	DDR_SUSPEND_LOAD(_UPCTL_TRSTL);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_MCFG);		
+	DDR_SUSPEND_LOAD(_UPCTL_MCFG1);	    
+	  
+	DDR_SUSPEND_LOAD(_UPCTL_DFIODTCFG);
+    	  
+    DDR_SUSPEND_LOAD(_PUB_DCR);	  	
+
+	DDR_SUSPEND_LOAD(_PUB_MR0);	  	
+	DDR_SUSPEND_LOAD(_PUB_MR1);	  	
+	DDR_SUSPEND_LOAD(_PUB_MR2);	  	
+	DDR_SUSPEND_LOAD(_PUB_MR3);	  	
+	
+	DDR_SUSPEND_LOAD(_PUB_DTPR0);	
+	DDR_SUSPEND_LOAD(_PUB_DTPR1);	
+	DDR_SUSPEND_LOAD(_PUB_DTPR2);	
+	
+	DDR_SUSPEND_LOAD(_PUB_PTR0);
+	DDR_SUSPEND_LOAD(_PUB_PTR1);
+	DDR_SUSPEND_LOAD(_PUB_PTR2);
+	DDR_SUSPEND_LOAD(_PUB_PTR3);
+	DDR_SUSPEND_LOAD(_PUB_PTR4);
+
+	DDR_SUSPEND_LOAD(_PUB_ACBDLR);
+	
+	DDR_SUSPEND_LOAD(_PUB_ACIOCR);
+	writel(readl(P_PUB_ACIOCR_ADDR) & 0xdfffffff, P_PUB_ACIOCR_ADDR);
+	
+	
+	DDR_SUSPEND_LOAD(_PUB_DSGCR);
+
+	writel(1, P_UPCTL_POWCTL_ADDR);
+	
+	while(!(readl(P_UPCTL_POWSTAT_ADDR) & 1) ) {}
+
+	DDR_SUSPEND_LOAD(_PUB_DXCCR);   
+	
+	DDR_SUSPEND_LOAD(_PUB_ZQ0CR1);
+    		
+	// initial upctl ddr timing.
+	DDR_SUSPEND_LOAD(_UPCTL_TREFI);
+	DDR_SUSPEND_LOAD(_UPCTL_TMRD);
+	DDR_SUSPEND_LOAD(_UPCTL_TRFC);
+	DDR_SUSPEND_LOAD(_UPCTL_TRP);
+	DDR_SUSPEND_LOAD(_UPCTL_TAL);
+	DDR_SUSPEND_LOAD(_UPCTL_TCWL);
+	DDR_SUSPEND_LOAD(_UPCTL_TCL);
+	
+	
+	DDR_SUSPEND_LOAD(_UPCTL_TRAS);
+	DDR_SUSPEND_LOAD(_UPCTL_TRC);
+	DDR_SUSPEND_LOAD(_UPCTL_TRCD);
+	DDR_SUSPEND_LOAD(_UPCTL_TRRD);
+	DDR_SUSPEND_LOAD(_UPCTL_TRTP);		
+	DDR_SUSPEND_LOAD(_UPCTL_TWR);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_TWTR);
+	DDR_SUSPEND_LOAD(_UPCTL_TEXSR);
+	DDR_SUSPEND_LOAD(_UPCTL_TXP);
+	DDR_SUSPEND_LOAD(_UPCTL_TDQS);
+			
+	DDR_SUSPEND_LOAD(_UPCTL_TRTW);
+	DDR_SUSPEND_LOAD(_UPCTL_TCKSRE);
+	DDR_SUSPEND_LOAD(_UPCTL_TCKSRX);
+	DDR_SUSPEND_LOAD(_UPCTL_TMOD);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_TCKE);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_TZQCS);
+	DDR_SUSPEND_LOAD(_UPCTL_TZQCL);
+	DDR_SUSPEND_LOAD(_UPCTL_TXPDLL);
+	DDR_SUSPEND_LOAD(_UPCTL_TZQCSI);
+	DDR_SUSPEND_LOAD(_UPCTL_SCFG);
+
+	writel(UPCTL_CMD_CONFIG, P_UPCTL_SCTL_ADDR);
+	
+	while (!(readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_CONFIG)){
+		writel(UPCTL_CMD_CONFIG, P_UPCTL_SCTL_ADDR);
+	}
+
+	DDR_SUSPEND_LOAD(_UPCTL_PPCFG);
+	DDR_SUSPEND_LOAD(_UPCTL_DFISTCFG0);
+	DDR_SUSPEND_LOAD(_UPCTL_DFISTCFG1);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITCTRLDELAY);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITPHYWRDATA);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITPHYWRLAT);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITRDDATAEN);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_DFITPHYRDLAT);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITDRAMCLKDIS);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITDRAMCLKEN);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITCTRLUPDMIN);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_DFITPHYUPDTYPE0);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITPHYUPDTYPE1);
+	
+	DDR_SUSPEND_LOAD(_UPCTL_DFILPCFG0);
+	DDR_SUSPEND_LOAD(_UPCTL_DFITCTRLUPDI);
+	
+	writel(1,P_UPCTL_CMDTSTATEN_ADDR);
+	while (!(readl(P_UPCTL_CMDTSTAT_ADDR) & 1 )) {}
+
+
+	DDR_SUSPEND_LOAD(_PUB_PGCR0);
+	DDR_SUSPEND_LOAD(_PUB_PGCR1);
+	DDR_SUSPEND_LOAD(_PUB_PGCR2);
+
+	//To check???
+	//DDR_SUSPEND_LOAD(_PUB_DTAR0);
+	//DDR_SUSPEND_LOAD(_PUB_DTAR1);
+	//DDR_SUSPEND_LOAD(_PUB_DTAR2);
+	//DDR_SUSPEND_LOAD(_PUB_DTAR3);
+	//set training address to 0x9fffff00
+	//MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
+	writel((0x000 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR0_ADDR);
+	writel((0x008 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR1_ADDR);
+	writel((0x010 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR2_ADDR);
+	writel((0x018 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR3_ADDR);
+	
+	DDR_SUSPEND_LOAD(_PUB_DTCR);
+	
+	
+#define PUB_PIR_INIT  		(1<<0)
+#define PUB_PIR_ZCAL  		(1<<1)
+#define PUB_PIR_PLLINIT 	(1<<4)
+#define PUB_PIR_DCAL    	(1<<5)
+#define PUB_PIR_PHYRST  	(1<<6)
+#define PUB_PIR_DRAMRST 	(1<<7)
+#define PUB_PIR_DRAMINIT 	(1<<8)
+#define PUB_PIR_WL       	(1<<9)
+#define PUB_PIR_QSGATE   	(1<<10)
+#define PUB_PIR_WLADJ    	(1<<11)
+#define PUB_PIR_RDDSKW   	(1<<12)
+#define PUB_PIR_WRDSKW   	(1<<13)
+#define PUB_PIR_RDEYE    	(1<<14)
+#define PUB_PIR_WREYE    	(1<<15)
+#define PUB_PIR_ICPC     	(1<<16)
+#define PUB_PIR_PLLBYP   	(1<<17)
+#define PUB_PIR_CTLDINIT 	(1<<18)
+#define PUB_PIR_RDIMMINIT	(1<<19)
+#define PUB_PIR_CLRSR    	(1<<27)
+#define PUB_PIR_LOCKBYP  	(1<<28)
+#define PUB_PIR_DCALBYP 	(1<<29)
+#define PUB_PIR_ZCALBYP 	(1<<30)
+#define PUB_PIR_INITBYP  	(1<<31)
+
+
+#define PUB_PGSR0_ZCERR     (1<<20)
+#define PUB_PGSR0_WLERR     (1<<21)
+#define PUB_PGSR0_QSGERR    (1<<22)
+#define PUB_PGSR0_WLAERR    (1<<23)
+#define PUB_PGSR0_RDERR     (1<<24)
+#define PUB_PGSR0_WDERR     (1<<25)
+#define PUB_PGSR0_REERR     (1<<26)
+#define PUB_PGSR0_WEERR     (1<<27)
+#define PUB_PGSR0_DTERR     (PUB_PGSR0_RDERR|PUB_PGSR0_WDERR|PUB_PGSR0_REERR|PUB_PGSR0_WEERR)
+
+
+	//asm ("wfi");
+
+	//===============================================
+	//PLL,DCAL,PHY RST,ZCAL
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
+					PUB_PIR_PHYRST;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x8000000f)
+	{
+		__udelayx(10);
+		
+		if(readl(P_PUB_PGSR0_ADDR) & PUB_PGSR0_ZCERR)
+			goto pub_retry;
+	}
+
+	//===============================================
+	//DRAM INIT
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_DRAMRST | PUB_PIR_DRAMINIT ;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x8000001f)
+	{
+		__udelayx(10);
+		
+		//if(readl(P_PUB_PGSR0_ADDR) & (1<<20))
+		//	goto pub_retry;
+	}
+
+	//===============================================	
+	//WL init
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_WL ;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x8000003f)
+	{
+		__udelayx(10);
+		
+		if(readl(P_PUB_PGSR0_ADDR) & PUB_PGSR0_WLERR)
+			goto pub_retry;
+	}
+
+	//===============================================	
+	//DQS Gate training
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_QSGATE ;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x8000007f)
+	{
+		__udelayx(10);
+		
+		if(readl(P_PUB_PGSR0_ADDR) & PUB_PGSR0_QSGERR)
+			goto pub_retry;
+	}
+	
+	//===============================================	
+	//Write leveling ADJ
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_WLADJ ;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x800000ff)
+	{
+		__udelayx(10);
+		
+		if(readl(P_PUB_PGSR0_ADDR) & PUB_PGSR0_WLAERR)
+			goto pub_retry;
+	}
+
+	//===============================================	
+	//Data bit deskew & data eye training
+	nTempVal =	PUB_PIR_INIT | PUB_PIR_RDDSKW | PUB_PIR_WRDSKW|
+	PUB_PIR_RDEYE | PUB_PIR_WREYE;
+	writel(nTempVal, P_PUB_PIR_ADDR);
+	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
+	while(readl(P_PUB_PGSR0_ADDR) != 0x80000fff)
+	{
+		__udelayx(10);
+		
+		if(readl(P_PUB_PGSR0_ADDR) & PUB_PGSR0_DTERR)
+			goto pub_retry;
+	}
+	//===============================================
+
+	f_serial_puts("\nPGSR0: 0x");
+	serial_put_hex(readl(P_PUB_PGSR0_ADDR),32);
+
+	f_serial_puts("\nPGSR1: 0x");
+	serial_put_hex(readl(P_PUB_PGSR1_ADDR),32);
+	f_serial_puts("\n");
+
+	nTempVal = readl(P_PUB_PGSR0_ADDR);
+	
+	writel(UPCTL_CMD_GO, P_UPCTL_SCTL_ADDR);
+
+	while ((readl(P_UPCTL_STAT_ADDR) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {}
+
+    if (( (nTempVal >> 20) & 0xfff ) != 0x800 )
+    {
+	    return nTempVal;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+static void hx_init_dmc()
+{	
+
+#ifndef DDR_MMC_LOAD
+	#define DDR_MMC_LOAD(a)  {writel(g_ddr_settings[a],P##a);}
+#endif
+	
+	DDR_MMC_LOAD(_MMC_DDR_CTRL);
+/*
+	writel(0xffff, P_DMC_SEC_PORT0_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT1_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT2_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT3_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT4_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT5_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT6_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT7_RANGE0);
+    writel(0x80000000, P_DMC_SEC_CTRL);
+	while( readl(P_DMC_SEC_CTRL) & 0x800000000 ) {}
+
+	hx_enable_mmc_req();
+*/
+	//hx_dump_pub_pctl_all();
+	//hx_dump_mmc_dmc_all();
+	
+
+	
+	//re read write DDR SDRAM several times to 
+	//make sure the AXI2DDR bugs dispear.
+	//refer to arch\arm\cpu\aml_meson\m6\firmware\kreboot.s	
+//	int nCnt,nMax,nVal;
+//	for(nCnt=0,nMax= 9;nCnt<nMax;++nCnt)
+//		writel(0x55555555, 0x9fffff00);
+	
+	//asm volatile ("wfi");	
+//	for(nCnt=0,nMax= 12;nCnt<nMax;++nCnt)
+//		nVal = readl(0x9fffff00);
+		
+
+
+/*
+	if(g_ddr_settings[_MMC_LP_CTRL1] & MMC_LOWPWR_ENABLE)
+	{
+		DDR_MMC_LOAD(_MMC_LP_CTRL4);
+		DDR_MMC_LOAD(_MMC_LP_CTRL3);
+		DDR_MMC_LOAD(_MMC_LP_CTRL1);
+	}	
+		*/
+#undef DDR_MMC_LOAD
+	
+	
+}
+
+static void hx_init_pctl_resume(void)
+{
+	//hx_reset_mmc();
+	hx_init_pctl_ddr3();
+	
+	hx_init_dmc();
+	
+	//hx_dump_pub_pctl_all();	
+	//hx_dump_mmc_dmc_all();
+}
+
+static void hx_init_ddr_pll()
+{
+	//asm volatile ("wfi");
+	//band gap reset???
+	//....
+	
+#ifndef DDR_PLL_LOAD
+	#define DDR_PLL_LOAD(a)  {writel(g_ddr_settings[a],P##a);}
+#endif
+	
+	M6TV_PLL_RESET(HHI_DDR_PLL_CNTL);
+	DDR_PLL_LOAD(_HHI_DDR_PLL_CNTL2);
+	DDR_PLL_LOAD(_HHI_DDR_PLL_CNTL3);
+	DDR_PLL_LOAD(_HHI_DDR_PLL_CNTL4);
+	DDR_PLL_LOAD(_HHI_DDR_PLL_CNTL);	
+	M6TV_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
+
+#undef DDR_PLL_LOAD
+
+    writel(0x00000080, P_MMC_CLK_CNTL);
+    writel(0x000000c0, P_MMC_CLK_CNTL);
+
+    //enable the clock.
+    writel(0x000001c0, P_MMC_CLK_CNTL);
+
+	__udelayx(100);
+}
+
+void hx_leave_power_down()
+{	
+	f_serial_puts("step 8\n");	
+	//wait_uart_empty();	
+	
+	hx_init_ddr_pll();
+
+   	//Next, we reset all channels 
+	hx_reset_mmc();
+	f_serial_puts("step 9\n");
+	//wait_uart_empty();
+
+	//from M6
+	//disable retention
+	//disable retention before init_pctl
+	//because init_pctl you need to data training stuff.
+	hx_disable_retention();
+
+	// initialize mmc and put it to sleep
+	hx_init_pctl_resume();
+	f_serial_puts("step 10\n");
+	wait_uart_empty();
+	
+	f_serial_puts("leave_power_down\n");
+	__udelayx(100000);	
+	  
+}
+
+int ddr_suspend_test()
+{
+	int abort = 0;
+
+	int bootdelay = 1;
+	int nLen = 0;
+	
+	//DDR save setting
+	hx_save_ddr_settings();	
+	//DDR suspend
+	hx_enter_power_down();	
+#if 0
+	f_serial_puts("Hit any key to stop power down: (second counting) ");
+	nLen = hx_serial_put_dec(bootdelay);
+	
+	//asm volatile ("wfi");	
+		
+	//while ((bootdelay > 0) && (!abort)) {
+	while ((!abort)) {
+		int i;
+
+		++bootdelay;
+		/* delay 100 * 10ms */
+		for (i=0; !abort && i<100; ++i) {
+			if (serial_tstc()) {	/* we got a key press	*/
+				abort  = 1;	    /* don't auto boot	*/
+				bootdelay = 0;	/* no more delay	*/
+                serial_getc();
+				break;
+			}
+			__udelay(10000);
+		}
+
+		if(abort)
+			break;
+		
+		while(nLen--)
+		{
+			f_serial_puts("\b\b  \b");
+		}
+		nLen = hx_serial_put_dec(bootdelay);
+	}
+
+
+	f_serial_puts("\n");
+	__udelay(100000);
+#endif
+	//DDR resume
+	hx_leave_power_down();
+	
+	return abort;
+}
+
