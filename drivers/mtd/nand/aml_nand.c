@@ -887,7 +887,7 @@ void aml_nand_read_retry_handle_hynix(struct mtd_info *mtd, int chipnr)
 
 	//cur_cnt++;
 	//aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr] = (cur_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-1)) ? 0 : cur_cnt;
-
+	aml_chip->new_nand_info.read_rety_info.cur_cnt[chipnr]++;
 }
 
 
