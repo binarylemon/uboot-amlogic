@@ -64,7 +64,7 @@ pwr_restart:
        //STR r1, [r0]
 
         //enable MMC request.
- 		mov r1,#0xFF
+ 		ldr r1,=0x1FF
  		ldr r0,=0xc8006400
  		str r1,[r0]
 

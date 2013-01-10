@@ -436,7 +436,8 @@ int board_init(void)
     
 #endif    
 
-    clrbits_le32(P_AO_GPIO_O_EN_N,1<<20);//GPIOAO_4, L, Init standby Led
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N, power-led on
+    setbits_le32(P_AO_GPIO_O_EN_N,1<<20);//GPIOAO_4, L, power-Led green
 
     //GPIOAO_5, net led
     clrbits_le32(P_AO_GPIO_O_EN_N,1<<5);

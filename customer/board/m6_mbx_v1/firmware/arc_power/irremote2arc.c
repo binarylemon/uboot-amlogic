@@ -122,8 +122,8 @@ void cec_wr_reg(unsigned long addr, unsigned long data)
 void cec_power_on(void)
 {
 	/*Enable GPIOD_5*/
-	writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_O)) | (1<<21)), CBUS_REG_ADDR(PREG_PAD_GPIO2_O));
-	writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N)) & (~(1<<21))), CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N));
+	//writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_O)) | (1<<21)), CBUS_REG_ADDR(PREG_PAD_GPIO2_O));
+	//writel((readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N)) & (~(1<<21))), CBUS_REG_ADDR(PREG_PAD_GPIO2_EN_N));
 	
 	/*Enable cts_hdmi_sys_clk*/
 	writel(((readl(CBUS_REG_ADDR(HHI_HDMI_CLK_CNTL)) & (~((0x7<<9) | 0x7f))) | (1<<8)), CBUS_REG_ADDR(HHI_HDMI_CLK_CNTL));	

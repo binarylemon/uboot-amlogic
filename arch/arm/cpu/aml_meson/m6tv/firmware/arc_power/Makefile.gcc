@@ -55,7 +55,7 @@ endef
 
 
 #CSRCS = $(wildcard *.c lib/*.c)
-CSRCS = suspend.c power.c lib/*.c
+CSRCS = suspend.c power.c lib/*.c mmc.c
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
 #all : clean $(obj)code_elf.out 

@@ -186,11 +186,13 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		__udelay(1000); //1ms for bandgap bootup
 
 		M6TV_PLL_RESET(HHI_VID_PLL_CNTL);
-		Wr(HHI_VID_PLL_CNTL,  0x600b0442 );
+		//Wr(HHI_VID_PLL_CNTL,  0x600b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  0x600b043f );//change VID PLL from 1.584GHz to 1.512GHz
 		Wr(HHI_VID_PLL_CNTL2, M6TV_VID_PLL_CNTL_2 );
 		Wr(HHI_VID_PLL_CNTL3, M6TV_VID_PLL_CNTL_3 );
 		Wr(HHI_VID_PLL_CNTL4, M6TV_VID_PLL_CNTL_4 );
-		Wr(HHI_VID_PLL_CNTL,  0x400b0442 );
+		//Wr(HHI_VID_PLL_CNTL,  0x400b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  0x400b043f ); //change VID PLL from 1.584GHz to 1.512GHz
 		//M6TV_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
 
 		__udelay(500); //wait 100us for PLL lock
