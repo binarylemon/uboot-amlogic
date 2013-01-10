@@ -139,9 +139,10 @@ static void power_off_via_gpio()
 {
 	setbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
 	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
-
-	clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+    
+    //mask for HDMI HDCP & CEC modules
+	//clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
 	
 	/*clr AO pinmux for GPIO_AO. AO pinmux has been 
 	  stored in backup_remote_register()
@@ -158,9 +159,9 @@ static void power_on_via_gpio()
 	setbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
 	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
 	udelay(1000);
-
-	setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+    //mask for HDMI HDCP & CEC modules
+	//setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
 	udelay(1000);
 	
 	clrbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
