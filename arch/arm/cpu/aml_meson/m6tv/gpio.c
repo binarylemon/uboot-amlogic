@@ -15,7 +15,7 @@ struct gpio_addr
 };
 static struct gpio_addr gpio_addrs[]=
 {
-    
+
     [PREG_PAD_GPIO0]={P_PREG_PAD_GPIO0_EN_N,P_PREG_PAD_GPIO0_O,P_PREG_PAD_GPIO0_I},
     [PREG_PAD_GPIO1]={P_PREG_PAD_GPIO1_EN_N,P_PREG_PAD_GPIO1_O,P_PREG_PAD_GPIO1_I},
     [PREG_PAD_GPIO2]={P_PREG_PAD_GPIO2_EN_N,P_PREG_PAD_GPIO2_O,P_PREG_PAD_GPIO2_I},
@@ -24,6 +24,7 @@ static struct gpio_addr gpio_addrs[]=
 	[PREG_PAD_GPIO5]={P_PREG_PAD_GPIO5_EN_N,P_PREG_PAD_GPIO5_O,P_PREG_PAD_GPIO5_I},
     [PREG_PAD_GPIOAO] = {PREG_PAD_GPIO5_EN_N, PREG_PAD_GPIO5_O, PREG_PAD_GPIO5_I},
     [PREG_JTAG_GPIO]={PREG_JTAG_GPIO_ADDR,PREG_JTAG_GPIO_ADDR,PREG_JTAG_GPIO_ADDR},
+    [PREG_PAD_GPIO6]={P_PREG_PAD_GPIO6_EN_N,P_PREG_PAD_GPIO6_O,P_PREG_PAD_GPIO6_I},
 };
 
 int set_gpio_mode(gpio_bank_t bank,int bit,gpio_mode_t mode)
@@ -57,9 +58,9 @@ unsigned long  get_gpio_val(gpio_bank_t bank,int bit)
 
 /**
  * enable gpio edge interrupt
- *	
- * @param [in] pin  index number of the chip, start with 0 up to 255 
- * @param [in] flag rising(0) or falling(1) edge 
+ *
+ * @param [in] pin  index number of the chip, start with 0 up to 255
+ * @param [in] flag rising(0) or falling(1) edge
  * @param [in] group  this interrupt belong to which interrupt group  from 0 to 7
  */
 void gpio_enable_edge_int(int pin , int flag, int group)
@@ -67,13 +68,13 @@ void gpio_enable_edge_int(int pin , int flag, int group)
 	group &= 7;
 	unsigned ireg = GPIO_INTR_GPIO_SEL0 + (group>>2);
 	SET_CBUS_REG_MASK(ireg, pin<<((group&3)<<3));
-	SET_CBUS_REG_MASK(GPIO_INTR_EDGE_POL, ((flag<<(16+group)) | (1<<group)));	
+	SET_CBUS_REG_MASK(GPIO_INTR_EDGE_POL, ((flag<<(16+group)) | (1<<group)));
 }
 /**
  * enable gpio level interrupt
- *	
- * @param [in] pin  index number of the chip, start with 0 up to 255 
- * @param [in] flag high(0) or low(1) level 
+ *
+ * @param [in] pin  index number of the chip, start with 0 up to 255
+ * @param [in] flag high(0) or low(1) level
  * @param [in] group  this interrupt belong to which interrupt group  from 0 to 7
  */
 void gpio_enable_level_int(int pin , int flag, int group)
@@ -81,7 +82,7 @@ void gpio_enable_level_int(int pin , int flag, int group)
 	group &= 7;
 	unsigned ireg = GPIO_INTR_GPIO_SEL0 + (group>>2);
 	SET_CBUS_REG_MASK(ireg, pin<<((group&3)<<3));
-	SET_CBUS_REG_MASK(GPIO_INTR_EDGE_POL, ((flag<<(16+group)) | (0<<group)));	
+	SET_CBUS_REG_MASK(GPIO_INTR_EDGE_POL, ((flag<<(16+group)) | (0<<group)));
 }
 
 /**

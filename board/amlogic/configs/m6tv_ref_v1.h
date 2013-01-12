@@ -111,6 +111,16 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
+	"video_dev=panel\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x85100000\0" \
+	"prepare=mmc read 1 ${loadaddr} 4000 4000;video open;video dev bl_on\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
@@ -126,7 +136,7 @@
 	"normalsize=400000\0" \
 	"has.accelerometer=false\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -179,6 +189,13 @@
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
+
+/* config LCD output */
+#define CONFIG_VIDEO_AML
+#define CONFIG_VIDEO_AMLLCD
+#define CONFIG_CMD_BMP
+#define LCD_BPP LCD_COLOR24
+#define LCD_TEST_PATTERN
 
 /*POST support*/
 /*

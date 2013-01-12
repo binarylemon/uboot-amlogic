@@ -12,6 +12,7 @@ typedef enum gpio_bank {
     PREG_PAD_GPIO5,
 	PREG_PAD_GPIOAO,
 	PREG_JTAG_GPIO,
+	PREG_PAD_GPIO6,
 } gpio_bank_t;
 
 
@@ -56,19 +57,23 @@ unsigned long  get_gpio_val(gpio_bank_t bank, int bit);
 #define GPIOY_bank_bit0_22(bit)     (PREG_PAD_GPIO5)
 #define GPIOY_bit_bit0_22(bit)      (bit)
 
+#define GPIOZ_bank_bit0_12(bit)     (PREG_PAD_GPIO6)
+#define GPIOZ_bit_bit0_12(bit)      (bit)
+
+
 /**
  * enable gpio edge interrupt
- *	
- * @param [in] pin  index number of the chip, start with 0 up to 255 
- * @param [in] flag rising(0) or falling(1) edge 
+ *
+ * @param [in] pin  index number of the chip, start with 0 up to 255
+ * @param [in] flag rising(0) or falling(1) edge
  * @param [in] group  this interrupt belong to which interrupt group  from 0 to 7
  */
 extern void gpio_enable_edge_int(int pin , int flag, int group);
 /**
  * enable gpio level interrupt
- *	
- * @param [in] pin  index number of the chip, start with 0 up to 255 
- * @param [in] flag high(0) or low(1) level 
+ *
+ * @param [in] pin  index number of the chip, start with 0 up to 255
+ * @param [in] flag high(0) or low(1) level
  * @param [in] group  this interrupt belong to which interrupt group  from 0 to 7
  */
 extern void gpio_enable_level_int(int pin , int flag, int group);
