@@ -983,7 +983,7 @@ static void hx_init_ddr_pll()
 	//asm volatile ("wfi");
 	//band gap reset???
 	//....
-	
+	writel(readl(P_HHI_VID_PLL_CNTL) |(1<<30), P_HHI_VID_PLL_CNTL);
 #ifndef DDR_PLL_LOAD
 	#define DDR_PLL_LOAD(a)  {writel(g_ddr_settings[a],P##a);}
 #endif
