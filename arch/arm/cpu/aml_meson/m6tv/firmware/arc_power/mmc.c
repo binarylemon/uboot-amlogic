@@ -835,6 +835,9 @@ pub_retry:
 		
 		//if(readl(P_PUB_PGSR0_ADDR) & (1<<20))
 		//	goto pub_retry;
+		if(readl(P_PUB_PGSR0_ADDR) & 1)
+			break;
+		
 	}
 
 	//===============================================	
