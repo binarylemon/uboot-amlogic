@@ -20,7 +20,7 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-#define CONFIG_SECURITYKEY
+//#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif
