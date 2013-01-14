@@ -1,16 +1,29 @@
 #include <common.h>
 #include <command.h>
+#include <video_fb.h>
 #include <devfont.h>
 #include <amlogic/aml_lcd.h>
 
+#include <font/ISO_88591_18.h>
+#include <font/ISO_88591_20.h>
+#include <font/ISO_88591_24.h>
+#include <font/ISO_88591_32.h>
+#include <font/ISO_88591_40.h>
+
+
 #define MAX_FONT_NUM		16
 
-PFONT font_arrays[MAX_FONT_NUM] ;
-unsigned char  font_nums = 0 ;
+PFONT font_arrays[MAX_FONT_NUM];
+unsigned char  font_nums = 0;
 PFONT gpCurFont = NULL;
 
-extern vidinfo_t panel_info;
+extern GraphicDevice aml_gdev;
+static GraphicDevice *gdev = NULL;	/* Graphic Device */
+
 extern void mdelay(unsigned long msec);
+
+#define lcd_line_length	(gdev->winSizeX * gdev->gdfBytesPP)
+
 
 unsigned char is_rect_invalid(const RECT *rect)
 {
@@ -43,20 +56,25 @@ unsigned char is_rect_invalid(const RECT *rect)
 int DrawPixel(unsigned short x, unsigned short y, int color)
 {
     unsigned char *dest;
-    unsigned short lcd_line_length = (OSD_WIDTH * OSD_BPP) / 8;
     
-    if((x > OSD_WIDTH) || (y > OSD_HEIGHT)) {
+    if((x > gdev->winSizeX) || (y > gdev->winSizeY)) {
     	return	-1;
     }
     
-    dest = (uchar *)(panel_info.lcd_base + y * lcd_line_length + x * (OSD_BPP / 8));
-#if(OSD_BPP == OSD_COLOR24)
-    *dest++ = color & 0xff;
-    *dest++ = (color >> 8) & 0xff;
-    *dest = (color >> 16) & 0xff;
-#endif
+    dest = (uchar *)(gdev->frameAdrs + y * lcd_line_length + x * gdev->gdfBytesPP);
+	if(gdev->gdfBytesPP == GDF_16BIT_565RGB)
+	{
+	    *dest++ = color & 0xff;
+	    *dest++ = (color >> 8) & 0xff;
+	}
+	else if(gdev->gdfBytesPP == GDF_24BIT_888RGB)
+	{
+	    *dest++ = color & 0xff;
+	    *dest++ = (color >> 8) & 0xff;
+	    *dest = (color >> 16) & 0xff;
+	}
     
-    flush_cache((unsigned long)(panel_info.lcd_base), OSD_WIDTH * OSD_HEIGHT * OSD_BPP/8);
+    flush_cache((unsigned long)(gdev->frameAdrs), gdev->winSizeX * gdev->winSizeY * gdev->gdfBytesPP);
     return 0;
 }
 
@@ -64,9 +82,8 @@ int DrawRect(unsigned short x, unsigned short y, unsigned short w, unsigned shor
 {
     unsigned char *dest;
     unsigned short row, col;
-    unsigned short lcd_line_length = (OSD_WIDTH * OSD_BPP) / 8;
     
-    if((x > OSD_WIDTH) || (y > OSD_HEIGHT)) {
+    if((x > gdev->winSizeX) || (y > gdev->winSizeY)) {
     	return -1;
     }
     
@@ -74,18 +91,24 @@ int DrawRect(unsigned short x, unsigned short y, unsigned short w, unsigned shor
     	return -1;
     }
     
-    dest = (unsigned char *)(panel_info.lcd_base + y * lcd_line_length + x * (OSD_BPP / 8));
+    dest = (unsigned char *)(gdev->frameAdrs + y * lcd_line_length + x * gdev->gdfBytesPP);
     for(row=0; row<h; row++) {
     	for(col=0; col<w; col++) {
-#if(OSD_BPP == OSD_COLOR24)
-    	    *dest++ = color & 0xff;
-    	    *dest++ = (color >> 8) & 0xff;
-    	    *dest++ = (color >> 16) & 0xff;
-#endif
+			if(gdev->gdfBytesPP == GDF_16BIT_565RGB)
+			{
+	    	    *dest++ = color & 0xff;
+	    	    *dest++ = (color >> 8) & 0xff;
+			}
+			else if(gdev->gdfBytesPP == GDF_24BIT_888RGB)
+			{
+	    	    *dest++ = color & 0xff;
+	    	    *dest++ = (color >> 8) & 0xff;
+	    	    *dest++ = (color >> 16) & 0xff;
+			}
     	}
-    	dest = (unsigned char *)(panel_info.lcd_base + (y + row) * lcd_line_length + x * (OSD_BPP / 8));
+    	dest = (unsigned char *)(gdev->frameAdrs + (y + row) * lcd_line_length + x * gdev->gdfBytesPP);
     }
-    flush_cache((unsigned long)(panel_info.lcd_base), OSD_WIDTH * OSD_HEIGHT * OSD_BPP / 8);
+    flush_cache((unsigned long)(gdev->frameAdrs), gdev->winSizeX * gdev->winSizeY * gdev->gdfBytesPP);
     return 0;
 }
 
@@ -94,7 +117,7 @@ int DrawFont(int x, int y, int font_width, int font_height, int font_color, unsi
     RECT draw_rect;
     unsigned int w,h;
 
-    if((x > OSD_WIDTH) || (y > OSD_HEIGHT)) {
+    if((x > gdev->winSizeX) || (y > gdev->winSizeY)) {
     	return -1;
     }
 
@@ -235,6 +258,23 @@ void SetFont(char *font_name)
     return;
 }
 
+int SetFontSize(int font_size)
+{
+    unsigned char iTemp = 0;
+    
+    for(iTemp = 0; iTemp < font_nums; iTemp++)
+    {
+		if(font_arrays[iTemp]->font_size == font_size)
+    	{
+    	    gpCurFont = font_arrays[iTemp];
+    	    return 0;
+    	}
+    }
+	printf("Font size %d not found.\n", font_size);
+    return -1;
+}
+
+
 int RegisterFont(PFONT new_font)
 {
     unsigned char i = 0;
@@ -286,6 +326,31 @@ unsigned short GetCharHeight(void)
      return gpCurFont->font_height;
 }
 
+
+int do_set_fontsize (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+
+	int font_size;
+
+	if (argc < 2) {
+		cmd_usage(cmdtp);
+		return -1;
+	}
+	if(gdev == NULL)
+	{
+		gdev = &aml_gdev;
+		RegisterFont(&ISO_88591_18Font);
+		RegisterFont(&ISO_88591_20Font);
+		RegisterFont(&ISO_88591_24Font);
+		RegisterFont(&ISO_88591_32Font);
+		RegisterFont(&ISO_88591_40Font);
+	}
+	font_size = simple_strtoul(argv[1], NULL, 10);
+	return SetFontSize(font_size);
+}
+
+
+
 int draw_string (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned short x, y;
@@ -295,7 +360,11 @@ int draw_string (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		cmd_usage(cmdtp);
 		return 1;
 	}
-
+	if(gdev == NULL)
+	{
+		printf("Error: Please initialize gdev first!\n");
+		return -1;
+	}
 	x = simple_strtoul(argv[2], NULL, 10);
 	y = simple_strtoul(argv[3], NULL, 10);
 	font_color = simple_strtoul(argv[4], NULL, 16);
@@ -303,6 +372,17 @@ int draw_string (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	AsciiPrintf(argv[1], x, y, font_color);
 	return 0;
 }
+
+
+
+
+U_BOOT_CMD(
+	set_fontsize,	2,	1,	do_set_fontsize,
+	"Set font size for display text on the screen",
+	"set_fontsize <size>\n"
+	"<size>:	18; 20; 24; 32; 40)"
+);
+
 
 U_BOOT_CMD(
 	drawstr,	5,	1,	draw_string,

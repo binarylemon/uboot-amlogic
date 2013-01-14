@@ -249,6 +249,8 @@
 #endif
 /*end config LCD output*/
 
+#define CONFIG_AML_FONT
+
 /*POST support*/
 
 #if 0
