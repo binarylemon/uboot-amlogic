@@ -10,7 +10,7 @@
  */
 #define CONFIG_AML_MESON6
 //#define WRITE_TO_EFUSE_ENABLE	
-#define WRITE_TO_NAND_ENABLE
+//#define WRITE_TO_NAND_ENABLE
 
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
 #error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
@@ -20,7 +20,7 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-#define CONFIG_SECURITYKEY
+//#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif
