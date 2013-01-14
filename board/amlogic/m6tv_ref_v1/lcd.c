@@ -83,7 +83,7 @@ static void backlight_power_ctrl(Bool_t status)
 		mdelay(300);
 		//BL_EN: GPIOD_1(PWM_D)
 #if (BL_CTL==BL_CTL_GPIO)
-	    set_gpio_val(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), 1);
+	    set_gpio_val(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), 0);
 	    set_gpio_mode(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), GPIO_OUTPUT_MODE);
 		//mdelay(50);
 		//WRITE_CBUS_REG_BITS(LED_PWM_REG0, 0, 0, 4);
@@ -100,7 +100,7 @@ static void backlight_power_ctrl(Bool_t status)
 		mdelay(20);
 		//BL_EN -> GPIOD_1: 0
 	    //WRITE_MPEG_REG(PWM_MISC_REG_CD, READ_MPEG_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
-		set_gpio_val(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), 0);
+		set_gpio_val(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), 1);
 	    set_gpio_mode(GPIOX_bank_bit0_31(2), GPIOX_bit_bit0_31(2), GPIO_OUTPUT_MODE);
 
 	    mdelay(20);
@@ -142,7 +142,7 @@ static void lcd_power_ctrl(Bool_t status)
 		set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 0);
 		set_gpio_mode(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), GPIO_OUTPUT_MODE);
 #else
-		set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 1);
+		set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 0);
 		set_gpio_mode(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), GPIO_OUTPUT_MODE);
 #endif
 
@@ -176,7 +176,7 @@ static void lcd_power_ctrl(Bool_t status)
 	set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 1);
 	set_gpio_mode(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), GPIO_OUTPUT_MODE);
 #else
-	set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 0);
+	set_gpio_val(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), 1);
 	set_gpio_mode(GPIOZ_bank_bit0_12(5), GPIOZ_bit_bit0_12(5), GPIO_OUTPUT_MODE);
 #endif
 
