@@ -56,9 +56,9 @@
    #define LCD_HADR                 0
 
 /* for POL_CNTL_ADDR */
-   #define LCD_DCLK_SEL             14    //FOR DCLK OUTPUT   
-   #define LCD_TCON_VSYNC_SEL_DVI   11	 // FOR RGB format DVI output   
-   #define LCD_TCON_HSYNC_SEL_DVI   10	 // FOR RGB format DVI output   
+   #define LCD_DCLK_SEL             14    //FOR DCLK OUTPUT
+   #define LCD_TCON_VSYNC_SEL_DVI   11	 // FOR RGB format DVI output
+   #define LCD_TCON_HSYNC_SEL_DVI   10	 // FOR RGB format DVI output
    #define LCD_TCON_DE_SEL_DVI      9	 // FOR RGB format DVI output
    #define LCD_CPH3_POL             8
    #define LCD_CPH2_POL             7
@@ -121,7 +121,7 @@
    #define LCD_RES                  3
    #define LCD_LVDS_PORT_SWP        2
    #define LCD_PACK_RVS             1
-   #define LCD_PACK_LITTLE          0   
+   #define LCD_PACK_LITTLE          0
 
 typedef enum
 {
@@ -131,7 +131,7 @@ typedef enum
     LCD_DIGITAL_MINILVDS,
     LCD_TYPE_MAX,
 } Lcd_Type_t;
-   
+
 typedef struct {
     int channel_num;
     int hv_sel;
@@ -145,11 +145,11 @@ typedef struct {
     int tcon_2nd_ve_addr;
 } Mlvds_Tcon_Config_t;
 
-typedef struct {      
+typedef struct {
 	unsigned int lvds_prem_ctl;
     unsigned int lvds_swing_ctl;
     unsigned int lvds_vcm_ctl;
-    unsigned int lvds_ref_ctl;    
+    unsigned int lvds_ref_ctl;
 } Lvds_Phy_Control_t;
 
 typedef struct {
@@ -166,34 +166,38 @@ typedef struct {
     int scan_function;
 } Mlvds_Config_t;
 
-typedef struct {    
+typedef struct {
     int lvds_repack;
     int pn_swap;
-    //int bit_num;  
-    //Lvds_Phy_Control_t *lvds_phy_control;  
-} Lvds_Config_t;   
+    int dual_port;
+    int port_reverse;
+    //int bit_num;
+    //Lvds_Phy_Control_t *lvds_phy_control;
+} Lvds_Config_t;
 
 // Refer to LCD Spec
 typedef struct {
     u16 h_active;   	// Horizontal display area
-    u16 v_active;     	// Vertical display area 
-    u16 h_period;       // Horizontal total period time 
-    u16 v_period;       // Vertical total period time 
-    u16 screen_ratio_width;      // screen aspect ratio width 
-    u16 screen_ratio_height;     // screen aspect ratio height 
-   
+    u16 v_active;     	// Vertical display area
+    u16 h_period;       // Horizontal total period time
+    u16 v_period;       // Vertical total period time
+    u16 screen_ratio_width;      // screen aspect ratio width
+    u16 screen_ratio_height;     // screen aspect ratio height
+    u32 screen_actual_width;/* screen physical width in "mm" unit */
+    u32 screen_actual_height;/* screen physical height in "mm" unit */
+
     Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
     u16 lcd_bits;         // 6 or 8 bits
 }Lcd_Basic_t;
 
 typedef struct {
 	//u16 clk_source;		 /*video pll clock, must be multiple of 12, from 384~744*/
-    u32 pll_ctrl;        /* video PLL settings */    
+    u32 pll_ctrl;        /* video PLL settings */
     u32 div_ctrl;        /* video pll div settings */
 	u32 clk_ctrl;        /* video clock settings */  //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
     u16 sync_duration_num;
     u16 sync_duration_den;
-	
+
 	u16 video_on_pixel;
     u16 video_on_line;
 
@@ -201,16 +205,16 @@ typedef struct {
     u16 sth1_he_addr;
     u16 sth1_vs_addr;
     u16 sth1_ve_addr;
-    
+
     u16 oeh_hs_addr;
     u16 oeh_he_addr;
     u16 oeh_vs_addr;
     u16 oeh_ve_addr;
-                                
+
     u16 vcom_hswitch_addr;
     u16 vcom_vs_addr;
     u16 vcom_ve_addr;
-                    
+
     u16 cpv1_hs_addr;
     u16 cpv1_he_addr;
     u16 cpv1_vs_addr;
@@ -240,21 +244,21 @@ typedef struct {
     u16 rgb_base_addr;
     u16 rgb_coeff_addr;
     u16 dith_cntl_addr;
-    
+
     s16 brightness[33];
     s16 contrast[33];
     s16 saturation[33];
     s16 hue[33];
-    
+
     u16 GammaTableR[256];
     u16 GammaTableG[256];
     u16 GammaTableB[256];
 } Lcd_Effect_t;
 
-typedef struct {    
+typedef struct {
 	Lvds_Config_t *lvds_config;
 	Mlvds_Config_t *mlvds_config;
-	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7    
+	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
 	Lvds_Phy_Control_t *lvds_phy_control;
 } Lvds_Mlvds_Config_t;
 
@@ -262,7 +266,7 @@ typedef enum {
     OFF = 0,
     ON = 1,
 } Bool_t;
-    
+
 // Power Control
 typedef struct {
     int cur_bl_level;
@@ -276,10 +280,10 @@ typedef struct {
 
 typedef struct {
     Lcd_Basic_t lcd_basic;
-    Lcd_Timing_t lcd_timing;    
-    Lcd_Effect_t lcd_effect; 
-	Lvds_Mlvds_Config_t lvds_mlvds_config;	
-	Lcd_Power_Ctrl_t lcd_power_ctrl; 
+    Lcd_Timing_t lcd_timing;
+    Lcd_Effect_t lcd_effect;
+	Lvds_Mlvds_Config_t lvds_mlvds_config;
+	Lcd_Power_Ctrl_t lcd_power_ctrl;
 } Lcd_Config_t;
 
 Lcd_Config_t lcd_config;

@@ -57,6 +57,7 @@ int appf_runtime_call(unsigned function, unsigned arg1, unsigned arg2, unsigned 
  */
 
 extern void pwr_delay(int n);
+extern unsigned int secure_reg_1;
 int appf_warm_reset(void)
 {
     int ret;
@@ -73,6 +74,8 @@ int appf_warm_reset(void)
 	//writel(readl(0xDA00434c)&(~(0x1<<29)),0xDA00434c);// Disable GPO filter for 32k
 	writel(0x3600000,0xDA00434c);// Disable GPO filter for 32k
 	//**********************//
+
+	writel(secure_reg_1,0xDA004004);//restore secure_reg_1
     
     cpu_index = appf_platform_get_cpu_index();
     cluster_index = appf_platform_get_cluster_index();

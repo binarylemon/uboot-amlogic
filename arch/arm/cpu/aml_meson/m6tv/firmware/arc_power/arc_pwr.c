@@ -237,13 +237,13 @@ void restart_arm()
 	delay_ms(1);
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
- //	f_serial_puts("arm restarted ...done\n");
-//	wait_uart_empty();
+// f_serial_puts("arm restarted ...done\n");
+// wait_uart_empty();
 }
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
 
-#define pwr_ddr_off 
+//#define pwr_ddr_off 
 void enter_power_down()
 {
 	int i;
@@ -254,14 +254,14 @@ void enter_power_down()
 	//	disp_pctl();
 	//	test_ddr(0);
 	// First, we disable all memory accesses.
-
+#ifdef pwr_ddr_off
 	f_serial_puts("step 1: DDR enter self-refresh\n");	
  	wait_uart_empty();
 	//DDR save setting
 	hx_save_ddr_settings();	
 	//DDR suspend
 	hx_enter_power_down();
-
+#endif
 
  	f_serial_puts("step 2: CPU off\n");
  	wait_uart_empty();
@@ -271,10 +271,11 @@ void enter_power_down()
  	wait_uart_empty();
 	//store_restore_plls(1);
 
-	f_serial_puts("step 4: power off domain\n");
+	f_serial_puts("step 4: power off domain12345\n");
 	wait_uart_empty();
-	power_off_at_24M();
-
+//	power_off_at_24M();
+	
+	
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
 	switch_in_32k();
@@ -292,6 +293,7 @@ void enter_power_down()
 		udelay(2000);
 		power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
+		  
 		  if(power_key==0x10)  //the reference remote power key code
         		break;
 		}
@@ -346,13 +348,14 @@ void enter_power_down()
 	power_on_at_32k();
 	switch_out_32k();
 	
-	power_on_at_24M();
+//	power_on_at_24M();
  	uart_reset();
 
 	f_serial_puts("step 7: restore pll\n");
 	wait_uart_empty();
 	//store_restore_plls(0);
 	
+	writel(0x00000020,P_PWM_PWM_B);
 #ifdef pwr_ddr_off    
 	f_serial_puts("step 8: resume ddr\n");
 	wait_uart_empty();
