@@ -55,10 +55,18 @@ static void hx_enable_mmc_req(void)
 	__udelayx(100);
 }
 
+//temp solution for DDR resume fail with Android
+//To Android system reset MMC will cause 
+//ARM fail to access DDR for most times
+//But with busybox it does work and no fail found
+#define M6TV_MMC_RESET_TEMP
 static void hx_reset_mmc(void)
 {
 	f_serial_puts("hx_reset_mmc\n");
-	
+#ifdef	M6TV_MMC_RESET_TEMP
+	f_serial_puts("NOT DO MMC reset! --> Please check!\n");
+	return;
+#endif
 	//reset all sub module
 	writel(0, P_MMC_SOFT_RST);
 	writel(0, P_MMC_SOFT_RST1); //To check??
@@ -603,8 +611,17 @@ void hx_enter_power_down()
 	// before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
 	// that will save the DLL analog power.
 	f_serial_puts("mmc soft rst\n");
+	
+#ifdef	M6TV_MMC_RESET_TEMP
+	f_serial_puts("Only PUB/PCTL soft reset! --> Please check!\n");
+	#define MMC_RESET_SELECT (0x1f)
+	unsigned nTempVal = readl(P_MMC_SOFT_RST) & (~(MMC_RESET_SELECT<<25));			
+	writel(nTempVal, P_MMC_SOFT_RST);
+	#undef MMC_RESET_SELECT
+#else
 	writel(0, P_MMC_SOFT_RST);
     writel(0, P_MMC_SOFT_RST1); //To check??
+#endif 
 
 	// shut down DDR PLL. 
 	writel(readl(P_HHI_DDR_PLL_CNTL)|(1<<30),P_HHI_DDR_PLL_CNTL);
