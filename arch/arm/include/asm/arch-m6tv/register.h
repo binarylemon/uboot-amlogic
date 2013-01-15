@@ -14,6 +14,8 @@
 #else
 #define REGISTER_H
 
+#include "canvas_missed_define.h"
+#include "vpp_misc_missed_define.h"
 #define Is_dos_reg(addr) ((((addr)>>8)==0x09 || ((addr)>>8)==0x0c || ((addr)>>8)==0x0e || ((addr)>>8)==0x03)? 1 : 0)
 
 #define Wr(addr, data) *(volatile unsigned long *)((Is_dos_reg(addr)? 0xc8010000:0xc1100000)|((addr)<<2))=(data)
@@ -1512,6 +1514,13 @@
 #define HHI_TIMER90K                               0x103b
 #define HHI_AUD_DAC_CTRL                           0x1044
 // Gated clock enables.  There are 64 enables for the MPEG clocks and 32 enables for other clock domains
+#define HHI_VIID_PLL_CNTL4                         0x1046 
+#define HHI_VIID_PLL_CNTL                          0x1047 
+#define HHI_VIID_PLL_CNTL2                         0x1048 
+#define HHI_VIID_PLL_CNTL3                         0x1049
+#define HHI_VIID_CLK_DIV                           0x104a
+#define HHI_VIID_CLK_CNTL                          0x104b
+#define HHI_VIID_DIVIDER_CNTL                      0x104c
 #define HHI_GCLK_MPEG0                             0x1050
 #define HHI_GCLK_MPEG1                             0x1051
 #define HHI_GCLK_MPEG2                             0x1052

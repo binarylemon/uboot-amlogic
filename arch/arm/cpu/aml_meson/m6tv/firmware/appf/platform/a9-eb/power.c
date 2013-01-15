@@ -103,6 +103,7 @@ void pwr_delay(int n)
 
 void l2x0_clean_all(void); 
 extern void platform_reset_handler(void);
+unsigned int secure_reg_1;
 void run_arc_program()
 {
 	 char cmd;
@@ -145,6 +146,8 @@ void run_arc_program()
 	writel(readl(0xDA004340)|(0xf<<12),0xDA004340);//set int edge of GPO
 	writel(readl(0xDA004344)|(0xf<<12),0xDA004344);//clear int
 	//**********************//
+	secure_reg_1 = readl(0xDA004004);
+	writel(/*readl(0xDA004004) & ((~(3<<8)) | (~(3<<16)))*/0,0xDA004004);// TMS from gpioAO_9
     //switch to ARC jtag
     //set pinmux
 /*    writel(readl(0xc8100014)|(1<<14),0xc8100014);
