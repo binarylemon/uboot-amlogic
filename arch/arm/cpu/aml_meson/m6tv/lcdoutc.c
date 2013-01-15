@@ -27,6 +27,7 @@
 #include <asm/arch/mlvds_regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
+#include <asm/arch/gpio.h>
 
 //M6 PLL control value
 #define M6_PLL_CNTL_CST2 (0x814d3928)
@@ -1430,10 +1431,27 @@ static void _enable_backlight(u32 brightness_level)
 }*/
 static void _lcd_module_enable(void)
 {
+#if 0
     BUG_ON(pDev==NULL);
-    _init_display_driver(&pDev->conf);
-    panel_oper.power_on();
+   // _init_display_driver(&pDev->conf);
+   //md by jack
+   panel_oper.power_on();
+   udelay(200);
+	_init_display_driver(&pDev->conf);//TX_clock
     //_enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
+    _enable_vsync_interrupt();
+#endif
+	    BUG_ON(pDev==NULL);   
+	panel_oper.power_on();//panel power 12v
+	udelay(50);
+	_init_display_driver(&pDev->conf);//TX_clock
+	udelay(50);
+	////pull up pwm
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,1,30,1);
+	////pull up pwm
+	mdelay(160);
+    _enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
     _enable_vsync_interrupt();
 }
 

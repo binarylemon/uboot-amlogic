@@ -289,12 +289,17 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     //init_custom_trigger();
+    writel(readl(P_AO_RTI_GEN_CTNL_REG0) | 0x00010000,P_AO_RTI_GEN_CTNL_REG0);
+    udelay(2000);
+    writel(readl(P_AO_RTI_GEN_CTNL_REG0) & 0xfffeffff,P_AO_RTI_GEN_CTNL_REG0);
+    //resume ir regs
+    resume_remote_register();
 	while(1){
 		udelay(2000);
 		power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
 		  
-		  if(power_key==0x10)  //the reference remote power key code
+		  if(power_key==0x10 || power_key==0x0c)  //the reference remote power key code
         		break;
 		}
 #endif

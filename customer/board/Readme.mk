@@ -70,6 +70,22 @@ help_customer:
 	@echo The mark in board is "HD6027-AML8726M6-VER1.0"
 	@echo config command: \"make m6_letv_g29ref_config\"
 
+	@echo =======================================================================
+	@echo The mark in board is "M6TV_H02_V1"
+	@echo config command: \"make m6tv_h02_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M6TV_H03_V1"
+	@echo config command: \"make m6tv_h03_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M6TV_H04_V1"
+	@echo config command: \"make m6tv_h04_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M6TV_H05_V1"
+	@echo config command: \"make m6tv_h05_v1_config\"
+
 	@echo customer defined board end
 	@echo
 	
