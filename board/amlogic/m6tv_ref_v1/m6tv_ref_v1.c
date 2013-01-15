@@ -13,7 +13,7 @@
 #include <aml_i2c.h>
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
-
+#include <asm/arch/gpio.h>
 #define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -650,8 +650,11 @@ int board_init(void)
 #if CONFIG_JERRY_NAND_TEST //temp test	
     nand_init();
     
-#endif    
-    
+#endif 
+   /// pull down pwm by jack
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
+
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
