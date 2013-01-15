@@ -14,7 +14,7 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
-
+#define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
 
@@ -32,7 +32,7 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
@@ -46,7 +46,7 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #endif
@@ -129,6 +129,19 @@ U_BOOT_CMD(
 
 #endif //CONFIG_SARADC
 
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode(void)
+{
+    u32 reboot_mode_current = reboot_mode;
+    printf("reboot_mode_current=%x\n",reboot_mode_current);   
+    
+    if(reboot_mode_current == 0x02020202)
+    run_command("run recoveryinand",0);	
+    
+    return 0;
+}
+#endif
+
 u32 get_board_rev(void)
 {
     /*
@@ -154,7 +167,7 @@ switch(port)
                   break;
             case SDIO_PORT_C:    	
                   //enable pull up
-	//		clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
+                  clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
                   break;
             case SDIO_PORT_XC_A:
                   break;

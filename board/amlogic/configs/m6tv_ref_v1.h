@@ -8,7 +8,8 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-
+//
+#define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
@@ -134,15 +135,16 @@
 	"bootpath=u-boot-512M-UartB.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
 #define CONFIG_BOOTCOMMAND  "mmcinfo 1;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
-#define CONFIG_SPI_BOOT 1
-//#define CONFIG_MMC_BOOT
-//#define CONFIG_EMMC_BOOT 1
+//#define CONFIG_SPI_BOOT
+//#define CONFIG_MMC_BOOT 1
+#define CONFIG_EMMC_BOOT 1
 
 //#ifndef CONFIG_JERRY_NAND_TEST
 //	#define CONFIG_NAND_BOOT 1
@@ -182,8 +184,7 @@
 #elif defined CONFIG_EMMC_BOOT
 	#define CONFIG_ENV_IS_IN_EMMC
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_DEVICE_ID        0
-	#define CONFIG_ENV_SIZE         0x2000
+	#define CONFIG_ENV_DEVICE_ID 1    
 	#define CONFIG_ENV_OFFSET       0x200000
 
 #else
