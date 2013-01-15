@@ -1266,7 +1266,12 @@ void osd_init_hw(void)
 	setbits_le32(P_VPP_MISC,VPP_POSTBLEND_EN);
 	clrbits_le32(P_VPP_MISC, VPP_PREBLEND_EN);  
 	clrbits_le32(P_VPP_MISC,VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND );
-	data32  = 0x1          << 0; // osd_blk_enable
+	//data32  = 0x1          << 0; // osd_blk_enable
+	#ifdef CONFIG_M6TV
+	data32 = 0x0 << 0; // osd_blk_enable
+	#else
+	data32 = 0x1 << 0;
+	#endif
 	data32 |= OSD_GLOBAL_ALPHA_DEF<< 12;
 	data32 |= (1<<21)	;
 	writel(data32, P_VIU_OSD1_CTRL_STAT);
