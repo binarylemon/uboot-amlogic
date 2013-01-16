@@ -26,7 +26,7 @@
 #include "appf_types.h"
 #include "appf_internals.h"
 #include "appf_helpers.h"
-
+#include <asm/arch/cpu.h>
 
 struct set_and_clear_regs
 {
@@ -96,9 +96,19 @@ int save_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor_add
 
     *pointer = id->enable.set[0];
     ++pointer;
+#ifdef CONFIG_MESON_ARM_GIC_FIQ    
+    copy_words(pointer, id->priority, 8);
+    pointer += 8;
+    copy_words(pointer, id->target, 8);
+    pointer += 8;
+    copy_words(pointer, id->security, 8);
+    pointer += 8;
+#else
     pointer = copy_words(pointer, id->priority, 8);
     pointer = copy_words(pointer, id->target, 8);
     /* Save just the PPI configurations (SGIs are not configurable) */
+#endif
+   
     *pointer = id->configuration[1];
     ++pointer;
     *pointer = id->pending.set[0];
@@ -191,6 +201,10 @@ void restore_gic_distributor_private(appf_u32 *pointer, unsigned gic_distributor
     pointer += 8;
     copy_words(id->target, pointer, 8);
     pointer += 8;
+#ifdef CONFIG_MESON_ARM_GIC_FIQ    
+    copy_words(id->security, pointer, 8);
+    pointer += 8;	
+#endif    
     /* Restore just the PPI configurations (SGIs are not configurable) */
     id->configuration[1] = *pointer;
     ++pointer;
