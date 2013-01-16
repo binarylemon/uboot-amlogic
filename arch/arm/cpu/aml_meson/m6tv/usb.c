@@ -71,6 +71,12 @@ static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 	}else if(port == USB_PHY_PORT_B){
 		port_idx = 1;
 		peri = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_B);
+	}else if(port == USB_PHY_PORT_C){
+		port_idx = 2;
+		peri = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_C);
+	}else if(port == USB_PHY_PORT_D){
+		port_idx = 3;
+		peri = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_D);
 	}else{
 		printf("usb base address error: %x\n",usb_cfg->base_addr);
 		return -1;
@@ -94,7 +100,9 @@ static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 	control.b.por = 1;  /* power off default*/
 	peri->ctrl = control.d32;
 	udelay(time_dly);
-
+	control.b.por = 0;
+	peri->ctrl = control.d32;
+	udelay(time_dly);
 	return 0;
 }
 //call after set clock
@@ -103,18 +111,26 @@ void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 	unsigned long delay = 1000;
 	int port_idx;
 	unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
-	usb_peri_reg_t *peri_a,*peri_b,*peri;
+	usb_peri_reg_t *peri_a,*peri_b,*peri_c,*peri_d,*peri;
 	usb_ctrl_data_t control;
 
 	peri_a = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_A);
 	peri_b = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_B);
+	peri_c = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_C);
+	peri_d = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_D);
 
 	if(port == USB_PHY_PORT_A){
 		peri = peri_a;
 		port_idx = 0;
-	}else{
+	}else if(port == USB_PHY_PORT_B){
 		peri = peri_b;
 		port_idx = 1;
+	}else if(port == USB_PHY_PORT_C){
+		peri = peri_c;
+		port_idx = 2;
+	}else if(port == USB_PHY_PORT_D){
+		peri = peri_d;
+		port_idx = 3;
 	}
 	
 	if(is_on){
@@ -140,6 +156,14 @@ void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 		control.d32 = peri_b->ctrl;
 		control.b.por = 1;
 		peri_b->ctrl = control.d32;
+		
+		control.d32 = peri_c->ctrl;
+		control.b.por = 1;
+		peri_c->ctrl = control.d32;
+		
+		control.d32 = peri_d->ctrl;
+		control.b.por = 1;
+		peri_d->ctrl = control.d32;
 	}
 	udelay(delay);
 
@@ -159,19 +183,27 @@ static void usb_bc_detect(amlogic_usb_config_t * usb_cfg)
 {
 	int port_idx,timeout_det;
 	unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
-	usb_peri_reg_t *peri_a,*peri_b,*peri;
+	usb_peri_reg_t *peri_a,*peri_b,*peri_c,*peri_d,*peri;
 	usb_adp_bc_data_t adp_bc;
 	int bc_mode = BC_MODE_UNKNOWN;
 
 	peri_a = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_A);
 	peri_b = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_B);
+	peri_c = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_C);
+	peri_d = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_D);
 
 	if(port == USB_PHY_PORT_A){
 		peri = peri_a;
 		port_idx = 0;
-	}else{
+	}else if(port == USB_PHY_PORT_B){
 		peri = peri_b;
 		port_idx = 1;
+	}else if(port == USB_PHY_PORT_C){
+		peri = peri_c;
+		port_idx = 2;
+	}else if(port == USB_PHY_PORT_D){
+		peri = peri_d;
+		port_idx = 3;
 	}
 
 	adp_bc.d32 = peri->adp_bc;

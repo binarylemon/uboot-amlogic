@@ -6,6 +6,8 @@
 //ddrtest and d2pll command support
 #define CONFIG_CMD_DDR_TEST	1	//ddrtest & d2pll
 
+//#define TEST_UBOOT_BOOT_SPEND_TIME
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
@@ -70,8 +72,10 @@
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-#define CONFIG_M6_USBPORT_BASE	0xC90C0000
 #define CONFIG_M6_USBPORT_BASE_A	0xC9040000
+#define CONFIG_M6_USBPORT_BASE_B	0xC90C0000
+#define CONFIG_M6_USBPORT_BASE_C	0xC9100000
+#define CONFIG_M6_USBPORT_BASE_D	0xC9140000
 #define CONFIG_USB_STORAGE      1
 #define CONFIG_USB_DWC_OTG_HCD  1
 #define CONFIG_USB_DWC_OTG_294	1
