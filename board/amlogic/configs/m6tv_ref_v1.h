@@ -110,7 +110,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS2,115200n8\0" \
-	"mmcargs=setenv bootargs console=${console} " \
+	"mmcargs=setenv bootargs init=/init mem=1024m mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -140,7 +140,7 @@
 	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
