@@ -117,6 +117,12 @@ void udelay(int i)
     }
 }
 
+#define __udelay(a)	\
+	udelay(24*a)
+
+static void save_pll(void);
+static void store_pll(void);
+
 #define delay_1s() delay_tick(TICK_OF_ONE_SECOND);
 
 //volatile unsigned * arm_base=(volatile unsigned *)0x8000;
@@ -206,24 +212,88 @@ extern void power_off_at_24M();
 extern void power_on_at_24M();
 extern void power_off_at_32k();
 extern void power_on_at_32k();
-
+#if 1
 void restart_arm()
 {
+ int i;
+ //------------------------------------------------------------------------
+ // restart arm
+  //0. make sure a9 reset
+ setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+
+
+ //1. write flag
+ writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+ 
+ //2. remap AHB SRAM
+// writel(3,P_AO_REMAP_REG0);
+ writel(1,P_AHB_ARBDEC_REG);
+ 
+ //3. turn off romboot clock
+ writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
+
+// writel(0xffffffff, P_HHI_GCLK_MPEG1);
+
+ 
+
+// reinitial clock
+
+//clock_set_sys_defaults();  // may be not necessary
+
+
+ //4. Release ISO for A9 domain.
+ setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
+
+ 
+
+ //reset A9
+
+writel(0xF, P_RESET4_REGISTER);
+
+// *P_AO_IRQ_STAT_CLR = 0xFFFF;
+ serial_put_hex(Rd(HHI_SYS_CPU_AUTO_CLK0),32);
+ f_serial_puts("\n");
+ serial_put_hex(Rd(HHI_SYS_CPU_AUTO_CLK1),32);
+  f_serial_puts("\n");
+
+writel(readl(P_HHI_SYS_CPU_CLK_CNTL) & ~(1<<7),P_HHI_SYS_CPU_CLK_CNTL);
+
+	/*
+	writel(0xffff,P_AO_IRQ_STAT_CLR);
+	
+ Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(0x3 << 6)) | (2 << 6)) );
+        // Pulse select to select this new value
+        Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(1 << 8)) | (1 << 8)) );
+        Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(1 << 8)) | (0 << 8)) );
+    */    
+
+ clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+//  writel((1<<22) | (3<<24), P_WATCHDOG_TC);
+}
+#endif
+#if 0
+void restart_arm()
+{
+	int i;
 	//------------------------------------------------------------------------
 	// restart arm
 		//0. make sure a9 reset
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-		
+
 	//1. write flag
 	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	
+	writel(0,P_AO_RTI_STATUS_REG1);//clear debug status
 	//2. remap AHB SRAM
 //	writel(3,P_AO_REMAP_REG0);
 	writel(1,P_AHB_ARBDEC_REG);
  
 	//3. turn off romboot clock
 	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
- 
+//writel(readl(P_HHI_GCLK_MPEG1) | 1<<31,P_HHI_GCLK_MPEG1);
+
+
+//     writel()
 	//4. Release ISO for A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
 
@@ -232,18 +302,26 @@ void restart_arm()
 	//setbits_le32(P_HHI_SYS_CPU_CLK_CNTL , (1 << 7));
 
 	//reset A9
-	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
+
 	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
-	delay_ms(1);
-	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+	writel(0xF ,P_RESET4_REGISTER);// -- reset arm.ww
+	delay_ms(100);
+	//clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
   
-// f_serial_puts("arm restarted ...done\n");
-// wait_uart_empty();
+                            
+ wait_uart_empty();
+ clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+
+	// writel((1<<22) | (3<<24), P_WATCHDOG_TC);
 }
+#endif
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
 
 #define pwr_ddr_off 
+#define POWER_OFF_24M
+//#define POWER_OFF_32K
+
 void enter_power_down()
 {
 	int i;
@@ -270,16 +348,21 @@ void enter_power_down()
 	f_serial_puts("step 3: store pll\n");
  	wait_uart_empty();
 	//store_restore_plls(1);
-
-	f_serial_puts("step 4: power off domain12345\n");
-	wait_uart_empty();
-//	power_off_at_24M();
 	
+	save_pll();
+#ifdef POWER_OFF_24M
+	f_serial_puts("step 4: power off domain\n");
+	wait_uart_empty();
+	power_off_at_24M();
+#endif
 	
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
 	switch_in_32k();
+	
+#ifdef POWER_OFF_32K
 	power_off_at_32k();
+#endif
 	// gate off UART
 	writel(readl(P_AO_RTI_GEN_CTNL_REG0)&(~(0x8)),P_AO_RTI_GEN_CTNL_REG0);
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -350,15 +433,23 @@ void enter_power_down()
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CTNL_REG0)|0x8,P_AO_RTI_GEN_CTNL_REG0);
 
+#ifdef POWER_OFF_32K
 	power_on_at_32k();
+#endif
+
 	switch_out_32k();
+
+#ifdef POWER_OFF_24M
+	power_on_at_24M();
+#endif
 	
-//	power_on_at_24M();
  	uart_reset();
+
 
 	f_serial_puts("step 7: restore pll\n");
 	wait_uart_empty();
 	//store_restore_plls(0);
+	store_pll();
 	
 	writel(0x00000020,P_PWM_PWM_B);
 #ifdef pwr_ddr_off    
@@ -407,9 +498,6 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(CONFIG_AW_AXP20) || defined(CONFIG_ACT8942QJ233_PMU) || defined(CONFIG_AML_PMU))
-			init_I2C();
-#endif
 			copy_reboot_code();
 			enter_power_down();
 			//test_arc_core();
@@ -445,6 +533,7 @@ int main(void)
 	            f_serial_puts(" arm boot fail\n\n");
 	            wait_uart_empty();
 	            #endif
+	            
 	            #if 0 //power down 
 	            cmd = readl(P_AO_GPIO_O_EN_N);
 	            cmd &= ~(1<<6);
@@ -492,8 +581,185 @@ int main(void)
 
 unsigned pll_settings[4];
 unsigned mpll_settings[10];
-unsigned viidpll_settings[4];
 unsigned vidpll_settings[4];
+unsigned clk_settings[2]={0,0};
+
+static void save_pll(void)
+{
+	int i;
+	
+	//save sys pll
+	pll_settings[0]=readl(P_HHI_SYS_PLL_CNTL);
+	pll_settings[1]=readl(P_HHI_SYS_PLL_CNTL2);
+	pll_settings[2]=readl(P_HHI_SYS_PLL_CNTL3);
+	pll_settings[3]=readl(P_HHI_SYS_PLL_CNTL4);
+
+	for(i=0;i<10;i++)//store mpll
+	{
+		mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
+	}
+
+	vidpll_settings[0]=readl(P_HHI_VID_PLL_CNTL);
+	vidpll_settings[1]=readl(P_HHI_VID_PLL_CNTL2);
+	vidpll_settings[2]=readl(P_HHI_VID_PLL_CNTL3);
+	vidpll_settings[3]=readl(P_HHI_VID_PLL_CNTL4);
+	
+	clk_settings[0]=readl(P_HHI_A9_CLK_CNTL);
+	clk_settings[1]=readl(P_HHI_MPEG_CLK_CNTL);
+}
+
+static void store_pll(void)
+{
+#define M6TV_PLL_RESET(pll) \
+		Wr(pll,/*Rd(pll) |*/ (1<<29));
+
+#define M6TV_PLL_WAIT_FOR_LOCK(pll) \
+	do{\
+		__udelay(1000);\
+	}while((Rd(pll)&0x80000000)==0);
+
+	//Enable PLLs pins
+	//*P_AM_ANALOG_TOP_REG1 |= 0x1; // Enable DDR_PLL enable pin	
+	//#define AM_ANALOG_TOP_REG1    0x206F  ->  0xC11081BC 	
+//	Wr(AM_ANALOG_TOP_REG1, Rd(AM_ANALOG_TOP_REG1)|1);
+
+	//*P_HHI_MPLL_CNTL5   |= 0x1; // Enable Both MPLL and SYS_PLL enable pin
+	//move to following SYS PLL init
+
+	Wr(HHI_MPLL_CNTL, clk_settings[1] );
+		serial_put_hex(clk_settings[1],32);
+	f_serial_puts("\n");
+		Wr(HHI_MPLL_CNTL, 0x4000067d );
+
+	//switch a9 clock to  oscillator in the first.  This is sync mux.
+  //  Wr( HHI_A9_CLK_CNTL, 0);
+	//__udelay(100);
+f_serial_puts("sys pll store done00.\n");
+	wait_uart_empty();
+
+	serial_put_hex(pll_settings[0],32);
+	f_serial_puts("\n");
+	serial_put_hex(pll_settings[1],32);
+	f_serial_puts("\n");
+	serial_put_hex(pll_settings[2],32);
+	f_serial_puts("\n");
+		serial_put_hex(pll_settings[3],32);
+	f_serial_puts("\n");
+ wait_uart_empty();
+ 	f_serial_puts("\n");	f_serial_puts("\n");	f_serial_puts("\n");
+ serial_put_hex(readl(P_HHI_SYS_PLL_CNTL),32);
+	f_serial_puts("\n");
+	serial_put_hex(readl(P_HHI_SYS_PLL_CNTL2),32);
+	f_serial_puts("\n");
+	serial_put_hex(readl(P_HHI_SYS_PLL_CNTL3),32);
+	f_serial_puts("\n");
+		serial_put_hex(readl(P_HHI_SYS_PLL_CNTL4),32);
+	f_serial_puts("\n");
+ wait_uart_empty();
+ 
+	do{
+		//BANDGAP reset for SYS_PLL,AUD_PLL,MPLL lock fail
+		//Note: once SYS PLL is up, there is no need to
+		//          use AM_ANALOG_TOP_REG1 for AUD, MPLL
+		//          lock fail
+		Wr_reg_bits(HHI_MPLL_CNTL5,0,0,1);
+		__udelay(10);
+		Wr_reg_bits(HHI_MPLL_CNTL5,1,0,1);
+		__udelay(1000); //1ms for bandgap bootup
+
+		M6TV_PLL_RESET(HHI_SYS_PLL_CNTL);
+		Wr(HHI_SYS_PLL_CNTL2,pll_settings[1]);
+		Wr(HHI_SYS_PLL_CNTL3,pll_settings[2]);
+		Wr(HHI_SYS_PLL_CNTL4,pll_settings[3]);
+		Wr(HHI_SYS_PLL_CNTL, pll_settings[0] & (~(1<<30)|1<<29));
+		Wr(HHI_SYS_PLL_CNTL, pll_settings[0] & ~(3<<29));
+		//M6TV_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
+
+		__udelay(100); //wait 100us for PLL lock
+		//f_serial_puts("sys pll store done....\n");
+	//wait_uart_empty();
+
+	}while((Rd(HHI_SYS_PLL_CNTL)&0x80000000)==0);
+f_serial_puts("sys pll store done.\n");
+	wait_uart_empty();
+	//A9 clock setting
+//	Wr(HHI_A9_CLK_CNTL,(clk_settings[0] & (~(1<<7))));
+//	__udelay(1);
+	//enable A9 clock
+//	Wr(HHI_A9_CLK_CNTL,(clk_settings[0] | (1<<7)));
+
+
+	f_serial_puts("sys pll store done22.\n");
+	wait_uart_empty();
+	/*
+	//AUDIO PLL
+	M6TV_PLL_RESET(HHI_AUDCLK_PLL_CNTL);
+	Wr(HHI_AUDCLK_PLL_CNTL2, M6TV_AUD_PLL_CNTL_2 );
+	Wr(HHI_AUDCLK_PLL_CNTL3, M6TV_AUD_PLL_CNTL_3 );
+	Wr(HHI_AUDCLK_PLL_CNTL4, M6TV_AUD_PLL_CNTL_4 );
+	Wr(HHI_AUDCLK_PLL_CNTL5, M6TV_AUD_PLL_CNTL_5 );
+	Wr(HHI_AUDCLK_PLL_CNTL6, M6TV_AUD_PLL_CNTL_6 );
+	Wr(HHI_AUDCLK_PLL_CNTL,  0x20242 );
+	M6TV_PLL_WAIT_FOR_LOCK(HHI_AUDCLK_PLL_CNTL);
+	*/
+	
+	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
+	M6TV_PLL_RESET(HHI_MPLL_CNTL);
+	Wr(HHI_MPLL_CNTL2, mpll_settings[1] );
+	Wr(HHI_MPLL_CNTL3, mpll_settings[2] );
+	Wr(HHI_MPLL_CNTL4, mpll_settings[3] );
+	Wr(HHI_MPLL_CNTL5, mpll_settings[4] );
+	Wr(HHI_MPLL_CNTL6, mpll_settings[5] );
+	Wr(HHI_MPLL_CNTL7, mpll_settings[6] );
+	Wr(HHI_MPLL_CNTL8, mpll_settings[7] );
+	Wr(HHI_MPLL_CNTL9, mpll_settings[8] );
+	Wr(HHI_MPLL_CNTL10,mpll_settings[9]);
+	Wr(HHI_MPLL_CNTL, mpll_settings[0] );
+	M6TV_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL);
+
+	//clk81=fclk_div5 /2=400/2=200M
+	Wr(HHI_MPEG_CLK_CNTL, clk_settings[1] );
+
+	f_serial_puts("mpll store done.\n");
+	wait_uart_empty();
+
+	Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
+	__udelay(10);
+	Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
+	__udelay(1000); //1ms for bandgap bootup
+
+		/*	
+	//asm volatile ("wfi");
+	//VID PLL
+	do{
+		//BANDGAP reset for VID_PLL,DDR_PLL lock fail
+		//Note: once VID PLL is up, there is no need to
+		//          use AM_ANALOG_TOP_REG1 for DDR PLL
+		//          lock fail
+		Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
+		__udelay(10);
+		Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
+		__udelay(1000); //1ms for bandgap bootup
+
+		M6TV_PLL_RESET(HHI_VID_PLL_CNTL);
+		//Wr(HHI_VID_PLL_CNTL,  0x600b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] );//change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL2, vidpll_settings[1] );
+		Wr(HHI_VID_PLL_CNTL3, vidpll_settings[2] );
+		Wr(HHI_VID_PLL_CNTL4, vidpll_settings[3] );
+		//Wr(HHI_VID_PLL_CNTL,  0x400b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] ); //change VID PLL from 1.584GHz to 1.512GHz
+		//M6TV_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
+
+		__udelay(500); //wait 100us for PLL lock
+
+	}while((Rd(HHI_VID_PLL_CNTL)&0x80000000)==0);
+	f_serial_puts("vid pll store done.\n");
+	wait_uart_empty();
+*/
+ 	__udelay(100);
+
+}
 
 #define CONFIG_SYS_PLL_SAVE
 void store_restore_plls(int flag)
@@ -606,4 +872,5 @@ void store_vid_pll()
 		udelay(24000); //wait 200us for PLL lock
 	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
 }
+
 

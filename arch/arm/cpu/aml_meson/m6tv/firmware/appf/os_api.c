@@ -193,6 +193,33 @@ static int late_init(void)
 }
 
 
+
+#define         MODE_DELAYED_WAKE       0
+#define         MODE_IRQ_DELAYED_WAKE   1
+#define         MODE_IRQ_ONLY_WAKE      2
+
+static void auto_clk_gating_setup(
+	unsigned int sleep_dly_tb, unsigned int mode, unsigned int clear_fiq, unsigned int clear_irq,
+	unsigned int   start_delay,unsigned int   clock_gate_dly,unsigned int   sleep_time,unsigned int   enable_delay)
+{
+	writel((sleep_dly_tb << 24)    |   // sleep timebase
+		(sleep_time << 16)      |   // sleep time
+		(clear_irq << 5)        |   // clear IRQ
+		(clear_fiq << 4)        |   // clear FIQ
+		(mode << 2),								// mode
+		0xc1100000 + 0x1078*4);//P_HHI_A9_AUTO_CLK0                
+	writel(	(0 << 20)               |   // start delay timebase
+		(enable_delay << 12)    |   // enable delay
+		(clock_gate_dly << 8)   |   // clock gate delay
+		(start_delay << 0),  				// start delay
+		0xc1100000 + 0x1079*4);    //P_HHI_A9_AUTO_CLK1
+	
+	writel(readl(0xc1100000 + 0x1078*4) | 1<<0,0xc1100000 + 0x1078*4);
+	//SET_CBUS_REG_MASK(HHI_A9_AUTO_CLK0, 1 << 0);
+}
+
+
+
 /**
  * This function is called when the OS makes a firmware call with the 
  * function code APPF_POWER_DOWN_CPU
@@ -347,6 +374,15 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
 #endif
 #endif
 
+            auto_clk_gating_setup(	2,						    // select 100uS timebase
+                                MODE_IRQ_ONLY_WAKE, 	    // Set interrupt wakeup only
+                                0,						    // don't clear the FIQ global mask
+                                0,						    // don't clear the IRQ global mask
+                                1,						    // 1us start delay
+                                1,						    // 1uS gate delay
+                                1,						    // Set the delay wakeup time (1mS)
+                                1); 					    // 1uS enable delay
+            asm volatile("cpsid	if");
             dsb();    
             wfi(); /* This signals the power controller to cut the power */
             /* Next stop, reset vector! */
