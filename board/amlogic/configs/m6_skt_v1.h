@@ -10,6 +10,8 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//#define TEST_UBOOT_BOOT_SPEND_TIME
+
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
