@@ -6,6 +6,8 @@
 //ddrtest and d2pll command support
 #define CONFIG_CMD_DDR_TEST	1	//ddrtest & d2pll
 
+//#define TEST_UBOOT_BOOT_SPEND_TIME
+
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
