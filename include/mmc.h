@@ -139,11 +139,13 @@
  * EXT_CSD fields
  */
 
+#define EXT_CSD_PART_CONFIG	179	/* R/W */
 #define EXT_CSD_BUS_WIDTH	183	/* R/W */
 #define EXT_CSD_HS_TIMING	185	/* R/W */
 #define EXT_CSD_CARD_TYPE	196	/* RO */
 #define EXT_CSD_REV		192	/* RO */
 #define EXT_CSD_SEC_CNT		212	/* RO, 4 bytes */
+#define EXT_CSD_BOOT_MULT	226	/* RO */
 
 /*
  * EXT_CSD field definitions
@@ -284,6 +286,7 @@ struct mmc {
 	uint read_bl_len;
 	uint write_bl_len;
 	u64 capacity;
+	u64 boot_size;
 	block_dev_desc_t block_dev;
 	int (*send_cmd)(struct mmc *mmc,
 			struct mmc_cmd *cmd, struct mmc_data *data);
@@ -303,6 +306,7 @@ struct mmc *find_mmc_device(int dev_num);
 int mmc_set_dev(int dev_num);
 void print_mmc_devices(char separator);
 int board_mmc_getcd(u8 *cd, struct mmc *mmc);
+int mmc_switch_partition(struct mmc* mmc, unsigned int part);
 
 #ifdef CONFIG_GENERIC_MMC
 int atmel_mci_init(void *regs);
