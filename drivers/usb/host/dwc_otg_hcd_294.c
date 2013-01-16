@@ -1723,8 +1723,12 @@ usb_lowlevel_init(void)
 
     if((usb_config->base_addr & USB_PHY_PORT_MSK) == USB_PHY_PORT_A)
 	    port_idx = 0;
-    else
+    else if((usb_config->base_addr & USB_PHY_PORT_MSK) == USB_PHY_PORT_B)
 	    port_idx = 1;
+	else if((usb_config->base_addr & USB_PHY_PORT_MSK) == USB_PHY_PORT_C)
+		port_idx = 2;
+	else if((usb_config->base_addr & USB_PHY_PORT_MSK) == USB_PHY_PORT_D)
+		port_idx = 3;
 	
     memset(dwc_otg_device, 0, sizeof(dwc_otg_device_t));
 
