@@ -720,8 +720,9 @@ dwc_otg_hcd_stop(dwc_otg_core_if_t * core_if)
     hcgcctl.b.pwrclmp = 1;
     //hcgcctl.b.rstpdwnmodule = 1;
 	//printf("core_if->pcgcctl  : 0x%x, & = 0x%x\n",core_if->pcgcctl,&core_if->pcgcctl );
-	
+#ifndef CONFIG_M6TV
     dwc_write_reg32(core_if->pcgcctl,hcgcctl.d32);
+#endif
     return;
 }
 

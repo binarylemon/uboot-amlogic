@@ -100,9 +100,7 @@ static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 	control.b.por = 1;  /* power off default*/
 	peri->ctrl = control.d32;
 	udelay(time_dly);
-	control.b.por = 0;
-	peri->ctrl = control.d32;
-	udelay(time_dly);
+	
 	return 0;
 }
 //call after set clock
@@ -142,6 +140,13 @@ void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 		control.b.por = 0;
 		peri_b->ctrl = control.d32;
 
+		control.d32 = peri_c->ctrl;
+		control.b.por = 0;
+		peri_c->ctrl = control.d32;
+		
+		control.d32 = peri_d->ctrl;
+		control.b.por = 0;
+		peri_d->ctrl = control.d32;
 		/* read back clock detected flag*/
 		control.d32 = peri->ctrl;
 		if(!control.b.clk_detected){
