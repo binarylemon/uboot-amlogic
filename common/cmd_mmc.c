@@ -197,6 +197,10 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	        if(strcmp(argv[1], "switch")==0){
 			int dev = simple_strtoul(argv[2], NULL, 10);
 			struct mmc* mmc = find_mmc_device(dev);
+			if(!mmc) {
+				puts("no mmc devices available\n");
+				return 1;
+			}
 			mmc_init(mmc);
             		if(strcmp(argv[3], "boot0")==0)
                 		mmc_switch_partition(mmc, 1);
