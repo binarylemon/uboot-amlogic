@@ -126,8 +126,8 @@ void copy_reboot_code()
 //#define POWER_OFF_3GVCC
 
 //for mbox
-#define POWER_OFF_VCCK_VDDIO
-#define POWER_OFF_VCC5V
+//#define POWER_OFF_VCCK_VDDIO
+//#define POWER_OFF_VCC5V
 
 
 /***********************
@@ -208,10 +208,12 @@ static void power_off_vcck_vddio(void)
 }
 static void power_on_vcck_vddio(void)
 {
+	int i;
 	//GPIOAO_2
 	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2,3 output
 	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 H VCCK_EN
-	udelay(100);
+	for(i=0; i<200; i++)
+		udelay(10000);
 }
 #endif
 
@@ -478,7 +480,6 @@ power_off_via_gpio();
 		  */
 		  
 	  }
-	power_on_via_gpio();
 	resume_remote_register();
 
 #else
@@ -534,9 +535,9 @@ power_off_via_gpio();
 
 //	dump_pmu_reg();
 
-	switch_to_81();
+//	switch_to_81();
   // ee go back to clk81
-	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+//	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay(10000);
 
 
@@ -547,6 +548,8 @@ power_off_via_gpio();
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
+
+	power_on_via_gpio();
 
 //turn on ee
 // 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
