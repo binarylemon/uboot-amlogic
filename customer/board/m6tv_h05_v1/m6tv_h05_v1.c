@@ -628,7 +628,7 @@ static int usb_charging_detect_call_back(char bc_mode)
 struct amlogic_usb_config g_usb_config_m6_skt={
 	USB_PHY_CLK_SEL_XTAL,
 	1, //PLL divider: (clock/12 -1)
-	CONFIG_M6_USBPORT_BASE,
+	CONFIG_M6_USBPORT_BASE_A,
 	USB_ID_MODE_SW_HOST,
 	NULL,//gpio_set_vbus_power, //set_vbus_power
 	NULL,
