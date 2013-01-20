@@ -109,7 +109,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
-	"console=ttyS2,115200n8\0" \
+	"console=ttyS0,115200n8\0" \
 	"mmcargs=setenv bootargs init=/init mem=1024m mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
