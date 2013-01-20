@@ -120,6 +120,7 @@ void init_dmc(struct ddr_set * ddr_setting)
 	,P_MMC_LP_CTRL1 );
 #endif
 
+	writel(readl(P_MMC_CHAN3_CTRL) | 0x3ff,P_MMC_CHAN3_CTRL);
 
 	writel(0x1ff, P_MMC_REQ_CTRL);
 
