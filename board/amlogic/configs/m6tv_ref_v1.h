@@ -246,7 +246,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(800)
+#define M6TV_CPU_CLK 		(1200)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 
