@@ -124,7 +124,7 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x85100000\0" \
 	"prepare=mmc read 1 ${loadaddr} 4000 4000;video open\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m logo=osd1,loaded,panel\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -140,7 +140,7 @@
 	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
