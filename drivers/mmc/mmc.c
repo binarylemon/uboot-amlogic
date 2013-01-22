@@ -450,6 +450,9 @@ int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
 	struct mmc_data data;
 	int err;
 
+	/*delay for some emmc init fail*/
+	mdelay(1);
+
 	/* Get the Card Status Register */
 	cmd.cmdidx = MMC_CMD_SEND_EXT_CSD;
 	cmd.resp_type = MMC_RSP_R1;
