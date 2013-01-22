@@ -30,7 +30,7 @@ help: help_customer
 
 	@echo =======================================================================
 	@echo The mark in board is "M6L_SKT_V1", relative to chip M6l
-	@echo config command: \"make m6l_skt_v1_m6l_config\"
+	@echo config command: \"make m6l_skt_v1_config\"
 
 	@echo =======================================================================
 	@echo The mark in board is "M6TV_SKT_V1"

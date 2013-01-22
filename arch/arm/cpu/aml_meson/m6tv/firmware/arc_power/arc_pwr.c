@@ -249,6 +249,7 @@ void restart_arm()
  //reset A9
 
 writel(0xF, P_RESET4_REGISTER);
+writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
 
 // *P_AO_IRQ_STAT_CLR = 0xFFFF;
  serial_put_hex(Rd(HHI_SYS_CPU_AUTO_CLK0),32);
@@ -626,10 +627,10 @@ static void store_pll(void)
 	//*P_HHI_MPLL_CNTL5   |= 0x1; // Enable Both MPLL and SYS_PLL enable pin
 	//move to following SYS PLL init
 
-	Wr(HHI_MPLL_CNTL, clk_settings[1] );
-		serial_put_hex(clk_settings[1],32);
+	Wr(HHI_MPLL_CNTL, mpll_settings[0] );
+	serial_put_hex(mpll_settings[0],32);
 	f_serial_puts("\n");
-		Wr(HHI_MPLL_CNTL, 0x4000067d );
+//		Wr(HHI_MPLL_CNTL, 0x4000067d );
 
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
   //  Wr( HHI_A9_CLK_CNTL, 0);
