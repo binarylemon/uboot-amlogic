@@ -52,11 +52,16 @@ void power_off_at_24M()
 	serial_put_hex(readl(P_AO_GPIO_O_EN_N),32);
 	f_serial_puts(" \n");
 	wait_uart_empty();
+	
+	/*power down EE 1.1v*/
+	writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<11)) & (~(1<<27)),P_AO_GPIO_O_EN_N);
 
 }
 void power_on_at_24M()
 {
-
+	/*power up EE 1.1v*/
+	writel(readl(P_AO_GPIO_O_EN_N) | (1<<27),P_AO_GPIO_O_EN_N);
+	
 	writel(readl(P_AO_GPIO_O_EN_N) | (1<<21),P_AO_GPIO_O_EN_N);
 	udelay(200);
 	writel(readl(P_AO_GPIO_O_EN_N) | (1<<5),P_AO_GPIO_O_EN_N);
