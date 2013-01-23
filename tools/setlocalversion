@@ -11,11 +11,12 @@ cd "${1:-.}" || usage
 # Check for git and a git repo.
 if head=`git rev-parse --verify HEAD 2>/dev/null`; then
 	# Do we have an untagged version?
-	if git name-rev --tags HEAD | \
-	   grep -E '^HEAD[[:space:]]+(.*~[0-9]*|undefined)$' > /dev/null; then
-	        (git describe || git describe --tags || git describe --all --long) \
-				2>/dev/null | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
-	fi
+	#if git name-rev --tags HEAD | \
+	#   grep -E '^HEAD[[:space:]]+(.*~[0-9]*|undefined)$' > /dev/null; then
+	#        (git describe || git describe --tags || git describe --all --long) \
+	#			2>/dev/null | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
+	#fi
+	printf m6tv-sky
 
 	# Are there uncommitted changes?
 	git update-index --refresh --unmerged > /dev/null
