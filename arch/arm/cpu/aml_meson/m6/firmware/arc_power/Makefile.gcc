@@ -54,9 +54,11 @@ endef
 
 #CSRCS = $(wildcard *.c lib/*.c)
 ifdef CONFIG_CEC_WAKE_UP
-CSRCS = clk_util.c mmc.c suspend.c lib/*.c
+#CSRCS = clk_util.c mmc.c suspend.c lib/*.c
+CSRCS = clk_util.c suspend.c lib/*.c
 else
-CSRCS = clk_util.c i2c.c mmc.c suspend.c lib/*.c
+#CSRCS = clk_util.c i2c.c mmc.c suspend.c lib/*.c
+CSRCS = clk_util.c i2c.c  suspend.c lib/*.c
 endif
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
