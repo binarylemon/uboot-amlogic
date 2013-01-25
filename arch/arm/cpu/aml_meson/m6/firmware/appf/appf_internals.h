@@ -90,11 +90,7 @@ int appf_setup_translation_tables(void);
 #define TIMER_DATA_SIZE             128
 #define VFP_DATA_SIZE               288
 #define GIC_INTERFACE_DATA_SIZE      64
-#ifdef CONFIG_MESON_ARM_GIC_FIQ
 #define GIC_DIST_PRIVATE_DATA_SIZE   128
-#else
-#define GIC_DIST_PRIVATE_DATA_SIZE   96
-#endif
 #define BANKED_REGISTERS_SIZE       128
 #define CP15_DATA_SIZE               64
 #define DEBUG_DATA_SIZE            1024
