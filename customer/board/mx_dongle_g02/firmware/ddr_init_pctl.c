@@ -188,15 +188,18 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)
 	#ifdef CONFIG_TURN_OFF_ODT
-		writel(zqcr, P_PUB_ZQ0CR0_ADDR);
+		writel(zqcr | (1<<28), P_PUB_ZQ0CR0_ADDR);
 	#else
 	    writel(zqcr, P_PUB_ZQ0CR1_ADDR);
 	#endif
 	else
 #endif
 #ifdef CONFIG_TURN_OFF_ODT
+    writel(0x108 | (1<<28), P_PUB_ZQ0CR0_ADDR);
+    /*
 	 writel(0x1ef | (1<<28), P_PUB_ZQ0CR0_ADDR);
      writel(0x16b| (1<<20), 0xc8006440);
+     */
 #else
     writel(timing_reg->zq0cr1, P_PUB_ZQ0CR1_ADDR);	//get from __ddr_setting
 #endif

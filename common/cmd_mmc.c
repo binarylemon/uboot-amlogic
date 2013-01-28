@@ -105,6 +105,7 @@ static void print_mmcinfo(struct mmc *mmc)
 
 	printf("High Capacity: %s\n", mmc->high_capacity ? "Yes" : "No");
 	printf("Capacity: %lld\n", mmc->capacity);
+	printf("Boot Part Size: %lld\n", mmc->boot_size);
 
 	printf("Bus Width: %d-bit\n", mmc->bus_width);
 }
@@ -193,7 +194,22 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	case 0:
 	case 1:
 	case 4:
-		return cmd_usage(cmdtp);
+	        if(strcmp(argv[1], "switch")==0){
+			int dev = simple_strtoul(argv[2], NULL, 10);
+			struct mmc* mmc = find_mmc_device(dev);
+			if(!mmc) {
+				puts("no mmc devices available\n");
+				return 1;
+			}
+			mmc_init(mmc);
+            		if(strcmp(argv[3], "boot0")==0)
+                		mmc_switch_partition(mmc, 1);
+	            	else if(strcmp(argv[3], "boot1")==0)
+        	        	mmc_switch_partition(mmc, 2);
+	            	else if(strcmp(argv[3], "user")==0)
+        	        	mmc_switch_partition(mmc, 0);
+        	}
+		return 1;
 
 	case 2:
 		if (!strcmp(argv[1], "list")) {
@@ -287,5 +303,6 @@ U_BOOT_CMD(
 	"mmc erase <device num>\n"
 	"mmc rescan <device num>\n"
 	"mmc part <device num> - lists available partition on mmc\n"
-	"mmc list - lists available devices");
+	"mmc list - lists available devices\n"
+	"mmc switch <device num> <part name> - part name : boot0, boot1, user");
 #endif

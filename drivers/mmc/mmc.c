@@ -450,6 +450,9 @@ int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
 	struct mmc_data data;
 	int err;
 
+	/*delay for some emmc init fail*/
+	mdelay(1);
+
 	/* Get the Card Status Register */
 	cmd.cmdidx = MMC_CMD_SEND_EXT_CSD;
 	cmd.resp_type = MMC_RSP_R1;
@@ -506,6 +509,11 @@ int mmc_change_freq(struct mmc *mmc)
 		//mmc->capacity = (*(unsigned *)(&ext_csd[212]))*mmc->read_bl_len;
 		sector_count = (((unsigned)ext_csd[215])<<24)|(((unsigned)ext_csd[214])<<16)|(((unsigned)ext_csd[213])<<8)|(((unsigned)ext_csd[212])<<0);
 		mmc->capacity = sector_count*mmc->read_bl_len;
+        	/*
+		 * There are two boot regions of equal size, defined in
+		 * multiples of 128K.
+		 */
+	        mmc->boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
 		//mmc->high_capacity = 1;
 	}		
 
@@ -945,6 +953,24 @@ int mmc_startup(struct mmc *mmc)
 	init_part(&mmc->block_dev);
     //print_part(&mmc->block_dev);
 	return 0;
+}
+
+int mmc_switch_partition(struct mmc* mmc, unsigned int part)
+{
+    int err;
+    struct mmc_cmd cmd;
+    char* partname[3] = {"user", "boot0", "boot1"};
+
+    cmd.cmdidx = MMC_CMD_SWITCH;
+    cmd.resp_type = MMC_RSP_R1b;
+    cmd.cmdarg = (MMC_SWITCH_MODE_WRITE_BYTE << 24) |
+        (EXT_CSD_PART_CONFIG << 16) |
+        (part << 8);
+    cmd.flags = 0;
+
+    err = mmc_send_cmd(mmc, &cmd, NULL);
+    printf("mmc switch part %s %s\n", partname[part], err?"fail":"success");
+    return err;
 }
 
 int mmc_send_if_cond(struct mmc *mmc)

@@ -14,7 +14,9 @@
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
-
+#define SCAN_MMC_PARTITION 4
+#define CONFIG_AML_AUTOSCRIPT
+#define AML_AUTOSCRIPT  "aml_autoscript"
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1	//waiting for nand support
@@ -108,10 +110,11 @@
 #define CONFIG_BOOTFILE		uImage
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs init=/init mem=1024m mac=${ethaddr}\0" \
+	"mmcargs=setenv bootargs init=/init mem=1024m logo=osd1,loaded,panel mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -247,7 +250,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(800)
+#define M6TV_CPU_CLK 		(1200)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 

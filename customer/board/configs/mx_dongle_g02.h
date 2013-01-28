@@ -4,6 +4,7 @@
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
+#define CONFIG_MESON_ARM_GIC_FIQ
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
@@ -281,9 +282,10 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6_DDR_CLK (516)
+//#define M6_DDR_CLK (516)
+#define M6_DDR_CLK (456)
 
-//#define CONFIG_DDR_LOW_POWER
+#define CONFIG_DDR_LOW_POWER
 
 
 //#define DDR3_9_9_9

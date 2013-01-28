@@ -111,7 +111,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs init=/init mem=1024m mac=${ethaddr}\0" \
+	"mmcargs=setenv bootargs init=/init mem=1024m logo=osd1,loaded,panel mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -247,7 +247,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(800)
+#define M6TV_CPU_CLK 		(1200)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 

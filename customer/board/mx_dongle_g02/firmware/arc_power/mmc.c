@@ -11,6 +11,9 @@
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
 #define dbg_puts(s) f_serial_puts(s);wait_uart_empty();
 
+#define CONFIG_TURN_OFF_ODT
+
+
 #if 0
 void __udelay(int n)
 {	

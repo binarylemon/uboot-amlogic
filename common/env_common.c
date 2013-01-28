@@ -31,7 +31,8 @@
 #include <search.h>
 #include <errno.h>
 #include <malloc.h>
-
+#include <version.h>
+#include <timestamp.h>
 #ifdef CONFIG_ENV_IS_IN_AML_NAND
 #include <asm/arch/nand.h>
 #endif

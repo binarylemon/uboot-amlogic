@@ -21,6 +21,8 @@
 include $(TOPDIR)/config.mk
 OUTDIR = $(SRCTREE)/build/appf
 EXTINCDIR=$(SRCTREE)/build/include2
+EXTINCDIR2=$(SRCTREE)/build/include
+EXTINCDIR3=$(SRCTREE)/include
 PLATFORM?=a9-eb
 ENTRY_POINT=appf_boottime_init
 LISTFILE=$(OUTDIR)/symbols.txt
@@ -53,7 +55,7 @@ AS=arm-none-eabi-gcc
 LD=arm-none-eabi-ld
 fromelf=arm-none-eabi-objcopy
 MAPFILE=appf.gls
-CFLAGS= -g -O2 -fpie -fpic -mcpu=$(CPU) -I. -DNO_PCU -I$(EXTINCDIR)
+CFLAGS= -g -O2 -fpie -fpic -mcpu=$(CPU) -I. -DNO_PCU -I$(EXTINCDIR) -I$(EXTINCDIR2) -I$(EXTINCDIR3) 
 # -DUSE_REALVIEW_EB_RESETS
 ASFLAGS= -g -mcpu=$(CPU) -mfpu=vfpv3 -c
 LDFLAGS= -g -nostartfiles -pie -fpic -static -e $(ENTRY_POINT) --verbose -T $(MAPFILE) -M

@@ -111,7 +111,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs init=/init mem=1024m mac=${ethaddr}\0" \
+	"mmcargs=setenv bootargs init=/init mem=512m logo=osd1,loaded,panel mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -125,7 +125,7 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x85100000\0" \
 	"prepare=mmc read 1 ${loadaddr} 4000 4000;video open\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=512m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -247,7 +247,7 @@
 //----------------------------------------------------------------------
 //Please set the M6TV CPU clock(unit: MHz)
 //legal value: 700, 800,900,1000,1200,1296
-#define M6TV_CPU_CLK 		(800)
+#define M6TV_CPU_CLK 		(1200)
 #define CONFIG_SYS_CPU_CLK	(M6TV_CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -261,8 +261,8 @@
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-//#define M6TV_DDR3_512M
-#define M6TV_DDR3_1GB
+#define M6TV_DDR3_512M
+//#define M6TV_DDR3_1GB
 //above setting will affect following:
 //board/amlogic/m6tv_h04_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6tv/mmutable.s

@@ -192,7 +192,7 @@ static struct ddr_set __ddr_setting={
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
                            ,
                     .zq0cr0  = 0x109ce,
-                    .zq0cr1  = 0x19,
+                    .zq0cr1  = 0x19, // 0x1d for GT ddr
                     .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
                     .t_dxccr_dqsres  = 0x1, //ODT: pull down, 688ohms
                     					    //PUB_DXCCR[8:5]: DQS resister. DQSRES[3]: 0 - pull down, 1-pull up. 
@@ -270,13 +270,13 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//[8]0:clk81=XTL 1:clk81=pll
 	//[7]enable gating
 	//0x105d [0xc1104174]
-    .mpeg_clk_cntl= (7 << 12) |    //[B14,B13,B12] select fclk_div5=400MHz
+    .mpeg_clk_cntl= (6 << 12) |    //[B14,B13,B12] select fclk_div5=667MHz
     				(1 << 8 ) |    //[B8] select pll
     				(1 << 7 ) |    //[B7] cntl_hi_mpeg_div_en, enable gating
-                    (1 << 0 ) |    //[B6-B0] div 2 (n+1)  fclk_div5=2G/5=400MHz, clk81=400MHz/(1+1)=200MHz
+                    (2 << 0 ) |    //[B6-B0] div 3 (n+1)  fclk_div5=2G/5=400MHz, clk81=400MHz/(1+1)=200MHz
 					(1 << 15),     //[B15] Connect clk81 to the PLL divider output
 
-	.clk81=200000000,	
+	.clk81=222000000,	
 
     .demod_pll400m_cntl=(1<<9)  | //n 1200=xtal*m/n 
             (50<<0),    		//m 50*24
@@ -286,7 +286,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
     .sdio_cmd_clk_divide=5,
     .sdio_time_short=(250*180000)/(2*(12)),
     .uart=
-        (200000000/(CONFIG_BAUDRATE*4) -1)
+        (222000000/(CONFIG_BAUDRATE*4) -1)
         | UART_STP_BIT 
         | UART_PRTY_BIT
         | UART_CHAR_LEN 

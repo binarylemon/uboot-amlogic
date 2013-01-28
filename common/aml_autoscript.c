@@ -19,7 +19,7 @@ int aml_autoscript(void)
 			{
 				sprintf(str, "fatload mmc 0:%d ${loadaddr} %s", (i + 1), AML_AUTOSCRIPT);
 				run_command (str, 0);
-				run_command ("autoscr ${loadaddr}", 0);
+				run_command ("source ${loadaddr}", 0);
 				return	0;
 			}
 		}
@@ -39,7 +39,7 @@ int aml_autoscript(void)
 			{
 				sprintf(str, "fatload usb 0:%d ${loadaddr} %s", (i + 1), AML_AUTOSCRIPT);
 				run_command (str, 0);
-				run_command ("autoscr ${loadaddr}", 0);
+				run_command ("source ${loadaddr}", 0);
 				return	0;
 			}
 		}
