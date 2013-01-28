@@ -125,7 +125,7 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x85100000\0" \
 	"prepare=mmc read 1 ${loadaddr} 4000 4000;video open\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m logo=osd1,loaded,panel\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
