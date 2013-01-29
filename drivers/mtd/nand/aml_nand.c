@@ -3688,7 +3688,8 @@ static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 	if (aml_chip->block_status != NULL) {
 		if ((aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD)||(aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD)) {
 			//return 0;
-			break;
+			goto mark_bad;
+			
 		}
 		else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD) {
 			aml_chip->block_status[blk_addr] = NAND_BLOCK_BAD;
@@ -3702,7 +3703,7 @@ static int aml_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 			}
 		}
 	}
-
+mark_bad:
 	aml_oob_ops.mode = MTD_OOB_AUTO;
 	aml_oob_ops.len = mtd->writesize;
 	aml_oob_ops.ooblen = mtd->oobavail;
