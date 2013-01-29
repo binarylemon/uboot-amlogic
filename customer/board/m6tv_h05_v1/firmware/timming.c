@@ -245,6 +245,25 @@ static struct ddr_set __ddr_setting={
 	#error "CONFIG_SYS_CPU_CLK is not set! Please set M6TV CPU clock first!\n"
 #endif
 
+#ifndef CONFIG_CLK81
+	#define M6TV_CLK81		(200000000)
+	#define M6TV_CLK81_PLL_SEL	(7)
+	#define M6TV_CLK81_PLL_DIV	(1)
+#else
+#if CONFIG_CLK81>200
+	#define M6TV_CLK81		(222000000)
+	#define M6TV_CLK81_PLL_SEL	(6)
+	#define M6TV_CLK81_PLL_DIV	(2)
+#elif CONFIG_CLK81<200
+	#define M6TV_CLK81		(167000000)
+	#define M6TV_CLK81_PLL_SEL	(6)
+	#define M6TV_CLK81_PLL_DIV	(3)
+#else
+	#define M6TV_CLK81		(200000000)
+	#define M6TV_CLK81_PLL_SEL	(7)
+	#define M6TV_CLK81_PLL_DIV	(1)
+#endif
+#endif
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
 ={
 	//current test: >=1320MHz  can not work stable@VDD_CPU=1.2V	
@@ -270,13 +289,13 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//[8]0:clk81=XTL 1:clk81=pll
 	//[7]enable gating
 	//0x105d [0xc1104174]
-    .mpeg_clk_cntl= (6 << 12) |    //[B14,B13,B12] select fclk_div5=667MHz
+    .mpeg_clk_cntl= (M6TV_CLK81_PLL_SEL << 12) |    //[B14,B13,B12] 7 select fclk_div5=400MHz; 6 select fclk_div3=667MHz
     				(1 << 8 ) |    //[B8] select pll
     				(1 << 7 ) |    //[B7] cntl_hi_mpeg_div_en, enable gating
-                    (2 << 0 ) |    //[B6-B0] div 3 (n+1)  fclk_div5=2G/5=400MHz, clk81=400MHz/(1+1)=200MHz
+                    (M6TV_CLK81_PLL_DIV << 0 ) |    //[B6-B0] div 2 (n+1)  fclk_div5=2G/5=400MHz, clk81=400MHz/(1+1)=200MHz
 					(1 << 15),     //[B15] Connect clk81 to the PLL divider output
 
-	.clk81=222000000,	
+	.clk81=M6TV_CLK81,	
 
     .demod_pll400m_cntl=(1<<9)  | //n 1200=xtal*m/n 
             (50<<0),    		//m 50*24
@@ -286,7 +305,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
     .sdio_cmd_clk_divide=5,
     .sdio_time_short=(250*180000)/(2*(12)),
     .uart=
-        (222000000/(CONFIG_BAUDRATE*4) -1)
+        (M6TV_CLK81/(CONFIG_BAUDRATE*4) -1)
         | UART_STP_BIT 
         | UART_PRTY_BIT
         | UART_CHAR_LEN 
