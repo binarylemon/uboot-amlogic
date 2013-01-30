@@ -46,6 +46,8 @@ typedef struct vidinfo {
 #define LCD_COLOR8	8
 #define LCD_COLOR16	16
 #define LCD_COLOR24	24
+#define LCD_COLOR32	32
+
 
 /*----------------------------------------------------------------------*/
 #if defined(CONFIG_LCD_INFO_BELOW_LOGO)
