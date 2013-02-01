@@ -5,7 +5,7 @@
 
 /*Inorder to save power for core1.1v, 
 we need let A9 enter auto gate off & decrease core input clk*/
-unsigned int hhi_sys_cpu_clk_cntl;
+//unsigned int hhi_sys_cpu_clk_cntl;
 void power_down_core(void)
 {
 	f_serial_puts("power down core.\n");
