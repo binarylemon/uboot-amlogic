@@ -123,6 +123,22 @@
    #define LCD_PACK_RVS             1
    #define LCD_PACK_LITTLE          0   
 
+/* for video encoder */
+   #define	TTL_DELAY				19
+   #define	LVDS_DELAY				0
+   #define	MLVDS_DELAY				0
+   
+/* for clk parameter */
+   #define	PLL_CTRL_OD				16
+   #define	PLL_CTRL_M				0
+   #define	DIV_CTRL_DIV			4
+   #define	CLK_CTRL_AUTO			20
+   #define	CLK_CTRL_SS				16
+   #define	CLK_CTRL_PLL_SEL		12
+   #define	CLK_CTRL_DIV_SEL		8
+   #define	CLK_CTRL_VCLK_SEL		4
+   #define	CLK_CTRL_XD				0   
+ 
 typedef enum
 {
     LCD_NULL = 0,
@@ -155,25 +171,18 @@ typedef struct {
 typedef struct {
     int mlvds_insert_start;
     int total_line_clk;
-    int test_dual_gate;
-    //int test_bit_num;
+    int test_dual_gate;    
     int test_pair_num;
-//  int set_mlvds_pinmux;
     int phase_select;
-    int TL080_phase;
-    //Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
-    //Lvds_Phy_Control_t *lvds_phy_control;
+    int TL080_phase;    
     int scan_function;
 } Mlvds_Config_t;
 
 typedef struct {    
     int lvds_repack;
-    int pn_swap;
-    //int bit_num;  
-    //Lvds_Phy_Control_t *lvds_phy_control;  
+    int pn_swap;    
 } Lvds_Config_t;   
 
-// Refer to LCD Spec
 typedef struct {
     u16 h_active;   	// Horizontal display area
     u16 v_active;     	// Vertical display area 
@@ -181,16 +190,18 @@ typedef struct {
     u16 v_period;       // Vertical total period time 
     u16 screen_ratio_width;      // screen aspect ratio width 
     u16 screen_ratio_height;     // screen aspect ratio height 
+    u32 screen_actual_width;/* screen physical width in "mm" unit */
+    u32 screen_actual_height;/* screen physical height in "mm" unit */
    
     Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
     u16 lcd_bits;         // 6 or 8 bits
 }Lcd_Basic_t;
 
 typedef struct {
-	//u16 clk_source;		 /*video pll clock, must be multiple of 12, from 384~744*/
     u32 pll_ctrl;        /* video PLL settings */    
     u32 div_ctrl;        /* video pll div settings */
 	u32 clk_ctrl;        /* video clock settings */  //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
+	u32 lcd_clk;		/* lcd clock*/
     u16 sync_duration_num;
     u16 sync_duration_den;
 	
