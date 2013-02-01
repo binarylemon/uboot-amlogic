@@ -174,7 +174,7 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 		}
 	}
 
-	if ((bpix != 1) && (bpix != 8) && (bpix != 16) && (bpix != 24)) {
+	if ((bpix != 1) && (bpix != 8) && (bpix != 16) && (bpix != 24) && (bpix != 32)) {
 		printf ("Error: %d bit/pixel mode, but BMP has %d bit/pixel\n",
 			bpix, bmp_bpix);
 		return 1;
@@ -278,6 +278,21 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 		}
 		break;
 #endif /* LCD_BPP ==LCD_COLOR24 */
+#if(LCD_BPP ==LCD_COLOR32)
+		case 32:
+			for (i = 0; i < height; ++i) {
+				for (j = 0; j < width; j++) {
+
+					*(fb++) = *(bmap++);
+					*(fb++) = *(bmap++);
+					*(fb++) = *(bmap++);
+					*(fb++) = *(bmap++);
+				}
+				bmap += (padded_line - width);
+				fb   -= (width * 4 + lcd_line_length);
+			}
+			break;
+#endif /* LCD_BPP ==LCD_COLOR32 */
 
 	default:
 		printf("ERROR LCD_BPP is %d\n", LCD_BPP);
