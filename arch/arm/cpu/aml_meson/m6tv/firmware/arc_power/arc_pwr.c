@@ -323,9 +323,13 @@ void enter_power_down()
 		udelay(2000);
 		power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
-		  
-		  if(power_key==0x10 || power_key==0x0c)  //the reference remote power key code
-        		break;
+
+		  if(power_key==0x10 || power_key==0x0c){
+				  writel(0x1234abcd,P_AO_RTI_STATUS_REG1);
+				  f_serial_puts("remote power key\n");
+				  //the reference remote power key code
+	        	  break;
+		  	}
 		}
 #endif
 #if 0
