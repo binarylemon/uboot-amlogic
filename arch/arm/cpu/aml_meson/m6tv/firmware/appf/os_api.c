@@ -374,7 +374,7 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
 #endif
 #endif
 
-            auto_clk_gating_setup(	2,						    // select 100uS timebase
+ /*           auto_clk_gating_setup(	2,						    // select 100uS timebase
                                 MODE_IRQ_ONLY_WAKE, 	    // Set interrupt wakeup only
                                 0,						    // don't clear the FIQ global mask
                                 0,						    // don't clear the IRQ global mask
@@ -382,6 +382,7 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
                                 1,						    // 1uS gate delay
                                 1,						    // Set the delay wakeup time (1mS)
                                 1); 					    // 1uS enable delay
+*/
             asm volatile("cpsid	if");
             dsb();    
             wfi(); /* This signals the power controller to cut the power */
