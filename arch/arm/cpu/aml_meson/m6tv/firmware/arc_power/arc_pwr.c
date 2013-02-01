@@ -212,109 +212,50 @@ extern void power_off_at_24M();
 extern void power_on_at_24M();
 extern void power_off_at_32k();
 extern void power_on_at_32k();
+
 #if 1
 void restart_arm()
 {
- int i;
- //------------------------------------------------------------------------
- // restart arm
-  //0. make sure a9 reset
- setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-
-
- //1. write flag
- writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
- 
- //2. remap AHB SRAM
-// writel(3,P_AO_REMAP_REG0);
- writel(1,P_AHB_ARBDEC_REG);
- 
- //3. turn off romboot clock
- writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
-
-// writel(0xffffffff, P_HHI_GCLK_MPEG1);
-
- 
-
-// reinitial clock
-
-//clock_set_sys_defaults();  // may be not necessary
-
-
- //4. Release ISO for A9 domain.
- setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
-
- 
-
- //reset A9
-
-writel(0xF, P_RESET4_REGISTER);
-writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
-
-// *P_AO_IRQ_STAT_CLR = 0xFFFF;
- serial_put_hex(Rd(HHI_SYS_CPU_AUTO_CLK0),32);
- f_serial_puts("\n");
- serial_put_hex(Rd(HHI_SYS_CPU_AUTO_CLK1),32);
-  f_serial_puts("\n");
-
-writel(readl(P_HHI_SYS_CPU_CLK_CNTL) & ~(1<<7),P_HHI_SYS_CPU_CLK_CNTL);
-
-	/*
-	writel(0xffff,P_AO_IRQ_STAT_CLR);
-	
- Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(0x3 << 6)) | (2 << 6)) );
-        // Pulse select to select this new value
-        Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(1 << 8)) | (1 << 8)) );
-        Wr(HHI_SYS_CPU_AUTO_CLK0, ( (Rd(HHI_SYS_CPU_AUTO_CLK0) & ~(1 << 8)) | (0 << 8)) );
-    */    
-
- clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
-//  writel((1<<22) | (3<<24), P_WATCHDOG_TC);
-}
-#endif
-#if 0
-void restart_arm()
-{
-	int i;
-	//------------------------------------------------------------------------
-	// restart arm
-		//0. make sure a9 reset
+	// Set up conditions on the ports of the A9 BEFORE releasing the
+	// isolation clamps (bit[4] of AO_RTI_PWR_CNTL_REG0)
+	// Start the A9 using the Crystal as the master clock
+	writel(readl(P_HHI_SYS_CPU_CLK_CNTL) & ~(1<<7),P_HHI_SYS_CPU_CLK_CNTL);
+	// Set the soft reset of the A9
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-
-	//1. write flag
+	// Set the soft resets of the APB, AXI and A9 Debug module
+	// bits[18] AT soft reset
+	// bits[17] APB soft reset
+	// bits[16] AXI soft reset
+	setbits_le32( P_A9_CFG2,7<<16);
+	// 1. write flag
 	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
-	
-	writel(0,P_AO_RTI_STATUS_REG1);//clear debug status
-	//2. remap AHB SRAM
-//	writel(3,P_AO_REMAP_REG0);
+	// 2. remap AHB SRAM
 	writel(1,P_AHB_ARBDEC_REG);
- 
-	//3. turn off romboot clock
+	// 3. turn off romboot clock (not sure this is necessary but saves power)
 	writel(readl(P_HHI_GCLK_MPEG1)&0x7fffffff,P_HHI_GCLK_MPEG1);
-//writel(readl(P_HHI_GCLK_MPEG1) | 1<<31,P_HHI_GCLK_MPEG1);
-
-
-//     writel()
-	//4. Release ISO for A9 domain.
+	// Release ISO for A9 domain. This enables the controls from the EE domain
+	// into the A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
-
-	//use sys pll for speed up
-	//clrbits_le32(P_HHI_SYS_PLL_CNTL, (1 << 30));
-	//setbits_le32(P_HHI_SYS_CPU_CLK_CNTL , (1 << 7));
-
-	//reset A9
-
-	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
-	writel(0xF ,P_RESET4_REGISTER);// -- reset arm.ww
-	delay_ms(100);
-	//clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
-  
-                            
- wait_uart_empty();
- clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
-
-	// writel((1<<22) | (3<<24), P_WATCHDOG_TC);
+	// Delay a little to let things stabilize
+	udelay(100);
+	// Reset the Clock dividers associated with the A9. 1 = reset
+	// [15] general divider soft reset
+	// [14] Soft reset for the AXI, APB, AT, and peripheral clock dividers
+	setbits_le32( P_HHI_SYS_CPU_CLK_CNTL, (0x3 << 14) );
+	udelay(10);
+	clrbits_le32( P_HHI_SYS_CPU_CLK_CNTL, (0x3 << 14) );
+	udelay(100);
+	// Asynchronously reset the A9, APB, AT and AXI modules
+	writel(0xF, P_RESET4_REGISTER);
+	// Reset the Mali
+	writel(1<<14,P_RESET2_REGISTER);
+	// Release all soft resets except the A9
+	clrbits_le32(P_A9_CFG2,7<<16);
+	udelay(100);
+	// Release the A9 to start the booting process
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 }
+
 #endif
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
@@ -451,8 +392,12 @@ void enter_power_down()
 	wait_uart_empty();
 	//store_restore_plls(0);
 	store_pll();
-	
+
+	/*Need reset pwm*/
+	writel((readl(P_PWM_MISC_REG_AB)& ~(0x7f << 16)) | ((1 << 23) | (0 << 16) | (1 << 1)),P_PWM_MISC_REG_AB);
 	writel(0x00000020,P_PWM_PWM_B);
+	writel(readl(P_PERIPHS_PIN_MUX_2) | (1 << 1),P_PERIPHS_PIN_MUX_2);
+	
 #ifdef pwr_ddr_off    
 	f_serial_puts("step 8: resume ddr\n");
 	wait_uart_empty();
@@ -524,7 +469,7 @@ int main(void)
 	    c = (char)cmd;
 	    if(c == 0)
 	    {
-	        udelay(6000);
+	        udelay(60000);
 	        cmd = readl(P_AO_RTI_STATUS_REG1);
 	        c = (char)cmd;
 	        if((c == 0)||(c!='r'))
@@ -534,7 +479,7 @@ int main(void)
 	            f_serial_puts(" arm boot fail\n\n");
 	            wait_uart_empty();
 	            #endif
-	            
+
 	            #if 0 //power down 
 	            cmd = readl(P_AO_GPIO_O_EN_N);
 	            cmd &= ~(1<<6);
@@ -573,7 +518,6 @@ int main(void)
 	    }
 	    //cmd='f';
 	    //writel(cmd,P_AO_RTI_STATUS_REG1);
-	    
 		asm(".long 0x003f236f"); //add sync instruction.
 		asm("SLEEP");
 	}
@@ -635,28 +579,7 @@ static void store_pll(void)
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
   //  Wr( HHI_A9_CLK_CNTL, 0);
 	//__udelay(100);
-f_serial_puts("sys pll store done00.\n");
-	wait_uart_empty();
 
-	serial_put_hex(pll_settings[0],32);
-	f_serial_puts("\n");
-	serial_put_hex(pll_settings[1],32);
-	f_serial_puts("\n");
-	serial_put_hex(pll_settings[2],32);
-	f_serial_puts("\n");
-		serial_put_hex(pll_settings[3],32);
-	f_serial_puts("\n");
- wait_uart_empty();
- 	f_serial_puts("\n");	f_serial_puts("\n");	f_serial_puts("\n");
- serial_put_hex(readl(P_HHI_SYS_PLL_CNTL),32);
-	f_serial_puts("\n");
-	serial_put_hex(readl(P_HHI_SYS_PLL_CNTL2),32);
-	f_serial_puts("\n");
-	serial_put_hex(readl(P_HHI_SYS_PLL_CNTL3),32);
-	f_serial_puts("\n");
-		serial_put_hex(readl(P_HHI_SYS_PLL_CNTL4),32);
-	f_serial_puts("\n");
- wait_uart_empty();
  
 	do{
 		//BANDGAP reset for SYS_PLL,AUD_PLL,MPLL lock fail
@@ -681,17 +604,17 @@ f_serial_puts("sys pll store done00.\n");
 	//wait_uart_empty();
 
 	}while((Rd(HHI_SYS_PLL_CNTL)&0x80000000)==0);
-f_serial_puts("sys pll store done.\n");
+	f_serial_puts("sys pll store done.\n");
 	wait_uart_empty();
+	Wr(HHI_A9_CLK_CNTL, clk_settings[0] );
+
+	
 	//A9 clock setting
 //	Wr(HHI_A9_CLK_CNTL,(clk_settings[0] & (~(1<<7))));
 //	__udelay(1);
 	//enable A9 clock
 //	Wr(HHI_A9_CLK_CNTL,(clk_settings[0] | (1<<7)));
 
-
-	f_serial_puts("sys pll store done22.\n");
-	wait_uart_empty();
 	/*
 	//AUDIO PLL
 	M6TV_PLL_RESET(HHI_AUDCLK_PLL_CNTL);

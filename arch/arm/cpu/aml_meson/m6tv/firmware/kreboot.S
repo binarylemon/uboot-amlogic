@@ -34,6 +34,7 @@ pwr_restart:
        LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
        mov  r1, #1
        str   r1, [r0]
+       dsb
 
        //restore MMC Security setting.
  		ldr r0,=0xda002020
@@ -48,6 +49,11 @@ pwr_restart:
  		str r1,[r0,#28]  /*DMC_SEC_PORT7_RANGE0*/
  		ldr r1,=0x80000000
  		str r1,[r0,#0x84] /*DMC_SEC_CTRL*/
+
+       LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+       mov  r1, #12
+       str   r1, [r0]
+       dsb
 
        //enable MMC lower power mode.
        //LDR r1, =0x27
@@ -124,34 +130,12 @@ pwr_restart:
       dmb
       isb
 
-      LDR r0, =0xc1104260 /*clrbits_le32(P_HHI_SYS_PLL_CNTL, (1 << 30));*/
-      ldr r1, [r0]
-      LDR r2, =0xbfffffff
-      and r1, r1, r2
-      str r1, [r0]
-
-      LDR r0, =0xc110419c /*setbits_le32(P_HHI_SYS_CPU_CLK_CNTL , (1 << 7));*/
-      ldr r1, [r0]
-      mov r2, #0x80
-      orr r1, r1, r2
-      str r1, [r0]
-
-      mov r0,#0
-      ldr r1, =0x1000
-delay_loop:
-      nop
-      nop
-      nop
-      nop
-      add r0, r0, #1
-      cmp r0, r1
-      bne delay_loop
 
        //send debug status to ARC
        LDR  r0, =0xc8100004
        mov  r1, #2
        str   r1, [r0]
-
+	dsb
 /* for debug */
     adr r1,reset_addr
     ldr r0,[r1]
@@ -184,5 +168,9 @@ pwr_fiq:
 	mov r0,#7
 	b pwr_fail_sleep	
 pwr_fail_sleep:
+	LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+	mov  r1, #9
+	str   r1, [r0]
+	dsb
 	wfi
 
