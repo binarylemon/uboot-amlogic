@@ -29,7 +29,31 @@ static inline int end_ddr_config(void)
     return timeout;
 }
 
-static void dtu_test_for_debug_training_result(struct ddr_set * timing_reg)
+static void display_more_training_result(void)
+{
+    serial_puts("\nDX0GSR0: 0x");
+	serial_put_hex(readl(P_PUB_DX0GSR0_ADDR),32);
+	serial_puts("\nDX0GSR2: 0x");
+	serial_put_hex(readl(P_PUB_DX0GSR2_ADDR),32);
+	serial_puts("\n");
+	serial_puts("\nDX1GSR0: 0x");
+	serial_put_hex(readl(P_PUB_DX1GSR0_ADDR),32);
+	serial_puts("\nDX1GSR2: 0x");
+	serial_put_hex(readl(P_PUB_DX1GSR2_ADDR),32);
+	serial_puts("\n");
+	serial_puts("\nDX2GSR0: 0x");
+	serial_put_hex(readl(P_PUB_DX2GSR0_ADDR),32);
+	serial_puts("\nDX2GSR2: 0x");
+	serial_put_hex(readl(P_PUB_DX2GSR2_ADDR),32);
+	serial_puts("\n");
+	serial_puts("\nDX3GSR0: 0x");
+	serial_put_hex(readl(P_PUB_DX3GSR0_ADDR),32);
+	serial_puts("\nDX3GSR2: 0x");
+	serial_put_hex(readl(P_PUB_DX3GSR2_ADDR),32);
+	serial_puts("\n");
+}
+
+static void dtu_test_for_debug_training_result(void)
 {
     int i;
 	//debug 11.20
@@ -159,19 +183,19 @@ int ddr_init_hw(struct ddr_set * timing_reg)
 	
 	if(ret)
     {
-        dtu_test_for_debug_training_result(timing_reg);
+        display_more_training_result();
+        dtu_test_for_debug_training_result();
         __udelay(10);        
 		serial_puts("\nPUB init fail! Reset...\n");
-		__udelay(10000); 
+		__udelay(10000);
+		writel(0, 0xc8100000);
 		writel((1<<22) | (3<<24), P_WATCHDOG_TC);
 		while(1);
         return ret;
     }    
 
 	//asm volatile("wfi");
-		
-    //display_training_result(timing_reg);//M6 only, M6TV no need
-       
+
     init_dmc(timing_reg);
 
 

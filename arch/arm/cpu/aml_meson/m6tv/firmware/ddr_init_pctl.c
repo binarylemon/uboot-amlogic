@@ -55,6 +55,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal = 0;
 	int i;
+	int timeout = 6;
 
 pub_retry:
 
@@ -293,7 +294,7 @@ pub_retry:
 
 #endif 
 
-	if(0x80000fff != readl(P_PUB_PGSR0_ADDR))
+	if((0x80000fff != readl(P_PUB_PGSR0_ADDR)) && timeout--)
 		goto pub_retry;
 	
 	writel(2, P_UPCTL_SCTL_ADDR); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
