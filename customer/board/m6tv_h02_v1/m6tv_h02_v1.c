@@ -655,6 +655,10 @@ int board_init(void)
    /// pull down pwm by jack
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
+   //light on led
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,0,23,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
+
 
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
