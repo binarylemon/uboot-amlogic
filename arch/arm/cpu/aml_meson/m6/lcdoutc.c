@@ -191,22 +191,14 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 
     WRITE_MPEG_REG(RGB_BASE_ADDR,   pConf->lcd_effect.rgb_base_addr);
     WRITE_MPEG_REG(RGB_COEFF_ADDR,  pConf->lcd_effect.rgb_coeff_addr);
-    WRITE_MPEG_REG(POL_CNTL_ADDR,   (tcon_adr->pol_cntl_addr & (1 << LCD_CPH1_POL)));
+    WRITE_MPEG_REG(POL_CNTL_ADDR,   pConf->lcd_timing.pol_cntl_addr);    
 	if(pConf->lcd_basic.lcd_bits == 8)
 		WRITE_MPEG_REG(DITH_CNTL_ADDR,  0x400);
 	else
 		WRITE_MPEG_REG(DITH_CNTL_ADDR,  0x600);
 
-	if (tcon_adr->pol_cntl_addr & (1 << LCD_HS_POL))
-    {
-	    WRITE_MPEG_REG(STH1_HS_ADDR,    tcon_adr->sth1_hs_addr);
-	    WRITE_MPEG_REG(STH1_HE_ADDR,    tcon_adr->sth1_he_addr);
-	}
-	else
-	{
-		WRITE_MPEG_REG(STH1_HS_ADDR,    tcon_adr->sth1_he_addr);
-		WRITE_MPEG_REG(STH1_HE_ADDR,    tcon_adr->sth1_hs_addr);
-	}
+    WRITE_MPEG_REG(STH1_HS_ADDR,    tcon_adr->sth1_hs_addr);
+    WRITE_MPEG_REG(STH1_HE_ADDR,    tcon_adr->sth1_he_addr);
     WRITE_MPEG_REG(STH1_VS_ADDR,    tcon_adr->sth1_vs_addr);
     WRITE_MPEG_REG(STH1_VE_ADDR,    tcon_adr->sth1_ve_addr);
 
@@ -226,16 +218,8 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 
     WRITE_MPEG_REG(STV1_HS_ADDR,    tcon_adr->stv1_hs_addr);
     WRITE_MPEG_REG(STV1_HE_ADDR,    tcon_adr->stv1_he_addr);
-	if (tcon_adr->pol_cntl_addr & (1 << LCD_VS_POL))
-	{
-	    WRITE_MPEG_REG(STV1_VS_ADDR,    tcon_adr->stv1_vs_addr);
-	    WRITE_MPEG_REG(STV1_VE_ADDR,    tcon_adr->stv1_ve_addr);
-	}
-	else
-	{
-		WRITE_MPEG_REG(STV1_VS_ADDR,    tcon_adr->stv1_ve_addr);
-	    WRITE_MPEG_REG(STV1_VE_ADDR,    tcon_adr->stv1_vs_addr);
-	}
+    WRITE_MPEG_REG(STV1_VS_ADDR,    tcon_adr->stv1_vs_addr);
+    WRITE_MPEG_REG(STV1_VE_ADDR,    tcon_adr->stv1_ve_addr);
 
     WRITE_MPEG_REG(OEV1_HS_ADDR,    tcon_adr->oev1_hs_addr);
     WRITE_MPEG_REG(OEV1_HE_ADDR,    tcon_adr->oev1_he_addr);
@@ -252,23 +236,25 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 static void set_tcon_lvds(Lcd_Config_t *pConf)
 {
     debug("%s.\n",__FUNCTION__);
+	Lcd_Timing_t *tcon_adr = &(pConf->lcd_timing);
     set_lcd_gamma_table_lvds(pConf->lcd_effect.GammaTableR, H_SEL_R);
     set_lcd_gamma_table_lvds(pConf->lcd_effect.GammaTableG, H_SEL_G);
     set_lcd_gamma_table_lvds(pConf->lcd_effect.GammaTableB, H_SEL_B);
 
     WRITE_MPEG_REG(L_GAMMA_CNTL_PORT, pConf->lcd_effect.gamma_cntl_port);
+    WRITE_MPEG_REG(L_GAMMA_VCOM_HSWITCH_ADDR, pConf->lcd_effect.gamma_vcom_hswitch_addr);
 
     WRITE_MPEG_REG(L_RGB_BASE_ADDR,   pConf->lcd_effect.rgb_base_addr);
     WRITE_MPEG_REG(L_RGB_COEFF_ADDR,  pConf->lcd_effect.rgb_coeff_addr);
-    //WRITE_MPEG_REG(L_POL_CNTL_ADDR,   pConf->lcd_timing.pol_cntl_addr);
+    WRITE_MPEG_REG(L_POL_CNTL_ADDR,   pConf->lcd_timing.pol_cntl_addr);
     if(pConf->lcd_basic.lcd_bits == 8)
 		WRITE_MPEG_REG(L_DITH_CNTL_ADDR,  0x400);
 	else
 		WRITE_MPEG_REG(L_DITH_CNTL_ADDR,  0x600);
 	
-    //WRITE_MPEG_REG(L_INV_CNT_ADDR,    tcon_adr->inv_cnt_addr);
-    //WRITE_MPEG_REG(L_TCON_MISC_SEL_ADDR, 	tcon_adr->tcon_misc_sel_addr);
-    //WRITE_MPEG_REG(L_DUAL_PORT_CNTL_ADDR, tcon_adr->dual_port_cntl_addr);
+    WRITE_MPEG_REG(L_INV_CNT_ADDR,    tcon_adr->inv_cnt_addr);
+    WRITE_MPEG_REG(L_TCON_MISC_SEL_ADDR, 	tcon_adr->tcon_misc_sel_addr);
+    WRITE_MPEG_REG(L_DUAL_PORT_CNTL_ADDR, tcon_adr->dual_port_cntl_addr);
 
     CLEAR_MPEG_REG_MASK(VPP_MISC, VPP_OUT_SATURATE);
 }
@@ -300,6 +286,7 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
     set_lcd_gamma_table_lvds(pConf->lcd_effect.GammaTableB, H_SEL_B);
 
     WRITE_MPEG_REG(L_GAMMA_CNTL_PORT, pConf->lcd_effect.gamma_cntl_port);
+	WRITE_MPEG_REG(L_GAMMA_VCOM_HSWITCH_ADDR, pConf->lcd_effect.gamma_vcom_hswitch_addr);
 
     WRITE_MPEG_REG(L_RGB_BASE_ADDR, pConf->lcd_effect.rgb_base_addr);
     WRITE_MPEG_REG(L_RGB_COEFF_ADDR, pConf->lcd_effect.rgb_coeff_addr);
@@ -1234,181 +1221,6 @@ static void init_lvds_phy(Lcd_Config_t *pConf)
     //WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) & ~(0x7f<<0));  //disable LVDS phy port. wait for power on sequence.
 }
 
-/* PLL parameters */
-#define PLL_M_MIN			2
-#define PLL_M_MAX			100
-#define PLL_N_MIN			1
-#define PLL_N_MAX			1
-#define PLL_FREF_MIN		(5 * 1000)
-#define PLL_FREF_MAX		(30 * 1000)
-#define PLL_VCO_MIN			(750 * 1000)
-#define PLL_VCO_MAX			(1500 * 1000)
-#define PLL_OD_MIN			0
-#define PLL_OD_MAX			1
-
-/* VID_DIV */
-#define DIV_PRE_MAX_CLK_IN		(1300 * 1000)
-#define DIV_PRE_MIN				1
-#define DIV_PRE_MAX				6
-#define DIV_POST_MAX_CLK_IN		(800 * 1000)
-
-/* CRT_VIDEO */
-#define CRT_VID_MAX_CLK_IN		(600 * 1000)
-#define CRT_VID_DIV_MAX			15
-
-#define MAX_ERROR				(5 * 1000)
-static unsigned error_abs(unsigned num1, unsigned num2)
-{
-	if (num1 >= num2)
-		return num1 - num2;
-	else
-		return num2 - num1;
-}
-
-static void generate_clk_parameter(Lcd_Config_t *pConf)
-{
-	unsigned pll_n = 0;
-	unsigned pll_m = 0;
-	unsigned pll_od = 0;
-	unsigned vid_div_pre = 0;
-	unsigned crt_xd = 0;	
-
-	unsigned m, n, od, div_pre, div_post, xd;
-	unsigned f_ref, pll_vco, od_index, fout_pll, div_pre_out, div_post_out, final_freq;
-	unsigned crt_xd_max;
-	unsigned min_error = MAX_ERROR;
-	unsigned error = MAX_ERROR;
-	
-	unsigned fin = 24000;	//kHz
-	unsigned fout = (pConf->lcd_timing.lcd_clk) / 1000;  //kHz	
-	
-	unsigned clk_num = 0;	
-	for (n = PLL_N_MIN; n <= PLL_N_MAX; n++)
-	{
-		f_ref = fin / n;
-		if ((f_ref >= PLL_FREF_MIN) && (f_ref <= PLL_FREF_MAX))
-		{
-			for (m = PLL_M_MIN; m <= PLL_M_MAX; m++)
-			{				
-				pll_vco = f_ref * m;				
-				if ((pll_vco >= PLL_VCO_MIN) && (pll_vco <= PLL_VCO_MAX))
-				{
-					for (od_index = PLL_OD_MIN; od_index <= PLL_OD_MAX; od_index++)
-					{
-						od_index = PLL_OD_MAX - od_index;						
-						od = (od_index == 0 ? 1 : 2);
-						fout_pll = pll_vco / od;
-						if (fout_pll <= DIV_PRE_MAX_CLK_IN)
-						{
-							for (div_pre = DIV_PRE_MIN; div_pre <= DIV_PRE_MAX; div_pre++)
-							{								
-								div_pre_out = fout_pll / div_pre;
-								if (div_pre_out <= DIV_POST_MAX_CLK_IN)
-								{
-									switch (pConf->lcd_basic.lcd_type)
-									{
-										case LCD_DIGITAL_TTL:										
-											div_post = 1;
-											crt_xd_max = CRT_VID_DIV_MAX;
-											break;
-										case LCD_DIGITAL_LVDS:
-											div_post = 7;
-											crt_xd_max = 1;
-											break;
-										case LCD_DIGITAL_MINILVDS:
-											div_post = 6;
-											crt_xd_max = 1;
-											break;
-										default:
-											div_post = 1;
-											crt_xd_max = 1;
-											break;
-									}
-									div_post_out = div_pre_out / div_post;
-									if (div_post_out <= CRT_VID_MAX_CLK_IN)
-									{										
-										for (xd = 1; xd <= crt_xd_max; xd++)
-										{
-											final_freq = div_post_out / xd;
-											error = error_abs(final_freq, fout);											
-											if (error < min_error)
-											{	
-												min_error = error;
-												pll_m = m;
-												pll_n = n;
-												pll_od = od_index;
-												vid_div_pre = div_pre - 1;
-												crt_xd = xd;
-												clk_num++;												
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	if (clk_num > 0)
-	{
-		pConf->lcd_timing.pll_ctrl = (pll_od << 16) | (pll_n << 9) | (pll_m << 0);
-		pConf->lcd_timing.div_ctrl = 0x18803 | (vid_div_pre << 4);
-		pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xf << 0)) | (crt_xd << 0);		
-	}
-	else
-	{			
-		pConf->lcd_timing.pll_ctrl = 0x10220;
-		pConf->lcd_timing.div_ctrl = 0x18803;
-		pConf->lcd_timing.clk_ctrl = pConf->lcd_timing.clk_ctrl | (7 << 0);
-		printf("Out of clock range, reset to default setting!\n");
-	}
-}
-
-static void lcd_sync_duration(Lcd_Config_t *pConf)
-{
-	unsigned m, n, od, pre_div, xd, post_div;
-	unsigned h_period, v_period, sync_duration;	
-	unsigned lcd_clk;
-
-	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
-	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
-	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
-	pre_div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;
-	h_period = pConf->lcd_basic.h_period;
-	v_period = pConf->lcd_basic.v_period;
-	
-	od = (od == 0) ? 1:((od == 1) ? 2:4);
-	switch(pConf->lcd_basic.lcd_type)
-	{
-		case LCD_DIGITAL_TTL:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
-			post_div = 1;
-			break;
-		case LCD_DIGITAL_LVDS:
-			xd = 1;
-			post_div = 7;
-			break;
-		case LCD_DIGITAL_MINILVDS:
-			xd = 1;
-			post_div = 6;
-			break;
-		default:
-			post_div = 1;
-			break;
-	}
-	
-	lcd_clk = ((m * 24 * 1000) / (n * od * (pre_div + 1) * xd * post_div)) * 1000;
-	pConf->lcd_timing.lcd_clk = lcd_clk;
-	sync_duration = ((lcd_clk / h_period) * 100) / v_period;
-	sync_duration = (sync_duration + 5) / 10;	
-	
-	pConf->lcd_timing.sync_duration_num = sync_duration;	
-	printf("lcd_clk=%u.%uMHz, frame_rate=%u.%uHz.\n\n", (lcd_clk / 1000000), ((lcd_clk / 100000) % 10), (sync_duration / 10), (sync_duration % 10));
-}
-
 static inline void _init_display_driver(Lcd_Config_t *pConf)
 {
 	int lcd_type;
@@ -1421,8 +1233,8 @@ static inline void _init_display_driver(Lcd_Config_t *pConf)
 	}; 
 	
 	lcd_type = pDev->conf.lcd_basic.lcd_type;
-	printf("\nInit LCD type: %s, resolution: %ux%u\n", lcd_type_table[lcd_type], pConf->lcd_basic.h_active, pConf->lcd_basic.v_active);
-	printf("lcd_clk=%u.%uMHz, frame_rate=%u.%uHz.\n", (pConf->lcd_timing.lcd_clk / 1000000), ((pConf->lcd_timing.lcd_clk / 100000) % 10), (pConf->lcd_timing.sync_duration_num / 10), (pConf->lcd_timing.sync_duration_num % 10));
+	printf("\nInit LCD type: %s.\n", lcd_type_table[lcd_type]);
+	printf("lcd frame rate=%d/%d.\n", pDev->conf.lcd_timing.sync_duration_num, pDev->conf.lcd_timing.sync_duration_den);
 	
 	switch(lcd_type)
 	{
@@ -1548,21 +1360,6 @@ static int lcd_module_disable(vmode_t cur_vmod)
     return 0;
 }*/
 
-static void  _lcd_config_init(Lcd_Config_t *pConf)
-{	
-	if (pConf->lcd_timing.clk_ctrl & (1 << CLK_CTRL_AUTO))
-	{		
-		printf("\nAuto generate clock parameters.\n");
-		generate_clk_parameter(pConf);		
-	}
-	else
-	{		
-		printf("\nCustome clock parameters.\n");
-	}
-	printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
-	lcd_sync_duration(pConf);	
-}
-
 static void _init_vout(lcd_dev_t *pDev)
 {
     pDev->lcd_info.name = PANEL_NAME;
@@ -1578,7 +1375,6 @@ static void _init_vout(lcd_dev_t *pDev)
 
 static void _lcd_init(Lcd_Config_t *pConf)
 {
-	_lcd_config_init(pConf);
 	_init_vout(pDev);
     	//_lcd_module_enable();		//remove repeatedly lcd_module_enable
 	lcd_set_current_vmode(VMODE_LCD);
