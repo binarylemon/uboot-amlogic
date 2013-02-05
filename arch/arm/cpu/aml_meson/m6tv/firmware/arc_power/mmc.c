@@ -704,7 +704,10 @@ pub_retry:
 
 	DDR_SUSPEND_LOAD(_PUB_DXCCR);   
 	
-	DDR_SUSPEND_LOAD(_PUB_ZQ0CR1);
+	if(g_ddr_settings[_PUB_ZQ0CR0])
+        writel(g_ddr_settings[_PUB_ZQ0CR0] | (1<<28), P_PUB_ZQ0CR0_ADDR);
+    else
+        DDR_SUSPEND_LOAD(_PUB_ZQ0CR1);
     		
 	// initial upctl ddr timing.
 	DDR_SUSPEND_LOAD(_UPCTL_TREFI);
@@ -829,7 +832,10 @@ pub_retry:
 
 	//===============================================
 	//PLL,DCAL,PHY RST,ZCAL
-	nTempVal =	PUB_PIR_INIT | PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
+	if(g_ddr_settings[_PUB_ZQ0CR0])
+	    nTempVal =	PUB_PIR_INIT | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
+	else
+        nTempVal =	PUB_PIR_INIT | PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
 					PUB_PIR_PHYRST;
 	writel(nTempVal, P_PUB_PIR_ADDR);
 	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
