@@ -144,7 +144,7 @@
 	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
 	"nandargs=nand read aml_logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1200000000\0"\
-	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
+	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run update;fi;fi\0" \
 	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"recovery_path=uImage_recovery\0" \
