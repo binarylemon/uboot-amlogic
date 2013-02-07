@@ -175,7 +175,7 @@ extern void dbg_wait(void);
 #define L2X0_INV_LINE_PA               (L2X0_BASE+0x770)
 #define L2X0_CLEAN_LINE_PA             (L2X0_BASE+0x780)
 
-#define L2X0_BASE_rel 0xF4200000
+#define L2X0_BASE_rel 0xF2200000
 #define L2X0_CACHE_SYNC_rel            (L2X0_BASE_rel+0x730)
 #define L2X0_CLEAN_WAY_rel             (L2X0_BASE_rel+0x7BC)
 
