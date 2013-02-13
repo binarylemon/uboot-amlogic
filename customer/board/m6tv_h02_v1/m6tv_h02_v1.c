@@ -132,7 +132,26 @@ U_BOOT_CMD(
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
+	printf("\n---switch_boot_mode---\n\n");
     u32 reboot_mode_current = reboot_mode;
+	char *data = getenv("ubootversion");
+	printf("---vercurre =%s---\n",data);
+	run_command("defenv",0);
+	char *dataenv = getenv("ubootversion");
+	printf("---verafterdef =%s---\n",dataenv);
+	int ret = strcmp(data,dataenv);
+	if(ret == 0)
+		{
+			printf("---vercurre = verafterdef---\n");
+			
+		}
+	else{
+
+			run_command("defenv",0);
+		    saveenv();
+	}
+
+	
     printf("reboot_mode_current=%x\n",reboot_mode_current);   
     
     if(reboot_mode_current == 0x02020202)

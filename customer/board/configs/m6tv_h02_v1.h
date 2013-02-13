@@ -260,7 +260,7 @@
  */
 //Please just define m6tv DDR clock here only
 //current DDR clock range (400~800)MHz
-#define CFG_M6TV_DDR_CLK (792)
+#define CFG_M6TV_DDR_CLK (744)
 
 //#define CONFIG_DDR_LOW_POWER 1
 
