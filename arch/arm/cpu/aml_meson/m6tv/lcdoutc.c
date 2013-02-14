@@ -1441,6 +1441,7 @@ static void _lcd_module_enable(void)
     //_enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
     _enable_vsync_interrupt();
 #endif
+	printf("_lcd_module_enable---.\n");
 	    BUG_ON(pDev==NULL);   
 	panel_oper.power_on();//panel power 12v
 	udelay(50);
@@ -1451,7 +1452,7 @@ static void _lcd_module_enable(void)
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,1,30,1);
 	////pull up pwm
 	mdelay(160);
-    _enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
+    //_enable_backlight(BL_MAX_LEVEL);	//disable backlight at pannel init
     _enable_vsync_interrupt();
 }
 

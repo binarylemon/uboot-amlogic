@@ -470,6 +470,78 @@ static void test_pattern (void)
 /************************************************************************************************/
 /* LCD command */
 /************************************************************************************************/
+#ifdef CONFIG_CMD_ADC_POWER_KEY
+
+static do_lcdoptcmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+
+	if (argc  < 2){
+		printf("too fill args\n");
+	}
+	if(strcmp(argv[0], "enable") == 0)
+	{
+		lcd_is_enabled = 1;		
+		panel_oper.enable();		
+	}
+	else if(strcmp(argv[0], "disable") == 0)
+	{
+		lcd_is_enabled = 0;
+		panel_oper.disable();		
+	}
+	else if(strcmp(argv[0], "bl_on") == 0)
+	{
+		panel_oper.bl_on();
+	}
+	else if(strcmp(argv[0], "bl_off") == 0)
+	{
+		panel_oper.bl_off();
+	}
+	else if(strcmp(argv[0], "set_bl_level") == 0)
+	{
+		panel_oper.set_bl_level(simple_strtoul(argv[1], NULL, 10));
+	}
+	else if(strcmp(argv[0], "test") == 0)
+	{
+#ifdef LCD_TEST_PATTERN		
+		test_pattern();
+#endif		
+		printf("LCD Test!\n");    
+		lcd_printf("\n");
+		lcd_printf("   D   \n");
+		lcd_printf("lcd_test: FILE:%s:%d, FUNC:%s\n",\
+                                                     __FILE__,__LINE__,__func__);
+	}
+	else
+	{
+		printf("Current device is panel.\n");
+		panel_oper.bl_on();
+		//opt_cmd_help();
+		return 1;
+	}
+	return 0;	
+}
+
+U_BOOT_CMD(
+	lcdctl, 3, 1, do_lcdoptcmd,
+	"Help:\n",		
+	"enable	-enable lcd\n"
+	"bl_on	-lcd backlight on"
+	"bl_off	-lcd backlight off\n"
+);
+/*
+U_BOOT_CMD(
+	lcdctl, 3, 1, do_lcdoptcmd,
+	"Help:\n"
+	"enable	-enable lcd\n"
+	"disable	-disable lcd\n"
+	"bl_on	-lcd backlight on\n"
+	"bl_off	-lcd backlight off\n"
+	"set_bl_level <level>	-set backlight level\n"
+	"test	-test lcd display\n"
+);
+*/
+#endif
+
 static void opt_cmd_help(void)
 {
 	printf("Help:\n");

@@ -650,6 +650,18 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #endif
 #endif
 
+#ifdef CONFIG_CMD_ADC_POWER_KEY
+	puts ("cold power up \n");
+	char *data_sus = getenv("suspend");
+	int sus_ret = strcmp(data_sus,"on");
+	if  (sus_ret == 0)
+		{
+			printf("pls touch key_pad\n");
+			/*add  install_halder_riq for keypad and remote*/
+			//run_command("adc 2",0);
+
+		}
+#endif
 #ifdef CONFIG_VIDEO_AMLLCD
 	puts("LCD Initialize:   \n");
 	aml_lcd_init();

@@ -144,7 +144,7 @@
 	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};lcdctl bl_on;mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -203,6 +203,10 @@
 #define CONFIG_CMD_BMP
 #define LCD_BPP LCD_COLOR32
 #define LCD_TEST_PATTERN
+
+/*config tv cold power on*/
+
+#define CONFIG_CMD_ADC_POWER_KEY
 
 /*POST support*/
 /*
