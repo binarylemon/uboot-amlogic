@@ -132,22 +132,22 @@ U_BOOT_CMD(
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
-	printf("\n---switch_boot_mode---\n\n");
+	printf("switch_boot_mode\n");
     u32 reboot_mode_current = reboot_mode;
 	char *data = getenv("ubootversion");
-	printf("---vercurre =%s---\n",data);
-	run_command("defenv",0);
+	printf("vercur =%sn",data);
+	run_command("defenv_without mmcargs",0);
 	char *dataenv = getenv("ubootversion");
-	printf("---verafterdef =%s---\n",dataenv);
+	printf("ver_after_def =%s\n",dataenv);
 	int ret = strcmp(data,dataenv);
 	if(ret == 0)
 		{
-			printf("---vercurre = verafterdef---\n");
+			printf("vercurre = verafterdef\n");
 			
 		}
 	else{
 
-			run_command("defenv",0);
+			run_command("defenv_without mmcargs",0);
 		    saveenv();
 	}
 
