@@ -132,12 +132,32 @@ U_BOOT_CMD(
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
+	printf("switch_boot_mode\n");
     u32 reboot_mode_current = reboot_mode;
+	char *data = getenv("ubootversion");
+	printf("vercur =%sn",data);
+	run_command("defenv_without mmcargs",0);
+	char *dataenv = getenv("ubootversion");
+	printf("ver_after_def =%s\n",dataenv);
+	int ret = strcmp(data,dataenv);
+	if(ret == 0)
+		{
+			printf("vercurre = verafterdef\n");
+			
+		}
+	else{
+
+			run_command("defenv_without mmcargs",0);
+		    saveenv();
+	}
+
+	
     printf("reboot_mode_current=%x\n",reboot_mode_current);   
     
     if(reboot_mode_current == 0x02020202)
     run_command("run recoveryinand",0);	
-    
+    extern int aml_autoscript(void);
+    aml_autoscript(); 
     return 0;
 }
 #endif
@@ -654,6 +674,10 @@ int board_init(void)
    /// pull down pwm by jack
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
+   //light on led
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,0,23,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
+
 
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
