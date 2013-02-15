@@ -13,7 +13,9 @@
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
-
+#define SCAN_MMC_PARTITION 4
+#define CONFIG_AML_AUTOSCRIPT
+#define AML_AUTOSCRIPT  "aml_autoscript"
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1	//waiting for nand support
@@ -107,6 +109,7 @@
 #define CONFIG_BOOTFILE		uImage
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
@@ -140,7 +143,7 @@
 	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};mmc read 1 82000000 c000 4000;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};lcdctl bl_on;mmc read 1 82000000 c000 4000;bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -275,6 +278,7 @@
 
 /***Other MARCO about DDR***/
 #define ENABLE_WRITE_LEVELING 1
+#define IMPEDANCE_OVER_RIDE_ENABLE 1
 /***************************/
 
 #define CONFIG_NR_DRAM_BANKS    1   /* CS1 may or may not be populated */
