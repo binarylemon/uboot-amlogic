@@ -137,7 +137,8 @@ int switch_boot_mode(void)
     
     if(reboot_mode_current == 0x02020202)
     run_command("run recoveryinand",0);	
-    
+    extern int aml_autoscript(void);
+    aml_autoscript(); 
     return 0;
 }
 #endif
