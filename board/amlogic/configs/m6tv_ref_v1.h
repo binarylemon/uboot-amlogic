@@ -203,6 +203,9 @@
 #define LCD_BPP LCD_COLOR32
 #define LCD_TEST_PATTERN
 
+/*config tv cold power on*/
+#define CONFIG_CMD_ADC_POWER_KEY
+
 /*POST support*/
 /*
 #define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\
