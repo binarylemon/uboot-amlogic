@@ -4,11 +4,14 @@
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
+#define CONFIG_MESON_ARM_GIC_FIQ
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
-#define CONFIG_CMDLINE_EDITING 1       /* Command-line editing */
 
+#define CONFIG_AML_TINY_USBTOOL
+
+#define CONFIG_CMDLINE_EDITING 1       /* Command-line editing */
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
@@ -88,6 +91,18 @@
 #define CONFIG_USB_DWC_OTG_294	1
 #define CONFIG_CMD_USB 1
 
+//#define CONFIG_USB_ETHER
+#ifdef CONFIG_USB_ETHER
+#define IO_USB_A_BASE			0xc9040000
+#define CONFIG_USBPORT_BASE IO_USB_A_BASE
+#define CONFIG_SYS_CACHELINE_SIZE       64 
+#define CONFIG_USB_ETH_RNDIS
+#define CONFIG_USB_GADGET_S3C_UDC_OTG
+#define CONFIG_USB_GADGET_DUALSPEED
+#endif
+
+
+
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
@@ -118,7 +133,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
-	"machid=4e28\0" \
+	"machid=4e27\0" \
 	"video_dev=tvout\0" \
 	"display_width=720\0" \
 	"display_height=480\0" \
@@ -129,15 +144,25 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x84900000\0" \
 	"sleep_threshold=20\0" \
+	"upgrade_step=0\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=98\0" \
-	"preboot=run switch_bootmode\0" \
 	"outputmode=720p\0" \
-	"nandargs=setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputmode} androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m\0"\
-	"switch_bootmode=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
-	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; nand read aml_logo 0x84100000 0 400000; bootm\0" \
-	"recovery=echo enter recovery;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 400000; bootm\0" \
+	"outputtemp=720p\0" \
+	"cvbsenable=false\0" \
+	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
+	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
+	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
+	"nandargs=run cvbscheck;nand read aml_logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;fi\0" \
+	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; bootm;run recovery\0" \
+	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m\0" \
+	"usbnet_devaddr=00:15:18:01:81:31" \
+	"usbnet_hostddr=00:15:18:01:a1:3b" \
+	"cdc_connect_timeout=9999999999" \
 
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"
@@ -154,7 +179,7 @@
 #define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
-	//#define CONFIG_NAND_BOOT 1
+//#define CONFIG_NAND_BOOT 1
 #endif
 
 //#ifdef CONFIG_NAND_BOOT
@@ -266,7 +291,7 @@
  */
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
-#define M6_DDR_CLK (528)
+#define M6_DDR_CLK (516)
 
 //#define CONFIG_DDR_LOW_POWER
 
@@ -315,6 +340,6 @@
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
-
+#define CONFIG_CEC_WAKE_UP 1
 
 #endif //__CONFIG_M6_REF_V1_H__

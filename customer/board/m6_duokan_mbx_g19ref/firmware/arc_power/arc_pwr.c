@@ -7,7 +7,9 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
+//#include <asm/arch/register.h>
 #include "boot_code.dat"
+#include <asm/arch/cec_tx_reg.h>
 
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
@@ -126,7 +128,7 @@ void copy_reboot_code()
 //#define POWER_OFF_3GVCC
 
 //for mbox
-#define POWER_OFF_VCCK_VDDIO
+//#define POWER_OFF_VCCK_VDDIO
 #define POWER_OFF_VCC5V
 
 
@@ -137,9 +139,10 @@ static void power_off_via_gpio()
 {
 	setbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
 	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
-
-	clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+    
+    //mask for HDMI HDCP & CEC modules
+	//clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
 	
 	/*clr AO pinmux for GPIO_AO. AO pinmux has been 
 	  stored in backup_remote_register()
@@ -156,9 +159,9 @@ static void power_on_via_gpio()
 	setbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
 	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
 	udelay(1000);
-
-	setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
+    //mask for HDMI HDCP & CEC modules
+	//setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
+	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
 	udelay(1000);
 	
 	clrbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
@@ -281,6 +284,20 @@ void enter_power_down()
 	unsigned addr;
 	unsigned gate;
 	unsigned power_key;
+    //unsigned char cec_repeat = 0;
+    //unsigned char power_key_num = 0x0;
+    //unsigned long cec_key = 0;
+    //unsigned long cec_status;
+    unsigned long test_status_0;
+    unsigned long test_status_1;
+    //unsigned long test_reg_0;
+    //unsigned long test_reg_1;
+    //unsigned long poweronflag = 0;
+    unsigned long cec_flag = 0;
+    hdmi_cec_func_config = readl(P_AO_DEBUG_REG0); 
+    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+    serial_put_hex(hdmi_cec_func_config,32);
+    f_serial_puts("\n");        	
 #ifdef smp_test
 	//ignore ddr problems.
 //	for(i = 0; i < 1000; i++)
@@ -292,7 +309,19 @@ void enter_power_down()
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
 	f_serial_puts("step 1\n");
-
+	f_serial_puts("cec\n");
+	//f_serial_puts("readl(P_AO_IR_DEC_REG0):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_REG0),32);
+    //f_serial_puts("\n");
+	//f_serial_puts("readl(P_AO_IR_DEC_REG1):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_REG1),32);
+    //f_serial_puts("\n");
+    //f_serial_puts("readl(P_AO_IR_DEC_STATUS):\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_STATUS),32);
+    //f_serial_puts("\n");
+    //f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
+    //serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
+    //f_serial_puts("\n");
 
 #ifdef pwr_ddr_off
    asm(".long 0x003f236f"); //add sync instruction.
@@ -321,10 +350,10 @@ void enter_power_down()
 
 
 #ifdef pwr_ddr_off
- 	f_serial_puts("step 2\n");
- 	wait_uart_empty();
-  // Next, we sleep
-  mmc_sleep();
+    f_serial_puts("step 2\n");
+    wait_uart_empty();
+    // Next, we sleep
+    mmc_sleep();
 
 #if 1
   //Clear PGCR CK
@@ -332,10 +361,10 @@ void enter_power_down()
   APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
   //APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
-  // enable retention
-  //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
-  //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
-  enable_retention();
+    // enable retention
+    //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
+    //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
+    enable_retention();
 
     // save ddr power
     // before shut down DDR PLL, keep the DDR PHY DLL in reset mode.
@@ -405,6 +434,10 @@ void enter_power_down()
 	power_off_vcck_vddio();
 #endif
 
+#ifdef POWER_OFF_VCC5V
+  power_off_vcc5v();
+#endif
+
 #ifdef POWER_DOWN_DDR15
 	power_down_ddr15();//1.5v -> 1.3v
 #endif
@@ -420,26 +453,97 @@ void enter_power_down()
 //	power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
+    //test_reg_0 =readl(P_AO_IR_DEC_REG0);
+    //test_reg_1 =readl(P_AO_IR_DEC_REG1);
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        remote_cec_hw_reset();  
+        cec_node_init();
+    }  
     udelay(10000);
-
+       
     //set the detect gpio
     //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
     while(1)
     {
-    	//detect remote key
-		  power_key=readl(P_AO_IR_DEC_FRAME);
-		  power_key = (power_key>>16)&0xff;
-		  if(power_key==0x1a)  //the reference remote power key code
-        		break;
-        		  
-		  //detect IO key
-		  /*power_key=readl(P_AO_GPIO_I); 
-		  power_key=power_key&(1<<3);
-		  if(!power_key)
-		    break;
-		  */
+		//  power_key = readl(P_AO_IR_DEC_FRAME);
+		//  power_key = (power_key>>16)&0xff;
+		//  if(power_key==0x1a)  //the reference remote power key code
+        //		break;
+        if(((test_status_0 = readl(P_AO_IR_DEC_STATUS))>>3) & 0x1){
+        	power_key = readl(P_AO_IR_DEC_FRAME);
+        	//power_key = (power_key>>16)&0xff;
+        	if(power_key == 0xf50ae386){	
+        	    //poweronflag = 1;
+    		    //for(i = 0;i<1000;i++)
+    		    //{
+                //    //readl(P_AO_IR_DEC_FRAME);
+    		    //	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
+    		    //	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && ((test_status_1>>7)&0x1))//ok
+    		    //	{
+    		    //		//readl(P_AO_IR_DEC_FRAME);
+    		    //		cec_flag = 1;
+    		    //	}
+    		    //	//readl(P_AO_IR_DEC_FRAME);
+    		    //}
+    		    //if(cec_flag) {
+    		    //    writel(readl(P_AO_DEBUG_REG0) | (0x1<<4),P_AO_DEBUG_REG0);
+        		//    if(hdmi_cec_func_config & 0x1){
+        		//        //cec_imageview_on();
+        		//    }
+    		    //}else{
+        		//    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
+    		    //}
+    		    if(hdmi_cec_func_config & 0x1){
+    		        cec_imageview_on();
+    		    }
+    		    break;
+            }
+        }
+        //if(poweronflag == 1){
+        //
+        //    //udelay(100000);
+        //	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
+        //    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
+        //	writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_IR_DEC_LDR_REPEAT);//my change
+        //    writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_IR_DEC_LDR_REPEAT);//my change
+        //    //for(i = 0;i<200ms;i++)
+        //	    for(i = 0;i<5000;i++)
+        //	    {
+        //            //readl(P_AO_IR_DEC_FRAME);
+        //	    	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
+        //	    	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && (test_status_1>>7))
+        //	    	{
+        //	    		//readl(P_AO_IR_DEC_FRAME);
+        //	    		cec_flag = 1;
+        //	    		break;
+        //	    	}
+        //	    	//readl(P_AO_IR_DEC_FRAME);
+        //	    }
+        //	    cec_key++;
+        //	    break;
+        //}
+
+        if(hdmi_cec_func_config & 0x1){
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
+        }
+        if(readl(0xc1109860)&0x100)
+            break;
+        //detect IO key
+        /*power_key=readl(P_AO_GPIO_I); 
+        power_key=power_key&(1<<3);
+        if(!power_key)
+            break;
+        */
 		  
-	  }
+    }
+
+    //if(hdmi_cec_func_config & 0x1){
+    //    remote_cec_hw_off();
+    //}
 //	power_on_via_gpio();
 //	resume_remote_register();
 
@@ -459,15 +563,15 @@ void enter_power_down()
    }
 #endif
 
+// gate on REMOTE, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+
+ #endif//CONFIG_IR_REMOTE_WAKEUP
 	//disable power_key int
 	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
 	writel(readl(0xc8100080)&(~0x1),0xc8100080);
 	writel(0x100,0xc1109860);//clear int
 
-// gate on REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
-
- #endif//CONFIG_IR_REMOTE_WAKEUP
 //  ee_on();
  
 //  disable_iso_ao();
@@ -483,6 +587,9 @@ void enter_power_down()
 	power_on_vcck_vddio(); 
 #endif
 
+#ifdef POWER_OFF_VCC5V
+    power_on_vcc5v();
+#endif 
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
@@ -512,41 +619,79 @@ void enter_power_down()
 // 	writel(readl(P_HHI_GCLK_MPEG1)&(~(0x1<<31)),P_HHI_GCLK_MPEG1);
  	uart_reset();
 
+	
+    f_serial_puts("step 7\n");   
+    wait_uart_empty();
+    store_restore_plls(0);
 
 
 
- 	
-  f_serial_puts("step 7\n");
- 	wait_uart_empty();
-	store_restore_plls(0);
 	
 #ifdef pwr_ddr_off    
-  f_serial_puts("step 8\n");
-	wait_uart_empty();  
-  init_ddr_pll();
+    f_serial_puts("step 8\n");
+    wait_uart_empty();  
+    init_ddr_pll();
 
-   // Next, we reset all channels 
-  reset_mmc();
-  f_serial_puts("step 9\n");
- 	wait_uart_empty();
+    // Next, we reset all channels 
+    reset_mmc();
+    f_serial_puts("step 9\n");
+    wait_uart_empty();
 
-  // disable retention
-  // disable retention before init_pctl is because init_pctl you need to data training stuff.
-  disable_retention();
+    // disable retention
+    // disable retention before init_pctl is because init_pctl you need to data training stuff.
+    disable_retention();    
+    // initialize mmc and put it to sleep
+    init_pctl();
+    f_serial_puts("step 10\n");
+    wait_uart_empty();
+    
+    //if(hdmi_cec_func_config & 0x1){
+    //    f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
+    //    serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+    //    f_serial_puts("\n");   
+    //    f_serial_puts("CEC P_AO_DEBUG_REG1:\n");
+    //    serial_put_hex(readl(P_AO_DEBUG_REG1),32);          
+    //    f_serial_puts("\n");       
+    //    f_serial_puts("CEC CEC_LOGICAL_ADDR0:\n");      
+    //    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
+    //    f_serial_puts("\n");
 
-  // initialize mmc and put it to sleep
-  init_pctl();
-  f_serial_puts("step 10\n");
-  wait_uart_empty();
-
-  //print some useful information to help debug.
-   serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
-   f_serial_puts("  MMC_LP_CTRL1\n");
-   wait_uart_empty();
-
-   serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
-   f_serial_puts("  MCFG\n");
-   wait_uart_empty();
+        //f_serial_puts("CEC power_key:\n");      
+        //serial_put_hex(power_key,32);
+        //f_serial_puts("\n");
+        f_serial_puts("CEC readl(P_AO_DEBUG_REG0):\n");      
+        serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+        f_serial_puts("\n");
+        //f_serial_puts("CEC test_reg_0:\n");      
+        //serial_put_hex(test_reg_0,32);
+        //f_serial_puts("\n");
+        //f_serial_puts("CEC test_reg_1:\n");      
+        //serial_put_hex(test_reg_1,32);
+        //f_serial_puts("\n");
+        f_serial_puts("CEC test_status_0:\n");      
+        serial_put_hex(test_status_0,32);
+        f_serial_puts("\n");
+        f_serial_puts("CEC test_status_1:\n");      
+        serial_put_hex(test_status_1,32);
+        f_serial_puts("\n");
+        f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
+        serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
+        f_serial_puts("\n");
+        f_serial_puts("cec_flag:\n");      
+        serial_put_hex(cec_flag,32);
+        f_serial_puts("\n");
+        //f_serial_puts("poweronflag:\n");      
+        //serial_put_hex(poweronflag,32);
+        //f_serial_puts("\n");
+    //}
+    //print some useful information to help debug.
+    serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
+    f_serial_puts("  MMC_LP_CTRL1\n");
+    wait_uart_empty();
+    
+    serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
+    f_serial_puts("  MCFG\n");
+    wait_uart_empty();
 
 #endif   //pwr_ddr_off
   // Moved the enable mmc req and SEC to ARM code.
@@ -563,7 +708,8 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-
+	
+	
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();
@@ -688,9 +834,9 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
-			init_I2C();
-#endif
+//#if (defined(POWER_OFF_VDDIO) || defined(POWER_OFF_HDMI_VCC) || defined(POWER_OFF_AVDD33) || defined(POWER_OFF_AVDD25))
+//			init_I2C();
+//#endif
 			copy_reboot_code();
 			enter_power_down();
 			//test_arc_core();
