@@ -60,6 +60,7 @@ static void setup_net_chip(void)
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 	udelay(2000);
 	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	setbits_le32(addr,set)
 }
 
 int board_eth_init(bd_t *bis)
@@ -674,6 +675,9 @@ int board_init(void)
    /// pull down pwm by jack
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
+   //init GPIOAO_5(POWER_ON)
+   WRITE_CBUS_REG_BITS(0xc8100024,0,5,1);
+   WRITE_CBUS_REG_BITS(0xc8100024,1,21,1);
    //light on led
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,1,23,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
