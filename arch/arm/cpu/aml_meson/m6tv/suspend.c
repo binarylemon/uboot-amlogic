@@ -657,3 +657,22 @@ void meson_pm_suspend(void)
 	printf("0:0x%x; 1:0x%x; 2:0x%x; 3:0x%x\n", elvis_array[0], elvis_array[1], elvis_array[2], elvis_array[3]);
 }
 
+static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	run_command("video dev bl_off",1);
+	run_command("video dev disable",1);
+
+	meson_pm_suspend();
+	return 0;
+}
+
+
+
+U_BOOT_CMD(
+	suspend,	1,	0,	do_suspend,
+	"suspend",
+	"/N\n"
+	"This command will into suspend\n"
+);
+
+

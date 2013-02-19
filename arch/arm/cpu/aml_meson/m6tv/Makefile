@@ -24,7 +24,7 @@ COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
 
 ifdef CONFIG_AML_SUSPEND
-#COBJS += suspend.o
+COBJS += suspend.o
 COBJS += firmwareld.o
 endif
 

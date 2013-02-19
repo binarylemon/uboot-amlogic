@@ -136,7 +136,7 @@ int switch_boot_mode(void)
     u32 reboot_mode_current = reboot_mode;
 	char *data = getenv("ubootversion");
 	printf("vercur =%sn",data);
-	run_command("defenv_without mmcargs",0);
+	run_command("defenv_without mmcargs ethaddr",0);
 	char *dataenv = getenv("ubootversion");
 	printf("ver_after_def =%s\n",dataenv);
 	int ret = strcmp(data,dataenv);
@@ -675,7 +675,7 @@ int board_init(void)
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
    //light on led
-   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,0,23,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,1,23,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
 
 
