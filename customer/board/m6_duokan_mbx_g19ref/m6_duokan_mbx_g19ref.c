@@ -72,9 +72,13 @@ int board_eth_init(bd_t *bis)
 
     udelay(1000);
 		
-	extern int aml_eth_init(bd_t *bis);
-
+#ifdef	CONFIG_USB_ETHER
+    extern int usb_eth_initialize(bd_t *bi);
+    usb_eth_initialize(bis);
+#else
+    extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);
+#endif
 
 	return 0;
 }
@@ -391,24 +395,15 @@ static void gpio_set_vbus_power(char is_power_on)
 	if(is_power_on)
 	{
 		//@WA-AML8726-M3_REF_V1.0.pdf
-	    //GPIOA_26 -- VCCX2_EN
-		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
-	
-		//@WA-AML8726-M3_REF_V1.0.pdf
 		//GPIOD_9 -- USB_PWR_CTL
 		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
-		
 		udelay(100000);
 	}
 	else
 	{
 		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
-
-		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
 
@@ -490,3 +485,24 @@ void power_off(void)
 	axp_power_off();
 }
 */
+#ifdef CONFIG_AML_TINY_USBTOOL
+	int usb_get_update_result(void)
+	{
+		unsigned long upgrade_step;
+		upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
+		printf("upgrade_step = %d\n", upgrade_step);
+		if(upgrade_step == 1)
+		{
+			run_command("defenv", 1);
+			run_command("setenv upgrade_step 2", 1);
+			run_command("saveenv", 1);
+			return 0;
+		}
+		else
+		{
+			return -1;
+		}
+	}
+#endif
+
+
