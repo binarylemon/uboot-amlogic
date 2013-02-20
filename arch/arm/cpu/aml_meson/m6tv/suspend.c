@@ -657,11 +657,36 @@ void meson_pm_suspend(void)
 	printf("0:0x%x; 1:0x%x; 2:0x%x; 3:0x%x\n", elvis_array[0], elvis_array[1], elvis_array[2], elvis_array[3]);
 }
 #endif
+void init_remoter(void)
+{	
+	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
+	writel(0x30fa0013,P_AO_IR_DEC_REG0);
+	writel(0x001ebe50,P_AO_IR_DEC_REG1);
+	writel(0x00f800ca,P_AO_IR_DEC_LDR_ACTIVE);
+	writel(0x00f800ca,P_AO_IR_DEC_LDR_IDLE);
+	writel(0x0044002c,P_AO_IR_DEC_BIT_0);
+
+
+}
 void meson_pm_suspend(void)
 {
 	unsigned power_key;
 	//1:cut down power
+	printf("reset\n");
+	writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<25)),P_AO_GPIO_O_EN_N);
+	udelay(200);
+	writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<9)),P_AO_GPIO_O_EN_N);
+	/*power down 12v*/
+	printf("12v\n");
+	writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<21)),P_AO_GPIO_O_EN_N);
+	udelay(200);
+	writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<5)),P_AO_GPIO_O_EN_N);
+	/*power down 1.1v*/
+	//writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<11)) & (~(1<<27)),P_AO_GPIO_O_EN_N);
+	//2:init remoter
+	init_remoter();
 	printf("enter meson_pm_suspend\n");
+	//3:wait for adc any key or remoter powerkey
 	do{
 		udelay(2000);
 		power_key=readl(P_AO_IR_DEC_FRAME);
@@ -673,7 +698,7 @@ void meson_pm_suspend(void)
 				  //the reference remote power key code
 	        	  break;
 		  	}
-}while(!(readl(0xc8100028)&0x100));
+}while((readl(0xc8100028)&0x100));
 
 }
 
@@ -683,6 +708,7 @@ static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	run_command("video dev disable",1);
 
 	meson_pm_suspend();
+	run_command("run bootcmd",1);
 	return 0;
 }
 

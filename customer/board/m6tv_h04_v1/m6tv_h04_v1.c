@@ -675,8 +675,10 @@ int board_init(void)
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_O,0,30,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO1_EN_N,0,30,1);
    //init GPIOAO_5(POWER_ON)
-  // WRITE_CBUS_REG_BITS(0xc8100024,0,5,1);
-  // WRITE_CBUS_REG_BITS(0xc8100024,1,21,1);
+   writel(readl(P_AO_GPIO_O_EN_N) | ((1<<21)),P_AO_GPIO_O_EN_N);
+   udelay(200);
+   writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<5)),P_AO_GPIO_O_EN_N);
+
    //light on led
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,1,23,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
