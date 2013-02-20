@@ -488,7 +488,7 @@ int meson_power_suspend(void)
 	return 0;
 }
 
-
+#if 0
 void meson_pm_suspend(void)
 {
     unsigned ddr_clk_N;
@@ -655,6 +655,26 @@ void meson_pm_suspend(void)
 	free(pdata);
 	//aml_lcd_init();
 	printf("0:0x%x; 1:0x%x; 2:0x%x; 3:0x%x\n", elvis_array[0], elvis_array[1], elvis_array[2], elvis_array[3]);
+}
+#endif
+void meson_pm_suspend(void)
+{
+	unsigned power_key;
+	//1:cut down power
+	printf("enter meson_pm_suspend\n");
+	do{
+		udelay(2000);
+		power_key=readl(P_AO_IR_DEC_FRAME);
+		  power_key = (power_key>>16)&0xff;
+
+		  if(power_key==0x10 || power_key==0x0c){
+				  writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+				  printf("remote power key\n");
+				  //the reference remote power key code
+	        	  break;
+		  	}
+}while(!(readl(0xc8100028)&0x100));
+
 }
 
 static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
