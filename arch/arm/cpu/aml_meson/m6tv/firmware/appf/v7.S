@@ -730,7 +730,7 @@ v7_flush_cache_all FUNCTION
 	bl	invalidate_dcache_v7
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c5, 0		; I+BTB cache invalidate
-	bl l2x0_clean_all_rel
+	bl l2x0_clean
 	ldmfd	sp!, {r0-r7, r9-r11, lr}
 	mov	pc, lr
 	ENDFUNC

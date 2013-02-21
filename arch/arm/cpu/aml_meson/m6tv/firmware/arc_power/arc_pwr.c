@@ -261,7 +261,7 @@ void restart_arm()
 
 
 #define pwr_ddr_off 
-#define POWER_OFF_24M
+//#define POWER_OFF_24M
 //#define POWER_OFF_32K
 
 void enter_power_down()

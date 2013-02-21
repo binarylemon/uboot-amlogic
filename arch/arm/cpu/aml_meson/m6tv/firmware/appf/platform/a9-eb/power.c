@@ -133,6 +133,7 @@ void run_arc_program()
 				*pbuffer = arc_code[i];
 				pbuffer++;
 		}
+		dbg_prints("aaaaaaaaaaaaaa ...\n");
     writel((0x1<<4) | ((vaddr2>>14)&0xf),P_AO_REMAP_REG1);
     v = ((vaddr2 & 0xFFFFF)>>12);
     writel(v<<8,0xDA004000);
@@ -145,9 +146,10 @@ void run_arc_program()
 	writel(readl(0xDA00434c)|(0x1<<29),0xDA00434c);// Enable GPO filter if running at 32khz
 	writel(readl(0xDA004340)|(0xf<<12),0xDA004340);//set int edge of GPO
 	writel(readl(0xDA004344)|(0xf<<12),0xDA004344);//clear int
+	dbg_prints("bbbbbbbbbbb ...\n");
 	//**********************//
-	secure_reg_1 = readl(0xDA004004);
-	writel(/*readl(0xDA004004) & ((~(3<<8)) | (~(3<<16)))*/0,0xDA004004);// TMS from gpioAO_9
+	//secure_reg_1 = readl(0xDA004004);
+	//writel(/*readl(0xDA004004) & ((~(3<<8)) | (~(3<<16)))*/0,0xDA004004);// TMS from gpioAO_9
     //switch to ARC jtag
     //set pinmux
 /*    writel(readl(0xc8100014)|(1<<14),0xc8100014);

@@ -1511,8 +1511,11 @@
 #define HASB_ARM_MB1                               0x1035
 #define HASB_ARM_MB2                               0x1036
 #define HASB_ARM_MB3                               0x1037
-#define HHI_TIMER90K                               0x103b
-#define HHI_AUD_DAC_CTRL                           0x1044
+#define HHI_TIMER90K                                   0x103b
+#define HHI_AUD_DAC_CTRL                        0x1044
+#define HHI_VIID_CLK_CNTL                         0x104b
+#define HHI_VIID_PLL_CNTL                          0x1047
+
 // Gated clock enables.  There are 64 enables for the MPEG clocks and 32 enables for other clock domains
 #define HHI_VIID_PLL_CNTL4                         0x1046 
 #define HHI_VIID_PLL_CNTL                          0x1047 

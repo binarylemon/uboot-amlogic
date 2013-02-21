@@ -488,7 +488,7 @@ int meson_power_suspend(void)
 	return 0;
 }
 
-#if 0
+#if 1
 void meson_pm_suspend(void)
 {
     unsigned ddr_clk_N;
@@ -657,6 +657,7 @@ void meson_pm_suspend(void)
 	printf("0:0x%x; 1:0x%x; 2:0x%x; 3:0x%x\n", elvis_array[0], elvis_array[1], elvis_array[2], elvis_array[3]);
 }
 #endif
+
 void init_remoter(void)
 {	
 	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
@@ -668,6 +669,8 @@ void init_remoter(void)
 
 
 }
+#if 0
+
 void meson_pm_suspend(void)
 {
 	unsigned power_key;
@@ -701,14 +704,16 @@ void meson_pm_suspend(void)
 }while((readl(0xc8100028)&0x100));
 
 }
+#endif
 
 static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	run_command("video dev bl_off",1);
-	run_command("video dev disable",1);
-
+	//run_command("video dev bl_off",1);
+	//run_command("video dev disable",1);
+	init_remoter();
+	 //meson_power_suspend();
 	meson_pm_suspend();
-	run_command("run bootcmd",1);
+	//run_command("run bootcmd",1);
 	return 0;
 }
 
