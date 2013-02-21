@@ -101,6 +101,9 @@ extern void rtl8019_get_enetaddr (uchar * addr);
 extern int aml_lcd_init(void);
 #endif
 
+// Pre-clear hdmi hdcp ksv ram
+extern int hdmi_hdcp_clear_ksv_ram(void);
+
 /************************************************************************
  * Coloured LED functionality
  ************************************************************************
@@ -281,6 +284,7 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	arm_pci_init,
 #endif
+    hdmi_hdcp_clear_ksv_ram,
 	NULL,
 };
 
