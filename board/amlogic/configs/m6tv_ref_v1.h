@@ -113,7 +113,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs init=/init mem=1024m logo=osd0,loaded,panel mac=${ethaddr}\0" \
+	"mmcargs=setenv bootargs init=/init console=ttyS0,115200n8 mem=1024m logo=osd0,loaded,panel mac=${ethaddr} panel_reverse=1 osd_reverse=all,true\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -127,7 +127,7 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x84100000\0" \
 	"prepare=mmc read 1 ${loadaddr} 4000 800;video open\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m logo=osd0,loaded,panel\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m logo=osd0,loaded,panel panel_reverse=1 osd_reverse=all,true\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -262,7 +262,7 @@
  */
 //Please just define m6tv DDR clock here only
 //current DDR clock range (400~800)MHz
-#define CFG_M6TV_DDR_CLK (672)
+#define CFG_M6TV_DDR_CLK (600)
 
 //#define CONFIG_DDR_LOW_POWER 1
 
