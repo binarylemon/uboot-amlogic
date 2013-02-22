@@ -40,6 +40,7 @@ extern appf_u32 appf_translation_table1[];
 extern appf_u32 appf_translation_table2[];
 extern unsigned appf_runtime_call_flat_mapped;
 extern unsigned appf_device_memory_flat_mapped;
+extern unsigned secure_reg_1;
 
 /*
  * Entry points

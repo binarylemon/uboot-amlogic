@@ -29,7 +29,7 @@ APPF_FUNCTION_INITIALIZE	EQU 0
         EXPORT appf_ttbr0
 	EXPORT appf_ttbcr
 	EXPORT flat_mapped
-
+	EXPORT secure_reg_1
         IMPORT appf_runtime_init
         IMPORT appf_platform_get_stack_pointer
         IMPORT appf_runtime_call
@@ -483,5 +483,8 @@ appf_ttbr0
         
 appf_ttbcr
 	DCD	0
-
+	
+secure_reg_1
+	DCD	0
+	
 	END

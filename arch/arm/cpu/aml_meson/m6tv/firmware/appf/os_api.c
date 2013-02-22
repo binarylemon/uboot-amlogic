@@ -57,7 +57,7 @@ int appf_runtime_call(unsigned function, unsigned arg1, unsigned arg2, unsigned 
  */
 
 extern void pwr_delay(int n);
-extern unsigned int secure_reg_1;
+
 int appf_warm_reset(void)
 {
     int ret;

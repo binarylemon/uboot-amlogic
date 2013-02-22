@@ -261,7 +261,7 @@ void restart_arm()
 
 
 #define pwr_ddr_off 
-//#define POWER_OFF_24M
+#define POWER_OFF_24M
 //#define POWER_OFF_32K
 
 void enter_power_down()
@@ -407,6 +407,20 @@ void enter_power_down()
 	wait_uart_empty();
 	hx_leave_power_down();
 #endif   //pwr_ddr_off
+
+	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
+	{
+		{
+			writel(0,P_AO_RTI_STATUS_REG2);
+			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+			writel(10,0xc1109904);
+			writel(1<<22|3<<24,0xc1109900);
+
+		    do{udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+		}
+	}
+
   // Moved the enable mmc req and SEC to ARM code.
   //enable_mmc_req();
 	
