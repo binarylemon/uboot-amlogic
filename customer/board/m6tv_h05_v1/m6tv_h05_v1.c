@@ -679,8 +679,14 @@ int board_init(void)
    udelay(200);
    writel(readl(P_AO_GPIO_O_EN_N) & (~(1<<5)),P_AO_GPIO_O_EN_N);
 
+   //GPIOAO_9 
+   writel(0,0xda004004);
+   clrbits_le32(P_AO_GPIO_O_EN_N, (1<<9));
+   clrbits_le32(P_AO_GPIO_O_EN_N,(1<<25));
+   
+
    //light on led
-   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,1,23,1);
+   WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_O,0,23,1);
    WRITE_CBUS_REG_BITS(PREG_PAD_GPIO2_EN_N,0,23,1);
 
 
