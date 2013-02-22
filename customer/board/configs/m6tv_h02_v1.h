@@ -10,6 +10,7 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 //
+//#define CONFIG_CMD_SUSPEND
 #define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1

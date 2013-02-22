@@ -177,29 +177,21 @@
 
 #define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
-#ifndef CONFIG_JERRY_NAND_TEST
 //#define CONFIG_NAND_BOOT 1
+
+#ifdef CONFIG_NAND_BOOT
+#define CONFIG_AMLROM_NANDBOOT 1
 #endif
 
-//#ifdef CONFIG_NAND_BOOT
-//#define CONFIG_AMLROM_NANDBOOT 1
-//#endif
-
-#define CONFIG_ENV_SIZE         0x8000
+#define CONFIG_ENV_SIZE         0x10000
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
 	#define CONFIG_CMD_SAVEENV
-//  #define CONFIG_ENV_SIZE             0x2000
 	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
-	//#ifdef CONFIG_SPI_FLASH_SPANSION
-	 //#define CONFIG_ENV_SECT_SIZE		0x10000
-	//#else
-	#define CONFIG_ENV_SECT_SIZE        0x1000
-	//#endif
-
-	#define CONFIG_ENV_OFFSET           0x80000
+	#define CONFIG_ENV_SECT_SIZE        0x10000
+	#define CONFIG_ENV_OFFSET           0x70000
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV

@@ -27,7 +27,7 @@
 #include "appf_internals.h"
 #include "appf_platform_api.h"
 #include "appf_helpers.h"
-
+#include "virtul_serial.h"
 #define SECTION    (1<<1)
 #define PAGE_TABLE (1<<0)
 #define SMALL_PAGE (1<<1)
@@ -213,6 +213,7 @@ void l2x0_flush_line(unsigned long addr)
 }
 void cache_sync(void)
 {
+	dbg_prints("enter cache_sync\n");
 	writel(0, L2X0_CACHE_SYNC);
 	cache_wait(L2X0_CACHE_SYNC, 1);
 }
@@ -235,9 +236,25 @@ void pwr_wait(int n)
 			n--;
 		}
 }
+void l2x0_clean()
+{
+	unsigned va, pa;
+	update_offset();
+	pa = reloc_addr((unsigned)&main_table);
+    	va = &main_table;
+	if( pa==va)
+	{
+		dbg_prints("uboot enter!\n");
+		l2x0_clean_all();
+	}
+	else
+	{
+		v_prints("kernel enter!\n");
+		l2x0_clean_all_rel();
+	}
+}
 void l2x0_clean_all_rel ()
 {
-   
 	/* invalidate all ways */
 	writel(0xff, L2X0_CLEAN_WAY_rel);
 	asm("dsb");
@@ -249,7 +266,8 @@ void l2x0_clean_all_rel ()
 
 void l2x0_clean_all ()
 {
-   
+	if((readl(L2X0_CTRL))&1)//uboot l2 cache disable
+	{
 	/* invalidate all ways */
 	writel(0xff, L2X0_CLEAN_WAY);
 	asm("dsb");
@@ -257,6 +275,7 @@ void l2x0_clean_all ()
 	pwr_wait(100);
 //	cache_wait(L2X0_CLEAN_WAY, 0xff);
 	cache_sync();
+	}
 }
 
 void l2x0_clean_inv_all ()
