@@ -14,6 +14,7 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 #include <asm/arch/gpio.h>
+#include <asm/arch/reboot.h>
 #define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -145,12 +146,13 @@ int switch_boot_mode(void)
     printf("reboot_mode_current=%x\n",reboot_mode_current);   
     switch(reboot_mode_current)
 	{
-	case 0x08080808:
+	case AMLOGIC_LOCK_REBOOT:
 	{
 	   printf("AML suspend boot....\n");
 	   run_command("suspend",0);
 	}    
-	case 0x02020202:
+	case AMLOGIC_UPDATE_REBOOT:
+	case AMLOGIC_FACTORY_RESET_REBOOT:	
 	{
 	    run_command("run recoveryinand",0);
     	    extern int aml_autoscript(void);
