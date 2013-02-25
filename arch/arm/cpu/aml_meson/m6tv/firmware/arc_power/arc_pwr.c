@@ -319,6 +319,19 @@ void enter_power_down()
     writel(readl(P_AO_RTI_GEN_CTNL_REG0) & 0xfffeffff,P_AO_RTI_GEN_CTNL_REG0);
     //resume ir regs
     resume_remote_register();
+    	do{
+		udelay(2000);
+		power_key=readl(P_AO_IR_DEC_FRAME);
+		  power_key = (power_key>>16)&0xff;
+
+		  if(power_key==0x10 || power_key==0x0c){
+				  writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+				  //printf("remote power key\n");
+				  //the reference remote power key code
+	        	  break;
+		  	}
+        }while((readl(0xc8100028)&0x00000100));
+/*
 	while(1){
 		udelay(2000);
 		power_key=readl(P_AO_IR_DEC_FRAME);
@@ -331,6 +344,7 @@ void enter_power_down()
 	        	  break;
 		  	}
 		}
+*/
 #endif
 #if 0
 //	udelay(200000);//Drain power
