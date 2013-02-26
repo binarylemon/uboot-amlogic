@@ -11,7 +11,7 @@
 #define CONFIG_CONS_INDEX   2
 //
 #define CONFIG_CMD_SUSPEND 1
-#define CONFIG_IR_REMOTE 1
+//#define CONFIG_IR_REMOTE 1
 #define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
@@ -116,7 +116,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs init=/init mem=512m logo=osd0,loaded,panel mac=${ethaddr}\0" \
+	"mmcargs=setenv bootargs init=/init console=ttyS0,115200n8 mem=1024m logo=osd0,loaded,panel mac=${ethaddr}\0" \
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=1124\0" \
@@ -129,8 +129,8 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x84100000\0" \
-	"prepare=mmc read 1 ${loadaddr} 4000 800;video open\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 mem=512m\0" \
+	"prepare=mmc read 1 ${loadaddr} 4000 2400;video open\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 mem=1024m logo=osd0,loaded,panel\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -270,8 +270,8 @@
 
 //#define CONFIG_DDR_LOW_POWER 1
 
-#define M6TV_DDR3_512M
-//#define M6TV_DDR3_1GB
+//#define M6TV_DDR3_512M
+#define M6TV_DDR3_1GB
 //above setting will affect following:
 //board/amlogic/m6tv_h04_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6tv/mmutable.s
