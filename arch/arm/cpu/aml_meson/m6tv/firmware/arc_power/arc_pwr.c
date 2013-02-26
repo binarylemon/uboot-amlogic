@@ -324,7 +324,7 @@ void enter_power_down()
 		power_key=readl(P_AO_IR_DEC_FRAME);
 		  power_key = (power_key>>16)&0xff;
 
-		  if(power_key==0x10 || power_key==0x0c){
+		  if(power_key==0x10 || power_key==0x0c || power_key==0x46){
 				  writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 				  //printf("remote power key\n");
 				  //the reference remote power key code
