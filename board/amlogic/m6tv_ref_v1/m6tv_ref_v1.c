@@ -14,6 +14,7 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 #include <asm/arch/gpio.h>
+#include <asm/arch/reboot.h>
 #define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -132,13 +133,32 @@ U_BOOT_CMD(
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
-    u32 reboot_mode_current = reboot_mode;
+	printf("switch_boot_mode\n");
+    	u32 reboot_mode_current = reboot_mode;
+	char *suspend = getenv("suspend");
+	int ret0 = strcmp(suspend,"on");
+	if (ret0 == 0){
+	  setenv("suspend","off");
+	  saveenv();
+	  printf("enter suspend = %s\n",suspend);
+	  run_command("suspend",0);	
+	}	
     printf("reboot_mode_current=%x\n",reboot_mode_current);   
-    
-    if(reboot_mode_current == 0x02020202)
-    run_command("run recoveryinand",0);	
-    extern int aml_autoscript(void);
-    aml_autoscript(); 
+    switch(reboot_mode_current)
+	{
+	case AMLOGIC_LOCK_REBOOT:
+	{
+	   printf("AML suspend boot....\n");
+	   run_command("suspend",0);
+	}    
+	case AMLOGIC_UPDATE_REBOOT:
+	case AMLOGIC_FACTORY_RESET_REBOOT:	
+	{
+	    run_command("run recoveryinand",0);
+    	    extern int aml_autoscript(void);
+            aml_autoscript();  
+	}
+	}
     return 0;
 }
 #endif
@@ -643,6 +663,19 @@ struct amlogic_usb_config g_usb_config_m6_skt_a={
 	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+#ifdef CONFIG_IR_REMOTE
+void board_ir_init()
+{
+	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
+	writel(0x30fa0013,P_AO_IR_DEC_REG0);
+	writel(0x001ebe50,P_AO_IR_DEC_REG1);
+	writel(0x00f800ca,P_AO_IR_DEC_LDR_ACTIVE);
+	writel(0x00f800ca,P_AO_IR_DEC_LDR_IDLE);
+	writel(0x0044002c,P_AO_IR_DEC_BIT_0);
+	printf("IR init done!\n");
+
+}
+#endif
 
 int board_init(void)
 {
@@ -658,6 +691,9 @@ int board_init(void)
 
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
+#endif /*CONFIG_AML_I2C*/
+#ifdef CONFIG_IR_REMOTE
+	board_ir_init();
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD

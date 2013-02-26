@@ -202,7 +202,7 @@ static struct ddr_set __ddr_setting={
                     				        //                      111-344ohms
                     .t_dxccr_dqsnres = 0x2, //ODT: pull down,611ohms
                     					    //PUB_DXCCR[12:9]: DQS# resister                    
-                    .t_acbdlr_ck0bd = 22,   //PUB_ACBDLR[5:0]: ck0 bit delay
+                    .t_acbdlr_ck0bd = 34,   //PUB_ACBDLR[5:0]: ck0 bit delay
                     .t_acbdlr_acbd  = 0,    //PUB_ACBDLR[23:18]: address/command bit delay
          .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2,
