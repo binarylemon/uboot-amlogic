@@ -10,6 +10,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 //
+#define CONFIG_CMD_SUSPEND 1
+#define CONFIG_IR_REMOTE 1
+
 #define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
@@ -95,7 +98,7 @@
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
-#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
+//#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
 //#define CONFIG_UBI_SUPPORT
 #ifdef	CONFIG_UBI_SUPPORT
 	#define CONFIG_CMD_UBI
@@ -141,7 +144,7 @@
 	"bootpath=u-boot-512M-UartB.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
-	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
+	"recoveryinand=mmcinfo;lcdctl bl_on;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
 #define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};lcdctl bl_on;mmc read 1 82000000 c000 4000;bootm"
@@ -159,11 +162,12 @@
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif 
+#define CONFIG_ENV_OVERWRITE
 
 #define CONFIG_ENV_SIZE         (0x2000)
 
 #ifdef CONFIG_SPI_BOOT
-	#define CONFIG_ENV_OVERWRITE
+	//#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
 	#define CONFIG_CMD_SAVEENV	
 	
@@ -178,12 +182,13 @@
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_OVERWRITE	
+	//#define CONFIG_ENV_OVERWRITE	
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
+	#define CONFIG_ENV_OVERWRITE
 	// #define CONFIG_SYS_MMC_ENV_DEV        0
 	#define CONFIG_SYS_MMC_ENV_DEV        1
 	#define CONFIG_ENV_OFFSET       0x1000000

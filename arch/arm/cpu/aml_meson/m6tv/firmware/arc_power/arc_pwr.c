@@ -330,7 +330,7 @@ void enter_power_down()
 				  //the reference remote power key code
 	        	  break;
 		  	}
-        }while((readl(0xc8100028)&0x00000100));
+        }while((readl(0xc8100028)&0x100));
 /*
 	while(1){
 		udelay(2000);

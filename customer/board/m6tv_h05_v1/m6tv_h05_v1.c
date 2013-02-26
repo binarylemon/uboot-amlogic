@@ -133,10 +133,18 @@ U_BOOT_CMD(
 int switch_boot_mode(void)
 {
 	printf("switch_boot_mode\n");
-    u32 reboot_mode_current = reboot_mode;
+    	u32 reboot_mode_current = reboot_mode;
+	char *suspend = getenv("suspend");
+	int ret0 = strcmp(suspend,"on");
+	if (ret0 == 0){
+	  setenv("suspend","off");
+	  saveenv();
+	  printf("enter suspend = %s\n",suspend);
+	  run_command("suspend",0);	
+	}	
 	char *data = getenv("ubootversion");
 	printf("vercur =%sn",data);
-	run_command("defenv_without mmcargs",0);
+	run_command("defenv_without mmcargs ethaddr suspend",0);
 	char *dataenv = getenv("ubootversion");
 	printf("ver_after_def =%s\n",dataenv);
 	int ret = strcmp(data,dataenv);
@@ -147,18 +155,30 @@ int switch_boot_mode(void)
 		}
 	else{
 
-			run_command("defenv_without mmcargs",0);
-		    saveenv();
+			run_command("defenv_without mmcargs ethaddr suspend",0);
+		        saveenv();
 	}
 
 	
     printf("reboot_mode_current=%x\n",reboot_mode_current);   
-    
-    if(reboot_mode_current == 0x02020202)
-    run_command("run recoveryinand",0);	
-    extern int aml_autoscript(void);
-    aml_autoscript(); 
-    return 0;
+    switch(reboot_mode_current){
+	case 0x08080808:
+	{
+	   printf("AML suspend boot....\n");
+	   run_command("suspend",0);
+	}    
+	case 0x02020202:
+	{
+	    run_command("run recoveryinand",0);
+    	    extern int aml_autoscript(void);
+            aml_autoscript();  
+	}
+     }
+//    if(reboot_mode_current == 0x02020202)
+//    run_command("run recoveryinand",0);	
+//    extern int aml_autoscript(void);
+//    aml_autoscript(); 
+	 return 0;
 }
 #endif
 
@@ -662,6 +682,20 @@ struct amlogic_usb_config g_usb_config_m6_skt_a={
 	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+#ifdef CONFIG_IR_REMOTE
+void board_ir_init()
+{
+	
+	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
+	writel(0x30fa0013,P_AO_IR_DEC_REG0);
+	writel(0x001ebe40,P_AO_IR_DEC_REG1);
+	writel(0x01d801ac,P_AO_IR_DEC_LDR_ACTIVE);
+	writel(0x00f800ca,P_AO_IR_DEC_LDR_IDLE);
+	writel(0x0044002c,P_AO_IR_DEC_BIT_0);
+	printf("IR init done!\n");
+
+}
+#endif
 
 int board_init(void)
 {
@@ -694,6 +728,9 @@ int board_init(void)
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
+#ifdef CONFIG_IR_REMOTE
+	board_ir_init();
+#endif
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
