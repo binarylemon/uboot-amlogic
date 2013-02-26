@@ -668,8 +668,8 @@ void board_ir_init()
 {
 	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
 	writel(0x30fa0013,P_AO_IR_DEC_REG0);
-	writel(0x001ebe50,P_AO_IR_DEC_REG1);
-	writel(0x00f800ca,P_AO_IR_DEC_LDR_ACTIVE);
+	writel(0x001ebe40,P_AO_IR_DEC_REG1);
+	writel(0x01d801ac,P_AO_IR_DEC_LDR_ACTIVE);
 	writel(0x00f800ca,P_AO_IR_DEC_LDR_IDLE);
 	writel(0x0044002c,P_AO_IR_DEC_BIT_0);
 	printf("IR init done!\n");
