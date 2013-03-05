@@ -565,7 +565,7 @@ $(U_BOOT_ONENAND):	$(ONENAND_IPL) $(obj)u-boot.bin
 		cat $(ONENAND_BIN) $(obj)u-boot.bin > $(obj)u-boot-onenand.bin
 
 $(VERSION_FILE):
-		@( printf '#define U_BOOT_VERSION "%s(%s@next)"\n'  \
+		@( printf '#define U_BOOT_VERSION "U-boot%s(%s@next)"\n'  \
 		 '$(shell $(TOPDIR)/tools/setlocalversion $(TOPDIR))' "$(BOARD)") > $@.tmp
 		@( printf '#define CC_VERSION_STRING "%s"\n' \
 		 '$(shell $(CC) --version | head -n 1)' )>>  $@.tmp
