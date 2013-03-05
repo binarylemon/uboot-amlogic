@@ -1,11 +1,15 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
+
+#if defined(CONFIG_M6_SECU_BOOT)
+#include "sha256.c"
+#endif
+
 #include <romboot.c>
 #ifndef CONFIG_AML_UBOOT_MAGIC
 #define CONFIG_AML_UBOOT_MAGIC 0x12345678
 #endif
-
 
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)

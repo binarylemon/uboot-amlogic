@@ -401,15 +401,19 @@ ifneq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
-else
-	@./tools/secu_boot/encrypto ./tools/secu_boot/keys/key.dat $(obj)firmware.bin $(obj)firmware.enc
-	$(obj)tools/convert --soc $(SOC) -s $(obj)firmware.enc -i $< -o $@
-	@rm -fr $(obj)firmware.enc
+else		
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+	@./tools/secu_boot/encrypto ./tools/secu_boot/keys/key.dat $@ $(CONFIG_M6_CRYPTO_BLK)
 endif
 
 else
 $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
+ifndef CONFIG_M6_SECU_BOOT	
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+else		
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+	@./tools/secu_boot/encrypto ./tools/secu_boot/keys/key.dat $@ $(CONFIG_M6_CRYPTO_BLK)
+endif
 
 $(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@

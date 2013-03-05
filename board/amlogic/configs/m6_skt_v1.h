@@ -267,7 +267,23 @@
 
 
 //M6 security boot
-//#define CONFIG_M6_SECU_BOOT	1
+//#define CONFIG_M6_SECU_BOOT		1
+
+/////////////////////////////////////////////////////////////////////////
+//Please DO NOT modify following code!
+#if defined(CONFIG_M6_SECU_BOOT)
+	/*NOTE: must define the block num for crypto, illegal value is 2 - 10*/
+	#define CONFIG_M6_CRYPTO_BLK	2		
+#endif //CONFIG_M6_SECU_BOOT	
+
+#if defined(CONFIG_M6_SECU_BOOT)
+	#if !defined(CONFIG_M6_CRYPTO_BLK)
+		#error "Please define CONFIG_M6_CRYPTO_BLK (2-10) !"
+	#elif (CONFIG_M6_CRYPTO_BLK < 2 || CONFIG_M6_CRYPTO_BLK > 10)
+		#error "Illegal valuel of CONFIG_M6_CRYPTO_BLK (2-10)!"
+	#endif	//CONFIG_M6_CRYPTO_BLK
+#endif //CONFIG_M6_SECU_BOOT
+//////////////////////////////////////////////////////////////////////////
 
 /*-----------------------------------------------------------------------
  * power down

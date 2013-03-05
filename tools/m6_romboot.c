@@ -1,4 +1,5 @@
 
+#include <config.h>
 #include <string.h>
 #include "romfuns.h"
 #define READ_SIZE       32*1024     // Size for data reading
@@ -29,6 +30,9 @@ int m6_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
     memset(buf,0,sizeof(buf));
 	num=fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	m6_caculate();
+#ifdef CONFIG_M6_SECU_BOOT
+	*((int *)((unsigned char *)buf + READ_SIZE - 4))= num*sizeof(buf[0]);
+#endif //CONFIG_HISUN	
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))
 	{
@@ -50,6 +54,9 @@ int m6_write_ex(FILE * fp_spl,FILE * fp_in ,FILE * fp_out,unsigned addr)
     memset(buf,0,sizeof(buf));
 	num = fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);   // add num assignment to avoid compile warning
 	m6_caculate();
+#ifdef CONFIG_M6_SECU_BOOT
+	*((int *)((unsigned char *)buf + READ_SIZE - 4))= num*sizeof(buf[0]);
+#endif //CONFIG_HISUN
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))
 	{
