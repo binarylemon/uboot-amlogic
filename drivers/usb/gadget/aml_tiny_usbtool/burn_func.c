@@ -701,11 +701,8 @@ int usb_run_command (const char *cmd, char* buff)
 					if(len>0)
 					{
 						printf("%s_len=%d\n",argv[2], len/2);
-						printf("%s_data=", argv[2]);
-						for(i=0; i<6; i++)
-							printf("%.2x:",buff[i]);
-						printf("\n");							
-						sprintf(efuse_data, "%02x:%02x:%02x:%02x:%02x:%02x", buff[0],buff[1],buff[2],buff[3],buff[4],buff[5]);
+						printf("%s_data=%s\n", argv[2], buff);
+						sprintf(efuse_data, "%s", buff);
 						sprintf(buff, "success:(%s)", efuse_data);				 //have writen mac/mac_bt/mac_wifi
 					}
 					else if(len<0)
