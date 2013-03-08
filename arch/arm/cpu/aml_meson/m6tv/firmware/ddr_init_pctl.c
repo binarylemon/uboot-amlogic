@@ -259,11 +259,24 @@ pub_retry:
     writel(readl(P_PUB_PGCR1_ADDR) | (1<<2), P_PUB_PGCR1_ADDR); //WL step = 1
 
     writel( (56250-400) | ( 0xf << 20 ), P_PUB_PGCR2_ADDR); 
-    writel( (0x0 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR0_ADDR );
-    writel( (0x8 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR1_ADDR );
-    writel( (0x10 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR2_ADDR );
-    writel( (0x18 | (0x0 <<12) | (7 << 28)),P_PUB_DTAR3_ADDR ); 
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+#define M6TV_DDR_BKMD       ((timing_reg->ddr_ctrl >> 6 )&1)
+#define M6TV_DDR_ROW_BITS   (ddr3_row_size ? (ddr3_row_size+12) : 16)
+#define M6TV_DDR_COL_BITS   (ddr3_col_size+8)
+#define M6TV_DTAR_BANK      ((((CONFIG_M6TV_DDR_DTAR >> (M6TV_DDR_BKMD ? 29 : 28)) & \
+                            (M6TV_DDR_BKMD ? 1 : 3)) << (M6TV_DDR_BKMD ? 2 : 1)) | \
+                            ((CONFIG_M6TV_DDR_DTAR>>12) & (M6TV_DDR_BKMD ? 3 : 1)))	
+#define M6TV_DTAR_ROW       ((CONFIG_M6TV_DDR_DTAR >> (M6TV_DDR_COL_BITS+2+M6TV_DDR_BKMD+1)) & ((1<<M6TV_DDR_ROW_BITS)-1))	
+#define M6TV_DTAR_COL       ((CONFIG_M6TV_DDR_DTAR >> 2) & ((1<<M6TV_DDR_COL_BITS)-1))
+#define M6TV_DTAR_ALL       ((M6TV_DTAR_COL) | (M6TV_DTAR_ROW <<12) | (M6TV_DTAR_BANK << 28))	
+
+    writel( (0x00+M6TV_DTAR_ALL),P_PUB_DTAR0_ADDR ); //CONFIG_M6TV_DDR_DTAR
+    writel( (0x10+M6TV_DTAR_ALL),P_PUB_DTAR1_ADDR ); //CONFIG_M6TV_DDR_DTAR+0x40
+    writel( (0x20+M6TV_DTAR_ALL),P_PUB_DTAR2_ADDR ); //CONFIG_M6TV_DDR_DTAR+0x80
+    writel( (0x30+M6TV_DTAR_ALL),P_PUB_DTAR3_ADDR ); //CONFIG_M6TV_DDR_DTAR+0xc0
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
     writel( ((readl(P_PUB_DTCR_ADDR) & 0xf0ffffff) | (1 << 24)),P_PUB_DTCR_ADDR);
 
     nTempVal = 1 |(1<<7)|(1<<8)|(1<<10)|(0xf<<12)|(1<<9)|(1<<11)|

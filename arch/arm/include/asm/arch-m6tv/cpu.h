@@ -14,6 +14,9 @@
 #endif
 //U boot code control
 
+//DDR training address, DO NOT modify
+#define CONFIG_M6TV_DDR_DTAR (0x9fffff00)
+
 //timer
 #define CONFIG_SYS_HZ 1000
 

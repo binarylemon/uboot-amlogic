@@ -777,17 +777,17 @@ pub_retry:
 	DDR_SUSPEND_LOAD(_PUB_PGCR1);
 	DDR_SUSPEND_LOAD(_PUB_PGCR2);
 
-	//To check???
-	//DDR_SUSPEND_LOAD(_PUB_DTAR0);
-	//DDR_SUSPEND_LOAD(_PUB_DTAR1);
-	//DDR_SUSPEND_LOAD(_PUB_DTAR2);
-	//DDR_SUSPEND_LOAD(_PUB_DTAR3);
+	//DTAR setting, load but not calculate again.
+	DDR_SUSPEND_LOAD(_PUB_DTAR0);
+	DDR_SUSPEND_LOAD(_PUB_DTAR1);
+	DDR_SUSPEND_LOAD(_PUB_DTAR2);
+	DDR_SUSPEND_LOAD(_PUB_DTAR3);
 	//set training address to 0x9fffff00
 	//MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
-	writel((0x000 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR0_ADDR);
-	writel((0x008 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR1_ADDR);
-	writel((0x010 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR2_ADDR);
-	writel((0x018 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR3_ADDR);
+	//writel((0x000 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR0_ADDR);
+	//writel((0x008 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR1_ADDR);
+	//writel((0x010 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR2_ADDR);
+	//writel((0x018 | (0xFFF0 <<12) | (0x7 << 28)),P_PUB_DTAR3_ADDR);
 	
 	DDR_SUSPEND_LOAD(_PUB_DTCR);
 	
