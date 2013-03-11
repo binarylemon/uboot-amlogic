@@ -150,7 +150,7 @@
 	"recovery_path=uImage_recovery\0" \
 	"recovery_name=recovery\0" \
 	"recovery_size=0x800000\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
 
 #define CONFIG_BOOTCOMMAND \
  "setenv bootcmd run nandboot; saveenv; run nandboot"
