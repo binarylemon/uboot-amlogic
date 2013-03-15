@@ -205,9 +205,9 @@ static void inv_pl310(unsigned pl310_address)
 {
     pl310_registers *pl310 = (pl310_registers *)pl310_address;
     int i;
-    
+
     pl310->inv_way = 0xffff;
-    while (pl310->inv_way)
+    while (pl310->inv_way & 0xffff)
     {
         /* Spin */
         for (i=10; i>0; --i)
@@ -215,6 +215,11 @@ static void inv_pl310(unsigned pl310_address)
             __nop();
         }
     }
+
+	pl310->cache_sync = 0;
+
+	while (pl310->cache_sync & 1)
+		;		
 }
 
 int is_enabled_pl310(unsigned pl310_address)
@@ -294,12 +299,13 @@ void restore_pl310(appf_u32 *pointer, unsigned pl310_address, int dormant)
     /*
      * If the RAMs were powered off, we need to invalidate the cache
      */
-    if (!dormant)
-    {
-        inv_pl310(pl310_address);
-    }
+//    if (!dormant)
+//    {
+//        inv_pl310(pl310_address);
+//       l2x0_inv_all(); //invalid be moved to entry.s
+//    }
     
-    pl310->control = 1;
+//    pl310->control = 1; // Not enable here. Move to entry.s to enable it after OS mmu set.
     dsb();
 }
 

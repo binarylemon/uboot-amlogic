@@ -184,7 +184,7 @@ static int late_init(void)
      */
     dsb();
     
-    clean_dcache_v7_l1();
+//    clean_dcache_v7_l1();
 
     return appf_platform_late_init(cluster);
 }
@@ -209,7 +209,7 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
 	 
     cluster = pmaintable->cluster_table;
     cluster += cluster_index;
-    
+	 	
     dbg_print("cluster:",cluster);
     
     cpu = cluster->cpu_table;

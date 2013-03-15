@@ -46,8 +46,8 @@ SCTLR_Z EQU (1<<11)
 appf_entry_point
 	; This is the entry point from the OS
 
-	; TODO: Decide how we're calling the firmware - BL or SMC
-	;  - for now we don't have SMC
+	; TODO: Decide how were calling the firmware - BL or SMC
+	;  - for now we dont have SMC
 	; Save some stuff on the OS stack (preserve 8 byte alignment)
 	push	{r4-r12, lr}		
 				;---------------------------------------
@@ -123,7 +123,7 @@ appf_entry_point
         cps #3 ;switch to SVC mode
         push {r4,r5,r6}        ; Preserve arguments
 
-        mov	r5, r0
+        mov	r5, r0				;save arguments
         mov	r6, r1
         mov	r7, r2
         mov	r8, r3     
@@ -131,18 +131,22 @@ appf_entry_point
 next_run				
 			
 				; cache flush
-	  			bl v7_flush_cache_all
-					
+				cpsid	if
+
+				; r0, r1, r2, r3 args from pwrtest_entry(). r1==1, l2 cache disable
+	  			bl v7_flush_cache_all_ref ; disable l1 i/d cache in it
+
 				; switch mmu table
-				;1. disable dcache and i cache
-				mrc p15,0,r12,c1,c0,0; read control
-				bfc r12,#2,#1
-				bfc r12,#12,#1
-				mcr p15,0,r12,c1,c0,0; read control
+				;1. disable dcache and i cache; this op disable all level cache @v7
+
+;				mrc p15,0,r12,c1,c0,0; read control
+;				bic	r12, r12, #0x1000			;@ ...i............
+;				bic	r12, r12, #0x0006			;@ .............ca.
+;				mcr p15,0,r12,c1,c0,0; read control
 ;	 			mov r12,#0
 ;				mcr p15, 0, r12, c7, c10, 4
-; 				dsb
-; 				isb
+ 				dsb
+ 				isb
 	      ; Is this runtime initialization?
 	cmp	r0, #APPF_FUNCTION_INITIALIZE
 	bne	%f1
@@ -199,7 +203,6 @@ next_run
         mrc	p15, 0, r8, c2, c0, 0	; read TTBR0
         mrc	p15, 0, r7, c2, c0, 2	; read TTBCR
         mrc	p15, 0, r6, c3, c0, 0	; read DACR
-        
         ; Switch translation tables to APPF        
         movw r5, #0x5555
         movt r5, #0x5555
@@ -211,6 +214,7 @@ next_run
         mov r9,#0
 				MCR p15,0,r9,c7,c5,6 			// Invalidate BTAC
 				MCR p15,0,r9,c7,c5,0			// Invalidate ICache
+;				MCR p15,0,r9,c7,c6,1			// Invalidate DCache
 				DSB
 				MCR p15,0,r9,c8,c7,0			// Invalidate TLBs
 				dsb
@@ -219,6 +223,7 @@ next_run
 			
 next_label
 	; Switch stacks, save OS stack pointer and TTBR0, TTBCR
+	
 0 
 	mov	r12, sp
 	bfc r11,#29,#3
@@ -226,7 +231,11 @@ next_label
 	mov	sp, r11
 	push	{r4-r8,r12}		; see comment in appf_reset_entry_point below
 	
-		
+;	mov r0, 0
+;	mov r1, 0
+;	mov r2, 0
+;	mov r3, 0
+	
 	adr	r7, appf_runtime_call_flat_mapped
 	ldr	r7, [r7]
 	blx	r7
@@ -239,6 +248,7 @@ appf_return_to_os
 	; Switch stacks
 	mov	sp, r12
 	mov	r12, #0
+
 
 	; Check whether we are flat-mapped
 	adr	r12, flat_mapped
@@ -256,27 +266,52 @@ appf_return_to_os
 	mov pc,r5
 	
 label_df
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0		; I+BTB cache invalidate
+
+	dsb
+	isb
 	
 	; Switch translation tables back to OS
 	mcr	p15, 0, r10, c2, c0, 0	; write TTBR1
 	mcr	p15, 0, r8, c2, c0, 0	; write TTBR0
 	mcr	p15, 0, r7, c2, c0, 2	; write TTBCR
-  mcr	p15, 0, r6, c3, c0, 0	; write DACR
- 
-  MCR p15,0,r12,c7,c5,6 		// Invalidate BTAC
+    mcr	p15, 0, r6, c3, c0, 0	; write DACR
+
+	bl	invalidate_dcache_v7
+
+    mov	r12, #0
+    MCR p15,0,r12,c7,c5,6 		// Invalidate BTAC
 	MCR p15,0,r12,c7,c5,0			// Invalidate ICache
-	DSB
+//	MCR p15,0,r9,c7,c6,1			// Invalidate DCache
+	ISB
+	DSB	
+	MCR p15,0,r12,c8,c7,0		// Invalidate TLBs
+    DSB
+
+	
 	;enable mmu for reset arm
 	mrc p15,0,r12,c1,c0,0; read control
  	ORR r12, r12, #1 << 12      // enable ICache
  	ORR r12, r12, #1 << 2      	// enable ICache
  	ORR r12, r12, #1         		// enable MMU
-	mcr p15,0,r12,c1,c0,0
-	mov r12,#0
-	MCR p15,0,r12,c8,c7,0			// Invalidate TLBs
+ 	mov r12, r12
+	mcr p15,0,r12,c1,c0,0	
+ 	mov r12, r12
+;	mov r12,#0
+;	MCR p15,0,r12,c8,c7,0			// Invalidate TLBs
 	dsb
 	isb
 
+	ldr r0, =0xf3100004
+	mov r1,#0x72   ;'r'
+	ldr r0, [r0]
+	cmp r0, r1
+	bne %f1
+	bl l2x0_inv_all_ref
+	bl l2x0_enable_ref
+
+1
 	mov r4,r4
 	; Restore interrupts
 0	msr	CPSR_c, r4
@@ -435,32 +470,35 @@ appf_reset_entry_point
   mcr	p15, 0, r5, c3, c0, 0	; write DACR
 		
 	
- 	mov r9,#0
-  MCR p15,0,r9,c7,c5,6 		// Invalidate BTAC
-	MCR p15,0,r9,c7,c5,0			// Invalidate ICache
-	DSB
-	MCR p15,0,r9,c8,c7,0			// Invalidate TLBs
-	DSB
+; 	mov r9,#0
+;  MCR p15,0,r9,c7,c5,6 		// Invalidate BTAC
+;	MCR p15,0,r9,c7,c5,0			// Invalidate ICache
+;	DSB
+;	MCR p15,0,r9,c8,c7,0			// Invalidate TLBs
+;	DSB
 
-	BL new_d_inval
-	DSB
+;	BL new_d_inval
+;	DSB
 
 	;enable mmu for reset arm
-	mrc p15,0,r12,c1,c0,0; read control
- 	ORR r12, r12, #1         		// enable MMU
-	mcr p15,0,r12,c1,c0,0
-	dsb
-	isb
+;	mrc p15,0,r12,c1,c0,0; read control
+; 	ORR r12, r12, #1         		// enable MMU
+; 	mov r12, r12
+;	mcr p15,0,r12,c1,c0,0
+;	mov r12, r12
+;	dsb
+;	isb
 	
     ; Turn I cache and branch prediction on
-	bl	read_sctlr
-	orr	r0, r0, #(SCTLR_I :OR: SCTLR_Z)
-	bl	write_sctlr
+;	bl	read_sctlr
+;	orr	r0, r0, #(SCTLR_I :OR: SCTLR_Z)
+;	bl	write_sctlr
 
 	; Clear all data cache levels visible to CPU
-	bl	invalidate_dcache_v7
+;	bl	invalidate_dcache_v7
 
-	bl  l2x0_enable
+	;bl l2x0_inv_all
+	;bl  l2x0_enable
 	
 	; Caches have been invalidated, and any other init completed.
         ; Stack pointer is valid, and I cache on

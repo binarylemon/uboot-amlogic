@@ -41,7 +41,9 @@
 	EXPORT clean_mva_dcache_v7_l1
 ;	EXPORT invalidate_icache_v7_pou
 	EXPORT invalidate_dcache_v7
+	EXPORT v7_flush_dcache_all
 	
+	EXPORT v7_flush_cache_all_ref
 	EXPORT v7_flush_cache_all
 	EXPORT new_d_inval
 	
@@ -513,13 +515,13 @@ disable_clean_inv_cache_pl310	FUNCTION
 	dsb
 		
 	; Clean+invalidate stack in L2
-	bic	r1, #(CACHE_LINE_SIZE - 1)
-5	cmp	r2, #0
-	blt	%f10
-	str	r1, [r0, #0x7f0]	; PL310: Clean and invalidate by PA	
-	add	r1, #CACHE_LINE_SIZE
-	subs	r2, #CACHE_LINE_SIZE
-	b	%b5
+;	bic	r1, #(CACHE_LINE_SIZE - 1)
+;5	cmp	r2, #0
+;	blt	%f10
+;	str	r1, [r0, #0x7f0]	; PL310: Clean and invalidate by PA	
+;	add	r1, #CACHE_LINE_SIZE
+;	subs	r2, #CACHE_LINE_SIZE
+;	b	%b5
 10	bx	lr        		; Stack invalidated, we can return to C
 	ENDFUNC
 
@@ -579,10 +581,11 @@ disable_clean_inv_dcache_v7_l1	FUNCTION
 ;	bx	lr
 ;	ENDFUNC	
 
-invalidate_dcache_v7 FUNCTION
+v7_flush_dcache_all FUNCTION
  ; Must iterate over the caches in order to synthesise a complete clean
  ; of data/unified cache
 	push    {r4-r11}
+	dmb
 	mrc     p15, 1, r0, c0, c0, 1       ; read clidr
 	ands    r3, r0, #0x7000000          ; extract loc from clidr
 	mov     r3, r3, lsr #23             ; left align loc bit field
@@ -612,7 +615,7 @@ loop3
 	orr     r11, r10, r8, lsl r5        ; factor way and cache number into r11
 	orr     r11, r11, r7, lsl r2        ; factor index number into r11
 	;mcr     p15, 0, r11, c7, c6, 2      ; invalidate by set/way
-	mcr     p15, 0, r11, c7 , c14, 2    
+	mcr     p15, 0, r11, c7 , c14, 2    ;clean & invalidate by set/way
 	
 	subs    r8, r8, #1                  ; decrement the way
 	bge     loop3
@@ -638,6 +641,65 @@ finished
 	bx      lr
 	ENDFUNC
 
+invalidate_dcache_v7 FUNCTION
+ ; Must iterate over the caches in order to synthesise a complete clean
+ ; of data/unified cache
+	push    {r4-r11}
+	dmb
+	mrc     p15, 1, r0, c0, c0, 1       ; read clidr
+	ands    r3, r0, #0x7000000          ; extract loc from clidr
+	mov     r3, r3, lsr #23             ; left align loc bit field
+	beq     finished0                   ; if loc is 0, then no need to clean
+	mov     r10, #0                     ; start clean at cache level 0 (in r10)
+loop10
+	add     r2, r10, r10, lsr #1        ; work out 3x current cache level
+	mov     r12, r0, lsr r2             ; extract cache type bits from clidr
+	and     r12, r12, #7                ; mask of bits for current cache only
+	cmp     r12, #2                     ; see what cache we have at this level
+	blt     skip0                       ; skip if no cache, or just i-cache
+	mcr     p15, 2, r10, c0, c0, 0      ; select current cache level in cssr
+	isb
+;	mov     r12, #0
+; mcr     p15, 0, r12, c7, c5, 4      ; prefetchflush to sync new cssr&csidr
+	mrc     p15, 1, r12, c0, c0, 0      ; read the new csidr
+	and     r2, r12, #7                 ; extract the length of the cache lines
+	add     r2, r2, #4                  ; add 4 (line length offset)
+	ldr     r6, =0x3ff
+	ands    r6, r6, r12, lsr #3         ; find maximum number on the way size
+	clz     r5, r6                      ; find bit pos of way size increment
+	ldr     r7, =0x7fff
+	ands    r7, r7, r12, lsr #13        ; extract max number of the index size
+loop20
+	mov     r8, r6                      ; create working copy of max way size
+loop30
+	orr     r11, r10, r8, lsl r5        ; factor way and cache number into r11
+	orr     r11, r11, r7, lsl r2        ; factor index number into r11
+	mcr     p15, 0, r11, c7, c6, 2      ; invalidate by set/way
+
+	
+	subs    r8, r8, #1                  ; decrement the way
+	bge     loop30
+	subs    r7, r7, #1                  ; decrement the index
+	bge     loop20
+skip0
+	add     r10, r10, #2                ; increment cache number
+	cmp     r3, r10
+	bgt     loop10
+finished0
+	mov     r10, #0
+	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+	dsb
+;	mcr	p15, 0, r10, c7, c5, 4		@ flush prefetch buffer,
+;						@ with armv7 this is 'isb',
+;						@ but we compile with armv5
+	isb
+;	dsb
+;	mcr     p15, 0, r10, c7, c10, 4     ; drain write buffer
+;	mcr     p15, 0, r10, c8, c7, 0      ; invalidate I + D TLBs
+;	mcr     p15, 0, r10, c2, c0, 2      ; TTB control register
+	pop     {r4-r11}
+	bx      lr
+	ENDFUNC
 
 	AREA APPF_ENTRY_POINT_CODE, CODE
 
@@ -725,12 +787,60 @@ set_security_state	FUNCTION
 	bx	lr
 	ENDFUNC
 	
-v7_flush_cache_all FUNCTION
+v7_flush_cache_all_ref FUNCTION ; refer to kernel Machine_kexec.c (y:\android_jb\common\arch\arm\kernel)	3235	2013-2-5
 	stmfd	sp!, {r0-r7, r9-r11, lr}
-	bl	invalidate_dcache_v7
+;	bl clean_dcache_v7_l1
+	dmb
+	mov r4, r3 ; save arg1
+	
+	bl	v7_flush_dcache_all	
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c5, 0		; I+BTB cache invalidate
-	bl l2x0_clean_all_rel
+
+	ldr r0, =0x80000000
+	and r4, r4, r0
+	cmp r4, #0  					; call from uboot suspend cmd and l2 cache not enable
+	bne %f0
+	
+	ldr r0, =0xF2200100
+	ldr r0, [r0]
+	cmp r0,#0                       ; l2 cache on or off
+	beq %f0
+
+	bl l2x0_flush_all_ref
+
+	bl l2x0_disable_ref
+0
+	mrc p15,0,r0,c1,c0,0; read control
+	bic	r0, r0, #0x1000			;@ ...i............
+	bic	r0, r0, #0x0006			;@ .............ca.
+	mcr p15,0,r0,c1,c0,0; read control
+
+	cmp r4, #0x1					; call from uboot suspend cmd and l2 cache not enable
+	bne %f1
+
+	ldr r0, =0xF2200100
+	ldr r0, [r0]
+	cmp r0,#0						; l2 cache on or off
+	beq %f1
+
+	bl l2x0_inv_all_ref
+1
+	bl	v7_flush_dcache_all	
+	mov	r0, #0
+	mcr	p15, 0, r0, c7, c5, 0		; I+BTB cache invalidate
+	
+	ldmfd	sp!, {r0-r7, r9-r11, lr}
+	mov	pc, lr
+	ENDFUNC
+
+v7_flush_cache_all FUNCTION
+	stmfd	sp!, {r0-r7, r9-r11, lr}
+	;bl clean_dcache_v7_l1
+	bl	v7_flush_dcache_all
+	mov	r0, #0
+	mcr	p15, 0, r0, c7, c5, 0		; I+BTB cache invalidate
+	bl l2x0_disable_flush
 	ldmfd	sp!, {r0-r7, r9-r11, lr}
 	mov	pc, lr
 	ENDFUNC

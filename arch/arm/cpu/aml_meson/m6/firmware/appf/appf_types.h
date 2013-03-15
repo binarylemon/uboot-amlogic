@@ -54,6 +54,7 @@
 #define APPF_SAVE_DEBUG        (1<<3)
 #define APPF_SAVE_L2           (1<<4)
 
+#define APPF_UBOOT_FLAG        (1<<31) //call from uboot
 
 typedef unsigned int appf_u32;
 typedef signed int appf_i32;

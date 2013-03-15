@@ -86,7 +86,6 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
         saved_items |= SAVED_DEBUG;
     }
     dbg_prints("save step 6\n");
-    
     cluster_down = cluster->power_state >= 2;
 
   //  if (cluster_down)
@@ -105,7 +104,6 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
     save_mmu(context->mmu_data);
     context->saved_items = saved_items;
     dbg_prints("save step 7\n");
-    
   //  if (cluster_down)
     {
     		if(cluster->scu_address)
@@ -128,12 +126,12 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
      * Note that if L1 was to be dormant and we were the last CPU, we would only need to clean some key data
      * out of L1 and clean+invalidate the stack.
      */
-    asm volatile("mov r0,#0");
-    asm volatile("mcr p15, 0, r0, c7, c5, 0");
+    //asm volatile("mov r0,#0");
+    //asm volatile("mcr p15, 0, r0, c7, c5, 0");
 
     		
-		disable_clean_inv_dcache_v7_l1();
-
+		//disable_clean_inv_dcache_v7_l1();
+	//v7_flush_dcache_all();
 
     /* 
      * Next, disable cache coherency
@@ -155,29 +153,32 @@ int appf_platform_save_context(struct appf_cluster *cluster, struct appf_cpu *cp
          * Disable the MMU (and the L2 cache if necessary), then clean+invalidate the stack in the L2.
          * This all has to be done one assembler function as we can't use the C stack during these operations.
          */
+         
+		dbg_print("cluster_down",cluster_down)
         disable_clean_inv_cache_pl310(cluster->l2_address, appf_platform_get_stack_pointer() - STACK_SIZE, 
                                       STACK_SIZE, cluster_down);
   
         /*
          * We need to partially or fully clean the L2, because we will enter reset with cacheing disabled
          */
-        if (cluster_down)
+//        if (cluster_down)
         {
             /* Clean the whole thing */
-            clean_pl310(cluster->l2_address);
+            //clean_pl310(cluster->l2_address);
+//			l2x0_flush_all();
         }
-        else
+//        else
         {
             /* 
 	     * L2 staying on, so just clean everything this CPU will need before the MMU is reenabled
 	     *
              * TODO: some of this data won't change after boottime init, could be cleaned once during late_init
 	     */
-            clean_range_pl310(cluster,           sizeof(struct appf_cluster),         cluster->l2_address);
-            clean_range_pl310(cpu,               sizeof(struct appf_cpu),             cluster->l2_address);
-            clean_range_pl310(context,           sizeof(struct appf_cpu_context),     cluster->l2_address);
-            clean_range_pl310(context->mmu_data, MMU_DATA_SIZE,                       cluster->l2_address);
-            clean_range_pl310(cluster_context,   sizeof(struct appf_cluster_context), cluster->l2_address);
+//            clean_range_pl310(cluster,           sizeof(struct appf_cluster),         cluster->l2_address);
+//            clean_range_pl310(cpu,               sizeof(struct appf_cpu),             cluster->l2_address);
+//            clean_range_pl310(context,           sizeof(struct appf_cpu_context),     cluster->l2_address);
+//            clean_range_pl310(context->mmu_data, MMU_DATA_SIZE,                       cluster->l2_address);
+//            clean_range_pl310(cluster_context,   sizeof(struct appf_cluster_context), cluster->l2_address);
         }
     }
     dbg_prints("save step 10\n");

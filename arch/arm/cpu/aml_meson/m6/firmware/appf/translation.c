@@ -83,6 +83,7 @@ unsigned int appf_device_memory_flat_mapped = 0;
 #define REMAPPING_NORMAL 2
 #define CACHE_WBWA 0x1
 
+#define l2x0_way_mask ((1<<8)-1) //8 ways
 #if 0
 int find_remapping(unsigned prrr, unsigned nmrr, unsigned desired_type)
 {
@@ -175,9 +176,14 @@ extern void dbg_wait(void);
 #define L2X0_INV_LINE_PA               (L2X0_BASE+0x770)
 #define L2X0_CLEAN_LINE_PA             (L2X0_BASE+0x780)
 
-#define L2X0_BASE_rel 0xF2200000
+
+#define L2X0_BASE_rel 0xF2200000//0xF4200000
+
 #define L2X0_CACHE_SYNC_rel            (L2X0_BASE_rel+0x730)
 #define L2X0_CLEAN_WAY_rel             (L2X0_BASE_rel+0x7BC)
+#define L2X0_CTRL_ref                  (L2X0_BASE_rel+0x100)
+#define L2X0_INV_WAY_ref               (L2X0_BASE_rel+0x77c)
+#define L2X0_CLEAN_INV_WAY_ref         (L2X0_BASE_rel+0x7FC)
 
 #define CACHE_LINE_SIZE 32
 /*void _clean_dcache_addr(unsigned long addr);
@@ -216,6 +222,11 @@ void cache_sync(void)
 	writel(0, L2X0_CACHE_SYNC);
 	cache_wait(L2X0_CACHE_SYNC, 1);
 }
+void cache_sync_ref(void)
+{
+	writel(0, L2X0_CACHE_SYNC_rel);
+	cache_wait(L2X0_CACHE_SYNC_rel, 1);
+}
 void cache_sync_rel(void)
 {
 	writel(0, L2X0_CACHE_SYNC_rel);
@@ -239,11 +250,11 @@ void l2x0_clean_all_rel ()
 {
    
 	/* invalidate all ways */
-	writel(0xff, L2X0_CLEAN_WAY_rel);
+	writel(l2x0_way_mask, L2X0_CLEAN_WAY_rel);
 	asm("dsb");
 	asm("isb");
 	pwr_wait(100);
-//	cache_wait(L2X0_CLEAN_WAY, 0xff);
+	cache_wait(L2X0_CLEAN_WAY_rel, l2x0_way_mask);
 	cache_sync_rel();
 }
 
@@ -251,11 +262,11 @@ void l2x0_clean_all ()
 {
    
 	/* invalidate all ways */
-	writel(0xff, L2X0_CLEAN_WAY);
+	writel(l2x0_way_mask, L2X0_CLEAN_WAY);
 	asm("dsb");
 	asm("isb");
 	pwr_wait(100);
-//	cache_wait(L2X0_CLEAN_WAY, 0xff);
+	cache_wait(L2X0_CLEAN_WAY, l2x0_way_mask);
 	cache_sync();
 }
 
@@ -264,11 +275,27 @@ void l2x0_clean_inv_all ()
    if(l2x0_status())
    	{
 		/* invalidate all ways */
-		writel(0xff, L2X0_CLEAN_INV_WAY);
-		cache_wait(L2X0_CLEAN_INV_WAY, 0xff);
+		writel(l2x0_way_mask, L2X0_CLEAN_INV_WAY);
+		cache_wait(L2X0_CLEAN_INV_WAY, l2x0_way_mask);
 		cache_sync();
 	}
 }
+
+void l2x0_disable_flush()
+{
+	if(l2x0_status())
+	{
+		l2x0_disable();
+		l2x0_clean_all();
+		l2x0_clean_inv_all();		
+	}
+}
+
+void l2_cache_disable_ref(void)
+{
+	l2x0_disable_ref();
+}
+
 void l2x0_inv_line(unsigned long addr)
 {
 	cache_wait(L2X0_INV_LINE_PA, 1);
@@ -278,13 +305,25 @@ void l2x0_inv_line(unsigned long addr)
 void l2x0_inv_all(void)
 {
   /* invalidate all ways */
-	writel(0xff, L2X0_INV_WAY);
+	writel(l2x0_way_mask, L2X0_INV_WAY);
 	asm("dsb");
 	asm("isb");
 	pwr_wait(100);
 
-//	cache_wait(L2X0_INV_WAY, 0xff);
+	cache_wait(L2X0_INV_WAY, l2x0_way_mask);
 	cache_sync();
+}
+
+void l2x0_inv_all_ref(void)
+{
+  /* invalidate all ways */
+	writel(l2x0_way_mask, L2X0_INV_WAY_ref);
+	asm("dsb");
+	asm("isb");
+	pwr_wait(100);
+
+	cache_wait(L2X0_INV_WAY_ref, l2x0_way_mask);
+	cache_sync_ref();
 }
 #define min(a,b) (a<b?a:b)
 void l2x0_invalid_range(unsigned long start, unsigned long end)
@@ -369,6 +408,34 @@ void l2x0_enable()
 void l2x0_disable()
 {
     writel(0,  L2X0_CTRL);
+}
+
+void l2x0_enable_ref()
+{
+	asm ("dsb");
+	asm ("isb");
+	writel(1,  L2X0_CTRL_ref);
+	asm ("dsb");
+	asm ("isb");
+}
+void l2x0_disable_ref()
+{
+    writel(0,  L2X0_CTRL_ref);
+}
+
+
+void l2x0_flush_all_ref(void)
+{
+	writel(l2x0_way_mask/*8 ways*/, L2X0_CLEAN_INV_WAY_ref);
+	cache_wait(L2X0_CLEAN_INV_WAY_ref, l2x0_way_mask);
+	cache_sync_ref();
+}
+
+void l2x0_flush_all(void)
+{
+	writel(l2x0_way_mask/*8 ways*/, L2X0_CLEAN_INV_WAY);
+	cache_wait(L2X0_CLEAN_INV_WAY, l2x0_way_mask);
+	cache_sync();
 }
 
 #if 0
@@ -464,7 +531,7 @@ int appf_setup_translation_tables(void)
     	else if(i == 0xc12)
     		attr = 0x10412;
     	else if(i == 0xc42)
-    		attr = 0x02412;
+    		attr = 0x412;
     	else if(i==0xc43)
     		attr = 0x2412;
     	else if(i>=0xc80 && i <= 0xCFF)
@@ -483,7 +550,7 @@ int appf_setup_translation_tables(void)
     	}
     	else if(i == 0xDFF)
     	{
-      	((unsigned*)tab1_pa) [i] = 0xc0e|(0x9FF<<20);
+      	((unsigned*)tab1_pa) [i] = 0x402|(0x9FF<<20);//0xc0e
     	}
     	else if(i == 0xCFF)
     	{
@@ -522,6 +589,9 @@ int appf_setup_translation_tables(void)
     *((volatile unsigned*)pa) = reloc_addr((unsigned)appf_translation_table1);
      
     __V(appf_ttbcr) = 0;
+
+    clean_dcache_v7_l1();
+	
     return APPF_OK;
 }
 #endif

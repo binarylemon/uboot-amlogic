@@ -136,8 +136,6 @@ void run_arc_program()
     v = ((vaddr2 & 0xFFFFF)>>12);
     writel(v<<8 | 1,0xDA004000); //TEST_N : 1->output mode; 0->input mode
      *(volatile unsigned *)(vaddr2 +0x20) = (unsigned)(&platform_reset_handler);
-    if(0x87654321 != readl(P_AO_RTI_STATUS_REG2))//need take more attention
-        l2x0_clean_all();
 
 	//**********************//
 
@@ -207,14 +205,14 @@ int appf_platform_leave_cstate(unsigned cpu_index, struct appf_cpu *cpu, struct 
      * so that it can tell whether it is the first CPU up. Note that mva==pa here.
      */
     dsb();
-    clean_mva_dcache_v7_l1((void *)&(cluster->active_cpus));
-    clean_mva_dcache_v7_l1((void *)&(cluster->power_state));
-    if (cluster->l2_address && is_enabled_pl310(cluster->l2_address))
-    {
-        dsb();
-        clean_range_pl310((void *)&(cluster->active_cpus), 4, cluster->l2_address);
-        clean_range_pl310((void *)&(cluster->power_state), 4, cluster->l2_address);
-    }
+//    clean_mva_dcache_v7_l1((void *)&(cluster->active_cpus));
+//    clean_mva_dcache_v7_l1((void *)&(cluster->power_state));
+ //   if (cluster->l2_address && is_enabled_pl310(cluster->l2_address))
+//    {
+//        dsb();
+//        clean_range_pl310((void *)&(cluster->active_cpus), 4, cluster->l2_address);
+//        clean_range_pl310((void *)&(cluster->power_state), 4, cluster->l2_address);
+//    }
 
     /*
      * We could check the value in the SCU power status register as it is written at 

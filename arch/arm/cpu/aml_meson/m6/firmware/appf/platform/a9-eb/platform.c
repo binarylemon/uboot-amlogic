@@ -147,11 +147,11 @@ int appf_platform_boottime_init(void)
     }*/
     
     /* Setup tables - Note that pointers are flat-mapped/physical addresses */
-     if (aem_cluster[0].scu_address)
-    {
-        aem_cluster[0].num_cpus = num_cpus_from_a9_scu(aem_cluster[0].scu_address);
-    }
-    else
+//     if (aem_cluster[0].scu_address)
+//    {
+//        aem_cluster[0].num_cpus = num_cpus_from_a9_scu(aem_cluster[0].scu_address);
+//    }
+//    else
     {
         aem_cluster[0].num_cpus = 1;
     }
@@ -256,10 +256,10 @@ int appf_platform_late_init(struct appf_cluster *cluster)
      * Clean the APPF code and translation tables from L2 cache, if it's enabled
      * - this matters as we will disable the L2 during power down.
      */
-    if (cluster->l2_address && is_enabled_pl310(cluster->l2_address))
-    {
-        clean_pl310(cluster->l2_address);
-    }
+//    if (cluster->l2_address && is_enabled_pl310(cluster->l2_address))
+//    {
+//        clean_pl310(cluster->l2_address);
+//    }
     return APPF_OK;
 }
 

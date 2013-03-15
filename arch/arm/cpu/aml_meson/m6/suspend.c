@@ -445,6 +445,8 @@ static void auto_clk_gating_setup(
 #define APPF_SAVE_DEBUG        (1<<3)
 #define APPF_SAVE_L2           (1<<4)
 
+#define APPF_UBOOT_FLAG        (1<<31) //call from uboot
+
 #ifdef CONFIG_SUSPEND_WATCHDOG
 void disable_watchdog(void)
 {
@@ -478,13 +480,13 @@ int meson_power_suspend(void)
 	if(test_flag != 1234){
 		test_flag = 1234;
 		printf("initial appf\n");
-		pwrtest_entry(APPF_INITIALIZE,0,0,0);
+		pwrtest_entry(APPF_INITIALIZE,0,0,APPF_UBOOT_FLAG);
 	}
 #ifdef CONFIG_SUSPEND_WATCHDOG
 	disable_watchdog();
 #endif
 	printf("power down cpu --\n");
-	pwrtest_entry(APPF_POWER_DOWN_CPU,0,0,APPF_SAVE_PMU|APPF_SAVE_VFP|APPF_SAVE_L2);
+	pwrtest_entry(APPF_POWER_DOWN_CPU,0,0,APPF_UBOOT_FLAG);
 #ifdef CONFIG_SUSPEND_WATCHDOG
 	enable_watchdog();
 #endif
