@@ -13,8 +13,6 @@
 #error please define CONFIG_M6
 #endif
 //U boot code control
-//DDR training address, Please DO NOT modify
-#define CONFIG_M6_DDR_DTAR_ADDR (0x9fffff00)
 
 //timer
 #define CONFIG_SYS_HZ 1000

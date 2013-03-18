@@ -325,6 +325,13 @@
 	#error "Please set DDR3 capacity first in file m6_ref_v1.h\n"
 #endif
 
+//DDR data training address setting
+//ATTENTION: change the setting need sync with kernel
+//NOTE: 1. Now it is fixed to 0x9FFFFF00 for 512MB and 1GB
+//           2. For another size DDR (2GB) maybe need update this
+//           3. 64 bytes alignment is a must
+//           4. bit12,11,10 must be same:111 or 000 (why?)
+//#define CONFIG_M6_DDR_DTAR_ADDR (0x9FFFFF00)
 
 #define CONFIG_NR_DRAM_BANKS    1   /* CS1 may or may not be populated */
 
