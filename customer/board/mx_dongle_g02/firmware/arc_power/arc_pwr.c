@@ -145,7 +145,7 @@ static void power_off_via_gpio()
 	
 	clrbits_le32(CBUS_REG_ADDR(0x105d),7<<12);
 	clrbits_le32(CBUS_REG_ADDR(0x1067),(3<<4) | (1<<0));
-	setbits_le32(CBUS_REG_ADDR(0x10a0),1<<30);
+//	setbits_le32(CBUS_REG_ADDR(0x10a0),1<<30);
 		setbits_le32(CBUS_REG_ADDR(0x2013),1<<16);
 		clrbits_le32(CBUS_REG_ADDR(0x2012),1<<16);
 		clrbits_le32(CBUS_REG_ADDR(0x202e),1<<2);
@@ -478,6 +478,8 @@ power_off_via_gpio();
 		  if(!power_key)
 		    break;
 		  */
+                  if(readl(0xc1109860)&0x100)
+                    break;
 		  
 	  }
 	resume_remote_register();
