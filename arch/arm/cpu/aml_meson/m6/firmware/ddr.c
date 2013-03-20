@@ -26,8 +26,6 @@ static unsigned ddr_start_again=1;
 
 #define APB_Wr(addr, data) WRITE_APB_REG(addr,data)
 #define APB_Rd(addr) READ_APB_REG(addr)
-#define Wr           WRITE_CBUS_REG
-#define Rd           READ_CBUS_REG
 
 //#include "ddr_init_sw.c"
 #include "ddr_init_hw.c"
@@ -87,7 +85,36 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 #ifndef CONFIG_CMD_DDR_TEST
 	wait_pll(3,timing_reg->ddr_clk);
 #endif
-    serial_puts("set ddr clock ok!\n");
+       
+#if !defined(CONFIG_M6_NOT_DUMP_DDR_INFO)
+
+	if(!((readl(0xc1107d54) >> 9) & 1))	
+	{
+		//error, because all clk setting base on 24MHz
+		serial_puts("\nERROR! XTAL is wrong, try to reset...\n");
+		__udelay(10000); 
+		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
+		while(1);
+	}
+
+	int nPLL = readl(P_HHI_DDR_PLL_CNTL);
+	int nDDRCLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+	serial_puts("\nDDR clock is ");
+	serial_put_dec(nDDRCLK);
+	serial_puts("MHz with ");
+	
+	#ifdef CONFIG_DDR_LOW_POWER
+	serial_puts("Low Power & ");
+	#endif
+	
+	if(readl(P_UPCTL_MCFG_ADDR)& (1<<3))
+		serial_puts("2T mode\n");
+	else
+		serial_puts("1T mode\n");
+#else
+	serial_puts("\nset ddr clock ok!\n");
+#endif
+
 }
 
 #ifdef DDR_ADDRESS_TEST_FOR_DEBUG
