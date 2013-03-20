@@ -7,6 +7,24 @@
 #define CONFIG_MESON_ARM_GIC_FIQ
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
+/*
+ *  write to efuse/nand when usb_burning 
+ *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
+ */
+#define CONFIG_AML_MESON6
+//#define WRITE_TO_EFUSE_ENABLE        
+#define WRITE_TO_NAND_ENABLE
+
+#if defined(WRITE_TO_NAND_ENABLE)
+#define CONFIG_SECURITYKEY 1
+#define CONFIG_AML_NAND_KEY 1
+#endif
+
+#define CONFIG_HDCP_PREFETCH 1
+
+#if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
+#error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
+#endif
 
 
 #define CONFIG_AML_TINY_USBTOOL
@@ -147,7 +165,7 @@
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
 	"nandargs=nand read logo 0x84100000 0 400000;setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1200000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run update;fi;fi\0" \
-	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000; bootm;run recovery\0" \
+	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"recovery_path=uImage_recovery\0" \
 	"recovery_name=recovery\0" \

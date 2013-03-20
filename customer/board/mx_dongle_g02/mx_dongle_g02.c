@@ -506,7 +506,7 @@ inline int get_key(void)
 	SET_CBUS_REG_MASK(PAD_PULL_UP_REG2, (1<<14)); //enable internal pullup
 	set_gpio_mode(GPIOC_bank_bit0_15(14), GPIOC_bit_bit0_15(14), GPIO_INPUT_MODE);
 	val = get_gpio_val(GPIOC_bank_bit0_15(14), GPIOC_bit_bit0_15(14));
-	printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
+//	printf("%s: get from gpio is %d.\n", __FUNCTION__, val);
 	return !val;
 #else
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
@@ -515,29 +515,42 @@ inline int get_key(void)
 
 int switch_boot_mode(void)
 {
-	unsigned long hold_time = 50000, polling_time = 10000, tmp;
+	unsigned long hold_time = 5000000, polling_time = 10000, tmp;
 	//unsigned long upgrade_step;
-
+	unsigned int key_flag=0;
 
 	while(hold_time > 0)
 	{
 		udelay(polling_time);
 		tmp = get_key();
-		printf("get_key(): %d\n", tmp);
-		if(!tmp)  break;
+		if(tmp && (key_flag<10)) {  
+		    printf("get_key(): %d\n", tmp);
+                    key_flag++;
+                }
+                else if(!tmp && (key_flag>=10) && (key_flag<20)) {
+		    printf("get_key(): %d\n", tmp);
+                    key_flag++;
+                }
+                else if(key_flag>=20)
+                    break;
+        
 		hold_time -= polling_time;
 	}
-
-	if(hold_time > 0)
+        printf("key_flag=%d\n", key_flag);
+	if(key_flag >= 15)
 	{
-		printf("Normal Start...\n");
-		return	1;
+                printf("nand key burning.... please wait\n");
+                run_command ("tiny_usbtool 20000", 0);
+                return 1;
 	}
-	else
+	else if(key_flag == 10)
 	{
 		printf("upgrading... please wait\n");
 		into_recovery();
-	}
+	} else {
+		printf("Normal Start...\n");
+		return	1;
+        }
 
 }
 
