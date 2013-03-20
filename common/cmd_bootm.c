@@ -211,6 +211,9 @@ static void bootm_start_lmb(void)
 #endif
 }
 
+#if defined(CONFIG_ANDROID_IMG) & defined(CONFIG_OF_LIBFDT)
+	static int fdt_addr;
+#endif
 static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	void		*os_hdr;
@@ -289,7 +292,19 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		images.rd_start = ((ulong)temp_android_hdr->kernel_size + 0x800 + (ulong)os_hdr 
 			+  ((ulong)temp_android_hdr->page_size - 1)) & (~((ulong)temp_android_hdr->page_size - 1));
 		images.rd_end = images.rd_start + (ulong)temp_android_hdr->ramdisk_size;
-		printf("	Ramdisk start addr = 0x%x, len = 0x%x\n",images.rd_start,temp_android_hdr->ramdisk_size );
+		printf("    Ramdisk start addr = 0x%x, len = 0x%x\n",images.rd_start,temp_android_hdr->ramdisk_size );
+#if defined(CONFIG_OF_LIBFDT)
+		if(images.ft_len = (ulong)temp_android_hdr->second_size)
+		{
+			fdt_addr = (images.rd_end
+				+ ((ulong)temp_android_hdr->page_size - 1)) & (~((ulong)temp_android_hdr->page_size - 1));
+			images.ft_addr = (char *)fdt_addr;
+			images.ft_len = fdt_totalsize(fdt_addr);
+
+			printf("    Flat device tree start addr = 0x%x, len = 0x%x magic=0x%x\n",
+			*((int *)images.ft_addr),images.ft_len, *(int *)(*((int *)images.ft_addr)));
+		}
+#endif
 		break;
 #endif
 	default:
@@ -340,11 +355,16 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 
 #if defined(CONFIG_OF_LIBFDT)
 		/* find flattened device tree */
-		ret = boot_get_fdt (flag, argc, argv, &images,
-				    &images.ft_addr, &images.ft_len);
-		if (ret) {
-			puts ("Could not find a valid device tree\n");
-			return 1;
+#if defined(CONFIG_ANDROID_IMG)
+		if(!images.ft_addr)
+#endif
+		{
+			ret = boot_get_fdt (flag, argc, argv, &images,
+					    &images.ft_addr, &images.ft_len);
+			if (ret) {
+				puts ("Could not find a valid device tree\n");
+				return 1;
+			}
 		}
 
 		set_working_fdt_addr(images.ft_addr);
