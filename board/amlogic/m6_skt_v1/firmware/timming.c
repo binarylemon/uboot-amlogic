@@ -35,6 +35,19 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define ddr3_col_size 2
 #endif
 
+#if defined(DDR3_2Gbx16) && defined(DDR3_7_7_7)
+#define T_RFC_CLOCK		86
+#elif defined(DDR3_2Gbx16) && defined(DDR3_9_9_9)
+#define T_RFC_CLOCK		107
+#elif defined(DDR3_4Gbx16) && defined(DDR3_7_7_7)
+#define T_RFC_CLOCK		160
+#elif defined(DDR3_4Gbx16) && defined(DDR3_9_9_9)
+#define T_RFC_CLOCK		200
+#else
+#error "don't config ddr3\n"
+#endif
+
+
 static struct ddr_set __ddr_setting={
 
                 #ifdef DDR3_9_9_9
@@ -63,7 +76,7 @@ static struct ddr_set __ddr_setting={
                 #endif
                     .t_refi_100ns   =  39,//78 for temperature over 85 degrees
                 #ifdef DDR3_9_9_9
-                    .t_rfc          = 107,
+                    .t_rfc          = T_RFC_CLOCK,
                     .t_rp           =   9,
                     .t_rrd          =   5,
                     .t_rtp          =   5,
@@ -71,7 +84,7 @@ static struct ddr_set __ddr_setting={
                     .t_wtr          =   5,
                 #endif
                 #ifdef DDR3_7_7_7
-                    .t_rfc          =  86,
+                    .t_rfc          =  T_RFC_CLOCK,
                     .t_rp           =   7,
                     .t_rrd          =   6,
                     .t_rtp          =   4,

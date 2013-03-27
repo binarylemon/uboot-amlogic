@@ -116,7 +116,7 @@
 	"boardname=m1_mbox\0" \
 	"chipname=8726m\0" \
 	"machid=F81\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt \0" \
+	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m hdmitx=vdacoff,powermode1,unplug_powerdown \0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -130,7 +130,17 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 
-#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+//#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0:1 82000000 uimage;bootm"
+#define CONFIG_BOOTCOMMAND  "mmcinfo;fatload mmc 0 82000000 boot.img;bootm"
+
+#if 0
+/*
+ * set below pararmeter, Android can work ok with 512M memory
+ * */
+setenv bootargs "root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=300m a9_clk_max=960M"
+set bootcmd 'mmcinfo;fatload mmc 0:1 82000000 uimage;bootm'
+save
+#endif
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -224,6 +234,7 @@
 //Please just define M6 DDR clock here only
 //current DDR clock range (300~600)MHz
 #define M6_DDR_CLK (480)
+//#define M6_DDR_CLK (480-12*5)
 
 //#define CONFIG_DDR_LOW_POWER 1
 
@@ -237,8 +248,8 @@
 	#error "Please set DDR3 property first in file m6_skt_v1.h\n"
 #endif
 
-//#define M2C_DDR3_1GB
-#define M6_DDR3_512M
+#define M6_DDR3_1GB
+//#define M6_DDR3_512M
 //above setting will affect following:
 //board/amlogic/m6_skt_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m6/mmutable.s
@@ -298,6 +309,7 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+#define CONFIG_ANDROID_IMG 1
 
 /*
 * CPU switch test for uboot
