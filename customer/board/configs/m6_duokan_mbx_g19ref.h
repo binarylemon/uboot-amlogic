@@ -8,6 +8,25 @@
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
+/*
+ *  write to efuse/nand when usb_burning 
+ *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
+ */
+#define CONFIG_AML_MESON6
+//#define WRITE_TO_EFUSE_ENABLE        
+#define WRITE_TO_NAND_ENABLE
+
+#if defined(WRITE_TO_NAND_ENABLE)
+#define CONFIG_SECURITYKEY 1
+#define CONFIG_AML_NAND_KEY 1
+#endif
+
+#define CONFIG_HDCP_PREFETCH 1
+
+#if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
+#error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
+#endif
+
 
 #define CONFIG_AML_TINY_USBTOOL
 
@@ -122,7 +141,7 @@
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
-#define CONFIG_BOOTFILE		uImage
+#define CONFIG_BOOTFILE		boot.img
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
@@ -149,16 +168,17 @@
 	"outputmode=720p\0" \
 	"outputtemp=720p\0" \
 	"cvbsenable=true\0" \
-	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
+	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
 	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
+	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then tiny_usbtool 20000; fi; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=run cvbscheck;nand read aml_logo 0x84100000 0 400000;setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"nandargs=nand read logo 0x83000000 0 800000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
-	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 400000; bootm;run recovery\0" \
-	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} uImage_recovery; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 hlt vmalloc=256m mem=1024m\0" \
+	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
+	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 hlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
 	"cdc_connect_timeout=9999999999" \
@@ -177,7 +197,9 @@
 
 #define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
+#ifndef CONFIG_JERRY_NAND_TEST
 //#define CONFIG_NAND_BOOT 1
+#endif
 
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_AMLROM_NANDBOOT 1
