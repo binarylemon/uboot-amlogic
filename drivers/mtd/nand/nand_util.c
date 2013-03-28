@@ -1154,7 +1154,7 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
         memset(tmp_buf,0,nand->writesize+nand->oobsize);
         page_no = 0;
         addr_from = (block_num << chip->phys_erase_shift) + (page_no<<chip->page_shift);
-    	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,&raw_ops);
+    	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,(struct mtd_oob_ops *)&raw_ops);
     	if (rval && rval != -EUCLEAN) {
     		printf ("NAND read from offset %zx failed %d\n",
     			(size_t)offset, rval);
@@ -1172,7 +1172,7 @@ int nand_raw_read_nand_dev(nand_info_t *nand, loff_t offset, loff_t *length,
         memset(tmp_buf,0,nand->writesize+nand->oobsize);
         page_no = nand->erasesize/nand->writesize - 1;
         addr_from = ( block_num << chip->phys_erase_shift) + (page_no<<chip->page_shift);
-    	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,&raw_ops);
+    	rval = nand_raw_read_factory_info(nand,addr_from,nand->writesize,&retlen,tmp_buf,(struct mtd_oob_ops *)&raw_ops);
     	if (rval && rval != -EUCLEAN) {
     		printf ("NAND read from offset %zx failed %d\n",
     			(size_t)offset, rval);

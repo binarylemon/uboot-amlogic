@@ -30,9 +30,9 @@
 
 int do_calc (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int val0, val1, result;
+	int val0, val1, result = 0;
 	char operator;
-	char *result_str[32];
+	char result_str[32];
 
 	if (argc != 5)
 		return cmd_usage(cmdtp);

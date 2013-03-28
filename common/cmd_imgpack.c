@@ -45,7 +45,7 @@ static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		return -1;
 	}
 
-	addr = simple_strtoul (argv[1], NULL, 16);
+	addr = (void *)simple_strtoul (argv[1], NULL, 16);
 	pos = 0;
 	while(1)
 	{
@@ -57,7 +57,7 @@ static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		}
 
 		sprintf(env_name, "%s_offset", pack_header_p->name);
-		sprintf(env_data, "0x%x", addr+pack_header_p->start);
+		sprintf(env_data, "0x%x", (unsigned int)(addr+pack_header_p->start));
 		setenv(env_name, env_data);
 		
 		sprintf(env_name, "%s_size", pack_header_p->name);

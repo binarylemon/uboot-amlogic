@@ -47,6 +47,7 @@ static void hx_disable_mmc_req(void)
 	}
 }
 
+#if 0
 static void hx_enable_mmc_req(void)
 {
 	f_serial_puts("hx_enable_mmc_req\n");
@@ -54,6 +55,7 @@ static void hx_enable_mmc_req(void)
 	writel(0x1ff, P_MMC_REQ_CTRL);
 	__udelayx(100);
 }
+#endif
 
 //temp solution for DDR resume fail with Android
 //To Android system reset MMC will cause 
@@ -85,10 +87,18 @@ static void hx_reset_mmc(void)
 }
 
 #define  UPCTL_STAT_MASK		(7)
+#ifndef  UPCTL_STAT_INIT
 #define  UPCTL_STAT_INIT        (0)
+#endif
+#ifndef  UPCTL_STAT_CONFIG
 #define  UPCTL_STAT_CONFIG      (1)
+#endif
+#ifndef  UPCTL_STAT_ACCESS
 #define  UPCTL_STAT_ACCESS      (3)
+#endif
+#ifndef  UPCTL_STAT_LOW_POWER
 #define  UPCTL_STAT_LOW_POWER   (5)
+#endif
 
 #define  UPCTL_CMD_INIT         (0) 
 #define  UPCTL_CMD_CONFIG       (1) 
@@ -120,6 +130,7 @@ static void hx_mmc_sleep(void)
 	
 }
 
+#if 0
 static void hx_mmc_wakeup(void)
 {
 	f_serial_puts("hx_mmc_wakeup\n");
@@ -141,6 +152,7 @@ static void hx_mmc_wakeup(void)
 		
 	} while(stat != UPCTL_STAT_ACCESS);
 }
+#endif
 
 //ddr training result
 typedef enum {
@@ -180,8 +192,10 @@ typedef enum {
 //	_HHI_AUDCLK_PLL_CNTL5,_HHI_AUDCLK_PLL_CNTL6,  													//108
 		
 } back_reg_index;
-    
+
+#ifndef DDR_SETTING_COUNT
 #define DDR_SETTING_COUNT 128
+#endif
 static unsigned int g_ddr_settings[DDR_SETTING_COUNT];
 void hx_save_ddr_settings()
 {	
@@ -361,6 +375,8 @@ void hx_save_ddr_settings()
 	serial_puts("\n");	
 	*/	
 }
+
+#if 0
 static void hx_dump_ddr_settings()
 {
 	f_serial_puts("hx_dump_ddr_settings\n");
@@ -538,6 +554,7 @@ static void hx_dump_mmc_dmc_all()
 
 #undef DDR_SUSPEND_DUMP_ALL 
 }
+#endif
 
 static void hx_store_restore_plls(int flag)
 {
@@ -835,7 +852,7 @@ pub_retry:
 	if(g_ddr_settings[_PUB_ZQ0CR0])
 	    nTempVal =	PUB_PIR_INIT | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
 	else
-        nTempVal =	PUB_PIR_INIT | PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL;
+        nTempVal =	PUB_PIR_INIT | PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL | \
 					PUB_PIR_PHYRST;
 	writel(nTempVal, P_PUB_PIR_ADDR);
 	//while( !(readl(P_PUB_PGSR0_ADDR) & 1 ) ) {}
@@ -1032,6 +1049,7 @@ static void hx_init_ddr_pll()
 	__udelayx(100);
 }
 
+extern void wait_uart_empty();
 void hx_leave_power_down()
 {	
 	f_serial_puts("step 8\n");	
@@ -1064,14 +1082,13 @@ int ddr_suspend_test()
 {
 	int abort = 0;
 
-	int bootdelay = 1;
-	int nLen = 0;
-	
 	//DDR save setting
 	hx_save_ddr_settings();	
 	//DDR suspend
 	hx_enter_power_down();	
 #if 0
+	int bootdelay = 1;
+	int nLen = 0;
 	f_serial_puts("Hit any key to stop power down: (second counting) ");
 	nLen = hx_serial_put_dec(bootdelay);
 	

@@ -804,7 +804,6 @@ unsigned long    clk_util_clk_msr(unsigned long   clk_mux, unsigned long   uS_ga
     clrsetbits_le32(P_MSR_CLK_REG0,
         (0xf << 20)|(1<<19)|(1<<16),
         (clk_mux<<20) |(1<<19)|(1<<16));
-    { unsigned long dummy_rd = readl(P_MSR_CLK_REG0); }
     // Wait for the measurement to be done
     while( (readl(P_MSR_CLK_REG0) & (1 << 31)) ) {} 
     // disable measuring

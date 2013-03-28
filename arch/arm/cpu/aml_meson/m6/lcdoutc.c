@@ -494,6 +494,7 @@ static void set_video_spread_spectrum(int video_pll_sel, int video_ss_level)
 	//debug("set video spread spectrum %d%%.\n", video_ss_level);	
 }
 
+extern void mdelay(unsigned long msec);
 static void vclk_set_lcd(int lcd_type, int pll_sel, int pll_div_sel, int vclk_sel, unsigned long pll_reg, unsigned long vid_div_reg, unsigned int xd)
 {
     debug("setup lcd clk.\n");
@@ -624,10 +625,10 @@ static void vclk_set_lcd(int lcd_type, int pll_sel, int pll_div_sel, int vclk_se
       WRITE_MPEG_REG_BITS (HHI_VID_CLK_CNTL, 0, 15, 1);  //release soft reset
     }
 
-    printf("video pl1 clk = %d\n", clk_util_clk_msr(VID_PLL_CLK));
-    printf("video pll2 clk = %d\n", clk_util_clk_msr(VID2_PLL_CLK));
-    printf("cts_enct clk = %d\n", clk_util_clk_msr(CTS_ENCT_CLK));
-	printf("cts_encl clk = %d\n", clk_util_clk_msr(CTS_ENCL_CLK));
+    printf("video pl1 clk = %d\n", (int)clk_util_clk_msr(VID_PLL_CLK));
+    printf("video pll2 clk = %d\n", (int)clk_util_clk_msr(VID2_PLL_CLK));
+    printf("cts_enct clk = %d\n", (int)clk_util_clk_msr(CTS_ENCT_CLK));
+	printf("cts_encl clk = %d\n", (int)clk_util_clk_msr(CTS_ENCL_CLK));
 }
 
 static void set_pll_ttl(Lcd_Config_t *pConf)
@@ -1105,7 +1106,7 @@ static void set_control_lvds(Lcd_Config_t *pConf)
     WRITE_MPEG_REG( LVDS_GEN_CNTL, (READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 0)) );  //fifo enable 
     //WRITE_MPEG_REG( LVDS_GEN_CNTL, (READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 3))); // enable fifo
 	
-	printf("lvds fifo clk = %d\n", clk_util_clk_msr(LVDS_FIFO_CLK));	
+	printf("lvds fifo clk = %d\n", (int)clk_util_clk_msr(LVDS_FIFO_CLK));	
 }
 
 static void set_control_mlvds(Lcd_Config_t *pConf)

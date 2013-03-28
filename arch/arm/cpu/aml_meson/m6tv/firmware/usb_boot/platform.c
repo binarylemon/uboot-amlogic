@@ -15,7 +15,8 @@
 #else
 #define PREI_USB_PHY_REG_BASE   PREI_USB_PHY_A_REG_BASE
 #endif
-#define P_RESET1_REGISTER                           (volatile unsigned long *)0xc1104408
+//#define P_RESET1_REGISTER                           (volatile unsigned long *)0xc1104408
+#define P_RESET1_REGISTER_USB                           (volatile unsigned long *)0xc1104408
 #define USB_CLK_SEL_XTAL				0
 #define USB_CLK_SEL_XTAL_DIV_2	1
 #define USB_CLK_SEL_DDR_PLL			2
@@ -83,7 +84,8 @@ static void set_usb_phy_config(int cfg)
     usb_config_data_t config;
     usb_ctrl_data_t control;
 
-		*P_RESET1_REGISTER = (1<<2);//usb reset
+//		*P_RESET1_REGISTER = (1<<2);//usb reset
+		*P_RESET1_REGISTER_USB = (1<<2);//usb reset
 
   	config.d32 = usb_aml_regs->config;
   	if(cfg == EXT_CLOCK)
@@ -127,8 +129,8 @@ void usb_memcpy(char * dst,char * src,int len)
 	while(len--)
 	{
 		*(unsigned char*)dst = *(unsigned char*)src;
-		(unsigned char*)dst++;
-		(unsigned char*)src++;
+		dst++;
+		src++;
 	}
 }
 void usb_memcpy_32bits(int *dst,int *src,int len)

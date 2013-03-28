@@ -1709,7 +1709,7 @@ usb_lowlevel_init(void)
     dwc_otg_device_t *dwc_otg_device = &dwc_otg_dev;
     int             retval = 0;
     int32_t         snpsid;
-    int             i,id_mode,port_idx;
+    int             i,id_mode,port_idx = 100;	//remove warning.
     amlogic_usb_config_t * usb_config;
     
     printf("dwc_usb driver version: %s\n",DWC_DRIVER_VERSION);

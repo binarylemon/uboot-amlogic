@@ -1670,7 +1670,7 @@ void aml_nand_set_toggle_mode_toshiba(struct mtd_info *mtd, int chipnr)
 void aml_nand_debug_toggle_flash(struct mtd_info *mtd, int chipnr)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct aml_nand_platform *plat = aml_chip->platform;
+//	struct aml_nand_platform *plat = aml_chip->platform;
 	
      if(aml_chip->mfr_type == NAND_MFR_TOSHIBA){
 
@@ -1839,7 +1839,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	int nr, i, error = 0, part_save_in_env = 1, file_system_part = 0, phys_erase_shift;
 	u8 part_num = 0;
 	loff_t offset;
-    loff_t adjust_offset = 0,key_block;
+    loff_t adjust_offset = 0;
 	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE )) ? mtd->erasesize : (NAND_MINI_PART_SIZE ));
 	//uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
 
@@ -1946,6 +1946,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 			}
 		}
 #ifdef CONFIG_AML_NAND_KEY
+		loff_t key_block;
 		temp_parts = parts + (nr-1);
 		key_block = aml_chip->aml_nandkey_info->end_block - aml_chip->aml_nandkey_info->start_block + 1;
 
@@ -2119,6 +2120,7 @@ static int aml_nand_dev_ready(struct mtd_info *mtd)
 	return NFC_GET_RB_STATUS(aml_chip->rb_received);
 }
 
+#if 0
 static int aml_platform_dma_waiting(struct aml_nand_chip *aml_chip)
 {
 	unsigned time_out_cnt = 0;
@@ -2135,6 +2137,7 @@ static int aml_platform_dma_waiting(struct aml_nand_chip *aml_chip)
 
 	return -EBUSY;
 }
+#endif
 
 static int aml_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 {
@@ -5512,7 +5515,7 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 	struct aml_nand_platform *plat = aml_chip->platform;
 	int32_t read_cnt, page, pages_per_blk;
 	loff_t addr, offset;
-	int  start_blk, total_blk, i, j, bad_blk_cnt = 0, phys_erase_shift;
+	int  start_blk = 0, total_blk = 0, i, j, bad_blk_cnt = 0, phys_erase_shift;
 	int realpage, col0_data=0, col0_oob=0, valid_page_num = 1, internal_chip;
 	int col_data_sandisk[6], bad_sandisk_flag=0;
 

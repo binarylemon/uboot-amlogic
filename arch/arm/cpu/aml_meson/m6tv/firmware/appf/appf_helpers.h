@@ -123,7 +123,7 @@ extern int num_cpus_from_a9_scu(unsigned scu_address);
 extern void update_offset(void);
 extern unsigned  reloc_addr(unsigned);
 
-#define __V(addr) (*((unsigned*)reloc_addr(&addr)))
+#define __V(addr) (*((unsigned*)reloc_addr((unsigned)&addr)))
 
 /*
  * GCC Compatibility

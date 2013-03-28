@@ -78,7 +78,7 @@ int axp_charger_get_charging_status(void)
 	}
 }
 
-static int axp_get_basecap()
+static int axp_get_basecap(void)
 {
 	uint8_t val;
 
@@ -103,7 +103,7 @@ static void axp_set_basecap(int base_cap)
 }
 
 /* 得到开路电压 */
-static int axp_get_ocv()
+static int axp_get_ocv(void)
 {
 	int battery_ocv;
 	uint8_t v[2];
@@ -118,7 +118,8 @@ static int axp_get_ocv()
 static int axp_get_coulomb(void)
 {
 	uint8_t  temp[8];
-	int64_t  rValue1,rValue2,rValue;
+	int64_t  rValue1,rValue2;
+	uint64_t rValue;
 	int Cur_CoulombCounter_tmp,m;
 
 
@@ -319,10 +320,10 @@ static int get_ocv_batteryCap(int init_yes)
 #endif
 
 
-int axp_charger_get_charging_percent()
+int axp_charger_get_charging_percent(void)
 {
 
-	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
+	int Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
 		battery_ocv, charging_status, is_ac_online, icharging;
 	uint8_t val;
 	struct axp_adc_res axp_adc;
@@ -535,7 +536,7 @@ int axp_charger_set_usbcur_limit(int usbcur_limit)
 			val |= 0x0;
 			break;
 		default:
-			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n");
+			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n", usbcur_limit);
 			return -1;
 			break;
 	}
@@ -561,7 +562,7 @@ int set_dcdc2(u32 val)
 		printf("axp_write(): Failed!\n");
 		return -1;
 	}
-	if(axp_read(POWER20_DC2OUT_VOL, &reg_val))
+	if(axp_read(POWER20_DC2OUT_VOL, (uint8_t *)&reg_val))
 	{
 		printf("axp_read(): Failed!\n");
 		return -1;
@@ -585,7 +586,7 @@ int set_dcdc3(u32 val)
 		printf("axp_write(): Failed!\n");
 		return -1;
 	}
-	if(axp_read(POWER20_DC3OUT_VOL, &reg_val))
+	if(axp_read(POWER20_DC3OUT_VOL, (uint8_t *)&reg_val))
 	{
 		printf("axp_read(): Failed!\n");
 		return -1;

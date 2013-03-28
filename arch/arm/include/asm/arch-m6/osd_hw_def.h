@@ -256,6 +256,7 @@ static update_func_t hw_func_array[HW_OSD_COUNT][HW_REG_INDEX_MAX]={
 	},
 };
 
+extern void mdelay(unsigned long msec);
 #ifdef FIQ_VSYNC
 #define add_to_update_list(osd_idx,cmd_idx) \
 	spin_lock_irqsave(&osd_lock, lock_flags); \

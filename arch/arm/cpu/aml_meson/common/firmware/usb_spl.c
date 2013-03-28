@@ -57,8 +57,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 #endif
-
-	int i;
 		
     //Adjust 1us timer base
     timer_init();

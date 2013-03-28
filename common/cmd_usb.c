@@ -712,6 +712,7 @@ int do_usbbc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	board_usb_start(BOARD_USB_MODE_CHARGER);
 	board_usb_stop(BOARD_USB_MODE_CHARGER);
+	return 0;
 }
 U_BOOT_CMD(
 	usbbc,	3,	1,	do_usbbc,

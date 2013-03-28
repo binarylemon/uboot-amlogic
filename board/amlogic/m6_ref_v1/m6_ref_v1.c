@@ -379,6 +379,7 @@ struct aml_nand_device aml_nand_mid_device = {
 //@board schematic: m3_skt_v1.pdf
 //@pinmax: AppNote-M3-CorePinMux.xlsx
 //GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
+#if 0
 static void gpio_set_vbus_power(char is_power_on)
 {
 	if(is_power_on)
@@ -404,6 +405,7 @@ static void gpio_set_vbus_power(char is_power_on)
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
+#endif
 
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
@@ -444,6 +446,8 @@ int board_late_init(void)
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 #ifdef CONFIG_AW_AXP20
+extern int set_dcdc2(u32 val);
+extern int set_dcdc3(u32 val);
 set_dcdc2(1500);	//set DC-DC2 to 1500mV
 set_dcdc3(1100);	//set DC-DC3 to 1100mV
 #endif
@@ -465,17 +469,20 @@ inline int get_key(void)
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
 
+extern int axp_charger_is_ac_online(void);
 inline int is_ac_online(void)
 {
 	return axp_charger_is_ac_online();
 }
 
+extern void axp_power_off(void);
 //Power off
 void power_off(void)
 {
 	axp_power_off();
 }
 
+extern int axp_charger_get_charging_percent(void);
 inline int get_charging_percent(void)
 {
 	return axp_charger_get_charging_percent();

@@ -8,6 +8,14 @@
 #include <common.h>
 #include <command.h>
 
+extern inline void key_init(void);
+extern inline int get_key(void);
+extern inline int is_ac_online(void);
+extern void power_off(void);
+extern inline int get_charging_percent(void);
+extern inline int set_charging_current(int current);
+extern int axp_charger_set_usbcur_limit(int usbcur_limit);
+
 
 static int do_getkey (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -74,7 +82,7 @@ static int do_get_batcap (cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 {
 	char precent_str[16];
 	int precent = get_charging_percent();
-	printf("Battery CAP: %d%\n", precent);
+	printf("Battery CAP: %d%%\n", precent);
 	sprintf(precent_str, "%d", precent);
 	setenv("battery_cap", precent_str);
 	return 0;

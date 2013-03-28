@@ -3,6 +3,10 @@
 #include <asm/arch/uart.h>
 #include <asm/arch/reg_addr.h>
 
+extern void f_serial_puts(const char *s);
+extern void wait_uart_empty();
+extern void udelay(int i);
+
 /*Inorder to save power for core1.1v, 
 we need let A9 enter auto gate off & decrease core input clk*/
 //unsigned int hhi_sys_cpu_clk_cntl;

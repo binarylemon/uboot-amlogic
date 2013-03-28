@@ -179,7 +179,7 @@ static const char dt_string_serial[DT_STRING_SERIAL_LEN]={
 	0
 };
 #endif
-int usb_pcd_init()
+int usb_pcd_init(void)
 {
 	return dwc_core_init();
 }
@@ -187,7 +187,7 @@ int usb_pcd_init()
 static unsigned int need_check_timeout;
 static unsigned int time_out_val;
 
-void usb_parameter_init()
+void usb_parameter_init(void)
 {
 	need_check_timeout = 0;
 	/* clear utimer */
@@ -195,7 +195,7 @@ void usb_parameter_init()
 	time_out_val = USB_ROM_CONN_TIMEOUT; // wait PC GetDescriptor command 
 }
 
-int usb_pcd_irq()
+int usb_pcd_irq(void)
 {
 	
 	if(need_check_timeout){
@@ -428,6 +428,8 @@ void do_vendor_request( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 
 	return;
 }
+
+extern int usb_run_command (const char *cmd, char *buffer);
 /*
  * This function will be called after a whole SETUP-OUT-IN transfer.
  */

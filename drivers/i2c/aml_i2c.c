@@ -669,7 +669,7 @@ int aml_i2c_init(void)
 int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
 	int ret;
-	struct i2c_msg *msgs;
+	struct i2c_msg *msgs = {0};
     /*
 	 * I2C data address within the chip.  This can be 1 or
 	 * 2 bytes long.  Some day it might be 3 bytes long :-).
@@ -776,7 +776,7 @@ int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buffer, int len)
 {
 	int ret;
-	int length;
+	int length = 0;
 	struct i2c_msg *msgs;
 	uint8_t buff[3];
 
@@ -785,7 +785,7 @@ int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buf
 	 * 2 bytes long.  Some day it might be 3 bytes long :-).
 	 * here,if it has 2 bytes long at most.
 	 */
-	uint8_t devaddr[2];
+	uint8_t devaddr[2] = {0};
 
 	switch(alen)                        
 	{
@@ -895,7 +895,7 @@ int i2c_probe(uchar chip)
        	 	.addr = chip,
         	.flags = 0,			//write
         	.len = 1,
-         	.buf = &addr,
+         	.buf = (unsigned char *)&addr,
        		}
     	};
 

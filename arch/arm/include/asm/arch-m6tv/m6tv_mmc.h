@@ -349,7 +349,9 @@
 #define P_PUB_DX8GSR2_ADDR              0xc80013f4
 
 //DMC register.
+#ifndef P_MMC_DDR_CTRL
 #define P_MMC_DDR_CTRL        0xc8006000
+#endif
   //bit 25:16.   ddr command filter bank and read write over timer limit.
   //bit 7        ddr command filter bank policy. 1 = keep open. 0 : close bank if no request.
   //bit 6.       ddr address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.    
@@ -572,8 +574,9 @@
 #define P_MMC_MON_ALL_GRANT_CNT     0xc8006194
   // at the test period,  the whole MMC granted data cycles. 64bits unit. 
 
-
+#ifndef P_MMC_REQ_CTRL
 #define P_MMC_REQ_CTRL        0xc8006400 
+#endif
 //bit 8:0.      enable bit for the 9 channel request.   1 = enable.
 //bit 8.   HCODEC.
 //bit 7.   AUDIO.
@@ -585,7 +588,9 @@
 //bit 1.   MALI.
 //bit 0.   A9 CPU.
 
+#ifndef P_MMC_SOFT_RST
 #define P_MMC_SOFT_RST        0xc8006404
+#endif
   // level reset.  0 = reset.  1 = deassert reset.
   // bit 30.  lower power control module reset bit.
   // bit 29.  PHY IP reset bit.
@@ -629,11 +634,15 @@
   // bit 2.  chan2 async fifo master clock domain reset bit.
   // bit 1.  chan1 async fifo master clock domain reset bit.
   // bit 0.  chan0 async fifo master clock domain reset bit.
+#ifndef P_MMC_RST_STS
 #define P_MMC_RST_STS         0xc800640c
+#endif
   //MMC_SOFT_RST reset bits return.  For example, if you write one bit to 0, you can check the related return bit became to 0.  that means the 0 is propagated to that module correctly. 
 #define P_MMC_RST_STS1        0xc8006410
   //MMC_SOFT_RST1  reset bits returns.
+#ifndef P_MMC_CLK_CNTL
 #define P_MMC_CLK_CNTL        0xc800641c
+#endif
   //bit 9:8.  PUBL, uPCTL and DMC APB clock control. 
           //2'b00:  disable APB  
           //2'b01:  ddr pll clock /2. 
@@ -727,7 +736,9 @@
   //bit 2.  force disable  channel 2 clock. 
   //bit 1.  force disable  channel 1 clock. 
   //bit 0.  force disable  channel 0 clock. 
+#ifndef MMC_CMDZQ_CTRL
 #define MMC_CMDZQ_CTRL       0xc8006458 
+#endif
   //bit 20.   force command lane ZQ CTRL use register bit 19:0 value
   //bit 19:0. the value used for command lane ZQ CTRL. 
 

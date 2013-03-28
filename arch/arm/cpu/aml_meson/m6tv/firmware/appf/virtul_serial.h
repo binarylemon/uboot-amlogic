@@ -18,7 +18,7 @@ static void delay_tick(int count)
                for(i = 0; i < 100; i++);
                count--;
        };
-       return count;
+//       return count;
 }
 static void serial_putc(const char c)
 {

@@ -74,6 +74,7 @@ int flagc = 0;
 int flagd = 0;
 static void _lcd_init(Lcd_Config_t *pConf) ;
 
+#if 0
 static void set_lcd_gamma_table_ttl(u16 *data, u32 rgb_mask)
 {
     int i;
@@ -109,6 +110,7 @@ static void set_lcd_gamma_table_lvds(u16 *data, u32 rgb_mask)
                                     (0x1 << rgb_mask)   |
                                     (0x23 << HADR));
 }
+#endif
 
 static void write_tcon_double(Mlvds_Tcon_Config_t *mlvds_tcon)
 {
@@ -772,8 +774,7 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
 
     int pll_div_post;
     int phy_clk_div2;
-    int FIFO_CLK_SEL;
-    unsigned long rd_data;
+//    unsigned long rd_data;
 
     unsigned pll_reg, div_reg, xd;
     int pll_sel, pll_div_sel, vclk_sel;
@@ -1419,16 +1420,21 @@ static inline void _enable_vsync_interrupt(void)
         WRITE_MPEG_REG(VENC_INTCTRL, 0x2);
     }
 }
+
+#if 0
 static void _enable_backlight(u32 brightness_level)
 {
     //pDev->conf.backlight_on?pDev->conf.backlight_on():0;
     panel_oper.bl_on();
 }
+#endif
+
 /*static void _disable_backlight(void)
 {
     //pDev->conf.backlight_off?pDev->conf.backlight_off():0;
     panel_oper.bl_off();
 }*/
+extern void mdelay(unsigned long msec);
 static void _lcd_module_enable(void)
 {
 #if 0
@@ -1456,10 +1462,12 @@ static void _lcd_module_enable(void)
     _enable_vsync_interrupt();
 }
 
+#if 0
 static const vinfo_t *lcd_get_current_info(void)
 {
     return &pDev->lcd_info;
 }
+#endif
 
 static int lcd_set_current_vmode(vmode_t mode)	//…Ë÷√∆¡øÌ
 {

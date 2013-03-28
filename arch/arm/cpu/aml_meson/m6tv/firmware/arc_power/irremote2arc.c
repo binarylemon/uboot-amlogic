@@ -52,7 +52,6 @@ void resume_remote_register(void)
 static int ir_remote_init_32k_mode(void)
 {
     unsigned int control_value,status,data_value;
-    int i;
 
     int val = readl(P_AO_RTI_PIN_MUX_REG);
 		writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);

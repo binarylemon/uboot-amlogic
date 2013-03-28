@@ -238,7 +238,7 @@ int writeenv(size_t offset, u_char *buf)
 
 		error = mtd->write_oob(mtd, addr, &aml_oob_ops);
 		if (error) {
-			printf("blk check good but write failed: %llx, %d\n", offset, error);
+			printf("blk check good but write failed: %llx, %d\n", (long long unsigned int)offset, error);
 			return 1;
 		}
 
@@ -607,7 +607,7 @@ void env_relocate_spec (void)
 			saveenv();
 		return;
 	}	
-	env_import(&env_buf, 1);
+	env_import((char *)&env_buf, 1);
 	
 #endif /* ! ENV_IS_EMBEDDED */
 }

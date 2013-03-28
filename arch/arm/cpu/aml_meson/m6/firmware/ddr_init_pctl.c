@@ -103,7 +103,6 @@ static unsigned short zqcr = 0;
 int init_pctl_ddr3(struct ddr_set * timing_reg)
 {	
 	int nTempVal;
-	int i;
 	int ret = 0;
 
 	//UPCTL memory timing registers

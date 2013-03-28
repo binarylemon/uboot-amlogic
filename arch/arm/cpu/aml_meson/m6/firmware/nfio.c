@@ -21,7 +21,7 @@ read one page only
 #define DEFAULT_ECC_MODE  ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
 
 #if 1
-STATIC_PREFIX short retry_micron_handle(unsigned retry_cnt)
+STATIC_PREFIX void retry_micron_handle(unsigned retry_cnt)
 {
 	serial_puts("enter retry_cnt=0x");
 	serial_put_hex(retry_cnt,32);
@@ -41,7 +41,7 @@ STATIC_PREFIX short retry_micron_handle(unsigned retry_cnt)
     writel(CE0 | IDLE,P_NAND_CMD);
 }
 
-STATIC_PREFIX short retry_micron_exit()
+STATIC_PREFIX void retry_micron_exit(void)
 {
     serial_puts("retry_micron_exit\n");
     

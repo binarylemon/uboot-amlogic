@@ -8,7 +8,7 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
-#define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
+//#define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
 #define dbg_puts(s) f_serial_puts(s);wait_uart_empty();
 
 #if 0
@@ -472,7 +472,6 @@ void reset_ddr_dll(void) {
 
 void init_pctl(void)
 {
-	int nTempVal;
 	int stat;
   
 	MMC_Wr(MMC_PHY_CTRL,v_mmc_phy_ctrl);
@@ -530,7 +529,7 @@ void init_pctl(void)
 	  __udelay(50);
 	//wait PHY DLL LOCK
 	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
-	dbg_out("d",2);
+	dbg_out(("d"),2);
 
 	// configure DDR3_rst pin.
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
@@ -814,7 +813,7 @@ void init_pctl(void)
 */
 //	MMC_Wr(MMC_REQ_CTRL, 0xff ); Already enable request in kreboot.s
 	
-	return 0;
+	return;
 }
 
 void power_down_ddr_phy(void)

@@ -472,7 +472,7 @@ static void test_pattern (void)
 /************************************************************************************************/
 #ifdef CONFIG_CMD_ADC_POWER_KEY
 
-static do_lcdoptcmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_lcdoptcmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 
 	if (argc  < 2){

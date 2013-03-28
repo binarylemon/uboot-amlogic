@@ -201,6 +201,11 @@ void dcache_clean_range(unsigned start,unsigned size)
 
 void _clean_invd_dcache(void);
 */
+
+//function declaration, in order to remove warnings.
+void l2x0_disable();
+void l2x0_disable_ref();
+
 static void cache_wait(unsigned reg, unsigned long mask)
 {
 	/* wait for the operation to complete */

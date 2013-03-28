@@ -201,7 +201,7 @@ arg_off_size(int argc, char *argv[], nand_info_t *nand, loff_t *off, loff_t *siz
 	}
 
 #if defined(CONFIG_CMD_MTDPARTS)
-out:
+//out:
 #endif
 	//printf("device %d ", idx);
 	if (*size == nand->size)

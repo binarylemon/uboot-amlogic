@@ -16,9 +16,9 @@
 
 //#define Wr(addr, data) *(volatile unsigned long *)(0xc1100000|(addr<<2))=data
 //#define Rd(addr) *(volatile unsigned long *)(0xc1100000|(addr<<2))
-//#define Wr_reg_bits(reg, val, start, len) \
-//			  Wr(reg, ((Rd(reg) & ~(((1L<<(len))-1)<<(start))) | ((unsigned int)(val) << (start))))
-
+/*#define Wr_reg_bits(reg, val, start, len) \
+			  Wr(reg, ((Rd(reg) & ~(((1L<<(len))-1)<<(start))) | ((unsigned int)(val) << (start))))
+*/
 //
 // Reading file:  ./register_map.h
 //

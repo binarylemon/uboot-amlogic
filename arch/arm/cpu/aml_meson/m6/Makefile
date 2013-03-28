@@ -43,12 +43,12 @@ power_firmware:
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
 ifdef CONFIG_CMD_RUNARC
-		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+#		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
 endif
 else
 power_firmware:
 ifdef CONFIG_CMD_RUNARC
-		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+#		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
 endif
 endif
 

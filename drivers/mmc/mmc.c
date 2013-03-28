@@ -254,7 +254,7 @@ mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 			//printf("erase_ssize = %d\n",erase_ssize);
 
 			if (erase_blk_en == 1) {
-				uint erase_factor = mmc->write_bl_len / 512;
+				erase_factor = mmc->write_bl_len / 512;
 				erase_ssize = 1; //blk cnt
 			}
 

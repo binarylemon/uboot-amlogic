@@ -107,9 +107,10 @@ static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 {
 	unsigned long delay = 1000;
-	int port_idx;
+	int port_idx = 100;
 	unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
 	usb_peri_reg_t *peri_a,*peri_b,*peri_c,*peri_d,*peri;
+	peri = NULL;
 	usb_ctrl_data_t control;
 
 	peri_a = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_A);

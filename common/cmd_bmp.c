@@ -144,9 +144,9 @@ static int do_bmp_scale(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 	case 3:
 		src_addr = simple_strtoul(argv[1], NULL, 16);
 		dst_addr = simple_strtoul(argv[2], NULL, 16);
-		width = simple_strtoul(getenv("display_width"), NULL, NULL);
-		height = simple_strtoul(getenv("display_height"), NULL, NULL);
-		printf("src_addr=0x%x,dst_addr=0x%x,w=%d,h=%d\n",src_addr,dst_addr,width,height);
+		width = simple_strtoul(getenv("display_width"), NULL, 0);
+		height = simple_strtoul(getenv("display_height"), NULL, 0);
+		printf("src_addr=0x%x,dst_addr=0x%x,w=%d,h=%d\n",(uint)src_addr,(uint)dst_addr,width,height);
 		break;
 	default:
 		return cmd_usage(cmdtp);
@@ -299,7 +299,7 @@ static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsi
 	char *pBuf_dst = (char*)bmp_dst+bmp_dst->header.data_offset;
 
 #if 1//Fast scale
-	int   nWidth   ,   nHeight	 ,	 nNewWidth	 ,	 nNewHeight   ,   nNewWidthBit	 ,	 nWidthBit; 
+	int   nWidth   ,   nHeight	 ,	 nNewWidth	 ,	 nNewHeight   ,   nNewWidthBit; 
 	float m_xscale,m_yscale;
 	int i,j,x,y,oldoffset;	
 	char *pNewTmp = NULL; 

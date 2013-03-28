@@ -157,9 +157,13 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
    cmd_clk_divide=__plls.sdio_cmd_clk_divide;
    SD_boot_type=sdio_get_port(por_sel);
    unsigned card_type=(romboot_info->ext>>4)&0xf;
-#define SDIO_AHB_CBUS_CTRL          (volatile unsigned long *)0xc1108c60   
+
+//register.h: #define SDIO_AHB_CBUS_CTRL 0x2318
+//#define SDIO_AHB_CBUS_CTRL          (volatile unsigned long *)0xc1108c60   
+#define SDIO_AHB_CBUS_CTRL_ADDR          (volatile unsigned long *)0xc1108c60   
     serial_put_dword(clk_util_clk_msr(7));
-    *SDIO_AHB_CBUS_CTRL&=~1;
+//    *SDIO_AHB_CBUS_CTRL&=~1;
+    *SDIO_AHB_CBUS_CTRL_ADDR&=~1;
    //set clk to trnsfer clk rate and bus width
    WRITE_CBUS_REG(SDIO_CONFIG,(2 << sdio_write_CRC_ok_status_bit) |
                       (2 << sdio_write_Nwr_bit) |

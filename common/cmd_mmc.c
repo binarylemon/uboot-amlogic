@@ -187,7 +187,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			n = mmc->block_dev.block_erase(dev, 0, 0);
 
 			printf("%d blocks erased: %s\n",
-				  mmc->block_dev.lba, (n == 0) ? "OK" : "ERROR");
+				  (int)(mmc->block_dev.lba), (n == 0) ? "OK" : "ERROR");
 			return (n == 0) ? 0 : 1;
 		}
 

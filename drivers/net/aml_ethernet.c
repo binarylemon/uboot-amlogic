@@ -164,7 +164,7 @@ static unsigned int detect_phyad(void)
 	return 0xffff;
 }
 
-static void set_mac_mode()
+static void set_mac_mode(void)
 {
 	printf("set_mac_mode(%d)\n", g_mac_mode);
 	if (g_mac_mode == 2) {
@@ -493,7 +493,7 @@ static int aml_eth_send(struct eth_device *net_current, volatile void *packet, i
 		return -1;
 	}
 
-	eth_tx_dump(packet, length);
+	eth_tx_dump((unsigned char *)packet, length);
 	netdev_chk();
 
 	struct _tx_desc* pTx = g_current_tx;
@@ -647,7 +647,7 @@ NEXT_BUF:
 		g_current_rx = pRx;
 		rxnum++;
 		NetReceive(NetRxPackets[0], len);
-		eth_rx_dump(NetRxPackets[0], len);
+		eth_rx_dump((unsigned char *)NetRxPackets[0], len);
 	}
 
 	return len;
@@ -716,7 +716,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 	bufptr = (unsigned char *) gS->rx_buf_addr;
 	for (i = 0; i < gS->rx_len - 1; i++) {
 		if (g_debug > 1) {
-			printf("[rx-descriptor%d] 0x%x\n", i, bufptr);
+			printf("[rx-descriptor%d] 0x%x\n", i, (unsigned int)bufptr);
 		}
 		pRDesc->rdes0 = RDES0_OWN;
 		pRDesc->rdes1 = RDES1_RCH | (gS->buffer_len & RDES1_RBS1_MASK);
@@ -815,7 +815,7 @@ static int do_phyreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return -1;
 	}
 
-	cmd = argv[1];
+	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
 	case 'd':
 		printf("=== ethernet phy register dump:\n");
@@ -853,13 +853,13 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int reg, value;
 	unsigned char *cmd = NULL;
-	unsigned int i;
+	unsigned int i = 0;
 
 	if (argc  < 2) {
 		return cmd_usage(cmdtp);
 	}
 
-	cmd = argv[1];
+	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
 	case 'd':
 		printf("=== ETH_MAC register dump:\n");
@@ -976,9 +976,6 @@ static int do_autoping(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 }
 static int do_mdc_clk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int value;
-	char buffer[40];
-
 	if (argc  < 2) {
 		return cmd_usage(cmdtp);
 	}
@@ -1006,15 +1003,13 @@ static int do_ethrst(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 static int do_ethmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int reg, value;
 	unsigned char *cmd = NULL;
-	unsigned int i;
 
 	if (argc  < 2) {
 		return cmd_usage(cmdtp);
 	}
 
-	cmd = argv[1];
+	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
 	case '0':
 		g_mac_mode = 0;
@@ -1071,7 +1066,7 @@ static int do_ethdbg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return cmd_usage(cmdtp);
 	}
 
-	cmd = argv[1];
+	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
 	case '0':
 		g_debug = 0;

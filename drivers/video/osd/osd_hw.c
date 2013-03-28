@@ -40,7 +40,7 @@
 //#define  FIQ_VSYNC
 
 
-static DECLARE_WAIT_QUEUE_HEAD(osd_vsync_wq);
+//static DECLARE_WAIT_QUEUE_HEAD(osd_vsync_wq);
 static bool vsync_hit = false;
 static bool osd_vf_need_update = false;
 
@@ -225,6 +225,7 @@ void osd_wait_vsync_hw(void)
 	//wait_event_interruptible_timeout(osd_vsync_wq, vsync_hit, HZ);	//comment out by Elvis Yu
 }
 
+extern void mdelay(unsigned long msec);
 void  osd_set_gbl_alpha_hw(u32 index,u32 gbl_alpha)
 {
 	_debug("\n");
@@ -1242,7 +1243,7 @@ static  void  osd2_update_disp_3d_mode(void)
 
 void osd_init_hw(void)
 {
-	u32 group,idx,data32;
+	u32 group,idx,data32 = 0;
 	_debug("\n");
 	for(group=0;group<HW_OSD_COUNT;group++)
 	{

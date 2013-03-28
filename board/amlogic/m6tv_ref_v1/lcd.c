@@ -58,6 +58,7 @@ vidinfo_t panel_info;
 
 static unsigned bl_level = 0;
 
+#if 0
 static void lvds_ports_ctrl(Bool_t status)
 {
     debug("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -70,7 +71,9 @@ static void lvds_ports_ctrl(Bool_t status)
         WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) & ~(1 << 3)); // disable fifo
     }
 }
+#endif
 
+extern void mdelay(unsigned long msec);
 static void backlight_power_ctrl(Bool_t status)
 {
 	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -367,16 +370,17 @@ static void lcd_io_init(void)
     //set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
+extern int lcd_probe(void);
 static int lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
 
-	panel_info.vd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
-	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
-	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, NULL);
-	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
-	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
-	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
+	panel_info.vd_base = (void *)simple_strtoul(getenv("fb_addr"), NULL, 0);
+	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, 0);
+	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, 0);
+	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 0);
+	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
+	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
 
 	lcd_sync_duration(&lcd_config);
 	//lcd_setup_gamma_table(&lcd_config);
@@ -387,6 +391,7 @@ static int lcd_enable(void)
     return 0;
 }
 
+extern int lcd_remove(void);
 void lcd_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
@@ -419,7 +424,7 @@ vidinfo_t panel_info =
 
 struct panel_operations panel_oper =
 {
-	.enable	=	lcd_enable,
+	.enable	=	(void *)lcd_enable,
 	.disable	=	lcd_disable,
 	.bl_on	=	power_on_backlight,
 	.bl_off	=	power_off_backlight,

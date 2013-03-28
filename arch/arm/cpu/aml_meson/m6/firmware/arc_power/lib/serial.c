@@ -58,7 +58,7 @@ SPL_STATIC_FUNC void uart_reset()
 SPL_STATIC_FUNC void serial_init(unsigned set,unsigned tag)
 {
     /* baud rate */
-    unsigned baud_para=0;
+    /*unsigned baud_para=0;*/
     if(tag){//reset uart.
 	    setbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);
 	    clrbits_le32(P_AO_RTI_GEN_CNTL_REG0,1<<17);

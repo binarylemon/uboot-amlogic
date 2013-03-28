@@ -70,7 +70,7 @@ int axp_read(int reg, uint8_t *val)
             .addr = AXP_I2C_ADDR,
             .flags = 0,
             .len = 1,
-            .buf = &reg,
+            .buf = (void *)&reg,
         },
         {
             .addr = AXP_I2C_ADDR,
@@ -97,7 +97,7 @@ int axp_reads(int reg, int len, uint8_t *val)
             .addr = AXP_I2C_ADDR,
             .flags = 0,
             .len = 1,
-            .buf = &reg,
+            .buf = (void *)&reg,
         },
         {
             .addr = AXP_I2C_ADDR,
@@ -165,6 +165,7 @@ out:
 	return ret;
 }
 
+extern void mdelay(unsigned long msec);
 void axp_power_off(void)
 {
 	printf("[axp] send power-off command!\n");

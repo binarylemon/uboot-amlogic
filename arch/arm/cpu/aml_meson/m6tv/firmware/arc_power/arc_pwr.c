@@ -63,6 +63,29 @@ void store_restore_plls(int flag);
 //#define wait_uart_empty()
 //#define udelay(a)
 
+extern void udelay(int i);
+extern void wait_uart_empty();
+extern int check_all_regulators(void);
+extern void power_down_ddr_phy(void);
+extern inline void power_off_at_24M();
+extern inline void power_off_at_32K_1();
+extern inline void power_off_at_32K_2();
+extern void power_off_ddr15(void);
+extern unsigned char get_charging_state();
+extern void power_on_ddr15(void);
+extern inline void power_on_at_32k_2();
+extern inline void power_on_at_32k_1();
+extern inline void power_on_at_24M();
+extern void uart_reset();
+extern void init_ddr_pll(void);
+extern void store_vid_pll(void);
+extern void shut_down();
+extern void __udelay(int n);
+extern void init_I2C();
+extern void hx_save_ddr_settings();
+extern void hx_enter_power_down();
+extern void hx_leave_power_down();
+
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts('\n');wait_uart_empty();
 
 static void timer_init()
@@ -98,6 +121,7 @@ unsigned delay_tick(unsigned count)
             asm("mov r0,r0");
         }
     }
+	return 0;
 }
 
 void delay_ms(int ms)
@@ -151,7 +175,7 @@ void copy_reboot_code()
 	}
 }
 
-
+#if 0
 static void enable_iso_ee()
 {
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
@@ -160,11 +184,14 @@ static void disable_iso_ee()
 {
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
 }
+#endif
 
 static void cpu_off()
 {
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL)|(1<<19),P_HHI_SYS_CPU_CLK_CNTL);
 }
+
+#if 0
 static void switch_to_rtc()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
@@ -191,6 +218,8 @@ static void ee_on()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x1<<9),P_AO_RTI_PWR_CNTL_REG0);
 }
+#endif
+
 static void switch_out_32k()
 {
 /*
@@ -266,10 +295,7 @@ void restart_arm()
 
 void enter_power_down()
 {
-	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
-	unsigned char vcin_state;
-	unsigned char charging_state;
 	unsigned power_key;
 	//	disp_pctl();
 	//	test_ddr(0);
@@ -348,6 +374,9 @@ void enter_power_down()
 #endif
 #if 0
 //	udelay(200000);//Drain power
+	unsigned char charging_state;
+	unsigned char vcin_state;
+	int i;
 
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
@@ -457,7 +486,6 @@ int main(void)
 {
 	unsigned cmd;
 	char c;
-	int i = 0,j;
 	timer_init();
 #ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");

@@ -136,20 +136,20 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 	return result;
 }
 
-
+extern void * memset(void * s,int c,size_t count);
 u32 checkcum_32(const unsigned char *buf, u32 len)
 {
 	u32 fake_len, chksum = 0;
-	u32 *ptr = buf;
+	u32 *ptr = (u32 *)buf;
 	int i;
 	serial_puts("\nbuf=");
-	serial_put_hex(buf, 32);
+	serial_put_hex((uint)buf, 32);
 	serial_puts("len=");
 	serial_put_hex(len, 32);
 	if(len%4)
 	{
 		fake_len = len - len%4 + 4;
-		memset((buf+len), 0, (fake_len-len));
+		memset((void *)(buf+len), 0, (fake_len-len));
 	}
 	else
 	{
@@ -166,12 +166,10 @@ u32 checkcum_32(const unsigned char *buf, u32 len)
 
 int usb_run_command (const char *cmd, char *buffer)
 {
-	int ret = -1, flag = 0;
 	u32 addr = 0, length = 0;
 	u32 crc_value, crc_verify = 0;
 	int argc;
 	char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
-	unsigned long upgrade_step;
 	
 	serial_puts("cmd:");
 	serial_puts(cmd);
@@ -179,14 +177,14 @@ int usb_run_command (const char *cmd, char *buffer)
 	memset(buffer, 0, CMD_BUFF_SIZE);
 	if(strncmp(cmd,"crc",(sizeof("crc")-1)) == 0)
 	{
-		if ((argc = parse_line (cmd, argv)) == 0) {
+		if ((argc = parse_line ((char *)cmd, argv)) == 0) {
 			return -1;	/* no command at all */
 		}
 		addr = simple_strtoul (argv[1], NULL, 16);
 		length = simple_strtoul (argv[2], NULL, 10);
 		crc_verify = simple_strtoul (argv[3], NULL, 16);
 		//crc_value = crc32 (0, (const uchar *) addr, length);
-		crc_value = checkcum_32(addr, length);
+		crc_value = checkcum_32((unsigned char *)addr, length);
 		serial_puts("crc_value=");
 		serial_put_hex(crc_value, 32);
 		if(crc_verify == crc_value)
@@ -198,7 +196,5 @@ int usb_run_command (const char *cmd, char *buffer)
 			strcpy(buffer, "failed");
 		}
 	}
+	return 0;
 }
-
-
-

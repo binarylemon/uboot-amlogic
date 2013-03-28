@@ -165,7 +165,7 @@ int appf_platform_boottime_init(void)
     aem_cluster[0].context->l2_data              = (void *)get_memory(L2_DATA_SIZE);
     aem_cluster[0].context->scu_data             = (void *)get_memory(SCU_DATA_SIZE);
     aem_cluster[0].context->global_timer_data    = (void *)get_memory(GLOBAL_TIMER_DATA_SIZE);
-    aem_cluster[0].context->lock                 = (void *)reloc_addr(&appf_device_memory);
+    aem_cluster[0].context->lock                 = (void *)reloc_addr((unsigned)&appf_device_memory);
     
     initialize_spinlock(aem_cluster[0].context->lock);
 
@@ -188,14 +188,14 @@ int appf_platform_boottime_init(void)
                                     APPF_SAVE_VFP |
                                     APPF_SAVE_DEBUG;
                                    // APPF_SAVE_L2;
-			  pstacks = (unsigned*)reloc_addr(platform_cpu_stacks);
+			  pstacks = (unsigned*)reloc_addr((unsigned)platform_cpu_stacks);
         pstacks[i] = get_memory(STACK_SIZE) + STACK_SIZE;
     }
     temp_main_table.cluster_table           = &aem_cluster[0];
     temp_main_table.num_clusters            = sizeof(aem_cluster) / sizeof(aem_cluster[0]);
-    temp_main_table.entry_point             = reloc_addr(appf_entry_point);
+    temp_main_table.entry_point             = (appf_entry_point_t *)reloc_addr((unsigned)appf_entry_point);
 		/* Copy our temp table to the right place in memory */
-    appf_memcpy(reloc_addr(&main_table), &temp_main_table, sizeof(struct appf_main_table));
+    appf_memcpy((void *)reloc_addr((unsigned)&main_table), &temp_main_table, sizeof(struct appf_main_table));
     return APPF_OK;
 }
 

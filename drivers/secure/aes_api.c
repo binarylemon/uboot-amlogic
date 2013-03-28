@@ -26,6 +26,9 @@ unsigned char g_AESkey[] = {
 0x50,0x43,0xEB,0x8D,0xAB,0x16,0x91,0xBB,0x6B,0x5E,0x60,0x21,0x57,0x44,0x61,0x06,
 };
 
+extern unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base);
+extern int printf(const char *fmt, ...);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //	AES encrypt/decrypt
 //

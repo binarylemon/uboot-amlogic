@@ -25,7 +25,7 @@ static int do_hisun(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	szSubCmd = argv[1];
 
-	nret = do_aes_process(argc,argv);
+	nret = do_aes_process(argc,(char **)argv);
 
 	if (nret)
 	{

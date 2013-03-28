@@ -180,6 +180,10 @@ extern void dbg_wait(void);
 #define L2X0_CLEAN_WAY_rel             (L2X0_BASE_rel+0x7BC)
 
 #define CACHE_LINE_SIZE 32
+
+void l2x0_clean_all_rel ();
+void l2x0_clean_all ();
+
 /*void _clean_dcache_addr(unsigned long addr);
 void dcache_clean_range(unsigned start,unsigned size)
 {
@@ -241,7 +245,7 @@ void l2x0_clean()
 	unsigned va, pa;
 	update_offset();
 	pa = reloc_addr((unsigned)&main_table);
-    	va = &main_table;
+    	va = (unsigned)&main_table;
 	if( pa==va)
 	{
 		dbg_prints("uboot enter!\n");

@@ -27,7 +27,7 @@ struct meson_pm_config {
 
 
 
-static void wait_uart_empty()
+static void wait_uart_empty(void)
 {
     do{
         if((readl(P_UART0_STATUS) & (1<<22)) == 0)
@@ -265,7 +265,7 @@ static char clks_name[CLK_COUNT][32] = {
     "HHI_VDEC_CLK_CNTL",
 };
 
-
+extern __u32 get_rate_xtal(void);
 static unsigned uart_rate_backup;
 static unsigned xtal_uart_rate_backup;
 void clk_switch(int flag)
@@ -365,6 +365,7 @@ static char plls_name[PLL_COUNT][32] = {
 };
 
 #define EARLY_PLL_COUNT 2
+#if 0
 static char early_pll_flag[EARLY_PLL_COUNT];
 static unsigned early_plls[EARLY_PLL_COUNT] = {
     P_HHI_VID_PLL_CNTL,
@@ -375,6 +376,7 @@ static char early_plls_name[EARLY_PLL_COUNT][32] = {
     "HHI_VID_PLL_CNTL",
     "HHI_VIID_PLL_CNTL",
 };
+#endif
 
 void pll_switch(int flag)
 {
@@ -462,6 +464,7 @@ void reset_watchdog(void)
 }
 #endif
 
+extern void free(void*);
 int meson_power_suspend(void)
 {
 	static int test_flag = 0;
@@ -489,13 +492,15 @@ int meson_power_suspend(void)
 }
 
 #if 1
+extern void *malloc (size_t len);
+extern int get_adc_sample(int chan);
 void meson_pm_suspend(void)
 {
     unsigned ddr_clk_N;
-	uint32_t elvis_array[10];
+	uint32_t elvis_array[10]={0};
 
 	//Elvis Fool!
-	pdata = malloc(sizeof(struct meson_pm_config));
+	pdata = (struct meson_pm_config *)malloc(sizeof(struct meson_pm_config));
 	pdata->set_vccx2 = NULL;
 	pdata->set_exgpio_early_suspend = NULL;
 

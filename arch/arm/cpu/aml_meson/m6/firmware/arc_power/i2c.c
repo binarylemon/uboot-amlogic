@@ -507,10 +507,10 @@ unsigned short i2c_pmu_read_w(unsigned int reg)
 
 #endif//CONFIG_AML_PMU
 
+extern void delay_ms(int ms);
 void init_I2C()
 {
-	unsigned v,speed,reg;
-	struct aml_i2c_reg_ctrl* ctrl;
+	unsigned v,reg;
 
 	//1. set pinmux
 	v = readl(P_AO_RTI_PIN_MUX_REG);
@@ -724,6 +724,7 @@ int ldo4_voltage_table[] = { 1250, 1300, 1400, 1500, 1600, 1700,
 				   1800, 1900, 2000, 2500, 2700, 2800,
 				   3000, 3100, 3200, 3300 };
 
+extern void wait_uart_empty();
 int check_all_regulators(void)
 {
 	int ret = 0;
@@ -814,7 +815,7 @@ int check_all_regulators(void)
 	reg_data = i2c_axp202_read(POWER20_LDO24OUT_VOL);
 	if(((reg_data>>4)&0xf)	!= val)
 	{
-		val = reg_data & 0xf0 | (val<<4);
+		val = (reg_data & 0xf0) | (val<<4);
 		i2c_axp202_write(POWER20_LDO24OUT_VOL, val);	//set LDO2(VDDIO_AO) to 3.000V
 		f_serial_puts("Set LDO2(VDDIO_AO) register to 0x");
 		serial_put_hex(val, 8);

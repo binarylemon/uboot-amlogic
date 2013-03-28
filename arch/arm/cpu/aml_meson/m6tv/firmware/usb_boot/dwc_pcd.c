@@ -65,7 +65,7 @@ dwc_otg_core_init()
     gusbcfg_data_t  usbcfg = {.d32 = 0 };
  //   gi2cctl_data_t  i2cctl = {.d32 = 0 };
 //    hcfg_data_t     hcfg;
-    dcfg_data_t     dcfg;
+
 #ifndef USE_FULL_SPEED
 	usbcfg.d32 = dwc_read_reg32(DWC_REG_GUSBCFG);
 
@@ -93,6 +93,7 @@ dwc_otg_core_init()
 	dwc_write_reg32(&_core_if->host_if->host_global_regs->hcfg, hcfg.d32);
 */
 // for Device
+	dcfg_data_t     dcfg;
 	dcfg.d32 = dwc_read_reg32(DWC_REG_DCFG);
 	dcfg.b.devspd = 1;//Hi speed phy run at Full speed
 	dwc_write_reg32(DWC_REG_DCFG, dcfg.d32);
