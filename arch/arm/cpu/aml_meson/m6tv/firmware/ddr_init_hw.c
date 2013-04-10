@@ -188,7 +188,6 @@ int ddr_init_hw(struct ddr_set * timing_reg)
         __udelay(10);        
 		serial_puts("\nPUB init fail! Reset...\n");
 		__udelay(10000);
-		writel(0, 0xc8100000);
 		writel((1<<22) | (3<<24), P_WATCHDOG_TC);
 		while(1);
         return ret;

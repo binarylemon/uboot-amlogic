@@ -134,9 +134,6 @@ void do_exception(unsigned reason,unsigned lr)
     serial_puts("\tlink addr:");
         serial_put_dword(lr);
 #ifdef CONFIG_ENABLE_WATCHDOG
-#ifdef CONFIG_M6TV
-    writel(0, P_AO_RTI_STATUS_REG0);
-#endif
 	writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);//enable watch dog
 #endif
     //~ writel((1<<22)|1000000,P_WATCHDOG_TC);//enable Watchdog

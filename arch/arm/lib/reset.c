@@ -49,11 +49,6 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 
 	udelay (50000);				/* wait 50 ms */
-
-#if defined(CONFIG_M6TV) || defined (CONFIG_M6)
-	//if not clear, uboot command reset will fail -> romcode blocked
-	*((volatile unsigned long *)0xc8100000) = 0;
-#endif
 	disable_interrupts();
 	reset_cpu(0);
 
