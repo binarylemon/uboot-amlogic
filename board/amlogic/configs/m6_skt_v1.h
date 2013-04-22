@@ -287,6 +287,10 @@ save
 //M6 security boot
 //#define CONFIG_M6_SECU_BOOT		1
 
+//M6 L1 cache enable for uboot decompress speed up
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
+
+
 /////////////////////////////////////////////////////////////////////////
 //Please DO NOT modify following code!
 #if defined(CONFIG_M6_SECU_BOOT)

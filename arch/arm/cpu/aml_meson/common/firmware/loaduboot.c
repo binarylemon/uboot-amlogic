@@ -6,6 +6,10 @@
 #include "sha256.c"
 #endif
 
+#ifdef  CONFIG_AML_SPL_L1_CACHE_ON
+#include <aml_a9_cache.c>
+#endif  //CONFIG_AML_SPL_L1_CACHE_ON
+
 #include <romboot.c>
 #ifndef CONFIG_AML_UBOOT_MAGIC
 #define CONFIG_AML_UBOOT_MAGIC 0x12345678
@@ -36,6 +40,12 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned size;
 	int rc=0;
     serial_puts("\nHHH\n");
+
+#ifdef  CONFIG_AML_SPL_L1_CACHE_ON
+	aml_cache_enable();
+	//serial_puts("\nSPL log : ICACHE & DCACHE ON\n");
+#endif	//CONFIG_AML_SPL_L1_CACHE_ON
+
 	size=__TEXT_SIZE;
 	//boot_id = 1;
 	if(boot_id>1)
@@ -46,6 +56,13 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	}else{
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size);
 	}
+
+	//here no need to disable I/D cache?
+#if 0	
+#if CONFIG_AML_SPL_L1_CACHE_ON
+	aml_cache_disable();
+#endif	//CONFIG_AML_SPL_L1_CACHE_ON
+#endif 
 
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 	if(!rc&&check_sum((unsigned*)__TEXT_BASE,0,0)==0)
