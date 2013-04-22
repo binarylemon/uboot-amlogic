@@ -158,7 +158,6 @@ COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_VFD) += cmd_vfd.o
 COBJS-$(CONFIG_CMD_SUSPEND) += cmd_suspend.o
 COBJS-$(CONFIG_CMD_AML) += cmd_aml.o
-COBJS-$(CONFIG_CMD_AML) += cmd_random.o
 COBJS-$(CONFIG_EFUSE) += cmd_efuse.o
 COBJS-$(CONFIG_RTC_DAY_TEST) += cmd_rtc.o
 COBJS-$(CONFIG_CMD_SARADC) += cmd_saradc.o
@@ -167,6 +166,8 @@ COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
 
 # others
+COBJS-y += cmd_mdio.o
+COBJS-y += cmd_efuse_check.o
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_d2pll.o
 COBJS-$(CONFIG_DDR_SPD) += ddr_spd.o

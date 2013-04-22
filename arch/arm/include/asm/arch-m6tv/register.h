@@ -429,6 +429,8 @@
 // Ethernet (1)
 // ----------------------------
 #define PREG_ETHERNET_ADDR0                        0x2042
+#define PREG_ETHERNET_ADDR1						   0x2046
+
 // ---------------------------
 // AM_ANALOG_TOP
 // ----------------------------
