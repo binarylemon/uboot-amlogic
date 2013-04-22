@@ -170,7 +170,7 @@
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=nand read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc}; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"preboot=nand read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc}; chk_all_regulators; run usid_random_or_not; run mac_random_or_not; run mac_wifi_random_or_not; run mac_bt_random_or_not; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv_without reboot_mode; setenv upgrade_step 2; save; fi; fi\0" \
 	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=video open; video clear; video dev bl_on\0" \
@@ -189,10 +189,14 @@
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
-	"usb_burning=tiny_usbtool 20000\0"
+	"usb_burning=tiny_usbtool 20000\0" \
+	"usid_random_or_not=if get_usid_random; then; else set_usid_random 16; save; fi;\0" \
+	"mac_random_or_not=if get_mac_random; then; else set_mac_random; save; fi;\0" \
+	"mac_wifi_random_or_not=if get_mac_wifi_random; then; else set_mac_wifi_random; save; fi;\0" \
+	"mac_bt_random_or_not=if get_mac_bt_random; then; else set_mac_bt_random; save; fi;\0" \
+	"add_random_to_bootargs=setenv bootargs ${bootargs} androidboot.serialno=${usid_random} androidboot.mac=${mac_random} androidboot.mac_wifi=${mac_wifi_random} androidboot.mac_bt=${mac_bt_random}; echo add random to bootargs; echo bootargs=${bootargs};\0"	 
 
-
-#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=1512000000; bootm"
+#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=1512000000; run add_random_to_bootargs; bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 

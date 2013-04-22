@@ -233,6 +233,14 @@ static void netdev_chk(void)
 			full = ((rint2) & (1 << 13));
 			gS->linked = rint2 & (1 << 10);
 			break;
+		case PHY_IC_IP101ALF:
+			rint2 = phy_reg_rd(id,1);
+			gS->linked = rint2&(1<<2);
+			rint2 = phy_reg_rd(id,0);
+			speed = (rint2 & (0x1<<8))? 1:0;
+			rint2 = phy_reg_rd(id,5);
+			full = (rint2 & (0x1<<7))? 1:0;
+		break;
 		case PHY_SMSC_8700:
 		case PHY_SMSC_8720:
 		default:
@@ -371,6 +379,8 @@ static int eth_reset(struct _gStruct* emac_config)
 		g_phy_Identifier |= val;
 		printf("find net phy id=0x%x, phyad=%d\n", (unsigned int)g_phy_Identifier, phyad);
 
+		if(g_phy_Identifier == PHY_IC_IP101ALF)
+			WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120); // phy ip101 need clock phase normal
 		/* Software Reset PHY */
 		phy_reg_wr(phyad, PHY_CR, PHY_CR_RST);
 		for (k = 0; k < NET_MAX_RESET_TEST; k++) {
