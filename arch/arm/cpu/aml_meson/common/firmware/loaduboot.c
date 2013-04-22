@@ -3,7 +3,7 @@
 #include <asm/arch/romboot.h>
 
 #if defined(CONFIG_M6_SECU_BOOT)
-#include "sha256.c"
+#include "../../../../../../drivers/secure/sha2.c"
 #endif
 
 #ifdef  CONFIG_AML_SPL_L1_CACHE_ON

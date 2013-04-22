@@ -295,7 +295,7 @@ save
 //Please DO NOT modify following code!
 #if defined(CONFIG_M6_SECU_BOOT)
 	/*NOTE: must define the block num for crypto, illegal value is 2 - 10*/
-	#define CONFIG_M6_CRYPTO_BLK	2		
+	#define CONFIG_M6_CRYPTO_BLK	10		
 #endif //CONFIG_M6_SECU_BOOT	
 
 #if defined(CONFIG_M6_SECU_BOOT)
