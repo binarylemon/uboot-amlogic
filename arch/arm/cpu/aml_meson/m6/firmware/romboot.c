@@ -53,11 +53,12 @@ STATIC_PREFIX void aml_m6_sec_boot_check(const unsigned char *pSRC)
 	writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
 	unsigned char szHashUCL[SHA256_HASH_BYTES];
 	unsigned int nSizeUCL = *((unsigned int *)(AML_MX_UCL_SIZE_ADDR)); //get ucl length to be hashed
-	memcpy(szHashUCL,AML_MX_UCL_HASH_ADDR_1,AML_MX_UCL_HASH_SIZE_1);   //get 1st hash key
-	memcpy(szHashUCL+AML_MX_UCL_HASH_SIZE_1,AML_MX_UCL_HASH_ADDR_2,AML_MX_UCL_HASH_SIZE_2);//get 2nd hash key
+	memcpy(szHashUCL,(const void *)AML_MX_UCL_HASH_ADDR_1,AML_MX_UCL_HASH_SIZE_1);   //get 1st hash key
+	memcpy(szHashUCL+AML_MX_UCL_HASH_SIZE_1,(const void *)AML_MX_UCL_HASH_ADDR_2,AML_MX_UCL_HASH_SIZE_2);//get 2nd hash key
 	//to clear
-	memcpy(AML_MX_UCL_SIZE_ADDR,AML_MX_UCL_HASH_ADDR_1+16,AML_MX_UCL_HASH_SIZE_1+4);
-	memcpy(AML_MX_UCL_HASH_ADDR_2,AML_MX_UCL_HASH_ADDR_1+16,AML_MX_UCL_HASH_SIZE_1);
+	memcpy((void *)AML_MX_UCL_SIZE_ADDR,(const void *)(AML_MX_UCL_HASH_ADDR_1+16),AML_MX_UCL_HASH_SIZE_1+4);
+	memcpy((void *)AML_MX_UCL_HASH_ADDR_2,(const void *)(AML_MX_UCL_HASH_ADDR_1+16),AML_MX_UCL_HASH_SIZE_1);
+
 	if((!nSizeUCL) || (nSizeUCL > AML_UBOOT_SIZE_MAX) || //illegal uboot image size
 		sha_256(szHashUCL,pSRC,nSizeUCL))
 	{
@@ -174,7 +175,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 
 
 #if defined(CONFIG_M6_SECU_BOOT)
-	aml_m6_sec_boot_check(temp_addr);
+	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
 #endif //CONFIG_M6_SECU_BOOT
 
 	
@@ -214,7 +215,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
     int rc=sdio_read(temp_addr,size,por_cfg);
 
 #if defined(CONFIG_M6_SECU_BOOT)
-	aml_m6_sec_boot_check(temp_addr);
+	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
 #endif //CONFIG_M6_SECU_BOOT
 
 

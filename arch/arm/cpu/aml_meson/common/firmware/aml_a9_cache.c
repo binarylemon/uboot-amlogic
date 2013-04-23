@@ -36,7 +36,7 @@ static inline void mmu_setup(void)
 	asm volatile("mcr	p15, 0, r0, c1, c0, 0");//
 
 	/////////////////////////////////////////////////////////////	
-	unsigned int *pVMMUTable = (0xd9000000 + 32 * 1024);
+	unsigned int *pVMMUTable = (unsigned int *)(0xd9000000 + 32 * 1024);
 	int i = 0;
 	uint nVal = 0;
 	for(i = 0 ; i < 0x1000;++i)
@@ -117,7 +117,7 @@ static int dcache_status(void)
 
 //code from \arch\arm\lib\cache_v7.S
 //@void _clean_invd_dcache(void);
-static void _clean_invd_dcache()
+static void _clean_invd_dcache(void)
 {
     //asm volatile("push    {r4,r5,r6,lr}");
     asm volatile("push    {r4,r5,r6}");
@@ -146,7 +146,7 @@ static void _clean_invd_dcache()
 
 //code from \arch\arm\lib\cache_v7.S
 //@void _clean_dcache(void);
-static void _clean_dcache()
+static void _clean_dcache(void)
 {
     asm volatile("push    {r4,r5,r6}");
     asm volatile("MOV     r2,#0     ");
@@ -200,15 +200,16 @@ static void cache_disable(uint32_t cache_bit)
 	set_cr(reg & ~cache_bit);
 }
 
-static void aml_cache_disable()
+static void aml_cache_disable(void)
 {
 	_clean_dcache();
 	cache_disable(CR_I);
 	cache_disable(CR_C);
-	memset((0xd9000000 + 32 * 1024),0,0x4000);
+	extern void * memset(void * s,char c,size_t count);
+	memset((void *)(0xd9000000 + 32 * 1024),0,0x4000);
 }
 
-static void aml_cache_enable()
+static void aml_cache_enable(void)
 {
 	//cache_disable(CR_I);
 	//cache_disable(CR_C);
