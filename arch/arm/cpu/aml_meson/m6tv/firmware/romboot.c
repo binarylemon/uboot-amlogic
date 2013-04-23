@@ -114,10 +114,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             break;
         case POR_1ST_SPI :
         case POR_1ST_SPI_RESERVED :
-            if(por_cfg&POR_ROM_BOOT_ENABLE)
-                mem=(unsigned *)(NOR_START_ADDR+READ_SIZE);
-            else
-                mem=(unsigned *)(NOR_START_ADDR+READ_SIZE+ROM_SIZE);
+            mem=(unsigned *)(NOR_START_ADDR+READ_SIZE);
             spi_init();
 #if CONFIG_UCL==0
             if((rc=check_sum(target,0,0))!=0)
@@ -213,11 +210,7 @@ STATIC_PREFIX void load_ext(unsigned por_cfg,unsigned bootid,unsigned target)
     if(bootid==0&&(POR_GET_1ST_CFG(por_cfg)==POR_1ST_SPI||POR_GET_1ST_CFG(por_cfg)==POR_1ST_SPI_RESERVED))
     {
         // spi boot
-        if(por_cfg&POR_ROM_BOOT_ENABLE)
-            temp_addr=(unsigned)(NOR_START_ADDR+READ_SIZE);
-        else
-            temp_addr=(unsigned)(NOR_START_ADDR+READ_SIZE+ROM_SIZE);
-        
+        temp_addr=(unsigned)(NOR_START_ADDR+READ_SIZE);
     }
         
     for(i=0;i<sizeof(__load_table)/sizeof(__load_table[0]);i++)
