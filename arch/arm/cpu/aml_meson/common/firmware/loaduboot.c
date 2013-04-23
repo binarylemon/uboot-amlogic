@@ -57,12 +57,12 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size);
 	}
 
-	//here no need to disable I/D cache?
-#if 0	
+	//here no need to flush I/D cache?
 #if CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
+	//aml_cache_disable();
+	dcache_flush();
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
-#endif 
+
 
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 	if(!rc&&check_sum((unsigned*)__TEXT_BASE,0,0)==0)
@@ -103,6 +103,11 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	}
 #endif
 	fw_print_info(por_cfg,1);
+
+	//here no need to flush I/D cache?
+#if CONFIG_AML_SPL_L1_CACHE_ON
+	dcache_flush();
+#endif	//CONFIG_AML_SPL_L1_CACHE_ON
     return rc;
 }
 
