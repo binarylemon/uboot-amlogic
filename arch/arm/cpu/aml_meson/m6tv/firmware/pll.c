@@ -93,7 +93,15 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr(HHI_MPLL_CNTL, 0x4000067d );
 	
 	//switch a9 clock to  oscillator in the first.  This is sync mux.
+#if 0	
     Wr( HHI_A9_CLK_CNTL, 0);
+#else
+	Wr( HHI_A9_CLK_CNTL, Rd(HHI_A9_CLK_CNTL) & (~(1<<7)));
+	__udelay(10);
+	Wr( HHI_A9_CLK_CNTL, 0);
+	__udelay(10);
+	Wr(HHI_MPEG_CLK_CNTL, Rd(HHI_MPEG_CLK_CNTL) & (~(1<<8)) );	
+#endif
 	__udelay(100);
 
 
