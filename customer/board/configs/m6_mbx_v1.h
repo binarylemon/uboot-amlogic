@@ -168,7 +168,7 @@
 	"batfull_threshold=98\0" \
 	"outputmode=720p\0" \
 	"outputtemp=720p\0" \
-	"cvbsenable=false\0" \
+	"cvbsenable=true\0" \
 	"vdacswitchmode=cvbs\0" \
 	"vdacswitchconfig=if test ${cvbsenable} = true; then setenv vdacswitchmode cvbs;else if test ${cvbsenable} = false;then setenv vdacswitchmode component;fi;fi\0" \
 	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
