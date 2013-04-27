@@ -535,6 +535,8 @@ int switch_boot_mode(void)
                     break;
         
 		hold_time -= polling_time;
+        if((key_flag==0) && (hold_time<4950000))
+            break;
 	}
         printf("key_flag=%d\n", key_flag);
 	if(key_flag >= 15)
