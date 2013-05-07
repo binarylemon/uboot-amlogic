@@ -505,3 +505,54 @@ char* efuse_dump(void)
      return (char*)efuse_buf;
 }
 
+#ifdef CONFIG_AML_EFUSE_INIT_PLUS
+int efuse_aml_init_plus(void)
+{
+	int nRet = 0;
+	//check efuse size
+	if(EFUSE_BYTES != 512)
+		return nRet;
+	
+	//check MX or not
+	if(cpu_is_before_m6())
+		return nRet;
+	
+	int i=0;
+	char szBuffer[EFUSE_BYTES];
+	memset(szBuffer,0,sizeof(szBuffer));
+	efuse_init();
+
+ 	// Enabel auto-read mode
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+
+	for(i=0; i<EFUSE_BYTES; i+=4)
+		__efuse_read_dword(i,  (unsigned long*)(&(szBuffer[i])));	    
+		
+     // Disable auto-read mode    
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
+             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+	
+	//check
+#define AML_MX_EFUSE_CHECK_1FD (0x1FD)
+	if(szBuffer[AML_MX_EFUSE_CHECK_1FD])
+		return nRet;	
+#undef AML_MX_EFUSE_CHECK_1FD
+
+#define AML_MX_EFUSE_CHECK_1 (0x1)
+	if(!(szBuffer[AML_MX_EFUSE_CHECK_1] & 0x1))
+	{
+		efuse_init();		
+		szBuffer[AML_MX_EFUSE_CHECK_1] |= 0x01;
+		loff_t pos = AML_MX_EFUSE_CHECK_1;
+		efuse_write(&szBuffer[AML_MX_EFUSE_CHECK_1], 1, (loff_t*)&pos);	
+		//printf("AML efuse init\n");
+	}
+#undef AML_MX_EFUSE_CHECK_1	
+
+	return nRet;
+}
+#endif //CONFIG_AML_EFUSE_INIT_PLUS
+
+
+
