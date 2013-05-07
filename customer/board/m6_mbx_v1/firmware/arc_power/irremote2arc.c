@@ -450,20 +450,24 @@ void cec_give_deck_status(void)
 
 void cec_set_osd_name(void)
 {
-    unsigned char msg[9];
+    unsigned char msg[13];
     
-    //"PHILIPS HMP8100"
+    //"AMLOGIC MBX"
     msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
     msg[1] = CEC_OC_SET_OSD_NAME;
-    msg[2] = 'H';
+    msg[2] = 'A';
     msg[3] = 'M';
-    msg[4] = 'P';
-    msg[5] = '8';
-    msg[6] = '1';
-    msg[7] = '0';
-    msg[8] = '0';
+    msg[4] = 'L';
+    msg[5] = 'O';
+    msg[6] = 'G';
+    msg[7] = 'I';
+    msg[8] = 'C';
+    msg[9] = ' ';
+    msg[10] = 'M';
+    msg[11] = 'B';
+    msg[12] = 'X';
     
-    remote_cec_ll_tx(msg, 9);
+    remote_cec_ll_tx(msg, 13);
 }
 
 //void register_cec_rx_msg(unsigned char *msg, unsigned char len )
