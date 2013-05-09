@@ -335,7 +335,49 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	writel(1, P_UPCTL_CMDTSTATEN_ADDR);
 	while (!(readl(P_UPCTL_CMDTSTAT_ADDR) & 1 )) {}
 
-	writel((0x0 | (0x0 <<12) | (7 << 28)), P_PUB_DTAR_ADDR); 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//following code is for DDR training, Please DO NOT try to modify!!!
+#if !defined(CONFIG_M6_DDR_DTAR_ADDR)
+	#define CONFIG_M6_DDR_DTAR_ADDR (0x9fffff00)
+#else
+	#if (CONFIG_M6_DDR_DTAR_ADDR < PHYS_MEMORY_START) || \
+		(CONFIG_M6_DDR_DTAR_ADDR >= (PHYS_MEMORY_START+PHYS_MEMORY_SIZE))
+		#error "ERROR! CONFIG_M6_DDR_DTAR_ADDR is out of DDR space range!"
+	#elif (CONFIG_M6_DDR_DTAR_ADDR & 0x3F)
+		#error "ERROR! CONFIG_M6_DDR_DTAR_ADDR is not 64 alignment!"
+	#elif (((CONFIG_M6_DDR_DTAR_ADDR >> 10) & 0x7) != 7) && \
+		(((CONFIG_M6_DDR_DTAR_ADDR >> 10) & 0x7) != 0)
+		#error "ERROR! CONFIG_M6_DDR_DTAR_ADDR bit 12,11,10 must be identical!"
+	#elif (CONFIG_M6_DDR_DTAR_ADDR != (0x9fffff00))
+		#warning "CONFIG_M6_DDR_DTAR_ADDR is not M6 default value!"
+	#endif
+#endif
+
+	#define M6_DDR_ROW_BITS (ddr3_row_size ? (ddr3_row_size+12) : 16)
+	#define M6_DDR_COL_BITS (ddr3_col_size+8)
+	 
+	//16bit,32bit
+#if defined(M6_DDR3_DATABUS_16MODE)
+	#define M6_DDR_BIT_WIDTH (16)
+#else
+	#define M6_DDR_BIT_WIDTH (32)
+#endif
+	#define M6_DDR_ADDR_LSB_WIDTH    (M6_DDR_BIT_WIDTH/16) 
+	#define M6_DDR_ADDR_LOW_COL_LEN  (M6_DDR_ADDR_LSB_WIDTH==1 ? 9 : 8)
+	#define M6_DDR_ADDR_LOW_COL_MASK ((1<<M6_DDR_ADDR_LOW_COL_LEN)-1)
+	//16bit : The ARM/system linear address = {bank_addr[2], row_addr[ROW_BITS-1:0], col_addr[COL_BITS-1:9], bank_addr[1:0], col_addr[8:0], 1¡¯b0};
+	//32bit : The ARM/system linear address = {bank_addr[2], row_addr[ROW_BITS-1:0], col_addr[COL_BITS-1:8], bank_addr[1:0], col_addr[7:0], 2¡¯b00}; 
+	#define M6_DTAR_DTBANK  (((CONFIG_M6_DDR_DTAR_ADDR >> 10) & 0x3) | \
+	(((CONFIG_M6_DDR_DTAR_ADDR >> (M6_DDR_ROW_BITS+M6_DDR_COL_BITS+2+M6_DDR_ADDR_LSB_WIDTH)) & 1) <<2))
+	#define M6_DTAR_DTROW   ((CONFIG_M6_DDR_DTAR_ADDR >> (M6_DDR_COL_BITS+2+M6_DDR_ADDR_LSB_WIDTH)) & ((1<<M6_DDR_ROW_BITS) - 1)) 
+	#define M6_DTAR_DTCOL   (((CONFIG_M6_DDR_DTAR_ADDR >> M6_DDR_ADDR_LSB_WIDTH ) & M6_DDR_ADDR_LOW_COL_MASK)| \
+	((CONFIG_M6_DDR_DTAR_ADDR >> 12) & ((1<<M6_DDR_ADDR_LSB_WIDTH) - 1)) << M6_DDR_ADDR_LOW_COL_LEN)
+	 
+	//writel((0x0 | (0x0 <<12) | (7 << 28)), P_PUB_DTAR_ADDR); 
+	writel((M6_DTAR_DTCOL | (M6_DTAR_DTROW <<12) | (M6_DTAR_DTBANK << 28)), P_PUB_DTAR_ADDR); 
+	//writel(0x0 | (0x0 <<12) | (7 << 28), P_PUB_DTAR_ADDR); //0xa0001800@1GB,32bit, not calulate but find, why?
+	//writel(0x0 | (0x0 <<12) | (7 << 28), P_PUB_DTAR_ADDR); //0x90001800@512MB,32bit,not calulate but find, why?
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// DDR PHY initialization 
 	//MMC_Wr( PUB_PIR_ADDR, 0x1e1);

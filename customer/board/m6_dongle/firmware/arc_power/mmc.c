@@ -423,6 +423,10 @@ void save_ddr_settings()
 	v_zq0cr0   = MMC_Rd(PUB_ZQ0CR0_ADDR);
 	v_cmdzq    = MMC_Rd(MMC_CMDZQ_CTRL);
 #endif
+
+
+	v_dtar     = MMC_Rd(PUB_DTAR_ADDR);
+	
 }
 
 #if 0
@@ -468,52 +472,6 @@ void reset_ddr_dll(void) {
 	while( !(MMC_Rd(PUB_PGSR_ADDR & 0x2))) {}
 }
 
-void ddr_data_training(void) {
-	int stat;
-	//start trainning.
-	// DDR PHY initialization
-	// UPCTL enter cfg mode.
-	MMC_Wr(UPCTL_SCTL_ADDR, 1); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
-	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-
-	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
-
-	MMC_Wr( PUB_PIR_ADDR, 0x189);
-	//MMC_Wr( PUB_PIR_ADDR, 0x69); //no training
-
-	//DDR3_SDRAM_INIT_WAIT :
-	while( !(MMC_Rd(PUB_PGSR_ADDR & 1))) {}
-	//check data training result
-	//check ZQ calibraration status.
-	stat = MMC_Rd(PUB_ZQ0SR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR0\n");
-	stat = MMC_Rd(PUB_ZQ0SR1_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_ZQ0SR1\n");
-
-	//check data training result.
-	stat = MMC_Rd(PUB_DX0GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX0GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX1GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX1GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX2GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX2GSR0\n");
-	wait_uart_empty();
-	stat = MMC_Rd(PUB_DX3GSR0_ADDR);
-	serial_put_hex(stat,32);
-	f_serial_puts(" PUB_DX3GSR0\n");
-	wait_uart_empty();
-
-	dbg_out("d",9);
-	MMC_Wr(UPCTL_SCTL_ADDR, 2); // init: 0, cfg: 1, go: 2, sleep: 3, wakeup: 4
-	//while ((MMC_Rd(UPCTL_STAT_ADDR) & 0x7 ) != 3 ) {}
-}
 
 void init_pctl(void)
 {
@@ -575,7 +533,7 @@ void init_pctl(void)
 	  __udelay(50);
 	//wait PHY DLL LOCK
 	while(!(MMC_Rd( PUB_PGSR_ADDR) & 1)) {}
-	dbg_out("d",2);
+	dbg_out(("d"),2);
 
 	// configure DDR3_rst pin.
 	MMC_Wr( PUB_ACIOCR_ADDR, MMC_Rd( PUB_ACIOCR_ADDR) & 0xdfffffff );
@@ -736,8 +694,10 @@ void init_pctl(void)
 	dbg_out("d",8);
 
 	//MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0 <<12) | (7 << 28))); //training address is 0x90001800 not safe
-	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
-	
+	//MMC_Wr( PUB_DTAR_ADDR, (0x3c0 | (0x7FFF <<12) | (3 << 28))); //let training address is 0x9fffff00;
+	MMC_Wr(PUB_DTAR_ADDR,v_dtar);
+	serial_put_hex(MMC_Rd(PUB_DTAR_ADDR),32);
+	f_serial_puts(" PUB_DTAR_ADDR\n");
 	//start trainning.
 	// DDR PHY initialization 
 #ifdef CONFIG_TURN_OFF_ODT
@@ -852,7 +812,7 @@ void init_pctl(void)
 */
 //	MMC_Wr(MMC_REQ_CTRL, 0xff ); Already enable request in kreboot.s
 	
-	return 0;
+	return;
 }
 
 void power_down_ddr_phy(void)
