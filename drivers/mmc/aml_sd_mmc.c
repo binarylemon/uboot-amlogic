@@ -722,4 +722,7 @@ void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 	mmc->f_min = 200000;
 	mmc->f_max = 50000000;	
 	mmc_register(mmc);
+	
+	WRITE_CBUS_REG(RESET6_REGISTER, (1<<8));
+
 }
