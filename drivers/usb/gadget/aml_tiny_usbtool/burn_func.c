@@ -843,6 +843,106 @@ int usb_run_command (const char *cmd, char* buff)
 			return -1;
 		}	
 	}
+	else if(!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
+         int i = 0, ret = -1;
+         char key_data[SECUKEY_BYTES];
+         char *Argv[4] = {"nand", "write", "boardid", ""};
+         char *boardid = NULL;
+         int boardid_len = 0, boardid_key_len = 0;
+
+         /* Extract arguments */
+         if ((argc = parse_line (cmd, argv)) == 0) {
+			return -1;	/* no command at all */
+         }
+
+         memset(key_data, 0, sizeof(key_data));
+
+         argv[0] = Argv[0];
+
+         if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+#define BOARDID_DATA_ADDR	(volatile unsigned long *)(0x82000000)    //get boardid data from address:0x82000000
+               char length[4] = {0};
+               boardid = BOARDID_DATA_ADDR;
+               for(i=0; i<4; i++) {
+                  length[i] = *boardid++;
+                  printf("length[%d]=0x%02x\n", i, length[i]);
+               }
+               boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               printf("boardid_key_len=%d\n", boardid_key_len);
+               for(i=0; i<boardid_key_len; i++) {
+                  key_data[i] = *boardid++;
+               }
+               printf("receive boardid_data=%s\n", key_data);
+               memcpy(Argv[3], key_data, SECUKEY_BYTES);					//copy boardid datas
+               argv[0] = Argv[0];
+               argv[1] = Argv[1];
+               argv[2] = Argv[2];
+               argv[3] = Argv[3];
+               argc = 4;
+         }
+
+         for(i=0; i<argc; i++) {
+            printf("argv[%d]=%s\n", i, argv[i]);
+         }
+
+
+         /* version */
+         if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
+              sprintf(buff, "%s", "failed:(nand not be initialized)");
+              printf("%s\n",buff);
+              return 0;
+         }
+         else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
+            ret = ensure_secukey_init();
+            if (ret==0 || ret==1) {                              //init nand success or already inited.
+               sprintf(buff, "%s", "success:(init nand success)");
+               printf("%s\n", buff);
+               return 0;
+            }
+            else {                                                       //init nand failed!!
+               sprintf(buff, "%s", "failed:(init nand failed)");
+               printf("%s\n", buff);
+               return -1;
+            }
+         }
+
+         /* boardid */
+         if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  strcpy(namebuf, "boardid");
+                  memset(databuf, 0, sizeof(databuf));
+                  boardid_len = uboot_key_read(namebuf, databuf);
+                  printf("boardid_len = uboot_key_read(%s, databuf)\n", namebuf);
+                  if(boardid_len>0) {
+                     //printf("boardid_len=%d\n", boardid_len/2);
+                     printf("boardid_data=%s\n", buff);
+                     memcpy(key_data, buff, strlen(buff));
+                     sprintf(buff, "%s", "success:(boardid has been writen)");
+                  }
+                  else if(boardid_len<0) {
+                     //printf("boardid_len=%d\n", boardid_len);
+                     sprintf(buff, "%s", "failed:(boardid has been not writen)");
+                  }
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+         }
+         else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "%s", "success:(nand write boardid success)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+         }
+	}
 #endif      /* WRITE_TO_EFUSE_OR_NAND_ENABLE */	
 	else
 	{
