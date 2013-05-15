@@ -843,6 +843,7 @@ int usb_run_command (const char *cmd, char* buff)
 			return -1;
 		}	
 	}
+#if defined( WRITE_TO_NAND_ENABLE)
 	else if(!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
          int i = 0, ret = -1;
          char key_data[SECUKEY_BYTES];
@@ -943,6 +944,7 @@ int usb_run_command (const char *cmd, char* buff)
                }
          }
 	}
+#endif      /* WRITE_TO_NAND_ENABLE */
 #endif      /* WRITE_TO_EFUSE_OR_NAND_ENABLE */	
 	else
 	{
