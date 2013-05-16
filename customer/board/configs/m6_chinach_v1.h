@@ -15,6 +15,7 @@
 
 #if defined(WRITE_TO_NAND_ENABLE)
 #define CONFIG_SECURITYKEY 1
+#define CONFIG_AML_NAND_KEY 1
 #endif
 
 #define CONFIG_HDCP_PREFETCH 1
@@ -27,10 +28,6 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-//#define CONFIG_SECURITYKEY
-#ifdef CONFIG_SECURITYKEY
-#define CONFIG_AML_NAND_KEY
-#endif
 
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
