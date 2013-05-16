@@ -15,7 +15,6 @@
 
 #if defined(WRITE_TO_NAND_ENABLE)
 #define CONFIG_SECURITYKEY 1
-#define CONFIG_AML_NAND_KEY 1
 #endif
 
 #define CONFIG_HDCP_PREFETCH 1
