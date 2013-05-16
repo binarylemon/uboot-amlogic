@@ -959,6 +959,17 @@ void nand_init(void)
 			printk("error for not platform data\n");
 			continue;
 		}
+		
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+		 if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
+			printk("NAND BOOT : %s %d \n",__func__,__LINE__);
+		}
+		if( ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))) &&\
+			(i == 0) && (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
+			printk("SPI BOOT : continue i %d\n",i);
+			continue;
+		}
+#endif
 		ret = m3_nand_probe(plat, i);
 		if (ret) {
 			printk("nand init faile: %d\n", ret);

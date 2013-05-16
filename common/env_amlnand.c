@@ -78,6 +78,12 @@ int nand_legacy_rw (struct nand_chip* nand, int cmd,
 	    size_t start, size_t len,
 	    size_t * retlen, u_char * buf);
 
+extern env_t *env_ptr;
+extern uchar default_environment[];
+
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+	
+#else
 /* references to names in env_common.c */
 extern uchar default_environment[];
 
@@ -91,6 +97,7 @@ env_t *env_ptr = (env_t *)(&environment[0]);
 env_t *env_ptr = 0;
 #endif /* ENV_IS_EMBEDDED */
 
+#endif
 
 /* local functions */
 #if !defined(ENV_IS_EMBEDDED)
@@ -109,11 +116,16 @@ static struct aml_nandenv_info_t aml_nandenv_info;
 static t_env_blockmap env_map[CONFIG_ENV_BLOCK_NUM];
 static u_char last_valid_block = 0;
 static u_char current_valid_block = 0;*/
+
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+	
+#else
+
 uchar env_get_char_spec (int index)
 {
 	return ( *((uchar *)(gd->env_addr + index)) );
 }
-
+#endif
 
 /* this is called before nand_init()
  * so we can't read Nand to validate env data.
@@ -126,6 +138,74 @@ uchar env_get_char_spec (int index)
  * the SPL loads not only the U-Boot image from NAND but also the
  * environment.
  */
+
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+int nand_env_init(void)
+{
+	/*struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
+	if (!mtd)
+		return 1;
+
+	int blocksize = mtd->erasesize;
+	nand_erase_options_t nand_erase_options;
+	
+	nand_erase_options.length = blocksize;
+	nand_erase_options.quiet = 0;
+	nand_erase_options.jffs2 = 0;
+	nand_erase_options.scrub = 0;
+	nand_erase_options.offset = CONFIG_ENV_OFFSET;*/
+	//printk("%s enter\n", __func__);
+#if defined(ENV_IS_EMBEDDED)
+	int crc1_ok = 0, crc2_ok = 0;
+	env_t *tmp_env1, *tmp_env2;
+
+	tmp_env1 = env_ptr;
+	tmp_env2 = (env_t *)((ulong)env_ptr + CONFIG_ENV_SIZE);
+
+	crc1_ok = (crc32(0, tmp_env1->data, ENV_SIZE) == tmp_env1->crc);
+	crc2_ok = (crc32(0, tmp_env2->data, ENV_SIZE) == tmp_env2->crc);
+
+	if (!crc1_ok && !crc2_ok){
+		gd->env_addr = 0;
+		gd->env_valid = 0;
+		return 0;
+	}
+	else if(crc1_ok && !crc2_ok)
+		gd->env_valid = 1;
+	else if(!crc1_ok && crc2_ok)
+		gd->env_valid = 2;
+	else {
+		/* both ok - check serial */
+		if(tmp_env1->flags == 255 && tmp_env2->flags == 0)
+			gd->env_valid = 2;
+		else if(tmp_env2->flags == 255 && tmp_env1->flags == 0)
+			gd->env_valid = 1;
+		else if(tmp_env1->flags > tmp_env2->flags)
+			gd->env_valid = 1;
+		else if(tmp_env2->flags > tmp_env1->flags)
+			gd->env_valid = 2;
+		else /* flags are equal - almost impossible */
+			gd->env_valid = 1;
+	}
+
+	if (gd->env_valid == 1)
+		env_ptr = tmp_env1;
+	else if (gd->env_valid == 2)
+		env_ptr = tmp_env2;
+
+	gd->env_addr = (ulong)env_ptr->data;
+	
+#else /* ENV_IS_EMBEDDED */
+	gd->env_addr  = (ulong)&default_environment[0];
+	gd->env_valid = 1;
+
+#endif /* ENV_IS_EMBEDDED */
+
+	return (0);
+}
+	
+#else
+
 int env_init(void)
 {
 	/*struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
@@ -189,6 +269,7 @@ int env_init(void)
 
 	return (0);
 }
+#endif
 
 #ifdef CMD_SAVEENV
 /*
@@ -238,7 +319,7 @@ int writeenv(size_t offset, u_char *buf)
 
 		error = mtd->write_oob(mtd, addr, &aml_oob_ops);
 		if (error) {
-			printf("blk check good but write failed: %llx, %d\n", (long long unsigned int)offset, error);
+			printf("blk check good but write failed: %llx, %d\n", offset, error);
 			return 1;
 		}
 
@@ -251,9 +332,195 @@ int writeenv(size_t offset, u_char *buf)
 	kfree(data_buf);
 	return 0;
 }
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+
 #ifdef CONFIG_ENV_OFFSET_REDUND
 static unsigned char env_flags;
 
+int nand_saveenv(void)
+{
+    env_t	*env_new_p = NULL;
+	ssize_t	len;
+	char	*res;
+	struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
+	if (IS_ERR(mtd))
+		return 1;
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	size_t total;
+	size_t offset = CONFIG_ENV_IN_NAND_OFFSET;
+	int ret = 0;
+	nand_erase_options_t nand_erase_options;
+    //printk("123 %s enter\n", __func__);
+	offset = (1024 * aml_chip->page_size * (mtd->writesize / (aml_chip->plane_num * aml_chip->page_size)));
+	if (CONFIG_ENV_IN_NAND_OFFSET < offset)
+		_debug ("env define offset must larger than 1024 page size: %d \n", mtd->writesize);
+	else
+		offset = CONFIG_ENV_IN_NAND_OFFSET;
+
+	env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);		
+	res = (char *)&(env_new_p->data);
+	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE);
+	if (len < 0) {
+		error("Cannot export environment: errno = %d\n", errno);
+		free(env_new_p);			
+		return 1;
+	}
+	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);
+	env_new_p->flags = ++env_flags; /* increase the serial */
+	total = CONFIG_ENV_SIZE;
+
+	nand_erase_options.length = CONFIG_ENV_RANGE;
+	nand_erase_options.quiet = 0;
+	nand_erase_options.jffs2 = 0;
+	nand_erase_options.scrub = 0;
+
+	if (CONFIG_ENV_RANGE < CONFIG_ENV_SIZE)
+		return 1;
+	if(gd->env_valid == 1) {
+		puts ("Erasing redundant Nand...\n");
+		nand_erase_options.offset = CONFIG_ENV_OFFSET_REDUND;
+		if (nand_erase_opts(mtd, &nand_erase_options))
+			return 1;
+
+		puts ("Writing to redundant Nand... ");
+		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) env_new_p);
+	} else {
+		puts ("Erasing Nand...\n");
+		nand_erase_options.offset = CONFIG_ENV_IN_NAND_OFFSET;
+		if (nand_erase_opts(mtd, &nand_erase_options))
+			return 1;
+
+		puts ("Writing to Nand... ");
+		ret = writeenv(CONFIG_ENV_IN_NAND_OFFSET, (u_char *) env_new_p);
+	}
+	if (ret) {
+		puts("FAILED!\n");
+		return 1;
+	}
+
+	puts ("done\n");
+	gd->env_valid = (gd->env_valid == 2 ? 1 : 2);
+    free(env_new_p);
+	return ret;
+}
+#else /* ! CONFIG_ENV_OFFSET_REDUND */
+int nand_saveenv(void)
+{
+    env_t *env_new_p = NULL;
+	char	*res;
+	ssize_t	len;
+	struct mtd_info *mtd;
+	struct aml_nand_bbt_info *nand_bbt_info;
+	struct env_free_node_t *env_free_node, *env_tmp_node;
+	int error = 0, pages_per_blk, i = 1;
+	size_t addr = 0;
+	struct erase_info aml_env_erase_info;
+    //printk("abc %s enter\n", __func__);
+	mtd = nand_info[nand_curr_device];
+	if (mtd == NULL)
+		return 1;
+
+	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	if (!aml_chip->aml_nandenv_info->env_init) 
+		return 1;
+
+	pages_per_blk = mtd->erasesize / mtd->writesize;
+	if ((mtd->writesize < CONFIG_ENV_SIZE) && (aml_chip->aml_nandenv_info->env_valid == 1))
+		i = (CONFIG_ENV_SIZE + mtd->writesize - 1) / mtd->writesize;
+	
+	if (aml_chip->aml_nandenv_info->env_valid) {
+		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr += i;
+		if ((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr + i) > pages_per_blk) {
+
+			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
+			if (env_free_node == NULL)
+				return -ENOMEM;
+
+			env_free_node->phy_blk_addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+			env_free_node->ec = aml_chip->aml_nandenv_info->env_valid_node->ec;
+			env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+			while (env_tmp_node->next != NULL) {
+				env_tmp_node = env_tmp_node->next;
+			}
+			env_tmp_node->next = env_free_node;
+
+			env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+			aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = env_tmp_node->phy_blk_addr;
+			aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = 0;
+			aml_chip->aml_nandenv_info->env_valid_node->ec = env_tmp_node->ec;
+			aml_chip->aml_nandenv_info->env_valid_node->timestamp += 1;
+			aml_chip->aml_nandenv_info->env_free_node = env_tmp_node->next;
+			kfree(env_tmp_node);
+		}
+	}
+	else {
+
+		env_tmp_node = aml_chip->aml_nandenv_info->env_free_node;
+		aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = env_tmp_node->phy_blk_addr;
+		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = 0;
+		aml_chip->aml_nandenv_info->env_valid_node->ec = env_tmp_node->ec;
+		aml_chip->aml_nandenv_info->env_valid_node->timestamp += 1;
+		aml_chip->aml_nandenv_info->env_free_node = env_tmp_node->next;
+		kfree(env_tmp_node);
+	}
+
+	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
+	addr *= mtd->erasesize;
+	addr += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
+	if ((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr == 0)&&aml_chip->aml_nandenv_info->env_valid) {
+
+		memset(&aml_env_erase_info, 0, sizeof(struct erase_info));
+		aml_env_erase_info.mtd = mtd;
+		aml_env_erase_info.addr = addr;
+		aml_env_erase_info.len = mtd->erasesize;
+
+		error = mtd->erase(mtd, &aml_env_erase_info);
+		if (error) {
+			printf("env free blk erase failed %d\n", error);
+			mtd->block_markbad(mtd, addr);
+			return error;
+		}
+		aml_chip->aml_nandenv_info->env_valid_node->ec++;
+	}
+
+    env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);
+    if(!env_new_p){
+        error("Cannot malloc env_t\n");
+        return 1;
+    }
+	// get env data from hash table
+	res = (char *)&(env_new_p->data);
+	memset(env_new_p->data, 0, ENV_SIZE);
+	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE);
+	if (len < 0) {
+		error("Cannot export environment: errno = %d\n", errno);		
+		free(env_new_p);
+		return 1;
+	}
+	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);	
+
+	nand_bbt_info = &aml_chip->aml_nandenv_info->nand_bbt_info;
+	if ((!memcmp(nand_bbt_info->bbt_head_magic, BBT_HEAD_MAGIC, 4)) && (!memcmp(nand_bbt_info->bbt_tail_magic, BBT_TAIL_MAGIC, 4))) {
+		memcpy(env_new_p->data + default_environment_size, aml_chip->aml_nandenv_info->nand_bbt_info.bbt_head_magic, sizeof(struct aml_nand_bbt_info));
+		env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);
+	}
+	printf("Writing to Nand... 0x%x\n", addr);
+	if (writeenv(addr, (u_char *) env_new_p)) {
+		printf("FAILED!\n");
+        free(env_new_p);
+		return 1;
+	}
+	aml_chip->aml_nandenv_info->env_valid = 1;
+	printf("Successful!\n");
+    free(env_new_p);
+	return error;
+}
+#endif /* CONFIG_ENV_OFFSET_REDUND */
+
+#else
+
+#ifdef CONFIG_ENV_OFFSET_REDUND
+static unsigned char env_flags;
 int saveenv(void)
 {
     env_t	*env_new_p = NULL;
@@ -434,7 +701,7 @@ int saveenv(void)
 }
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 #endif /* CMD_SAVEENV */
-
+#endif /* CMD_SAVEENV */
 int readenv (size_t offset, u_char * buf)
 {
     env_t	*env_p = (env_t	*)buf;
@@ -526,6 +793,91 @@ int readenv (size_t offset, u_char * buf)
 	return 0;
 }
 
+
+#ifdef CONFIG_SPI_NAND_COMPATIBLE
+
+#ifdef CONFIG_ENV_OFFSET_REDUND
+void nand_env_relocate_spec (void)
+{
+#if !defined(ENV_IS_EMBEDDED)
+	size_t total;
+	int crc1_ok = 0, crc2_ok = 0;
+	env_t *tmp_env1, *tmp_env2;
+    //printk("%s enter\n", __func__);
+	total = CONFIG_ENV_SIZE;
+
+	tmp_env1 = (env_t *) malloc(CONFIG_ENV_SIZE);
+	tmp_env2 = (env_t *) malloc(CONFIG_ENV_SIZE);
+
+	if (readenv(CONFIG_ENV_IN_NAND_OFFSET, (u_char *) tmp_env1))
+		puts("No Valid Environment Area Found\n");
+	if (readenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) tmp_env2))
+		puts("No Valid Reundant Environment Area Found\n");
+
+	crc1_ok = (crc32(0, tmp_env1->data, ENV_SIZE) == tmp_env1->crc);
+	crc2_ok = (crc32(0, tmp_env2->data, ENV_SIZE) == tmp_env2->crc);
+
+	if(!crc1_ok && !crc2_ok) {
+		free(tmp_env1);
+		free(tmp_env2);
+		return use_default();
+	} else if(crc1_ok && !crc2_ok)
+		gd->env_valid = 1;
+	else if(!crc1_ok && crc2_ok)
+		gd->env_valid = 2;
+	else {
+		/* both ok - check serial */
+		if(tmp_env1->flags == 255 && tmp_env2->flags == 0)
+			gd->env_valid = 2;
+		else if(tmp_env2->flags == 255 && tmp_env1->flags == 0)
+			gd->env_valid = 1;
+		else if(tmp_env1->flags > tmp_env2->flags)
+			gd->env_valid = 1;
+		else if(tmp_env2->flags > tmp_env1->flags)
+			gd->env_valid = 2;
+		else /* flags are equal - almost impossible */
+			gd->env_valid = 1;
+
+	}
+
+	free(env_ptr);
+	if(gd->env_valid == 1) {
+		env_ptr = tmp_env1;
+		free(tmp_env2);
+	} else {
+		env_ptr = tmp_env2;
+		free(tmp_env1);
+	}
+
+#endif /* ! ENV_IS_EMBEDDED */
+}
+#else /* ! CONFIG_ENV_OFFSET_REDUND */
+/*
+ * The legacy NAND code saved the environment in the first NAND device i.e.,
+ * nand_dev_desc + 0. This is also the behaviour using the new NAND code.
+ */
+void nand_env_relocate_spec (void)
+{
+#if !defined(ENV_IS_EMBEDDED)
+	int ret;
+	env_t env_buf;
+	
+	memset(env_buf.data, 0, ENV_SIZE);
+	ret = readenv(CONFIG_ENV_IN_NAND_OFFSET, (u_char *) &env_buf);
+	if (ret) {		
+		set_default_env("!readenv() failed");
+        if (ret == 2){
+		nand_saveenv();
+        	}
+		return;
+	}	
+	env_import(&env_buf, 1);
+	
+#endif /* ! ENV_IS_EMBEDDED */
+}
+#endif /* CONFIG_ENV_OFFSET_REDUND */
+
+#else
 #ifdef CONFIG_ENV_OFFSET_REDUND
 void env_relocate_spec (void)
 {
@@ -611,6 +963,7 @@ void env_relocate_spec (void)
 	
 #endif /* ! ENV_IS_EMBEDDED */
 }
+#endif /* CONFIG_ENV_OFFSET_REDUND */
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 
 #if !defined(ENV_IS_EMBEDDED)

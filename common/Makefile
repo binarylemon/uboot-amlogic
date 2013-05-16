@@ -64,6 +64,7 @@ COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
+COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += env_amlnand.o env_sf.o env_switch.o
 # command
 COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
 COBJS-$(CONFIG_HDCP_PREFETCH) += cmd_hdcp.o
@@ -125,6 +126,7 @@ COBJS-$(CONFIG_CMD_MMC) += cmd_mmc.o
 COBJS-$(CONFIG_MP) += cmd_mp.o
 COBJS-$(CONFIG_CMD_MTDPARTS) += cmd_mtdparts.o
 COBJS-$(CONFIG_CMD_NAND) += cmd_nand.o
+COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += cmd_interface.o
 COBJS-$(CONFIG_CMD_NET) += cmd_net.o
 COBJS-$(CONFIG_CMD_ONENAND) += cmd_onenand.o
 COBJS-$(CONFIG_CMD_OTP) += cmd_otp.o
