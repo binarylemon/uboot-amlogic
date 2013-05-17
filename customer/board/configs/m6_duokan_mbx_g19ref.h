@@ -13,15 +13,14 @@
  *  WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE should not be both existed
  */
 #define CONFIG_AML_MESON6
-//#define WRITE_TO_EFUSE_ENABLE        
-#define WRITE_TO_NAND_ENABLE
+#define WRITE_TO_EFUSE_ENABLE
+//#define WRITE_TO_NAND_ENABLE
 
 #if defined(WRITE_TO_NAND_ENABLE)
 #define CONFIG_SECURITYKEY 1
 #define CONFIG_AML_NAND_KEY 1
-#endif
-
 #define CONFIG_HDCP_PREFETCH 1
+#endif
 
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
 #error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
@@ -30,6 +29,7 @@
 
 #define CONFIG_AML_TINY_USBTOOL
 
+#define CONFIG_CMDLINE_TAG     1       /* enable passing of ATAGs      */
 #define CONFIG_CMDLINE_EDITING 1       /* Command-line editing */
 
 //UART Sectoion
@@ -45,9 +45,9 @@
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
-#define CONFIG_CMD_NAND  1
+//#define CONFIG_CMD_NAND  1
 //#endif
-#define CONFIG_CMD_SF    1
+//#define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
 #define SPI_WRITE_PROTECT  1
@@ -55,8 +55,8 @@
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
-#define CONFIG_SARADC 1
-#define CONFIG_CMD_SARADC
+//#define CONFIG_SARADC 1
+//#define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 
@@ -90,7 +90,7 @@
 //#define CONFIG_SDIO_B1   1
 //#define CONFIG_SDIO_A    1
 #define CONFIG_SDIO_B    1
-//#define CONFIG_SDIO_C    1
+#define CONFIG_SDIO_C    1
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
 
 
@@ -168,23 +168,20 @@
 	"outputmode=720p\0" \
 	"outputtemp=720p\0" \
 	"cvbsenable=true\0" \
-	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
-	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
+	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run switch_bootmode\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
-	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
-	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then tiny_usbtool 20000; fi; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=nand read logo 0x83000000 0 800000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"nandargs=run cvbscheck;mmc read 1 0x83000000 4000 3000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
-	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
-	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"nandboot=echo Booting from eMMC ...;run nandargs;mmc read 1 ${loadaddr} a000 3000;bootm;run recovery\0" \
+	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmc read 1 ${loadaddr} 6000 3000; bootm\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
 	"cdc_connect_timeout=9999999999" \
 
 #define CONFIG_BOOTCOMMAND \
- "setenv bootcmd run nandboot; saveenv; run nandboot"
+ "run nandboot"
 
 /*
 #define CONFIG_BOOTCOMMAND \
@@ -195,8 +192,8 @@
 
 #define CONFIG_AUTO_COMPLETE	1
 
-#define CONFIG_SPI_BOOT 1
-//#define CONFIG_MMC_BOOT
+//#define CONFIG_SPI_BOOT 1
+#define CONFIG_MMC_BOOT 1
 #ifndef CONFIG_JERRY_NAND_TEST
 //#define CONFIG_NAND_BOOT 1
 #endif
@@ -223,8 +220,14 @@
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0
-	#define CONFIG_ENV_OFFSET       0x1000000
+	#define CONFIG_SYS_MMC_ENV_DEV        1
+	#define CONFIG_ENV_DEVICE_ID 1    
+	#define CONFIG_ENV_OFFSET       0x400000
+#elif defined CONFIG_EMMC_BOOT
+	#define CONFIG_ENV_IS_IN_EMMC
+	#define CONFIG_CMD_SAVEENV
+	#define CONFIG_ENV_DEVICE_ID 1    
+	#define CONFIG_ENV_OFFSET       0x400000
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
@@ -316,7 +319,7 @@
 
 //note: please DO NOT remove following check code
 #if !defined(DDR3_9_9_9) && !defined(DDR3_7_7_7)
-	#error "Please set DDR3 property first in file m6_ref_v1.h\n"
+	#error "Please set DDR3 property first in file m6_duokan_mbx_g19ref.h\n"
 #endif
 
 #define M6_DDR3_1GB
@@ -327,7 +330,7 @@
 
 //note: please DO NOT remove following check code
 #if !defined(M6_DDR3_1GB) && !defined(M6_DDR3_512M)
-	#error "Please set DDR3 capacity first in file m6_ref_v1.h\n"
+	#error "Please set DDR3 capacity first in file m6_duokan_mbx_g19ref.h\n"
 #endif
 
 
@@ -375,4 +378,4 @@
 #define CONFIG_CMD_IMI 1
 #define CONFIG_ANDROID_IMG 1
 
-#endif //__CONFIG_M6_REF_V1_H__
+#endif //__CONFIG_M6_MBX_G19_H__
