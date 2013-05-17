@@ -536,10 +536,10 @@ void meson_pm_suspend(void)
     pdata->ddr_clk |= ddr_clk_N << 9;
 
     printf("target ddr clock 0x%x!\n", pdata->ddr_clk);
-	
+#ifdef CONFIG_SARADC
 	elvis_array[0] = get_adc_sample(4);
 	printf("0:0x%x\n", elvis_array[0]);
-
+#endif
 #ifndef SUSPEND_WITH_SARADC_ON	
 //    analog_switch(OFF);
 #endif
@@ -555,8 +555,10 @@ void meson_pm_suspend(void)
 	printf("b\n");
     clk_switch(OFF);
 	printf("c\n");
+#ifdef CONFIG_SARADC
 	elvis_array[2] = get_adc_sample(4);
 	printf("2:0x%x\n", elvis_array[2]);
+#endif
     pll_switch(OFF);
 
 	power_gate_switch(OFF);
@@ -609,7 +611,9 @@ void meson_pm_suspend(void)
 	writel(0x87654321, P_AO_RTI_STATUS_REG2);//set flag for u-boot suspend cmd
     meson_power_suspend();
     printf("Elvis ~.~!\n");
+#idef CONFIG_SARADC
 	elvis_array[3] = get_adc_sample(4);
+#endif
 #endif
 #else
     /**
