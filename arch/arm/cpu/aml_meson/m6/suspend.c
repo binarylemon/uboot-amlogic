@@ -611,7 +611,7 @@ void meson_pm_suspend(void)
 	writel(0x87654321, P_AO_RTI_STATUS_REG2);//set flag for u-boot suspend cmd
     meson_power_suspend();
     printf("Elvis ~.~!\n");
-#idef CONFIG_SARADC
+#ifdef CONFIG_SARADC
 	elvis_array[3] = get_adc_sample(4);
 #endif
 #endif
