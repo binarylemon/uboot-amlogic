@@ -471,6 +471,19 @@ inline int get_key(void)
 {
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
+#ifdef CONFIG_SWITCH_BOOT_MODE
+int switch_boot_mode(void)
+{
+	printf("switch_boot_mode\n");
+	unsigned int suspend_status_current2 = readl(P_AO_RTI_STATUS_REG2);
+	printf("suspend_status_current2=%x\n",suspend_status_current2);
+	if((suspend_status_current2 == 0))
+	{
+		run_command ("suspend", 0);
+	}
+	return 0;
+}
+#endif
 
 
 /*//AC online

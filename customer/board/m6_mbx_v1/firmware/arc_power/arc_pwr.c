@@ -284,6 +284,7 @@ void enter_power_down()
     //unsigned long test_reg_1;
     //unsigned long poweronflag = 0;
     unsigned long cec_flag = 0;
+	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
     hdmi_cec_func_config = readl(P_AO_DEBUG_REG0); 
     f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
     serial_put_hex(hdmi_cec_func_config,32);
@@ -683,7 +684,20 @@ void enter_power_down()
     f_serial_puts("  MCFG\n");
     wait_uart_empty();
 
-#endif   //pwr_ddr_off
+#endif   //pwr_ddr_off.
+ 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
+	{
+		writel(0xa0a0a0a0,P_AO_RTI_STATUS_REG2);
+		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+		 clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+		 writel(10,0xc1109904);
+		writel(1<<22|3<<24,0xc1109900);
+  
+		do{
+			udelay(20000);f_serial_puts("wait reset...\n");wait_uart_empty();
+		}while(1);
+	  }
+
   // Moved the enable mmc req and SEC to ARM code.
   //enable_mmc_req();
 	
