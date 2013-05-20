@@ -58,6 +58,7 @@ COBJS-$(CONFIG_RBTREE)	+= rbtree.o
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
+OBJS += libmx.o
 
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

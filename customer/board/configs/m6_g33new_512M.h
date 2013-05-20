@@ -133,6 +133,11 @@
 #define CONFIG_CMD_SUSPEND 1
 //#define SUSPEND_WITH_SARADC_ON
 
+/*
+ * add for mx revd
+ */ 
+ #define CONFIG_CMD_CHIPREV 1
+ 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
@@ -146,6 +151,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_refg24\0" \
 	"chipname=8726m\0" \
+	"chiprev=B\0" \
 	"machid=4e27\0" \
 	"upgrade_step=0\0" \
 	"logo_img_size=0\0" \
@@ -163,8 +169,8 @@
 	"batfull_threshold=100\0" \
 	"power_off=video dev disable; msleep 100; poweroff\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend mem=512m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; run val_init; usbbc; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
-	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; fi\0" \
+	"preboot=if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; run update_chiprev; fi; if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; run val_init; usbbc; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update_chiprev; run update; fi\0" \
 	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
 	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi; nand read recovery ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm\0" \
@@ -184,7 +190,8 @@
 	"val_init=setenv sleep_count 0; setenv key_timeout 0; setenv key_pressed 0; setenv poweron_count 0; setenv key_count 0\0" \
 	"usb_burning_or_not=if getkey; then if itest ${key_pressed} == 0; then calc ${key_count} + 1 key_count; setenv key_pressed 1; setenv poweron_count 0; echo 1; else calc ${poweron_count} + 1 poweron_count; if itest ${poweron_count} > 1000; then run bootcmd; fi; fi;else if itest ${key_pressed} == 1; then setenv key_pressed 0; setenv key_timeout 0; echo 3; else calc ${key_timeout} + 1 key_timeout ;if itest ${key_timeout} > 200; then setenv key_timeout 0; setenv key_count 0;fi;fi;fi;if itest ${key_count} > 2; then setenv key_count 0;run sdcard_update;run usb_burning; fi;\0" \
 	"usb_burning=tiny_usbtool 20000\0" \
-    "sdcard_update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi;\0"
+    "sdcard_update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi;\0" \
+    "update_chiprev=chiprev; setenv bootargs ${bootargs} chiprev=${chiprev}\0" 
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=1512000000; hdcp prefetch nand; bootm"

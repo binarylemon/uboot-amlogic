@@ -21,7 +21,7 @@ read one page only
 #define DEFAULT_ECC_MODE  ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
 
 #if 1
-STATIC_PREFIX void retry_micron_handle(unsigned retry_cnt)
+STATIC_PREFIX short retry_micron_handle(unsigned retry_cnt)
 {
 	serial_puts("enter retry_cnt=0x");
 	serial_put_hex(retry_cnt,32);
@@ -41,7 +41,7 @@ STATIC_PREFIX void retry_micron_handle(unsigned retry_cnt)
     writel(CE0 | IDLE,P_NAND_CMD);
 }
 
-STATIC_PREFIX void retry_micron_exit(void)
+STATIC_PREFIX short retry_micron_exit()
 {
     serial_puts("retry_micron_exit\n");
     
@@ -164,13 +164,36 @@ STATIC_PREFIX short nfio_page_read(unsigned src,unsigned mem,unsigned ext)
     return ERROR_NONE;
 }
 #endif
+#ifdef MX_REVD
+unsigned char pagelist_hynix256[128] = {
+	0x00, 0x01, 0x02, 0x03, 0x06, 0x07, 0x0A, 0x0B,
+	0x0E, 0x0F, 0x12, 0x13, 0x16, 0x17, 0x1A, 0x1B,
+	0x1E, 0x1F, 0x22, 0x23, 0x26, 0x27, 0x2A, 0x2B,
+	0x2E, 0x2F, 0x32, 0x33, 0x36, 0x37, 0x3A, 0x3B,
+
+	0x3E, 0x3F, 0x42, 0x43, 0x46, 0x47, 0x4A, 0x4B,	
+	0x4E, 0x4F, 0x52, 0x53, 0x56, 0x57, 0x5A, 0x5B,
+	0x5E, 0x5F, 0x62, 0x63, 0x66, 0x67, 0x6A, 0x6B,
+	0x6E, 0x6F, 0x72, 0x73, 0x76, 0x77, 0x7A, 0x7B,
+	
+	0x7E, 0x7F, 0x82, 0x83, 0x86, 0x87, 0x8A, 0x8B,
+	0x8E, 0x8F, 0x92, 0x93, 0x96, 0x97, 0x9A, 0x9B,
+	0x9E, 0x9F, 0xA2, 0xA3, 0xA6, 0xA7, 0xAA, 0xAB,
+	0xAE, 0xAF, 0xB2, 0xB3, 0xB6, 0xB7, 0xBA, 0xBB,
+
+	0xBE, 0xBF, 0xC2, 0xC3, 0xC6, 0xC7, 0xCA, 0xCB,
+	0xCE, 0xCF, 0xD2, 0xD3, 0xD6, 0xD7, 0xDA, 0xDB,
+	0xDE, 0xDF, 0xE2, 0xE3, 0xE6, 0xE7, 0xEA, 0xEB,
+	0xEE, 0xEF, 0xF2, 0xF3, 0xF6, 0xF7, 0xFA, 0xFB,
+};
+#endif
 STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned ext,unsigned area)
 {
     int i, ecc_mode, short_mode, short_size, pages, page_size,pages_in_block;
     int ret, data_size, page_base, read_size;
 	int total_page = 1024;
 	unsigned int new_nand_type;
-	int retry_cnt = 0;
+	int retry_cnt = 0, read_page;
     // nand parameters
     // when ecc_mode==1, page_size is 512 bytes.
     ecc_mode = ext>>14&7;
@@ -190,8 +213,7 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
     data_size = page_size * 8 * pages;
     
     page_base = ((area<<8)+1)+(src/data_size);
-    if((new_nand_type) && (new_nand_type < 10))
-    	page_base += 1;
+	
     mem-=src%data_size;
     count+=src%data_size;
 
@@ -199,14 +221,23 @@ STATIC_PREFIX short nfio_read(unsigned src,unsigned mem,unsigned count,unsigned 
     {
     			retry_cnt =0;
        // do{
-       		if((new_nand_type) && (new_nand_type < 10)){		//for new nand
-       			if((i+page_base)%4 == 0)
-       				i += 2;
-       		}
 page_retry:       		
-	        ret = nfio_page_read(i+page_base, mem+read_size, ext);
+#ifdef MX_REVD
+				if((new_nand_type) && (new_nand_type < 10)){		//for new nand
+					read_page = pagelist_hynix256[(i+page_base)%256] + ((i+page_base)/256)*256;					
+					ret = nfio_page_read(read_page, mem+read_size, ext);
+				}
+				else{
+					ret = nfio_page_read(i+page_base, mem+read_size, ext);
+				}
+#else
+		ret = nfio_page_read(i+page_base, mem+read_size, ext);
+#endif
 	        if (ret) 
 	        {
+	  		serial_puts("nand read addr=0x");	
+	        	serial_put_hex(i+page_base,32);
+	        	serial_puts("nfio_read read err here\n");
 	        	if((new_nand_type == MICRON_20NM) && (retry_cnt < 7)) {
 	        		retry_micron_handle(retry_cnt);
 	        		 retry_cnt++;
@@ -235,7 +266,7 @@ STATIC_PREFIX short
     unsigned por_cfg=romboot_info->por_cfg;
     unsigned ext=romboot_info->ext;
     //unsigned area;
-    unsigned temp_addr = NAND_TEMP_BUF;
+    unsigned temp_addr = NAND_TEMP_BUF, ret = 0;
     
     
     switch(POR_GET_1ST_CFG(por_cfg))
@@ -268,7 +299,15 @@ STATIC_PREFIX short
     if(romboot_info->boot_id||romboot_info->init[0])
         return -20;
         
-    nfio_page_read(0,temp_addr,DEFAULT_ECC_MODE|(ext&(3<<22)));
+    ret = nfio_page_read(0,temp_addr,DEFAULT_ECC_MODE|(ext&(3<<22)));
+    if(ret == ERROR_NAND_ECC){
+	ret = nfio_page_read(0,temp_addr,DEFAULT_ECC_MODE|(ext&(3<<22)) | (1<<19));
+    }
+	
+    if(ret == ERROR_NAND_ECC){
+        serial_puts("nfio_read read info page error here\n");
+        return ret;
+    }
 //    for(area=0;area<4;area++)
 //    {
 //        if(romboot_info->load[0][area]==0&&romboot_info->dchk[0][area]==0)

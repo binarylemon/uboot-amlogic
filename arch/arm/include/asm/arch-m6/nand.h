@@ -6,6 +6,21 @@
 #include <linux/mtd/partitions.h>
 #include "io.h"
 
+/***default disable MX RevD support***/
+#define	MX_REVD
+
+#ifdef MX_REVD
+#define	NAND_PAGELIST_MAGIC 	0x4c50414e
+#endif
+
+#define MX_REV_B_ID  (0x00000bbb)
+#define MX_REV_D_ID  (0x00000d67)
+
+/***************ERROR CODING*******************/
+#define NAND_CHIP_ID_ERR            1
+#define NAND_SHIP_BAD_BLOCK_ERR     2
+#define NAND_CHIP_REVB_HY_ERR       3
+
 /*fixme container_of this function is in common.h, but if include it, it
  will case serial compile error*/
 /**
@@ -149,7 +164,7 @@
 #define NFC_CMD_RB_INT(ce,time)        ((ce)|RB|(((ce>>10)^0xf)<<14)|(time&0x1f))
 #define NFC_CMD_RBIO(time,io)		   (RB|io|(time&0x1f))
 #define NFC_CMD_RBIO_INT(io,time)      (RB|(((io>>10)^0x7)<<14)|(time&0x1f))
-#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + (seed&0x7fff)))
+#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + seed&0x7fff))
 #define NFC_CMD_STS(tim) 			   (STS|(tim&3))
 #define NFC_CMD_M2N(ran,ecc,sho,pgsz,pag)      ((ran?M2N:M2N_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
 #define NFC_CMD_N2M(ran,ecc,sho,pgsz,pag)      ((ran?N2M:N2M_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
@@ -219,7 +234,7 @@
 #define NFC_SEND_CMD_DWR(data)              NFC_SEND_CMD(DWR     |(data&0xff  ))
 #define NFC_SEND_CMD_DRD(    )              NFC_SEND_CMD(DRD                   )
 */
-#define NFC_SEND_CMD_IDLE(ce,time)          NFC_SEND_CMD(NFC_CMD_IDLE(ce,time))
+#define NFC_SEND_CMD_IDLE(ce,time)          {while(NFC_CMDFIFO_SIZE()>0);NFC_SEND_CMD(NFC_CMD_IDLE(ce,time));}
 #define NFC_SEND_CMD_CLE(ce,cmd  )          NFC_SEND_CMD(NFC_CMD_CLE(ce,cmd))
 #define NFC_SEND_CMD_ALE(ce,addr )          NFC_SEND_CMD(NFC_CMD_ALE(ce,addr))
 #define NFC_SEND_CMD_STANDBY(time)          NFC_SEND_CMD(NFC_CMD_STANDBY(time))
@@ -258,7 +273,7 @@
 #define NAND_INFO_DATA_1INFO(a)   ((a)&0xff)
 
 
-//#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
+#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
 
 
 #define AML_NORMAL						0
@@ -481,9 +496,9 @@ struct aml_nand_bch_desc{
 #define	SUMSUNG_2XNM 			30	
 
 #define   MICRON_20NM			40
-
 //for SANDISK
 #define    SANDISK_19NM			50
+#define     SANDISK_24NM			51
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -578,7 +593,6 @@ struct new_tech_nand_t{
     struct aml_nand_dynamic_read dynamic_read_info;
 };
 #endif
-
 #ifdef NAND_STATUS_TEST
 struct test_status{
 	char id_status;
@@ -587,7 +601,6 @@ struct test_status{
 	int boot_bad_block_status;
 };
 #endif
-
 struct aml_nand_chip {
 	/* mtd info */
 	u8 mfr_type;
@@ -631,6 +644,7 @@ struct aml_nand_chip {
 	u8 ecc_max;
     unsigned zero_cnt;
 	unsigned oob_fill_cnt;
+	unsigned boot_oob_fill_cnt;
 #ifdef NAND_STATUS_TEST
 	struct test_status  aml_nand_status;
 #endif
@@ -653,7 +667,7 @@ struct aml_nand_chip {
 	unsigned max_ecc;
     struct ecc_desc_s * ecc;
 //	unsigned onfi_mode;
-
+    unsigned err_sts;
 	//plateform operation function
 	void	(*aml_nand_hw_init)(struct aml_nand_chip *aml_chip);
 	void	(*aml_nand_adjust_timing)(struct aml_nand_chip *aml_chip);

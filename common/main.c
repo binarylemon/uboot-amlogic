@@ -385,6 +385,16 @@ extern void init_suspend_firmware(void);
 	init_suspend_firmware();
 #endif
 
+#ifdef CONFIG_CMD_CHIPREV
+	extern int init_env_chiprev(void);
+	char env_bootargs[256];
+	init_env_chiprev();
+	memset(env_bootargs, 0, 18);
+	sprintf(env_bootargs, "%s chiprev=%s", getenv("bootargs"), getenv("chiprev"));
+	setenv("bootargs", env_bootargs);
+	printf("bootargs = %s\n", env_bootargs);
+#endif
+	
 #ifdef CONFIG_PREBOOT
 	if ((p = getenv ("preboot")) != NULL) {
 # ifdef CONFIG_AUTOBOOT_KEYED
@@ -1454,18 +1464,22 @@ int run_command (const char *cmd, int flag)
 #endif
 
 		/* OK - call function to do the command */
+		rc = (cmdtp->cmd) (cmdtp, flag, argc, argv);
+/*
 		if ((cmdtp->cmd) (cmdtp, flag, argc, argv) != 0) {
 			rc = -1;
 		}
 
 		repeatable &= cmdtp->repeatable;
 
-		/* Did the user stop this? */
+		/* Did the user stop this? 
 		if (had_ctrlc ())
 			return -1;	/* if stopped then not repeatable */
+		
 	}
 
-	return rc ? rc : repeatable;
+	//return rc ? rc : repeatable;
+	return rc;
 }
 
 /****************************************************************************/

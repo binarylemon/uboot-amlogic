@@ -135,6 +135,11 @@
 #define CONFIG_CMD_SUSPEND 1
 //#define SUSPEND_WITH_SARADC_ON
 
+/*
+ * add for mx revd
+ */ 
+ #define CONFIG_CMD_CHIPREV 1
+ 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
@@ -148,6 +153,7 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_refg24\0" \
 	"chipname=8726m\0" \
+	"chiprev=B\0" \
 	"machid=4e27\0" \
 	"upgrade_step=0\0" \
 	"logo_img_size=0\0" \
@@ -164,8 +170,8 @@
 	"batlow_threshold=3\0" \
 	"batfull_threshold=100\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
-	"preboot=if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; usbbc; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
-	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; fi\0" \
+	"preboot=if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; run update_chiprev; fi; if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; usbbc; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update_chiprev; run update; fi\0" \
 	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
 	"prepare=if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
 	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi; nand read recovery ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm\0" \
@@ -183,7 +189,8 @@
 	"aconline_or_not=if ac_online; then; else poweroff; fi\0" \
 	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; poweroff; fi; fi\0" \
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
-	"usb_burning=tiny_usbtool 20000\0"
+	"usb_burning=tiny_usbtool 20000\0" \
+    "update_chiprev=chiprev; setenv bootargs ${bootargs} chiprev=${chiprev}\0" 
 
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=1512000000;hdcp prefetch nand; bootm"
