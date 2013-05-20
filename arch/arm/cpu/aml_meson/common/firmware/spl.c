@@ -20,6 +20,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
+//write ENCI_MACV_N0 (CBUS 0x1b30) to 0, disable Macrovision
+#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
+	writel(0, CBUS_REG_ADDR(ENCI_MACV_N0));
+#endif
+
 //Default to open ARM JTAG for M6 only
 #if  defined(CONFIG_M6) || defined(CONFIG_M6TV)
 	#define AML_M6_JTAG_ENABLE
