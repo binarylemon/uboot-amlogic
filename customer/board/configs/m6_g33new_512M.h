@@ -136,7 +136,7 @@
 /*
  * add for mx revd
  */ 
-// #define CONFIG_CMD_CHIPREV 1
+ #define CONFIG_CMD_CHIPREV 1
  
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
