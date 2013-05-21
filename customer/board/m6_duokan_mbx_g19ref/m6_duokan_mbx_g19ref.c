@@ -36,21 +36,21 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #else
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #endif
