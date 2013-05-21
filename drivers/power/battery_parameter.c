@@ -39,8 +39,8 @@
 #define MIN_PRE_CHARGE_TIME     40                      // min pre-charge time
 #define MAX_FAST_CHARGE_TIME    720                     // max fast charge(const current) time, in minutes
 #define MIN_FAST_CHARGE_TIME    360                     // min fast charge time
-#define MAX_VBUS_VOLTAGE_LIMIT  4600                    // max VBUS voltage limit, in mV
-#define MIN_VBUS_VOLTAGE_LIMIT  4300                    // min VBUS voltage limit
+#define MAX_VBUS_VOLTAGE_LIMIT  4700                    // max VBUS voltage limit, in mV
+#define MIN_VBUS_VOLTAGE_LIMIT  4000                    // min VBUS voltage limit
 #define MAX_VBUS_CURRENT_LIMIT  900                     // max VBUS current limit, in mA
 #define MIN_VBUS_CURRENT_LIMIT  100                     // min VBUS current limit
 #endif
@@ -135,6 +135,7 @@ typedef enum {
 } pmu_para_member;
 
 struct battery_parameter board_battery_para = {};
+int match_cnt = 0;
 
 #define TYPE_INT	0
 #define TYPE_HEX	1
@@ -195,12 +196,25 @@ static int ssscanf(char *str, int type, int *value)
     return p - str; 
 }
 
+int is_letter(char c)
+{
+    if ((c >= 'a' && c <='z') || (c >= 'A' && c <= 'Z')) {
+        return 1;    
+    } else {
+        return 0;    
+    }
+}
+
 pmu_para_member match_key_word(char *buf, char **value_offset)
 {
     int i = 0;
+    int len;
+    char *p_find = NULL;
     for (i = 0; i < ARRAY_SIZE(str_battery_para); i++) {
-        if (strstr(buf, str_battery_para[i])) {
-            *value_offset = memchr(buf + strlen(str_battery_para[i]), '=', 200) + 1;
+        len = strlen(str_battery_para[i]);
+        p_find = strstr(buf, str_battery_para[i]); 
+        if (p_find && !is_letter(p_find[len])) {
+            *value_offset = memchr(buf + len, '=', 200) + 1;
             return i;
         }
     }
@@ -216,6 +230,7 @@ static int get_para_value(char *value, int *member, int range_lo, int range_hi, 
                *member);
         return -1;
     }
+    match_cnt++;
     return 0;     
 }
 
@@ -241,6 +256,7 @@ static int get_para_array(char *str, struct battery_curve *curve, char **return_
             curve[i].discharge_percent < 0 || curve[i].discharge_percent > 100) {
             printf("Wrong parameter of battery curve, ocv:%d, charge_percent:%d, discharge_percent:%d\n",
                    curve[i].ocv, curve[i].charge_percent, curve[i].discharge_percent);
+            return -1;
         }
         size -= (int)(p - tmp);
         tmp = p; 
@@ -534,6 +550,42 @@ static int parse_battery_para(char *base, int size)
         remain_size -= (int)(offset - pre_offset);
         pre_offset = offset;
     }
+    if (match_cnt < 10) {
+        printf("No enough parameters found, parse fail, match_cnt:%d\n", match_cnt);
+        return -1;
+    }
+    return 0;
+}
+
+int check_parsed_parameters(void)
+{
+    int i = 0;
+    int ocv_full = 0, ocv_empty = 0;
+    /*
+     * only check some important battery parameters
+     */
+    if ((!board_battery_para.pmu_battery_rdc) ||
+        (!board_battery_para.pmu_battery_cap) ||
+        (!board_battery_para.pmu_charge_efficiency)) {
+        printf("wrong value of important battery parameters\n");
+        return -1;
+    }
+    for (i = 0; i < 16; i++) {
+        if (board_battery_para.pmu_bat_curve[i].ocv == 0) {
+            printf("wrong valus of battery curve\n");
+            return -1;
+        }
+        if (!ocv_empty && board_battery_para.pmu_bat_curve[i].discharge_percent > 0 && i) {
+            ocv_empty = board_battery_para.pmu_bat_curve[i - 1].ocv;
+        }
+        if (!ocv_full && board_battery_para.pmu_bat_curve[i].discharge_percent == 100) {
+            ocv_full = board_battery_para.pmu_bat_curve[i].ocv;
+        }
+    }
+    if (!ocv_full || !ocv_empty) {
+        printf("wrong valus of battery curve\n");
+        return -1;
+    }
     return 0;
 }
 
@@ -558,7 +610,11 @@ int parse_battery_parameters(void)
     ssscanf(env_offset, TYPE_HEX, &size);
     
     if (parse_battery_para(offset, size) < 0) {
-        return -1;    
+        return -1;
+    }
+
+    if (check_parsed_parameters()) {
+        return -1;
     }
 
     printf("Successed for parse battery parameter\n");

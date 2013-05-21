@@ -78,7 +78,7 @@ int axp_charger_get_charging_status(void)
 	}
 }
 
-static int axp_get_basecap(void)
+static int axp_get_basecap()
 {
 	uint8_t val;
 
@@ -103,7 +103,7 @@ static void axp_set_basecap(int base_cap)
 }
 
 /* 得到开路电压 */
-static int axp_get_ocv(void)
+static int axp_get_ocv()
 {
 	int battery_ocv;
 	uint8_t v[2];
@@ -114,12 +114,29 @@ static int axp_get_ocv(void)
 }
 
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+static int axp_calculate_ocv(int charging, int rdc)
+{
+    struct axp_adc_res axp_adc;
+    int ibat, vbat;
+    int ocv;
+
+    axp_read_adc(&axp_adc);
+    ibat = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res)); 
+    vbat = (axp_adc.vbat_res * 1100) / 1000;
+    if (charging) {
+        ocv = vbat - (ibat * rdc) / 1000;
+    } else {
+        ocv = vbat + (ibat * rdc) / 1000;
+    }
+    return ocv;
+}
+#endif
 
 static int axp_get_coulomb(void)
 {
 	uint8_t  temp[8];
-	int64_t  rValue1,rValue2;
-	uint64_t rValue;
+	int64_t  rValue1,rValue2,rValue;
 	int Cur_CoulombCounter_tmp,m;
 
 
@@ -144,197 +161,188 @@ static int axp_get_coulomb(void)
 
 
 
-
-
-/* add OCV measure by wch */
-//#define CONFIG_AXP_USE_OCV
+//add OCV Measurement by wch
 #if defined(CONFIG_AXP_USE_OCV)
 #define AXP_CAP_REG 	0xB9
-#define AXP_CAP_NUM	10
-static int ocv_initCnt = 1;
-/***********************************************
-  *
-  * init_yes=0: 读取电量值
-  * init_yes=1: 初始化电量值
-  *
- ***********************************************/
-static int get_ocv_batteryCap(int init_yes)
+#define AXP_CAP_NUM	 20
+static signed char get_ocv_batteryCap(int init_yes)
 {
-	int   battery_ocv, charging_status, is_ac_online;
-  	unsigned int   i, capTotal=0;
-  	unsigned char    capValue, capTmp;
-  	static unsigned char  axp_cap_Value=0, capValue_Save=0;
-	static unsigned char  cap_buffer[AXP_CAP_NUM], cap_index=0;
+	int battery_ocv, charging_status, is_ac_online;
+  	unsigned int    i, capTotal=0;
+  	unsigned char capValue, capTmp;
+  	static int axp_cap_lastValue=0, cnt=1;
+	static unsigned char cap_buffer[AXP_CAP_NUM], cap_index=0;
 
-	//读状态
+  	//初始化求的第一次的电量值
+	if(init_yes)
+	{
+		if(init_yes==2)  
+			cnt = 1;
+		if(cnt)
+		{
+		 	memset(cap_buffer, 0, AXP_CAP_NUM);
+			axp_read( AXP_CAP_REG, &capValue);
+			capTmp = capValue;
+			while(1)
+			{
+				mdelay(5);
+				axp_read(AXP_CAP_REG, &capValue);
+//				printf("\n###capTmp=%d,capValue=%d\n",capTmp,capValue);
+				if(ABS(capTmp-capValue) > 5)
+					capTmp = capValue;
+				else
+				{
+					capValue = (capTmp+capValue) /2;
+					break;
+				}
+			}
+			memset(cap_buffer, capValue, AXP_CAP_NUM);
+			capTotal	= AXP_CAP_NUM*capValue;
+			capValue = capTotal /AXP_CAP_NUM;
+			if(!(capValue & (1<<7)))					//OCV Measurement normal work
+			{
+				capValue &= 0x7f;
+				if(capValue >= 100)  
+					capValue = 100;
+				axp_cap_lastValue = capValue;
+			}
+			else										//OCV Measurement not normal work
+			{ 
+				printf("OCV Measurement not normal work.\n");
+				cnt = 0;
+				cap_index = 0;
+				capTotal   = 0;	
+				return -1;
+			}
+			cnt = 0;
+			cap_index = 0;
+			capTotal   = 0;
+			printf("########################################:%d,%d\n",axp_cap_lastValue, capValue);
+		}	
+	}
+
+
+	//求电量平均值
+	axp_read( AXP_CAP_REG, &capValue);
+	capTmp = capValue;
+	while(1)
+	{
+		mdelay(100);
+		axp_read(AXP_CAP_REG, &capValue);
+//		printf("\n####capTmp=%d,capValue=%d\n",capTmp,capValue);
+		if(ABS(capTmp-capValue) > 5)
+			capTmp = capValue;
+		else
+		{
+			capValue = (capTmp+capValue) /2;
+			break;
+		}
+	}
+	
+	cap_buffer[cap_index] = capValue;
+	for(i=0; i<AXP_CAP_NUM; i++)
+		capTotal  += cap_buffer[i];
+	capValue = capTotal /AXP_CAP_NUM;
+	cap_index ++;
+	if(cap_index >= AXP_CAP_NUM)
+		cap_index = 0;
+
+
+	//状态
 	battery_ocv      = axp_get_ocv();
 	charging_status = axp_charger_get_charging_status();
 	is_ac_online      = axp_charger_is_ac_online();
+  	
 
-  	//初始电量值
-	if(init_yes)										
+	//拔插电源处理
+	if(is_ac_online /*charger->ac_valid*/)				//AC online
 	{
-		//求2次相邻电量平均值
-		memset(cap_buffer, 0, AXP_CAP_NUM);
-		axp_read(AXP_CAP_REG, &capValue);
-		capTmp = capValue;
-		while(1)
-		{
-			mdelay(100);
-			axp_read(AXP_CAP_REG, &capValue);
-			if(ABS(capTmp-capValue) > 5)
-				capTmp = capValue;
-			else
-			{
-				capValue = (capTmp+capValue) /2;
-				break;
-			}
-		}
-		
-		//存入10 个相同的电量值,求平均值
-		memset(cap_buffer, capValue, AXP_CAP_NUM);
-		capTotal	= AXP_CAP_NUM*capValue;
-		capValue = capTotal /AXP_CAP_NUM;
-		if(!(capValue & (1<<7)))						//OCV 正常工作
+		printf("\nAC online, actual cap percent: %d%\n",capValue);
+		if(!(capValue & (1<<7)))						//OCV Measurement normal work
 		{
 			capValue &= 0x7f;
-			if(capValue >= 100)
-				capValue = 100;				
-			if((battery_ocv >= 4090) && (charging_status == 0) && is_ac_online)
+			if(capValue >= 100)  
 				capValue = 100;
-						
-			axp_cap_Value = capValue;		
+				
+			if(capValue < axp_cap_lastValue)
+				capValue = axp_cap_lastValue;
+			else
+				axp_cap_lastValue = capValue;	
+
 		}
-		else											//OCV 不正常工作
+		else											//OCV Measurement not normal work
 		{ 
-			cap_index = 0;
-			capTotal   = 0;
 			printf("OCV Measurement not normal work.\n");
 			return -1;
 		}
-
-		cap_index = 0;
-		capTotal   = 0;
-		printf("##################init:axp actual cap percent capValue=%d%, capValue_Save=%d%, axp_cap_Value=%d%\n",capValue,capValue_Save,axp_cap_Value);
-
-		return (int)axp_cap_Value;						//返回初始化后的电量值
+				
 	}
-
-
-	//读取电量值
-	if(!init_yes)
+	else												//AC not online
 	{
-		//求2次相邻电量平均值
-		axp_read(AXP_CAP_REG, &capValue);
-		capTmp = capValue;
-		while(1)
-		{
-			mdelay(100);
-			axp_read(AXP_CAP_REG, &capValue);
-			if(ABS(capTmp-capValue) > 5)
-				capTmp = capValue;
-			else
-			{
-				capValue = (capTmp+capValue) /2;
-				break;
-			}
-		}
-
-		//判断OCV是否正常工作
-		if(!(capValue & (1<<7)))						//OCV 正常工作
+		printf("\nAC not online, actual cap percent: %d%\n",capValue);
+		if(!(capValue & (1<<7)))						//OCV Measurement normal work
 		{
 			capValue &= 0x7f;
-			if(capValue >= 100)
-				capValue = 100;			
-			if((battery_ocv >= 4090) && (charging_status == 0) && is_ac_online)
-				capValue = 100;			
+			if(capValue >= 100)  
+				capValue = 100;
+				
+			if(capValue > axp_cap_lastValue)
+				capValue = axp_cap_lastValue;
+			else
+				axp_cap_lastValue = capValue;
 		}
-		else											//OCV 不正常工作
+		else											//OCV Measurement not normal work
 		{ 
 			printf("OCV Measurement not normal work.\n");
 			return -1;
-		}	
-
-		//求10 次电量平均值
-		cap_buffer[cap_index] = capValue;
-		for(i=0; i<AXP_CAP_NUM; i++)
-			capTotal  += cap_buffer[i];
-		capValue = capTotal /AXP_CAP_NUM;
-		cap_index ++;
-		if(cap_index >= AXP_CAP_NUM)
-			cap_index = 0;
-
-		//拔插电源处理
-		if(is_ac_online )//充电状态
-		{
-			printf("\nAC online, actual cap percent: %d%\n",capValue);
-			printf("axp_cap_Value=%d%\n",axp_cap_Value);
-			if(ABS(axp_cap_Value-capValue)<3)			//本次和上一次电量值相差3% 内则进行比较
-			{
-				if(capValue < axp_cap_Value)
-					capValue = axp_cap_Value;
-				else
-					axp_cap_Value = capValue;	
-			}
-			else										//否则缓慢增加电量值
-			{
-				if(axp_cap_Value < capValue)
-				{
-					axp_cap_Value ++;
-					if(axp_cap_Value>=100)
-						axp_cap_Value = 100;
-				}
-				capValue = axp_cap_Value;	
-			}	
 		}
-		else			//放电状态
-		{
-			printf("\nAC not online, actual cap percent: %d%\n",capValue);
-			printf("axp_cap_Value=%d%\n",axp_cap_Value);
-			if(ABS(axp_cap_Value-capValue)<3)			//本次和上一次电量值相差3% 内则进行比较
-			{
-				if(capValue > axp_cap_Value)
-					capValue = axp_cap_Value;
-				else
-					axp_cap_Value = capValue;
-			}
-			else										//否则缓慢减小电量值
-			{
-				if(axp_cap_Value > capValue)			
-				{
-					axp_cap_Value --;
-					if(axp_cap_Value<=0)
-						axp_cap_Value = 0;
-				}	
-				capValue = axp_cap_Value;	
-			}	
-		}
-
-		printf("battery_ocv=%d,charging_status=%d,is_ac_online=%d\n",battery_ocv,charging_status,is_ac_online);	
-		printf("OCV Measurement normal work,percent: %d%\n\n",capValue);
-
-		capValue_Save = capValue;
-		return (int)capValue;							//返回电量值
 	}
+
+
+	//判断
+	if((battery_ocv >= 4090) /*&& (capValue < 100)*/ && (charging_status == 0) && is_ac_online)
+	{
+		capValue = 100;
+		axp_cap_lastValue = capValue;
+	}
+
+	if((capValue >= 100) && (charging_status==1))
+	{
+		capValue = 99;
+		axp_cap_lastValue = capValue;
+	}		
+
+	printf("battery_ocv=%d,charging_status=%d,is_ac_online=%d\n",battery_ocv,charging_status,is_ac_online);	
+	printf("OCV Measurement normal work,percent: %d%\n\n",capValue);
+	
+	return capValue;
+	
 }
 #endif
 
 
-int axp_charger_get_charging_percent(void)
+
+
+int axp_charger_get_charging_percent()
 {
 
-	int Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
+	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
 		battery_ocv, charging_status, is_ac_online, icharging;
 	uint8_t val;
 	struct axp_adc_res axp_adc;
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+    extern int config_battery_rdc;
+    extern struct battery_curve config_battery_curve[];
     int i;
     int ocv = 0;
     int ocv_diff, percent_diff, ocv_diff2;
     int charge_status = axp_charger_get_charging_status();
+    int percent1, percent2;
     static int ocv_full  = 0;
     static int ocv_empty = 0;
+    static int battery_rdc;
+    static struct battery_curve *battery_curve;
 
     if (get_battery_para_flag() == PARA_UNPARSED) {
         /*
@@ -351,50 +359,60 @@ int axp_charger_get_charging_percent(void)
                     ocv_full = board_battery_para.pmu_bat_curve[i].ocv;    
                 }
             }
+            battery_rdc   = board_battery_para.pmu_battery_rdc;
+            battery_curve = board_battery_para.pmu_bat_curve;
         } else {
             set_battery_para_flag(PARA_PARSE_FAILED);
         }
     }
-    if (get_battery_para_flag() == PARA_PARSE_SUCCESS) {
-        for (i = 0; i < 8; i++) {                           // calculate average ocv
-            ocv += axp_get_ocv(); 
-            udelay(10000); 
-        }
-        ocv = ocv / 8;
-        if (ocv >= ocv_full) {
-            return 100;    
-        } else if (ocv <= ocv_empty) {
-            return 0;    
-        }
-        for (i = 0; i < 15; i++) {                          // find which range this ocv is in
-            if (ocv >= board_battery_para.pmu_bat_curve[i].ocv &&
-                ocv <  board_battery_para.pmu_bat_curve[i + 1].ocv) {
-                break;
+    if (get_battery_para_flag() != PARA_PARSE_SUCCESS && !ocv_full) {
+        /*
+         * parse battery parameters failed, use configured parameters
+         */
+        battery_rdc   = config_battery_rdc;
+        battery_curve = config_battery_curve;
+        for (i = 0; i < 16; i++) {                  	// find out full & empty ocv in battery curve
+            if (!ocv_empty && battery_curve[i].discharge_percent > 0) {
+                ocv_empty = battery_curve[i - 1].ocv;    
+            }
+            if (!ocv_full && battery_curve[i].discharge_percent == 100) {
+                ocv_full = battery_curve[i].ocv;    
             }
         }
-        if (charge_status) {                                // calculate capability of battery according curve
-            percent_diff = board_battery_para.pmu_bat_curve[i + 1].charge_percent -
-                           board_battery_para.pmu_bat_curve[i].charge_percent;
-        } else {
-            percent_diff = board_battery_para.pmu_bat_curve[i + 1].discharge_percent -
-                           board_battery_para.pmu_bat_curve[i].discharge_percent;
-        }
-        ocv_diff  = board_battery_para.pmu_bat_curve[i + 1].ocv -
-                    board_battery_para.pmu_bat_curve[i].ocv;
-        ocv_diff2 = ocv - board_battery_para.pmu_bat_curve[i].ocv;
-        rest_vol  = (percent_diff * ocv_diff2 + ocv_diff / 2)/ocv_diff;
-        if (charge_status) {
-            rest_vol += board_battery_para.pmu_bat_curve[i].charge_percent;
-        } else {
-            rest_vol += board_battery_para.pmu_bat_curve[i].discharge_percent;
-        }
-        if (rest_vol > 100) {
-            rest_vol = 100;    
-        } else if (rest_vol < 0) {
-            rest_vol = 0;    
-        }
-        return rest_vol;
     }
+    for (i = 0; i < 8; i++) {                           // calculate average ocv
+        ocv += axp_calculate_ocv(charge_status, battery_rdc);
+        udelay(10000); 
+    }
+    ocv = ocv / 8;
+    printf("[AXP] ocv is %4d, ", ocv);
+    if (ocv >= ocv_full) {
+        return 100;    
+    } else if (ocv <= ocv_empty) {
+        return 0;    
+    }
+    for (i = 0; i < 15; i++) {                          // find which range this ocv is in
+        if (ocv >= battery_curve[i].ocv &&
+            ocv <  battery_curve[i + 1].ocv) {
+            break;
+        }
+    }
+    percent1 = (battery_curve[i + 1].charge_percent + 
+                battery_curve[i + 1].discharge_percent) / 2;
+    percent2 = (battery_curve[i].charge_percent + 
+                battery_curve[i].discharge_percent) / 2;
+    percent_diff = percent1 - percent2; 
+    ocv_diff  = battery_curve[i + 1].ocv -
+                battery_curve[i].ocv;
+    ocv_diff2 = ocv - battery_curve[i].ocv;
+    rest_vol  = (percent_diff * ocv_diff2 + ocv_diff / 2)/ocv_diff;
+    rest_vol += percent2; 
+    if (rest_vol > 100) {
+        rest_vol = 100;    
+    } else if (rest_vol < 0) {
+        rest_vol = 0;    
+    }
+    return rest_vol;
 #endif      /* CONFIG_UBOOT_BATTERY_PARAMETERS */
 
 	axp_read_adc(&axp_adc);
@@ -473,19 +491,15 @@ int axp_charger_get_charging_percent(void)
 		}
 	}
 
-#else  //#define CONFIG_AXP_USE_OCV	
-	if(ocv_initCnt==1)		//初始化
-	{
-		rest_vol = get_ocv_batteryCap(1);
-		ocv_initCnt *= 0;
-		printf("ocv init...\n");
-	}
-	else if(ocv_initCnt==0)	//读取电量值
-	{
-		rest_vol = get_ocv_batteryCap(0);
-		printf("use ocv mode...\n");
-	}	
+#else  //define	CONFIG_AXP_USE_OCV				
+	rest_vol = get_ocv_batteryCap(1);
 #endif
+
+    if (rest_vol > 100) {						// fit to proper range
+    	rest_vol = 100;    
+	} else if (rest_vol < 0) {
+        rest_vol = 0;    
+	}
 
     return rest_vol;
 }
@@ -521,6 +535,7 @@ int axp_charger_set_usbcur_limit(int usbcur_limit)
 
 	axp_read(AXP20_CHARGE_VBUS, &val);
 
+    val &= ~0x03;
 	switch(usbcur_limit)
 	{
 		case 0:
@@ -536,11 +551,13 @@ int axp_charger_set_usbcur_limit(int usbcur_limit)
 			val |= 0x0;
 			break;
 		default:
-			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n", usbcur_limit);
+			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n");
 			return -1;
 			break;
 	}
 	axp_write(AXP20_CHARGE_VBUS, val);
+    	axp_read(AXP20_CHARGE_VBUS, &val);
+	printf("[AXP_PMU]%s,AXP20_CHARGE_VBUS:0x%x\n", __func__, val);
 	
     return 0;
 }
@@ -562,7 +579,7 @@ int set_dcdc2(u32 val)
 		printf("axp_write(): Failed!\n");
 		return -1;
 	}
-	if(axp_read(POWER20_DC2OUT_VOL, (uint8_t *)&reg_val))
+	if(axp_read(POWER20_DC2OUT_VOL, &reg_val))
 	{
 		printf("axp_read(): Failed!\n");
 		return -1;
@@ -586,7 +603,7 @@ int set_dcdc3(u32 val)
 		printf("axp_write(): Failed!\n");
 		return -1;
 	}
-	if(axp_read(POWER20_DC3OUT_VOL, (uint8_t *)&reg_val))
+	if(axp_read(POWER20_DC3OUT_VOL, &reg_val))
 	{
 		printf("axp_read(): Failed!\n");
 		return -1;
@@ -678,6 +695,9 @@ int axp_battery_calibrate_init(void)
         terminal_print(0, 35, "ERROR, NO battery is connected to system\n");
         return 0;
     }
+    axp_read(0x30, &val);
+    val |= 0x03;
+    axp_write(0x30, val);
     axp_read(0x84, &val);
     val &= ~0xc0;
     val |= 0x80;
@@ -900,6 +920,7 @@ int axp_battery_calibrate(void)
     int     rdc_average = 0, rdc_total = 0, rdc_cnt = 0, rdc_update_flag = 0;
     int     ocv_0 = 2;
     int     rdc_tmp = 0;
+    int     charge_eff;
 
     ClearScreen();
     terminal_print(0,  7, "=============================== WARNING ================================\n");
@@ -999,7 +1020,7 @@ int axp_battery_calibrate(void)
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, prev_ocv);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d\n",
+                        "        %4d,  %4d,  %4d \n",
                         (int32_t)energy_p, vbat_i, rdc_r);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
@@ -1007,16 +1028,18 @@ int axp_battery_calibrate(void)
         prev_ocv = ocv;
         prev_ibat = ibat;
         udelay(1000000);
-        if (ibat == 0) {                        // charging finished
+        if (ibat <= 100) {                        // charging finished
             ibat_cnt++;
             if (ibat_cnt > 50) {
                 break;
             }
         }
     }
-    size = sprintf(buf, "During charge, rdc_total=%d, rdc_cnt:%d, rdc_average:%d\n", 
-                   rdc_total, rdc_cnt, rdc_total / rdc_cnt);
+    rdc_average = rdc_total / rdc_cnt;
+    size = sprintf(buf, "During charge, rdc_total=%d, rdc_cnt:%d, rdc_average:%d \n", 
+                   rdc_total, rdc_cnt, rdc_average);
     terminal_print(0, 36, buf);
+    axp_set_rdc(rdc_average);
 
     energy_top = energy_c;
     terminal_print(0, 10, "============= RESULT FOR CHARGE ================\n");
@@ -1041,7 +1064,7 @@ int axp_battery_calibrate(void)
             offset = battery_energy_charge[i].coulomb_p - base;
             percent = 100 * (offset + range_charge / 200) / range_charge;
         }
-        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d\n", 
+        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d \n", 
                        i,
                        battery_energy_charge[i].ocv, 
                        battery_energy_charge[i].energy, 
@@ -1104,7 +1127,7 @@ int axp_battery_calibrate(void)
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, prev_ocv);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d\n",
+                        "        %4d,  %4d,  %4d \n",
                         (int32_t)energy_p, vbat_i, rdc_r);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
@@ -1132,7 +1155,7 @@ int axp_battery_calibrate(void)
             offset = battery_energy_discharge[i].coulomb_p - base;
             percent = 100 - 100 * (offset + range_discharge / 200) / range_discharge;
         }
-        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d\n", 
+        size = sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,  %4d,  %3d \n", 
                        i,
                        battery_energy_discharge[i].ocv, 
                        battery_energy_discharge[i].energy, 
@@ -1145,10 +1168,14 @@ int axp_battery_calibrate(void)
     }
     energy_p = energy_top;
     do_div(energy_p, 3700);
-    size = sprintf(buf, "Energy visible:%5dmAh@3700mV\n", range_discharge);
+    size = sprintf(buf, "Energy visible:%5dmAh@3700mV \n", range_discharge);
     buf[size] = '\0';
     terminal_print(60, 30, buf);
-    size = sprintf(buf, "Charging efficient:%d%%\n", (100 * (range_discharge + range_charge / 200)) / range_charge);
+    charge_eff = (100 * (range_discharge + range_charge / 200)) / range_charge;
+    if (charge_eff >= 100) {
+        charge_eff = 99;
+    }
+    size = sprintf(buf, "Charging efficient:%d%% \n", charge_eff); 
     buf[size] = '\0';
     terminal_print(60, 31, buf);
 

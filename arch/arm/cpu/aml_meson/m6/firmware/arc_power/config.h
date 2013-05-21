@@ -14,7 +14,12 @@
  * PMU device select, CONFIG_AML_PMU and CONFIG_AW_AXP20 should not be both existed
  */
 //#define CONFIG_AML_PMU 
-#define CONFIG_AW_AXP20
+//#define CONFIG_AW_AXP20
+
+#ifdef CONFIG_AML_PMU
+#define CONFIG_POWER_SPL
+#define CONFIG_VDDAO_VOLTAGE    1200                                    // bring up VDDAO to 1.2V for boot stable
+#endif      /* CONFIG_AML_PMU */
 
 #ifdef CONFIG_AW_AXP20
 #define CONFIG_CONST_PWM_FOR_DCDC

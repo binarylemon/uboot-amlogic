@@ -70,7 +70,7 @@ int axp_read(int reg, uint8_t *val)
             .addr = AXP_I2C_ADDR,
             .flags = 0,
             .len = 1,
-            .buf = (void *)&reg,
+            .buf = &reg,
         },
         {
             .addr = AXP_I2C_ADDR,
@@ -97,7 +97,7 @@ int axp_reads(int reg, int len, uint8_t *val)
             .addr = AXP_I2C_ADDR,
             .flags = 0,
             .len = 1,
-            .buf = (void *)&reg,
+            .buf = &reg,
         },
         {
             .addr = AXP_I2C_ADDR,
@@ -158,14 +158,13 @@ int axp_update(int reg, uint8_t val, uint8_t mask)
 		goto out;
 
 	if ((reg_val & mask) != val) {
-		reg_val = (reg_val & ~mask) | val;
+		reg_val = (reg_val & ~mask) | (val & mask);
 		ret = axp_write(reg, reg_val);
 	}
 out:
 	return ret;
 }
 
-extern void mdelay(unsigned long msec);
 void axp_power_off(void)
 {
 	printf("[axp] send power-off command!\n");
@@ -271,6 +270,7 @@ int check_axp_regulator_for_m6_board(void)
 	axp_read(POWER20_LDO24OUT_VOL, &reg_data);
 	if((reg_data&0xf) != val)
 	{
+        val |= (reg_data & 0xf0);
 		axp_write(POWER20_LDO24OUT_VOL, val);	//set LDO4(AVDD3.3V) to 3.300V
 		printf("Set LDO4(AVDD3.3V) to %dmV(0x%x). But the register is 0x%x before\n", CONFIG_LDO4_VOLTAGE, val, reg_data);
 		mdelay(10);

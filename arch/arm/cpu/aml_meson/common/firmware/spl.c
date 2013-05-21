@@ -14,6 +14,9 @@
 
 #include <loaduboot.c>
 
+#ifdef CONFIG_POWER_SPL
+#include <power.c>
+#endif
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
@@ -102,9 +105,13 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
     // initial pll
     pll_init(&__plls);
-
 	serial_init(__plls.uart);
 
+#ifdef CONFIG_POWER_SPL
+	serial_puts("\n");
+	serial_puts("\ninit power for cpu\n");
+    power_init();
+#endif
 #ifdef ENTRY_DEBUG_ROM
     __udelay(100000);//wait for a uart input
 #else

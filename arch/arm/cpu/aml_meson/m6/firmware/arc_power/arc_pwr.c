@@ -285,9 +285,14 @@ void test_ddr(int i)
 #define pwr_ddr_off 
 void enter_power_down()
 {
+	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned char vcin_state = 0;
 	unsigned char charging_state;
+    int delay_cnt = 0;
+    int voltage   = 0;
+    int axp_ocv = 0;
+
 
 	//	disp_pctl();
 	//	test_ddr(0);
@@ -374,6 +379,15 @@ void enter_power_down()
   
    	f_serial_puts("Set up pwr key\n");
  	wait_uart_empty();
+#ifdef CONFIG_AW_AXP20       
+    axp_ocv = axp_get_ocv();
+    f_serial_puts("axp_ocv=");
+    wait_uart_empty();
+    serial_put_hex(axp_ocv,32);
+    wait_uart_empty();
+    f_serial_puts("\n");
+    wait_uart_empty();
+#endif
 	//enable power_key int	
 	writel(0x100,0xc1109860);//clear int
  	writel(readl(0xc1109868)|1<<8,0xc1109868);
@@ -421,8 +435,40 @@ void enter_power_down()
 		do{
 			udelay(2000);
 			vcin_state=get_charging_state();
-			if(!vcin_state)
+			if (!vcin_state) {
+			#ifdef CONFIG_AML_PMU
+				shut_down();
+				while(1);
+			#else
 				break;
+			#endif
+			}
+        #ifdef CONFIG_AML_PMU
+            delay_cnt++;
+            if (delay_cnt >= 32768 * 60) {                  // at least delay 1 minutes
+                if (vcin_state) {                           // work around for cannot stop charge
+                    if (get_charge_end_det()) {
+                        break;
+                    }
+                }
+                voltage = aml_pmu_get_voltage();
+                if (voltage < 3410) {
+                    break;
+                }
+                delay_cnt = 0;
+            }
+        #endif /* CONFIG_AML_PMU */
+        /* prevent  AXP202 from discharge too low.*/
+        #ifdef CONFIG_AW_AXP20
+            delay_cnt++;
+            if (delay_cnt >= 3000) {                  //do not delay too long.
+                axp_ocv = axp_get_ocv();
+                if (axp_ocv < 3480) {
+                    break;
+                }
+                delay_cnt = 0;
+            }
+        #endif /* CONFIG_AW_AXP20 */
 		}while(!(readl(0xc1109860)&0x100));
 #endif//CONFIG_ARC_SARDAC_ENABLE
 		power_on_ddr15();
@@ -434,6 +480,32 @@ void enter_power_down()
 			udelay(200);
 			if(get_charging_state() ^ charging_state)//when the state is changed, wakeup
 				break;
+        #ifdef CONFIG_AML_PMU
+            delay_cnt++;
+            if (delay_cnt >= 32768 * 60) {                  // at least delay 1 minutes
+                if (charging_state) {                       // work around for cannot stop charge
+                    if (get_charge_end_det()) {
+                        break;
+                    }
+                }
+                voltage = aml_pmu_get_voltage();
+                if (voltage < 3410) {                       // check over-dishcarge
+                    break;
+                }
+                delay_cnt = 0;
+            }
+        #endif /* CONFIG_AML_PMU */
+        /* prevent  AXP202 from discharge too low.*/
+        #ifdef CONFIG_AW_AXP20
+            delay_cnt++;
+            if (delay_cnt >= 3000) {                  //do not delay too long.
+                axp_ocv = axp_get_ocv();
+                if (axp_ocv < 3480) {
+                    break;
+                }
+                delay_cnt = 0;
+            }
+        #endif /* CONFIG_AW_AXP20 */
 		}while(!(readl(0xc1109860)&0x100));
 	}
 
@@ -463,7 +535,9 @@ void enter_power_down()
 		power_on_at_32k_1();
 
 	//  In 32k mode, we had better not print any log.
+    #ifndef CONFIG_AML_PMU
 		store_restore_plls(0);//Before switch back to clk81, we need set PLL
+    #endif
 
 	//	dump_pmu_reg();
 	
@@ -478,6 +552,9 @@ void enter_power_down()
 	wait_uart_empty();
 	
 	power_on_at_24M();
+#ifdef CONFIG_AML_PMU
+	store_restore_plls(0);//Before switch back to clk81, we need set PLL
+#endif
 
  	uart_reset();
 
@@ -490,6 +567,16 @@ void enter_power_down()
 	wait_uart_empty();  
 	init_ddr_pll();
 
+
+#ifdef CONFIG_AW_AXP20       
+    axp_ocv = axp_get_ocv();
+    f_serial_puts(" axp_ocv=");
+    wait_uart_empty();
+    serial_put_hex(axp_ocv,32);
+    wait_uart_empty();
+    f_serial_puts("\n");
+    wait_uart_empty();
+#endif
 	store_vid_pll();
 
    // Next, we reset all channels 
@@ -817,16 +904,27 @@ void store_restore_plls(int flag)
 		while(1);
 	}
 	*/
-
+	
+#ifdef CONFIG_AML_PMU
+    printf_arc("store_restore_plls, in\n");
+#endif
 	do{
 		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
 		//Note: once SYS PLL is up, there is no need to 
 		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
 		//          lock fail
 		writel(readl(P_HHI_MPLL_CNTL5)&(~1),P_HHI_MPLL_CNTL5); 
+    #ifdef CONFIG_AML_PMU
+		udelay(3 * 750);
+    #else
 		udelay(3);
+    #endif
 		writel(readl(P_HHI_MPLL_CNTL5)|1,P_HHI_MPLL_CNTL5); 
+    #ifdef CONFIG_AML_PMU
+		udelay(30 * 750);
+    #else
 		udelay(30); //1ms in 32k for bandgap bootup
+    #endif
 		
 		writel(1<<29,P_HHI_SYS_PLL_CNTL);		
 		writel(pll_settings[1],P_HHI_SYS_PLL_CNTL2);
@@ -837,19 +935,37 @@ void store_restore_plls(int flag)
 		
 		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
 
+    #ifdef CONFIG_AML_PMU
+		udelay(10 * 750);
+    #else
 		udelay(10); //wait 100us for PLL lock
+    #endif
 	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
 
+#ifdef CONFIG_AML_PMU
+    printf_arc("store_restore_plls, SYS_PLL out\n");
+#endif
 	do{
 		//no need to do bandgap reset
 		writel(1<<29,P_HHI_MPLL_CNTL);
 		for(i=1;i<10;i++)
 			writel(mpll_settings[i],P_HHI_MPLL_CNTL+4*i);
 
+    #ifdef CONFIG_AML_PMU //add
+		writel((mpll_settings[0] |1<<30),P_HHI_MPLL_CNTL);
+		udelay(24 * 100);
+    #endif
 		writel((mpll_settings[0] & ~(1<<30))|1<<29,P_HHI_MPLL_CNTL);
 		writel(mpll_settings[0] & ~(3<<29),P_HHI_MPLL_CNTL);
+    #ifdef CONFIG_AML_PMU
+		udelay(10 * 750);
+    #else
 		udelay(10); //wait 200us for PLL lock		
+    #endif
 	}while((readl(P_HHI_MPLL_CNTL)&0x80000000)==0);
+#ifdef CONFIG_AML_PMU
+    printf_arc("store_restore_plls, HHI_PLL out\n");
+#endif
 
 	do{
 		//no need to do bandgap reset
@@ -862,10 +978,19 @@ void store_restore_plls(int flag)
 
 		writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);
 		writel(viidpll_settings[0] & ~(3<<29),P_HHI_VIID_PLL_CNTL);
+	#ifdef CONFIG_AML_PMU
+	    udelay(10 * 750);
+	#else
 		udelay(10); //wait 200us for PLL lock		
+	#endif
 	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
 
+#ifdef CONFIG_AML_PMU
+    udelay(3 * 750);
+#else
 	udelay(3);
+#endif
+
 #endif //CONFIG_SYS_PLL_SAVE
 }
 

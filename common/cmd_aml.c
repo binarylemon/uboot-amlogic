@@ -14,7 +14,6 @@ extern inline int is_ac_online(void);
 extern void power_off(void);
 extern inline int get_charging_percent(void);
 extern inline int set_charging_current(int current);
-extern int axp_charger_set_usbcur_limit(int usbcur_limit);
 
 
 static int do_getkey (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -117,30 +116,37 @@ U_BOOT_CMD(
 	"unit is mA\n"
 );
 
-static int do_set_usbcur_limit (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+/* set  usb current limit */
+#ifdef CONFIG_AW_AXP20
+extern int axp_charger_set_usbcur_limit(int usbcur_limit);
+#endif
+#ifdef CONFIG_AML_PMU
+extern int aml_pmu_set_usb_curr_limit(int curr);
+#endif
+static int pmu_set_usbcur_limit(int usbcur_limit)
 {
-	int current = simple_strtol(argv[1], NULL, 10);
-
-	if(!axp_charger_set_usbcur_limit(current))
-	{
-		printf("USB current limit: %smA\n", argv[1]);
-		setenv("usb_current_limit", argv[1]);
-		return 0;
-	}
-	else
-	{
-		printf("Set USB current limit failed!\n");
-		return -1;
-	}
+#ifdef CONFIG_AW_AXP20
+    return axp_charger_set_usbcur_limit(usbcur_limit);
+#endif
+#ifdef CONFIG_AML_PMU
+    return aml_pmu_set_usb_curr_limit(usbcur_limit);
+#endif
 }
-
-
+static int do_set_usbcur_limit(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    if (argc < 2)
+        return cmd_usage(cmdtp);
+    int usbcur_limit = simple_strtol(argv[1], NULL, 10);
+    pmu_set_usbcur_limit(usbcur_limit);
+    printf("set usbcur_limit: %smA\n", argv[1]);
+    setenv("usbcur_limit", argv[1]);
+    return 0;
+}
 U_BOOT_CMD(
 	set_usbcur_limit,	2,	0,	do_set_usbcur_limit,
-	"set USB current limit",
+	"set pmu usb limit current",
 	"/N\n"
 	"set_usbcur_limit <current>\n"
 	"unit is mA\n"
 );
-
 
