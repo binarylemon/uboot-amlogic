@@ -138,6 +138,12 @@
 #define CONFIG_CMD_IMGPACK 1
 #define CONFIG_CMD_REBOOT 1
 #define CONFIG_CMD_MATH 1
+#define CONFIG_CMD_SUSPEND 1
+
+/*
+ * add for mx revd
+ */
+#define CONFIG_CMD_CHIPREV 1
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
@@ -176,6 +182,7 @@
 	"nandboot=echo Booting from eMMC ...;run nandargs;mmc read 1 ${loadaddr} a000 3000;bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmc read 1 ${loadaddr} 6000 3000; bootm\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
+	"update_chiprev=chiprev; setenv bootargs ${bootargs} chiprev=${chiprev}\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
 	"cdc_connect_timeout=9999999999" \
