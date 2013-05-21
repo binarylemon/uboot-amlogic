@@ -31,7 +31,9 @@ int m6_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 	num=fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	m6_caculate();
 #ifdef CONFIG_M6_SECU_BOOT
-	*((int *)((unsigned char *)buf + READ_SIZE - 4))= num*sizeof(buf[0]);
+	*((unsigned int *)((unsigned char *)buf + READ_SIZE - 4))= ((unsigned short)num) * 2;
+	#define AML_M6_SECURE_BOOT_ID   (0x4C42364D)
+	*((unsigned int *)&(buf[0x1b8/2]))= AML_M6_SECURE_BOOT_ID;
 #endif //CONFIG_HISUN	
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))

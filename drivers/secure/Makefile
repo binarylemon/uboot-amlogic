@@ -31,8 +31,13 @@ COBJS	:= $(CSRCS:%.c=%.o)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
+OBJS += aml_dec.o
+OBJS += libtfm.a
+
+
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+	
 
 clean:
 	rm -f $(OBJS)
