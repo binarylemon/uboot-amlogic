@@ -8044,19 +8044,19 @@
 #define RGB_BASE_ADDR                              0x1485
 #define RGB_COEFF_ADDR                             0x1486
 #define POL_CNTL_ADDR                              0x1487
-   #define   DCLK_SEL             14    //FOR DCLK OUTPUT
-   #define   TCON_VSYNC_SEL_DVI   11    //FOR RGB format DVI output
-   #define   TCON_HSYNC_SEL_DVI   10    //FOR RGB format DVI output
-   #define   TCON_DE_SEL_DVI      9     //FOR RGB format DVI output
-   #define   CPH3_POL         8
-   #define   CPH2_POL         7
-   #define   CPH1_POL         6
-   #define   TCON_DE_SEL      5
-   #define   TCON_VS_SEL      4
-   #define   TCON_HS_SEL      3
-   #define   DE_POL           2
-   #define   VS_POL           1
-   #define   HS_POL           0
+//   #define   DCLK_SEL             14    //FOR DCLK OUTPUT
+//   #define   TCON_VSYNC_SEL_DVI   11    //FOR RGB format DVI output
+//   #define   TCON_HSYNC_SEL_DVI   10    //FOR RGB format DVI output
+//   #define   TCON_DE_SEL_DVI      9     //FOR RGB format DVI output
+//   #define   CPH3_POL         8
+//   #define   CPH2_POL         7
+//   #define   CPH1_POL         6
+//   #define   TCON_DE_SEL      5
+//   #define   TCON_VS_SEL      4
+//   #define   TCON_HS_SEL      3
+//   #define   DE_POL           2
+//   #define   VS_POL           1
+//   #define   HS_POL           0
 #define DITH_CNTL_ADDR                             0x1488
    #define  DITH10_EN         10
    #define  DITH8_EN          9

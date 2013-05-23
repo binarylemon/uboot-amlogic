@@ -306,4 +306,6 @@ typedef struct {
 
 Lcd_Config_t lcd_config;
 
+extern void mdelay(unsigned long msec);
+
 #endif /* LCDOUTC_H */
