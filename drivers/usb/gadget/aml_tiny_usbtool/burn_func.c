@@ -37,22 +37,25 @@ int cmd_secukey(int argc, char * const argv[], char *buf);
 #define SECUKEY_BYTES     512
 #if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
 //test efuse read
-#define EFUSE_READ_TEST_ENABLE									//enable efuse read test after efuse write success
+#define EFUSE_READ_TEST_ENABLE                                                   //enable efuse read test after efuse write success
+
+//hdcp verify enable
+#define WRITE_HDCP_VERIFY_ENABLE
 
 //efuse version
-#define EFUSE_VERSION_MESON3						"01:02:03"		//m3 version:01:xx:xx, machine id  sets 0x02:0x03
-#define EFUSE_VERSION_MESON6						"02"				//m6 version:02
+#define EFUSE_VERSION_MESON3						"01:02:03"        //m3 version:01:xx:xx, machine id  sets 0x02:0x03
+#define EFUSE_VERSION_MESON6						"02"                 //m6 version:02
 
 //extern 
 #ifdef WRITE_TO_EFUSE_ENABLE
 #ifdef CONFIG_AML_MESON3
-extern int do_efuse_usb(int argc, char * const argv[], char *buf);			//extern in m3 platform
+extern int do_efuse_usb(int argc, char * const argv[], char *buf);   //extern in m3 platform
 #elif defined(CONFIG_AML_MESON6)
-extern int cmd_efuse(int argc, char * const argv[], char *buf);			//extern in m6 platform
+extern int cmd_efuse(int argc, char * const argv[], char *buf);         //extern in m6 platform
 #endif
 #endif
 
-/* hdcp 数据校验代码*/
+/* hdcp key verify code */
 #define DWORD unsigned int  //4 bytes
 #define BYTE unsigned char   //1 byte
 #define SHA1_MAC_LEN 20
@@ -115,26 +118,26 @@ void SHA1Transform_H(DWORD *state, BYTE *buffer)
         d = state[3];
         e = state[4];
         /* 4 rounds of 20 operations each. Loop unrolled. */
-        R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);
-        R0(b,c,d,e,a, 4); R0(a,b,c,d,e, 5); R0(e,a,b,c,d, 6); R0(d,e,a,b,c, 7);
-        R0(c,d,e,a,b, 8); R0(b,c,d,e,a, 9); R0(a,b,c,d,e,10); R0(e,a,b,c,d,11);
-        R0(d,e,a,b,c,12); R0(c,d,e,a,b,13); R0(b,c,d,e,a,14); R0(a,b,c,d,e,15);
-        R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
-        R2(a,b,c,d,e,20); R2(e,a,b,c,d,21); R2(d,e,a,b,c,22); R2(c,d,e,a,b,23);
-        R2(b,c,d,e,a,24); R2(a,b,c,d,e,25); R2(e,a,b,c,d,26); R2(d,e,a,b,c,27);
-        R2(c,d,e,a,b,28); R2(b,c,d,e,a,29); R2(a,b,c,d,e,30); R2(e,a,b,c,d,31);
-        R2(d,e,a,b,c,32); R2(c,d,e,a,b,33); R2(b,c,d,e,a,34); R2(a,b,c,d,e,35);
-        R2(e,a,b,c,d,36); R2(d,e,a,b,c,37); R2(c,d,e,a,b,38); R2(b,c,d,e,a,39);
-        R3(a,b,c,d,e,40); R3(e,a,b,c,d,41); R3(d,e,a,b,c,42); R3(c,d,e,a,b,43);
-        R3(b,c,d,e,a,44); R3(a,b,c,d,e,45); R3(e,a,b,c,d,46); R3(d,e,a,b,c,47);
-        R3(c,d,e,a,b,48); R3(b,c,d,e,a,49); R3(a,b,c,d,e,50); R3(e,a,b,c,d,51);
-        R3(d,e,a,b,c,52); R3(c,d,e,a,b,53); R3(b,c,d,e,a,54); R3(a,b,c,d,e,55);
-        R3(e,a,b,c,d,56); R3(d,e,a,b,c,57); R3(c,d,e,a,b,58); R3(b,c,d,e,a,59);
-        R4(a,b,c,d,e,60); R4(e,a,b,c,d,61); R4(d,e,a,b,c,62); R4(c,d,e,a,b,63);
-        R4(b,c,d,e,a,64); R4(a,b,c,d,e,65); R4(e,a,b,c,d,66); R4(d,e,a,b,c,67);
-        R4(c,d,e,a,b,68); R4(b,c,d,e,a,69); R4(a,b,c,d,e,70); R4(e,a,b,c,d,71);
-        R4(d,e,a,b,c,72); R4(c,d,e,a,b,73); R4(b,c,d,e,a,74); R4(a,b,c,d,e,75);
-        R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79);
+        R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);udelay(100);
+        R0(b,c,d,e,a, 4); R0(a,b,c,d,e, 5); R0(e,a,b,c,d, 6); R0(d,e,a,b,c, 7);udelay(100);
+        R0(c,d,e,a,b, 8); R0(b,c,d,e,a, 9); R0(a,b,c,d,e,10); R0(e,a,b,c,d,11);udelay(100);
+        R0(d,e,a,b,c,12); R0(c,d,e,a,b,13); R0(b,c,d,e,a,14); R0(a,b,c,d,e,15);udelay(100);
+        R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);udelay(100);
+        R2(a,b,c,d,e,20); R2(e,a,b,c,d,21); R2(d,e,a,b,c,22); R2(c,d,e,a,b,23);udelay(100);
+        R2(b,c,d,e,a,24); R2(a,b,c,d,e,25); R2(e,a,b,c,d,26); R2(d,e,a,b,c,27);udelay(100);
+        R2(c,d,e,a,b,28); R2(b,c,d,e,a,29); R2(a,b,c,d,e,30); R2(e,a,b,c,d,31);udelay(100);
+        R2(d,e,a,b,c,32); R2(c,d,e,a,b,33); R2(b,c,d,e,a,34); R2(a,b,c,d,e,35);udelay(100);
+        R2(e,a,b,c,d,36); R2(d,e,a,b,c,37); R2(c,d,e,a,b,38); R2(b,c,d,e,a,39);udelay(100);
+        R3(a,b,c,d,e,40); R3(e,a,b,c,d,41); R3(d,e,a,b,c,42); R3(c,d,e,a,b,43);udelay(100);
+        R3(b,c,d,e,a,44); R3(a,b,c,d,e,45); R3(e,a,b,c,d,46); R3(d,e,a,b,c,47);udelay(100);
+        R3(c,d,e,a,b,48); R3(b,c,d,e,a,49); R3(a,b,c,d,e,50); R3(e,a,b,c,d,51);udelay(100);
+        R3(d,e,a,b,c,52); R3(c,d,e,a,b,53); R3(b,c,d,e,a,54); R3(a,b,c,d,e,55);udelay(100);
+        R3(e,a,b,c,d,56); R3(d,e,a,b,c,57); R3(c,d,e,a,b,58); R3(b,c,d,e,a,59);udelay(100);
+        R4(a,b,c,d,e,60); R4(e,a,b,c,d,61); R4(d,e,a,b,c,62); R4(c,d,e,a,b,63);udelay(100);
+        R4(b,c,d,e,a,64); R4(a,b,c,d,e,65); R4(e,a,b,c,d,66); R4(d,e,a,b,c,67);udelay(100);
+        R4(c,d,e,a,b,68); R4(b,c,d,e,a,69); R4(a,b,c,d,e,70); R4(e,a,b,c,d,71);udelay(100);
+        R4(d,e,a,b,c,72); R4(c,d,e,a,b,73); R4(b,c,d,e,a,74); R4(a,b,c,d,e,75);udelay(100);
+        R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79);udelay(100);
         /* Add the working vars back into context.state[] */
         state[0] += a;
         state[1] += b;
@@ -242,6 +245,129 @@ typedef struct
     unsigned char dpk[280];
     unsigned char sha[20];
 }hdcp_llc_file;
+
+#if defined(WRITE_TO_EFUSE_ENABLE)
+static int run_efuse_cmd(int argc, char *argv[], char *buff)
+{
+   int ret = -1;
+   
+#ifdef CONFIG_AML_MESON3
+   ret = do_efuse_usb(argc, argv, buff);
+#elif defined(CONFIG_AML_MESON6)
+   ret = cmd_efuse(argc, argv, buff);
+#endif
+
+   return ret;
+}
+#endif    /* WRITE_TO_EFUSE_ENABLE */
+
+#if defined(EFUSE_READ_TEST_ENABLE)
+static int test_efuse_read(int argc, char *argv[], char *cmpBuff)
+{
+   int i = 0, j = 0, ret = -1;
+   int hdcp_flag = 0, hdcp_key_len = 288;
+   char *hdcp = NULL;
+   char efuse_data[SECUKEY_BYTES], reBuff[SECUKEY_BYTES], tmpBuf[SECUKEY_BYTES];
+
+   printf("-----Test efuse read commond:\n");
+   for(i=0; i<argc; i++) 
+      printf("argv[%d]=%s\n", i, argv[i]);
+
+   if(!strncmp(argv[0], "efuse", 5) && !strncmp(argv[1], "read", 4) && 
+      (!strncmp(argv[2], "version", 7) ||!strncmp(argv[2], "mac_wifi", 8) ||
+      !strncmp(argv[2], "mac_bt", 6) ||!strncmp(argv[2], "mac", 3) ||
+      !strncmp(argv[2], "usid", 4) ||!strncmp(argv[2], "hdcp", 4))) {
+      goto run;
+   }
+   else {
+      printf("test efuse read commond not mach\n");
+      return -3;
+   }
+
+run:
+   memset(efuse_data, 0, sizeof(efuse_data));
+   memset(reBuff, 0, sizeof(reBuff));
+   memset(tmpBuf, 0, sizeof(tmpBuf));
+
+   ret = run_efuse_cmd(argc, argv, reBuff);
+   if(!ret) {
+      // test efuse read version
+      if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
+#ifdef CONFIG_AML_MESON3
+         sprintf(efuse_data, "%02x:%02x:%02x", reBuff[0], reBuff[1], reBuff[2]);
+#elif defined(CONFIG_AML_MESON6)
+         sprintf(efuse_data, "%02x", reBuff[0]);
+#endif
+         if(!strncmp(efuse_data, cmpBuff, strlen(cmpBuff))) {
+            printf("test efuse read version success,read version=%s\n", efuse_data);
+            return 0;
+         }
+         else {
+            printf("test efuse read version success,read version=%s, but not mach %s\n", efuse_data, cmpBuff);
+            return -1;
+         }
+      }
+      // test efuse read mac/mac_bt/mac_wifi
+      else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
+         !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+         sprintf(efuse_data, "%02x:%02x:%02x:%02x:%02x:%02x", reBuff[0], reBuff[1], reBuff[2], reBuff[3], reBuff[4], reBuff[5]);
+         if(!strncmp(efuse_data, cmpBuff, strlen(cmpBuff))) {
+            printf("test efuse read %s success,read %s=%s\n", argv[2], argv[2], efuse_data);
+            return 0;
+         }
+         else {
+            printf("test efuse read %s success,read %s=%s, but not mach %s\n", argv[2], argv[2], efuse_data, cmpBuff);
+            return -1;
+         }
+      }
+      // test efuse read usid
+      else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+         for(i=0; i<strlen(cmpBuff); i++) {
+            sprintf(tmpBuf, "%c", reBuff[i]);
+            sprintf(&efuse_data[j], "%s", tmpBuf);
+            j += strlen(tmpBuf);
+            memset(tmpBuf, 0, sizeof(tmpBuf));
+         }
+         if(!strncmp(efuse_data, cmpBuff, strlen(cmpBuff))) {
+            printf("test efuse read usid success,read usid=%s\n", efuse_data);
+            return 0;
+         }
+         else {
+            printf("test efuse read usid success,read usid=%s, but not mach %s\n", efuse_data, cmpBuff);
+            return -1;
+         }
+      }
+      // test efuse read hdcp
+      else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+         hdcp = cmpBuff;
+         for(i=0; i<hdcp_key_len; i++) {
+            if(reBuff[i] != *hdcp ++) {
+               hdcp_flag = 1;
+               break;
+            }
+         }
+         if(!hdcp_flag) {
+            printf("test efuse read hdcp success\n");
+            printf("read hdcp=");
+            for(i=0; i<hdcp_key_len; i++)
+               printf("%02x:", reBuff[i]);
+            printf("\n");
+            return 0;
+         }
+         else {
+            printf("test efuse read hdcp success,but not mach\n");
+            return -1;
+         }
+      }
+   }
+   else {
+      printf("test efuse read %s fail\n", argv[2]);
+      return -2;
+   }
+
+   return ret;
+}
+#endif    /* EFUSE_READ_TEST_ENABLE */
 #endif    /* WRITE_TO_EFUSE_OR_NAND_ENABLE */
 
 int burn_board(const char *dev, void *mem_addr, u64 offset, u64 size)
@@ -382,6 +508,7 @@ int usb_run_command (const char *cmd, char* buff)
 		}
 	}
 #if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
+#if 0
 	/*
 		//efuse read/write command
 		"efuse read version"	 	//cmd: efuse read version
@@ -945,7 +1072,669 @@ int usb_run_command (const char *cmd, char* buff)
          }
 	}
 #endif      /* WRITE_TO_NAND_ENABLE */
-#endif      /* WRITE_TO_EFUSE_OR_NAND_ENABLE */	
+
+#else
+
+/*
+  *	burn keys to efuse/nand common command:
+  *	"efuse read version"
+  *	"efuse write version"
+  *	"efuse read mac"
+  *	"efuse write mac xx:xx:xx:xx:xx:xx"
+  *	"efuse read bt_mac"
+  *	"efuse write bt_mac xx:xx:xx:xx:xx:xx"
+  *	"efuse read wifi_mac"
+  *	"efuse write wifi_mac xx:xx:xx:xx:xx:xx"
+  *	"efuse read usid"
+  *	"efuse write usid xxxxx..."
+  *	"read hdcp"
+  *	"write hdcp:"   (hdcp key datas form 0x82000000 address)
+  *
+  *	or: burn keys to efuse/nand private command:
+  *	"secukey_efuse/secukey_nand read version"
+  *	"secukey_efuse/secukey_nand write version"
+  *	"secukey_efuse/secukey_nand read mac"
+  *	"secukey_efuse/secukey_nand write mac xx:xx:xx:xx:xx:xx"
+  *	"secukey_efuse/secukey_nand read bt_mac"
+  *	"secukey_efuse/secukey_nand write bt_mac xx:xx:xx:xx:xx:xx"
+  *	"secukey_efuse/secukey_nand read wifi_mac"
+  *	"secukey_efuse/secukey_nand write wifi_mac xx:xx:xx:xx:xx:xx"
+  *	"secukey_efuse/secukey_nand read usid"
+  *	"secukey_efuse/secukey_nand write usid xxxxx..."
+  *	"secukey_efuse/secukey_nand read hdcp"
+  *	"secukey_efuse/secukey_nand write hdcp:" (hdcp key datas form 0x82000000 address)
+  *	 "secukey_nand read boardid"
+  *	"secukey_nand write boardid:"    (boardid key datas form 0x82000000 address)
+  **/
+      else if(!strncmp(cmd, "efuse", strlen("efuse")) ||
+            !strncmp(cmd, "read hdcp", strlen("read hdcp")) ||!strncmp(cmd, "write hdcp:", strlen("write hdcp:")) ||
+            !strncmp(cmd, "secukey_efuse", strlen("secukey_efuse")) ||!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
+            int i = 0, ret = -1, error = -1;
+            int flag = 0, usid_flag = 0, hdcp_flag = 0, writeHdcp_flag = 1;
+            int hdcp_key_len = 288, boardid_key_len = 0;
+            char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
+            char *hdcp = NULL, *boardid = NULL;
+            char *Argv1[3] = {"efuse", "read", "hdcp"}, *Argv2[4] = {"efuse", "write", "hdcp", ""};
+            char *Argv3[3] = {"nand", "read", "hdcp"}, *Argv4[4] = {"nand", "write", "hdcp", ""};
+            char *Argv5[4] = {"nand", "write", "boardid", ""};
+
+            /* Extract arguments */
+            if ((argc = parse_line (cmd, argv)) == 0) {
+               return -1;	/* no command at all */
+            }
+
+            memset(key_data, 0, sizeof(key_data));
+            memset(hdcp_verify_data_receive, 0, sizeof(hdcp_verify_data_receive));
+            memset(hdcp_verify_data_calculate, 0, sizeof(hdcp_verify_data_calculate));
+
+/* Burn key to efuse */
+/* ---Command process */
+#ifdef  WRITE_TO_EFUSE_ENABLE
+            if(strncmp(argv[0], "efuse", strlen("efuse")) && 
+               strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) &&  //cmd:read hdcp/write hdcp:
+               strncmp(argv[0], "secukey_efuse", strlen("secukey_efuse"))) {
+               sprintf(buff, "%s", "failed:(code compiled to efuse,but cmd not mach with pc send)");
+               printf("%s\n", buff);
+               return -1;
+            }
+            printf("burn key to efuse. convert command...\n");
+            if(!strncmp(argv[0], "secukey_efuse", strlen("secukey_efuse")))
+               argv[0] = "efuse";
+
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
+               argc ++;
+#ifdef CONFIG_AML_MESON3
+               argv[3] = EFUSE_VERSION_MESON3;
+               printf("CONFIG_AML_MESON3 VERSION(version:%s)\n",argv[3]);
+#elif defined(CONFIG_AML_MESON6)
+               argv[3] = EFUSE_VERSION_MESON6;
+               printf("CONFIG_AML_MESON6 VERSION(version:%s)\n",argv[3]);
+#endif
+            }
+
+            if(!strncmp(argv[2], "bt_mac", strlen("bt_mac")))
+               strncpy(argv[2], "mac_bt", strlen("mac_bt"));
+
+            if(!strncmp(argv[2], "wifi_mac", strlen("wifi_mac")))
+               strncpy(argv[2], "mac_wifi", strlen("mac_wifi"));
+
+            if(!strncmp(argv[0], "read", strlen("read")) && !strncmp(argv[1], "hdcp", strlen("hdcp"))) {
+               argv[0] = Argv1[0];
+               argv[1] = Argv1[1];
+               argv[2] = Argv1[2];
+               argc = 3;
+            }
+
+            if(!strncmp(argv[0], "write", strlen("write")) && !strncmp(argv[1], "hdcp:", strlen("hdcp:")) ||
+                !strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
+#define HDCP_DATA_ADDR	(volatile unsigned long *)(0x82000000)	//get hdcp data from address:0x82000000 
+               hdcp = HDCP_DATA_ADDR;
+               printf("receive %d hdcp key datas from address:0x82000000:\n", hdcp_key_len);
+               for(i=0; i<hdcp_key_len; i++) {                                            //read 288 hdcp datas
+                  key_data[i] = *hdcp++;
+                  printf("%.2x:", key_data[i]);
+               }
+               printf("\nreceive 20 hdcp key verify datas:\n");
+               for(i=0; i<20; i++) {											     //read 20 hdcp verify datas
+                  hdcp_verify_data_receive[i] = *hdcp++;
+                  printf("%.2x:", hdcp_verify_data_receive[i]);
+               }
+               printf("\n");
+
+#ifdef  WRITE_HDCP_VERIFY_ENABLE
+               printf("start to verify %d hdcp key datas...\n", hdcp_key_len);
+               SHA1_Perform(key_data, hdcp_key_len, hdcp_verify_data_calculate);
+               printf("verify & get 20 hdcp verify datas:\n");
+               for(i=0; i<20; i++)
+			   printf("%.2x:", hdcp_verify_data_calculate[i]);
+               printf("\n");
+
+               for(i=0; i<20; i++) {
+			   if(hdcp_verify_data_receive[i] != hdcp_verify_data_calculate[i]) {
+			      writeHdcp_flag = 0;
+			      break;
+			   }
+               }
+#endif
+               if(writeHdcp_flag)	{		                                                   //hdcp can write
+                  memcpy(Argv2[3], key_data, hdcp_key_len);		         //copy hdcp datas
+                  argv[0] = Argv2[0];
+                  argv[1] = Argv2[1];
+                  argv[2] = Argv2[2];
+                  argv[3] = Argv2[3];
+                  argc = 4;
+               }
+               else {
+                  sprintf(buff, "%s", "failed:(hdcp data verify not mach)");
+                  printf("%s\n",buff);
+                  return -1;
+               }
+            }
+#endif   /* WRITE_TO_EFUSE_ENABLE */
+
+
+/* Burn key to nand */
+/* ---Command process */
+#ifdef WRITE_TO_NAND_ENABLE
+            if(strncmp(argv[0], "efuse", strlen("efuse")) && 
+               strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) && 
+               strncmp(argv[0], "secukey_nand", strlen("secukey_nand"))) {
+               sprintf(buff, "%s", "failed:(code compiled to nand,but cmd not mach with pc send)");
+               printf("%s\n", buff);
+               return -1;
+            }
+            printf("burn key to nand. convert command...\n");
+            if(!strncmp(argv[0], "efuse", strlen("efuse"))||!strncmp(argv[0], "secukey_nand", strlen("secukey_nand")))
+               argv[0] = "nand";
+
+            if(!strncmp(argv[2], "bt_mac", strlen("bt_mac")))
+               strncpy(argv[2], "mac_bt", strlen("mac_bt"));
+            
+            if(!strncmp(argv[2], "wifi_mac", strlen("wifi_mac")))
+               strncpy(argv[2], "mac_wifi", strlen("mac_wifi"));
+
+            if(!strncmp(argv[0], "read", strlen("read")) && !strncmp(argv[1], "hdcp", strlen("hdcp"))) {
+               argv[0] = Argv3[0];
+               argv[1] = Argv3[1];
+               argv[2] = Argv3[2];
+               argc = 3;
+            }
+
+            if(!strncmp(argv[0], "write", strlen("write")) && !strncmp(argv[1], "hdcp:", strlen("hdcp:")) ||
+                !strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
+#define HDCP_DATA_ADDR	(volatile unsigned long *)(0x82000000)
+               hdcp = HDCP_DATA_ADDR;
+               printf("receive %d hdcp key datas from address:0x82000000:\n", hdcp_key_len);
+               for(i=0; i<hdcp_key_len; i++) {
+                  key_data[i] = *hdcp++;
+                  printf("%.2x:", key_data[i]);
+               }
+               printf("\nreceive 20 hdcp key verify datas:\n");
+               for(i=0; i<20; i++) {
+                  hdcp_verify_data_receive[i] = *hdcp++;
+                  printf("%.2x:", hdcp_verify_data_receive[i]);
+               }
+               printf("\n");
+
+#ifdef  WRITE_HDCP_VERIFY_ENABLE
+               printf("start to verify %d hdcp key datas...\n", hdcp_key_len);
+               SHA1_Perform(key_data, hdcp_key_len, hdcp_verify_data_calculate);
+               printf("verify & get 20 hdcp verify datas:\n");
+               for(i=0; i<20; i++)
+			   printf("%.2x:", hdcp_verify_data_calculate[i]);
+               printf("\n");
+
+               for(i=0; i<20; i++) {
+			   if(hdcp_verify_data_receive[i] != hdcp_verify_data_calculate[i]) {
+			      writeHdcp_flag = 0;
+			      break;
+			   }
+               }
+#endif
+               if(writeHdcp_flag)	{
+                  memcpy(Argv4[3], key_data, hdcp_key_len);
+                  argv[0] = Argv4[0];
+                  argv[1] = Argv4[1];
+                  argv[2] = Argv4[2];
+                  argv[3] = Argv4[3];
+                  argc = 4;
+               }
+               else {
+                  sprintf(buff, "%s", "failed:(hdcp data verify not mach)");
+                  printf("%s\n",buff);
+                  return -1;
+               }
+            }
+
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid:", strlen("boardid:"))) {
+#define BOARDID_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get boardid data from address:0x82000000
+               char length[4] = {0};
+               boardid = BOARDID_DATA_ADDR;
+               for(i=0; i<4; i++) {
+                  length[i] = *boardid++;
+                  //printf("length[%d]=0x%02x\n", i, length[i]);
+               }
+               boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               printf("boardid_key_len=%d(maximum length limit is %d)\n", boardid_key_len, SECUKEY_BYTES);
+                  for(i=0; i<boardid_key_len; i++) {
+                     key_data[i] = *boardid++;
+                  }
+                  printf("receive %d boardid key datas from address:0x82000000:\n%s\n", boardid_key_len, key_data);
+                  memcpy(Argv5[3], key_data, SECUKEY_BYTES);                  //copy boardid datas
+                  argv[0] = Argv5[0];
+                  argv[1] = Argv5[1];
+                  argv[2] = Argv5[2];
+                  argv[3] = Argv5[3];
+                  argc = 4;
+            }
+#endif   /* WRITE_TO_NAND_ENABLE */
+
+
+            //printf argv[0]--argv[argc-1]
+            if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               hdcp = argv[3];
+               printf("argv[3]=");
+               for(i=0; i<hdcp_key_len; i++) printf("%02x:", *hdcp ++);
+               printf("\n");
+            }
+            else
+               for(i=0; i<argc; i++)  printf("argv[%d]=%s\n", i,argv[i]);
+
+/* Burn key to efuse */
+/* ---The actual function to read & write operation */
+#ifdef  WRITE_TO_EFUSE_ENABLE
+            /* read/write version */
+            if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+#ifdef CONFIG_AML_MESON3
+               if(!ret) {
+                  for(i=0; i<3; i++) {
+                     if(buff[i] != 0x00) {
+                        flag = 1;
+                        break;
+                     }
+                  }
+                  if(flag) {
+                     sprintf(key_data, "%02x:%02x:%02x", buff[0], buff[1], buff[2]);
+                     printf("version=%s\n", key_data);
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(version has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+#elif defined(CONFIG_AML_MESON6)
+               if(!ret) {
+                  if(buff[0] != 0x00) {
+                     sprintf(key_data, "%02x", buff[0]);
+                     printf("version=%s\n", key_data);
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(version has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+#endif
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+#ifndef EFUSE_READ_TEST_ENABLE
+                  sprintf(buff, "success:(%s)", argv[3]);
+#else
+                  argv[1] = "read";
+                  argc = 3;
+                  ret = test_efuse_read(argc, argv, argv[3]);
+                  if(!ret)
+                     sprintf(buff, "success:(%s)", argv[3]);
+                  else if(ret == -1) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read data not match write)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+                  else if(ret == -2) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read fail)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+#endif
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write mac/mac_bt/mac_wifi */
+            else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+                  for(i=0; i<6; i++) {
+                     if(buff[i] != 0x00) {
+                        flag = 1;
+                        break;
+                     }
+                  }
+                  if(flag) {
+                     sprintf(key_data, "%02x:%02x:%02x:%02x:%02x:%02x", buff[0],buff[1],buff[2],buff[3],buff[4],buff[5]);
+                     printf("%s_key_data=%s\n", argv[2], key_data);
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "failed:(%s has been not writen)", argv[2]);
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && (!strncmp(argv[2], "mac", strlen("mac")) || 
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+#ifndef EFUSE_READ_TEST_ENABLE
+                  sprintf(buff, "success:(%s)", argv[3]);
+#else
+                  argv[1] = "read";
+                  argc = 3;
+                  ret = test_efuse_read(argc, argv, argv[3]);
+                  if(!ret)
+                     sprintf(buff, "success:(%s)", argv[3]);
+                  else if(ret == -1) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read data not match write)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+                  else if(ret == -2) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read fail)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+#endif
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write usid */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+                  for(i=0; i<strlen(buff); i++) {
+                     if(buff[i] != 0x00) {
+                        usid_flag = 1;
+                        break;
+                     }
+                  }
+                  if(usid_flag) {
+                     printf("usid_key_data=%s\n", buff);
+                     memcpy(key_data, buff, strlen(buff));
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(usid has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+#ifndef EFUSE_READ_TEST_ENABLE
+                  sprintf(buff, "success:(%s)", argv[3]);
+#else
+                  argv[1] = "read";
+                  argc = 3;
+                  ret = test_efuse_read(argc, argv, argv[3]);
+                  if(!ret)
+                     sprintf(buff, "success:(%s)", argv[3]);
+                  else if(ret == -1) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read data not match write)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+                  else if(ret == -2) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read fail)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+#endif
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write hdcp */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+                  for(i=0; i<hdcp_key_len; i++) {
+                     if(buff[i] != 0x00) {
+                        hdcp_flag = 1;
+                        break;
+                     }
+                  }
+                  if(hdcp_flag) {
+                     printf("hdcp_key_data=");
+                     for(i=0; i<hdcp_key_len; i++)
+                        printf("%.2x:", buff[i]);
+                     printf("\n");
+                     sprintf(buff, "%s", "success:(hdcp has been writen)");
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(hdcp has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               ret = run_efuse_cmd(argc, argv, buff);
+               if(!ret) {
+#ifndef EFUSE_READ_TEST_ENABLE
+                  sprintf(buff, "%s", "success:(efuse write hdcp success)");
+#else
+                  argv[1] = "read";
+                  argc = 3;
+                  ret = test_efuse_read(argc, argv, argv[3]);
+                  if(!ret)
+                     sprintf(buff, "%s", "success:(efuse write hdcp success)");
+                  else if(ret == -1) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read data not match write)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+                  else if(ret == -2) {
+                     sprintf(buff, "%s", "failed:(efuse write success,but test read fail)");
+                     printf("%s\n", buff);
+                     return -1;
+                  }
+#endif
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* no command mach */
+            else {
+               sprintf(buff, "%s", "failed:(No command mached)");
+               printf("%s\n", buff);
+               return -1;
+            }
+#endif   /* WRITE_TO_EFUSE_ENABLE */
+
+
+/* Burn key to nand */
+/* ---The actual function to read & write operation */
+#ifdef  WRITE_TO_NAND_ENABLE
+            /* read/write version */
+            if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
+               sprintf(buff, "%s", "failed:(nand not be initialized)");
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
+               ret = ensure_secukey_init();
+               if (ret==0 || ret==1) {                              //init nand success or already inited.
+                  sprintf(buff, "%s", "success:(init nand success)");
+               }
+               else {                                                       //init nand failed!!
+                  sprintf(buff, "%s", "failed:(init nand failed)");
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write mac/mac_bt/mac_wifi */
+            else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  strncpy(namebuf, argv[2], strlen(argv[2]));
+                  memset(databuf, 0, sizeof(databuf));
+                  error = uboot_key_read(namebuf, databuf);
+                  if(error >= 0) {
+                     printf("%s_key_data=%s\n", argv[2], buff);
+                     sprintf(key_data, "%s", buff);
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "failed:(%s has been not writen)", argv[2]);
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret)
+                  sprintf(buff, "success:(%s)", argv[3]);
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write usid */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  strncpy(namebuf, "usid", strlen("usid"));
+                  memset(databuf, 0, sizeof(databuf));
+                  error = uboot_key_read(namebuf, databuf);
+                  if(error >= 0) {
+                     printf("usid_key_data=%s\n", buff);
+                     memcpy(key_data, buff, strlen(buff));
+                     sprintf(buff, "success:(%s)", key_data);
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(usid has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret)
+                  sprintf(buff, "success:(%s)", argv[3]);
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write hdcp */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  strncpy(namebuf, "hdcp", strlen("hdcp"));
+                  memset(databuf, 0, sizeof(databuf));
+                  error = uboot_key_read(namebuf, databuf);
+                  if(error >= 0) {
+                     printf("hdcp_key_data=");
+                     for(i=0; i<hdcp_key_len; i++)
+                        printf("%.2x:", buff[i]);
+                     printf("\n");
+                     sprintf(buff, "%s", "success:(hdcp has been writen)");
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(hdcp has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((hdcp_key_len >> (i*8)) & 0xff);
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret)
+                  sprintf(buff, "%s", "success:(nand write hdcp success)");
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write boardid */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret) {
+                  strncpy(namebuf, "boardid", strlen(boardid));
+                  memset(databuf, 0, sizeof(databuf));
+                  error = uboot_key_read(namebuf, databuf);
+                  if(error >= 0) {
+                     printf("boardid_key_data=%s\n", buff);
+                     memcpy(key_data, buff, strlen(buff));
+                     sprintf(buff, "%s", "success:(boardid has been writen)");
+                  }
+                  else
+                     sprintf(buff, "%s", "failed:(boardid has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret)
+                  sprintf(buff, "%s", "success:(nand write boardid success)");
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* no command mach */
+            else {
+               sprintf(buff, "%s", "failed:(No command mached)");
+               printf("%s\n", buff);
+               return -1;
+            }
+#endif   /* WRITE_TO_NAND_ENABLE */
+      }
+#endif
+#endif   /* WRITE_TO_EFUSE_OR_NAND_ENABLE */
 	else
 	{
 		if(run_command(cmd, flag))
@@ -1032,7 +1821,6 @@ int cmd_secukey(int argc, char * const argv[], char *buf)
 		goto usage;
 	cmd = argv[1];
 	
-	memset(buf, 0, CMD_BUFF_SIZE);
 	memset(databuf, 0, sizeof(databuf));
 	if (secukey_inited){
 		if (argc > 2&&argc<5){
@@ -1040,6 +1828,7 @@ int cmd_secukey(int argc, char * const argv[], char *buf)
 				if (argc>3)
 					goto usage;
 				name=argv[2];
+				memset(buf, 0, CMD_BUFF_SIZE);
 				strcpy(namebuf,name);
 				error=uboot_key_read(namebuf, databuf);
                 for(i=0; i<CMD_BUFF_SIZE*2; i++)
@@ -1066,8 +1855,9 @@ int cmd_secukey(int argc, char * const argv[], char *buf)
 				name=argv[2];
 				data=argv[3];
 				strcpy(namebuf,name);
-				
-				for (i=0,j=0; i<SECUKEY_BYTES; i++,j++){
+				int secukey_len = (int)((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|(buf[0]));
+				printf("secukey_len=%d\n", secukey_len);
+				for (i=0,j=0; i<secukey_len; i++,j++){
 						databuf[j]= i_to_asc((data[i]>>4) & 0x0f);
 						databuf[++j]= i_to_asc((data[i]) & 0x0f);
 						printk("%02x:%02x:", databuf[j-1], databuf[j]);
