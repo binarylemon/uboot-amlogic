@@ -20,7 +20,7 @@
 #define CONFIG_SECURITYKEY 1
 #define CONFIG_AML_NAND_KEY 1
 #endif
-#define CONFIG_SWITCH_BOOT_MODE 1
+//#define CONFIG_SWITCH_BOOT_MODE 1
 #define CONFIG_HDCP_PREFETCH 1
 
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
@@ -380,7 +380,7 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-#define CONFIG_CMD_SUSPEND 1
+//#define CONFIG_CMD_SUSPEND 1
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
 
