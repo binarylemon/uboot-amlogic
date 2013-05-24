@@ -446,11 +446,18 @@ int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_REF;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-#if CONFIG_JERRY_NAND_TEST //temp test	
-    nand_init();
-    
-#endif    
-    
+
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N, VCCK enable
+	//GPIOAO_3, DDR3_Nrst is high
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);
+        //GPIOAO_4, SELF_INIT_RST# is high
+        clrbits_le32(P_AO_GPIO_O_EN_N,1<<4);
+        setbits_le32(P_AO_GPIO_O_EN_N,1<<20);
+        //GPIOAO_5, STBY# is high
+        clrbits_le32(P_AO_GPIO_O_EN_N,1<<5);
+        setbits_le32(P_AO_GPIO_O_EN_N,1<<21);
+
 	return 0;
 }
 
@@ -464,11 +471,6 @@ int board_late_init(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-
-#ifdef CONFIG_AW_AXP20
-set_dcdc2(1500);	//set DC-DC2 to 1500mV
-set_dcdc3(1100);	//set DC-DC3 to 1100mV
-#endif
 
 	return 0;
 }
@@ -487,24 +489,6 @@ inline int get_key(void)
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
 
-
-/*//AC online
-inline void ac_online_init(void)
-{
-	axp_charger_open();
-}
-
-inline int is_ac_online(void)
-{
-	return axp_charger_is_ac_online();
-}
-
-//Power off
-void power_off(void)
-{
-	axp_power_off();
-}
-*/
 #ifdef CONFIG_AML_TINY_USBTOOL
 	int usb_get_update_result(void)
 	{
@@ -524,5 +508,4 @@ void power_off(void)
 		}
 	}
 #endif
-
 
