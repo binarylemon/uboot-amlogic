@@ -128,27 +128,13 @@ void copy_reboot_code()
 //#define POWER_OFF_3GVCC
 
 //for mbox
-//#define POWER_OFF_VCCK_VDDIO
+#define POWER_OFF_VCCK_VDDIO
 //#define POWER_OFF_VCC5V
 
 
 /***********************
 **Power control domain**
 ************************/
-static void power_off_via_gpio()
-{
-    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
-    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output	
-    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<31);//TEST_N L VCCK
-}
-
-static void power_on_via_gpio()
-{
-    setbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N H VCCK
-    setbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
-    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output
-}
-
 #ifdef POWER_OFF_VCCK_VDDIO
 static void power_off_vcck_vddio(void)
 {
@@ -271,13 +257,6 @@ void enter_power_down()
     f_serial_puts("CEC P_AO_DEBUG_REG0:\n");
     serial_put_hex(hdmi_cec_func_config,32);
     f_serial_puts("\n");        	
-#ifdef smp_test
-	//ignore ddr problems.
-//	for(i = 0; i < 1000; i++)
-//		udelay(1000);
-//	restart_arm();
-//	return;
-#endif
 //	disp_pctl();
 //	test_ddr(0);
 	 // First, we disable all memory accesses.
@@ -295,8 +274,11 @@ void enter_power_down()
     //f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
     //serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
     //f_serial_puts("\n");
+#ifdef CONFIG_IR_REMOTE_WAKEUP
+    //backup the remote config (on arm)
+    backup_remote_register();
+#endif
 
-#ifdef pwr_ddr_off
    asm(".long 0x003f236f"); //add sync instruction.
 
    disable_mmc_req();
@@ -319,10 +301,6 @@ void enter_power_down()
    f_serial_puts("  MCFG\n");
    wait_uart_empty();
 
-#endif
-
-
-#ifdef pwr_ddr_off
     f_serial_puts("step 2\n");
     wait_uart_empty();
     // Next, we sleep
@@ -354,8 +332,6 @@ void enter_power_down()
 
  	f_serial_puts("step 3\n");
  	wait_uart_empty();
-
-#endif
 
  	f_serial_puts("step 4\n");
  	wait_uart_empty();
@@ -421,9 +397,6 @@ void enter_power_down()
 
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
-//backup the remote config (on arm)
-    backup_remote_register();
-    power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
     //test_reg_0 =readl(P_AO_IR_DEC_REG0);
@@ -436,7 +409,7 @@ void enter_power_down()
     udelay(10000);
        
     //set the detect gpio
-    setbits_le32(P_AO_GPIO_O_EN_N, 1<<2);
+    setbits_le32(P_AO_GPIO_O_EN_N, 3<<2);
     while(1)
     {
         if(((test_status_0 = readl(P_AO_IR_DEC_STATUS))>>3) & 0x1){
@@ -459,12 +432,10 @@ void enter_power_down()
             break;
         //detect IO key
         power_key=readl(P_AO_GPIO_I); 
-        power_key=power_key&(1<<2);
+        power_key=power_key&(3<<2);
         if(!power_key)
             break;
     }
-
-	power_on_via_gpio();
 
 #else
 // gate off REMOTE, UART
@@ -517,8 +488,6 @@ void enter_power_down()
 	power_on_avdd25();
 #endif
 
-//	dump_pmu_reg();
-
 	switch_to_81();
   // ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
@@ -543,9 +512,6 @@ void enter_power_down()
     wait_uart_empty();
     store_restore_plls(0);
 
-
-
-	
 #ifdef pwr_ddr_off    
     f_serial_puts("step 8\n");
     wait_uart_empty();  
@@ -627,8 +593,6 @@ void enter_power_down()
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
-	
-	
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();
