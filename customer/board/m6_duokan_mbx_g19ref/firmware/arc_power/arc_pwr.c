@@ -129,7 +129,7 @@ void copy_reboot_code()
 
 //for mbox
 //#define POWER_OFF_VCCK_VDDIO
-#define POWER_OFF_VCC5V
+//#define POWER_OFF_VCC5V
 
 
 /***********************
@@ -137,69 +137,42 @@ void copy_reboot_code()
 ************************/
 static void power_off_via_gpio()
 {
-	setbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
-    
-    //mask for HDMI HDCP & CEC modules
-	//clrbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
-	
-	/*clr AO pinmux for GPIO_AO. AO pinmux has been 
-	  stored in backup_remote_register()
-	*/	
-	clrbits_le32(P_AO_RTI_PIN_MUX_REG ,(0x3ff<<1)|(0xf<<23));//clear 1~10,23~26 bit
-	setbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
-	clrbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
-	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output	
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<31);//TEST_N L VCCK
 }
 
 static void power_on_via_gpio()
 {
-	clrbits_le32(P_AO_GPIO_O_EN_N,8<<16);//GPIO_AO 3 H VCC5V_EN
-	setbits_le32(P_AO_GPIO_O_EN_N,4<<16);//GPIO_AO 2 L VCCK_EN
-	clrbits_le32(P_AO_GPIO_O_EN_N,3<<2);//GPIO_AO 2,3 output	
-	udelay(1000);
-    //mask for HDMI HDCP & CEC modules
-	//setbits_le32(P_PREG_PAD_GPIO2_O,2<<20);//GPIO_D5 L HDMI_PWR_EN
-	//clrbits_le32(P_PREG_PAD_GPIO2_EN_N,2<<20);//GPIO_D5 output
-	udelay(1000);
-	
-	clrbits_le32(P_PREG_PAD_GPIO5_O,1<<31);//CARD8 H CARD_VCC
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<31);//CARD8 output
-	udelay(1000);
-
+    setbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N H VCCK
+    setbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output
 }
 
 #ifdef POWER_OFF_VCCK_VDDIO
 static void power_off_vcck_vddio(void)
 {
-	//GPIOAO_2
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2 output
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 L VCCK_EN
-	udelay(100);	
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output    
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<31);//TEST_N L VCCK
+    udelay(100);	
 }
 static void power_on_vcck_vddio(void)
 {
-	//GPIOAO_2
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<2);//GPIO_AO 2,3 output
-	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);//GPIO_AO 2 H VCCK_EN
-	udelay(100);
+    setbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N H VCCK
+    setbits_le32(P_AO_GPIO_O_EN_N, 1<<21);//GPIO_AO 5 L VDDIO
+    clrbits_le32(P_AO_GPIO_O_EN_N, 1<<5); //GPIO_AO 5 output
+    udelay(100);
 }
 #endif
 
 #ifdef POWER_OFF_VCC5V
 static void power_off_vcc5v(void)
 {
-	//GPIOAO_3
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
-	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 2 H VCCK_EN
 	udelay(100);
 }
 static void power_on_vcc5v(void)
 {
-	//GPIOAO_3
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);//GPIO_AO 3 output
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<19);//GPIO_AO 3 H VCC5V_EN
 	udelay(100);
 }
 #endif
@@ -450,7 +423,7 @@ void enter_power_down()
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 //backup the remote config (on arm)
     backup_remote_register();
-//	power_off_via_gpio();    
+    power_off_via_gpio();    
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
     //test_reg_0 =readl(P_AO_IR_DEC_REG0);
@@ -463,7 +436,7 @@ void enter_power_down()
     udelay(10000);
        
     //set the detect gpio
-    //setbits_le32(P_AO_GPIO_O_EN_N,(1<<3));
+    setbits_le32(P_AO_GPIO_O_EN_N, 1<<2);
     while(1)
     {
 		//  power_key = readl(P_AO_IR_DEC_FRAME);
@@ -533,18 +506,16 @@ void enter_power_down()
         if(readl(0xc1109860)&0x100)
             break;
         //detect IO key
-        /*power_key=readl(P_AO_GPIO_I); 
-        power_key=power_key&(1<<3);
+        power_key=readl(P_AO_GPIO_I); 
+        power_key=power_key&(1<<2);
         if(!power_key)
             break;
-        */
-		  
     }
 
     //if(hdmi_cec_func_config & 0x1){
     //    remote_cec_hw_off();
     //}
-//	power_on_via_gpio();
+	power_on_via_gpio();
 //	resume_remote_register();
 
 #else

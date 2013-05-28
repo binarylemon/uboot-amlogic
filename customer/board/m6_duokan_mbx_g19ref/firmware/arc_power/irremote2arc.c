@@ -59,7 +59,7 @@ static int ir_remote_init_32k_mode(void)
     int val = readl(P_AO_RTI_PIN_MUX_REG);
 		writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
 		
-		control_value = 0x600ffe00;
+		control_value = 0x000d240;
 		//control_value = 0x600ffe40;
     writel( control_value,P_AO_IR_DEC_REG1 );
     
@@ -72,26 +72,24 @@ static int ir_remote_init_32k_mode(void)
     
     //writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3ffffc << 10)) | (0x57 << 20) | (0x38 << 10) | (0x1 <<30),P_AO_IR_DEC_STATUS);
     // SCALE LEADER ACTIVE
-    writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 16)) | ((unsigned)(294*1.1) << 16),P_AO_IR_DEC_LDR_ACTIVE);
-    writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 0)) | ((unsigned)(294*0.9) << 0),P_AO_IR_DEC_LDR_ACTIVE);
+    writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 16)) | ((unsigned)(40*1) << 16),P_AO_IR_DEC_LDR_ACTIVE);
+    writel((readl(P_AO_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 0)) | ((unsigned)(10*1) << 0),P_AO_IR_DEC_LDR_ACTIVE);
 
     // SCALE LEADER IDLE
-    writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 16)) | ((unsigned)(147*1.1) << 16),P_AO_IR_DEC_LDR_IDLE);
-    writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 0)) | ((unsigned)(147*0.9) << 16),P_AO_IR_DEC_LDR_IDLE);
-	
-	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
-    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
-	writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_IR_DEC_LDR_REPEAT);
-    writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_IR_DEC_LDR_REPEAT);
-    // SCALE BIT 0 (1.11mS)
-    writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 16)) | ((unsigned)(36*1.1) << 16),P_AO_IR_DEC_BIT_0);
-    writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 0))  | ((unsigned)(36*0.9) << 0),P_AO_IR_DEC_BIT_0);
+    writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 16)) | ((unsigned)(40*1) << 16),P_AO_IR_DEC_LDR_IDLE);
+    writel((readl(P_AO_IR_DEC_LDR_IDLE)& ~(0x3FF << 0)) | ((unsigned)(10*1) << 16),P_AO_IR_DEC_LDR_IDLE);
 
+    // SCALE BIT 0 (1.11mS)
+    writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 16)) | ((unsigned)(39*1.2) << 16),P_AO_IR_DEC_BIT_0);
+    writel((readl(P_AO_IR_DEC_BIT_0)& ~(0x3FF << 0))  | ((unsigned)(39*0.8) << 0),P_AO_IR_DEC_BIT_0);
+
+    writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3 << 30)),P_AO_IR_DEC_STATUS);
+    writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3FF << 20)) | ((unsigned)(65*1.2) << 20),P_AO_IR_DEC_STATUS);
+    writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3FF << 10)) | ((unsigned)(65*0.8) << 10),P_AO_IR_DEC_STATUS);
 
     status = readl(P_AO_IR_DEC_STATUS);
     data_value = readl(P_AO_IR_DEC_FRAME);
 
-    //step 2 : request nec_remote irq  & enable it
     return 0;
 }
 
