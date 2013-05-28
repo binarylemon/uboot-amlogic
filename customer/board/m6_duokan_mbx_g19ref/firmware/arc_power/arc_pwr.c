@@ -439,63 +439,15 @@ void enter_power_down()
     setbits_le32(P_AO_GPIO_O_EN_N, 1<<2);
     while(1)
     {
-		//  power_key = readl(P_AO_IR_DEC_FRAME);
-		//  power_key = (power_key>>16)&0xff;
-		//  if(power_key==0x1a)  //the reference remote power key code
-        //		break;
         if(((test_status_0 = readl(P_AO_IR_DEC_STATUS))>>3) & 0x1){
         	power_key = readl(P_AO_IR_DEC_FRAME);
-        	//power_key = (power_key>>16)&0xff;
-        	if(power_key == 0xf50ae386){	
-        	    //poweronflag = 1;
-    		    //for(i = 0;i<1000;i++)
-    		    //{
-                //    //readl(P_AO_IR_DEC_FRAME);
-    		    //	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
-    		    //	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && ((test_status_1>>7)&0x1))//ok
-    		    //	{
-    		    //		//readl(P_AO_IR_DEC_FRAME);
-    		    //		cec_flag = 1;
-    		    //	}
-    		    //	//readl(P_AO_IR_DEC_FRAME);
-    		    //}
-    		    //if(cec_flag) {
-    		    //    writel(readl(P_AO_DEBUG_REG0) | (0x1<<4),P_AO_DEBUG_REG0);
-        		//    if(hdmi_cec_func_config & 0x1){
-        		//        //cec_imageview_on();
-        		//    }
-    		    //}else{
-        		//    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
-    		    //}
+        	if(power_key == 0xd5800000){	
     		    if(hdmi_cec_func_config & 0x1){
     		        cec_imageview_on();
     		    }
     		    break;
             }
         }
-        //if(poweronflag == 1){
-        //
-        //    //udelay(100000);
-        //	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
-        //    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
-        //	writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_IR_DEC_LDR_REPEAT);//my change
-        //    writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_IR_DEC_LDR_REPEAT);//my change
-        //    //for(i = 0;i<200ms;i++)
-        //	    for(i = 0;i<5000;i++)
-        //	    {
-        //            //readl(P_AO_IR_DEC_FRAME);
-        //	    	//if((test_status_1 = readl(P_AO_IR_DEC_STATUS))&0x1)
-        //	    	if(((((test_status_1 = readl(P_AO_IR_DEC_STATUS)) >> 4) & 0x7) == 0x1) && (test_status_1>>7))
-        //	    	{
-        //	    		//readl(P_AO_IR_DEC_FRAME);
-        //	    		cec_flag = 1;
-        //	    		break;
-        //	    	}
-        //	    	//readl(P_AO_IR_DEC_FRAME);
-        //	    }
-        //	    cec_key++;
-        //	    break;
-        //}
 
         if(hdmi_cec_func_config & 0x1){
           cec_handler();	
@@ -512,11 +464,7 @@ void enter_power_down()
             break;
     }
 
-    //if(hdmi_cec_func_config & 0x1){
-    //    remote_cec_hw_off();
-    //}
 	power_on_via_gpio();
-//	resume_remote_register();
 
 #else
 // gate off REMOTE, UART
