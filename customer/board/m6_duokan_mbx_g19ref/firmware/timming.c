@@ -54,13 +54,13 @@ static struct ddr_set __ddr_setting={
                 #endif
                 #ifdef DDR3_7_7_7
                     .cl             =   7,
-                    .t_faw          =  20,//27:page size 2KB; 20:page size 1KB
+                    .t_faw          =  27,//27:page size 2KB; 20:page size 1KB
                     .t_ras          =  20,
                     .t_rc           =  27,
                     .t_rcd          =   7,
-                    .t_rfc          =  86,//4Gb:139~160; 2Gb:86; 1Gb:59
+                    .t_rfc          =  160,//4Gb:139~160; 2Gb:86; 1Gb:59
                     .t_rp           =   7,
-                    .t_rrd          =   4,//6 or 5:page size 2KB; 4:page size 1KB
+                    .t_rrd          =   6,//6 or 5:page size 2KB; 4:page size 1KB
                     .t_rtp          =   4,
                     .t_wr           =   8,
                     .t_wtr          =   4,
@@ -109,7 +109,7 @@ static struct ddr_set __ddr_setting={
                     			(0 << 2 ) |   //[B2]cas latency bit 0.
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(1 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                            [1]=(0 << 9)|(1 << 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
                                 (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
                                 (0 <<3 ),					//@@[B4,B3]AL: It will be calcualted by get_mrs1()@ddr_init_pctl.c
                                 							//00: AL disabled; 01:CL-1;10:CL-2;11:reserved

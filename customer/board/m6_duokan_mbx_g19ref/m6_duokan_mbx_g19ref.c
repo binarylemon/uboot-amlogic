@@ -448,9 +448,6 @@ int board_init(void)
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 
 	setbits_le32(P_AO_GPIO_O_EN_N,1<<31);//TEST_N, VCCK enable
-	//GPIOAO_3, DDR3_Nrst is high
-	clrbits_le32(P_AO_GPIO_O_EN_N,1<<3);
-	setbits_le32(P_AO_GPIO_O_EN_N,1<<19);
         //GPIOAO_4, SELF_INIT_RST# is high
         clrbits_le32(P_AO_GPIO_O_EN_N,1<<4);
         setbits_le32(P_AO_GPIO_O_EN_N,1<<20);

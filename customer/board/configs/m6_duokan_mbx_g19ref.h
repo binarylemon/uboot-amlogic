@@ -177,11 +177,11 @@
 	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run switch_bootmode\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=run cvbscheck;mmc read 1 0x83000000 4000 3000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"nandargs=run cvbscheck;mmc read 1 0x83000000 4000 3000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
 	"nandboot=echo Booting from eMMC ...;run nandargs;mmc read 1 ${loadaddr} a000 3000;bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmc read 1 ${loadaddr} 6000 3000; bootm\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 hlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
 	"update_chiprev=chiprev; setenv bootargs ${bootargs} chiprev=${chiprev}\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
@@ -384,7 +384,7 @@
 #define CONFIG_CEC_WAKE_UP 1
 #define CONFIG_CMD_IMI 1
 #define CONFIG_ANDROID_IMG 1
-#define CONFIG_TURN_OFF_ODT
+//#define CONFIG_TURN_OFF_ODT
 #define CONFIG_PWM_CORE_VOLTAGE
 
 #endif //__CONFIG_M6_MBX_G19_H__

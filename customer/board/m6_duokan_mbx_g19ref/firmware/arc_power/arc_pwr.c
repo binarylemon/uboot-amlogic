@@ -347,6 +347,7 @@ void enter_power_down()
   
  	f_serial_puts("step 6\n");
  	wait_uart_empty();
+
 	//enable power_key int	
 	writel(0x100,0xc1109860);//clear int
  	writel(readl(0xc1109868)|1<<8,0xc1109868);
@@ -433,7 +434,7 @@ void enter_power_down()
         //detect IO key
         power_key=readl(P_AO_GPIO_I); 
         power_key=power_key&(3<<2);
-        if(!power_key)
+        if(power_key)
             break;
     }
 
