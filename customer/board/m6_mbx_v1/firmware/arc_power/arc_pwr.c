@@ -13,6 +13,7 @@
 
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
+#define CONFIG_CEC_WAKEUP       0//for CEC function
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"
@@ -446,11 +447,13 @@ void enter_power_down()
     init_custom_trigger();
     //test_reg_0 =readl(P_AO_IR_DEC_REG0);
     //test_reg_1 =readl(P_AO_IR_DEC_REG1);
+#if CONFIG_CEC_WAKEUP
     if(hdmi_cec_func_config & 0x1){
         cec_power_on();
         remote_cec_hw_reset();  
         cec_node_init();
-    }  
+    }
+#endif 
     udelay(10000);
        
     //set the detect gpio
@@ -484,10 +487,12 @@ void enter_power_down()
         		//    }
     		    //}else{
         		//    writel(readl(P_AO_DEBUG_REG0) & (~(0x1<<4)),P_AO_DEBUG_REG0);
-    		    //}
+    		    //
+#if CONFIG_CEC_WAKEUP
     		    if(hdmi_cec_func_config & 0x1){
     		        cec_imageview_on();
     		    }
+#endif
     		    break;
             }
         }
@@ -514,13 +519,14 @@ void enter_power_down()
         //	    cec_key++;
         //	    break;
         //}
-
+#if CONFIG_CEC_WAKEUP
         if(hdmi_cec_func_config & 0x1){
           cec_handler();	
           if(cec_msg.cec_power == 0x1){  //cec power key
                 break;
             }
         }
+#endif
         if(readl(0xc1109860)&0x100)
             break;
         //detect IO key
