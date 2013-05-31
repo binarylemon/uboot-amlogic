@@ -41,7 +41,7 @@ static void setup_net_chip(void)
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
 	/* setup ethernet clk */
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
+	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120);
 	/* setup ethernet pinmux */
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 	/* setup ethernet mode */
@@ -407,23 +407,19 @@ struct aml_nand_device aml_nand_mid_device = {
 #ifdef CONFIG_USB_DWC_OTG_HCD
 #include <asm/arch/usb.h>
 #include <asm/arch/gpio.h>
-//@board schematic: m3_skt_v1.pdf
-//@pinmax: AppNote-M3-CorePinMux.xlsx
-//GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
 static void gpio_set_vbus_power(char is_power_on)
 {
 	if(is_power_on)
 	{
-		//@WA-AML8726-M3_REF_V1.0.pdf
-		//GPIOD_9 -- USB_PWR_CTL
-		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
+		//GPIOD_7 -- USB_PWR_CTL
+		set_gpio_mode(GPIOD_bank_bit0_9(7), GPIOD_bit_bit0_9(7), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(7), GPIOD_bit_bit0_9(7), 1);
 		udelay(100000);
 	}
 	else
 	{
-		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
+		set_gpio_mode(GPIOD_bank_bit0_9(7), GPIOD_bit_bit0_9(7), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(7), GPIOD_bit_bit0_9(7), 0);
 	}
 }
 

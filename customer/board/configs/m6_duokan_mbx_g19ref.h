@@ -103,7 +103,7 @@
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-#define CONFIG_M6_USBPORT_BASE	0xC90C0000
+#define CONFIG_M6_USBPORT_BASE	0xC9040000
 #define CONFIG_M6_USBPORT_BASE_A	0xC9040000
 #define CONFIG_USB_STORAGE      1
 #define CONFIG_USB_DWC_OTG_HCD  1
@@ -251,6 +251,7 @@
 
 #define BOARD_LATE_INIT
 #define CONFIG_PREBOOT
+#if 0
 #define CONFIG_VIDEO_AML
 /* config TV output */
 #define CONFIG_VIDEO_AMLTVOUT
@@ -261,6 +262,8 @@
 #define LCD_BPP LCD_COLOR24
 #define TV_BPP LCD_BPP
 #define LCD_TEST_PATTERN
+#endif
+
 #ifndef CONFIG_SYS_CONSOLE_IS_IN_ENV
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV
 #endif
