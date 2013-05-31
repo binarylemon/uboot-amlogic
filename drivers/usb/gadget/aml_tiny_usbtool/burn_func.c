@@ -2,7 +2,7 @@
 #include "usb_pcd.h"
 
 
-#if defined(WRITE_TO_NAND_ENABLE)
+#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
 #include <common.h>
 #include <linux/ctype.h>
 #include <linux/mtd/mtd.h>
@@ -30,28 +30,23 @@ int ensure_secukey_init(void);
 int cmd_secukey(int argc, char * const argv[], char *buf);
 #endif
 
-#if defined(WRITE_TO_EFUSE_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
-#define WRITE_TO_EFUSE_OR_NAND_ENABLE  1
-#endif
-
 #define SECUKEY_BYTES     512
-#if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
 //test efuse read
-#define EFUSE_READ_TEST_ENABLE                                                   //enable efuse read test after efuse write success
+#define EFUSE_READ_TEST_ENABLE
 
 //hdcp verify enable
 #define WRITE_HDCP_VERIFY_ENABLE
 
 //efuse version
-#define EFUSE_VERSION_MESON3						"01:02:03"        //m3 version:01:xx:xx, machine id  sets 0x02:0x03
-#define EFUSE_VERSION_MESON6						"02"                 //m6 version:02
+#define EFUSE_VERSION_MESON3        "01:02:03"
+#define EFUSE_VERSION_MESON6        "02"
 
 //extern 
 #ifdef WRITE_TO_EFUSE_ENABLE
 #ifdef CONFIG_AML_MESON3
-extern int do_efuse_usb(int argc, char * const argv[], char *buf);   //extern in m3 platform
+extern int do_efuse_usb(int argc, char * const argv[], char *buf);
 #elif defined(CONFIG_AML_MESON6)
-extern int cmd_efuse(int argc, char * const argv[], char *buf);         //extern in m6 platform
+extern int cmd_efuse(int argc, char * const argv[], char *buf);
 #endif
 #endif
 
@@ -368,7 +363,6 @@ run:
    return ret;
 }
 #endif    /* EFUSE_READ_TEST_ENABLE */
-#endif    /* WRITE_TO_EFUSE_OR_NAND_ENABLE */
 
 int burn_board(const char *dev, void *mem_addr, u64 offset, u64 size)
 {
@@ -507,7 +501,6 @@ int usb_run_command (const char *cmd, char* buff)
 			strcpy(buff, "okay");
 		}
 	}
-#if defined(WRITE_TO_EFUSE_OR_NAND_ENABLE)
 #if 0
 	/*
 		//efuse read/write command
@@ -1076,7 +1069,7 @@ int usb_run_command (const char *cmd, char* buff)
 #else
 
 /*
-  *	burn keys to efuse/nand common command:
+  *	burn keys to efuse/nand/emmc common command:
   *	"efuse read version"
   *	"efuse write version"
   *	"efuse read mac"
@@ -1103,7 +1096,7 @@ int usb_run_command (const char *cmd, char* buff)
   *	"secukey_efuse/secukey_nand write usid xxxxx..."
   *	"secukey_efuse/secukey_nand read hdcp"
   *	"secukey_efuse/secukey_nand write hdcp:" (hdcp key datas form 0x82000000 address)
-  *	 "secukey_nand read boardid"
+  *	"secukey_nand read boardid"
   *	"secukey_nand write boardid:"    (boardid key datas form 0x82000000 address)
   **/
       else if(!strncmp(cmd, "efuse", strlen("efuse")) ||
@@ -1115,8 +1108,13 @@ int usb_run_command (const char *cmd, char* buff)
             char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
             char *hdcp = NULL, *boardid = NULL;
             char *Argv1[3] = {"efuse", "read", "hdcp"}, *Argv2[4] = {"efuse", "write", "hdcp", ""};
+#if defined(WRITE_TO_NAND_ENABLE)
             char *Argv3[3] = {"nand", "read", "hdcp"}, *Argv4[4] = {"nand", "write", "hdcp", ""};
             char *Argv5[4] = {"nand", "write", "boardid", ""};
+#elif defined(WRITE_TO_EMMC_ENABLE)
+            char *Argv3[3] = {"emmc", "read", "hdcp"}, *Argv4[4] = {"emmc", "write", "hdcp", ""};
+            char *Argv5[4] = {"emmc", "write", "boardid", ""};
+#endif
 
             /* Extract arguments */
             if ((argc = parse_line (cmd, argv)) == 0) {
@@ -1215,17 +1213,18 @@ int usb_run_command (const char *cmd, char* buff)
 
 /* Burn key to nand */
 /* ---Command process */
-#ifdef WRITE_TO_NAND_ENABLE
+#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
             if(strncmp(argv[0], "efuse", strlen("efuse")) && 
                strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) && 
                strncmp(argv[0], "secukey_nand", strlen("secukey_nand"))) {
-               sprintf(buff, "%s", "failed:(code compiled to nand,but cmd not mach with pc send)");
+               sprintf(buff, "failed:(code compiled to %s,but cmd not mach with pc send)", Argv3[0]);
                printf("%s\n", buff);
                return -1;
             }
-            printf("burn key to nand. convert command...\n");
+
+            printf("burn key to %s. convert command...\n", Argv3[0]);
             if(!strncmp(argv[0], "efuse", strlen("efuse"))||!strncmp(argv[0], "secukey_nand", strlen("secukey_nand")))
-               argv[0] = "nand";
+               argv[0] = Argv3[0];
 
             if(!strncmp(argv[2], "bt_mac", strlen("bt_mac")))
                strncpy(argv[2], "mac_bt", strlen("mac_bt"));
@@ -1572,18 +1571,18 @@ int usb_run_command (const char *cmd, char* buff)
 
 /* Burn key to nand */
 /* ---The actual function to read & write operation */
-#ifdef  WRITE_TO_NAND_ENABLE
+#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
             /* read/write version */
             if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
-               sprintf(buff, "%s", "failed:(nand not be initialized)");
+               sprintf(buff, "failed:(%s not be initialized)", argv[0]);
             }
             else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
                ret = ensure_secukey_init();
-               if (ret==0 || ret==1) {                              //init nand success or already inited.
-                  sprintf(buff, "%s", "success:(init nand success)");
+               if (ret==0 || ret==1) {                              //init nand/emmc success or already inited.
+                  sprintf(buff, "success:(init %s success)", argv[0]);
                }
-               else {                                                       //init nand failed!!
-                  sprintf(buff, "%s", "failed:(init nand failed)");
+               else {                                                       //init nand/emmc failed!!
+                  sprintf(buff, "failed:(init %s failed)", argv[0]);
                   printf("%s\n", buff);
                   return -1;
                }
@@ -1684,7 +1683,7 @@ int usb_run_command (const char *cmd, char* buff)
                for(i=0; i<4; i++) buff[i] = (char)((hdcp_key_len >> (i*8)) & 0xff);
                ret = cmd_secukey(argc, argv, buff);
                if(!ret)
-                  sprintf(buff, "%s", "success:(nand write hdcp success)");
+                  sprintf(buff, "success:(%s write hdcp success)", argv[0]);
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
                   printf("%s\n", buff);
@@ -1717,7 +1716,7 @@ int usb_run_command (const char *cmd, char* buff)
                for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
                ret = cmd_secukey(argc, argv, buff);
                if(!ret)
-                  sprintf(buff, "%s", "success:(nand write boardid success)");
+                  sprintf(buff, "success:(%s write boardid success)", argv[0]);
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
                   printf("%s\n", buff);
@@ -1731,10 +1730,9 @@ int usb_run_command (const char *cmd, char* buff)
                printf("%s\n", buff);
                return -1;
             }
-#endif   /* WRITE_TO_NAND_ENABLE */
+#endif   /* WRITE_TO_NAND_ENABLE || WRITE_TO_EMMC_ENABLE */
       }
 #endif
-#endif   /* WRITE_TO_EFUSE_OR_NAND_ENABLE */
 	else
 	{
 		if(run_command(cmd, flag))
@@ -1754,19 +1752,20 @@ int usb_run_command (const char *cmd, char* buff)
 
 
 
-#if defined(WRITE_TO_NAND_ENABLE)
+#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
 int ensure_secukey_init(void)
 {
 	int error;
 	char *cmd;
 
 	if (secukey_inited){
-		printk("nand already inited!!\n");
+		printk("flash device already inited!!\n");
 		return 1;
 	}
 	
 	printk("should be inited first!\n");
 
+#if defined(CONFIG_AML_NAND_KEY)
 	error = uboot_key_init();
 	if(error >= 0){
 		error = nandkey_provider_register();
@@ -1778,13 +1777,32 @@ int ensure_secukey_init(void)
 				return 0;
 			}
 		}
-	}	
+	}
 	else
 	{
 		printk("init error\n");
 		return -1;
 	}
-	
+#elif defined (CONFIG_AML_EMMC_KEY)
+	error = uboot_key_init();
+	if(error >= 0){
+		error = emmckey_provider_register();
+		if(error >= 0){
+			 error = key_set_version("emmc");
+			 if(error >= 0){
+				printk("init key ok!!\n");
+				secukey_inited = 1;
+				return 0;
+			}
+		}
+	}
+	else
+	{
+		printk("init error\n");
+		return -1;
+	}
+#endif
+
 	return -1;
 }
 
