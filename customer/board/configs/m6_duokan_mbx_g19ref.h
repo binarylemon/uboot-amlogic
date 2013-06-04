@@ -389,5 +389,6 @@
 #define CONFIG_ANDROID_IMG 1
 //#define CONFIG_TURN_OFF_ODT
 #define CONFIG_PWM_CORE_VOLTAGE
+#define CONFIG_CMD_DDR_TEST       1       //ddrtest & d2pll
 
 #endif //__CONFIG_M6_MBX_G19_H__
