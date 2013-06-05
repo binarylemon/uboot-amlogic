@@ -441,14 +441,14 @@ int aml_rtc_init(void)
 	printf("aml_rtc_init\n");
 #endif
 #ifdef CONFIG_AML_MESON_6
-	if(!(readl(P_RTC_ADDR1) & (s_ready)))
-	{
+	//if(!(readl(P_RTC_ADDR1) & (s_ready)))
+	//{
 		printf("aml rtc init first time!\n");
 		static_register_write(get_rtc_static_reg_init_val());
 		mdelay(2);
 		ser_access_write(RTC_GPO_COUNTER_ADDR, 0x500000);
 		//changed GPI :RTC_ADDR1: GPI_LEVEL:  current level of the GPI signal from the RTC block
-	}
+	//}
 #else
 	static_register_write(get_rtc_static_reg_init_val());
 	ser_access_write(RTC_GPO_COUNTER_ADDR,0x100000);
