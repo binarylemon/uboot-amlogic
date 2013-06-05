@@ -500,15 +500,15 @@ power_off_via_gpio();
    }
 #endif
 
+// gate on REMOTE, UART
+	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
+
+ #endif//CONFIG_IR_REMOTE_WAKEUP
 	//disable power_key int
 	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
 	writel(readl(0xc8100080)&(~0x1),0xc8100080);
 	writel(0x100,0xc1109860);//clear int
 
-// gate on REMOTE, UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
-
- #endif//CONFIG_IR_REMOTE_WAKEUP
 //  ee_on();
  
 //  disable_iso_ao();
