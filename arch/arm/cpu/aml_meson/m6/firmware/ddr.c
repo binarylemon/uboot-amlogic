@@ -151,6 +151,52 @@ addr_start:
 
 static inline unsigned lowlevel_ddr(unsigned tag,struct ddr_set * timing_reg)
 {
+#ifdef DDR_DETECT168_NAND_D7
+
+#ifdef DDR3_7_7_7
+    #define DDR_FREQ (533)
+#elif defined DDR3_9_9_9
+    #define DDR_FREQ (667)
+#else
+    #define DDR_FREQ M6_DDR_CLK
+#endif
+
+    if(romboot_info->por_cfg & POR_ROM_BOOT_ENABLE){ //8bit DDR
+        timing_reg->t_faw = 20;
+        timing_reg->t_rrd = 4;
+    }
+    else{ //16bit DDR
+        timing_reg->t_faw = 30;
+        timing_reg->t_rrd = 6;
+    }
+
+#ifdef M6_DDR3_1GB
+    if((romboot_info->por_cfg & POR_ROM_BOOT_ENABLE) && !(timing_reg->ddr_ctrl&(1<<7)))//256x8bitx4pcs
+        timing_reg->t_rfc = DDR_FREQ * 160 / 1000 + 1;
+    else //512x8x2pcs or 256x16x2pcs
+        timing_reg->t_rfc = DDR_FREQ * 300 / 1000 + 1;
+        
+    if(timing_reg->ddr_ctrl&(1<<7))
+        timing_reg->ddr_ctrl = (timing_reg->ddr_ctrl & ~0xf) | 2;
+    else
+        timing_reg->ddr_ctrl = (timing_reg->ddr_ctrl & ~0xf) | 0xe;
+
+#elif defined M6_DDR3_512M
+    if((romboot_info->por_cfg & POR_ROM_BOOT_ENABLE) && !(timing_reg->ddr_ctrl&(1<<7)))//128x8bitx4pcs
+        timing_reg->t_rfc = DDR_FREQ * 110 / 1000 + 1;
+    else if(!(romboot_info->por_cfg & POR_ROM_BOOT_ENABLE) && (timing_reg->ddr_ctrl&(1<<7)))//256x16x2pcs
+        timing_reg->t_rfc = DDR_FREQ * 300 / 1000 + 1;
+    else //256x8x2pcs or 128x16x2pcs
+        timing_reg->t_rfc = DDR_FREQ * 160 / 1000 + 1;
+        
+    if(timing_reg->ddr_ctrl&(1<<7))
+        timing_reg->ddr_ctrl = (timing_reg->ddr_ctrl & ~0xf) | 0xe;
+    else
+        timing_reg->ddr_ctrl = (timing_reg->ddr_ctrl & ~0xf) | 0xa;
+        
+#endif
+
+#endif
     set_ddr_clock(timing_reg);
     //if(tag)
     //    return ddr_init_sw(timing_reg);
