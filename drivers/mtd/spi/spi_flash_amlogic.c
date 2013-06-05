@@ -132,7 +132,7 @@ int spi_check_write_protect(void)
 
     while(readl(P_SPI_FLASH_CMD)!=0);
 
-    return (readl(P_SPI_FLASH_STATUS)&(0x7<<2)) == (0x7<<2)?1:0;
+    return (readl(P_SPI_FLASH_STATUS)&(0xf<<2)) == (0xf<<2)?1:0;
 }
 
 void spi_enable_write_protect(void)
@@ -140,7 +140,7 @@ void spi_enable_write_protect(void)
     unsigned char statusValue;
     int ret;
 
-    statusValue = 0x7<<2;//all protect;
+    statusValue = 0xf<<2;//all protect;
 		
 	/*write enable*/	
     writel(1<<SPI_FLASH_WREN, P_SPI_FLASH_CMD);
@@ -737,6 +737,9 @@ static const struct {
 #endif
 #ifdef CONFIG_SPI_FLASH_GIGADEVICE
 	{ 0, 0xc8, spi_flash_probe_gigadevice, },
+#endif
+#ifdef CONFIG_SPI_FLASH_PMDEVICE
+	{ 0, 0x7f, spi_flash_probe_pmdevice, },
 #endif
 #ifdef CONFIG_SPI_FRAM_RAMTRON
 	{ 6, 0xc2, spi_fram_probe_ramtron, },

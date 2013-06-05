@@ -474,3 +474,13 @@ int add_mtd_partitions(struct mtd_info *master,
 
 	return 0;
 }
+unsigned int get_mtd_size(char *name)
+{
+	struct mtd_part *slave, *next;
+	list_for_each_entry_safe(slave, next, &mtd_partitions, list) {
+		if (!strcmp(slave->mtd.name, name)) {
+			return slave->mtd.size;
+		}
+	}
+	return 0;
+}
