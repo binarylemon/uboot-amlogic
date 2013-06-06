@@ -516,7 +516,7 @@ static int parse_battery_para(char *base, int size)
             break;
             
         case member_pmu_ntc_ts_current:
-            if (get_para_value(value, &board_battery_para.pmu_ntc_ts_current, 20, 80, member_pmu_ntc_ts_current) < 0) {
+            if (get_para_value(value, &board_battery_para.pmu_ntc_ts_current, 0, 3, member_pmu_ntc_ts_current) < 0) {
                 return -1;
             }
             break;
