@@ -14,6 +14,7 @@
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
 #define CONFIG_CEC_WAKEUP       0//for CEC function
+#define CONFIG_RTC_WAKEUP       0//for RTC function
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"
@@ -212,8 +213,8 @@ void restart_arm()
 		//0. make sure a9 reset
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 		
-	//1. write flag
-	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	//1. write flag, Move it to before
+//	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	
 	//2. remap AHB SRAM
 //	writel(3,P_AO_REMAP_REG0);
@@ -349,11 +350,12 @@ void enter_power_down()
  	f_serial_puts("step 6\n");
  	wait_uart_empty();
 
+#if CONFIG_RTC_WAKEUP
 	//enable power_key int	
 	writel(0x100,0xc1109860);//clear int
  	writel(readl(0xc1109868)|1<<8,0xc1109868);
 	writel(readl(0xc8100080)|0x1,0xc8100080);
-
+#endif
 
 
 #ifdef POWER_OFF_3GVCC
@@ -435,9 +437,14 @@ void enter_power_down()
             }
         }
 #endif
-        if(readl(0xc1109860)&0x100)
+#if CONFIG_RTC_WAKEUP
+        //detect RTC Alarm
+        if(readl(0xc1109860)&0x100){
+            power_key=0x100;
             break;
-        //detect IO key
+            }
+#endif
+        //detect WiFi & BT Wake up
         power_key=readl(P_AO_GPIO_I); 
         power_key=power_key&(3<<2);
         if(power_key)
@@ -464,11 +471,12 @@ void enter_power_down()
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0xF,P_AO_RTI_GEN_CNTL_REG0);
 
  #endif//CONFIG_IR_REMOTE_WAKEUP
+#if CONFIG_RTC_WAKEUP
 	//disable power_key int
 	writel(readl(0xc1109868)&(~(1<<8)),0xc1109868);
 	writel(readl(0xc8100080)&(~0x1),0xc8100080);
 	writel(0x100,0xc1109860);//clear int
-
+#endif
 //  ee_on();
  
 //  disable_iso_ao();
@@ -548,30 +556,30 @@ void enter_power_down()
     //    serial_put_hex(cec_rd_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0),32);
     //    f_serial_puts("\n");
 
-        //f_serial_puts("CEC power_key:\n");      
-        //serial_put_hex(power_key,32);
-        //f_serial_puts("\n");
-        f_serial_puts("CEC readl(P_AO_DEBUG_REG0):\n");      
-        serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+        f_serial_puts("power_key: ");      
+        serial_put_hex(power_key,32);
         f_serial_puts("\n");
+        //f_serial_puts("CEC readl(P_AO_DEBUG_REG0):\n");      
+        //serial_put_hex(readl(P_AO_DEBUG_REG0),32);
+        //f_serial_puts("\n");
         //f_serial_puts("CEC test_reg_0:\n");      
         //serial_put_hex(test_reg_0,32);
         //f_serial_puts("\n");
         //f_serial_puts("CEC test_reg_1:\n");      
         //serial_put_hex(test_reg_1,32);
         //f_serial_puts("\n");
-        f_serial_puts("CEC test_status_0:\n");      
-        serial_put_hex(test_status_0,32);
-        f_serial_puts("\n");
-        f_serial_puts("CEC test_status_1:\n");      
-        serial_put_hex(test_status_1,32);
-        f_serial_puts("\n");
+        //f_serial_puts("CEC test_status_0:\n");      
+        //serial_put_hex(test_status_0,32);
+        //f_serial_puts("\n");
+        //f_serial_puts("CEC test_status_1:\n");      
+        //serial_put_hex(test_status_1,32);
+        //f_serial_puts("\n");
         f_serial_puts("AO_IR_DEC_LDR_REPEAT:\n");      
         serial_put_hex(readl(P_AO_IR_DEC_LDR_REPEAT),32);
         f_serial_puts("\n");
-        f_serial_puts("cec_flag:\n");      
-        serial_put_hex(cec_flag,32);
-        f_serial_puts("\n");
+        //f_serial_puts("cec_flag:\n");      
+        //serial_put_hex(cec_flag,32);
+        //f_serial_puts("\n");
         //f_serial_puts("poweronflag:\n");      
         //serial_put_hex(poweronflag,32);
         //f_serial_puts("\n");
@@ -596,7 +604,23 @@ void enter_power_down()
 //	test_ddr(1);
 	
 //	disp_code();	
-
+        //1. write flag
+        switch(power_key){
+#if CONFIG_RTC_WAKEUP
+            case 0x10 : //RTC
+                writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+                break;
+#endif
+            case 0x04 : //BT
+                writel(0x12344331,P_AO_RTI_STATUS_REG2);
+                break;
+            case 0x08 : //WiFi
+                writel(0x12344330,P_AO_RTI_STATUS_REG2);
+                break;
+            default: //IR Remote
+                writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+                break;
+            }
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
