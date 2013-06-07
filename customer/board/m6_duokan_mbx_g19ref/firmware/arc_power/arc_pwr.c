@@ -14,7 +14,7 @@
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
 #define CONFIG_CEC_WAKEUP       0//for CEC function
-#define CONFIG_RTC_WAKEUP       0//for RTC function
+#define CONFIG_RTC_WAKEUP       1//for RTC function
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"
@@ -608,7 +608,7 @@ void enter_power_down()
         switch(power_key){
 #if CONFIG_RTC_WAKEUP
             case 0x10 : //RTC
-                writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+                writel(0x12345678,P_AO_RTI_STATUS_REG2);
                 break;
 #endif
             case 0x04 : //BT
