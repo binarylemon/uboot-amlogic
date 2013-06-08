@@ -67,6 +67,7 @@ COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
 COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += env_amlnand.o env_sf.o env_switch.o
 # command
 COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
+COBJS-$(CONFIG_SECURITYKEY) += cmd_usid.o cmd_uuid.o
 COBJS-$(CONFIG_HDCP_PREFETCH) += cmd_hdcp.o
 #COBJS-$(CONFIG_SECURITYKEY) += cmd_tmp.o
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
@@ -82,6 +83,7 @@ COBJS-$(CONFIG_CMD_CONSOLE) += cmd_console.o
 COBJS-$(CONFIG_CMD_CPLBINFO) += cmd_cplbinfo.o
 COBJS-$(CONFIG_DATAFLASH_MMC_SELECT) += cmd_dataflash_mmc_mux.o
 COBJS-$(CONFIG_CMD_DATE) += cmd_date.o
+COBJS-$(CONFIG_SECURITYKEY) += cmd_boardid.o
 COBJS-$(CONFIG_CMD_CHIPREV) += cmd_chiprev.o
 ifdef CONFIG_4xx
 COBJS-$(CONFIG_CMD_SETGETDCR) += cmd_dcr.o
@@ -167,6 +169,7 @@ COBJS-$(CONFIG_CMD_SARADC) += cmd_saradc.o
 COBJS-$(CONFIG_CMD_IMGPACK) += cmd_imgpack.o
 COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
+COBJS-$(CONFIG_CMD_GPIO_KEY) += cmd_gpiokey.o
 
 # others
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o
