@@ -575,8 +575,14 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			addr = (ulong)simple_strtoul(argv[3], NULL, 16);
 			read = strncmp(cmd, "read", 4) == 0; /* 1 = read, 0 = write */
 			printf("\nNAND %s: %s ", read ? "read" : "write", argv[2]);
-			if (arg_off_size(argc - 4, argv + 4, nand, &off, &size) != 0)
-				return 1;
+			if (argc == 4) {
+				extern unsigned int get_mtd_size(char *name);
+				off = 0;
+				size = get_mtd_size(argv[2]);
+			} else {
+				if (arg_off_size(argc - 4, argv + 4, nand, &off, &size) != 0)
+					return 1;
+			}
 		}
 		else {
 			addr = (ulong)simple_strtoul(argv[2], NULL, 16);

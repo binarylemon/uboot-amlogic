@@ -81,4 +81,52 @@ U_BOOT_CMD(
 	"unpackimg <addr>		- open a imgpack in addr\n"
 );
 
+static int do_get_img_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	void *addr;
+	__u32 pos;
+	struct pack_header *pack_header_p;
+	char env_name[IH_NMLEN*2];
+	char env_data[IH_NMLEN*2];
+	
+	if (argc < 3)
+	{
+		cmd_usage(cmdtp);
+		return -1;
+	}
+	//printf("############ do_get_img_size #############\n");
+	addr = simple_strtoul (argv[1], NULL, 16);
+	pos = 0;
+	while(1)
+	{
+		pack_header_p = (struct pack_header *)(addr + pos);
+		if(pack_header_p->magic != IH_MAGIC)
+		{
+			printf("wrong pack img!\n");
+			return -1;
+		}
+
+		
+		if(pack_header_p->next == 0)
+		{
+			sprintf(env_name, "%s", argv[2]);
+			sprintf(env_data, "0x%x", pack_header_p->start + pack_header_p->size);
+			setenv(env_name, env_data);
+			saveenv();
+			break;
+		}
+		else
+		{
+			pos = pack_header_p->next;
+		}
+	}
+	return 0;
+}
+
+U_BOOT_CMD(
+	get_img_size,	3,	0,	do_get_img_size,
+	"get img size and save the result as a environment variable",
+	"get_img_size <addr> <env>  - check the img in addr and save the total size to env\n"
+);
+
 
