@@ -591,6 +591,12 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	/* initialize environment */
 	env_relocate ();
 
+//#ifdef MX_REVD
+#if 1
+ 		//if not clear, uboot command reset will fail -> blocked
+ 		*((volatile unsigned long *)0xc8100000) = 0;
+#endif 
+
 #ifdef CONFIG_VFD
 	/* must do this after the framebuffer is allocated */
 	drv_vfd_init();
