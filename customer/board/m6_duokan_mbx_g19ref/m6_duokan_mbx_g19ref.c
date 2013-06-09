@@ -502,3 +502,116 @@ inline int get_key(void)
 	}
 #endif
 
+#ifdef CONFIG_IR_RECOVERY_DETECT
+#define POWER_KEYCODE                   0x2180f4
+#define REMOTE_DUOKAN_STATUS_WAIT       0
+#define REMOTE_DUOKAN_STATUS_INTERVAL   1
+#define REMOTE_DUOKAN_STATUS_DATA       2
+#define REMOTE_DUOKAN_STATUS_FACTORY    3
+#define REMOTE_DUOKAN_STATUS_LEADER     4
+#define REMOTE_DUOKAN_STATUS_NUM        4
+unsigned int time_window[10];
+unsigned int state;
+unsigned int keycode;
+unsigned int frame_bit_num = 20;
+unsigned int bit_num = 2;
+int bit;
+void init_custom_trigger(void)
+{
+    int val = readl(P_AO_RTI_PIN_MUX_REG);
+    writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
+    writel(0x8148, P_AO_IR_DEC_REG1);//use 1us
+    writel(0xfa004, P_AO_IR_DEC_REG0);//5us
+    time_window[0] = 0x132;//1596/5  leader 13f
+    time_window[1] = 0x148;//1596/5  leader
+    time_window[2] = 0xdc;//1176/5  00
+    time_window[3] = 0xf8;//1420/5  01
+    time_window[4] = 0x110;//1764/5  10
+    time_window[5] = 0x12a;//2088/5   11
+    time_window[6] = 0x150;//1176/5  00
+    time_window[7] = 0x162;//1420/5  01
+    time_window[8] = 0x190;//1764/5  10
+    time_window[9] = 0x200;//2088/5   11
+    state = REMOTE_DUOKAN_STATUS_WAIT;
+    // enable interrupt
+    writel(readl(P_AO_IRQ_MASK_FIQ_SEL)|(1<<4), P_AO_IRQ_MASK_FIQ_SEL);
+}
+int checkRecoveryKey()
+{
+    unsigned int pluse;
+    unsigned int i;
+    // wait interrupt
+    if(!(readl(P_AO_IRQ_STAT_CLR)&(1<<4))) 
+        return 0;
+    pluse = (readl(P_AO_IR_DEC_REG1)>>16)&0x1fff;
+    if(pluse > 0x210 ) // null
+        state = REMOTE_DUOKAN_STATUS_WAIT;
+    switch (state) {
+        case REMOTE_DUOKAN_STATUS_LEADER:
+            if((pluse < time_window[1])&&(pluse > time_window[0]))
+                state = REMOTE_DUOKAN_STATUS_DATA;
+            return 0;
+        case REMOTE_DUOKAN_STATUS_DATA:
+            for(i=0; i<REMOTE_DUOKAN_STATUS_NUM; i++)
+                if((pluse <= time_window[2*i+3])&&(pluse > time_window[2*i+2]))
+                    keycode |= i<<bit;
+                    bit -= bit_num;
+                    break;
+            if(bit <0) bit = 0;
+            if(i == REMOTE_DUOKAN_STATUS_NUM) bit = 0;
+            if(bit == 0)
+                state = REMOTE_DUOKAN_STATUS_WAIT;
+            else
+                return 0;
+            break;
+        case REMOTE_DUOKAN_STATUS_WAIT:
+        default:
+            keycode = 0;
+            bit = frame_bit_num;
+            state = REMOTE_DUOKAN_STATUS_LEADER;
+            return 0;
+        }
+    //printf("keycode = %x-- bit = %d\n",keycode,bit);
+    if(keycode==POWER_KEYCODE)
+        return 1;
+    else 
+        return 0;
+}
+void clear_custom_trigger(void)
+{
+    int val = readl(P_AO_RTI_PIN_MUX_REG);
+    writel((val & ~(1<<0)), P_AO_RTI_PIN_MUX_REG);
+    writel(readl(P_AO_IRQ_MASK_FIQ_SEL)|(1<<20), P_AO_IRQ_MASK_FIQ_SEL);
+    writel(0, P_AO_IRQ_MASK_FIQ_SEL);
+}
+#define msleep(a) udelay(a * 1000)
+//#define DEBUG_IR
+int do_irdetect(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    int i;
+#ifdef DEBUG_IR
+    int j;
+#endif
+    init_custom_trigger();
+#ifdef DEBUG_IR
+  for(j=0;j<50;j++){
+#endif
+    for(i = 0; i < 1000000; i++)
+        if(checkRecoveryKey()){
+#ifdef DEBUG_IR
+            printf("Detect Recovery Key ...\n");
+#endif
+            clear_custom_trigger();
+            return 0;
+            }
+#ifdef DEBUG_IR
+    msleep(50);
+    printf("No key !!!\n");
+  }
+#endif
+    clear_custom_trigger(); 
+    return 1;
+}
+
+U_BOOT_CMD(irdetect, 1, 1, do_irdetect, "Detect IR Key to start recovery system","[<string>]\n");
+#endif /*CONFIG_IR_RECOVERY_DETECT*/

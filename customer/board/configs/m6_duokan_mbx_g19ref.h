@@ -7,6 +7,7 @@
 #define CONFIG_MESON_ARM_GIC_FIQ
 
 //#define TEST_UBOOT_BOOT_SPEND_TIME
+#define CONFIG_IR_RECOVERY_DETECT
 
 /*
  *  write to efuse/nand when usb_burning 
@@ -174,11 +175,12 @@
 	"outputmode=720p\0" \
 	"outputtemp=720p\0" \
 	"cvbsenable=true\0" \
-	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run switch_bootmode\0" \
+	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run upgrade_check; run irtest; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; mmc read 1 82000000 0 1; mw.w 820001fe 0; mmc write 1 82000000 0 1; fi\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
+	"irtest=if irdetect; then run recovery; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=run cvbscheck;mmc read 1 0x83000000 4000 3000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
+	"nandargs=run cvbscheck;mmc read 1 0x83000000 4000 2000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs init=/init console=${console} logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputtemp} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
 	"nandboot=echo Booting from eMMC ...;run nandargs;mmc read 1 ${loadaddr} a000 3000;bootm;run recovery\0" \
 	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmc read 1 ${loadaddr} 6000 3000; bootm\0" \
