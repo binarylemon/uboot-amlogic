@@ -44,6 +44,7 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	char namebuf[20];
 	char databuf[4096];
 	char listkey[1024];
+	static char key_device[20]={0};
 	memset(namebuf,0,sizeof(namebuf));
 	memset(databuf,0,sizeof(databuf));
 	memset(listkey,0,sizeof(listkey));
@@ -53,136 +54,153 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		goto usage;
 	cmd = argv[1];
 	//first read nand key
-	if(!inited)
-	{
-			if (argc!=2)
-			{
-				printk("wrong command!!\n");
-				goto usage;
-			} 
-			if (!strcmp(cmd,"nand") ) 
-			{
-				error=uboot_key_init();
-				if(error>=0){
-					error=nandkey_provider_register();
-					if(error>=0){
-						 error=key_set_version(cmd);
-						 if(error>=0){
-							printk("init key ok!!\n");
-							inited=1;
-							return 0;
-						}
-					}
-				}	
-				else
-					printk("init error\n");
-			}
-			else {
-				printk("invalid device!!\n");
-				return -1;
-			}
-	}
-	else if (inited)
-	{
-			if(!strcmp(cmd,"list"))
-			{
-				if (2==argc)
-					addr = 0x82000000;
-				else if(3==argc)
-					addr = (ulong)simple_strtoul(argv[2], NULL, 16);
-				else {
-					printk("wrong command!!\n");
-					goto usage;
-				}
-				error=uboot_get_keylist(listkey);
-				if (error>=0){
-					printk("the key name list are:\n%s",listkey);
-					for (i=0;i<strlen(listkey);i++){
-						if(listkey[i]==0x0a)
-							num++;
-						}
-					flag=num;
-					memset((char *)(addr),0,4096);
-					*((unsigned int *)addr)=flag;
-					flag=-1;
-					memcpy((char *)(addr+sizeof(int)),listkey,strlen(listkey)+1);
-					return 0;
-				}
-				else{
-					printk("key list error!!check the key  name first!!\n");
-					return -1;
-				}
-			}
-			if(!strcmp(cmd,"read"))
-			{
-				name=argv[2];
-				if(4==argc)
-					addr = (ulong)simple_strtoul(argv[3], NULL, 16);
-				else if(3==argc)
-					addr = 0x82000000;
-				else{
-					printk("wrong command!!\n");
-					goto usage; 
-				}
-				memcpy(namebuf,name,strlen(name));
-				error=uboot_key_read(namebuf, databuf);
-				if(error>=0){
-					char outputdata[2];
-					printk("read count=%d\n",error);
-					printk("the key name is :%s\n",namebuf);
-					printk("the key data is :");
-					memset(outputdata,0,2);
-					for(i=0;i<error;i++){
-						outputdata[0]=databuf[i];
-						printk("%c",outputdata[0]);
-					}
-					printk("\n");
-					#if 0
-					flag=strlen(databuf)-1;
-					*((unsigned int *)addr)=flag;
-					#endif
-					memset((char *)(addr),0,4096);
-					memcpy((char *)(addr),databuf,4096);
-					//flag=-1;
-					return 0;
-				}
-				else{
-					printk("read error!!\n");
-					return -1;
-				}
-			}
-			if(!strcmp(cmd,"write"))
-			{
-				if (argc!=4)
-					goto usage;
-				name=argv[2];
-				data=argv[3];
-				memcpy(namebuf,name,strlen(name));
-				memcpy(databuf,data,strlen(data));
-				error=uboot_key_write(namebuf, databuf);
-				if(error>=0){
-					printk("write key ok!!\n");
-					return 0;
-				}
-				else{
-					printk("write error!!\n");
-					return -1;
-				}	
-			}
+
+	if ((!strcmp(cmd,"nand") )||(!strcmp(cmd,"emmc")) || (!strcmp(cmd,"auto") )){
+		error =  uboot_key_initial(cmd);
+		if(error < 0){
+			printk("uboot key set version fail\n");
+			return -1;
 		}
-	else
-		goto usage ;
+		inited=1;
+		memset(key_device,0,sizeof(key_device));
+		strcpy(key_device,cmd);
+		printk("key save in %s\n",cmd);
+		return 0;
+	}
+	if(!inited){
+		printk("please input \"secukey device(nand or emmc)\" cmd\n");
+		return -1;
+	}
+	if(!strcmp(cmd,"list"))
+	{
+		if (2==argc)
+			addr = 0x82000000;
+		else if(3==argc)
+			addr = (ulong)simple_strtoul(argv[2], NULL, 16);
+		else {
+			printk("wrong command!!\n");
+			goto usage;
+		}
+		error=uboot_get_keylist(listkey);
+		if (error>=0){
+			printk("the key name list are:\n%s",listkey);
+			for (i=0;i<strlen(listkey);i++){
+				if(listkey[i]==0x0a)
+					num++;
+				}
+			flag=num;
+			memset((char *)(addr),0,4096);
+			*((unsigned int *)addr)=flag;
+			flag=-1;
+			memcpy((char *)(addr+sizeof(int)),listkey,strlen(listkey)+1);
+			return 0;
+		}
+		else{
+			printk("key list error!!check the key  name first!!\n");
+			return -1;
+		}
+	}
+	if(!strcmp(cmd,"read"))
+	{
+		name=argv[2];
+		if(4==argc)
+			addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+		else if(3==argc)
+			addr = 0x82000000;
+		else{
+			printk("wrong command!!\n");
+			goto usage; 
+		}
+		memcpy(namebuf,name,strlen(name));
+		error=uboot_key_read(namebuf, databuf);
+		if(error>=0){
+			char outputdata[2];
+			printk("read count=%d\n",error);
+			printk("the key name is :%s\n",namebuf);
+			printk("the key data is :");
+			memset(outputdata,0,2);
+			for(i=0;i<error;i++){
+				outputdata[0]=databuf[i];
+				printk("%c",outputdata[0]);
+			}
+			printk("\n");
+			printk("num:%d\n",error);
+			#if 0
+			flag=strlen(databuf)-1;
+			*((unsigned int *)addr)=flag;
+			#endif
+			memset((char *)(addr),0,4096);
+			memcpy((char *)(addr),databuf,4096);
+			//flag=-1;
+			return 0;
+		}
+		else{
+			printk("read error!!\n");
+			return -1;
+		}
+	}
+	if(!strcmp(cmd,"write"))
+	{
+		if (argc!=4)
+			goto usage;
+		name=argv[2];
+		data=argv[3];
+		memcpy(namebuf,name,strlen(name));
+		memcpy(databuf,data,strlen(data));
+		error=uboot_key_write(namebuf, databuf);
+		if(error>=0){
+			printk("write key ok!!\n");
+			return 0;
+		}
+		else{
+			printk("write error!!\n");
+			return -1;
+		}
+	}
+	if(!strcmp(cmd,"in")){
+		ulong lenth;
+		if (argc!=5){
+			goto usage;
+		}
+		name=argv[2];
+		addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+		lenth = (ulong)simple_strtoul(argv[4], NULL, 16);
+		error = uboot_key_put(key_device,name,(char*)addr,lenth,0);
+		if(error < 0){
+			printk("%s:%d  in key error\n",__func__,__LINE__);
+		}
+		printk("lenth:%d\n",lenth);
+		return error;
+	}
+	if(!strcmp(cmd,"out")){
+		ulong lenth;
+		if (argc!=5){
+			goto usage;
+		}
+		name=argv[2];
+		addr = (ulong)simple_strtoul(argv[3], NULL, 16);
+		lenth = (ulong)simple_strtoul(argv[4], NULL, 16);
+		error = uboot_key_get(key_device,name,(char*)addr,lenth,0);
+		if(error < 0){
+			printk("%s:%d  out key error\n",__func__,__LINE__);
+		}
+		printk("lenth:%d\n",lenth);
+		return error;
+	}
+
 usage:
 	cmd_usage(cmdtp);
 	return 1;
 }
 
 U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
-	"NAND KEY sub-system",
-	"list [addr] - show available NAND key name\n"
-	"secukey  device - init key in device\n"
-	"secukey write keyname data - wirte key data to nand\n"
+	"security KEY sub-system",
+	"list [addr] - show available security key name\n"
+	"secukey  device(nand or emmc or auto) - init key in device\n"
+	"secukey write keyname data - wirte key data to nand/emmc\n"
 	"secukey read keyname [addr]- read the key data\n"
+	"secukey in keyname keyaddr keylen\n"
+	"secukey out keyname keyaddr keylen\n"
 );
 
 ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);

@@ -306,6 +306,16 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	}
 #endif
 
+	if(strcmp(cmd, "exist") == 0){
+		if(nand_info[1]){
+			printf("nand exist return 0\n");
+			return 0;
+		}
+		else{
+			printf("nand exist return 1\n");
+			return 1;
+		}
+	}
 #ifdef MX_REVD
 	if (strcmp(cmd, "errstat") == 0){
 	    printk("checking chiprev here\n");

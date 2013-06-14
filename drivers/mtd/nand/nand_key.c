@@ -1572,6 +1572,7 @@ int aml_key_init(struct aml_nand_chip *aml_chip)
 {
 	//struct device *devp;
 	//static dev_t nand_key_devno;
+	aml_keybox_provider_t *provider;
 	int err = 0;
 	//pr_info("nand key: nand_key_probe. \n");
 
@@ -1582,14 +1583,30 @@ int aml_key_init(struct aml_nand_chip *aml_chip)
 
 	nand_key_mtd = &aml_chip->mtd;
 	nand_provider.priv=nand_key_mtd;	
-	return err;
-}
-int nandkey_provider_register()
-{
-	int err = 0;
+
+	provider = aml_keybox_provider_get(nand_provider.name);
+	if(provider){
+		return err;
+	}
 	err = aml_keybox_provider_register(&nand_provider);
 	if(err){
 		BUG();
 	}
+	return err;
+}
+int nandkey_provider_register(void)
+{
+	int err = 0;
+#if 0
+	aml_keybox_provider_t *provider;
+	provider = aml_keybox_provider_get(nand_provider.name);
+	if(provider){
+		return err;
+	}
+	err = aml_keybox_provider_register(&nand_provider);
+	if(err){
+		BUG();
+	}
+#endif
 	return err;
 }

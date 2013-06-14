@@ -263,6 +263,14 @@ struct mmc_data {
 	uint blocksize;
 };
 
+#ifdef CONFIG_MMC_DEVICE
+struct mmc_device{
+	char name[32];
+	uint type;
+	uint dev_num;
+};
+#endif
+
 struct mmc {
 	struct list_head link;
 	char name[32];
@@ -288,6 +296,13 @@ struct mmc {
 	u64 capacity;
 	u64 boot_size;
 	block_dev_desc_t block_dev;
+#ifdef CONFIG_MMC_DEVICE
+	mmc_device *device;
+#endif
+#ifdef CONFIG_AML_EMMC_KEY
+	uint key_protect;
+	struct aml_emmckey_info_t *aml_emmckey_info;
+#endif
 	int (*send_cmd)(struct mmc *mmc,
 			struct mmc_cmd *cmd, struct mmc_data *data);
 	void (*set_ios)(struct mmc *mmc);

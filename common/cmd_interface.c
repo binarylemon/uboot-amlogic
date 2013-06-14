@@ -12,6 +12,7 @@
 #include <linux/err.h>
 #include <spi_flash.h>
 #include <asm/io.h>
+#include <asm/arch/poc.h>
 
 static inline int isstring(char *p)
 {
@@ -101,18 +102,50 @@ int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	if (strcmp(cmd, "erase") == 0){
 
 		printk(" %s %d\n",__func__,__LINE__);
-		if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
-			printk("NAND BOOT,erase uboot : %s %d  off =%llx ,size=%llx\n",__func__,__LINE__, off, size);
+		if(POR_NAND_BOOT()){
+			printk("NAND BOOT,erase uboot : %s %d\n",__func__,__LINE__);
 			run_command("nand device 0",0);
 			run_command("nand erase  0",0);
 			printk("nand erase  uboot \n");
-		}else if( (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
+		}else if(POR_SPI_BOOT()){
 			printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
 			run_command("sf probe 2",0);
 			run_command("sf erase 0 200000",0);
 			printk("spi erase  uboot \n");
-		}else {
+		}else if(POR_EMMC_BOOT()) {
 			printk("MMC BOOT, %s %d \n",__func__,__LINE__);
+			run_command("mmcinfo 1",0);
+			run_command("mw.l 82000000 ffffffff 40000", 0);
+			//emmc: switch to boot0 partition
+			if(run_command ("mmc switch 1 boot0", 0)){
+				//switch fail: tsd, write 1M 0xff from 0 addr
+				run_command("mmc write 1 82000000 0 800", 0);
+			}else{
+				//switch success: emmc, should not exceed emmc boot0 partition size
+				run_command("mmc write 1 82000000 0 400", 0);
+			}
+			printk("mmc erase  uboot \n");
+		}else{
+			if(!run_command("sf probe 2", 0)){
+				printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
+				run_command("sf probe 2",0);
+				run_command("sf erase 0 200000",0);
+				printk("spi erase  uboot \n");
+			}else if(!run_command("nand exist", 0)){
+				printk("NAND BOOT,erase uboot : %s %d \n",__func__,__LINE__);
+				run_command("nand device 0",0);
+				run_command("nand erase  0",0);
+				printk("nand erase  uboot \n");
+			}else if(!run_command("mmc info 1", 0)) {
+				printk("MMC BOOT, %s %d \n",__func__,__LINE__);
+				run_command("mmcinfo 1",0);
+				run_command("mw.l 82000000 ffffffff 40000", 0);
+				//emmc: switch to boot0 partition
+				run_command ("mmc switch 1 boot0", 0);
+				//write 1M 0xff from 0 addr
+				run_command("mmc write 1 82000000 0 700", 0);
+				printk("mmc erase  uboot \n");
+			}
 		}
 		
 	}else{
@@ -153,7 +186,7 @@ int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	if (strcmp(cmd, "erase") == 0){
 
 		printk(" %s %d\n",__func__,__LINE__);
-		if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
+		if(POR_NAND_BOOT()){
 			printk("NAND BOOT,nand_env_relocate_spec : %s %d \n",__func__,__LINE__);
 			if(size == 0){
 				sprintf(str, "nand erase 0x%llx", off);
@@ -167,20 +200,32 @@ int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				run_command(str, 0);
 			}
 			printk("nand erase data \n");
-		}else if( (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
-			printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
-			if(size == 0){
-				sprintf(str, "nand erase 0x%llx", off);
-				printf("command:	%s\n", str);
-				run_command(str, 0);
-			}else{
-				sprintf(str, "nand erase 0x%llx 0x%llx", off, size);
-				printf("command:	%s\n", str);
-				run_command(str, 0);
-			}
-			printk("nand erase data \n");
-		}else {
+		}else if(POR_EMMC_BOOT()) {
 			printk("MMC BOOT, %s %d \n",__func__,__LINE__);
+			if(size == 0){
+				run_command("mmc erase 1", 0);
+			}
+			printk("mmc erase data \n");
+		}else{
+			ret = run_command("nand exist", 0);
+			printk("do_data else: %s %d , nand exist ret %d\n",__func__,__LINE__, ret);
+			if(!run_command("nand exist", 0)){
+				if(size == 0){
+					sprintf(str, "nand erase 0x%llx", off);
+					printf("command:	%s\n", str);
+					run_command(str, 0);
+				}else{
+					sprintf(str, "nand erase 0x%llx 0x%llx", off, size);
+					printf("command:	%s\n", str);
+					run_command(str, 0);
+				}
+				printk("nand erase data \n");
+			}else if(!run_command("mmcinfo 1", 0)){
+				if(size == 0){
+					run_command("mmc erase 1", 0);
+				}
+				printk("mmc erase data \n");
+			}
 		}
 		
 	}else{
@@ -197,9 +242,9 @@ usage:
 
 
 U_BOOT_CMD(data, CONFIG_SYS_MAXARGS, 1, do_data,
-	"SPI-NAND-COMPATIBLE",
+	"SPI-NAND-COMPATIBLE || SPI-NAND-EMMC-COMPATIBLE",
 	"data erase - addr off|partition size\n"
-	"erase data in nand or spi\n"
+	"erase data in nand, spi, mmc\n"
 );
 
 

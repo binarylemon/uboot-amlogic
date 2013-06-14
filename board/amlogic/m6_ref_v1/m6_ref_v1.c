@@ -190,6 +190,7 @@ static void board_mmc_register(unsigned port)
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
+    memset(mmc,0,sizeof(*mmc));
     aml_priv->sdio_init=sdio_init;
 	aml_priv->sdio_detect=sdio_detect;
 	aml_priv->sdio_pwr_off=sdio_pwr_off;

@@ -81,8 +81,8 @@ int nand_legacy_rw (struct nand_chip* nand, int cmd,
 extern env_t *env_ptr;
 extern uchar default_environment[];
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
-	
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
+
 #else
 /* references to names in env_common.c */
 extern uchar default_environment[];
@@ -117,8 +117,8 @@ static t_env_blockmap env_map[CONFIG_ENV_BLOCK_NUM];
 static u_char last_valid_block = 0;
 static u_char current_valid_block = 0;*/
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
-	
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
+
 #else
 
 uchar env_get_char_spec (int index)
@@ -139,7 +139,7 @@ uchar env_get_char_spec (int index)
  * environment.
  */
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 int nand_env_init(void)
 {
 	/*struct mtd_info * mtd=get_mtd_device_nm(NAND_NORMAL_NAME);
@@ -319,7 +319,7 @@ int writeenv(size_t offset, u_char *buf)
 
 		error = mtd->write_oob(mtd, addr, &aml_oob_ops);
 		if (error) {
-			printf("blk check good but write failed: %llx, %d\n", offset, error);
+			printf("blk check good but write failed: %llx, %d\n", (long long unsigned int)offset, error);
 			return 1;
 		}
 
@@ -332,7 +332,8 @@ int writeenv(size_t offset, u_char *buf)
 	kfree(data_buf);
 	return 0;
 }
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 
 #ifdef CONFIG_ENV_OFFSET_REDUND
 static unsigned char env_flags;
@@ -794,7 +795,7 @@ int readenv (size_t offset, u_char * buf)
 }
 
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 
 #ifdef CONFIG_ENV_OFFSET_REDUND
 void nand_env_relocate_spec (void)

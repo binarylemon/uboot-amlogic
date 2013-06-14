@@ -26,7 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /*************************************************
   * Amlogic Ethernet controller operation
-  * 
+  *
   * Note: The LAN chip LAN8720 need to be reset by GPIOY_15
   *
   *************************************************/
@@ -36,21 +36,21 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #else
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #endif
@@ -58,7 +58,7 @@ static void setup_net_chip(void)
 	/* setup ethernet interrupt */
 	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK, 1 << 8);
 	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT, 1 << 8);
-	
+
 	/* hardware reset ethernet phy */
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
@@ -67,11 +67,11 @@ static void setup_net_chip(void)
 }
 
 int board_eth_init(bd_t *bis)
-{   	
+{
     setup_net_chip();
 
     udelay(1000);
-		
+
 #ifdef	CONFIG_USB_ETHER
     extern int usb_eth_initialize(bd_t *bi);
     usb_eth_initialize(bis);
@@ -85,7 +85,7 @@ int board_eth_init(bd_t *bis)
 #endif /* (CONFIG_CMD_NET) */
 
 #ifdef CONFIG_SARADC
-/*following key value are test with board 
+/*following key value are test with board
   [M3_SKT_V1 20110622]
   ref doc:
   1. m3_skt_v1.pdf(2011.06.22)
@@ -122,14 +122,14 @@ struct adc_device aml_adc_devices={
 };
 
 /* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
-/* void adc_init(struct adc_info *adc_info, unsigned int len) 
+/* void adc_init(struct adc_info *adc_info, unsigned int len)
      @trunk/common/sys_test.c */
 
 /*following is test code to test ADC & key pad*/
 /*
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-	saradc_enable();	
+	saradc_enable();
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
@@ -139,7 +139,7 @@ struct adc_device aml_adc_devices={
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
-		
+
 		printf("get_key(): %d\n", nKeyVal);
 		nCnt++;
 	}
@@ -160,18 +160,41 @@ u32 get_board_rev(void)
 #include <mmc.h>
 #include <asm/arch/sdio.h>
 static int  sdio_init(unsigned port)
-{	
-    //todo add card detect 	
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-
+{
+      switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  //todo add card detect
+                  setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+                  break;
+            case SDIO_PORT_C:
+                  //enable pull up
+                  clrbits_le32(P_PAD_PULL_UP_REG3, 0x3ff<<0);
+                  break;
+            default:
+                  break;
+      }
     return cpu_sdio_init(port);
 }
 static int  sdio_detect(unsigned port)
 {
-	int ret;
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-	ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
-	printf( " %s return %d\n",__func__,ret);
+      int ret;
+      switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+                  ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+                  printf( " %s return %d\n",__func__,ret);
+                  break;
+            case SDIO_PORT_C:
+                  break;
+            default:
+                  break;
+      }
 	return 0;
 }
 static void sdio_pwr_prepare(unsigned port)
@@ -182,58 +205,62 @@ static void sdio_pwr_prepare(unsigned port)
 }
 static void sdio_pwr_on(unsigned port)
 {
-	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
-    /// @todo NOT FINISH
+      switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+                  clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+                  break;
+            case SDIO_PORT_C:
+                  break;
+            default:
+                  break;
+      }
 }
 static void sdio_pwr_off(unsigned port)
 {
-	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
-	/// @todo NOT FINISH
+      switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+                  clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+                  break;
+            case SDIO_PORT_C:
+                  break;
+            default:
+                  break;
+      }
 }
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
-    
+
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
+	memset(mmc,0,sizeof(*mmc));
     aml_priv->sdio_init=sdio_init;
 	aml_priv->sdio_detect=sdio_detect;
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
 	sdio_register(mmc,aml_priv);
-#if 0    
-    strncpy(mmc->name,aml_priv->name,31);
-    mmc->priv = aml_priv;
-	aml_priv->removed_flag = 1;
-	aml_priv->inited_flag = 0;
-	aml_priv->sdio_init=sdio_init;
-	aml_priv->sdio_detect=sdio_detect;
-	aml_priv->sdio_pwr_off=sdio_pwr_off;
-	aml_priv->sdio_pwr_on=sdio_pwr_on;
-	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
-	mmc->send_cmd = aml_sd_send_cmd;
-	mmc->set_ios = aml_sd_cfg_swth;
-	mmc->init = aml_sd_init;
-	mmc->rca = 1;
-	mmc->voltages = MMC_VDD_33_34;
-	mmc->host_caps = MMC_MODE_4BIT | MMC_MODE_HS;
-	//mmc->host_caps = MMC_MODE_4BIT;
-	mmc->bus_width = 1;
-	mmc->clock = 300000;
-	mmc->f_min = 200000;
-	mmc->f_max = 50000000;
-	mmc_register(mmc);
-#endif	
+
+	/*
+	* Normal procedure here, if you want init quickly for emmc,
+	* do not set mmc->block_dev.if_type
+	*/
+	mmc->block_dev.if_type = IF_TYPE_SD;
 }
 int board_mmc_init(bd_t	*bis)
 {
 //board_mmc_register(SDIO_PORT_A);
 	board_mmc_register(SDIO_PORT_B);
-//	board_mmc_register(SDIO_PORT_C);
+	board_mmc_register(SDIO_PORT_C); //inand
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;
 }
@@ -341,7 +368,7 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
- /* 
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -349,7 +376,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 1,
-                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_1K_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE),
             },
         },
         .rbpin_mode=1,
@@ -358,7 +385,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     },
-*/    
+#endif
     {
         .name = NAND_NORMAL_NAME,
         .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
@@ -380,7 +407,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = 1,
+    .dev_num = ARRAY_SIZE(aml_nand_mid_platform),
 };
 #endif
 

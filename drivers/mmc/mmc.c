@@ -33,6 +33,8 @@
 #include <mmc.h>
 #include <div64.h>
 
+#include "emmc_key.h"
+
 static struct list_head mmc_devices;
 static int cur_dev_num = -1;
 
@@ -80,6 +82,25 @@ struct mmc *find_mmc_device(int dev_num)
 
 	return NULL;
 }
+
+#ifdef CONFIG_MMC_DEVICE
+struct mmc find_mmc_device_by_name(char *name)
+{
+	struct mmc *m;
+	struct list_head *entry;
+
+	list_for_each(entry, &mmc_devices) {
+		m = list_entry(entry, struct mmc, link);
+
+		if (!strcmp(m->device->name , name))
+			return m;
+	}
+
+	printf("MMC Device %d not found\n", dev_num);
+
+	return NULL;
+}
+#endif
 
 static ulong
 mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
@@ -136,9 +157,22 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 	lbaint_t cur, blocks_todo = blkcnt;
 
 	struct mmc *mmc = find_mmc_device(dev_num);
+#ifdef CONFIG_AML_EMMC_KEY
+	struct aml_emmckey_info_t *emmckey_info;
+#endif
 	if (!mmc)
 		return 0;
 
+#ifdef CONFIG_AML_EMMC_KEY
+	emmckey_info = mmc->aml_emmckey_info;
+	if(mmc->key_protect){
+		if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
+			||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
+				//printf("prohibit write\n");
+			return blkcnt;
+		}
+	}
+#endif
 	if (mmc_set_blocklen(mmc, mmc->write_bl_len))
 		return 0;
 
@@ -201,6 +235,9 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 {
 	lbaint_t cur, blocks_todo = blkcnt;
+#ifdef CONFIG_AML_EMMC_KEY
+	struct aml_emmckey_info_t *emmckey_info;
+#endif
 
 	if (blkcnt == 0)
 		return 0;
@@ -214,6 +251,16 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 			start + blkcnt, mmc->block_dev.lba);
 		return 0;
 	}
+#ifdef CONFIG_AML_EMMC_KEY
+	emmckey_info = mmc->aml_emmckey_info;
+	if(mmc->key_protect){
+		if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
+			||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
+				//printf("prohibit write\n");
+			return blkcnt;
+		}
+	}
+#endif
 
 	if (mmc_set_blocklen(mmc, mmc->read_bl_len))
 		return 0;
@@ -237,12 +284,25 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 static ulong
 mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 {
-		struct mmc_cmd cmd;
-		int err;
-		struct mmc *mmc = find_mmc_device(dev_num);
+	struct mmc_cmd cmd;
+	int err;
+	struct mmc *mmc = find_mmc_device(dev_num);
+#ifdef CONFIG_AML_EMMC_KEY
+	struct aml_emmckey_info_t *emmckey_info;
+#endif
 
-	    if (!mmc)
-		  return 0;
+	if (!mmc)
+		return 0;
+#ifdef CONFIG_AML_EMMC_KEY
+	emmckey_info = mmc->aml_emmckey_info;
+	if(mmc->key_protect){
+		//if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
+		//	||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
+				//printf("prohibit write\n");
+			return blkcnt;
+		//}
+	}
+#endif
 
 		if (IS_SD(mmc)) {
 			int erase_blk_en = (mmc->csd[2]>>14) & 0x1;
@@ -317,17 +377,26 @@ mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err)
 			return err;
+#ifdef CONFIG_AML_EMMC_KEY
+	mmc->key_protect = 1;
+#endif
 	return 0;
 
 }
 
+
+#include <asm/arch/io.h>
 
 int mmc_go_idle(struct mmc* mmc)
 {
 	struct mmc_cmd cmd;
 	int err;
 
-	//udelay(1000);
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_EN_N,(0x1<<3));
+	SET_CBUS_REG_MASK(PREG_PAD_GPIO3_O,(0x1<<3));
+	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, (0x1<<26)); //D3
+
+	udelay(1000);
 
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
@@ -339,6 +408,8 @@ int mmc_go_idle(struct mmc* mmc)
 	if (err)
 		return err;
 
+	udelay(2000);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, (0x1<<26)); //D3
 	udelay(2000);
 
 	return 0;
@@ -839,6 +910,7 @@ int mmc_startup(struct mmc *mmc)
 
 	mmc->capacity = (csize + 1) << (cmult + 2);
 	mmc->capacity *= mmc->read_bl_len;
+	mmc->boot_size = 0;
 	if (mmc->read_bl_len > 512)
 		mmc->read_bl_len = 512;
 
@@ -1009,6 +1081,12 @@ int mmc_register(struct mmc *mmc)
 	mmc->block_dev.block_write = mmc_bwrite;
 	mmc->block_dev.block_erase = mmc_berase;
 
+#ifdef CONFIG_MMC_DEVICE
+	if(mmc->device){
+		mmc->device->dev_num = mmc->block_dev.dev;
+	}
+#endif
+
 	INIT_LIST_HEAD (&mmc->link);
 
 	list_add_tail (&mmc->link, &mmc_devices);
@@ -1083,8 +1161,20 @@ int mmc_init(struct mmc *mmc)
     }
 	
 	
-	return(mmc_startup(mmc));	
-	
+	//return(mmc_startup(mmc));	
+	err = mmc_startup(mmc);
+	if(!err){
+		if(mmc->block_dev.dev == EMMC_INAND_DEV) {//emmc
+			#ifdef CONFIG_AML_EMMC_KEY
+				err = emmc_key_init(mmc);
+				if(err){
+					printf("%s:%d,emmc key fail\n",__func__,__LINE__);
+				}
+			#endif
+		}
+	}
+	return err;
+
 }
 
 /*

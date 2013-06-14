@@ -114,6 +114,7 @@ int do_mmcinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	struct mmc *mmc;
 	int dev_num;
+	int ret = 1;
 
 	if (argc < 2)
 		dev_num = 0;
@@ -123,12 +124,13 @@ int do_mmcinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	mmc = find_mmc_device(dev_num);
 
 	if (mmc) {
-		mmc_init(mmc);
-
+		if(mmc_init(mmc))
+			return 1;
 		print_mmcinfo(mmc);
+		return 0;
 	}
 
-	return 0;
+	return 1;
 }
 
 U_BOOT_CMD(
@@ -176,7 +178,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return 1;
 		}else if (strcmp(argv[1], "erase") == 0) {
 		  int dev = simple_strtoul(argv[2], NULL, 10);
-			u32 n;
+			u32 n=0;
 			struct mmc *mmc = find_mmc_device(dev);
 
 			if (!mmc)
@@ -184,10 +186,13 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 			mmc_init(mmc);
 
-			n = mmc->block_dev.block_erase(dev, 0, 0);
-
-			printf("%d blocks erased: %s\n",
-				  (int)(mmc->block_dev.lba), (n == 0) ? "OK" : "ERROR");
+			if (mmc->boot_size > 0){
+				n = mmc->block_dev.block_erase(dev, 0, 0);
+				printf("blocks erased: %s\n",
+					  (int)(mmc->block_dev.lba), (n == 0) ? "OK" : "ERROR");
+			}else{
+				printf("boot_size 0 (tsd) doesn't support erase\n");
+			}
 			return (n == 0) ? 0 : 1;
 		}
 
@@ -208,7 +213,21 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         	        	mmc_switch_partition(mmc, 2);
 	            	else if(strcmp(argv[3], "user")==0)
         	        	mmc_switch_partition(mmc, 0);
-        	}
+			}
+			#ifdef CONFIG_AML_EMMC_KEY
+			if(strcmp(argv[1], "erase")==0){
+				int dev = simple_strtoul(argv[2], NULL, 10);
+				if(strcmp(argv[3], "key")==0){
+					struct mmc* mmc = find_mmc_device(dev);
+					if(!mmc){
+						printf("device %d is invalid\n",dev);
+						return 1;
+					}
+					mmc->key_protect = 0;
+					return 0;
+				}
+			}
+			#endif
 		return 1;
 
 	case 2:
@@ -281,8 +300,8 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 			mmc_init(mmc);
 
-      if (cnt != 0)
-			n = mmc->block_dev.block_erase(dev, blk, cnt);
+			if (cnt != 0 && mmc->boot_size > 0)
+				n = mmc->block_dev.block_erase(dev, blk, cnt);
 
 		  printf("%d groups erased: %s\n",
 			  cnt, (n == 0) ? "OK" : "ERROR");

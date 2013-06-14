@@ -20,12 +20,13 @@ char namebuf[20];
 char databuf[4096];
 //char listkey[1024];
 int secukey_inited=0;
-extern ssize_t uboot_key_init();
+//extern ssize_t uboot_key_init();
+extern int uboot_key_initial(char *device);
 extern ssize_t uboot_get_keylist(char *keyname);
 extern ssize_t uboot_key_read(char *keyname, char *keydata);
 extern ssize_t uboot_key_write(char *keyname, char *keydata);
-extern int nandkey_provider_register();
-extern int key_set_version(char *device);
+//extern int nandkey_provider_register();
+//extern int key_set_version(char *device);
 int ensure_secukey_init(void);
 int cmd_secukey(int argc, char * const argv[], char *buf);
 #endif

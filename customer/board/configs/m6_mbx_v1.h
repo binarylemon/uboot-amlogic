@@ -6,6 +6,8 @@
 #define CONFIG_MACH_MESON6_MBX
 #define CONFIG_MESON_ARM_GIC_FIQ
 
+#define CONFIG_SPI_NAND_EMMC_COMPATIBLE   1
+
 //#define TEST_UBOOT_BOOT_SPEND_TIME
  
 /*
@@ -16,10 +18,12 @@
 //#define WRITE_TO_EFUSE_ENABLE        
 #define WRITE_TO_NAND_ENABLE
 
-#if defined(WRITE_TO_NAND_ENABLE)
-#define CONFIG_SECURITYKEY 1
-#define CONFIG_AML_NAND_KEY 1
+#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#define CONFIG_AML_EMMC_KEY	1
 #endif
+
 //#define CONFIG_SWITCH_BOOT_MODE 1
 #define CONFIG_HDCP_PREFETCH 1
 
@@ -142,7 +146,12 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"mmc_logo_offset=0x2c000\0" \
+	"mmc_boot_offset=0x44000\0" \
+	"mmc_recovery_offset=0x34000\0" \
+	"mmc_lk_size=0x4000\0" \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"loadaddr_misc=0x83000000\0" \
@@ -170,6 +179,62 @@
 	"cvbsenable=true\0" \
 	"vdacswitchmode=cvbs\0" \
 	"vdacswitchconfig=if test ${cvbsenable} = true; then setenv vdacswitchmode cvbs;else if test ${cvbsenable} = false;then setenv vdacswitchmode component;fi;fi\0" \
+	"preboot=run detect_storage;get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
+	"mbr_write=if test ${upgrade_step} != 2; then mmcinfo 1; mmc read 1 82000000 0 1; mw.l 820001fc 0 1; mmc write 1 82000000 0 1;fi;\0" \
+	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;if usb start; then if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
+	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
+	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then tiny_usbtool 20000; fi; fi\0" \
+	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
+	"nandargs=run cvbscheck; nand read logo 0x83000000 0 800000;unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+	"mmcargs=run cvbscheck; mmcinfo 1; mmc read 1 0x83000000 ${mmc_logo_offset} ${mmc_lk_size};unpackimg 0x83000000; cp ${bootup_offset} 0x84100000 ${bootup_size}; setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
+	"nandboot=echo Booting from nand ...;run vdacswitchconfig;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
+	"nand_recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"mmcboot=echo Booting from mmc ...; run mmcargs;mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_boot_offset} ${mmc_lk_size}; bootm; run recovery\0" \
+	"mmc_recovery=echo enter recovery;run vdacswitchconfig;run mmcargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_lk_size}; bootm\0" \
+	"detect_storage=echo detect_storage ;nand exist; setenv no_nand $?; if test ${no_nand} = 0; then setenv storage nand ; echo setenv storage nand; else if test ${no_nand} = 1; then setenv storage mmc ;echo setenv storage mmc; run mbr_write;fi;fi\0" \
+	"recovery=if test ${storage} = nand; then run nand_recovery; else if test ${storage} = mmc; then run mmc_recovery;fi;fi\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
+	"storage=null\0" \
+	"compatible_boot=if test ${storage} = null; then run detect_storage;fi;if test ${storage} = nand; then echo compatible nand;run nandboot;else if test ${storage} = mmc; then run mmcboot;fi;fi\0" \
+	"usbnet_devaddr=00:15:18:01:81:31" \
+	"usbnet_hostddr=00:15:18:01:a1:3b" \
+	"cdc_connect_timeout=9999999999" \
+
+#define CONFIG_BOOTCOMMAND \
+ "setenv bootcmd run compatible_boot; saveenv; run compatible_boot; run compatible_boot"
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"mmc_logo_offset=0x2c000\0" \
+	"mmc_boot_offset=0x44000\0" \
+	"mmc_recovery_offset=0x34000\0" \
+	"mmc_lk_size=0x4000\0" \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"loadaddr_misc=0x83000000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m6_mbx\0" \
+	"chipname=8726m6\0" \
+	"machid=4e27\0" \
+	"video_dev=tvout\0" \
+	"display_width=720\0" \
+	"display_height=480\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x84900000\0" \
+	"sleep_threshold=20\0" \
+	"upgrade_step=0\0" \
+	"batlow_threshold=10\0" \
+	"batfull_threshold=98\0" \
+	"outputmode=720p\0" \
+	"outputtemp=720p\0" \
+	"cvbsenable=false\0" \
 	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi\0" \
 	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;if usb start; then if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
@@ -186,8 +251,8 @@
 	"cdc_connect_timeout=9999999999" \
 
 #define CONFIG_BOOTCOMMAND \
- "setenv bootcmd run nandboot; saveenv; run nandboot"
-
+ "setenv bootcmd run mmcboot; saveenv; run mmcboot"
+#endif
 /*
 #define CONFIG_BOOTCOMMAND \
  "mmcinfo 0;fatload mmc 0 82000000 aml_logo480.bmp;video dev open 480P;bmp display 82000000;video open"
@@ -196,6 +261,23 @@
 //\\temp above
 
 #define CONFIG_AUTO_COMPLETE	1
+
+#define CONFIG_ENV_SIZE         0x8000
+
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
+//spi
+#define CONFIG_ENV_OVERWRITE
+#define CONFIG_CMD_SAVEENV
+#define CONFIG_ENV_SECT_SIZE		0x1000
+ #define CONFIG_ENV_IN_SPI_OFFSET           		0x80000
+//nand
+#define CONFIG_ENV_IN_NAND_OFFSET       0x400000
+#define CONFIG_ENV_BLOCK_NUM    2
+//emmc
+#define CONFIG_SYS_MMC_ENV_DEV		  1
+#define CONFIG_ENV_IN_EMMC_OFFSET		0x80000
+
+#else
 
 #define CONFIG_SPI_BOOT 1
 //#define CONFIG_MMC_BOOT
@@ -231,12 +313,13 @@
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0
+	/*We restore environment in mmc device 1(inand)*/
+    #define CONFIG_SYS_MMC_ENV_DEV        1
 	#define CONFIG_ENV_OFFSET       0x1000000
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
-
+#endif
 
 /*
  * Size of malloc() pool

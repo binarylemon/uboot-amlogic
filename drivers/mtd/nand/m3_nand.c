@@ -11,6 +11,7 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
+#include <asm/arch/poc.h>
 
 #include "version.h"
 int nand_curr_device = -1;
@@ -1032,13 +1033,13 @@ void nand_init(void)
 			printk("error for not platform data\n");
 			continue;
 		}
-		
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
-		 if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
+
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
+		 if(POR_NAND_BOOT()){
 			printk("NAND BOOT : %s %d \n",__func__,__LINE__);
 		}
 		if( ((!strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))) &&\
-			(i == 0) && (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
+			(i == 0) && (POR_SPI_BOOT())){
 			printk("SPI BOOT : continue i %d\n",i);
 			continue;
 		}

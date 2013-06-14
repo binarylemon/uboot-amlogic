@@ -16,6 +16,12 @@
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
 
+#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#define CONFIG_AML_EMMC_KEY	1
+#endif
+
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
@@ -103,6 +109,8 @@
 #define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
 #endif
 
+#define CONFIG_SPI_NAND_EMMC_COMPATIBLE 1
+
 /* Environment information */
 #define CONFIG_BOOTDELAY	3
 #define CONFIG_BOOTFILE		uImage
@@ -144,8 +152,25 @@ save
 
 #define CONFIG_AUTO_COMPLETE	1
 
+#define CONFIG_ENV_SIZE 0x8000
+
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
+//spi
+#define CONFIG_ENV_OVERWRITE
+#define CONFIG_CMD_SAVEENV
+#define CONFIG_ENV_SECT_SIZE 0x1000
+ #define CONFIG_ENV_IN_SPI_OFFSET 0x80000
+//nand
+#define CONFIG_ENV_IN_NAND_OFFSET 0x400000
+#define CONFIG_ENV_BLOCK_NUM 2
+//emmc
+#define CONFIG_SYS_MMC_ENV_DEV 1
+#define CONFIG_ENV_IN_EMMC_OFFSET 0x80000
+
+#else
+
 #define CONFIG_SPI_BOOT 1
-//#define CONFIG_MMC_BOOT
+//#define CONFIG_EMMC_BOOT
 #ifndef CONFIG_JERRY_NAND_TEST
 	#define CONFIG_NAND_BOOT 1
 #endif
@@ -175,15 +200,22 @@ save
 	#define CONFIG_ENV_OVERWRITE	
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
-#elif defined CONFIG_MMC_BOOT
-	#define CONFIG_ENV_IS_IN_MMC
+//#elif defined CONFIG_MMC_BOOT
+//	#define CONFIG_ENV_IS_IN_MMC
+//	#define CONFIG_CMD_SAVEENV
+//	#define CONFIG_SYS_MMC_ENV_DEV        0	
+//	#define CONFIG_ENV_OFFSET       0x1000000		
+#elif defined CONFIG_EMMC_BOOT
+	#define CONFIG_ENV_IS_IN_EMMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+    #define CONFIG_ENV_DEVICE_ID        1
+	#define CONFIG_ENV_SIZE         (64*1024)
+	#define CONFIG_ENV_OFFSET       0x1000000
 #else
 #define CONFIG_ENV_IS_NOWHERE    1
 #endif
 
+#endif
 /*POST support*/
 /*
 #define CONFIG_POST (CONFIG_SYS_POST_CACHE	| CONFIG_SYS_POST_BSPEC1 |	\

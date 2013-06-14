@@ -32,21 +32,24 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	//WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
+	//WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #else
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	//WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #endif
@@ -143,16 +146,44 @@ u32 get_board_rev(void)
 static int  sdio_init(unsigned port)
 {	
     //todo add card detect 	
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-
+	//setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			//todo add card detect
+			setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+			break;
+		case SDIO_PORT_C:
+			//enable pull up
+			clrbits_le32(P_PAD_PULL_UP_REG3, 0x3ff<<0);
+			break;
+		default:
+			break;
+	}
     return cpu_sdio_init(port);
 }
 static int  sdio_detect(unsigned port)
 {
 	int ret;
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-	ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
-	printf( " %s return %d\n",__func__,ret);
+	//setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+	//ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+	//printf( " %s return %d\n",__func__,ret);
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+			ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+			printf( " %s return %d\n",__func__,ret);
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
 	return 0;
 }
 static void sdio_pwr_prepare(unsigned port)
@@ -162,14 +193,40 @@ static void sdio_pwr_prepare(unsigned port)
 }
 static void sdio_pwr_on(unsigned port)
 {
-	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	//clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	//clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+			clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
     /// @todo NOT FINISH
 }
 static void sdio_pwr_off(unsigned port)
 {
-	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	//setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	//clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+			clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
 	/// @todo NOT FINISH
 }
 static void board_mmc_register(unsigned port)
@@ -179,12 +236,18 @@ static void board_mmc_register(unsigned port)
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
+    memset(mmc,0,sizeof(*mmc));
     aml_priv->sdio_init=sdio_init;
 	aml_priv->sdio_detect=sdio_detect;
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
 	sdio_register(mmc,aml_priv);
+	/*
+	* Normal procedure here, if you want init quickly for emmc,
+	* do not set mmc->block_dev.if_type
+	*/
+	mmc->block_dev.if_type = IF_TYPE_SD;
 #if 0    
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
@@ -213,7 +276,7 @@ int board_mmc_init(bd_t	*bis)
 {
 //board_mmc_register(SDIO_PORT_A);
 	board_mmc_register(SDIO_PORT_B);
-//	board_mmc_register(SDIO_PORT_C);
+	board_mmc_register(SDIO_PORT_C);
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;
 }
@@ -411,6 +474,7 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -427,6 +491,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     },
+#endif
     {
         .name = NAND_NORMAL_NAME,
         .chip_enable_pad = (AML_NAND_CE0) ,  //| (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
@@ -448,7 +513,8 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = 2,
+    //.dev_num = 2,
+    .dev_num = ARRAY_SIZE(aml_nand_mid_platform),
 };
 #endif
 

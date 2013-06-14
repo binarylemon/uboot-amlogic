@@ -49,7 +49,7 @@ DECLARE_GLOBAL_DATA_PTR;
 extern env_t *env_ptr;
 extern uchar default_environment[];
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 
 #else
 /* references to names in env_common.c */
@@ -67,7 +67,7 @@ char * env_name_spec = "SPI Flash";
 
 static struct spi_flash *env_flash;
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 
 #else
 uchar env_get_char_spec(int index)
@@ -76,7 +76,7 @@ uchar env_get_char_spec(int index)
 }
 #endif
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 int spi_env_init(void)
 {
 	/* SPI flash isn't usable before relocation */
@@ -96,7 +96,7 @@ int env_init(void)
 }
 #endif
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 void spi_env_relocate_spec(void)
 {
 	int ret;
@@ -152,7 +152,7 @@ err_probe:
 }
 #endif
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 int spi_saveenv(void)
 {
 	u32 saved_size, saved_offset;

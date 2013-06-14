@@ -10,8 +10,9 @@
 #include <nand.h>
 #include <asm/arch/nand.h>
 #include <linux/err.h>
+#include <asm/arch/poc.h>
 
-#ifdef CONFIG_SPI_NAND_COMPATIBLE
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -32,56 +33,89 @@ env_t *env_ptr = 0;
 
 char * env_name_spec;
 
+extern void mdelay(unsigned long msec);
 
 int env_init(void)
 {
 	printk("env_init %s %d\n",__func__,__LINE__);
-	if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
-		printk("NAND BOOT, %s %d \n",__func__,__LINE__);
-		env_name_spec = "NAND";	
-		nand_env_init();
-	}else if( (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
-		printk("SPI BOOT, %s %d \n",__func__,__LINE__);
-		env_name_spec = "SPI Flash";
-		spi_env_init();
-	}else {
-		printk("MMC BOOT, %s %d \n",__func__,__LINE__);
-		return -1;
-	}
-
+	gd->env_addr  = (ulong)&default_environment[0];
+	gd->env_valid = 1;
 	return 0;
 }
 
 void env_relocate_spec(void)
 {
-	printk(" %s %d\n",__func__,__LINE__);
-	if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
+	if(POR_NAND_BOOT()){
 		printk("NAND BOOT,nand_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "NAND";
 		nand_env_relocate_spec();
-	}else if( (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
+	}else if(POR_SPI_BOOT()){
 		printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "SPI Flash";
 		spi_env_relocate_spec();
-	}else {
-		printk("MMC BOOT, %s %d \n",__func__,__LINE__);
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
+	}else if(POR_EMMC_BOOT()) {
+		printk("MMC BOOT, emmc_env_relocate_spec : %s %d \n",__func__,__LINE__);
+		env_name_spec = "eMMC";
+		emmc_env_relocate_spec();
+#endif
+	}else{
+		printk("BOOT FROM CARD? env_relocate_spec\n");
+		if(!run_command("sf probe 2", 0)){
+			printk("SPI BOOT, spi_env_relocate_spec %s %d \n",__func__,__LINE__);
+			env_name_spec = "SPI Flash";
+			spi_env_relocate_spec();
+		}else if(!run_command("nand exist", 0)){
+			printk("NAND BOOT, nand_env_relocate_spec %s %d \n",__func__,__LINE__);
+			env_name_spec = "NAND";
+			nand_env_relocate_spec();
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
+		}else if(!run_command("mmcinfo 1", 0)){
+			printk("MMC BOOT, emmc_env_relocate_spec %s %d \n",__func__,__LINE__);
+			env_name_spec = "eMMC";
+			emmc_env_relocate_spec();
+#endif
+		}else{
+			env_name_spec = "None";
+			set_default_env("error init device");
+		}
 	}
 }
 
 int saveenv(void)
 {
 	int ret = 0;
-	
-	printk("saveenv %s %d\n",__func__,__LINE__);
-	if( (((BOOT_DEVICE_FLAG & 7) == 7) || ((BOOT_DEVICE_FLAG & 7) == 6))){
+
+	if(POR_NAND_BOOT()){
 		printk("NAND BOOT,nand_saveenv :%s %d \n",__func__,__LINE__);
 		ret = nand_saveenv();
-	}else if( (((BOOT_DEVICE_FLAG & 7) == 5) || ((BOOT_DEVICE_FLAG & 7) == 4))){
+	}else if(POR_SPI_BOOT()){
 		printk("SPI BOOT,spi_saveenv : %s %d \n",__func__,__LINE__);
 		ret = spi_saveenv();
-	}else {
-		printk("MMC BOOT, %s %d \n",__func__,__LINE__);
-		return -1;
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
+	}else if(POR_EMMC_BOOT()){
+		printk("MMC BOOT,emmc_saveenv : %s %d \n",__func__,__LINE__);
+		ret = emmc_saveenv();
+#endif
+	}else if (POR_CARD_BOOT()){
+		printk("BOOT FROM CARD?\n");
+		if(!run_command("sf probe 2", 0)){
+			printk("SPI BOOT, spi_saveenv %s %d \n",__func__,__LINE__);
+			env_name_spec = "SPI Flash";
+			spi_saveenv();
+		}else if(!run_command("nand exist", 0)){
+			printk("NAND BOOT, nand_saveenv %s %d \n",__func__,__LINE__);
+			env_name_spec = "NAND";
+			nand_saveenv();
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
+		}else if(!run_command("mmcinfo 1", 0)){
+			printk("MMC BOOT, emmc_saveenv %s %d \n",__func__,__LINE__);
+			env_name_spec = "eMMC";
+			emmc_saveenv();
+#endif
+		}else{
+			printk("error init devices, saveenv fail\n");
+		}
 	}
 
 	return ret;

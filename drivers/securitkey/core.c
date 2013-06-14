@@ -36,11 +36,11 @@ typedef struct efuse_dev_s
     unsigned int flags;
 } efuse_dev_t;
 */
-static uint8_t keys_version;
+static uint8_t keys_version=0;
 static uint8_t version_dirty = 0;
 
-static aml_keys_schematic_t * key_schematic[256];
-static aml_key_t * curkey;
+static aml_keys_schematic_t * key_schematic[256]={NULL};
+static aml_key_t * curkey=NULL;
 ///static aml_keys_schematic_t *  cur_schematic;
 int32_t aml_keys_register(int32_t version, aml_keys_schematic_t * schematic)
 {
@@ -52,23 +52,28 @@ int32_t aml_keys_register(int32_t version, aml_keys_schematic_t * schematic)
     return 0;
 }
 #define PROVIDERS_NUM	5
-static aml_keybox_provider_t * providers[5];
+static aml_keybox_provider_t * providers[5]={NULL};
 
 static void trigger_key_init(void);
 
 int32_t aml_keybox_provider_register(aml_keybox_provider_t * provider)
 {
     int i;
-    for (i = 0; i < ARRAY_SIZE(providers); i++)
-    {
-        if (providers[i])
-            continue;
-        providers[i] = provider;
-        printk("i=%d,register --- %s", i,provider->name);
-        trigger_key_init();
-	break;
-    }
-    return 0;
+	for (i = 0; i < ARRAY_SIZE(providers); i++)
+	{
+		if (providers[i])
+			continue;
+		providers[i] = provider;
+		printk("i=%d,register --- %s\n", i,provider->name);
+		//trigger_key_init();
+		break;
+	}
+	if(i<ARRAY_SIZE(providers)){
+		return 0;
+	}
+	else{
+		return -1;
+	}
 }
 aml_keybox_provider_t * aml_keybox_provider_get(char * name)
 {
@@ -853,15 +858,18 @@ int32_t aml_keys_set_version(char *dev, uint8_t version, int storer)
 #endif
     int i, ret;
     int keyfile_index;
-    if (keys_version > 0 && keys_version < 256) ///has been initial
-        return -1;
+    //if (keys_version > 0 && keys_version < 256) ///has been initial
+    //   return 0;
+	if(version_dirty){
+		return 0;
+	}
 
 //	printk("version:%d,%s\n",version,__func__);
     if (version < 1 || version > 255)
         return -EINVAL;
 
     if(storer < 0)
-	return -EINVAL;
+		return -EINVAL;
     keyfile_index = storer;
 //    printk("keyfile:%s\n",keyfile[0]);
 //    printk("keyfile:%s\n",keyfile[1]);
@@ -1011,8 +1019,8 @@ static ssize_t version_store(struct device *dev, struct device_attribute *attr,
 
     if (new < 1 || new > 255)
         return ret;
-    if (keys_version > 0 && keys_version < 256)
-        return ret;
+    //if (keys_version > 0 && keys_version < 256)
+    //    return ret;
 
     if (aml_keys_set_version(dev, new,storer) < 0)
     {
@@ -1359,56 +1367,95 @@ void trigger_key_init(void)
 
 struct device_type_s{
 	char devname[16];
-	char platname[16];
+	char storername[16];
+	int  storer_index;
 };
-#define DEVICE_TYPE_MAP_COUNT	2
+#define AUTO_IDENTIFY_STORE		0xff
+#define DEVICE_TYPE_MAP_COUNT	3
 static struct device_type_s device_type_map[DEVICE_TYPE_MAP_COUNT]={
 	[0]={
 		.devname="nand",
-		.platname="nand_key",
+		.storername="nand_key",
+		.storer_index = NAND_STORE_KEY_INDEX,
 	},
 	[1]={
 		.devname="emmc",
-		.platname="emmc_key",
+		.storername="emmc_key",
+		.storer_index = EMMC_STORE_KEY_INDEX,
+	},
+	[2]={
+		.devname="auto",
+		.storername="auto",
+		.storer_index = AUTO_IDENTIFY_STORE,
 	},
 };
 
 ssize_t uboot_key_init(void)
 {
 	int i,err = 0;
+	static int uboot_key_init_flat=0;
 	extern int v3_keys_init(void);
+	if(uboot_key_init_flat){
+		return 0;
+	}
 	for(i=0;i<256;i++){
 		key_schematic[i]=NULL;
 	}
-	for(i=0;i<PROVIDERS_NUM;i++){
-		providers[i] = NULL;
-	}
+	//for(i=0;i<PROVIDERS_NUM;i++){
+		//providers[i] = NULL;
+	//}
 	err=v3_keys_init();
 	if (err<0){
 		printk("v3_keys_init error\n");
 		return -1;
 	}
+	uboot_key_init_flat = 1;
+	return 0;
 }
 int key_set_version(char *device)
 {
 	int i,err=-1;
-	char *pname = NULL;
+	//char *pname = NULL;
+	int flag;
 	struct device_type_s *pdev = &device_type_map[0];
-	for(i=0;i<DEVICE_TYPE_MAP_COUNT;i++){
+	flag = 0;
+	for(i=0;i<DEVICE_TYPE_MAP_COUNT;i++,pdev++){
 		if(strcmp(device,pdev->devname) == 0){
-			pname=pdev->platname;
+			//pname=pdev->platname;
+			flag = 1;
 			break;
 		}
 	}
-	if(pname == NULL){
+	if(flag == 0){
 		printk("device name error,%s:%d\n",__func__,__LINE__);
 		return -EINVAL;
 	}
-	err = aml_keys_set_version(pname, version_check(), 0);
-	if(err < 0){
-		printk("uboot key init fail,%s:%d\n",__func__,__LINE__);
+	if(pdev->storer_index != AUTO_IDENTIFY_STORE){
+		err = aml_keys_set_version(pdev->storername, version_check(), pdev->storer_index);
+		if(err < 0){
+			printk("uboot key init fail,%s:%d\n",__func__,__LINE__);
+		}
+		return err;
 	}
-	return err;
+	else{
+		pdev = &device_type_map[0];
+		for(i=0;i<(DEVICE_TYPE_MAP_COUNT-1);i++,pdev++){
+			err = aml_keys_set_version(pdev->storername, version_check(), pdev->storer_index);
+			if(err < 0){
+				//printk("uboot key init fail,%s:%d\n",__func__,__LINE__);
+				continue;
+			}
+			else{
+				printk("current storer:%s\n",pdev->storername);
+				return err;
+			}
+		}
+		if(i>=(DEVICE_TYPE_MAP_COUNT-1)){
+			printf("%s:%d,not found storer device\n",__func__,__LINE__);
+			return -1;
+		}
+	}
+	return -1;
 }
 
 ssize_t uboot_key_write(char *keyname, char *keydata)
@@ -1467,46 +1514,33 @@ ssize_t uboot_get_keylist(char *keylist)
 	return ret;
 }
 
-#if defined(WRITE_TO_NAND_ENABLE)
-extern int secukey_inited;
-#endif
-int uboot_key_inited=0;
-static int uboot_key_initial(char *device)
+
+static int uboot_key_inited=0;
+
+/*
+ * device: nand,emmc,auto
+ * */
+int uboot_key_initial(char *device)
 {
-	int error;
+	int error=-1;
 	if(uboot_key_inited )
 	{
 		return 0;
 	}
-	if (!strcmp(device,"nand")){
-		#if defined(WRITE_TO_NAND_ENABLE)
-		if(secukey_inited){
-			return 0;
-		}
-		#endif
+	if ((!strcmp(device,"nand"))
+		|| (!strcmp(device,"emmc"))
+		|| (!strcmp(device,"auto"))){
 		error=uboot_key_init();
-		if(error >= 0){
-			error = nandkey_provider_register();
-			if(error >= 0){
-				error = key_set_version(device);
-				if(error >= 0){
-					printk("init key ok!!\n");
-					uboot_key_inited = 1;
-					#if defined(WRITE_TO_NAND_ENABLE)
-					secukey_inited = 1;
-					#endif
-					return 0;
-				}
+		if(error>=0){
+			error = key_set_version(device);
+			if(error>=0){
+				printk("emmc init key ok!!\n");
+				uboot_key_inited = 1;
+				return 0;
 			}
 		}
-		else
-		{
-			printk("init error\n");
-			return -1;
-		}
-		return -1;
 	}
-	
+	return error;
 }
 
 static char hex_to_asc(char para)
@@ -1552,15 +1586,17 @@ ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_l
 			return -1;
 		}
 	}
-	if (!strcmp(device,"nand")){
+	if (!strcmp(device,"nand") || !strcmp(device,"emmc")|| (!strcmp(device,"auto"))){
 		if(ascii_flag ){
 			error = uboot_key_write(key_name, key_data);
 		}
 		else{
-			data = kzalloc(key_data_len*2, GFP_KERNEL);
+			data = kzalloc(key_data_len*2+1, GFP_KERNEL);
 			if(data == NULL){
+				printk("%s:%d malloc mem fail\n",__func__,__LINE__);
 				return -1;
 			}
+			memset(data,0,key_data_len*2+1);
 			for(i=0,j=0;i<key_data_len;i++){
 				data[j++]=hex_to_asc((key_data[i]>>4) & 0x0f);
 				data[j++]=hex_to_asc((key_data[i]) & 0x0f);
@@ -1568,8 +1604,8 @@ ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_l
 			error = uboot_key_write(key_name, data);
 			kfree(data);
 		}
-		return error;
-	} 
+	}
+	return error;
 }
 /*
  *  device: nand, emmc
@@ -1590,23 +1626,33 @@ ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_l
 			return -1;
 		}
 	}
-	if (!strcmp(device,"nand")){
+	if (!strcmp(device,"nand") || !strcmp(device,"emmc")|| (!strcmp(device,"auto"))){
 		if(ascii_flag ){
 			data = kzalloc(CONFIG_MAX_VALID_KEYSIZE, GFP_KERNEL);
+			if(data == NULL){
+				printk("%s:%d malloc mem fail\n",__func__,__LINE__);
+				return -1;
+			}
+			memset(data,0,CONFIG_MAX_VALID_KEYSIZE);
 			error = uboot_key_read(key_name, data);
 			memcpy(key_data,data,key_data_len);
 			kfree(data);
 		}
 		else{
 			data = kzalloc(CONFIG_MAX_VALID_KEYSIZE, GFP_KERNEL);
+			if(data == NULL){
+				printk("%s:%d malloc mem fail\n",__func__,__LINE__);
+				return -1;
+			}
+			memset(data,0,CONFIG_MAX_VALID_KEYSIZE);
 			error = uboot_key_read(key_name, data);
 			for(i=0,j=0;i<key_data_len;i++,j++){
 				key_data[i]= (((asc_to_hex(data[j]))<<4) | (asc_to_hex(data[++j])));
 			}
 			kfree(data);
 		}
-		return error;
 	}
+	return error;
 }
 
 
