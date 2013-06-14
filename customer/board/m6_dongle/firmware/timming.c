@@ -174,7 +174,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//PLL=700MHz:   PD=0,RESET=0,OD=0,N=6,M=175
 	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50
 	//0x1098[0xc1104260]
-	.sys_pll_cntl=	(0  << 16) | //OD
+	.sys_pll_cntl=	(1  << 16) | //OD
 					(1  << 9 ) | //N
 					(50 << 0 ),	 //M
 	//A9 clock setting
@@ -185,8 +185,8 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
                   	(0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
                   	(1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock 
     //A9 clock              	
-    .sys_clk=1200,//MHz
-    .a9_clk=1200, //MHz
+    .sys_clk=600,//MHz
+    .a9_clk=600, //MHz
     
     .other_pll_cntl=0x00000219,//0x19*24/1=600M
 

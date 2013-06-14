@@ -440,11 +440,6 @@ int board_init(void)
     
 #endif    
 
-	// set cpu freq to 600MHZ
-//	aml_set_reg32_bits(0xb5,P_HHI_SYS_CPU_CLK_CNTL);	
-	writel(0xb5,P_HHI_SYS_CPU_CLK_CNTL);	
-	writel(0x180,P_PREG_CTLREG0_ADDR);	
-	writel(0x80000232,P_HHI_SYS_PLL_CNTL);	
 	return 0;
 }
 
