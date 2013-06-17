@@ -86,6 +86,12 @@ help_customer:
 	@echo config command: \"make m6_duokan_mbx_g19ref_config\"
 
 	@echo ----------------------------------------------------------------------
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "DVB_g17_M6_AML8726_REF_A"
+	@echo config command: \"make m6_dvb_g17_config\"
+	
+	
+	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "HD6027-AML8726M6-VER1.0"
 	@echo config command: \"make m6_letv_g28ref_config\"
 
