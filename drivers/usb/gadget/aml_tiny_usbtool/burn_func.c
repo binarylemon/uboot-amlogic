@@ -1696,7 +1696,7 @@ int usb_run_command (const char *cmd, char* buff)
             else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
                ret = cmd_secukey(argc, argv, buff);
                if(!ret) {
-                  strncpy(namebuf, "boardid", strlen(boardid));
+                  strncpy(namebuf, "boardid", strlen("boardid"));
                   memset(databuf, 0, sizeof(databuf));
                   error = uboot_key_read(namebuf, databuf);
                   if(error >= 0) {
