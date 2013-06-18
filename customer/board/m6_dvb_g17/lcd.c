@@ -30,6 +30,7 @@
 #include <amlogic/aml_lcd.h>
 #include <sn7325.h>
 #include <video_fb.h>
+#include <amlogic/vinfo.h>
 
 #ifdef CONFIG_AW_AXP20
 #include <axp-gpio.h>
@@ -387,12 +388,12 @@ static void lcd_io_init(void)
 
 static int lcd_enable(void)
 {
-	panel_info.lcd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
+	panel_info.vd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
 	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
 	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, NULL);
 	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
-	panel_info.lcd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
-	panel_info.lcd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
+	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
+	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
 
 	printf("WYJ %s, w=%d, h=%d\n", __FUNCTION__, panel_info.vl_col, panel_info.vl_row);
 	
@@ -422,12 +423,12 @@ vidinfo_t panel_info =
 
 	.vl_bpix	=	0,				/* Bits per pixel */
 
-	.lcd_console_address	=	NULL,	/* Start of console buffer	*/
+	.vd_console_address	=	NULL,	/* Start of console buffer	*/
 	.console_col	=	0,
 	.console_row	=	0,
 	
-	.lcd_color_fg	=	0,
-	.lcd_color_bg	=	0,
+	.vd_color_fg	=	0,
+	.vd_color_bg	=	0,
 	.max_bl_level	=	255,
 
 	.cmap	=	NULL,		/* Pointer to the colormap */
