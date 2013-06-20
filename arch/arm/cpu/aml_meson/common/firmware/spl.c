@@ -84,7 +84,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     //Adjust 1us timer base
     timer_init();
     //default uart clock.
-    //serial_init(__plls.uart);
+    serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
 
@@ -105,11 +105,8 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
     // initial pll
     pll_init(&__plls);
-	serial_init(__plls.uart);
 
 #ifdef CONFIG_POWER_SPL
-	serial_puts("\n");
-	serial_puts("\ninit power for cpu\n");
     power_init();
 #endif
 #ifdef ENTRY_DEBUG_ROM
@@ -117,10 +114,12 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
     __udelay(100);//wait for a uart input
 #endif
+#if 0 //disable the debug mode in uboot for mass production code
 	
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
 	 }	 
+#endif
 
     // initial ddr
     ddr_init_test();
