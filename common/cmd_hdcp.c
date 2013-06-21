@@ -37,6 +37,7 @@ extern int key_set_version(char *device);
 extern ssize_t uboot_key_read(char *keyname, char *keydata);
 #endif
 ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);
+int cmd_efuse(int argc, char * const argv[], char *buf);
 extern unsigned long hdmi_hdcp_rd_reg(unsigned long addr);
 extern void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data);
 
@@ -168,19 +169,29 @@ static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
 // Prefetch the HDCP keys data from nand, efuse, etc
 static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
-	int ret=0, prefetch_flag = 0;
+    int ret=0, prefetch_flag = 0;
 
-	if (argc == 1)
-		return cmd_usage(cmdtp);
+    if (argc == 1)
+        return cmd_usage(cmdtp);
 
     init_hdcp_ram(hdcp_keys_prefetch, 1);
 
-    ret = uboot_key_get(argv[1], "hdcp", hdcp_keys_prefetch, 308, 0);
-    if(ret >= 0) {
-        prefetch_flag = 1;;
+    printf("hdcp get form storage medium: %s\n", argv[1]);
+    if(!strncmp(argv[1], "nand", strlen("nand")) || !strncmp(argv[1], "emmc", strlen("emmc"))) {
+        ret = uboot_key_get(argv[1], "hdcp", hdcp_keys_prefetch, 308, 0);
+        if(ret >= 0)
+            prefetch_flag = 1;
+        else
+            printf("prefetch hdcp keys from %s failed\n", argv[1]);
     }
-    else {
-        printf("prefetch hdcp keys from %s failed\n", argv[1]);
+    else if(!strncmp(argv[1], "efuse", strlen("efuse"))) {
+        const char *Argv[3] = {"efuse", "read", "hdcp"};
+        int Argc = 3;
+        ret = cmd_efuse(Argc, Argv, hdcp_keys_prefetch);
+        if(!ret)
+            prefetch_flag = 1;
+        else
+            printf("prefetch hdcp keys from %s failed\n", argv[1]);
     }
 #if 0
         printf("FAKE prefect HDCP key\n");
