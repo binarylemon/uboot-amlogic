@@ -57,7 +57,7 @@ char twoASCByteToByte(char c1, char c2)
 static int do_usid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int i,j,count=1,ret = 0,prefetch_flag = 0;
-	char tmpbuf[1024],str[1024];
+	char tmpbuf[1024]={0},str[1024]={0};
 #ifdef CONFIG_AML_NAND_KEY
 	run_command("secukey nand",0);
 #endif
