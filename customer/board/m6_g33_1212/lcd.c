@@ -62,44 +62,30 @@ void set_backlight_level(unsigned level);
 
 static unsigned bl_level = 0;
 //*****************************************
-// Define LCD Timing Parameters
+
+#include "../../include/panel/CLAP070NJ02.h"
 //*****************************************
-#define ACITVE_AREA_WIDTH	154	//unit: mm
-#define ACITVE_AREA_HEIGHT	86	//unit: mm
-#define LCD_TYPE			LCD_DIGITAL_TTL   //LCD_DIGITAL_TTL  //LCD_DIGITAL_LVDS  //LCD_DIGITAL_MINILVDS
-#define LCD_BITS			6	//6	//8
+// defined by hardware design
+//*****************************************
+// redefine LCD_BITS if the panel support bits option
+#if (BITS_OPTION == 1)
+#undef LCD_BITS
+#define LCD_BITS			6
+#endif
 
-#define H_ACTIVE			1024
-#define V_ACTIVE			600
-#define H_PERIOD			1344
-#define V_PERIOD			635
-//#define FRAME_RATE			50
-#define	LCD_CLK				42700000//(H_PERIOD * V_PERIOD * FRAME_RATE)	//unit: Hz
 #define CLK_SS_LEVEL		0	//0~5, 0 for disable spread spectrum
-#define CLK_AUTO_GEN		1	//1, auto generate clk parameters	//0, user set pll_ctrl, div_ctrl & clk_ctrl
 
-//modify below settings if needed
-#define CLK_POL				0
-#define HS_WIDTH			20
-#define HS_BACK_PORCH		160	//include HS_WIDTH
-#define HS_POL				0	//0: negative, 1: positive
-#define VS_WIDTH			3
-#define VS_BACK_PORCH		23	//include VS_WIDTH
-#define VS_POL				0	//0: negative, 1: positive
 #define TTL_RB_SWAP			0	//0: normal, 1: swap
 #define TTL_RGB_BIT_SWAP	0	//0: normal, 1: swap
 
-#define LVDS_REPACK			0   //lvds data mapping  //0:JEIDA mode, 1:VESA mode
 #define LVDS_PN_SWAP		0	//0:normal, 1:swap
+#if (LCD_BITS == 6)
+#define LVDS_REPACK			0
+#else
+#define LVDS_REPACK			1
+#endif
+//*****************************************
 
-//recommend settings, don't modify them unless there is display problem
-#define TTL_H_OFFSET		0	//adjust ttl display h_offset
-#define H_OFFSET_SIGN		1	//0: negative value, 1: positive value
-#define TTL_V_OFFSET		0	//adjust ttl display v_offset
-#define V_OFFSET_SIGN		1	//0: negative value, 1: positive value
-#define VIDEO_ON_PIXEL		80
-#define VIDEO_ON_LINE		32
-//************************************************
 
 static void ttl_ports_ctrl(Bool_t status)
 { 
@@ -519,6 +505,7 @@ static int lcd_enable(void)
 	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
 	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
 	
+	printf("\nload lcd model: %s\n", PANEL_MODEL);
 	lcd_tcon_config(&lcd_config);
 	lcd_setup_gamma_table(&lcd_config);
 	lcd_video_adjust(&lcd_config);
