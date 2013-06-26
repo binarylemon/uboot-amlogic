@@ -139,11 +139,14 @@ static int do_set_usbcur_limit(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
     int usbcur_limit = simple_strtol(argv[1], NULL, 10);
     pmu_set_usbcur_limit(usbcur_limit);
     printf("set usbcur_limit: %smA\n", argv[1]);
+    if (argc == 2 )
+		{
     setenv("usbcur_limit", argv[1]);
+		}
     return 0;
 }
 U_BOOT_CMD(
-	set_usbcur_limit,	2,	0,	do_set_usbcur_limit,
+	set_usbcur_limit,	3,	0,	do_set_usbcur_limit,
 	"set pmu usb limit current",
 	"/N\n"
 	"set_usbcur_limit <current>\n"
