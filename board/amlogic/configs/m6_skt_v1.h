@@ -316,27 +316,29 @@ save
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
 
-//M6 security boot
-//#define CONFIG_M6_SECU_BOOT		1
+//////////////////////////////////////////////////////////////////////////
+
+//M6 security boot enable
+//#define CONFIG_M6_SECU_BOOT		 1
+//M6 2-RSA signature enable, enable CONFIG_M6_SECU_BOOT
+//first before use this feature
+//#define CONFIG_M6_SECU_BOOT_2RSA   1
+
+//M6 Auth-key build to uboot
+//#define CONFIG_M6_SECU_AUTH_KEY 1
+
+
+//enable CONFIG_M6_SECU_BOOT_2K must enable CONFIG_M6_SECU_BOOT first
+#if defined(CONFIG_M6_SECU_BOOT_2K)
+	#if !defined(CONFIG_M6_SECU_BOOT)
+		#define CONFIG_M6_SECU_BOOT 1
+	#endif //!defined(CONFIG_M6_SECU_BOOT)
+#endif //defined(CONFIG_M6_SECU_BOOT_2K)
+
 
 //M6 L1 cache enable for uboot decompress speed up
-#define CONFIG_AML_SPL_L1_CACHE_ON	1
+//#define CONFIG_AML_SPL_L1_CACHE_ON	1
 
-
-/////////////////////////////////////////////////////////////////////////
-//Please DO NOT modify following code!
-#if defined(CONFIG_M6_SECU_BOOT)
-	/*NOTE: must define the block num for crypto, illegal value is 2 - 10*/
-	#define CONFIG_M6_CRYPTO_BLK	10		
-#endif //CONFIG_M6_SECU_BOOT	
-
-#if defined(CONFIG_M6_SECU_BOOT)
-	#if !defined(CONFIG_M6_CRYPTO_BLK)
-		#error "Please define CONFIG_M6_CRYPTO_BLK (2-10) !"
-	#elif (CONFIG_M6_CRYPTO_BLK < 2 || CONFIG_M6_CRYPTO_BLK > 10)
-		#error "Illegal valuel of CONFIG_M6_CRYPTO_BLK (2-10)!"
-	#endif	//CONFIG_M6_CRYPTO_BLK
-#endif //CONFIG_M6_SECU_BOOT
 //////////////////////////////////////////////////////////////////////////
 
 /*-----------------------------------------------------------------------

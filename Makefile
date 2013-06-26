@@ -402,8 +402,12 @@ $(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 else		
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
-	@./tools/secu_boot/encrypto ./tools/secu_boot/keys/key.dat $@ $(CONFIG_M6_CRYPTO_BLK)
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
+ifdef CONFIG_M6_SECU_AUTH_KEY
+	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
+else
+	@./tools/secu_boot/encrypto2 $@
+endif
 endif
 
 else
@@ -411,8 +415,12 @@ $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
 ifndef CONFIG_M6_SECU_BOOT	
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 else		
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
-	@./tools/secu_boot/encrypto ./tools/secu_boot/keys/key.dat $@ $(CONFIG_M6_CRYPTO_BLK)
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
+ifdef CONFIG_M6_SECU_AUTH_KEY
+	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
+else
+	@./tools/secu_boot/encrypto2 $@
+endif
 endif
 
 $(obj)u-boot-comp-comp.bin:	$(obj)u-boot-comp-comp

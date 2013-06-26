@@ -59,8 +59,8 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//here no need to flush I/D cache?
 #if CONFIG_AML_SPL_L1_CACHE_ON
-	//aml_cache_disable();
-	dcache_flush();
+	aml_cache_disable();
+	//dcache_flush();
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
 
 

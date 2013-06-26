@@ -481,6 +481,17 @@ int sha2_sum( unsigned char outbuf[32],const unsigned char *pbuff, int nLen )
 	return 0;
 }
 
+int sha2_sum_2( unsigned char outbuf[32],const unsigned char *pbuff, int nLen )
+{    
+	//outbuf[0]: 0 ->start, 1-> on the way, 2->finish
+    static sha2_context ctx;
+	if(0 == outbuf[0])//start
+		sha2_starts( &ctx, 0 );
+    sha2_update( &ctx, pbuff, nLen );
+	if(2 == outbuf[0]) //end
+		sha2_finish( &ctx, outbuf );
+	return 0;
+}
 
 #define SHA256_HASH_BITS  256
 #define SHA256_HASH_BYTES (SHA256_HASH_BITS/8)
