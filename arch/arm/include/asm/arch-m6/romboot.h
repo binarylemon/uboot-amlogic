@@ -142,4 +142,8 @@ extern DataFormat  __magic_word;
 #define ERROR_NAND_MAGIC_WORD 23
 #define ERROR_NAND_INIT_READ 24
 
+#define ERROR_NAND_BLANK_PAGE 25
+/* SECUREBOOT RSA PuK EFUSE location */
+#define EFUSE_SECUREBOOT_RSAKEY   8		//size=256(1024bits)
+
 #endif /* ROMBOOT_H_ */

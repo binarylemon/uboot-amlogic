@@ -32,16 +32,30 @@ SECTIONS
 	.text			:
 	{
 		*  (.text)
+          *(.ARM.extab* .gnu.linkonce.armextab.*)		
 	}
+	. = ALIGN(4);
 	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
-	.data : { *(.data) }
+	
+	.ARM.exidx : {*(.ARM.exidx* .gnu.linkonce.armexidx.*)}      	
+	.got : {*(.got* .gnu.linkonce.got.plt.*)}
+	
+	. = ALIGN(4);
+	 __data_start = .;
+     .data : { *(.data*)}
+     __data_end = .;
 	
 	_end = .;
 	. = ALIGN(4);
+#ifdef 	CONFIG_MESON_SECUREBOOT
+	. =RAM_END-0x10000;     
+#endif
 	_bssstart = . ;
 	.bss : { *(.bss) }
 	. = ALIGN(4);
 	_bssend = . ;
 }
 ASSERT(_end <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bootstrap too big");
+#ifndef CONFIG_MESON_SECUREBOOT
 ASSERT(_bssend <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bss  too big");
+#endif

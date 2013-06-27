@@ -15,5 +15,7 @@ ifeq ($(CONFIG_CMD_RUNARC),y)
 endif
 
 ifeq ($(CONFIG_AML_SUSPEND),y)
+ifneq ($(CONFIG_MESON_TRUSTZONE),y)
 	$(MAKE) -f Makefile.krbt
+endif
 endif

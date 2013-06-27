@@ -357,6 +357,11 @@ ifeq  ($(CONFIG_SELF_COMPRESS),y)
 ALL += $(obj)u-boot-comp.bin
 endif
 
+ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
+SECURE_OS_BIN := secure_os/otzone-ucl.bin
+UBOOT_SECURE_OS := $(obj)uboot-secureos.bin
+ALL += $(UBOOT_SECURE_OS)
+endif
 
 all:		$(ALL)
 
@@ -372,6 +377,11 @@ $(obj)u-boot.bin:	$(obj)u-boot
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 		$(BOARD_SIZE_CHECK)
 else   #ELSE CONFIG_AML_MESON
+
+ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
+$(UBOOT_SECURE_OS): $(obj)u-boot.bin $(SECURE_OS_BIN)
+		$(obj)tools/join_uboot_secureos $(obj)u-boot.bin  $(SECURE_OS_BIN) $(UBOOT_SECURE_OS)
+endif  #END CONFIG_JOIN_UBOOT_SECUREOS
 
 #################
 ifneq ($(CONFIG_SELF_COMPRESS),y)

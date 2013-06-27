@@ -2,6 +2,10 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
+#ifdef CONFIG_MESON_SECUREBOOT
+#include <secureloader.c>
+#endif
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
@@ -469,6 +473,7 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
     return ;
 }
 
+
 #ifdef CONFIG_BOARD_8726M_ARM
 #define P_PREG_JTAG_GPIO_ADDR  (volatile unsigned long *)0xc110802c
 #endif
@@ -477,6 +482,12 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
     unsigned temp_addr;
+
+#ifdef CONFIG_MESON_SECUREBOOT
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif    
 #if CONFIG_UCL
     temp_addr=target-0x800000;
 #else
@@ -515,7 +526,15 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
         default:
            return 1;
     }
-
+    
+#ifdef CONFIG_MESON_SECUREBOOT
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-8-512);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-4-512);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);	
+#endif	  
+  
 
 #if defined(CONFIG_M6_SECU_BOOT)
 	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
@@ -540,6 +559,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     if(rc==0)    	
         rc=check_sum((unsigned*)temp_addr,magic_info->crc[1],size);
 #endif              	
+
     return rc;
 }
 STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
@@ -550,17 +570,32 @@ STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
 STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
     unsigned temp_addr;
+
+#ifdef CONFIG_MESON_SECUREBOOT
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif
+    
 #if CONFIG_UCL
     temp_addr=target-0x800000;
 #else
     temp_addr=target;
-#endif
+#endif	
     int rc=sdio_read(temp_addr,size,por_cfg);
+
+#ifdef CONFIG_MESON_SECUREBOOT
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-8-512);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-4-512);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);	
+#endif	
+
 
 #if defined(CONFIG_M6_SECU_BOOT)
 	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
 #endif //CONFIG_M6_SECU_BOOT
-
 
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC

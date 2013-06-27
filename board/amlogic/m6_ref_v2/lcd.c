@@ -235,7 +235,7 @@ Lcd_Config_t lcd_config =
     },
 
 	.lcd_timing = {
-        .pll_ctrl = 0x1023b, //0x10229, //0x10220,  //clk=54.9MHz
+        .pll_ctrl = 0x10232, //0x10229, //0x10220,  //clk=54.9MHz
         .div_ctrl = 0x18803,  //0x18803
         .clk_ctrl = 0x1111, //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
         //.sync_duration_num = 502,

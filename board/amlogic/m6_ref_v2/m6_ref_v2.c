@@ -343,7 +343,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 1,
-                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_1K_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE),
             },
         },
 	.rbpin_detect=1,
@@ -357,7 +357,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 2,
-                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_1K_MODE | NAND_TWO_PLANE_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE | NAND_TWO_PLANE_MODE),
             },
         },
 	.rbpin_detect=1,
@@ -369,7 +369,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = 2,
+    .dev_num = ARRAY_SIZE(aml_nand_mid_platform),
 };
 #endif
 
@@ -477,13 +477,28 @@ int board_late_init(void)
 //POWER key
 inline void key_init(void)
 {
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned temp = meson_trustzone_rtc_read_reg32(P_RTC_ADDR0);
+	temp &= (~(1<<11));
+	meson_trustzone_rtc_write_reg32(P_RTC_ADDR0, temp);
+	
+	temp = meson_trustzone_rtc_read_reg32(P_RTC_ADDR1);
+	temp &= (~(1<<3));
+	meson_trustzone_rtc_write_reg32(P_RTC_ADDR1, temp);
+#else	
 	clrbits_le32(P_RTC_ADDR0, (1<<11));
 	clrbits_le32(P_RTC_ADDR1, (1<<3));
+#endif	
 }
 
 inline int get_key(void)
 {
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned temp = meson_trustzone_rtc_read_reg32(P_RTC_ADDR1);
+	return (((temp >> 2) & 1) ? 0 : 1);
+#else	
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
+#endif		
 }
 
 inline int is_ac_online(void)

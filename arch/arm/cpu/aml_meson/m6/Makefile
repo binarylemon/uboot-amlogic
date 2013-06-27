@@ -25,7 +25,13 @@ COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
 
 ifdef CONFIG_AML_SUSPEND
 COBJS += suspend.o
+ifndef CONFIG_MESON_TRUSTZONE
 COBJS += firmwareld.o
+endif
+endif
+
+ifdef CONFIG_MESON_TRUSTZONE
+COBJS += trustzone.o
 endif
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
@@ -37,6 +43,7 @@ $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))	
 
 ifdef CONFIG_AML_SUSPEND
+ifndef CONFIG_MESON_TRUSTZONE
 FIRMWARE_AUTO_UPDATE=y
 export FIRMWARE_AUTO_UPDATE
 power_firmware:
@@ -49,6 +56,7 @@ else
 power_firmware:
 ifdef CONFIG_CMD_RUNARC
 #		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+endif
 endif
 endif
 

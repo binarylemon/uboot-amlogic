@@ -21,6 +21,14 @@ BURNLDFLAGS	= -Bstatic -T $(obj)burner.lds  $(PLATFORM_LDFLAGS)
 #LDFLAGS = --cpu cortex-a9 --info totals --info unused --info inputs --scatter firmware.scat --entry _start --keep=rom_spl_arm.o\(.magic\)
 #AFLAGS = -g --cpu cortex-a9  $(filter -I%,$(CFLAGS))
 
+
+ifdef CONFIG_MESON_SECUREBOOT
+LD_LIB_PATH_ARM=$(shell dirname '$(shell $(CC) -print-libgcc-file-name)') \
+									$(shell dirname '$(shell $(CC) -print-file-name=libc.a)')
+LD_LIB_PATH = $(LD_LIB_PATH_ARM:%=-L %)	
+PLATFORM_LIBGCC += $(LD_LIB_PATH)
+endif
+
 CFLAGS	:=$(CFLAGS:-marm=-mthumb)
 #CFLAGS	:=$(CFLAGS:-mno-thumb-interwork=)
 CFLAGS	:=$(CFLAGS:-fPIC=)
@@ -77,7 +85,11 @@ all: $(ALL) $(ELFFILES)
 
 %.bin:	%.out
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+ifdef CONFIG_MESON_SECUREBOOT
+$(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(obj)crypto/libcrypto.a $(target_LDS)
+else	
 $(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(target_LDS)
+endif
 $(dir $(FIRMWARE))aml-debug-rom.out:$(OBJS) $(obj)debugrom.o $(obj)firmware.lds
 $(dir $(FIRMWARE))usb_spl.out:$(OBJS) $(obj)usb_spl.o $(obj)firmware.lds
 else
@@ -93,13 +105,24 @@ $(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(target_LDS)
 $(dir $(FIRMWARE))aml-debug-rom.out:$(OBJS) $(obj)debugrom.o $(obj)firmware.lds
 endif
 %.out:
-
-	$(LD) $(LDFLAGS) $(filter %.o,$^) $(UCL_BOOTLIBS) $(PLATFORM_LIBGCC)\
+ifdef CONFIG_MESON_SECUREBOOT
+	$(LD) $(LDFLAGS) $(filter %.o,$^) $(UCL_BOOTLIBS) $(obj)crypto/libcrypto.a $(PLATFORM_LIBGCC) -lm -lc -lgcc -lgcov \
 		-Map $(@:%=%.map) --cref \
 		-o $@
+else
+	$(LD) $(LDFLAGS) $(filter %.o,$^) $(UCL_BOOTLIBS) $(PLATFORM_LIBGCC) \
+		-Map $(@:%=%.map) --cref \
+		-o $@
+endif
+	
 $(target_LDS):$(origin_LDS)
 	$(CPP) $(CPPFLAGS)   $(LDPPFLAGS) -std=c99 -D__ASSEMBLY__ -P - <$^ >$@
 
+ifdef CONFIG_MESON_SECUREBOOT
+$(obj)crypto/libcrypto.a:
+	$(MAKE) -C crypto/
+endif	
+	
 sinclude $(wildcard $(obj)*.d)
 
 

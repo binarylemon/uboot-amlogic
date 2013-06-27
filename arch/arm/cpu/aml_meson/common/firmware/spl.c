@@ -18,6 +18,15 @@
 #include <power.c>
 #endif
 
+#ifdef CONFIG_MESON_SECUREBOOT
+#include <efuse.c>
+#include <secureboot.c>
+#endif
+
+#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT
+unsigned int ovFlag;
+#endif
+
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
@@ -51,6 +60,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
+
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
@@ -145,6 +155,22 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
     	load_uboot(__TEXT_BASE,__TEXT_SIZE);
 #endif
+
+	//asm volatile ("wfi");
+	// load secureOS
+#ifdef CONFIG_MESON_SECUREBOOT
+	if(load_secureos()){
+		serial_puts("\nload secureOS fail,now reset the chip");
+		ovFlag = 1;		
+		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+	}
+	else{		
+		ovFlag = 0;
+		serial_puts("\nOV System Started\n");
+		serial_wait_tx_empty();    
+	}
+#endif	
+
     serial_puts("\nSystem Started\n");
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
@@ -190,5 +216,9 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif//CONFIG_M6_TEST_CPU_SWITCH
 
-    return 0;
+#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT		
+    return ovFlag;
+#else
+	return 0;
+#endif    
 }

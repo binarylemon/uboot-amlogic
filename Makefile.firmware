@@ -23,7 +23,7 @@ target= firmware_code
 all: $(target)
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
-		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
+#		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
 
 
 help:

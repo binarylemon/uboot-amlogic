@@ -20,11 +20,11 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-//#define CONFIG_SECURITYKEY
+#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif
-
+#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
@@ -78,7 +78,7 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
 #define CONFIG_CMD_SARADC
-#define CONFIG_EFUSE 1
+//#define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #ifdef CONFIG_MACHID_CHECK
 	//#define CONFIG_MACH_MESON6_RAMOS 0x30564552
@@ -191,7 +191,8 @@
 	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
 	"usb_burning=tiny_usbtool 20000\0" \
 
-#define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=1512000000; bootm"
+ #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 400000; setenv bootargs ${bootargs} a9_clk_max=1512000000; bootm"
+// #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; mmcinfo; fatload mmc 0 82000000 uimage; setenv bootargs ${bootargs} a9_clk_max=1512000000; bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
 
@@ -349,10 +350,32 @@
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
 
+/*
+ * Trustzone secure extension
+ */
+
+#define CONFIG_MESON_TRUSTZONE 1
+#define CONFIG_MESON_SECUREBOOT	 1
+#ifdef CONFIG_MESON_SECUREBOOT 
+#define CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT 1
+#define CONFIG_SECURE_CRYPTO	1
+
+
+#define RSA_ENCRYPT_POS (0)
+#define SECUREOS_HEAD_SIZE 0x200
+
+#define SECURE_OS_ENCRYPTED_ADDR		0x8E000000
+#define SECURE_OS_DECRYPTED_ADDR		0xa0100000
+
+#define CONFIG_JOIN_UBOOT_SECUREOS	1
+
+#endif
+
 /*-----------------------------------------------------------------------
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
+
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CMD_IMI 1
 #define CONFIG_ANDROID_IMG 1

@@ -381,8 +381,10 @@ void main_loop (void)
 #endif
 
 #ifdef CONFIG_AML_SUSPEND
+#ifndef CONFIG_MESON_TRUSTZONE
 extern void init_suspend_firmware(void);
 	init_suspend_firmware();
+#endif
 #endif
 
 #ifdef CONFIG_CMD_CHIPREV

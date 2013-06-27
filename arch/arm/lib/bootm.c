@@ -207,8 +207,11 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 #endif
 	setup_end_tag(bd);
 #endif
+/*
+	// Normal World can not access address 0
 	if(strcmp(getenv("dbgkernel"),"y")==0)
 		asm volatile ("wfi");
+*/		
 	announce_and_cleanup();
 
 	kernel_entry(0, machid, bd->bi_boot_params);

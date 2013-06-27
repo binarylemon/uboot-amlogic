@@ -830,6 +830,24 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	int page_list[6] = {0x01, 0x02, 0x03, 0x06, 0x07, 0x0A};
 #endif	
 	
+
+#ifdef CONFIG_SECURE_NAND
+	struct mtd_info *mtd_device1;
+	struct aml_nand_chip *aml_chip_device1 ; 
+	struct aml_nand_platform *plat = NULL;
+	int k,nand_read_info,secure_block,valid_chip_num =0;
+	unsigned char chip_num=0, plane_num=0,micron_nand=0;
+
+	for(i=0;i<aml_nand_mid_device.dev_num; i++){
+		plat = &aml_nand_mid_device.aml_nand_platform[i];
+		if(!strncmp((char*)plat->name, NAND_NORMAL_NAME, strlen((const char*)NAND_NORMAL_NAME))){
+			mtd_device1 = nand_info[i];
+			break;
+		}
+	}
+	aml_chip_device1 = mtd_to_nand_chip(mtd_device1);
+#endif
+
 #ifdef MX_REVD
 	new_nand_type = aml_chip->new_nand_info.type;
 	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
@@ -868,6 +886,33 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 				memcpy(chip->buffers->databuf + 5*sizeof(int), (unsigned char *)(&magic), sizeof(int));
 				memcpy(chip->buffers->databuf + 6*sizeof(int), (unsigned char *)(&page_list[0]), 6*sizeof(int));
 			}
+#endif
+			
+#ifdef CONFIG_SECURE_NAND
+			valid_chip_num = 0;
+			for (k=0; k<aml_chip_device1->chip_num; k++) {
+				if(aml_chip_device1->valid_chip[k]){
+					valid_chip_num++;
+				}
+			}
+			
+			chip_num = valid_chip_num;
+			if(aml_chip_device1->plane_num == 2)
+				plane_num = 1;
+			
+			ran_mode = aml_chip_device1->ran_mode;
+			
+			if((aml_chip_device1->mfr_type == NAND_MFR_MICRON) || (aml_chip_device1->mfr_type == NAND_MFR_INTEL))
+				micron_nand = 1;
+			
+			nand_read_info = chip_num | (plane_num << 2) |(ran_mode << 3) | (micron_nand << 4);
+			memcpy(chip->buffers->databuf +3* sizeof(int), (unsigned char *)(&nand_read_info), sizeof(int));
+			
+			secure_block = aml_chip_device1->aml_nandsecure_info->start_block;
+			memcpy(chip->buffers->databuf +4* sizeof(int), (unsigned char *)(&secure_block), sizeof(int));
+			
+			printk("chip_num %d,plane_num %d,ran_mode %d micron_nand %d ,secure_block %d\n",chip_num,\
+				plane_num,ran_mode,micron_nand,secure_block);
 #endif
 				
 			chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, write_page);
@@ -1050,10 +1095,21 @@ void nand_init(void)
 			continue;
 		}
 	}
-	if (aml_nand_mid_device.dev_num  >  0)
-		nand_curr_device = (aml_nand_mid_device.dev_num - 1);
-	else
-		nand_curr_device = 0;
+
+	for(i=0;i<aml_nand_mid_device.dev_num; i++){
+		plat = &aml_nand_mid_device.aml_nand_platform[i];
+		if(!strncmp((char*)plat->name, NAND_NORMAL_NAME, strlen((const char*)NAND_NORMAL_NAME))){
+			nand_curr_device = i;  //normal device
+			printk("nand_curr_device =%d\n",nand_curr_device);
+			break;
+		}else
+			nand_curr_device = 0; // uboot device
+	}
+	
+	//if (aml_nand_mid_device.dev_num  >  0)
+		//nand_curr_device = (aml_nand_mid_device.dev_num - 2);
+	//else
+		//nand_curr_device = 0;
 	return;
 }
 

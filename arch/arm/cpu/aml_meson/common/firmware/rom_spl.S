@@ -35,7 +35,7 @@ __magic_word:
   .space 0x1fe - (. - _start)
   .short 0xaa55
 #endif
-	   
+
 reset:
 #if 0
 	ldr     r0,=0xda004004
@@ -98,7 +98,15 @@ clr_bss_end:
     mcr p15,0,r0,c12,c0,0
     ldr r0,__TEXT_BASE
     ldr r1,__TEXT_SIZE
-    bl	main    
+    bl	main 
+#ifdef CONFIG_MESON_SECUREBOOT
+#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT
+    cmp r0, #0x0
+	ldreq pc, __SECURE_OS_BASE
+#else
+	ldr pc, __SECURE_OS_BASE
+#endif	
+#endif       
 #ifndef CONFIG_IMPROVE_UCL_DEC    
     ldr pc,__TEXT_BASE
 #else
@@ -118,8 +126,18 @@ __TEXT_SIZE:
 #ifdef CONFIG_BOARD_SIZE_LIMIT
     .word CONFIG_BOARD_SIZE_LIMIT
 #else
-    .word 0x60000 - READ_SIZE
+#ifdef CONFIG_MESON_SECUREBOOT
+	.word CONFIG_SECURE_UBOOT_SIZE - READ_SIZE
+#else
+     .word 0x60000 - READ_SIZE
 #endif    
+#endif  
+
+#ifdef CONFIG_MESON_SECUREBOOT
+__SECURE_OS_BASE:
+	.word SECURE_OS_DECRYPTED_ADDR
+#endif
+
 __ROM_STACK_END:
 	.word ROM_STACK_END
 __BSS_START:

@@ -105,7 +105,7 @@ fi
 
 if [ ! -L ${SRCTREE}/include/configs/customer ]; then	
 	cd ${SRCTREE}/include/configs
-	ln -s ../../customer/board/configs customer
+	ln -s ../../customer/board/configs customer -f
 fi 
 
 if [ ! -L ${SRCTREE}/include/configs/amlogic ]; then	

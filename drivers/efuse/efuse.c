@@ -23,6 +23,7 @@ extern void efuse_init(void);
 
 ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 {
+#ifdef CONFIG_EFUSE	
     unsigned long contents[EFUSE_DWORDS];
 	unsigned pos = *ppos;
     unsigned long *pdw;
@@ -54,10 +55,14 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 	
     *ppos += count;
     return count;
+#else
+	return 0;
+#endif    
 }
 
 ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 { 	
+#ifdef CONFIG_EFUSE	
 	unsigned pos = *ppos;
 	const char *pc;
 
@@ -79,6 +84,9 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
     //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) & ~(1 << 12) );
 
 	return count;
+#else
+	return 0;
+#endif	
 }
 
 static int cpu_is_before_m6(void)
@@ -91,6 +99,7 @@ static int cpu_is_before_m6(void)
 
 static int efuse_readversion(void)
 {
+#ifdef CONFIG_EFUSE	
 //	loff_t ppos;
 	char ver_buf[4], buf[4];
 	efuseinfo_item_t info;
@@ -135,11 +144,14 @@ static int efuse_readversion(void)
 #else
 	return -1;
 #endif	
-	
+#else
+	return -1;
+#endif	
 }
 
 static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 {
+#ifdef CONFIG_EFUSE	
 	int ver;
 	int i;
 	efuseinfo_t *vx = NULL;
@@ -204,11 +216,15 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 			printf("POS:%d is not found.\n", pos);
 			
 		return ret;
+#else
+	return -1;
+#endif		
 }
 
 
 int efuse_chk_written(loff_t pos, size_t count)
 {
+#ifdef CONFIG_EFUSE	
 	loff_t local_pos = pos;	
 	int i;
 	//unsigned char* buf = NULL;
@@ -240,12 +256,16 @@ int efuse_chk_written(loff_t pos, size_t count)
 		}
 	}	
 	return 0;
+#else
+	return -1;
+#endif	
 }
 
 
 
 int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 {	
+#ifdef CONFIG_EFUSE	
 	char data[EFUSE_BYTES];
 //	int ret;
 	unsigned enc_len;			
@@ -293,10 +313,14 @@ int efuse_read_usr(char *buf, size_t count, loff_t *ppos)
 	memcpy(buf, data, count);		
 
 	return count;	
+#else
+	return 0;
+#endif	
 }
 
 int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 {
+#ifdef CONFIG_EFUSE	
 	char data[EFUSE_BYTES];
 //	int ret;		
 	char *pdata = NULL;
@@ -350,10 +374,14 @@ int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 	efuse_write(efuse_buf, enc_len, ppos);
 	
 	return enc_len;	
+#else
+	return -1;
+#endif	
 }
 
 void efuse_set_versioninfo(efuseinfo_item_t *info)
 {
+#ifdef CONFIG_EFUSE	
 	strcpy(info->title, "version");			
 	if(cpu_is_before_m6()){
 			info->offset = EFUSE_VERSION_OFFSET; //380;		
@@ -371,11 +399,13 @@ void efuse_set_versioninfo(efuseinfo_item_t *info)
 			info->we = 1;									//add 
 			info->bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE;
 		}
+#endif		
 }
 
 
 int efuse_getinfo(char *title, efuseinfo_item_t *info)
 {
+#ifdef CONFIG_EFUSE	
 	int ver;
 	int i;
 	efuseinfo_t *vx = NULL;
@@ -431,10 +461,14 @@ int efuse_getinfo(char *title, efuseinfo_item_t *info)
 		if(ret < 0)
 			printf("%s is not found.\n", title);			
 		return ret;
+#else
+	return -1;
+#endif		
 }
 
 unsigned efuse_readcustomerid(void)
 {
+#ifdef CONFIG_EFUSE	
 	if(efuse_active_customerid != 0)
 		return efuse_active_customerid;
 	
@@ -462,6 +496,9 @@ unsigned efuse_readcustomerid(void)
 	}
 	
 	return efuse_active_customerid;
+#else
+	return 0;
+#endif	
 }
 
 /*void efuse_getinfo_version(efuseinfo_item_t *info)
@@ -486,6 +523,7 @@ unsigned efuse_readcustomerid(void)
 
 char* efuse_dump(void)
 {
+#ifdef CONFIG_EFUSE	
 	int i=0;
     //unsigned pos;
     memset(efuse_buf, 0, sizeof(efuse_buf));
@@ -503,6 +541,9 @@ char* efuse_dump(void)
              CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
      
      return (char*)efuse_buf;
+#else
+	return NULL;
+#endif     
 }
 
 #ifdef CONFIG_AML_EFUSE_INIT_PLUS

@@ -1,0 +1,198 @@
+/*
+ *  Copyright (C) 2002 ARM Ltd.
+ *  All Rights Reserved
+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/*
+ * Trustzone API
+ *
+ * Copyright (C) 2012 Amlogic, Inc.
+ *
+ * Author: Platform-BJ@amlogic.com
+ *
+ */
+
+
+#include <asm/arch/io.h>
+
+#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
+
+typedef struct trustzone_cmd {
+    unsigned int id;
+    unsigned int context;
+    unsigned int enc_id;
+
+    unsigned int src_id;
+    unsigned int src_context;
+
+    unsigned int req_buf_len;
+    unsigned int resp_buf_len;
+    unsigned int ret_resp_buf_len;
+    unsigned int cmd_status;
+    unsigned int req_buf_phys;
+    unsigned int resp_buf_phys;
+    unsigned int meta_data_phys;
+    unsigned int dev_file_id;
+} trustzone_cmd_t;
+
+
+/**
+ * @brief meson_cpu_ctrl_reg_set
+ *
+ * @param para
+ */
+void meson_trustzone_smc(uint32_t para)
+{
+#define CALL_TRUSTZONE_API 0x1
+#define OTZ_SVC 0x6
+#define OTZ_CMD_ID 0x1
+#define OTZ_CMD_TYPE_NS_TO_SECURE 0x1
+    trustzone_cmd_t boot_cmd = {};
+    boot_cmd.id = ((OTZ_SVC << 10) | OTZ_CMD_ID);
+    boot_cmd.src_id = ((OTZ_SVC << 10) | OTZ_CMD_ID);
+    boot_cmd.context = para;
+    register uint32_t r0 asm("r0") = CALL_TRUSTZONE_API;
+    register uint32_t r1 asm("r1") = virt_to_phys(&boot_cmd);
+    register uint32_t r2 asm("r2") = OTZ_CMD_TYPE_NS_TO_SECURE;
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            __asmeq("%3", "r2")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1), "r"(r2));
+    } while (0);
+}
+
+/**
+ * @brief meson_trustzone_rtc_read_reg32
+ *
+ * @param addr
+ * @param value
+ */
+uint32_t meson_trustzone_rtc_read_reg32(uint32_t addr)
+{
+    register uint32_t r0 asm("r0") = 0x2;
+    register uint32_t r1 asm("r1") = addr;
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1));
+    } while (0);
+
+	return r0;
+}
+
+
+/**
+ * @brief meson_trustzone_rtc_write_reg32
+ *
+ * @param addr
+ * @param value
+ */
+uint32_t meson_trustzone_rtc_write_reg32(uint32_t addr, uint32_t value)
+{
+    register uint32_t r0 asm("r0") = 0x3;
+    register uint32_t r1 asm("r1") = addr;
+    register uint32_t r2 asm("r2") = value;
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            __asmeq("%3", "r2")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1), "r"(r2));
+    } while (0);
+
+    return r0;
+}
+
+
+/**
+ * @brief meson_trustzone_sram_read_reg32
+ *
+ * @param addr
+ * @param value
+ */
+uint32_t meson_trustzone_sram_read_reg32(uint32_t addr)
+{
+    register uint32_t r0 asm("r0") = 0x2;
+    register uint32_t r1 asm("r1") = addr;
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1));
+    } while (0);
+
+    return r0;
+}
+
+
+/**
+ * @brief meson_trustzone_sram_write_reg32
+ *
+ * @param addr
+ * @param value
+ */
+uint32_t meson_trustzone_sram_write_reg32(uint32_t addr, uint32_t value)
+{
+    register uint32_t r0 asm("r0") = 0x3;
+    register uint32_t r1 asm("r1") = addr;
+    register uint32_t r2 asm("r2") = value;
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            __asmeq("%3", "r2")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1), "r"(r2));
+    } while (0);
+
+    return r0;
+}
+
+/**
+ * @brief meson_trustzone_suspend
+ *
+ * @suspend cmd smc entry
+ */
+uint32_t meson_trustzone_suspend()
+{
+#define TRUSTZONE_MON_SUSPNED_FIRMWARE			0x300
+
+    register uint32_t r0 asm("r0") = 0x4;
+    register uint32_t r1 asm("r1") = TRUSTZONE_MON_SUSPNED_FIRMWARE;
+
+    do {
+        asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1));
+    } while (0);
+
+    return r0;
+}
+
+
