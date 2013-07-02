@@ -823,8 +823,8 @@ void check_pmu_version(void)
         printf("[AML_PMU] ### error, unknow PMU version ### \n");    
     } else {
         aml_pmu_version = val;
-        if (aml_pmu_version == AML_PMU_VERSION_D) {
-            aml_pmu_set_bits(0x004a, 0x08, 0x08);       // open clock to charger for revD 
+        if (aml_pmu_version == AML_PMU_VERSION_D) {  
+            aml_pmu_set_bits(0x004a, 0x38, 0x38);       // open clock to charger for revD 
             aml_pmu_set_bits(0x0035, 0xc0, 0xe0);       // according David Wang, for PFM threshold
             aml_pmu_set_bits(0x003e, 0xc0, 0xe0);
             aml_pmu_set_bits(0x0047, 0x18, 0x1c);
@@ -911,10 +911,13 @@ int aml_pmu_init(void)
         aml_pmu_write(0x0023, 0x13);                // according Harry, bypass USB_D signal
         aml_pmu_set_bits(0x0027, 0x80, 0x80);       // disable skip mode
     } else if (aml_pmu_version == AML_PMU_VERSION_D) {
-        aml_pmu_set_bits(0x0020, 0xce, 0xce);       // according Harry, boost register change for REVD 
-        aml_pmu_set_bits(0x0022, 0x00, 0x80); 
-        aml_pmu_set_bits(0x0023, 0x51, 0xf1);
-        aml_pmu_set_bits(0x0025, 0x28, 0xfc);
+        //aml_pmu_set_bits(0x0020, 0xce, 0xce);
+        aml_pmu_set_bits(0x0020, 0xcf, 0xcf);       // according Harry, boost register change for REVD 
+        //aml_pmu_set_bits(0x0022, 0x00, 0x80); 
+        //aml_pmu_set_bits(0x0023, 0x51, 0xf1);
+        aml_pmu_set_bits(0x0023, 0x53, 0xf3);
+        //aml_pmu_set_bits(0x0025, 0x28, 0xfc);
+        aml_pmu_set_bits(0x0025, 0x2a, 0xfa);
 
         //according to shusun,Reduce DC1,DC2 OC current
         printf("###### %s():Reduce DC1,DC2 OC current, Duty max enable ####\n", __func__);
@@ -930,7 +933,8 @@ int aml_pmu_init(void)
         printf("###### %s():set LDO2& LD03 current limit to 150mA ####\n", __func__);
         aml_pmu_set_bits(0x005e, 0x01, 0x07);
         aml_pmu_set_bits(0x005f, 0xc0, 0xe0);
-        aml_pmu_set_bits(0x0062, 0x01, 0x07);
+        //aml_pmu_set_bits(0x0062, 0x01, 0x07);
+        aml_pmu_set_bits(0x0062, 0x03, 0x07);
         aml_pmu_set_bits(0x0063, 0xc0, 0xe0);
         aml_pmu_set_bits(0x0066, 0x01, 0x07);
         aml_pmu_set_bits(0x0067, 0xc0, 0xe0);
@@ -956,7 +960,7 @@ int aml_pmu_init(void)
      * According Harry, for IC damage issure when soft power_up boost
      */
   //aml_pmu_set_bits(0x0027, 0x02, 0x02);       // disable boost UV fault
-    aml_pmu_set_bits(0x0021, 0x01, 0x01);
+    aml_pmu_set_bits(0x0021, 0x41, 0x41);
     aml_pmu_read(0x0028, &val);
     printf("reg[0x28] = 0x%02x\n", val);
     if (aml_pmu_version != AML_PMU_VERSION_D) {
@@ -971,11 +975,6 @@ int aml_pmu_init(void)
         aml_pmu_set_bits(0x0028, 0x10, 0x70);
         aml_pmu_set_bits(0x0028, 0x02, 0x0e);
     }
-    udelay(100);
-    
-    // according to Harry, prevent device from power off with fault status when low voltage.
-    aml_pmu_set_bits(0x0021,0x40, 0x40);
-    aml_pmu_set_bits(0x0020,0x01, 0x01);
     udelay(100);
     
     aml_pmu_write16(0x0082, 0x0001);            // software boost up
