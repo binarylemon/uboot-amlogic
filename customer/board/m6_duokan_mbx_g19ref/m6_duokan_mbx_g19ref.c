@@ -169,7 +169,7 @@ static int  sdio_detect(unsigned port)
                   break;
             case SDIO_PORT_B:
                   setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-                  ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+                  ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29);
                   printf( " %s return %d\n",__func__,ret);
                   break;
             case SDIO_PORT_C:    	
