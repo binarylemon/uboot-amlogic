@@ -188,7 +188,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 			if (mmc->boot_size > 0){
 				n = mmc->block_dev.block_erase(dev, 0, 0);
-				printf("blocks erased: %s\n",
+				printf("blocks erased: %d %s\n",
 					  (int)(mmc->block_dev.lba), (n == 0) ? "OK" : "ERROR");
 			}else{
 				printf("boot_size 0 (tsd) doesn't support erase\n");

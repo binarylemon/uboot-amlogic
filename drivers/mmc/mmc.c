@@ -377,6 +377,25 @@ mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err)
 			return err;
+
+	unsigned int timeout = 0;
+	uint *res = (uint*)(&(cmd.response[0]));
+	do {
+		cmd.cmdidx = MMC_CMD_SEND_STATUS;
+		cmd.cmdarg = mmc->rca << 16;
+		cmd.resp_type = MMC_RSP_R1;
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err || (*res & 0xFDF92000)) {
+			printf("error %d requesting status %#x\n", err, *res);
+			return -1;
+		}
+		timeout ++;
+		if (timeout > 10*60*1000)
+			return -1;
+		mdelay(1);
+	} while (!(*res & R1_READY_FOR_DATA) ||
+		 (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
+
 #ifdef CONFIG_AML_EMMC_KEY
 	mmc->key_protect = 1;
 #endif
