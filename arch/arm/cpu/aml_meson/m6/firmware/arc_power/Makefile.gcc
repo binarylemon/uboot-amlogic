@@ -20,38 +20,7 @@ ARCCPP=arc-elf32-cpp
 ARCCC_FLAGS = -mA7 -mno-volatile-cache -O2 -D__ARC__ -DCONFIG_ARC  -Iinclude -Wall
 ARCCC_FLAGS += -g -MD -mno-sdata -fno-builtin -ffreestanding -nostdinc -isystem -pipe -fomit-frame-pointer
 AARCC_FLAGS += -Wstrict-prototypes -fno-stack-protector -D__KERNEL__ -mno-cond-exec
-
-#------------------------------------------------------------
-# For different PMU driver compile
-#------------------------------------------------------------
-PMU_CONFIGURED = false
-ifdef CONFIG_AW_AXP20
-    ARCCC_FLAGS += -DCONFIG_AW_AXP20        # for AXP202
-    PMU_CONFIGURED = true 
-endif
-
-ifdef CONFIG_AML_PMU
-    ARCCC_FLAGS += -DCONFIG_AML_PMU         # for AML1212
-    PMU_CONFIGURED = true 
-endif
-
-ifdef CONFIG_ACT8942QJ233_PMU
-    ARCCC_FLAGS += -DCONFIG_ACT8942QJ233_PMU
-    PMU_CONFIGURED = true 
-endif
-
-# you can add other pmu device config here, examples see above
-
-# if no pmu is configured, use AXP as default
-ifeq ($(PMU_CONFIGURED), false)
-    $(info No PMU devices is configured, use AXP202 as default config)
-    ARCCC_FLAGS += -DCONFIG_AW_AXP20
-endif
-
-$(info ARCCC_FLAGS=$(ARCCC_FLAGS))
-#------------------------------------------------------------
-# End of PMU config
-#------------------------------------------------------------
+ARCCC_FLAGS += -include $(TOPDIR)/build/include/config.h -I $(TOPDIR)/include/ -I $(TOPDIR)/arch/arm/include/
 
 ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
 VPATH_LIST = $(TOPDIR)/customer/board/$(BOARD) \

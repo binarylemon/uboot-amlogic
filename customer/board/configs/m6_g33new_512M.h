@@ -43,15 +43,18 @@
 #define CHECK_ALL_REGULATORS
 #define CONFIG_CONST_PWM_FOR_DCDC
 #define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
-#define CONFIG_DCDC2_VOLTAGE	1500
-#define CONFIG_DCDC3_VOLTAGE	1100
 #define CONFIG_LDO2_VOLTAGE	3000
 #define CONFIG_LDO3_VOLTAGE	2500
 #define CONFIG_LDO4_VOLTAGE	3300
 
-#define BATTERYCAP				7700							//battery capability
 #define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_VOLTAGE 1200
+#define BATTERYCAP                      7700                //battery capability
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
+#define CONFIG_VDDAO_VOLTAGE            1200
+
+#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
+#define CONFIG_DDR_VOLTAGE              1500
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1 
 #endif /* CONFIG_AW_AXP20 */
 
 //Enable storage devices

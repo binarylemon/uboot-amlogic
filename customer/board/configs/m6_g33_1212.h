@@ -21,40 +21,21 @@
 //#define CONFIG_CMD_I2C    1     
 //#define CONFIG_SYS_I2C_SPEED 400000
 
-/*
- * PMU selection, CONFIG_AML_PMU and CONFIG_AW_AXP20 should not 
- * be both existed
- */
 #define CONFIG_AML_PMU                                          // Amlogic PMU support
 #ifdef CONFIG_AML_PMU
 #define CONFIG_UBOOT_BATTERY_PARAMETERS 
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
-#define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_VOLTAGE 1200
 #define CONFIG_POWER_UP_BL_CHECK                                // check battery voltage when power up back light
+
+#define CONFIG_POWER_SPL
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
+#define CONFIG_VDDAO_VOLTAGE            1200
+
+#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
+#define CONFIG_DDR_VOLTAGE              1500
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1 
 #endif  /* CONFIG_AML_PMU */
 
-//#define CONFIG_AW_AXP20
-#ifdef CONFIG_AW_AXP20
-#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
-#define CONFIG_UBOOT_BATTERY_PARAMETERS 
-#define CHECK_ALL_REGULATORS
-#define CONFIG_CONST_PWM_FOR_DCDC
-#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
-#define CONFIG_DCDC2_VOLTAGE	1500
-#define CONFIG_DCDC3_VOLTAGE	1100
-#define CONFIG_LDO2_VOLTAGE	3000
-#define CONFIG_LDO3_VOLTAGE	2500
-#define CONFIG_LDO4_VOLTAGE	3300
-
-#define BATTERYCAP				7700							//battery capability
-#define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_VOLTAGE 1200
-#endif /* CONFIG_AW_AXP20 */
-
-#if defined(CONFIG_AML_PMU) && defined(CONFIG_AW_AXP20)
-#error You should only select one of CONFIG_AML_PMU and CONFIG_AW_AXP20
-#endif
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST
