@@ -2,7 +2,7 @@
 #include "usb_pcd.h"
 
 
-#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 #include <common.h>
 #include <linux/ctype.h>
 #include <linux/mtd/mtd.h>
@@ -20,13 +20,10 @@ char namebuf[20];
 char databuf[4096];
 //char listkey[1024];
 int secukey_inited=0;
-//extern ssize_t uboot_key_init();
 extern int uboot_key_initial(char *device);
 extern ssize_t uboot_get_keylist(char *keyname);
 extern ssize_t uboot_key_read(char *keyname, char *keydata);
 extern ssize_t uboot_key_write(char *keyname, char *keydata);
-//extern int nandkey_provider_register();
-//extern int key_set_version(char *device);
 int ensure_secukey_init(void);
 int cmd_secukey(int argc, char * const argv[], char *buf);
 #endif
@@ -502,573 +499,6 @@ int usb_run_command (const char *cmd, char* buff)
 			strcpy(buff, "okay");
 		}
 	}
-#if 0
-	/*
-		//efuse read/write command
-		"efuse read version"	 	//cmd: efuse read version
-		"efuse write version"	 	//cmd: efuse write version
-		"efuse read mac"		 	//cmd: efuse read mac
-		"efuse write mac "		 	//cmd: efuse write mac xx:xx:xx:xx:xx:xx
-		"efuse read bt_mac"	 	//cmd: efuse read bt_mac
-		"efuse write bt_mac "	 	//cmd: efuse write bt_mac xx:xx:xx:xx:xx:xx
-		"efuse read wifi_mac"	 	//cmd: efuse read wifi_mac
-		"efuse write wifi_mac "	 	//cmd: efuse write wifi_mac xx:xx:xx:xx:xx:xx
-		"efuse read usid"	 		//cmd: efuse read usid
-		"efuse write usid "	 		//cmd: efuse write usid xxxxx...
-		"read hdcp"				//cmd: read hdcp
-		"write hdcp:"			 	//cmd: write hdcp:xxxxx...		
-	*/
-	else if( !strncmp(cmd,"efuse",(sizeof("efuse")-1))  || 
-		      !strncmp(cmd,"read hdcp",(sizeof("read hdcp")-1))  || 
-		      !strncmp(cmd,"write hdcp:",(sizeof("write hdcp:")-1))){
-		int argc;
-		int i, ret, usid_flag = 0, hdcp_flag = 0, flag = 0;
-		int usid_len, hdcp_len, len;
-		int writeHdcp_flag = 1;
-		char efuse_data[512], test_buff[512], hdcp_verify_data[512];
-#ifdef  WRITE_TO_EFUSE_ENABLE	
-		char *Argv1[3]={"efuse","read","hdcp"};
-		char *Argv2[4]={"efuse","write","hdcp",""};
-#elif defined(WRITE_TO_NAND_ENABLE)		
-		char *Argv1[3]={"secukey","read","hdcp"};
-		char *Argv2[4]={"secukey","write","hdcp",""};	
-#endif		
-		char *hdcp;
-		char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
-
-		/* Extract arguments */
-		if ((argc = parse_line (cmd, argv)) == 0) {
-			return -1;	/* no command at all */
-		}
-
-#ifdef  WRITE_TO_EFUSE_ENABLE
-		printf("usb_burning to efuse\n");
-#elif defined(WRITE_TO_NAND_ENABLE)	
-		printf("usb_burning to nand\n");
-#endif
-		memset(efuse_data,0,sizeof(efuse_data));
-		memset(hdcp_verify_data,0,sizeof(hdcp_verify_data));
-		
-		//m3/m6 version
-		if((!strncmp(argv[1],"write",sizeof("write"))) &&  (!strncmp(argv[2],"version",sizeof("version"))))
-		{
-			argc ++;	
-			#ifdef CONFIG_AML_MESON3
-				argv[3] = EFUSE_VERSION_MESON3;				//m3 version
-				printf("CONFIG_AML_MESON3(version:%s)\n",argv[3]);
-			#elif defined(CONFIG_AML_MESON6) 
-				argv[3] = EFUSE_VERSION_MESON6;				//m6 version
-				printf("CONFIG_AML_MESON6(version:%s)\n",argv[3]);
-			#endif
-		}
-
-
-		//bt_mac/wifi_mac -->mac_bt/mac_wifi
-		if(((!strncmp(argv[1],"read",sizeof("read")))||(!strncmp(argv[1],"write",sizeof("write")))) &&  
-		      (!strncmp(argv[2],"bt_mac",sizeof("bt_mac"))))
-			strcpy(argv[2], "mac_bt");
-		else if(((!strncmp(argv[1],"read",sizeof("read")))||(!strncmp(argv[1],"write",sizeof("write")))) &&
-	      		      (!strncmp(argv[2],"wifi_mac",sizeof("wifi_mac"))))
-	      		 strcpy(argv[2], "mac_wifi"); 
-
-
-		//hdcp
-		if((!strncmp(argv[0],"read",sizeof("read"))) &&  (!strncmp(argv[1],"hdcp",sizeof("hdcp"))))
-		{
-			argv[0] = Argv1[0];
-			argv[1] = Argv1[1];
-			argv[2] = Argv1[2];
-			argc = 3;
-		}
-		else if((!strncmp(argv[0],"write",sizeof("write"))) &&  (!strncmp(argv[1],"hdcp:",sizeof("hdcp:"))))
-		{
-			#define HDCP_DATA_ADDR	(volatile unsigned long *)(0x82000000)	//get hdcp data from address:0x82000000 
-			hdcp = HDCP_DATA_ADDR;
-					
-			printf("receive hdcp_data=");
-			for(i=0;i<288;i++)												//read 288 hdcp datas		
-			{
-				efuse_data[i] = *hdcp++;
-				printf("%.2x:", efuse_data[i]);
-			}	
-			printf("\n");
-			
-			printf("receive hdcp_verify_data=");
-			for(i=0;i<20;i++)													//read 20 hdcp verify datas		
-			{
-				hdcp_verify_data[i] = *hdcp++;
-				printf("%.2x:", hdcp_verify_data[i]);
-			}	
-			printf("\n");
-
-#ifdef  WRITE_HDCP_VERIFY_ENABLE	
-		    	SHA1_CTX sha;
-		    	BYTE Message_Digest[20];
-		    	hdcp_llc_file *llc_key;
-
-			memset(Message_Digest, 0, sizeof(Message_Digest));
-			llc_key = (hdcp_llc_file *)efuse_data;
-
-			printf("llc_key->ksv=");
-			for(i=0;i<5;i++)
-				printf("%.2x:", llc_key->ksv[i]);	
-				
-			printf("\nllc_key->rsv=");
-			for(i=0;i<3;i++)
-				printf("%.2x:", llc_key->rsv[i]);
-				
-			printf("\nllc_key->dpk=");
-			for(i=0;i<280;i++)
-				printf("%.2x:", llc_key->dpk[i]);
-				
-			printf("\nllc_key->sha=");
-			for(i=0;i<20;i++)
-				printf("%.2x:", llc_key->sha[i]);
-			printf("\n");
-
-
-			printf("start to verify hdcp data...\n");
-		    	SHA1Reset(&sha);
-		    	SHA1Input(&sha, (unsigned char*)llc_key, 288);
-			SHA1Result(&sha, Message_Digest);
-
-			printf("calculate hdcp_verify_data=");
-			for(i=0; i<20; i++)
-				printf("%.2x:", Message_Digest[i]);
-			printf("\n");
-
-			for(i=0; i<20; i++)
-			{
-				if(hdcp_verify_data[i] != Message_Digest[i])
-				{
-					writeHdcp_flag = 0;
-					break;
-				}
-			}
-#endif
-			if(writeHdcp_flag)			//verify success,hdcp can write
-			{
-				memcpy(Argv2[3], efuse_data, SECUKEY_BYTES);					//copy hdcp datas
-				argv[0] = Argv2[0];
-				argv[1] = Argv2[1];
-				argv[2] = Argv2[2];
-				argv[3] = Argv2[3];
-				argc = 4; 
-			}
-			else
-			{
-				sprintf(buff, "%s", "failed:(hdcp data verify not mach)");
-				printf("%s\n",buff);
-				return -1;
-			}	
-			
-		}
-
-
-#ifdef  WRITE_TO_NAND_ENABLE
-		argv[0] = Argv2[0];			//if defined WRITE_TO_NAND_ENABLE,"efuse" convert to "secukey"
-#endif
-
-		//printf argv[0]--argv[argc-1]
-		if((!strncmp(argv[1],"write",sizeof("write"))) &&  (!strncmp(argv[2],"hdcp",sizeof("hdcp"))))
-		{
-			for(i=0;i<argc-1;i++)  printf("argv[%d]=%s\n", i,argv[i]); 
-			hdcp = argv[3];
-			printf("argv[3]="); 
-			for(i=0;i<SECUKEY_BYTES;i++)  printf("%02x:", *hdcp ++);  
-			printf("\n"); 
-		}
-		else
-			for(i=0;i<argc;i++)  printf("argv[%d]=%s\n", i,argv[i]);  
-		
-
-		
-#ifdef  WRITE_TO_EFUSE_ENABLE	
-#ifdef CONFIG_AML_MESON3
-		ret = do_efuse_usb(argc, argv, buff);			//efuse read/write in m3 platform
-#elif defined(CONFIG_AML_MESON6)
-		ret = cmd_efuse(argc, argv, buff);				//efuse read/write in m6 platform
-#endif
-#elif defined(WRITE_TO_NAND_ENABLE)
-		//write to nand
-		if ((!strncmp(argv[1],"read",sizeof("read"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
-		{
-			sprintf(buff, "%s", "failed:(version is not writen)");
-			printf("%s\n",buff);
-			return 0;
-		}
-		else if ((!strncmp(argv[1],"write",sizeof("write"))) && ( !strncmp(argv[2],"version",sizeof("version"))))
-		{
-			ret = ensure_secukey_init();
-			if (ret==0 || ret==1)						//init nand success or already inited.
-			{
-				#ifdef CONFIG_AML_MESON3
-					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
-				#elif defined(CONFIG_AML_MESON6) 
-					sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
-				#endif	
-				printf("%s\n",buff);
-				return 0;				
-			}		
-			else	 									//init nand failed!!
-			{	
-				printf("init nand failed!!\n");
-				sprintf(buff, "failed:(write version failed)");	
-				printf("%s\n",buff);	
-				return -1;
-			}
-		}		
-
-		ret = cmd_secukey(argc, argv, buff);									
-#endif
-
-		if(!ret)														
-		{
-#ifdef  WRITE_TO_EFUSE_ENABLE	
-			//read version/mac/bt_mac/wifi_mac/usid/hdcp sucess 
-			if(!strncmp(argv[1],"read",sizeof("read")))
-			{														
-				if(!strncmp(argv[2],"version",sizeof("version"))) 
-				{
-					#ifdef CONFIG_AML_MESON3
-						sprintf(efuse_data, "%02x:%02x:%02x", buff[0],buff[1],buff[2]);		
-					#elif defined(CONFIG_AML_MESON6) 
-						sprintf(efuse_data, "%02x", buff[0]);
-					#endif
-
-					if(simple_strtol(&efuse_data[0], NULL, 16) != 0x00)
-				    		sprintf(buff, "success:(%s)", efuse_data);
-					else
-						sprintf(buff, "%s", "failed:(version is not writen)");	
-				
-				}
-				else if( !strncmp(argv[2],"mac",sizeof("mac")) || 
-					     !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) ||
-					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )	
-				{
-					for(i=0;i<6;i++)
-					{
-						if(buff[i] != 0x00)
-						{
-							flag = 1;
-							break;
-						}		
-					}
-					if(flag)
-					{													
-						sprintf(efuse_data, "%02x:%02x:%02x:%02x:%02x:%02x", buff[0],buff[1],buff[2],buff[3],buff[4],buff[5]);	
-						sprintf(buff, "success:(%s)", efuse_data);				//have writen mac/mac_bt/mac_wifi
-					}						
-					else
-						sprintf(buff, "failed:(%s has been not writen)", argv[2]);	//haven't write mac/mac_bt/mac_wifi	
-					
-				}	
-				else if( !strncmp(argv[2],"usid",sizeof("usid")) )	
-				{
-					printf("usid_len=%d, usid=%s\n", strlen(buff), buff);
-					for(i=0; i<strlen(buff); i++)
-					{
-						if(buff[i] != 0x00)
-						{
-							usid_flag = 1;
-							break;
-						}
-					}
-					if(usid_flag)
-					{
-						//sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
-						memcpy(efuse_data, buff, strlen(buff));
-						sprintf(buff, "success:(%s)", efuse_data);	
-					}
-					else
-						sprintf(buff, "%s", "failed:(usid has been not writen)");	//haven't write usid	
-						
-				}
-				else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) )	
-				{
-					printf("hdcp_data=");
-					for(i=0; i<300; i++)
-						printf("%.2x:",buff[i]);
-					printf("\n");
-					
-					for(i=0; i<288; i++)
-					{
-						if(buff[i] != 0x00)
-						{
-							hdcp_flag = 1;
-							break;
-						}
-					}
-					if(hdcp_flag)
-					{
-						sprintf(buff, "%s", "success:(hdcp has been writen)");	//have writen hdcp
-					}
-					else
-						sprintf(buff, "%s", "failed:(hdcp has been not writen)");	//haven't write hdcp		
-				}	
-			}			
-#elif defined(WRITE_TO_NAND_ENABLE)		//nand
-			if(!strncmp(argv[1],"read",sizeof("read")))
-			{
-				 if( !strncmp(argv[2],"mac",sizeof("mac")) || 
-					     !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) ||
-					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )	
-				{
-					strcpy(namebuf,argv[2]);
-					memset(databuf, 0, sizeof(databuf));
-
-					len = uboot_key_read(namebuf, databuf);
-					printf("%s_len = uboot_key_read(%s, databuf)\n",argv[2], namebuf);
-					if(len>0)
-					{
-						printf("%s_len=%d\n",argv[2], len/2);
-						printf("%s_data=%s\n", argv[2], buff);
-						sprintf(efuse_data, "%s", buff);
-						sprintf(buff, "success:(%s)", efuse_data);				 //have writen mac/mac_bt/mac_wifi
-					}
-					else if(len<0)
-					{
-						printf("%s_len=%d\n",argv[2], len);
-						sprintf(buff, "failed:(%s has been not writen)", argv[2]);	//haven't write mac/mac_bt/mac_wifi													
-					}	
-					
-				}
-				else if( !strncmp(argv[2],"usid",sizeof("usid")) )	
-				{
-					strcpy(namebuf,"usid");
-					memset(databuf, 0, sizeof(databuf));
-					
-					usid_len = uboot_key_read(namebuf, databuf);
-					printf("usid_len = uboot_key_read(%s, databuf)\n",namebuf);
-					if(usid_len>0)
-					{
-						printf("usid_len=%d\n",usid_len/2);
-						printf("usid_data=%s\n",buff);	
-						//sprintf(buff, "%s", "success:(usid has been writen)");	//have writen usid
-						memcpy(efuse_data, buff, strlen(buff));
-						sprintf(buff, "success:(%s)", efuse_data);	
-					}	
-					else if(usid_len<0)
-					{
-						printf("usid_len=%d\n",usid_len);
-						sprintf(buff, "%s", "failed:(usid has been not writen)");	//haven't write usid	
-					}	
-						
-				}
-				else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) )	
-				{	
-					strcpy(namebuf,"hdcp");
-					memset(databuf, 0, sizeof(databuf));
-
-					hdcp_len = uboot_key_read(namebuf, databuf);
-					printf("hdcp_len = uboot_key_read(%s, databuf)\n",namebuf);
-					if(hdcp_len>0)
-					{
-						printf("hdcp_len=%d\n",hdcp_len/2);
-						printf("hdcp_data=");
-						for(i=0; i<512; i++)
-							printf("%.2x:",buff[i]);
-						printf("\n");		
-						sprintf(buff, "%s", "success:(hdcp has been writen)");	//have writen hdcp						
-					}	
-					else if(hdcp_len<0)
-					{
-						printf("hdcp_len=%d\n",hdcp_len);
-						sprintf(buff, "%s", "failed:(hdcp has been not writen)");	//haven't write hdcp							
-					}	
-						
-				}	
-			}
-#endif			
-			//write version/mac/bt_mac/wifi_mac/usid/hdcp sucess 
-			else if( !strncmp(argv[1],"write",sizeof("write")))
-			{
-				if(!strncmp(argv[2],"version",sizeof("version")))			
-				{
-					#ifdef CONFIG_AML_MESON3
-						sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON3);
-					#elif defined(CONFIG_AML_MESON6) 
-						sprintf(buff, "success:(%s)", EFUSE_VERSION_MESON6);
-					#endif					
-				}
-				else if( !strncmp(argv[2],"mac",sizeof("mac")) || 
-					     !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) || 
-					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )
-					sprintf(buff, "success:(%s)", argv[3]);
-				else if( !strncmp(argv[2],"usid",sizeof("usid")) )	
-					//sprintf(buff, "%s", "success:(write usid success)");
-					sprintf(buff, "success:(%s)", argv[3]);
-				else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) )	
-					sprintf(buff, "%s", "success:(write hdcp success)");
-
-//efuse write success, test efuse read
-#if defined( WRITE_TO_EFUSE_ENABLE) && defined(EFUSE_READ_TEST_ENABLE)
-				printf("#####efuse write %s success,now test efuse read %s:\n",argv[2], argv[2]);
-				memset(test_buff,0,sizeof(test_buff));
-				argv[0] 	= "efuse";	
-				argv[1]  	= "read";	
-				argv[2]  	= argv[2];
-				argc = 3;
-#ifdef CONFIG_AML_MESON3
-				ret = do_efuse_usb(argc, argv, test_buff);			//efuse read/write in m3 platform
-#elif defined(CONFIG_AML_MESON6)
-				ret = cmd_efuse(argc, argv, test_buff);				//efuse read/write in m6 platform
-#endif
-				if(!ret)
-				{
-					if( !strncmp(argv[2],"version",sizeof("version")) )
-					{
-						#ifdef CONFIG_AML_MESON3
-							sprintf(efuse_data, "%02x:%02x:%02x", test_buff[0],test_buff[1],test_buff[2]);		
-						#elif defined(CONFIG_AML_MESON6) 
-							sprintf(efuse_data, "%02x", test_buff[0]);
-						#endif	
-						printf("test success,version=%s\n", efuse_data);
-					}	
-					else if( !strncmp(argv[2],"mac",sizeof("mac")) || 
-					     !strncmp(argv[2],"mac_bt",sizeof("mac_bt")) ||
-					     !strncmp(argv[2],"mac_wifi",sizeof("mac_wifi")) )	
-					{
-						sprintf(efuse_data, "%02x:%02x:%02x:%02x:%02x:%02x", test_buff[0],test_buff[1],test_buff[2],test_buff[3],test_buff[4],test_buff[5]);
-						printf("test success,%s=%s\n", argv[2], efuse_data);
-					}	
-					else if( !strncmp(argv[2],"usid",sizeof("usid")) ) 
-					{
-						printf("test success,%s=%s\n", argv[2], test_buff);
-					}
-					else if( !strncmp(argv[2],"hdcp",sizeof("hdcp")) ) 
-					{
-						printf("test success,%s=", argv[2]);
-						for(i=0;i<512;i++)
-							printf("%02x:", test_buff[i]);
-						printf("\n");
-					}						
-				}
-				else
-					printf("test efuse read %s fail\n", argv[2]);	
-#endif
-			}
-
-		}
-		else														
-		{
-			//read version/mac/bt_mac/wifi_mac/usid/hdcp fail
-			if(!strncmp(argv[1],"read",sizeof("read")))
-				sprintf(buff, "failed:(read %s failed)", argv[2]);
-									
-			//write version/mac/bt_mac/wifi_mac/usid/hdcp fail
-			else if(!strncmp(argv[1],"write",sizeof("write")))
-				sprintf(buff, "failed:(write %s failed)", argv[2]);				
-			
-			printf("%s\n",buff);
-			return -1;
-		}	
-	}
-#if defined( WRITE_TO_NAND_ENABLE)
-	else if(!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
-         int i = 0, ret = -1;
-         char key_data[SECUKEY_BYTES];
-         char *Argv[4] = {"nand", "write", "boardid", ""};
-         char *boardid = NULL;
-         int boardid_len = 0, boardid_key_len = 0;
-
-         /* Extract arguments */
-         if ((argc = parse_line (cmd, argv)) == 0) {
-			return -1;	/* no command at all */
-         }
-
-         memset(key_data, 0, sizeof(key_data));
-
-         argv[0] = Argv[0];
-
-         if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
-#define BOARDID_DATA_ADDR	(volatile unsigned long *)(0x82000000)    //get boardid data from address:0x82000000
-               char length[4] = {0};
-               boardid = BOARDID_DATA_ADDR;
-               for(i=0; i<4; i++) {
-                  length[i] = *boardid++;
-                  printf("length[%d]=0x%02x\n", i, length[i]);
-               }
-               boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
-               printf("boardid_key_len=%d\n", boardid_key_len);
-               for(i=0; i<boardid_key_len; i++) {
-                  key_data[i] = *boardid++;
-               }
-               printf("receive boardid_data=%s\n", key_data);
-               memcpy(Argv[3], key_data, SECUKEY_BYTES);					//copy boardid datas
-               argv[0] = Argv[0];
-               argv[1] = Argv[1];
-               argv[2] = Argv[2];
-               argv[3] = Argv[3];
-               argc = 4;
-         }
-
-         for(i=0; i<argc; i++) {
-            printf("argv[%d]=%s\n", i, argv[i]);
-         }
-
-
-         /* version */
-         if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
-              sprintf(buff, "%s", "failed:(nand not be initialized)");
-              printf("%s\n",buff);
-              return 0;
-         }
-         else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
-            ret = ensure_secukey_init();
-            if (ret==0 || ret==1) {                              //init nand success or already inited.
-               sprintf(buff, "%s", "success:(init nand success)");
-               printf("%s\n", buff);
-               return 0;
-            }
-            else {                                                       //init nand failed!!
-               sprintf(buff, "%s", "failed:(init nand failed)");
-               printf("%s\n", buff);
-               return -1;
-            }
-         }
-
-         /* boardid */
-         if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
-               ret = cmd_secukey(argc, argv, buff);
-               if(!ret) {
-                  strcpy(namebuf, "boardid");
-                  memset(databuf, 0, sizeof(databuf));
-                  boardid_len = uboot_key_read(namebuf, databuf);
-                  printf("boardid_len = uboot_key_read(%s, databuf)\n", namebuf);
-                  if(boardid_len>0) {
-                     //printf("boardid_len=%d\n", boardid_len/2);
-                     printf("boardid_data=%s\n", buff);
-                     memcpy(key_data, buff, strlen(buff));
-                     sprintf(buff, "%s", "success:(boardid has been writen)");
-                  }
-                  else if(boardid_len<0) {
-                     //printf("boardid_len=%d\n", boardid_len);
-                     sprintf(buff, "%s", "failed:(boardid has been not writen)");
-                  }
-               }
-               else {
-                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
-                  printf("%s\n", buff);
-                  return -1;
-               }
-         }
-         else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
-               ret = cmd_secukey(argc, argv, buff);
-               if(!ret) {
-                  sprintf(buff, "%s", "success:(nand write boardid success)");
-               }
-               else {
-                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
-                  printf("%s\n", buff);
-                  return -1;
-               }
-         }
-	}
-#endif      /* WRITE_TO_NAND_ENABLE */
-
-#else
-
 /*
   *	burn keys to efuse/nand/emmc common command:
   *	"efuse read version"
@@ -1109,13 +539,8 @@ int usb_run_command (const char *cmd, char* buff)
             char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
             char *hdcp = NULL, *boardid = NULL;
             char *Argv1[3] = {"efuse", "read", "hdcp"}, *Argv2[4] = {"efuse", "write", "hdcp", ""};
-#if defined(WRITE_TO_NAND_ENABLE)
-            char *Argv3[3] = {"nand", "read", "hdcp"}, *Argv4[4] = {"nand", "write", "hdcp", ""};
-            char *Argv5[4] = {"nand", "write", "boardid", ""};
-#elif defined(WRITE_TO_EMMC_ENABLE)
-            char *Argv3[3] = {"emmc", "read", "hdcp"}, *Argv4[4] = {"emmc", "write", "hdcp", ""};
-            char *Argv5[4] = {"emmc", "write", "boardid", ""};
-#endif
+            char *Argv3[3] = {"flash", "read", "hdcp"}, *Argv4[4] = {"flash", "write", "hdcp", ""};
+            char *Argv5[4] = {"flash", "write", "boardid", ""};
 
             /* Extract arguments */
             if ((argc = parse_line (cmd, argv)) == 0) {
@@ -1212,9 +637,9 @@ int usb_run_command (const char *cmd, char* buff)
 #endif   /* WRITE_TO_EFUSE_ENABLE */
 
 
-/* Burn key to nand */
+/* Burn key to nand/emmc */
 /* ---Command process */
-#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
             if(strncmp(argv[0], "efuse", strlen("efuse")) && 
                strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) && 
                strncmp(argv[0], "secukey_nand", strlen("secukey_nand"))) {
@@ -1307,7 +732,7 @@ int usb_run_command (const char *cmd, char* buff)
                   argv[3] = Argv5[3];
                   argc = 4;
             }
-#endif   /* WRITE_TO_NAND_ENABLE */
+#endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
 
 
             //printf argv[0]--argv[argc-1]
@@ -1570,17 +995,20 @@ int usb_run_command (const char *cmd, char* buff)
 #endif   /* WRITE_TO_EFUSE_ENABLE */
 
 
-/* Burn key to nand */
+/* Burn key to nand/emmc */
 /* ---The actual function to read & write operation */
-#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
             /* read/write version */
             if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
                sprintf(buff, "failed:(%s not be initialized)", argv[0]);
             }
             else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "version", strlen("version"))) {
                ret = ensure_secukey_init();
-               if (ret==0 || ret==1) {                              //init nand/emmc success or already inited.
+               if(ret == 0) {                                            //init nand/emmc success.
                   sprintf(buff, "success:(init %s success)", argv[0]);
+               }
+               else if(ret == 1) {                                     //nand/emmc already inited.
+                  sprintf(buff, "success:(%s already inited)", argv[0]);
                }
                else {                                                       //init nand/emmc failed!!
                   sprintf(buff, "failed:(init %s failed)", argv[0]);
@@ -1731,9 +1159,8 @@ int usb_run_command (const char *cmd, char* buff)
                printf("%s\n", buff);
                return -1;
             }
-#endif   /* WRITE_TO_NAND_ENABLE || WRITE_TO_EMMC_ENABLE */
+#endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
       }
-#endif
 	else
 	{
 		if(run_command(cmd, flag))
@@ -1753,7 +1180,7 @@ int usb_run_command (const char *cmd, char* buff)
 
 
 
-#if defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EMMC_ENABLE)
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 int ensure_secukey_init(void)
 {
 	int error;
@@ -1766,43 +1193,14 @@ int ensure_secukey_init(void)
 	
 	printk("should be inited first!\n");
 
-#if defined(CONFIG_AML_NAND_KEY)
-	error = uboot_key_init();
-	if(error >= 0){
-		error = nandkey_provider_register();
-		if(error >= 0){
-			 error = key_set_version("nand");
-			 if(error >= 0){
-				printk("init key ok!!\n");
-				secukey_inited = 1;
-				return 0;
-			}
-		}
-	}
-	else
-	{
-		printk("init error\n");
-		return -1;
-	}
-#elif defined (CONFIG_AML_EMMC_KEY)
-	error = uboot_key_init();
-	if(error >= 0){
-		error = emmckey_provider_register();
-		if(error >= 0){
-			 error = key_set_version("emmc");
-			 if(error >= 0){
-				printk("init key ok!!\n");
-				secukey_inited = 1;
-				return 0;
-			}
-		}
-	}
-	else
-	{
-		printk("init error\n");
-		return -1;
-	}
-#endif
+	error = uboot_key_initial("auto");
+       if(error >= 0) {
+            printf("init key ok!!\n");
+            secukey_inited = 1;
+            return 0;
+       }
+       else
+            printf("init key fail!!\n");
 
 	return -1;
 }

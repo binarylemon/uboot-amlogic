@@ -1534,7 +1534,7 @@ int uboot_key_initial(char *device)
 		if(error>=0){
 			error = key_set_version(device);
 			if(error>=0){
-				printk("emmc init key ok!!\n");
+				printk("device:%s, init key ok!!\n", device);
 				uboot_key_inited = 1;
 				return 0;
 			}
