@@ -15,6 +15,13 @@
 #define AML_PMU_ADDR    0x35
 #define MAX_BUF         100
 
+#ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
+#define CONFIG_DDR_VOLTAGE              1500
+#endif
+#ifndef CONFIG_VDDAO_VOLTAGE            // VDDAO voltage for resume
+#define CONFIG_VDDAO_VOLTAGE            1200
+#endif
+
 #define USE_UBOOT_REF_TRIMMING      0
 
 #define AML_PMU_VERSION_D       0x03
@@ -946,9 +953,9 @@ int aml_pmu_init(void)
     aml_pmu_set_gpio(2, 0);                     // open vccx2 power
     udelay(500 * 1000);
 
-    aml_pmu_set_voltage(AML_PMU_DCDC1, 1200);   // VDDAO should be set to 1.2V when booting
+    aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_VOLTAGE);   // VDDAO should be set to 1.2V when booting
     aml_pmu_set_pfm(AML_PMU_DCDC1, 0);
-    aml_pmu_set_voltage(AML_PMU_DCDC2, 1500);
+    aml_pmu_set_voltage(AML_PMU_DCDC2, CONFIG_DDR_VOLTAGE);
     aml_pmu_set_pfm(AML_PMU_DCDC2, 0);
 
     aml_pmu_read(0x0086, &val);

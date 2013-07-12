@@ -15,6 +15,35 @@
 #define ETIMEDOUT 110
 #define EIO       111
 
+/*
+ * if not defined DDR and AO suspend voltage, define a default value for them
+ */
+#ifndef CONFIG_DDR_SUSPEND_VOLTAGE
+#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
+#endif
+
+#ifndef CONFIG_VDDAO_SUSPEND_VOLTAGE
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
+#endif
+
+#ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
+#define CONFIG_DDR_VOLTAGE              1500
+#endif
+
+#ifndef CONFIG_VDDAO_VOLTAGE            // VDDAO voltage for resume
+#define CONFIG_VDDAO_VOLTAGE            1200
+#endif
+
+#ifndef CONFIG_DCDC_PFM_PMW_SWITCH
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1
+#endif
+
+/*
+ * i2c clock speed define for 32K and 24M mode
+ */
+#define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
+#define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
+
 #define 	I2C_IDLE		0
 #define 	I2C_RUNNING	1
 
@@ -440,9 +469,8 @@ unsigned char i2c_act8942_read(unsigned char reg)
 #endif//CONFIG_ACT8942QJ233_PMU
 
 #ifdef CONFIG_AML_PMU
+
 #define I2C_AML_PMU_ADDR   (0x6a >> 1)
-#define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
-#define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
 #define i2c_pmu_write_b(reg, val)       i2c_pmu_write_12(reg, 1, val)
 #define i2c_pmu_write_w(reg, val)       i2c_pmu_write_12(reg, 2, val)
 #define i2c_pmu_read_b(reg)             (unsigned  char)i2c_pmu_read_12(reg, 1)
@@ -532,18 +560,9 @@ void init_I2C()
 	//---------------------------------
 	//config	  
  	//v=20; //(32000/speed) >>2) speed:400K
-#ifdef CONFIG_AML_PMU
-	v = I2C_RESUME_SPEED;     // at 24MHz, i2c speed to 100KHz
-    printf_arc("i2c speed of suspend:0x");
-    serial_put_hex(8000 / I2C_SUSPEND_SPEED, 16);
-    wait_uart_empty();
-    printf_arc(" \n");
-#else
-	v = 12; //for saving time cost
-#endif
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
-	reg |= (v <<12);
+	reg |= (I2C_RESUME_SPEED <<12);             // at 24MHz, i2c speed to 100KHz
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 //	delay_ms(20);
 	delay_ms(1);
@@ -556,8 +575,8 @@ void init_I2C()
 	if(v != 0x5F )
 #endif
 #ifdef CONFIG_AML_PMU
-	v = i2c_pmu_read_b(0x0086);
-	if(v != 0x4d)
+	v = i2c_pmu_read_b(0x007f);                 // read PMU version
+	if(v == 0xff || v == 0)
 #endif
 	{
         serial_put_hex(v, 8);
@@ -570,12 +589,6 @@ void init_I2C()
 /*******AXP202 PMU*********/
 /**************************/
 #ifdef CONFIG_AW_AXP20
-#define POWER_OFF_AVDD25
-#define POWER_OFF_AVDD33
-//#define POWER_OFF_VCCK12
-#define POWER_OFF_VDDIO
-#define DCDC_SWITCH_PWM
-
 #define POWER20_DCDC_MODESET        (0x80)
 #define POWER20_DC2OUT_VOL          (0x23)
 #define POWER20_DC3OUT_VOL          (0x27)
@@ -732,6 +745,58 @@ void dc_dc_pwm_switch(unsigned int flag)
 	udelay(100);//>1ms@32k
 }
 
+int find_idx(int start, int target, int step, int length)
+{
+    int i = 0;
+    do {
+        if (start >= target) {
+            break;    
+        }    
+        start += step;
+        i++;
+    } while (i < length);
+    return i;
+}
+
+void axp20_dcdc_voltage(int dcdc, int target) 
+{
+    int idx_to, idx_cur;
+    int addr, val, mask;
+    if (dcdc == 2) {
+        idx_to = find_idx(700, target, 25, 64);
+        addr   = POWER20_DC2OUT_VOL; 
+        mask   = 0x3f;
+    } else if (dcdc == 3) {
+        idx_to = find_idx(700, target, 25, 128);
+        addr   = POWER20_DC3OUT_VOL; 
+        mask   = 0x7f;
+    }
+    val = i2c_axp202_read(addr);
+    idx_cur = val & mask;
+    
+#if 0                                                           // for debug
+	f_serial_puts(" voltage set from 0x");
+	serial_put_hex(idx_cur, 8);
+    wait_uart_empty();
+    f_serial_puts(" to 0x");
+	serial_put_hex(idx_to, 8);
+    wait_uart_empty();
+    f_serial_puts("\n");
+#endif
+
+    while (idx_cur != idx_to) {
+        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
+            idx_cur++;    
+        } else {
+            idx_cur--;
+        }
+        val &= ~mask;
+        val |= (idx_cur);
+        i2c_axp202_write(addr, val);
+        udelay(100);                                            // atleast delay 100uS
+    }
+}
+
 int ldo4_voltage_table[] = { 1250, 1300, 1400, 1500, 1600, 1700,
 				   1800, 1900, 2000, 2500, 2700, 2800,
 				   3000, 3100, 3200, 3300 };
@@ -745,7 +810,6 @@ int check_all_regulators(void)
 	f_serial_puts("Check all regulator\n");
 	
 #ifdef CONFIG_CONST_PWM_FOR_DCDC
-
 	//check work mode for DCDC2 & DCDC3
 	reg_data = i2c_axp202_read(POWER20_DCDC_MODESET);
 	if(!((reg_data&(1<<1) )&&(reg_data&(1<<2) )))
@@ -771,48 +835,6 @@ int check_all_regulators(void)
  		wait_uart_empty();
 		reg_data &= ~(1<<2);	//disable LDO3 under voltage protect
 		i2c_axp202_write(0x81, reg_data);	
-		udelay(10000);
-		ret = 1;
-	}
-#endif
-
-	//check for DCDC2(DDR3_1.5V)
-#ifdef CONFIG_DCDC2_VOLTAGE
-#if ((CONFIG_DCDC2_VOLTAGE<700) || (CONFIG_DCDC2_VOLTAGE>2275))
-#error CONFIG_DCDC2_VOLTAGE not in the range 700~2275mV
-#endif
-	val = (CONFIG_DCDC2_VOLTAGE-700)/25;
-	reg_data = i2c_axp202_read(POWER20_DC2OUT_VOL);
-	if(reg_data != val)
-	{
-		i2c_axp202_write(POWER20_DC2OUT_VOL, val);	//set DCDC2(DDR3_1.5V) to 1.500V
-		f_serial_puts("Set DCDC2(DDR3_1.5V) register to 0x");
-		serial_put_hex(val, 8);
-		f_serial_puts(". But the register is 0x");
-		serial_put_hex(reg_data, 8);
-		f_serial_puts(" before\n");
- 		wait_uart_empty();
-		udelay(10000);
-		ret = 1;
-	}
-#endif
-
-	//check for DCDC3(VDD_AO)
-#ifdef CONFIG_DCDC3_VOLTAGE
-#if ((CONFIG_DCDC3_VOLTAGE<700) || (CONFIG_DCDC3_VOLTAGE>3500))
-#error CONFIG_DCDC3_VOLTAGE not in the range 700~3500mV
-#endif
-	val = (CONFIG_DCDC3_VOLTAGE-700)/25;
-	reg_data = i2c_axp202_read(POWER20_DC3OUT_VOL);
-	if(reg_data != val)
-	{
-		i2c_axp202_write(POWER20_DC3OUT_VOL, val);	//set DCDC3(VDD_AO) to 1.100V
-		f_serial_puts("Set DCDC3(VDD_AO) register to 0x");
-		serial_put_hex(val, 8);
-		f_serial_puts(". But the register is 0x");
-		serial_put_hex(reg_data, 8);
-		f_serial_puts(" before\n");
- 		wait_uart_empty();
 		udelay(10000);
 		ret = 1;
 	}
@@ -887,8 +909,6 @@ int check_all_regulators(void)
 #endif
 	return ret;
 }
-
-
 #endif//CONFIG_AW_AXP20
 
 /**************************/
@@ -1322,12 +1342,17 @@ void aml_pmu_set_pfm(int dcdc, int en)
 //todo...
 inline void power_off_at_24M()
 {
+#ifdef CONFIG_AW_AXP20
 #ifdef POWER_OFF_3GVCC
 	power_off_3gvcc();
 #endif	
 #ifdef POWER_OFF_AVDD33
 	power_off_avdd33();
 #endif
+    // step down ddr and ao voltage to save power
+    axp20_dcdc_voltage(2, CONFIG_DDR_SUSPEND_VOLTAGE);
+    axp20_dcdc_voltage(3, CONFIG_VDDAO_SUSPEND_VOLTAGE);
+#endif          /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
     pmu_version = i2c_pmu_read_b(0x007f);
@@ -1342,15 +1367,17 @@ inline void power_off_at_24M()
     printf_arc("close gpio2\n");
     aml_pmu_set_gpio(3, 1);
     printf_arc("close gpio3\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC1, 960);        // DCDC1 set to 960mV, pfm mode
+    aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_SUSPEND_VOLTAGE);        // DCDC1 set to 960mV, pfm mode
     printf_arc("DCDC1 to 0.96v\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC2, 1400);       // DCDC2 set to 1400mV, pfm mode
+    aml_pmu_set_voltage(AML_PMU_DCDC2, CONFIG_DDR_SUSPEND_VOLTAGE);       // DCDC2 set to 1400mV, pfm mode
     printf_arc("DCDC2 to 1.40v\n");
     if (!get_charging_state()) {
+    #if CONFIG_DCDC_PFM_PMW_SWITCH
         aml_pmu_set_pfm(AML_PMU_DCDC1, 1);
         printf_arc("DCDC1 to pfm\n");
         aml_pmu_set_pfm(AML_PMU_DCDC2, 1);
         printf_arc("DCDC2 to pfm\n");
+    #endif
     }
 #endif /* CONFIG_AML_PMU */
 }
@@ -1361,18 +1388,19 @@ unsigned char status_charge_flag;
 #endif
 inline void power_on_at_24M()
 {
-#ifdef CONFIG_AML_PMU
-    unsigned char status;
-#endif
-
+#ifdef CONFIG_AW_AXP20
 #ifdef POWER_OFF_AVDD33
 	power_on_avdd33();
 #endif
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
+    axp20_dcdc_voltage(3, CONFIG_VDDAO_VOLTAGE);
+    axp20_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
+#endif      /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
+    unsigned char status;
     int charge_state = get_charging_state();
     unsigned char charge_en = 0x01;
     /*
@@ -1393,13 +1421,15 @@ inline void power_on_at_24M()
             i2c_pmu_write_b(0x79, status_charge_flag);
         }
     }
+#if CONFIG_DCDC_PFM_PMW_SWITCH
     aml_pmu_set_pfm(AML_PMU_DCDC1, 0);
     printf_arc("dcdc1 to pwm\n");
     aml_pmu_set_pfm(AML_PMU_DCDC2, 0);
     printf_arc("dcdc2 to pwm\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC1, 1200);       // DCDC1 set to 1100mV, pwm mode, will be reset to 1.1V after later resume
+#endif
+    aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_VOLTAGE);       // DCDC1 set to 1200mV, pwm mode, will be reset to 1.1V after later resume
     printf_arc("dcdc1 to 1.2v\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC2, 1500);       // DCDC2 set to 1500mV, pwm mode
+    aml_pmu_set_voltage(AML_PMU_DCDC2, CONFIG_DDR_VOLTAGE);       // DCDC2 set to 1500mV, pwm mode
     printf_arc("dcdc2 to 1.5v\n");
     aml_pmu_set_gpio(3, 0);
     printf_arc("open gpio3\n");
@@ -1428,26 +1458,28 @@ inline void power_on_at_24M()
 
 inline void power_off_at_32K_1()
 {
+    unsigned int reg;                               // change i2c speed to 1KHz under 32KHz cpu clock
+    unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
+	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
+	reg &= 0xFFC00FFF;
+    if (sleep_flag == 0x87654321) {                 // suspended in uboot
+        reg |= (12) << 12;
+    } else {
+    	reg |= (I2C_SUSPEND_SPEED << 12);           // suspended from kernel
+    }
+	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+	udelay(100);
+
+#ifdef CONFIG_AW_AXP20
 #ifdef POWER_OFF_AVDD25
 	power_off_avdd25();
 #endif
 #ifdef POWER_OFF_VDDIO
 	power_off_vddio();
 #endif
+#endif  /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
-    unsigned int reg;                            // change i2c speed to 1KHz under 32KHz cpu clock
-    unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
-	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
-	reg &= 0xFFC00FFF;
-    if (sleep_flag == 0x87654321) {             // suspended in uboot
-        reg |= (12) << 12;
-    } else {
-    	reg |= (I2C_SUSPEND_SPEED << 12);       // suspended from kernel
-    }
-	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
-	udelay(100);
-
     /*
      * close LDO3(2.8V) LDO4(1.8V) and LDO5(2.5V) at one time to save suspend/resume time
      */
@@ -1462,16 +1494,17 @@ inline void power_off_at_32K_1()
 
 inline void power_on_at_32k_1()//need match the power_off_at_32k
 {
+    unsigned int    reg;
+#ifdef CONFIG_AW_AXP20
 #ifdef POWER_OFF_VDDIO
 	power_on_vddio();
 #endif
 #ifdef POWER_OFF_AVDD25
 	power_on_avdd25();
 #endif
+#endif
 
 #ifdef CONFIG_AML_PMU
-    unsigned int    reg;
-
     power_on_vcc33();               // vcc3 must be open before core power
 
     /*
@@ -1483,19 +1516,21 @@ inline void power_on_at_32k_1()//need match the power_off_at_32k
                       (1 << AML1212_POWER_LDO5_BIT));
     power_on_vcck12();
 
+#endif /* CONFIG_AML_PMU */
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
 	reg |= (I2C_RESUME_SPEED << 12);
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 	udelay(100);
-#endif /* CONFIG_AML_PMU */
 }
 
 inline void power_off_at_32K_2()//If has nothing to do, just let null
 {
-#ifdef DCDC_SWITCH_PWM
+#ifdef CONFIG_AW_AXP20
+#if CONFIG_DCDC_PFM_PMW_SWITCH 
 	dc_dc_pwm_switch(0);
 #endif
+#endif  /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
     // add other code here
@@ -1504,9 +1539,11 @@ inline void power_off_at_32K_2()//If has nothing to do, just let null
 
 inline void power_on_at_32k_2()//need match the power_off_at_32k
 {
-#ifdef DCDC_SWITCH_PWM
+#ifdef CONFIG_AW_AXP20
+#if CONFIG_DCDC_PFM_PMW_SWITCH 
 	dc_dc_pwm_switch(1);
 #endif
+#endif  /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
     // add other code here

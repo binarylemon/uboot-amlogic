@@ -52,8 +52,14 @@
 #define CONFIG_LDO4_VOLTAGE	3300
 
 #define BATTERYCAP				7700							//battery capability
+
 #define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_VOLTAGE 1200
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
+#define CONFIG_VDDAO_VOLTAGE            1200
+
+#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
+#define CONFIG_DDR_VOLTAGE              1500
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1 
 #endif /* CONFIG_AW_AXP20 */
 
 //Enable storage devices

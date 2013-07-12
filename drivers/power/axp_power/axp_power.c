@@ -174,6 +174,58 @@ void axp_power_off(void)
 	printf("[axp] warning!!! axp can't power-off, maybe some error happend!\n");
 }
 
+int find_idx(int start, int target, int step, int length)
+{
+    int i = 0;
+    do {
+        if (start >= target) {
+            break;    
+        }    
+        start += step;
+        i++;
+    } while (i < length);
+    return i;
+}
+
+void axp20_dcdc_voltage(int dcdc, int target) 
+{
+    int idx_to, idx_cur;
+    int addr, val, mask;
+    if (dcdc == 2) {
+        idx_to = find_idx(700, target, 25, 64);
+        addr   = 0x23; 
+        mask   = 0x3f;
+    } else if (dcdc == 3) {
+        idx_to = find_idx(700, target, 25, 128);
+        addr   = 0x27; 
+        mask   = 0x7f;
+    }
+    axp_read(addr, &val);
+    idx_cur = val & mask;
+    
+#if 0                                                           // for debug
+	f_serial_puts(" voltage set from 0x");
+	serial_put_hex(idx_cur, 8);
+    wait_uart_empty();
+    f_serial_puts(" to 0x");
+	serial_put_hex(idx_to, 8);
+    wait_uart_empty();
+    f_serial_puts("\n");
+#endif
+
+    while (idx_cur != idx_to) {
+        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
+            idx_cur++;    
+        } else {
+            idx_cur--;
+        }
+        val &= ~mask;
+        val |= (idx_cur);
+        axp_write(addr, val);
+        udelay(100);                                            // atleast delay 100uS
+    }
+}
+
 int ldo4_voltage_table[] = { 1250, 1300, 1400, 1500, 1600, 1700,
 				   1800, 1900, 2000, 2500, 2700, 2800,
 				   3000, 3100, 3200, 3300 };
@@ -209,35 +261,14 @@ int check_axp_regulator_for_m6_board(void)
 	}
 #endif
 
-	//check for DCDC2(DDR3_1.5V)
-#ifdef CONFIG_DCDC2_VOLTAGE
-#if ((CONFIG_DCDC2_VOLTAGE<700) || (CONFIG_DCDC2_VOLTAGE>2275))
-#error CONFIG_DCDC2_VOLTAGE not in the range 700~2275mV
+    /*
+     * ddr and ao voltage check
+     */
+#ifdef CONFIG_DDR_VOLTAGE
+    axp20_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
 #endif
-	val = (CONFIG_DCDC2_VOLTAGE-700)/25;
-	axp_read(POWER20_DC2OUT_VOL, &reg_data);
-	if(reg_data != val)
-	{
-		axp_write(POWER20_DC2OUT_VOL, val);	//set DCDC2(DDR3_1.5V) to 1.500V
-		printf("Set DCDC2(DDR3_1.5V) to %dmV(0x%x). But the register is 0x%x before\n", CONFIG_DCDC2_VOLTAGE, val, reg_data);
-		mdelay(10);
-		ret = 1;
-	}
-#endif
-	//check for DCDC3(VDD_AO)
-#ifdef CONFIG_DCDC3_VOLTAGE
-#if ((CONFIG_DCDC3_VOLTAGE<700) || (CONFIG_DCDC3_VOLTAGE>3500))
-#error CONFIG_DCDC3_VOLTAGE not in the range 700~3500mV
-#endif
-	val = (CONFIG_DCDC3_VOLTAGE-700)/25;
-	axp_read(POWER20_DC3OUT_VOL, &reg_data);
-	if(reg_data != val)
-	{
-		axp_write(POWER20_DC3OUT_VOL, val);	//set DCDC3(VDD_AO) to 1.100V
-		printf("Set DCDC3(VDD_AO) to %dV(0x%x). But the register is 0x%x before\n", CONFIG_DCDC2_VOLTAGE, val, reg_data);
-		mdelay(10);
-		ret = 1;
-	}
+#ifdef CONFIG_VDDAO_VOLTAGE
+    axp20_dcdc_voltage(3, CONFIG_VDDAO_VOLTAGE);
 #endif
 
 	//check for LDO2(VDDIO_AO)

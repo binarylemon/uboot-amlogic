@@ -296,6 +296,12 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     }
 };
 
+static void board_pmu_init(void)
+{
+#ifdef CONFIG_AW_AXP20
+    // todo add your platform needed init code here
+#endif
+}
 
 static void board_i2c_init(void)
 {		
@@ -312,7 +318,8 @@ static void board_i2c_init(void)
 	/*M6 board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10000);
+    board_pmu_init();
 }
 #endif /*CONFIG_AML_I2C*/
 

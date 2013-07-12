@@ -457,7 +457,8 @@ int aml_rtc_init(void)
 		printf("aml rtc init first time!\n");
 		static_register_write(get_rtc_static_reg_init_val());
 		mdelay(2);
-		//ser_access_write(RTC_GPO_COUNTER_ADDR, 0x500000);
+		rtc_wait_s_ready(); 
+		ser_access_write(RTC_GPO_COUNTER_ADDR, 0x500000);
 		//changed GPI :RTC_ADDR1: GPI_LEVEL:  current level of the GPI signal from the RTC block
 	}
 #else
