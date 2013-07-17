@@ -1,5 +1,5 @@
-#ifndef PANEL_LP097X02_H
-#define PANEL_LP097X02_H
+#ifndef PANEL_TYPICAL_TIMING_H
+#define PANEL_TYPICAL_TIMING_H
 
 //*****************************************
 // Define LCD Typical Timing Parameters

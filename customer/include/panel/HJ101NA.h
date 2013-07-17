@@ -1,5 +1,5 @@
-#ifndef PANEL_HJ101NA_H
-#define PANEL_HJ101NA_H
+#ifndef PANEL_TYPICAL_TIMING_H
+#define PANEL_TYPICAL_TIMING_H
 
 //*****************************************
 // Define LCD Typical Timing Parameters
