@@ -23,7 +23,6 @@ extern void efuse_init(void);
 
 ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 {
-#ifdef CONFIG_EFUSE	
     unsigned long contents[EFUSE_DWORDS];
 	unsigned pos = *ppos;
     unsigned long *pdw;
@@ -37,8 +36,8 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
 	if (count > EFUSE_BYTES)
 		return -1;
 
-    memset(contents, 0, sizeof(contents));
-
+#ifndef CONFIG_MESON_TRUSTZONE
+	memset(contents, 0, sizeof(contents));
  	// Enabel auto-read mode    
     WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
              CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
@@ -52,17 +51,32 @@ ssize_t efuse_read(char *buf, size_t count, loff_t *ppos )
              CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
             
 	memcpy(buf, (char*)contents+residunt, count);	
-	
-    *ppos += count;
+	*ppos += count;
     return count;
+        
 #else
-	return 0;
-#endif    
+	struct efuse_hal_api_arg arg;
+	unsigned int retcnt;
+	int ret;
+	arg.cmd=EFUSE_HAL_API_READ;
+	arg.offset=pos;
+	arg.size=count;
+	arg.buffer_phy = (unsigned int)buf;
+	arg.retcnt_phy = (unsigned int)&retcnt;
+	ret = meson_trustzone_efuse(&arg);
+	if(ret == 0){
+		*ppos+=retcnt;
+		return retcnt;
+	}
+	else
+		return ret;
+		
+#endif	
+
 }
 
 ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 { 	
-#ifdef CONFIG_EFUSE	
 	unsigned pos = *ppos;
 	const char *pc;
 
@@ -73,19 +87,33 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 	if (count > EFUSE_BYTES)
 		return -1;
 
+#ifndef CONFIG_MESON_TRUSTZONE
 	//Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) |  (1 << 12) );
     
     for (pc = buf; count--; ++pos, ++pc)
-		__efuse_write_byte(pos, *pc);
-		
-	*ppos = pos;
-	
+		__efuse_write_byte(pos, *pc);		
+	*ppos = pos;	
 	   // Disable the Write mode
     //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) & ~(1 << 12) );
-
 	return count;
+	
 #else
-	return 0;
+	struct efuse_hal_api_arg arg;
+	unsigned int retcnt;
+	arg.cmd=EFUSE_HAL_API_WRITE;
+	arg.offset = pos;
+	arg.size=count;
+	arg.buffer_phy=(unsigned int)buf;
+	arg.retcnt_phy=&retcnt;
+	int ret;
+	ret = meson_trustzone_efuse(&arg);
+	if(ret==0){
+		*ppos=retcnt;
+		return retcnt;
+	}
+	else
+		return ret;
+			
 #endif	
 }
 
@@ -119,10 +147,17 @@ static int efuse_readversion(void)
 		memcpy(ver_buf, buf, sizeof(buf));
 
 #ifdef CONFIG_M6   //version=2
+#ifndef CONFIG_MESON_TRUSTZONE
 	if(ver_buf[0] == 2){
 		efuse_active_version = ver_buf[0];
 		return ver_buf[0];
 	}
+#else
+	if(ver_buf[0] == 4){
+		efuse_active_version = ver_buf[0];
+		return ver_buf[0];
+	}
+#endif	
 	else
 		return -1;
 
@@ -523,7 +558,7 @@ unsigned efuse_readcustomerid(void)
 
 char* efuse_dump(void)
 {
-#ifdef CONFIG_EFUSE	
+#ifndef CONFIG_MESON_TRUSTZONE	
 	int i=0;
     //unsigned pos;
     memset(efuse_buf, 0, sizeof(efuse_buf));

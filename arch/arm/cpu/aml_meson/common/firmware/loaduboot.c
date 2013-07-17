@@ -7,7 +7,9 @@
 #endif
 
 #ifdef  CONFIG_AML_SPL_L1_CACHE_ON
+#ifndef CONFIG_MESON_TRUSTZONE
 #include <aml_a9_cache.c>
+#endif
 #endif  //CONFIG_AML_SPL_L1_CACHE_ON
 
 #include <romboot.c>
@@ -42,8 +44,10 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_puts("\nHHH\n");
 
 #ifdef  CONFIG_AML_SPL_L1_CACHE_ON
+#ifndef CONFIG_MESON_TRUSTZONE
 	aml_cache_enable();
 	//serial_puts("\nSPL log : ICACHE & DCACHE ON\n");
+#endif	
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
 
 	size=__TEXT_SIZE;
@@ -59,8 +63,10 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//here no need to flush I/D cache?
 #if CONFIG_AML_SPL_L1_CACHE_ON
+#ifndef CONFIG_MESON_TRUSTZONE
 	aml_cache_disable();
 	//dcache_flush();
+#endif	
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
 
 
@@ -106,7 +112,9 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//here no need to flush I/D cache?
 #if CONFIG_AML_SPL_L1_CACHE_ON
+#ifndef CONFIG_MESON_TRUSTZONE
 	dcache_flush();
+#endif	
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
     return rc;
 }

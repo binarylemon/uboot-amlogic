@@ -22,8 +22,10 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		action=EFUSE_READ;
 	else if(strncmp(argv[1], "write", 5) == 0)
 		action=EFUSE_WRITE;
+#ifndef CONFIG_MESON_TRUSTZONE		
 	else if(strcmp(argv[1], "dump") == 0)
 		action=EFUSE_DUMP;
+#endif		
 	/*else if(strcmp(argv[1], "version") == 0)
 		action = EFUSE_VERSION;*/
 	else{

@@ -27,32 +27,24 @@ int load_secureos(void)
 {
  	int rc=0;
  	unsigned len;    
-/* 	
- 	unsigned por_cfg=romboot_info->por_cfg;
-	unsigned boot_id=romboot_info->boot_id;
- 	
- 	// load from internal flash
- 	// load from external flash
- 	rc=fw_init_extl(por_cfg);
- 	if(rc)
- 		goto exit;
- 	rc=secure_load_extl(por_cfg);
- 	if(rc)
- 		goto exit;
-*/ 	
+
  	// verify secureOS validation 		
+/*
 #ifndef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT	
-	rc=spldecrypt(SECURE_OS_ENCRYPTED_ADDR);
+	rc=spldecrypt(SECURE_OS_COMPRESS_ADDR);
 	if(rc)
 		goto exit;	
 #endif		
- 	
+*/ 	
  	// UCL decompress 	 	
-#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT
-	rc=uclDecompress((char*)(SECURE_OS_DECRYPTED_ADDR), &len,(char*)(SECURE_OS_ENCRYPTED_ADDR)); 	
-#else 	
- 	rc=uclDecompress((char*)(SECURE_OS_DECRYPTED_ADDR), &len,(char*)(SECURE_OS_ENCRYPTED_ADDR+SECUREOS_HEAD_SIZE)); 	
+#ifdef CONFIG_MESON_TRUSTZONE
+	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR)); 	
+//#else 	
+// 	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR+SECUREOS_HEAD_SIZE)); 	
 #endif 	 	
+#if (defined(CONFIG_MESON_TRUSTZONE) && defined(CONFIG_AML_SPL_L1_CACHE_ON))
+	aml_cache_disable();
+#endif	
 exit:
 	return rc; 	 	
  }

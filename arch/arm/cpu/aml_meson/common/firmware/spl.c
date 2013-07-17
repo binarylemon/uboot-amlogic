@@ -18,12 +18,8 @@
 #include <power.c>
 #endif
 
-#ifdef CONFIG_MESON_SECUREBOOT
-#include <efuse.c>
+#ifdef CONFIG_MESON_TRUSTZONE
 #include <secureboot.c>
-#endif
-
-#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT
 unsigned int ovFlag;
 #endif
 
@@ -59,7 +55,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif
 
-
+
 
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
@@ -94,7 +90,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     //Adjust 1us timer base
     timer_init();
     //default uart clock.
-    serial_init(__plls.uart);
+    //serial_init(__plls.uart);
     serial_put_dword(get_utimer(0));
     writel(0,P_WATCHDOG_TC);//disable Watchdog
 
@@ -115,8 +111,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
     // initial pll
     pll_init(&__plls);
+	serial_init(__plls.uart);
 
 #ifdef CONFIG_POWER_SPL
+	serial_puts("\n");
+	serial_puts("\ninit power for cpu\n");
     power_init();
 #endif
 #ifdef ENTRY_DEBUG_ROM
@@ -124,12 +123,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
     __udelay(100);//wait for a uart input
 #endif
-#if 0 //disable the debug mode in uboot for mass production code
 	
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
 	 }	 
-#endif
 
     // initial ddr
     ddr_init_test();
@@ -158,7 +155,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//asm volatile ("wfi");
 	// load secureOS
-#ifdef CONFIG_MESON_SECUREBOOT
+#ifdef CONFIG_MESON_TRUSTZONE
 	if(load_secureos()){
 		serial_puts("\nload secureOS fail,now reset the chip");
 		ovFlag = 1;		
@@ -216,9 +213,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif//CONFIG_M6_TEST_CPU_SWITCH
 
-#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT		
+#ifdef CONFIG_MESON_TRUSTZONE		
     return ovFlag;
 #else
 	return 0;
 #endif    
 }
+

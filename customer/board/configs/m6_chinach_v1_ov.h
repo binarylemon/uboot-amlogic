@@ -71,7 +71,7 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
 #define CONFIG_CMD_SARADC
-//#define CONFIG_EFUSE 1
+#define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #ifdef CONFIG_MACHID_CHECK
 	//#define CONFIG_MACH_MESON6_RAMOS 0x30564552
@@ -381,15 +381,17 @@
  -----------------------------------------------------------------------*/
 #define CONFIG_SECURE_NAND  1
 #define CONFIG_MESON_TRUSTZONE	1
-#define CONFIG_MESON_SECUREBOOT	 1
-#ifdef CONFIG_MESON_SECUREBOOT 
-#define CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT 1
-#define CONFIG_SECURE_CRYPTO	1
-#define RSA_ENCRYPT_POS (0)
-#define SECUREOS_HEAD_SIZE 0x200
-#define SECURE_OS_ENCRYPTED_ADDR		0x8E000000
-#define SECURE_OS_DECRYPTED_ADDR		0xa0100000
+// use secureboot, need enable the following 2 config
+//#define CONFIG_M6_SECU_BOOT 1
+//#define #define CONFIG_AML_SPL_L1_CACHE_ON     1
+
+#ifdef CONFIG_MESON_TRUSTZONE
+#define SECURE_OS_COMPRESS_ADDR		0x8E000000
+#define SECURE_OS_DECOMPRESS_ADDR		0xa0100000
 #define CONFIG_JOIN_UBOOT_SECUREOS	1
+
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM      (32-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM                (32-4-4)
 #endif
 
 

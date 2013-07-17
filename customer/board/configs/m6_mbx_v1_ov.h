@@ -4,7 +4,7 @@
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
-#define CONFIG_MESON_ARM_GIC_FIQ
+//#define CONFIG_MESON_ARM_GIC_FIQ
 
 #define CONFIG_SPI_NAND_EMMC_COMPATIBLE   1
 
@@ -26,6 +26,17 @@
 
 //#define CONFIG_SWITCH_BOOT_MODE 1
 #define CONFIG_HDCP_PREFETCH 1
+
+// The Following configs are used in storage buring tool
+//#define SECURESTORAGE_DEVICE_NAND "spi"
+//#define CONFIG_SECURE_NAND
+//#define CONFIG_CMD_SECURESTORE
+
+//#define CONFIG_SECURESTORAGEKEY
+
+//#define CONFIG_CMD_RANDOM
+//#define CONFIG_RANDOM_GENERATE
+
 
 #if defined(WRITE_TO_EFUSE_ENABLE) && defined(WRITE_TO_NAND_ENABLE)
 #error You should only select one of WRITE_TO_EFUSE_ENABLE and WRITE_TO_NAND_ENABLE
@@ -51,6 +62,13 @@
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
+#define CONFIG_SPI_NOR_SECURE_STORAGE
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+#define SPI_MIN_ROOM_SIZE	0x200000
+#endif
+#endif
+
+#if defined(CONFIG_CMD_SF)
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
@@ -58,7 +76,7 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
 #define CONFIG_CMD_SARADC
-//#define CONFIG_EFUSE 1
+#define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 
 #define CONFIG_L2_OFF			1
@@ -470,16 +488,19 @@
 /*-----------------------------------------------------------------------
  * TRUSTZONE
  */
-#define CONFIG_MESON_TRUSTZONE		 1
-#define CONFIG_MESON_SECUREBOOT	 1
-#ifdef CONFIG_MESON_SECUREBOOT
-#define CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT 1
-#define CONFIG_SECURE_CRYPTO	1
-#define RSA_ENCRYPT_POS (0)
-#define SECUREOS_HEAD_SIZE 0x200
-#define SECURE_OS_ENCRYPTED_ADDR		0x8E000000
-#define SECURE_OS_DECRYPTED_ADDR		0xa0100000
+//#define CONFIG_SECURE_NAND  1
+#define CONFIG_MESON_TRUSTZONE	1
+// use secureboot, need enable the following 2 config
+//#define CONFIG_M6_SECU_BOOT 1
+//#define #define CONFIG_AML_SPL_L1_CACHE_ON     1
+
+#ifdef CONFIG_MESON_TRUSTZONE
+#define SECURE_OS_COMPRESS_ADDR		0x8E000000
+#define SECURE_OS_DECOMPRESS_ADDR		0xa0100000
 #define CONFIG_JOIN_UBOOT_SECUREOS	1
+
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM      (32-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM                (32-4-4)
 #endif
 
 

@@ -104,24 +104,26 @@ static const struct macronix_spi_flash_params macronix_spi_flash_table[] =
 
 static int macronix_read_fast(struct spi_flash *flash, u32 offset, size_t len, void *buf)
 {
+	int ret;
     spi_claim_bus(flash->spi);
 
-    spi_flash_read_amlogic(flash, offset, len,buf);
+    ret = spi_flash_read_amlogic(flash, offset, len,buf);
 
     spi_release_bus(flash->spi);
 	
-    return  0;		
+    return  ret;		
 }
 
 static int macronix_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
 {
+	int ret;
     spi_claim_bus(flash->spi);
     
-    spi_flash_write_amlogic(flash, offset, len,buf);
+    ret = spi_flash_write_amlogic(flash, offset, len,buf);
     
     spi_release_bus(flash->spi);
     
-    return 0;		
+    return ret;		
 }
 
 int macronix_erase(struct spi_flash *flash, u32 offset, size_t len)

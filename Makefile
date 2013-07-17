@@ -381,6 +381,13 @@ else   #ELSE CONFIG_AML_MESON
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
 $(UBOOT_SECURE_OS): $(obj)u-boot.bin $(SECURE_OS_BIN)
 		$(obj)tools/join_uboot_secureos $(obj)u-boot.bin  $(SECURE_OS_BIN) $(UBOOT_SECURE_OS)
+ifdef CONFIG_M6_SECU_BOOT		
+ifdef CONFIG_M6_SECU_AUTH_KEY
+	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
+else
+	@./tools/secu_boot/encrypto2 $@
+endif		
+endif
 endif  #END CONFIG_JOIN_UBOOT_SECUREOS
 
 #################
@@ -413,10 +420,12 @@ ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 else		
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
+ifndef CONFIG_MESON_TRUSTZONE
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
 else
 	@./tools/secu_boot/encrypto2 $@
+endif
 endif
 endif
 
@@ -426,10 +435,12 @@ ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 else		
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
+ifndef CONFIG_MESON_TRUSTZONE	
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
 else
 	@./tools/secu_boot/encrypto2 $@
+endif
 endif
 endif
 

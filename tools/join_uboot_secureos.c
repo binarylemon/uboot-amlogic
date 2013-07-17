@@ -8,19 +8,21 @@
 
 
 #define READ_SIZE       32*1024     // Size for data reading
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM	(32-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM 		(32-4-4)
 static unsigned char buf[READ_SIZE];
 void record_offset(unsigned int postion)
 {
 	unsigned int *pbuf;
 	
-	pbuf = (unsigned int*)&buf[READ_SIZE-8-512];
+	pbuf = (unsigned int*)&buf[READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM];
 	*pbuf = postion;
 }
 
 void record_size(unsigned int securesize)
 {
 	unsigned int *pbuf;
-	pbuf = (unsigned int*)&buf[READ_SIZE-4-512];
+	pbuf = (unsigned int*)&buf[READ_SIZE-SECURE_OS_SIZE_POSITION_IN_SRAM];
 	*pbuf = securesize;
 }
 

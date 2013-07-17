@@ -99,13 +99,14 @@ clr_bss_end:
     ldr r0,__TEXT_BASE
     ldr r1,__TEXT_SIZE
     bl	main 
-#ifdef CONFIG_MESON_SECUREBOOT
-#ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT
+#ifdef CONFIG_MESON_TRUSTZONE
+/* #ifdef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT*/
     cmp r0, #0x0
 	ldreq pc, __SECURE_OS_BASE
-#else
+/* #else
 	ldr pc, __SECURE_OS_BASE
 #endif	
+*/
 #endif       
 #ifndef CONFIG_IMPROVE_UCL_DEC    
     ldr pc,__TEXT_BASE
@@ -126,17 +127,17 @@ __TEXT_SIZE:
 #ifdef CONFIG_BOARD_SIZE_LIMIT
     .word CONFIG_BOARD_SIZE_LIMIT
 #else
-#ifdef CONFIG_MESON_SECUREBOOT
+#ifdef CONFIG_MESON_TRUSTZONE
 	.word CONFIG_SECURE_UBOOT_SIZE - READ_SIZE
 #else
      .word 0x60000 - READ_SIZE
 #endif    
 #endif  
 
-#ifdef CONFIG_MESON_SECUREBOOT
+#ifdef CONFIG_MESON_TRUSTZONE
 __SECURE_OS_BASE:
-	.word SECURE_OS_DECRYPTED_ADDR
-#endif
+	.word SECURE_OS_DECOMPRESS_ADDR
+#endif	
 
 __ROM_STACK_END:
 	.word ROM_STACK_END

@@ -9,5 +9,5 @@
 
 void secure_load(unsigned addr, unsigned size)
 {	
-	memcpy((unsigned char*)SECURE_OS_ENCRYPTED_ADDR, (unsigned char*)addr, size);
+	memcpy((unsigned char*)SECURE_OS_COMPRESS_ADDR, (unsigned char*)addr, size);
 }

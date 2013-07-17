@@ -14,6 +14,9 @@
 #include <asm/cache.h>      
 #include "spi_flash_amlogic.h"
 
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+#include "spi_secure_storage.h"
+#endif
 /*note: To use Amlogic SPI flash controller for SPI flash access 
          two macro CONFIG_CMD_SF & CONFIG_AML_MESON_1/2/3
          must be set to 1
@@ -456,7 +459,6 @@ int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 
 		printf("SF: Erase offset/length not multiple of sector size!\n");
 		return nReturn;
 	}
-
 	//close AHB bus before any APB bus operation
 	CLEAR_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); 	
 
@@ -469,6 +471,14 @@ int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 
 		debug("Erase:%x\n",actual);
 			
 		var=(offset+actual) & 0xffffff;
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+		if(flash->secure_protect){
+			if((var >=flash->securestorage_info->start_pos)&&(var < flash->securestorage_info->end_pos)){
+				//printf("addr: 0x%x \n",var);
+				continue;
+			}
+		}
+#endif
 		spi_flash_addr_write(slave,var);
 	
 		//Trigger write enable command
@@ -491,7 +501,11 @@ int spi_flash_erase_amlogic(struct spi_flash *flash,u32 offset, size_t len, u32 
 
 	//reopen AHB bus after any APB bus operation
 	SET_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); 
-	
+
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	void secure_storage_spi_disable(void);
+	secure_storage_spi_disable();
+#endif
    return nReturn;	
 }
 
@@ -521,6 +535,14 @@ int spi_flash_erase_be_amlogic(struct spi_flash *flash,u32 offset, size_t len, u
 		debug("Erase:%x\n",actual);
 			
 		var=(offset+actual) & 0xffffff;
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+		if(flash->secure_protect){
+			if((var >=flash->securestorage_info->start_pos)&&(var < flash->securestorage_info->end_pos)){
+				//printf("addr: 0x%x \n",var);
+				continue;
+			}
+		}
+#endif
 		spi_flash_addr_write(slave,var);
 	
 		//Trigger write enable command
@@ -547,6 +569,10 @@ int spi_flash_erase_be_amlogic(struct spi_flash *flash,u32 offset, size_t len, u
 	//reopen AHB bus after any APB bus operation
 	SET_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); 
 	
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	void secure_storage_spi_disable(void);
+	secure_storage_spi_disable();
+#endif
    return nReturn;	
 }
 
@@ -578,7 +604,18 @@ int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, cons
 	while(temp_length>0){
 		
 		flags=(temp_addr & 0xffffff)|( (temp_length>=32?32:temp_length) << SPI_FLASH_BYTES_LEN);
-		
+	#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+		if(flash->secure_protect){
+			if((temp_addr>=flash->securestorage_info->start_pos) &&(temp_addr<flash->securestorage_info->end_pos)){
+				temp_addr   += (temp_length>=32?32:temp_length);
+				buf			+= (temp_length>=32?32:temp_length);
+				temp_length -= (temp_length>=32?32:temp_length);	
+				//printf("prohibit write,%s:%d\n",__func__,__LINE__);	 
+				continue;
+			}
+		}
+	#endif
+
 		spi_flash_addr_write(spi, flags);
 		
 		flags=SPI_XFER_WRITECACHE;
@@ -627,7 +664,26 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
 
 	if(!len)
 		return 0;	
-		
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	if(flash->secure_protect){
+		if(((offset+len)>flash->securestorage_info->start_pos) &&((offset+len)<=flash->securestorage_info->end_pos)){
+				//printf("prohibit read,%s:%d\n",__func__,__LINE__);
+			return -1;
+		}
+		else if(((offset+len)>flash->securestorage_info->end_pos)
+			&&(offset>=flash->securestorage_info->start_pos)
+			&&(offset<flash->securestorage_info->end_pos)){
+				//printf("prohibit read,%s:%d\n",__func__,__LINE__);
+			return -1;
+		}
+		else if(((offset+len)>flash->securestorage_info->end_pos) 
+			&&(offset < flash->securestorage_info->start_pos)
+			&&(len>(flash->securestorage_info->start_pos-offset))){
+				//printf("prohibit read,%s:%d\n",__func__,__LINE__);
+			return -1;
+		}
+	}
+#endif
 	//invalid data cache
 	//dcache_invalid_range((u32)buf,len);
 	dcache_flush();
@@ -652,7 +708,6 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
     }
 
 	while(temp_length>0){
-		
 		//(byte counter << 24| 24bit device address) for SPI address register		
 		flags=(temp_addr & 0xffffff)|( (temp_length>=32?32:temp_length) << SPI_FLASH_BYTES_LEN);	
 		spi_flash_addr_write(spi, flags);	
@@ -679,6 +734,9 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
 
 void spi_flash_free(struct spi_flash *flash)
 {
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	spi_securestorage_free();
+#endif
 	spi_free_slave(flash->spi);
 	free(flash);
 }
@@ -804,6 +862,11 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 		goto err_manufacturer_probe;
 	}
 	
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	if(spi_securestorage_probe(flash)){
+		printf("spi secure storage probe fail\n");
+	}
+#endif
 #ifdef SPI_WRITE_PROTECT
         if(spi_check_write_protect())
              printf("\nSPI NOR Flash have write protect!!!\n");

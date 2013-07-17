@@ -17,7 +17,7 @@
 # define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
 #endif
 
-static struct spi_flash *flash;
+static struct spi_flash *flash=NULL;
 
 static int do_spi_flash_probe(int argc, char * const argv[])
 {
@@ -55,14 +55,14 @@ static int do_spi_flash_probe(int argc, char * const argv[])
 			goto usage;
 	}
 
+	if (flash)
+		spi_flash_free(flash);
+
 	new = spi_flash_probe(bus, cs, speed, mode);
 	if (!new) {
 		printf("Failed to initialize SPI flash at %u:%u\n", bus, cs);
 		return 1;
 	}
-
-	if (flash)
-		spi_flash_free(flash);
 	flash = new;
 
 	printf("%u KiB %s at %u:%u is now current device\n",
@@ -175,6 +175,13 @@ static int do_spi_flash(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		return do_spi_flash_read_write(argc - 1, argv + 1);
 	if (strcmp(cmd, "erase") == 0)
 		return do_spi_flash_erase(argc - 1, argv + 1);
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+	if (strcmp(cmd, "secureskey") == 0){
+		void secure_storage_spi_enable(void);
+		secure_storage_spi_enable();
+		return 0;
+	}
+#endif
 
 usage:
 	return cmd_usage(cmdtp);

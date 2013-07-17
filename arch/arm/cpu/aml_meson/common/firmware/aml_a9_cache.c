@@ -54,10 +54,13 @@ static inline void mmu_setup(void)
 		
 		if((i>= 0x800 && i< 0xa00) || (i>= 0xd90 && i< 0xd91))
 			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_WB);
-
+#ifdef M6_DDR3_1GB
+		if(i>= 0xA00 && i< 0xC00)
+			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_WB);
+#else
 		if(i>= 0xA00 && i< 0xC00)
 			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_SO_MEM);
-
+#endif
 		if(i>= 0xC11 && i< 0xC13)
 			nVal = (i<<20)|(SEC_PROT_RW_NA | SEC_XN | SEC_SO_MEM);
 
