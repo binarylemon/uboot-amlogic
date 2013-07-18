@@ -106,7 +106,6 @@ static void __x_efuse_read_dword( unsigned long addr, unsigned long *data )
 
 }
 
-#ifndef CONFIG_MESON_TRUSTZONE
 static void aml_mx_efuse_load(const unsigned char *pEFUSE)
 {	
 	//efuse init
@@ -199,9 +198,9 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 
 	unsigned int *pRSAAuthID = (unsigned int *)(AHB_SRAM_BASE+32*1024-16);
 	#define AML_M6_AMLA_ID	  (0x414C4D41)	 //AMLA
-	int nBlkOffset = 32*1024 - (sizeof(struct_aml_chk_blk)+256*2+16);
+	int nBlkOffset = 32*1024 - (sizeof(struct_aml_chk_blk)+256*2+32);
 	if( AML_M6_AMLA_ID == *pRSAAuthID)
-		nBlkOffset -= (128+16);
+		nBlkOffset -= 128;
 	
 	//struct_aml_chk_blk *pBlk = (struct_aml_chk_blk *)(AHB_SRAM_BASE+ *pSPLSize - sizeof(struct_aml_chk_blk) - 2*256);
 	struct_aml_chk_blk *pBlk = (struct_aml_chk_blk *)(AHB_SRAM_BASE+ nBlkOffset);
@@ -261,6 +260,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		e.dp[0] = 0x010001;
 		e.used = 1;				
 
+#if defined(CONFIG_M6_SECU_BOOT_2RSA)
 		unsigned char *pRSAPUK1 = (unsigned char *)pBlk + sizeof(struct_aml_chk_blk)+256;
 
 		unsigned char szRSAPUK1[256];
@@ -300,6 +300,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 			while(1);
 		}
+#endif //#if defined(CONFIG_M6_SECU_BOOT_2RSA)
 
 		unsigned char *pAESkey = (unsigned char *)pBlk + sizeof(struct_aml_chk_blk);
 
@@ -372,9 +373,9 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 			while(1);			
 		}
 
-		//Attention! RSA communication key is here
-		//memset_aml(pBlk,0,0xd9008000 - (unsigned int)pBlk - 128 - 32);
+#if defined(CONFIG_M6_SECU_BOOT_2RSA)
 		memcpy_aml(pRSAPUK1,szRSAPUK1,sizeof(szRSAPUK1));
+#endif //#if defined(CONFIG_M6_SECU_BOOT_2RSA)
 
 	}
 	else
@@ -388,6 +389,8 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 {
 
+#if defined(CONFIG_M6_SECU_BOOT_2RSA)
+
 #define AML_UBOOT_SIZE_MAX 			(600*1024)	
 #define AML_MX_UCL_SIZE_ADDR 		(AHB_SRAM_BASE+0x20)
 //note: the length of uboot ucl image which has beed hashed is placed to AML_MX_UCL_SIZE_ADDR
@@ -397,7 +400,7 @@ static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 #define AML_MX_UCL_HASH_SIZE_2 		(16)
 //note:  the hash key of uboot ucl image is splitted to two parts (16+16bytes) and locate in  AML_MX_UCL_HASH_ADDR_1/2
 
-	//writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
+	writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
 	unsigned char szHashUCL[SHA256_HASH_BYTES];
 	unsigned int nSizeUCL = *((unsigned int *)(AML_MX_UCL_SIZE_ADDR)); //get ucl length to be hashed
 	memcpy(szHashUCL,(const void *)AML_MX_UCL_HASH_ADDR_1,AML_MX_UCL_HASH_SIZE_1);   //get 1st hash key
@@ -414,276 +417,11 @@ static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 		while(1);
 	}	
 
-#if defined(CONFIG_M6_SECU_BOOT_2RSA)
-	aml_m6_sec_boot_check_2RSA_key((const unsigned char *)pSRC);
 #endif
 
-}
-#else  // define trustzone
-static void aml_mx_efuse_load(const unsigned char *pEFUSE)
-{	
-	//efuse init
-	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL4, CNTL4_ENCRYPT_ENABLE_OFF,
-	CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );
-	// clear power down bit
-	WRITE_EFUSE_REG_BITS(P_EFUSE_CNTL1, CNTL1_PD_ENABLE_OFF, 
-		CNTL1_PD_ENABLE_BIT, CNTL1_PD_ENABLE_SIZE);
-	
-	// Enabel auto-read mode
-	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
-	CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-	int i = 0;
-	for(i=8; i<8+128+32; i+=4)
-		__x_efuse_read_dword(i,	(unsigned long*)(pEFUSE+i-8));		
-	
-	 // Disable auto-read mode	  
-	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
-		 CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
+	aml_m6_sec_boot_check_2RSA_key((const unsigned char *)pSRC);
 
 }
-
-typedef unsigned long      fp_digit;
-typedef struct {   int dp[136];int used, sign;} fp_intx;
-/* initialize [or zero] an fp int */
-#define fp_init(a)  (void)memset_aml((a), 0, sizeof(fp_intx))
-#define fp_zero(a)  fp_init(a)
-/* clamp digits */
-#define fp_clamp(a)   { while ((a)->used && (a)->dp[(a)->used-1] == 0) --((a)->used); (a)->sign = (a)->used ? (a)->sign : 0; }
-
-static void rsa_dec(unsigned char* dest, unsigned char* src, unsigned int len, fp_intx* n, fp_intx *e)
-{
-	unsigned int *pID1 =(unsigned int *)0xd9040004;
-	unsigned int *pID2 =(unsigned int *)0xd904002c;
-	unsigned int MX_ROM_EXPT_MODE, MX_ROM_AES_DEC;//,MX_ROM_EFUSE_READ;
-	if(0xe2000003 == *pID1 && 0x00000bbb == *pID2)
-	{
-		//Rev-B
-		MX_ROM_EXPT_MODE = 0xd90442f4;
-		//MX_ROM_AES_DEC   = 0xd9043c8c;		
-	}
-	else if(0x00000d67 == *pID1 && 0x0e3a01000 == *pID2)
-	{
-		//Rev-D
-		MX_ROM_EXPT_MODE = 0xd9044b64;
-		//MX_ROM_AES_DEC   = 0xd90444b8;		
-	}
-	else
-	{
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
-#endif			
-		serial_puts("\nError! Wrong MX chip!\n");
-		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-		while(1);
-	
-	}
-	typedef  int (*func_rsa_exp)(fp_intx * G, fp_intx * X, fp_intx * P, fp_intx * Y);		
-	func_rsa_exp fp_exptmod_rom = (func_rsa_exp)MX_ROM_EXPT_MODE;	
-	
-	fp_intx c, m;
-	unsigned int i, j;
-	unsigned int i_len, o_len;
-	i_len=(n->used)<<2;
-	o_len=(n->used-1)<<2;
-	
-	for(i=0,j=0;i<len;i+=i_len,j+=o_len){
-		memset_aml(&c,0,sizeof(c));
-		memcpy_aml(&c,&src[i],i_len);
-		c.used=136;
-		fp_clamp(&c);
-		fp_exptmod_rom(&c,e,n,&m);
-		memcpy_aml(&dest[j],m.dp,o_len);
-	}		
-}
-
-static void aml_aes_dec(unsigned char* pSrc, int size, unsigned char* pAESkey)
-{
-	unsigned int *pID1 =(unsigned int *)0xd9040004;
-	unsigned int *pID2 =(unsigned int *)0xd904002c;
-	unsigned int MX_ROM_EXPT_MODE, MX_ROM_AES_DEC;//,MX_ROM_EFUSE_READ;
-	if(0xe2000003 == *pID1 && 0x00000bbb == *pID2)
-	{
-		//Rev-B		
-		MX_ROM_AES_DEC   = 0xd9043c8c;				
-	}
-	else if(0x00000d67 == *pID1 && 0x0e3a01000 == *pID2)
-	{
-		//Rev-D		
-		MX_ROM_AES_DEC   = 0xd90444b8;		
-	}
-	else
-	{
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
-#endif			
-		serial_puts("\nError! Wrong MX chip!\n");
-		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-		while(1);	
-	}		
-	typedef struct{
-		unsigned char ks[16];
-	} aes_roundkey_t;
-	typedef struct{
-		aes_roundkey_t key[14+1];
-	} aes256_ctx_t;		
-	typedef struct{
-		aes_roundkey_t key[1]; /* just to avoid the warning */
-	} aes_genctx_t;
-	
-	typedef  void (*aes_dec)(void* buffer, aes256_ctx_t* ctx);	
-	aes_dec aes_dec_rom = (aes_dec) MX_ROM_AES_DEC;
-	
-	aes256_ctx_t ctx;
-	int i;
-	memset_aml(&ctx,0,sizeof(ctx));	
-	memcpy_aml(ctx.key,pAESkey,14*sizeof(aes_roundkey_t));
-	
-	for(i=0; i<size; i+=16)
-		aes_dec_rom((void*)(pSrc+i), &ctx);
-	
-}
-
-static void aml_m6_sec_boot_check(const unsigned char *pSRC)
-{	
-#define AMLOGIC_CHKBLK_ID  (0x434C4D41) //414D4C43 AMLC
-#define AMLOGIC_CHKBLK_VER (3)
-#define AMLOGIC_CHKBLK_HASH_KEY_LEN (32)
-#define AMLOGIC_CHKBLK_INFO_MAX (60)
-#define AMLOGIC_CHKBLK_INFO_LEN (56)
-#define AMLOGIC_CHKBLK_AESKEY_LEN (48)
-#define AMLOGIC_CHKBLK_TIME_MAX (16)
-#define AMLOGIC_CHKBLK_CHK_MAX  (128)
-#define AMLOGIC_CHKBLK_PAD_MAX  (4)
-#define RSA1024_DEC_LEN     (128)   //block length for RSA decrypt
-	
-	typedef struct 
-	{	
-		unsigned int	nSize1; 		//sizeof(this)
-		union{
-			struct{ 			
-				unsigned int	nTotalFileLen; //4
-				unsigned int	nHashDataLen;  //4
-				unsigned int	nAESLength;    //4	
-				unsigned char	szHashKey[AMLOGIC_CHKBLK_HASH_KEY_LEN];//32
-				unsigned int	nInfoType; //4: 0-> info; 1-> AES key; 2,3,4...
-				union{
-					unsigned char	szInfo[AMLOGIC_CHKBLK_INFO_MAX];	//60
-					unsigned char	szAESKey[AMLOGIC_CHKBLK_AESKEY_LEN];//48
-				};
-				union{
-				unsigned char	szTime[AMLOGIC_CHKBLK_TIME_MAX];	//16
-				struct{
-					unsigned int nOffset1;
-					unsigned int nSize1;
-					unsigned int nOffset2;
-					unsigned int nSize2;
-					}hashInfo;
-				};
-				unsigned char	szPad1[AMLOGIC_CHKBLK_PAD_MAX]; 	//4 
-				}secure; //124+4	
-			unsigned char	szCHK[AMLOGIC_CHKBLK_CHK_MAX]; //128
-			};		//
-		unsigned char	szPad2[AMLOGIC_CHKBLK_PAD_MAX]; 	
-		unsigned char	szInfo[AMLOGIC_CHKBLK_INFO_MAX];	//
-		unsigned char	szTime[AMLOGIC_CHKBLK_TIME_MAX];	//
-		unsigned int	nSize2; 		//sizeof(this)
-		unsigned int	nVer;			//AMLOGIC_CHKBLK_VER	
-		unsigned int	unAMLID;		//AMLC 
-	}struct_aml_chk_blk;
-
-
-	//writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
-	#define AML_RSA_STAGE_1_1 (0x31315352)   //RS11
-	//#define AML_RSA_STAGE_2_2 (0x32325352)   //RS22
-
-	unsigned int *pID = (unsigned int *)(AHB_SRAM_BASE+(32<<10)-8);
-	switch(*pID)
-	{
-	case AML_RSA_STAGE_1_1:break;
-	//case AML_RSA_STAGE_2_2:break;
-	default:
-		{
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
-#endif				
-			serial_puts("\nError! SPL is corrupt!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);
-		}break;
-	}
-
-	//unsigned int *pRSAAuthID = (unsigned int *)(AHB_SRAM_BASE+32*1024-16);
-	//#define AML_M6_AMLA_ID	  (0x414C4D41)	 //AMLA
-	int nBlkOffset = 32*1024 - (sizeof(struct_aml_chk_blk)+256*2+16);
-	//if( AML_M6_AMLA_ID == *pRSAAuthID)
-	nBlkOffset -= (128+16);	
-	struct_aml_chk_blk *pBlk = (struct_aml_chk_blk *)(AHB_SRAM_BASE+ nBlkOffset);
-		
-	// Read RSA PuK from EFUSE
-	fp_intx n, e;	
-	memset_aml(&n, 0, sizeof(n))	;
-	memset_aml(&e, 0, sizeof(e));
-	char szEFUSE[128+32];	
-	aml_mx_efuse_load(szEFUSE);	
-	memcpy_aml(&(n.dp[0]), szEFUSE, 128);
-	n.used=32;
-	e.used=1;
-	//fixed E to 0x10001
-	e.dp[0] = 0x10001;	
-	fp_clamp(&e);
-	fp_clamp(&n);
-		
-	
-	if((AMLOGIC_CHKBLK_ID == pBlk->unAMLID) && (AMLOGIC_CHKBLK_VER >= pBlk->nVer) &&
-		sizeof(*pBlk) == pBlk->nSize2)
-	{
-		//prepare buffer for the encrypted hash key
-		unsigned char szRSADecBuff[RSA1024_DEC_LEN];
-		memset_aml(szRSADecBuff,0,sizeof(szRSADecBuff));
-		int OutLen = 128;
-		
-		// RSA dec block
-		rsa_dec(szRSADecBuff, pBlk->szCHK, RSA1024_DEC_LEN, &n, &e);			
-		memcpy_aml(pBlk->szCHK, szRSADecBuff, RSA1024_DEC_LEN);
-		
-		unsigned char AESkey[256];
-		memset_aml(AESkey, 0, sizeof(AESkey));	
-				
-		// RSA AES key
-		unsigned char *pAESkey = (unsigned char *)pBlk + sizeof(struct_aml_chk_blk);
-		rsa_dec(AESkey, pAESkey, RSA1024_DEC_LEN*2, &n, &e);			
-					
-		// Uboot do AES
-		aml_aes_dec((void*)pSRC, pBlk->secure.nAESLength, AESkey);
-		
-		// Uboot do Hash
-		unsigned char szHashKey[32];
-		memset_aml(szHashKey,0,sizeof(szHashKey));
-		sha2_sum( szHashKey,(unsigned char *)pSRC,pBlk->secure.nHashDataLen);
-
-		if(memcmp_aml(szHashKey,pBlk->secure.szHashKey,sizeof(szHashKey)))
-		{
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
-#endif				
-			serial_puts("\nError! UBoot is corrupt!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);			
-		}			
-		
-	}
-	else
-	{	
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-	aml_cache_disable();
-#endif			
-		serial_puts("\nError! UBoot is corrupt!\n");
-		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-		while(1);	
-	}
-}
-
-#endif   // CONFIG_MESON_TRUSTZONE
 
 #endif //CONFIG_M6_SECU_BOOT
 
