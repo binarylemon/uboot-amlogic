@@ -42,8 +42,9 @@ all:	power_firmware $(obj).depend $(LIB)
 $(LIB):	$(OBJS)	
 	$(call cmd_link_o_target, $(OBJS))	
 
-ifdef CONFIG_AML_SUSPEND
 ifndef CONFIG_MESON_TRUSTZONE
+
+ifdef CONFIG_AML_SUSPEND
 FIRMWARE_AUTO_UPDATE=y
 export FIRMWARE_AUTO_UPDATE
 power_firmware:
@@ -58,7 +59,11 @@ ifdef CONFIG_CMD_RUNARC
 #		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
 endif
 endif
+
+else
+power_firmware:
 endif
+
 
 #########################################################################
 
