@@ -39,10 +39,15 @@ void store_restore_plls(int flag);
 
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
 
+#if (defined(CONFIG_AW_AXP20) || defined(CONFIG_ACT8942QJ233_PMU) || defined(CONFIG_AML_PMU))
+#define PLATFORM_HAS_PMU
+#endif
+
 extern void udelay(int i);
 extern void wait_uart_empty();
-extern int check_all_regulators(void);
 extern void power_down_ddr_phy(void);
+#ifdef PLATFORM_HAS_PMU
+extern int check_all_regulators(void);
 extern inline void power_off_at_24M();
 extern inline void power_off_at_32K_1();
 extern inline void power_off_at_32K_2();
@@ -52,12 +57,13 @@ extern void power_on_ddr15(void);
 extern inline void power_on_at_32k_2();
 extern inline void power_on_at_32k_1();
 extern inline void power_on_at_24M();
+extern void shut_down();
+extern void init_I2C();
+#endif
 extern void uart_reset();
 extern void init_ddr_pll(void);
 extern void store_vid_pll(void);
-extern void shut_down();
 extern void __udelay(int n);
-extern void init_I2C();
 
 static void timer_init()
 {
@@ -393,7 +399,9 @@ void enter_power_down()
 	f_serial_puts("Pwr off domains\n");
  	wait_uart_empty();
 
+#ifdef PLATFORM_HAS_PMU
 	power_off_at_24M();
+#endif  /* PLATFORM_HAS_PMU */
 
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
 
@@ -406,10 +414,14 @@ void enter_power_down()
 		switch_to_rtc();
 		udelay(1000);
 
+    #ifdef PLATFORM_HAS_PMU
 		power_off_at_32K_1();
+    #endif
 	}
 
+#ifdef PLATFORM_HAS_PMU
 	power_off_at_32K_2();
+#endif
 
 	// gate off REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x9)),P_AO_RTI_GEN_CNTL_REG0);
@@ -419,18 +431,23 @@ void enter_power_down()
 
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
+    #ifdef PLATFORM_HAS_PMU
 		power_off_ddr15();
+    #endif
 
 #ifdef CONFIG_ARC_SARDAC_ENABLE
 		do{
 			udelay(2000);
+        #ifdef PLATFORM_HAS_PMU
 			vcin_state=get_charging_state();
 			if(!vcin_state)
 				break;
+        #endif /* PLATFORM_HAS_PMU */
 		}while((!(readl(0xc1109860)&0x100)) && !(get_adc_sample_in_arc(4)<0x1000));
 #else
 		do{
 			udelay(2000);
+    #ifdef PLATFORM_HAS_PMU
 			vcin_state=get_charging_state();
 			if (!vcin_state) {
 			#ifdef CONFIG_AML_PMU
@@ -466,15 +483,21 @@ void enter_power_down()
                 delay_cnt = 0;
             }
         #endif /* CONFIG_AW_AXP20 */
+    #endif      /* PLATFORM_HAS_PMU */
 		}while(!(readl(0xc1109860)&0x100));
 #endif//CONFIG_ARC_SARDAC_ENABLE
+    #ifdef PLATFORM_HAS_PMU
 		power_on_ddr15();
+    #endif /* PLATFORM_HAS_PMU */
 	}
 	else
 	{
+    #ifdef PLATFORM_HAS_PMU
 		charging_state=get_charging_state();//get state before enter polling
+    #endif
 		do{
 			udelay(200);
+    #ifdef PLATFORM_HAS_PMU
 			if(get_charging_state() ^ charging_state)//when the state is changed, wakeup
 				break;
         #ifdef CONFIG_AML_PMU
@@ -503,6 +526,7 @@ void enter_power_down()
                 delay_cnt = 0;
             }
         #endif /* CONFIG_AW_AXP20 */
+    #endif /* PLATFORM_HAS_PMU */
 		}while(!(readl(0xc1109860)&0x100));
 	}
 
@@ -523,13 +547,17 @@ void enter_power_down()
 // gate on REMOTE, UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x9,P_AO_RTI_GEN_CNTL_REG0);
 
+#ifdef PLATFORM_HAS_PMU
 	power_on_at_32k_2();
+#endif
 
 #ifdef CONFIG_ARC_SARDAC_ENABLE
 	if(uboot_cmd_flag != 0x87654321)//u-boot suspend cmd flag
 #endif
 	{
+    #ifdef PLATFORM_HAS_PMU
 		power_on_at_32k_1();
+    #endif
 
 	//  In 32k mode, we had better not print any log.
     #ifndef CONFIG_AML_PMU
@@ -548,7 +576,9 @@ void enter_power_down()
 	f_serial_puts("Pwr up avdd33/3gvcc\n");
 	wait_uart_empty();
 	
+#ifdef PLATFORM_HAS_PMU
 	power_on_at_24M();
+#endif
 #ifdef CONFIG_AML_PMU
 	store_restore_plls(0);//Before switch back to clk81, we need set PLL
 #endif
@@ -604,7 +634,9 @@ void enter_power_down()
 //		writel(readl(P_HHI_SYS_PLL_CNTL)&(~1<<30),P_HHI_SYS_PLL_CNTL);//power on sys pll
 		if(!vcin_state)//plug out ACIN
 		{
+        #ifdef PLATFORM_HAS_PMU
 			shut_down();
+        #endif      /* PLATFORM_HAS_PMU */
 			do{
 				udelay(20000);
 				f_serial_puts("wait shutdown...\n");
@@ -765,7 +797,7 @@ int main(void)
 		c = (char)cmd;
 		if(c == 't')
 		{
-#if (defined(CONFIG_AW_AXP20) || defined(CONFIG_ACT8942QJ233_PMU) || defined(CONFIG_AML_PMU))
+#ifdef PLATFORM_HAS_PMU 
 			init_I2C();
 #endif
 			copy_reboot_code();
