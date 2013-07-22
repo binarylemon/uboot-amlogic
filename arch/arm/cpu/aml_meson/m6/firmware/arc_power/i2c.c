@@ -339,6 +339,10 @@ int do_msgs(struct i2c_msg *msgs,int num)
 		return ret;
 }
 #ifdef CONFIG_AW_AXP20
+#define POWER_OFF_AVDD25
+#define POWER_OFF_AVDD33
+#define POWER_OFF_VDDIO
+
 #define I2C_AXP202_ADDR   (0x68 >> 1)
 #define AXP_I2C_ADDR           0x34
 typedef __u8                   uint8_t;
