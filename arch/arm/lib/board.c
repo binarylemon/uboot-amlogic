@@ -49,6 +49,8 @@
 #include <nand.h>
 #include <onenand_uboot.h>
 #include <mmc.h>
+#include <asm/cache.h>
+
 
 #ifdef CONFIG_AML_RTC
 #include <aml_rtc.h>
@@ -506,6 +508,13 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #if !defined(CONFIG_SYS_NO_FLASH)
 	ulong flash_size;
 #endif
+
+	
+	//2013.07.16
+	//cache update after relocation	
+	dcache_flush();
+	icache_invalid();
+	//end 2013.07.16
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	spl_boot_end = *((volatile unsigned int*)0x83a00000);
