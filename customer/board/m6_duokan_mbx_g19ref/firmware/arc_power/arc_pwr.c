@@ -208,13 +208,23 @@ static void ee_on()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x1<<9),P_AO_RTI_PWR_CNTL_REG0);
 }
+#define P_A9_CFG2 CBUS_REG_ADDR(A9_CFG2) 
 void restart_arm()
 {
 	//------------------------------------------------------------------------
+        // Set up conditions on the ports of the A9 BEFORE releasing the
+        // isolation clamps (bit[4] of AO_RTI_PWR_CNTL_REG0)
+        // Start the A9 using the Crystal as the master clock
+        writel(readl(P_HHI_SYS_CPU_CLK_CNTL) & ~(1<<7),P_HHI_SYS_CPU_CLK_CNTL);
 	// restart arm
 		//0. make sure a9 reset
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-		
+
+	// Set the soft resets of the APB, AXI and A9 Debug module
+	// bits[18] AT soft reset
+	// bits[17] APB soft reset
+	// bits[16] AXI soft reset
+	setbits_le32( P_A9_CFG2,7<<16);
 	//1. write flag, Move it to before
 //	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	
@@ -228,14 +238,24 @@ void restart_arm()
 	//4. Release ISO for A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
 
-	//reset A9
-	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
-	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
-	delay_ms(1);
-	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
-  
- //	f_serial_puts("arm restarted ...done\n");
-//	wait_uart_empty();
+	// Delay a little to let things stabilize
+	udelay(100);
+	// Reset the Clock dividers associated with the A9. 1 = reset
+	// [15] general divider soft reset
+	// [14] Soft reset for the AXI, APB, AT, and peripheral clock dividers
+	setbits_le32( P_HHI_SYS_CPU_CLK_CNTL, (0x3 << 14) );
+	udelay(10);
+	clrbits_le32( P_HHI_SYS_CPU_CLK_CNTL, (0x3 << 14) );
+	udelay(100);
+	// Asynchronously reset the A9, APB, AT and AXI modules
+	writel(0xF, P_RESET4_REGISTER);
+	// Reset the Mali
+	writel(1<<14,P_RESET2_REGISTER);
+	// Release all soft resets except the A9
+	clrbits_le32(P_A9_CFG2,7<<16);
+	udelay(100);
+	// Release the A9 to start the booting process
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 }
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
@@ -285,6 +305,7 @@ void enter_power_down()
 
    asm(".long 0x003f236f"); //add sync instruction.
 
+#ifdef pwr_ddr_off
    disable_mmc_req();
 
    serial_put_hex(APB_Rd(MMC_LP_CTRL1),32);
@@ -304,9 +325,11 @@ void enter_power_down()
    serial_put_hex(APB_Rd(UPCTL_MCFG_ADDR),32);
    f_serial_puts("  MCFG\n");
    wait_uart_empty();
+#endif
 
     f_serial_puts("step 2\n");
     wait_uart_empty();
+#ifdef pwr_ddr_off
     // Next, we sleep
     mmc_sleep();
 
@@ -316,6 +339,7 @@ void enter_power_down()
   APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(7<<9)));
   //APB_Wr(PUB_PGCR_ADDR,APB_Rd(PUB_PGCR_ADDR)&(~(3<<9)));
 #endif
+    mmc_sleep();
     // enable retention
     //only necessory if you want to shut down the EE 1.1V and/or DDR I/O 1.5V power supply.
     //but we need to check if we enable this feature, we can save more power on DDR I/O 1.5V domain or not.
@@ -342,7 +366,7 @@ void enter_power_down()
   // turn off ee
 //  enable_iso_ee();
 //	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
- 	
+#endif
   
  	f_serial_puts("step 5\n");
  	wait_uart_empty();
@@ -535,7 +559,7 @@ void enter_power_down()
     wait_uart_empty();  
     init_ddr_pll();
 
-    store_vid_pll();
+    //store_vid_pll();
 
     // Next, we reset all channels 
     reset_mmc();
@@ -617,6 +641,7 @@ void enter_power_down()
                 break;
 #endif
             case 0x04 : //BT
+            case 0x0C : //BT & WiFi
                 writel(0x12344331,P_AO_RTI_STATUS_REG2);
                 break;
             case 0x08 : //WiFi
@@ -857,7 +882,7 @@ void store_restore_plls(int flag)
 		{
 			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
 		}
-
+/*
 		viidpll_settings[0]=readl(P_HHI_VIID_PLL_CNTL);
 		viidpll_settings[1]=readl(P_HHI_VIID_PLL_CNTL2);
 		viidpll_settings[2]=readl(P_HHI_VIID_PLL_CNTL3);
@@ -867,7 +892,7 @@ void store_restore_plls(int flag)
 		vidpll_settings[1]=readl(P_HHI_VID_PLL_CNTL2);
 		vidpll_settings[2]=readl(P_HHI_VID_PLL_CNTL3);
 		vidpll_settings[3]=readl(P_HHI_VID_PLL_CNTL4);
-
+*/
 #endif //CONFIG_SYS_PLL_SAVE
 
 		save_ddr_settings();
@@ -951,7 +976,7 @@ writel(pll_settings[0],P_HHI_SYS_PLL_CNTL);//restore it
 #ifdef CONFIG_AML_PMU
     printf_arc("store_restore_plls, HHI_PLL out\n");
 #endif
-
+/*
 	do{
 		//no need to do bandgap reset
 		writel(1<<29,P_HHI_VIID_PLL_CNTL);		
@@ -966,7 +991,7 @@ writel(pll_settings[0],P_HHI_SYS_PLL_CNTL);//restore it
 		udelay(10); //wait 200us for PLL lock		
 	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
 	writel(viidpll_settings[0],P_HHI_VIID_PLL_CNTL);//restore it
-
+*/
 #ifdef CONFIG_AML_PMU
     udelay(3 * 750);
 #else
