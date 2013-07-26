@@ -40,6 +40,10 @@ help: help_customer
 	@echo The mark in board is "M6TV_REF_V1"
 	@echo config command: \"make m6tv_ref_v1_config\"
 
+	@echo =======================================================================
+	@echo The mark in board is "M8_SKT_V1"
+	@echo config command: \"make m8_skt_v1_config\"
+	
 	@echo
 
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)

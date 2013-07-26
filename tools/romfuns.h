@@ -13,3 +13,6 @@ int m3_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
 /* tools/m6_romboot.c */
 int m6_write(FILE *spl, FILE *in, FILE *out);
 int m6_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
+/* tools/m8_romboot.c */
+int m8_write(FILE *spl, FILE *in, FILE *out);
+int m8_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
