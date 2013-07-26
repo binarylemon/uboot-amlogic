@@ -110,12 +110,6 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 	fw_print_info(por_cfg,1);
 
-	//here no need to flush I/D cache?
-#if CONFIG_AML_SPL_L1_CACHE_ON
-#ifndef CONFIG_MESON_TRUSTZONE
-	dcache_flush();
-#endif	
-#endif	//CONFIG_AML_SPL_L1_CACHE_ON
     return rc;
 }
 
