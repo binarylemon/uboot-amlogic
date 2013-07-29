@@ -18,7 +18,6 @@
 #define V_PERIOD			810
 //#define FRAME_RATE			50
 #define	LCD_CLK				85700000//(H_PERIOD * V_PERIOD * FRAME_RATE)	//unit: Hz
-#define CLK_SS_LEVEL		0	//0~5, 0 for disable spread spectrum
 #define CLK_AUTO_GEN		1	//1, auto generate clk parameters	//0, user set pll_ctrl, div_ctrl & clk_ctrl
 
 //*****************************************
