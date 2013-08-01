@@ -6,6 +6,21 @@
 #include <linux/mtd/partitions.h>
 #include "io.h"
 
+/***default disable MX RevD support***/
+#define	MX_REVD
+
+#ifdef MX_REVD
+#define	NAND_PAGELIST_MAGIC 	0x4c50414e
+#endif
+
+#define MX_REV_B_ID  (0x00000bbb)
+#define MX_REV_D_ID  (0x00000d67)
+
+/***************ERROR CODING*******************/
+#define NAND_CHIP_ID_ERR            1
+#define NAND_SHIP_BAD_BLOCK_ERR     2
+#define NAND_CHIP_REVB_HY_ERR       3
+
 /*fixme container_of this function is in common.h, but if include it, it
  will case serial compile error*/
 /**
@@ -42,6 +57,17 @@
 #define M3_BOOT_WRITE_SIZE	  		0x600
 #define M3_BOOT_COPY_NUM	  		4
 #define M3_BOOT_PAGES_PER_COPY	 	256
+
+#ifdef CONFIG_SECURE_NAND
+
+#define NAND_SECURE_BLK    			2
+#define SECURE_STORE_MAGIC		0x9fe7d05c
+#define REMAIN_BLOCK_NUM 			4
+#define	NAND_SEC_MAX_BLK_NUM   4
+
+#define CONFIG_SECURE_SIZE         		(0x10000*2) //128k
+#define SECURE_SIZE (CONFIG_SECURE_SIZE - (sizeof(uint32_t)))
+#endif
 
 #define NFC_BASE			  CBUS_REG_ADDR(NAND_CMD)
 #define NFC_OFF_CMD           ((NAND_CMD -NAND_CMD)<<2)
@@ -149,17 +175,17 @@
 #define NFC_CMD_RB_INT(ce,time)        ((ce)|RB|(((ce>>10)^0xf)<<14)|(time&0x1f))
 #define NFC_CMD_RBIO(time,io)		   (RB|io|(time&0x1f))
 #define NFC_CMD_RBIO_INT(io,time)      (RB|(((io>>10)^0x7)<<14)|(time&0x1f))
-#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + (seed&0x7fff)))
+#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + seed&0x7fff))
 #define NFC_CMD_STS(tim) 			   (STS|(tim&3))
 #define NFC_CMD_M2N(ran,ecc,sho,pgsz,pag)      ((ran?M2N:M2N_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
 #define NFC_CMD_N2M(ran,ecc,sho,pgsz,pag)      ((ran?N2M:N2M_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
+
 
 #define NFC_ENABLE_TOSHIBA_TOGGLE_MODE()       	SET_CBUS_REG_MASK(NAND_CFG,1<<11)
 #define NFC_EXIT_TOSHIBA_TOGGLE_MODE() 			CLEAR_CBUS_REG_MASK(NAND_CFG,1<<11)
 #define NFC_ENABLE_MICRON_TOGGLE_MODE()      		 SET_CBUS_REG_MASK(NAND_CFG,1<<10)
 #define NFC_SYNC_ADJ()      							SET_CBUS_REG_MASK(NAND_CFG,1<<16)
 #define NFC_EXIT_SYNC_ADJ()      							CLEAR_CBUS_REG_MASK(NAND_CFG,1<<16)
-
 
 /**
     Alias for CMD
@@ -219,7 +245,7 @@
 #define NFC_SEND_CMD_DWR(data)              NFC_SEND_CMD(DWR     |(data&0xff  ))
 #define NFC_SEND_CMD_DRD(    )              NFC_SEND_CMD(DRD                   )
 */
-#define NFC_SEND_CMD_IDLE(ce,time)          NFC_SEND_CMD(NFC_CMD_IDLE(ce,time))
+#define NFC_SEND_CMD_IDLE(ce,time)          {while(NFC_CMDFIFO_SIZE()>0);NFC_SEND_CMD(NFC_CMD_IDLE(ce,time));}
 #define NFC_SEND_CMD_CLE(ce,cmd  )          NFC_SEND_CMD(NFC_CMD_CLE(ce,cmd))
 #define NFC_SEND_CMD_ALE(ce,addr )          NFC_SEND_CMD(NFC_CMD_ALE(ce,addr))
 #define NFC_SEND_CMD_STANDBY(time)          NFC_SEND_CMD(NFC_CMD_STANDBY(time))
@@ -258,7 +284,7 @@
 #define NAND_INFO_DATA_1INFO(a)   ((a)&0xff)
 
 
-//#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
+#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
 
 
 #define AML_NORMAL						0
@@ -357,6 +383,7 @@
 
 #define NAND_SYS_PART_SIZE				0x20000000
 #define ENV_NAND_SCAN_BLK                            50
+#define REMAIN_TAIL_BLOCK_NUM		8
 #define NAND_KEY_SAVE_MULTI_BLOCK
 
 struct aml_nand_flash_dev {
@@ -399,6 +426,19 @@ struct aml_nandkey_info_t {
          int end_block;
 };
 
+#ifdef CONFIG_SECURE_NAND
+struct aml_nandsecure_info_t{
+	struct mtd_info *mtd;
+	 struct env_valid_node_t *secure_valid_node;
+	 struct env_free_node_t *secure_free_node;
+	 u_char secure_valid;
+	 u_char secure_init;
+	 u_char part_num_before_sys;
+	 int start_block;
+	 int end_block;
+};
+#endif
+
 struct env_valid_node_t {
 	int16_t  ec;
 	int16_t	phy_blk_addr;
@@ -433,6 +473,18 @@ struct aml_nandenv_info_t {
 	u_char part_num_before_sys;
 	struct aml_nand_bbt_info nand_bbt_info;
 };
+
+#ifdef CONFIG_SECURE_NAND
+typedef	struct {
+	uint32_t	crc;		/* CRC32 over data bytes	*/
+	unsigned char	data[SECURE_SIZE]; /* Environment data		*/
+} secure_t;
+
+struct secure_oobinfo_t {
+	int  name;
+    unsigned       timestamp;
+};
+#endif
 
 struct aml_nand_bch_desc{
     char * name;
@@ -481,11 +533,9 @@ struct aml_nand_bch_desc{
 #define	SUMSUNG_2XNM 			30	
 
 #define   MICRON_20NM			40
-
 //for SANDISK
 #define    SANDISK_19NM			50
-
-
+#define     SANDISK_24NM			51
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -580,7 +630,6 @@ struct new_tech_nand_t{
     struct aml_nand_dynamic_read dynamic_read_info;
 };
 #endif
-
 #ifdef NAND_STATUS_TEST
 struct test_status{
 	char id_status;
@@ -589,7 +638,6 @@ struct test_status{
 	int boot_bad_block_status;
 };
 #endif
-
 struct aml_nand_chip {
 	/* mtd info */
 	u8 mfr_type;
@@ -633,6 +681,7 @@ struct aml_nand_chip {
 	u8 ecc_max;
     unsigned zero_cnt;
 	unsigned oob_fill_cnt;
+	unsigned boot_oob_fill_cnt;
 #ifdef NAND_STATUS_TEST
 	struct test_status  aml_nand_status;
 #endif
@@ -652,10 +701,14 @@ struct aml_nand_chip {
 	/* device info */
 	struct device			*device;
 
-	unsigned max_ecc;
+#ifdef CONFIG_SECURE_NAND
+	struct aml_nandsecure_info_t *aml_nandsecure_info;
+	unsigned secure_protect;
+#endif
+    unsigned max_ecc;
     struct ecc_desc_s * ecc;
 //	unsigned onfi_mode;
-
+    unsigned err_sts;
 	//plateform operation function
 	void	(*aml_nand_hw_init)(struct aml_nand_chip *aml_chip);
 	void	(*aml_nand_adjust_timing)(struct aml_nand_chip *aml_chip);
