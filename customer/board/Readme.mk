@@ -55,16 +55,16 @@ help_customer:
 	@echo config command: \"make m6_mbx_v1_config\"
 
 	@echo ----------------------------------------------------------------------
-	@echo The mark in board is "MBX_AML8726_MX_REF_A OV"
-	@echo config command: \"make m6_mbx_v1_ov_config\"
+	@echo The mark in board is "MBX_AML8726_MX_REF_A" with T
+	@echo config command: \"make m6_mbx_v1_t_config\"
 	
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "Amlogic JB Ref Board"
 	@echo config command: \"make m6_chinach_v1_config\"
 	
 	@echo ----------------------------------------------------------------------
-	@echo The mark in board is "Amlogic JB Ref OV Board"
-	@echo config command: \"make m6_chinach_v1_ov_config\"
+	@echo The mark in board is "Amlogic JB Ref Board" with T
+	@echo config command: \"make m6_chinach_v1_t_config\"
 	
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "Amlogic JB MXL Ref Board"
@@ -83,8 +83,8 @@ help_customer:
 	@echo config command: \"make m6_dongle_config\"
 
 	@echo ----------------------------------------------------------------------
-	@echo The mark in board is "DONGLE_AML8726_MX_REF_A"
-	@echo config command: \"make m6_dongle_ov_config\"
+	@echo The mark in board is "DONGLE_AML8726_MX_REF_A" with T
+	@echo config command: \"make m6_dongle_t_config\"
 
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "DONGLE_AML8726_MX_REF_A"
