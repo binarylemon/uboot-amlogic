@@ -150,7 +150,7 @@
 
 #ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"mmc_logo_offset=0x2c000\0" \
+	"mmc_logo_offset=0x24000\0" \
 	"mmc_boot_offset=0x44000\0" \
 	"mmc_recovery_offset=0x34000\0" \
 	"mmc_lk_size=0x4000\0" \
@@ -211,7 +211,7 @@
  "setenv bootcmd run compatible_boot; saveenv; run compatible_boot; run compatible_boot"
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"mmc_logo_offset=0x2c000\0" \
+	"mmc_logo_offset=0x24000\0" \
 	"mmc_boot_offset=0x44000\0" \
 	"mmc_recovery_offset=0x34000\0" \
 	"mmc_lk_size=0x4000\0" \
