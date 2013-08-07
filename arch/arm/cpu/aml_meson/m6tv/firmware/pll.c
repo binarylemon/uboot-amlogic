@@ -102,8 +102,9 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	__udelay(10);
 	Wr(HHI_MPEG_CLK_CNTL, Rd(HHI_MPEG_CLK_CNTL) & (~(1<<8)) );	
 #endif
-	__udelay(100);
 
+	serial_init(52|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);	//clk81 switch to 24M, init serial to print info
+	__udelay(100);
 
 	do{
 		//BANDGAP reset for SYS_PLL,AUD_PLL,MPLL lock fail
@@ -126,13 +127,15 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		
 #ifdef CONFIG_ENABLE_WATCHDOG
 		pll_times++;
-		serial_puts("pll_times:");
-		serial_put_dword(pll_times);
-		if(pll_times>PLL_TIMES){
-			serial_puts(__FILE__);
-			serial_puts(__FUNCTION__);
-			serial_put_dword(__LINE__);
-			writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+		if(pll_times > 1){
+			serial_puts("\npll_times1:");
+			serial_put_dword(pll_times);
+			if(pll_times>PLL_TIMES){
+				serial_puts(__FILE__);
+				serial_puts(__FUNCTION__);
+				serial_put_dword(__LINE__);
+				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+			}
 		}
 #endif
 	}while((Rd(HHI_SYS_PLL_CNTL)&0x80000000)==0);
@@ -171,6 +174,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 
 	//clk81=fclk_div5 /2=400/2=200M
 	Wr(HHI_MPEG_CLK_CNTL, plls->mpeg_clk_cntl );
+	serial_init(plls->uart);	//clk81 switch to MPLL, init serial to print info
+
 #ifdef CONFIG_ENABLE_WATCHDOG
 		pll_times=0;
 #endif
@@ -206,13 +211,15 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		__udelay(500); //wait 100us for PLL lock
 #ifdef CONFIG_ENABLE_WATCHDOG
 		pll_times++;
-		serial_puts("pll_times:");
-		serial_put_dword(pll_times);
-		if(pll_times>PLL_TIMES){
-			serial_puts(__FILE__);
-			serial_puts(__FUNCTION__);
-			serial_put_dword(__LINE__);
-			writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+		if(pll_times > 1){
+			serial_puts("\npll_times2:");
+			serial_put_dword(pll_times);
+			if(pll_times>PLL_TIMES){
+				serial_puts(__FILE__);
+				serial_puts(__FUNCTION__);
+				serial_put_dword(__LINE__);
+				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+			}
 		}
 #endif
 	}while((Rd(HHI_VID_PLL_CNTL)&0x80000000)==0);

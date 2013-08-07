@@ -111,7 +111,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
     // initial pll
     pll_init(&__plls);
-	serial_init(__plls.uart);
+	//serial_init(__plls.uart);
 
 #ifdef CONFIG_POWER_SPL
 	serial_puts("\n");
