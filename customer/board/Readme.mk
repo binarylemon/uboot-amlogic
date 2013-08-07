@@ -49,6 +49,10 @@ help_customer:
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "WINACCORD_AML8726_MX_REF_A"
 	@echo config command: \"make m6_winaccord_v1_config\"
+
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "m6_yifang_m7000nbd"
+	@echo config command: \"make m6_yifang_m7000nbd_config\"
 	
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "MBX_AML8726_MX_REF_A"
