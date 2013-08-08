@@ -1354,8 +1354,8 @@ inline void power_off_at_24M()
 	power_off_avdd33();
 #endif
     // step down ddr and ao voltage to save power
-    axp20_dcdc_voltage(2, CONFIG_DDR_SUSPEND_VOLTAGE);
-    axp20_dcdc_voltage(3, CONFIG_VDDAO_SUSPEND_VOLTAGE);
+  //axp20_dcdc_voltage(2, CONFIG_DDR_SUSPEND_VOLTAGE);
+  //axp20_dcdc_voltage(3, CONFIG_VDDAO_SUSPEND_VOLTAGE);
 #endif          /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
@@ -1399,8 +1399,8 @@ inline void power_on_at_24M()
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
-    axp20_dcdc_voltage(3, CONFIG_VDDAO_VOLTAGE);
-    axp20_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
+    //axp20_dcdc_voltage(3, CONFIG_VDDAO_VOLTAGE);
+    //axp20_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
 #endif      /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
