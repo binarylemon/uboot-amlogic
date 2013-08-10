@@ -123,7 +123,7 @@ pwr_restart:
       LDR  r0, [r1]
       dmb
       isb
-
+#if 0
       LDR r0, =0xc1104260 /*clrbits_le32(P_HHI_SYS_PLL_CNTL, (1 << 30));*/
       ldr r1, [r0]
       LDR r2, =0xbfffffff
@@ -146,7 +146,7 @@ delay_loop:
       add r0, r0, #1
       cmp r0, r1
       bne delay_loop
-
+#endif
        //send debug status to ARC
        LDR  r0, =0xc8100004
        mov  r1, #2
