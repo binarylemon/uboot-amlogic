@@ -18,14 +18,6 @@
 /*
  * if not defined DDR and AO suspend voltage, define a default value for them
  */
-#ifndef CONFIG_DDR_SUSPEND_VOLTAGE
-#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
-#endif
-
-#ifndef CONFIG_VDDAO_SUSPEND_VOLTAGE
-#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
-#endif
-
 #ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
 #define CONFIG_DDR_VOLTAGE              1500
 #endif
@@ -1353,9 +1345,6 @@ inline void power_off_at_24M()
 #ifdef POWER_OFF_AVDD33
 	power_off_avdd33();
 #endif
-    // step down ddr and ao voltage to save power
-  //axp20_dcdc_voltage(2, CONFIG_DDR_SUSPEND_VOLTAGE);
-  //axp20_dcdc_voltage(3, CONFIG_VDDAO_SUSPEND_VOLTAGE);
 #endif          /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
@@ -1371,10 +1360,6 @@ inline void power_off_at_24M()
     printf_arc("close gpio2\n");
     aml_pmu_set_gpio(3, 1);
     printf_arc("close gpio3\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_SUSPEND_VOLTAGE);        // DCDC1 set to 960mV, pfm mode
-    printf_arc("DCDC1 to 0.96v\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC2, CONFIG_DDR_SUSPEND_VOLTAGE);       // DCDC2 set to 1400mV, pfm mode
-    printf_arc("DCDC2 to 1.40v\n");
     if (!get_charging_state()) {
     #if CONFIG_DCDC_PFM_PMW_SWITCH
         aml_pmu_set_pfm(AML_PMU_DCDC1, 1);
@@ -1399,8 +1384,6 @@ inline void power_on_at_24M()
 #ifdef POWER_OFF_3GVCC
 	power_on_3gvcc();
 #endif
-    //axp20_dcdc_voltage(3, CONFIG_VDDAO_VOLTAGE);
-    //axp20_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
 #endif      /* CONFIG_AW_AXP20 */
 
 #ifdef CONFIG_AML_PMU
@@ -1431,10 +1414,6 @@ inline void power_on_at_24M()
     aml_pmu_set_pfm(AML_PMU_DCDC2, 0);
     printf_arc("dcdc2 to pwm\n");
 #endif
-    aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_VOLTAGE);       // DCDC1 set to 1200mV, pwm mode, will be reset to 1.1V after later resume
-    printf_arc("dcdc1 to 1.2v\n");
-    aml_pmu_set_voltage(AML_PMU_DCDC2, CONFIG_DDR_VOLTAGE);       // DCDC2 set to 1500mV, pwm mode
-    printf_arc("dcdc2 to 1.5v\n");
     aml_pmu_set_gpio(3, 0);
     printf_arc("open gpio3\n");
     aml_pmu_set_gpio(2, 0);

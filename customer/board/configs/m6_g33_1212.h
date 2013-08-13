@@ -28,10 +28,7 @@
 #define CONFIG_POWER_UP_BL_CHECK                                // check battery voltage when power up back light
 
 #define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
 #define CONFIG_VDDAO_VOLTAGE            1200
-
-#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
 #define CONFIG_DDR_VOLTAGE              1500
 #define CONFIG_DCDC_PFM_PMW_SWITCH      1 
 #endif  /* CONFIG_AML_PMU */
