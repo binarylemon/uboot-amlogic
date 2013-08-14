@@ -26,8 +26,6 @@ unsigned int ovFlag;
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 
-	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
-
 //write ENCI_MACV_N0 (CBUS 0x1b30) to 0, disable Macrovision
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV)
 	writel(0, CBUS_REG_ADDR(ENCI_MACV_N0));
@@ -62,7 +60,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		//A9 JTAG enable
 		writel(0x80000510,0xda004004);
 		//TDO enable
-		writel(0x4000,0xc8100014);
+		writel(readl(0xc8100014)|0x4000,0xc8100014);
 	#elif AML_M6_JTAG_SET_ARC
 		//ARC JTAG enable
 		writel(0x80051001,0xda004004);
@@ -85,14 +83,8 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 #endif
 		
-//	int i;
-
-    //Adjust 1us timer base
-    timer_init();
-    //default uart clock.
-    //serial_init(__plls.uart);
-    serial_put_dword(get_utimer(0));
-    writel(0,P_WATCHDOG_TC);//disable Watchdog
+    serial_puts("\nTE : ");
+    serial_put_dec(get_utimer(0));
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	unsigned spl_boot_start,spl_boot_end;
@@ -177,14 +169,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_put_dword((spl_boot_end-spl_boot_start));
 #else
 	*((volatile unsigned int*)0x8fa00000) = 0;
-#endif
-
-#if 0
-    //wait serial_puts end.
-    for(i = 0; i < 10; i++)
-		  __udelay(1000);
-#else
-	serial_wait_tx_empty();
 #endif
 
 #ifdef CONFIG_M6_TEST_CPU_SWITCH

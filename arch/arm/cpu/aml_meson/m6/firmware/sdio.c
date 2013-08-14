@@ -162,7 +162,10 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
 //register.h: #define SDIO_AHB_CBUS_CTRL 0x2318
 //#define SDIO_AHB_CBUS_CTRL          (volatile unsigned long *)0xc1108c60   
 #define SDIO_AHB_CBUS_CTRL_ADDR          (volatile unsigned long *)0xc1108c60   
-    serial_put_dword(clk_util_clk_msr(7));
+    //serial_put_dword(clk_util_clk_msr(7));
+	serial_puts("CLK81=");
+	serial_put_dec(clk_util_clk_msr(7));
+	serial_puts("Mhz\n");
 //*SDIO_AHB_CBUS_CTRL&=~1;
 	*SDIO_AHB_CBUS_CTRL_ADDR&=~1;
    //set clk to trnsfer clk rate and bus width

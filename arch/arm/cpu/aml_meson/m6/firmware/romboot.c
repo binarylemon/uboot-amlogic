@@ -521,7 +521,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
                 return rc;
             }
 #endif
-            serial_puts("Boot From SPI");
+            serial_puts("Boot From SPI\n");
             memcpy((unsigned*)temp_addr,mem,size);
             #ifdef CONFIG_SPI_NOR_SECURE_STORAGE
             spi_secure_storage_get(NOR_START_ADDR,0,0);

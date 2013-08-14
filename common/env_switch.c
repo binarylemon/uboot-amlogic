@@ -37,7 +37,7 @@ extern void mdelay(unsigned long msec);
 
 int env_init(void)
 {
-	printk("env_init %s %d\n",__func__,__LINE__);
+	//printk("env_init %s %d\n",__func__,__LINE__);
 	gd->env_addr  = (ulong)&default_environment[0];
 	gd->env_valid = 1;
 	return 0;
