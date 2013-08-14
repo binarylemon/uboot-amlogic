@@ -9,6 +9,13 @@
 
 #define MAX_I2C_BUFF 64
 
+#ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
+#define CONFIG_DDR_VOLTAGE              1500
+#endif
+#ifndef CONFIG_VDDAO_VOLTAGE            // VDDAO voltage for resume
+#define CONFIG_VDDAO_VOLTAGE            1200
+#endif
+
 int axp_write(int reg, uint8_t val)
 {
 	int ret;
