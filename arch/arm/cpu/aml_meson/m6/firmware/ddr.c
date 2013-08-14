@@ -107,13 +107,15 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	serial_puts("Low Power & ");
 	#endif
 	
-	if(readl(P_UPCTL_MCFG_ADDR)& (1<<3))
+	if(timing_reg->mcfg & (1<<3))
 		serial_puts("2T mode\n");
 	else
 		serial_puts("1T mode\n");
 #else
 	serial_puts("\nset ddr clock ok!\n");
 #endif
+
+	serial_puts("\nDDR training :");
 
 }
 
@@ -251,6 +253,7 @@ unsigned m6_ddr_init_test(int arg)
 	}
 	writel(0, P_WATCHDOG_TC);
 	ddr_start_again=por_cfg?1:ddr_start_again;
+	serial_putc('\n');
 	return por_cfg;
 }
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
