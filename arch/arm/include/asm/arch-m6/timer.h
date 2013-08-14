@@ -15,8 +15,8 @@
 #define __MESON_TIMER_H_
 #include "io.h"
 //timer E
-#define TIMERE_SUB(timea,timeb) (((timea<<8)-(timeb<<8))>>8)
-#define TIMERE_GET()            (READ_CBUS_REG(ISA_TIMERE)&0xffffff)
+#define TIMERE_SUB(timea,timeb) ((timea)-(timeb))
+#define TIMERE_GET()            (READ_CBUS_REG(ISA_TIMERE))
 
 
 #endif
