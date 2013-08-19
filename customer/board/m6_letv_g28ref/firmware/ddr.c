@@ -87,7 +87,38 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 #ifndef CONFIG_CMD_DDR_TEST
 	wait_pll(3,timing_reg->ddr_clk);
 #endif
-    serial_puts("set ddr clock ok!\n");
+    //serial_puts("set ddr clock ok!\n");
+#if !defined(CONFIG_M6_NOT_DUMP_DDR_INFO)
+
+	if(!((readl(0xc1107d54) >> 9) & 1))	
+	{
+		//error, because all clk setting base on 24MHz
+		serial_puts("\nERROR! XTAL is wrong, try to reset...\n");
+		__udelay(10000); 
+		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
+		while(1);
+	}
+
+	int nPLL = readl(P_HHI_DDR_PLL_CNTL);
+	int nDDRCLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+	serial_puts("\nDDR clock is ");
+	serial_put_dec(nDDRCLK);
+	serial_puts("MHz with ");
+	
+	#ifdef CONFIG_DDR_LOW_POWER
+	serial_puts("Low Power & ");
+	#endif
+	
+	if(timing_reg->mcfg & (1<<3))
+		serial_puts("2T mode\n");
+	else
+		serial_puts("1T mode\n");
+#else
+	serial_puts("\nset ddr clock ok!\n");
+#endif
+
+	serial_puts("\nDDR training :");
+
 }
 
 #ifdef DDR_ADDRESS_TEST_FOR_DEBUG
