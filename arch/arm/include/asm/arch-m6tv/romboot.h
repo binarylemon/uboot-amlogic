@@ -49,7 +49,12 @@
 #define POR_2ND_SDIO_A        2
 #define POR_2ND_SDIO_C        1
 #define POR_2ND_NEVER_CHECKED 0
-
+#define POR_GET_CRYSTAL(a) ((a>>7)&1)
+#define POR_CRYSTAL_24M 1
+#define POR_CRYSTAL_25M 0
+#define POR_GET_USB_CFG(a) ((a>>8)&1)
+#define POR_USB_ENABLE 1
+#define POR_USB_DISABLE 0
 //** ECC mode 7, dma 528 bytes(data+parity),Short mode , no scramble
 #define DEFAULT_ECC_MODE ((2<<20)|(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
 
@@ -140,4 +145,6 @@ extern DataFormat  __magic_word;
 #define ERROR_NAND_MAGIC_WORD 23
 #define ERROR_NAND_INIT_READ  24
 
+#define ERROR_NAND_BLANK_PAGE 25
+#define EFUSE_SECUREBOOT_RSAKEY   8		//size=256(1024bits)
 #endif /* __M6TV_ROMBOOT_H__ */
