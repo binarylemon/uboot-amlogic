@@ -82,6 +82,15 @@ help_customer:
 	@echo The mark in board is "Amlogic JB MXL 1212 Ref Board"
 	@echo config command: \"make m6_g33_1212_config\"
 	
+	
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "Amlogic JB ASD Board PI3100"
+	@echo config command: \"make m6_asd_pi3100_config\"
+	
+	@echo ----------------------------------------------------------------------
+	@echo The mark in board is "Amlogic JB ASD Board PI3900"
+	@echo config command: \"make m6_asd_pi3900_config\"
+	
 	@echo ----------------------------------------------------------------------
 	@echo The mark in board is "DONGLE_AML8726_MX_REF_A"
 	@echo config command: \"make m6_dongle_config\"
