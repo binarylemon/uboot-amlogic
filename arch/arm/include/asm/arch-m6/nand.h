@@ -502,7 +502,7 @@ struct aml_nand_bch_desc{
 #define RETRY_NAND_COPY_NUM	4
 
 #define	READ_RETRY_REG_NUM   	8
-#define	READ_RETRY_CNT   		20
+#define	READ_RETRY_CNT   		30
 
 
 #define	ENHANCE_SLC_REG_NUM   	5
@@ -528,6 +528,7 @@ struct aml_nand_bch_desc{
 #define	HYNIX_20NM_LGA_8GB 		5		//
 //for Toshiba
 #define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
+#define	TOSHIBA_A19NM 			21	
 										//TC58NVG6D2GTA00
 //for SAMSUNG
 #define	SUMSUNG_2XNM 			30	
@@ -536,6 +537,8 @@ struct aml_nand_bch_desc{
 //for SANDISK
 #define    SANDISK_19NM			50
 #define     SANDISK_24NM			51
+#define     SANDISK_A19NM		52
+
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -551,6 +554,8 @@ struct aml_nand_bch_desc{
 #define	NAND_CMD_SANDISK_INIT_ONE				0x3B
 #define	NAND_CMD_SANDISK_INIT_TWO				0xB9
 
+#define	NAND_CMD_SANDISK_DSP_ON					0x26
+#define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
 #define	NAND_CMD_SANDISK_LOAD_VALUE_ONE			0x53
 #define	NAND_CMD_SANDISK_LOAD_VALUE_TWO			0x54
 
