@@ -187,7 +187,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"F serials NAND 8GiB TC58TEG6DCJTA00",  {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},  //need readretry, disable two plane mode
 	{"A serials NAND 4GiB TC58TEG5DCJTA00 ", {NAND_MFR_TOSHIBA, 0xD7, 0x84, 0x93, 0x72, 0x57}, 16384, 4096, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
 	{"A serials NAND 8GiB TC58TEG6DDKTA00 ", {NAND_MFR_TOSHIBA, 0xDE, 0x94, 0x93, 0x76, 0x50}, 16384, 8192, 0x400000, 1280, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	
-
+	{"A serials NAND 16GiB TC58TEG7DCJTA00 ", {NAND_MFR_TOSHIBA, 0x3a, 0x85, 0x93, 0x76, 0x57}, 16384, 16384, 0x400000, 1280, 2, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},
 #endif
 #ifdef NEW_NAND_SUPPORT
 	{"A serials NAND 8GiB SDTNQGAMA-008G ", {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE )},	
@@ -2568,9 +2568,9 @@ static void aml_nand_command(struct mtd_info *mtd, unsigned command, int column,
 
 		aml_chip->page_addr = page_addr / valid_page_num;
 		if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
-			internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums;
+			//internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums;
 			aml_chip->page_addr -= aml_chip->internal_page_nums;
-			aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chip;
+			aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * aml_chip->internal_chipnr;
 		}
 	}
 
@@ -2664,9 +2664,9 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 
 	aml_chip->page_addr = page / valid_page_num;
 	if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
-		internal_chipnr = aml_chip->page_addr / aml_chip->internal_page_nums;
+		//internal_chipnr = aml_chip->page_addr / aml_chip->internal_page_nums;
 		aml_chip->page_addr -= aml_chip->internal_page_nums;
-		aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chipnr;
+		aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * aml_chip->internal_chipnr;
 	}
 
 	if (unlikely(aml_chip->ops_mode & AML_INTERLEAVING_MODE))
@@ -3826,6 +3826,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	u8 dev_id_toshiba_19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDE, 0x84, 0x93, 0x72, 0x57};
 	u8 dev_id_toshiba_19nm_4g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xD7, 0x84, 0x93, 0x72, 0x57};
 	u8 dev_id_toshiba_a19nm_8g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xDe, 0x94, 0x93, 0x76, 0x50};
+	u8 dev_id_toshiba_19nm_16g[MAX_ID_LEN] = {NAND_MFR_TOSHIBA, 0xa3, 0x85, 0x93, 0x76, 0x57};
 	u8 dev_id_samsung_2xnm_8g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xDE, 0xD5, 0x7E, 0x68, 0x44};	
 	u8 dev_id_samsung_2xnm_4g[MAX_ID_LEN] = {NAND_MFR_SAMSUNG, 0xD7, 0x94, 0x7e, 0x64, 0x44};		
 	u8 dev_id_sandisk_19nm_8g[MAX_ID_LEN] = {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57};	
@@ -4221,6 +4222,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	else  if((!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))
 	            ||(!strncmp((char*)type->id, (char*)dev_id_toshiba_24nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
 	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_8g, strlen((const char*)aml_nand_flash_ids[i].id)))
+	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_16g, strlen((const char*)aml_nand_flash_ids[i].id)))
 	            || (!strncmp((char*)type->id, (char*)dev_id_toshiba_19nm_4g, strlen((const char*)aml_nand_flash_ids[i].id)))){
 		aml_chip->new_nand_info.type =  TOSHIBA_24NM;
 		aml_chip->ran_mode = 1;
@@ -6127,9 +6129,9 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 
 					aml_chip->page_addr = page/ valid_page_num;
 				if (unlikely(aml_chip->page_addr >= aml_chip->internal_page_nums)) {
-					internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums;
+					//internal_chip = aml_chip->page_addr / aml_chip->internal_page_nums;
 					aml_chip->page_addr -= aml_chip->internal_page_nums;
-					aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * internal_chip;
+					aml_chip->page_addr |= (1 << aml_chip->internal_chip_shift) * aml_chip->internal_chipnr;
 					}
 				}
 
