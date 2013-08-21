@@ -3171,11 +3171,13 @@ dma_retry_plane1:
 						memset(oob_buf, 0x22, user_byte_num);
 						printk("########%s %d read ecc failed here at at page:%d, blk:%d chip[%d]\n", __func__, __LINE__, page_addr, (page_addr >> pages_per_blk_shift), i);
 						mtd->ecc_stats.failed++;
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_RESET, -1, -1, i);
-						if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
-							printk ("read couldn`t found selected chip: %d ready\n", i);
-							error = -EBUSY;
-							goto exit;
+						if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10)) {
+							aml_chip->aml_nand_command(aml_chip, NAND_CMD_RESET, -1, -1, i);
+							if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
+								printk ("read couldn`t found selected chip: %d ready\n", i);
+								error = -EBUSY;
+								goto exit;
+							}
 						}
 					}
 					else{
@@ -3613,11 +3615,13 @@ dma_retry_plane1:
 
 						memset(oob_buffer, 0x22, user_byte_num);
 						mtd->ecc_stats.failed++;
-						aml_chip->aml_nand_command(aml_chip, NAND_CMD_RESET, -1, -1, i);
-						if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
-							printk ("read couldn`t found selected chip: %d ready\n", i);
-							error = -EBUSY;
-							goto exit;
+						if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10)) {
+							aml_chip->aml_nand_command(aml_chip, NAND_CMD_RESET, -1, -1, i);
+							if (!aml_chip->aml_nand_wait_devready(aml_chip, i)) {
+								printk ("read couldn`t found selected chip: %d ready\n", i);
+								error = -EBUSY;
+								goto exit;
+							}
 						}
 					}
 					else{
