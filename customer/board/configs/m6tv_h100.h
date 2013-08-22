@@ -104,6 +104,7 @@
 	#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
 #endif
 
+#define CONFIG_CMD_REBOOT 1
 #define CONFIG_ANDROID_IMG 1
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
@@ -150,6 +151,7 @@
 	"nandargs=run cvbscheck; nand read logo 0x84100000 0 300000; setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x84100000,${outputtemp},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
 	"nandboot=echo Booting from nand ...;run vdacswitchconfig;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
+        "recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi;if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x84100000,720p\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
@@ -198,6 +200,7 @@
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
+#define CONFIG_PREBOOT
 
 /*POST support*/
 /*
