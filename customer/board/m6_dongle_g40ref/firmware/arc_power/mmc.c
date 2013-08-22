@@ -423,6 +423,7 @@ void save_ddr_settings()
 	v_zq0cr0   = MMC_Rd(PUB_ZQ0CR0_ADDR);
 	v_cmdzq    = MMC_Rd(MMC_CMDZQ_CTRL);
 #endif
+	v_dtar     = MMC_Rd(PUB_DTAR_ADDR);
 }
 
 #if 0
@@ -736,8 +737,10 @@ void init_pctl(void)
 	dbg_out("d",8);
 
 	//MMC_Wr( PUB_DTAR_ADDR, (0x0 | (0 <<12) | (7 << 28))); //training address is 0x90001800 not safe
-	MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
-	
+	//MMC_Wr( PUB_DTAR_ADDR, (0xFc0 | (0xFFFF <<12) | (7 << 28))); //let training address is 0x9fffff00;
+	MMC_Wr(PUB_DTAR_ADDR,v_dtar);
+	serial_put_hex(MMC_Rd(PUB_DTAR_ADDR),32);
+	f_serial_puts(" PUB_DTAR_ADDR\n");
 	//start trainning.
 	// DDR PHY initialization 
 #ifdef CONFIG_TURN_OFF_ODT

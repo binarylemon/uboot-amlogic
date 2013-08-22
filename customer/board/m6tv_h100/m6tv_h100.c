@@ -411,7 +411,7 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
-/*
+#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -419,7 +419,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 1,
-                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH30_1K_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE),
             },
         },
         .rbpin_mode=1,
@@ -427,7 +427,8 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .ran_mode=0,
         .T_REA = 20,
         .T_RHOH = 15,
-    },*/
+    },
+#endif
     {
         .name = NAND_NORMAL_NAME,
         .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
@@ -435,7 +436,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 2,
-                .options = (NAND_TIMING_MODE5| NAND_ECC_BCH30_1K_MODE),
+                .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE | NAND_TWO_PLANE_MODE),
             },
         },
         .rbpin_mode = 1,
