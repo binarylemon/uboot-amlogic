@@ -15,6 +15,9 @@
 #include "sardac_arc.c"
 #endif
 
+#define pwr_ddr_off
+#define POWER_OFF_24M
+//#define POWER_OFF_32K
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M6 MBox
 
@@ -62,29 +65,6 @@ void store_restore_plls(int flag);
 //#define serial_put_hex(a,b)
 //#define wait_uart_empty()
 //#define udelay(a)
-
-extern void udelay(int i);
-extern void wait_uart_empty();
-extern int check_all_regulators(void);
-extern void power_down_ddr_phy(void);
-extern inline void power_off_at_24M();
-extern inline void power_off_at_32K_1();
-extern inline void power_off_at_32K_2();
-extern void power_off_ddr15(void);
-extern unsigned char get_charging_state();
-extern void power_on_ddr15(void);
-extern inline void power_on_at_32k_2();
-extern inline void power_on_at_32k_1();
-extern inline void power_on_at_24M();
-extern void uart_reset();
-extern void init_ddr_pll(void);
-extern void store_vid_pll(void);
-extern void shut_down();
-extern void __udelay(int n);
-extern void init_I2C();
-extern void hx_save_ddr_settings();
-extern void hx_enter_power_down();
-extern void hx_leave_power_down();
 
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts('\n');wait_uart_empty();
 
@@ -175,7 +155,7 @@ void copy_reboot_code()
 	}
 }
 
-#if 0
+
 static void enable_iso_ee()
 {
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
@@ -184,14 +164,11 @@ static void disable_iso_ee()
 {
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
 }
-#endif
 
 static void cpu_off()
 {
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL)|(1<<19),P_HHI_SYS_CPU_CLK_CNTL);
 }
-
-#if 0
 static void switch_to_rtc()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
@@ -218,8 +195,6 @@ static void ee_on()
 {
 	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x1<<9),P_AO_RTI_PWR_CNTL_REG0);
 }
-#endif
-
 static void switch_out_32k()
 {
 /*
@@ -257,7 +232,7 @@ void restart_arm()
 	// bits[16] AXI soft reset
 	setbits_le32( P_A9_CFG2,7<<16);
 	// 1. write flag
-	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	//writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 	// 2. remap AHB SRAM
 	writel(1,P_AHB_ARBDEC_REG);
 	// 3. turn off romboot clock (not sure this is necessary but saves power)
@@ -289,8 +264,8 @@ void restart_arm()
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
 
-//#define pwr_ddr_off 
-#define POWER_OFF_24M
+
+
 //#define POWER_OFF_32K
 
 void enter_power_down()
@@ -454,7 +429,7 @@ void enter_power_down()
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
 		{
-			writel(0,P_AO_RTI_STATUS_REG2);
+			//writel(0,P_AO_RTI_STATUS_REG2);
 			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
 			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 			writel(10,0xc1109904);
@@ -624,9 +599,9 @@ static void store_pll(void)
 	}while((Rd(pll)&0x80000000)==0);
 
 	//Enable PLLs pins
-	//*P_AM_ANALOG_TOP_REG1 |= 0x1; // Enable DDR_PLL enable pin	
-	//#define AM_ANALOG_TOP_REG1    0x206F  ->  0xC11081BC 	
-//	Wr(AM_ANALOG_TOP_REG1, Rd(AM_ANALOG_TOP_REG1)|1);
+	//*P_AM_ANALOG_TOP_REG1 |= 0x1; // Enable DDR_PLL enable pin
+	//#define AM_ANALOG_TOP_REG1    0x206F  ->  0xC11081BC
+	Wr(AM_ANALOG_TOP_REG1, Rd(AM_ANALOG_TOP_REG1)|1);
 
 	//*P_HHI_MPLL_CNTL5   |= 0x1; // Enable Both MPLL and SYS_PLL enable pin
 	//move to following SYS PLL init
@@ -647,9 +622,9 @@ static void store_pll(void)
 		//          use AM_ANALOG_TOP_REG1 for AUD, MPLL
 		//          lock fail
 		Wr_reg_bits(HHI_MPLL_CNTL5,0,0,1);
-		__udelay(10);
+		__udelay(24*10);
 		Wr_reg_bits(HHI_MPLL_CNTL5,1,0,1);
-		__udelay(1000); //1ms for bandgap bootup
+		__udelay(24*1000); //1ms for bandgap bootup
 
 		M6TV_PLL_RESET(HHI_SYS_PLL_CNTL);
 		Wr(HHI_SYS_PLL_CNTL2,pll_settings[1]);
@@ -707,12 +682,6 @@ static void store_pll(void)
 	f_serial_puts("mpll store done.\n");
 	wait_uart_empty();
 
-	Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
-	__udelay(10);
-	Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
-	__udelay(1000); //1ms for bandgap bootup
-
-		/*	
 	//asm volatile ("wfi");
 	//VID PLL
 	do{
@@ -721,140 +690,26 @@ static void store_pll(void)
 		//          use AM_ANALOG_TOP_REG1 for DDR PLL
 		//          lock fail
 		Wr_reg_bits(AM_ANALOG_TOP_REG1,0,0,1);
-		__udelay(10);
+		__udelay(24*10);
 		Wr_reg_bits(AM_ANALOG_TOP_REG1,1,0,1);
-		__udelay(1000); //1ms for bandgap bootup
+		__udelay(24*1000); //1ms for bandgap bootup
 
 		M6TV_PLL_RESET(HHI_VID_PLL_CNTL);
-		//Wr(HHI_VID_PLL_CNTL,  0x600b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
-		Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] );//change VID PLL from 1.584GHz to 1.512GHz
+		//Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] );
 		Wr(HHI_VID_PLL_CNTL2, vidpll_settings[1] );
 		Wr(HHI_VID_PLL_CNTL3, vidpll_settings[2] );
 		Wr(HHI_VID_PLL_CNTL4, vidpll_settings[3] );
-		//Wr(HHI_VID_PLL_CNTL,  0x400b0442 ); //change VID PLL from 1.584GHz to 1.512GHz
-		Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] ); //change VID PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VID_PLL_CNTL,  vidpll_settings[0] | (1<<30));
 		//M6TV_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
 
-		__udelay(500); //wait 100us for PLL lock
+		__udelay(48*100); //wait 100us for PLL lock
 
 	}while((Rd(HHI_VID_PLL_CNTL)&0x80000000)==0);
 	f_serial_puts("vid pll store done.\n");
 	wait_uart_empty();
-*/
+
  	__udelay(100);
 
-}
-
-#define CONFIG_SYS_PLL_SAVE
-void store_restore_plls(int flag)
-{
-    int i;
-    if(flag)
-    {
-#ifdef CONFIG_SYS_PLL_SAVE 
-		pll_settings[0]=readl(P_HHI_SYS_PLL_CNTL);
-		pll_settings[1]=readl(P_HHI_SYS_PLL_CNTL2);
-		pll_settings[2]=readl(P_HHI_SYS_PLL_CNTL3);
-		pll_settings[3]=readl(P_HHI_SYS_PLL_CNTL4);
-
-		for(i=0;i<10;i++)//store mpll
-		{
-			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
-		}
-/*
-		viidpll_settings[0]=readl(P_HHI_VIID_PLL_CNTL);
-		viidpll_settings[1]=readl(P_HHI_VIID_PLL_CNTL2);
-		viidpll_settings[2]=readl(P_HHI_VIID_PLL_CNTL3);
-		viidpll_settings[3]=readl(P_HHI_VIID_PLL_CNTL4);
-*/
-		/*Audio PLL instead*/
-
-
-		vidpll_settings[0]=readl(P_HHI_VID_PLL_CNTL);
-		vidpll_settings[1]=readl(P_HHI_VID_PLL_CNTL2);
-		vidpll_settings[2]=readl(P_HHI_VID_PLL_CNTL3);
-		vidpll_settings[3]=readl(P_HHI_VID_PLL_CNTL4);
-
-#endif //CONFIG_SYS_PLL_SAVE
-
-		//save_ddr_settings();
-		return;
-    }    
-    
-#ifdef CONFIG_SYS_PLL_SAVE 
-
-	//temp define
-#define P_HHI_MPLL_CNTL5         CBUS_REG_ADDR(HHI_MPLL_CNTL5)
-
-	do{
-		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
-		//Note: once SYS PLL is up, there is no need to 
-		//          use AM_ANALOG_TOP_REG1 for VIID, MPLL
-		//          lock fail
-		writel(readl(P_HHI_MPLL_CNTL5)&(~1),P_HHI_MPLL_CNTL5); 
-		udelay(3);
-		writel(readl(P_HHI_MPLL_CNTL5)|1,P_HHI_MPLL_CNTL5); 
-		udelay(30); //1ms in 32k for bandgap bootup
-		
-		writel(1<<29,P_HHI_SYS_PLL_CNTL);		
-		writel(pll_settings[1],P_HHI_SYS_PLL_CNTL2);
-		writel(pll_settings[2],P_HHI_SYS_PLL_CNTL3);
-		writel(pll_settings[3],P_HHI_SYS_PLL_CNTL4);
-		writel((pll_settings[0] & ~(1<<30))|1<<29,P_HHI_SYS_PLL_CNTL);
-		writel(pll_settings[0] & ~(3<<29),P_HHI_SYS_PLL_CNTL);
-		
-		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
-
-		udelay(10); //wait 100us for PLL lock
-	}while((readl(P_HHI_SYS_PLL_CNTL)&0x80000000)==0);
-
-	do{
-		//no need to do bandgap reset
-		writel(1<<29,P_HHI_MPLL_CNTL);
-		for(i=1;i<10;i++)
-			writel(mpll_settings[i],P_HHI_MPLL_CNTL+4*i);
-
-		writel((mpll_settings[0] & ~(1<<30))|1<<29,P_HHI_MPLL_CNTL);
-		writel(mpll_settings[0] & ~(3<<29),P_HHI_MPLL_CNTL);
-		udelay(10); //wait 200us for PLL lock		
-	}while((readl(P_HHI_MPLL_CNTL)&0x80000000)==0);
-/*
-	do{
-		//no need to do bandgap reset
-		if(!(viidpll_settings[0] & 0x3fff))//M,N domain == 0, not restore vid pll
-			break;
-		writel(1<<29,P_HHI_VIID_PLL_CNTL);		
-		writel(viidpll_settings[1],P_HHI_VIID_PLL_CNTL2);
-		writel(viidpll_settings[2],P_HHI_VIID_PLL_CNTL3);
-		writel(viidpll_settings[3],P_HHI_VIID_PLL_CNTL4);
-
-		writel((viidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VIID_PLL_CNTL);
-		writel(viidpll_settings[0] & ~(3<<29),P_HHI_VIID_PLL_CNTL);
-		udelay(10); //wait 200us for PLL lock		
-	}while((readl(P_HHI_VIID_PLL_CNTL)&0x80000000)==0);
-*/
-	/*Audio PLL instead*/
-
-	udelay(3);
-#endif //CONFIG_SYS_PLL_SAVE
-}
-
-void store_vid_pll()
-{
-	if(!(vidpll_settings[0] & 0x7fff))//M,N domain == 0, not restore vid pll
-		return;
-	do{
-		//no need to do bandgap reset
-		writel(1<<29,P_HHI_VID_PLL_CNTL);
-		//writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
-		writel(vidpll_settings[1],P_HHI_VID_PLL_CNTL2);
-		writel(vidpll_settings[2],P_HHI_VID_PLL_CNTL3);
-		writel(vidpll_settings[3],P_HHI_VID_PLL_CNTL4);
-
-		writel((vidpll_settings[0] & ~(1<<30))|1<<29,P_HHI_VID_PLL_CNTL);
-		writel(vidpll_settings[0] & ~(3<<29),P_HHI_VID_PLL_CNTL);
-		udelay(24000); //wait 200us for PLL lock
-	}while((readl(P_HHI_VID_PLL_CNTL)&0x80000000)==0);
 }
 
 
