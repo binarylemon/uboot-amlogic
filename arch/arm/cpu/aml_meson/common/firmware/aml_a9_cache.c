@@ -449,8 +449,9 @@ static void aml_cache_disable(void)
 	flush_dcache_all();
 	cache_disable(CR_I);
 	cache_disable(CR_C);
-	extern void * memset(void * s,char c,size_t count);
-	memset((void *)(0xd9000000 + 32 * 1024),0,0x4000);
+	//temp for CONFIG_AML_SPL_L1_CACHE_ON + NAND boot
+	//extern void * memset(void * s,char c,size_t count);
+	//memset((void *)(0xd9000000 + 32 * 1024),0,0x4000);
 }
 
 static void aml_cache_enable(void)

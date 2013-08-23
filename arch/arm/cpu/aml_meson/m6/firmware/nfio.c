@@ -5,6 +5,11 @@
 #include <config.h>
 #include <asm/arch/io.h>
 #include <asm/arch/nand.h>
+
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+#include <aml_a9_cache.c>
+#endif //#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+
 //#include <asm/arch/firm/config.h>
 /**
 read one page only
@@ -161,7 +166,14 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 
 	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 
+	//for CONFIG_AML_SPL_L1_CACHE_ON + NAND boot
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	do {
+		//invalidate_dcache_range(info_buf, info_buf+pages*PER_INFO_BYTE);
+	}while(info_buf[pages-1]==0);
+#else	
 	while(info_buf[pages-1]==0);
+#endif //#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
 
 	for (k=0; k<pages; k++){
 
