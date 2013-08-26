@@ -169,7 +169,7 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 	//for CONFIG_AML_SPL_L1_CACHE_ON + NAND boot
 #if defined(CONFIG_AML_SPL_L1_CACHE_ON)
 	do {
-		//invalidate_dcache_range(info_buf, info_buf+pages*PER_INFO_BYTE);
+		invalidate_dcache_range(info_buf, info_buf+pages*PER_INFO_BYTE);
 	}while(info_buf[pages-1]==0);
 #else	
 	while(info_buf[pages-1]==0);
