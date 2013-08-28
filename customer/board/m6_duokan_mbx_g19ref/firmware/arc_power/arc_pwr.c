@@ -371,8 +371,9 @@ void enter_power_down()
  	f_serial_puts("step 5\n");
  	wait_uart_empty();
 	cpu_off();
-  
-  
+
+        serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
+        f_serial_puts("\n");
  	f_serial_puts("step 6\n");
  	wait_uart_empty();
 
@@ -471,10 +472,15 @@ void enter_power_down()
             }
 #endif
         //detect WiFi & BT Wake up
-        power_key=readl(P_AO_GPIO_I); 
-        power_key=power_key&(3<<2);
-        if(power_key)
+        power_key=readl(P_AO_GPIO_I);
+        if((power_key&0x4)&&((readl(P_AO_RTI_STATUS_REG1)>>16)&0xff == 0x6a)){
+            power_key = 4;
             break;
+            }
+        if((power_key&0x8)&&(readl(P_AO_RTI_STATUS_REG1)>>24 == 0x6a)){
+            power_key = 8;
+            break;
+            }
     }
 
 #else
@@ -641,7 +647,6 @@ void enter_power_down()
                 break;
 #endif
             case 0x04 : //BT
-            case 0x0C : //BT & WiFi
                 writel(0x12344331,P_AO_RTI_STATUS_REG2);
                 break;
             case 0x08 : //WiFi

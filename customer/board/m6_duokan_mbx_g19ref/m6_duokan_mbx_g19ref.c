@@ -523,16 +523,16 @@ void init_custom_trigger(void)
     writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
     writel(0x8148, P_AO_IR_DEC_REG1);//use 1us
     writel(0xfa004, P_AO_IR_DEC_REG0);//5us
-    time_window[0] = 0x132;//1596/5  leader 13f
-    time_window[1] = 0x148;//1596/5  leader
-    time_window[2] = 0xdc;//1176/5  00
-    time_window[3] = 0xf8;//1420/5  01
-    time_window[4] = 0x110;//1764/5  10
-    time_window[5] = 0x12a;//2088/5   11
-    time_window[6] = 0x150;//1176/5  00
-    time_window[7] = 0x162;//1420/5  01
-    time_window[8] = 0x190;//1764/5  10
-    time_window[9] = 0x200;//2088/5   11
+    time_window[0] = 0x131;//1596/5  leader 13f
+    time_window[1] = 0x149;//1596/5  leader
+    time_window[2] = 0xdb;//1176/5  00
+    time_window[3] = 0xf9;//1420/5  01
+    time_window[4] = 0x10f;//1764/5  10
+    time_window[5] = 0x12b;//2088/5   11
+    time_window[6] = 0x14f;//1176/5  00
+    time_window[7] = 0x163;//1420/5  01
+    time_window[8] = 0x18f;//1764/5  10
+    time_window[9] = 0x201;//2088/5   11
     state = REMOTE_DUOKAN_STATUS_WAIT;
     // enable interrupt
     writel(readl(P_AO_IRQ_MASK_FIQ_SEL)|(1<<4), P_AO_IRQ_MASK_FIQ_SEL);
@@ -595,7 +595,7 @@ int do_irdetect(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
     init_custom_trigger();
 #ifdef DEBUG_IR
-  for(j=0;j<50;j++){
+  for(j=0;j<20;j++){
 #endif
     for(i = 0; i < 1000000; i++)
         if(checkRecoveryKey()){
