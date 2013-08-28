@@ -115,16 +115,10 @@ int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}else if(POR_EMMC_BOOT()) {
 			printk("MMC BOOT, %s %d \n",__func__,__LINE__);
 			run_command("mmcinfo 1",0);
+			//write 1M 0xff from 0 addr
 			run_command("mw.l 82000000 ffffffff 40000", 0);
-			//emmc: switch to boot0 partition
-			if(run_command ("mmc switch 1 boot0", 0)){
-				//switch fail: tsd, write 1M 0xff from 0 addr
-				run_command("mmc write 1 82000000 0 800", 0);
-			}else{
-				//switch success: emmc, should not exceed emmc boot0 partition size
-				run_command("mmc write 1 82000000 0 400", 0);
-			}
-			printk("mmc erase  uboot \n");
+			run_command("mmc write 1 82000000 0 800", 0);
+			printk("mmc erase uboot user partition 0-1MB\n");
 		}else{
 			if(!run_command("sf probe 2", 0)){
 				printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
@@ -136,15 +130,12 @@ int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				run_command("nand device 0",0);
 				run_command("nand erase  0",0);
 				printk("nand erase  uboot \n");
-			}else if(!run_command("mmc info 1", 0)) {
+			}else if(!run_command("mmcinfo 1", 0)) {
 				printk("MMC BOOT, %s %d \n",__func__,__LINE__);
-				run_command("mmcinfo 1",0);
-				run_command("mw.l 82000000 ffffffff 40000", 0);
-				//emmc: switch to boot0 partition
-				run_command ("mmc switch 1 boot0", 0);
 				//write 1M 0xff from 0 addr
-				run_command("mmc write 1 82000000 0 700", 0);
-				printk("mmc erase  uboot \n");
+				run_command("mw.l 82000000 ffffffff 40000", 0);
+				run_command("mmc write 1 82000000 0 800", 0);
+				printk("mmc erase uboot user partition 0-1MB\n");
 			}
 		}
 		
