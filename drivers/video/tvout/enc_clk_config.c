@@ -34,6 +34,11 @@ static void set_hpll_clk_out(unsigned clk)
         default:
             break;
     }
+    WRITE_CBUS_REG(HHI_VID_PLL_CNTL, READ_CBUS_REG(HHI_VID_PLL_CNTL) | (1 << 30));
+    printf("wait hpll lock\n");
+    while(READ_CBUS_REG(HHI_VID_PLL_CNTL) & (1 << 31)) {
+        ;
+    }
 }
 
 static void set_hpll_hdmi_od(unsigned div)
@@ -191,4 +196,5 @@ void set_vmode_clk(vmode_t mode)
     set_vdac0_div(p_enc[j].vdac0_div);
     set_vdac1_div(p_enc[j].vdac1_div);
 
-} 
+}
+ 

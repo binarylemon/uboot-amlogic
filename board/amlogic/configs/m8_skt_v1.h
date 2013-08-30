@@ -43,7 +43,6 @@
 #endif// #ifdef CONFIG_ACS
 #endif// #if CONFIG_AML_V2_USBTOOL
 
-
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
