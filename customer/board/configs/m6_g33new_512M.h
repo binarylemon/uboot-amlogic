@@ -4,6 +4,7 @@
 #define CONFIG_SUPPORT_CUSOTMER_BOARD 1
 #define CONFIG_AML_MESON_6 1
 #define M6_G33_V1 1
+#define CONFIG_SPI_NAND_EMMC_COMPATIBLE   1
 
 /*
  *  write to efuse/nand when usb_burning 
@@ -12,11 +13,9 @@
 #define CONFIG_AML_MESON6
 //#define WRITE_TO_EFUSE_ENABLE	
 #define WRITE_TO_NAND_ENABLE
-
-#if defined(WRITE_TO_NAND_ENABLE)
 #define CONFIG_SECURITYKEY 1
 #define CONFIG_AML_NAND_KEY 1
-#endif
+#define CONFIG_AML_EMMC_KEY	1
 
 #define CONFIG_HDCP_PREFETCH 1
 
@@ -144,6 +143,82 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		uImage
 
+#ifdef CONFIG_SPI_NAND_EMMC_COMPATIBLE
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"mmc_logo_offset=0x24000\0" \
+	"mmc_boot_offset=0x44000\0" \
+	"mmc_recovery_offset=0x34000\0" \
+	"mmc_read_size=0x4000\0" \
+	"loadaddr=0x82000000\0" \
+	"testaddr=0x82400000\0" \
+	"loadaddr_misc=0x83000000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m6_refg24\0" \
+	"chipname=8726m\0" \
+	"chiprev=B\0" \
+	"machid=4e27\0" \
+	"upgrade_step=0\0" \
+	"logo_img_size=0\0" \
+	"video_dev=panel\0" \
+	"display_width=1024\0" \
+	"display_height=600\0" \
+	"display_bpp=16\0" \
+	"display_color_format_index=16\0" \
+	"display_layer=osd2\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x85100000\0" \
+	"sleep_threshold=20\0" \
+	"batlow_threshold=10\0" \
+	"batfull_threshold=100\0" \
+	"power_off=video dev disable; msleep 100; poweroff\0" \
+	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend mem=512m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
+	"preboot=if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; run update_chiprev; fi; run read_logo; unpackimg ${loadaddr_misc}; run val_init; usbbc; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
+	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update_chiprev; run update; fi\0" \
+	"switch_bootmode=if test ${reboot_mode} = normal; then run prepare; bmp display ${poweron_offset}; else if test ${reboot_mode} = factory_reset; then run recovery; else if test ${reboot_mode} = update; then run update; else run charging_or_not; fi; fi; fi\0" \
+	"prepare=run read_logo; unpackimg ${loadaddr_misc}; video open; video clear; video dev bl_on\0" \
+	"update=run prepare; bmp display ${bootup_offset}; if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi; run read_recovery; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm\0" \
+	"recovery=run run_recovery\0" \
+	"charging_or_not=if ac_online; then run prepare; run charging; else if getkey; then run prepare; bmp display ${poweron_offset}; run bootcmd; else run power_off; fi; fi\0" \
+	"charging=video clear; run display_loop\0" \
+	"display_loop=while itest 1 == 1; do get_batcap; if itest ${battery_cap} >= ${batfull_threshold}; then bmp display ${batteryfull_offset}; run custom_delay; else bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; fi; done\0" \
+	"custom_delay=setenv msleep_count 0; while itest ${msleep_count} < 800; do run aconline_or_not; run updatekey_or_not; run usb_burning_or_not; msleep 1; calc ${msleep_count} + 1 msleep_count; done; run sleep_or_not\0" \
+	"sleep_or_not=if itest ${sleep_count} > ${sleep_threshold}; then run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; fi\0" \
+	"into_sleep=suspend; while itest ${sleep_enable} == 1; do run sleep_get_key; done; video dev enable; video dev bl_on\0" \
+	"sleep_get_key=run aconline_or_not;if getkey; then msleep 100; if getkey; then setenv sleep_enable 0; fi; fi; if saradc get_in_range 0x0 0x380; then msleep 100; if saradc get_in_range 0x0 0x380; then setenv sleep_enable 0; fi; fi\0" \
+	"powerkey_or_not=if getkey; then msleep 500; if getkey; then run bootcmd; fi; fi\0" \
+	"updatekey_or_not=if saradc get_in_range 0x105 0x150; then msleep 500; if getkey; then if saradc get_in_range 0x105 0x150; then run update; fi; fi; fi\0" \
+	"aconline_or_not=if ac_online; then; else run power_off; fi\0" \
+	"batlow_or_not=if ac_online; then; else get_batcap; if itest ${battery_cap} < ${batlow_threshold}; then run prepare; run batlow_warning; run power_off; fi; fi\0" \
+	"batlow_warning=bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 1000\0" \
+	"val_init=setenv sleep_count 0; setenv key_timeout 0; setenv key_pressed 0; setenv poweron_count 0; setenv key_count 0\0" \
+	"usb_burning_or_not=if getkey; then if itest ${key_pressed} == 0; then calc ${key_count} + 1 key_count; setenv key_pressed 1; setenv poweron_count 0; echo 1; else calc ${poweron_count} + 1 poweron_count; if itest ${poweron_count} > 1000; then run bootcmd; fi; fi;else if itest ${key_pressed} == 1; then setenv key_pressed 0; setenv key_timeout 0; echo 3; else calc ${key_timeout} + 1 key_timeout ;if itest ${key_timeout} > 200; then setenv key_timeout 0; setenv key_count 0;fi;fi;fi;if itest ${key_count} > 2; then setenv key_count 0;run sdcard_update;run usb_burning; fi;\0" \
+	"usb_burning=tiny_usbtool 20000\0" \
+    "sdcard_update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; fi;\0" \
+    "update_chiprev=chiprev; setenv bootargs ${bootargs} chiprev=${chiprev}\0" \
+	"storage=null\0" \
+	"detect_storage=echo detect_storage ;nand exist; setenv no_nand $?; if test ${no_nand} = 0; then setenv storage nand ; echo setenv storage nand; else if test ${no_nand} = 1; then setenv storage mmc ;echo setenv storage mmc; fi;fi\0" \
+	"check_storage=if test ${storage} = null; then run detect_storage;fi;\0" \
+	"nand_recovery=run prepare; bmp display ${bootup_offset}; if nand read recovery ${loadaddr} 0 600000; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; else echo no uImage_recovery in NAND; fi\0" \
+	"mmc_recovery=run prepare; bmp display ${bootup_offset}; if mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_read_size}; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; else echo no uImage_recovery in EMMC; fi\0" \
+	"run_recovery=run check_storage;if test ${storage} = nand; then run nand_recovery;else if test ${storage} = mmc; then run mmc_recovery;fi;fi\0" \
+	"nand_read_logo=if itest ${logo_img_size} == 0; then nand read logo ${loadaddr_misc}; get_img_size ${loadaddr_misc} logo_img_size; else nand read logo ${loadaddr_misc} 0 ${logo_img_size}; fi;\0" \
+	"mmc_read_logo=mmc read 1 ${loadaddr_misc} ${mmc_logo_offset} ${mmc_read_size} \0" \
+	"read_logo=run check_storage;if test ${storage} = nand; then run nand_read_logo;else if test ${storage} = mmc; then run mmc_read_logo;fi;fi\0" \
+	"nand_read_recovery=nand read recovery ${loadaddr_misc} 0 ${logo_img_size}\0" \
+	"mmc_read_recovery=mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_read_size} \0" \
+	"read_recovery=run check_storage;if test ${storage} = nand; then run nand_read_recovery;else if test ${storage} = mmc; then run mmc_read_recovery;fi;fi\0" \
+	"nand_read_recovery=nand read recovery ${loadaddr_misc} 0 ${logo_img_size}\0" \
+	"mmc_read_recovery=mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_read_size} \0" \
+	"read_recovery=run check_storage;if test ${storage} = nand; then run nand_read_recovery;else if test ${storage} = mmc; then run mmc_read_recovery;fi;fi\0" \
+	"mmcboot=bmp display ${bootup_offset}; mmc read 1 ${loadaddr} ${mmc_boot_offset} ${mmc_read_size}; setenv bootargs ${bootargs} a9_clk_max=1512000000; hdcp prefetch emmc; bootm\0" \
+	"nandboot=bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=1512000000; hdcp prefetch nand; bootm\0" \
+	"compatible_boot=run check_storage;if test ${storage} = nand; then echo compatible nand;run nandboot;else if test ${storage} = mmc; then run mmcboot;fi;fi\0"
+
+#define CONFIG_BOOTCOMMAND  "run compatible_boot"
+#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
@@ -198,6 +273,8 @@
 
 #define CONFIG_BOOTCOMMAND  "bmp display ${bootup_offset}; nand read boot ${loadaddr} 0 600000; setenv bootargs ${bootargs} a9_clk_max=1512000000; hdcp prefetch nand; bootm"
 
+#endif
+
 #define CONFIG_AUTO_COMPLETE	1
 
 #define BOOT_DEVICE_FLAG  READ_CBUS_REG(ASSIST_POR_CONFIG)
@@ -213,13 +290,9 @@
 //nand
 #define CONFIG_ENV_IN_NAND_OFFSET       0x400000
 #define CONFIG_ENV_BLOCK_NUM    2
-
-#elif  defined  CONFIG_MMC_BOOT
-
-#define CONFIG_ENV_IS_IN_MMC
-#define CONFIG_CMD_SAVEENV
-#define CONFIG_SYS_MMC_ENV_DEV		  0 
-#define CONFIG_ENV_OFFSET		0x1000000	
+//emmc
+#define CONFIG_SYS_MMC_ENV_DEV		  1
+#define CONFIG_ENV_IN_EMMC_OFFSET		0x80000
 
 #else
 
