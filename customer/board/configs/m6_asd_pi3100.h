@@ -243,7 +243,7 @@
 	"display_color_bg=0\0" \
 	"fb_addr=0x85100000\0" \
 	"sleep_threshold=20\0" \
-	"batlow_threshold=10\0" \
+	"batlow_threshold=3\0" \
 	"batfull_threshold=100\0" \
 	"power_off=video dev disable; msleep 100; poweroff\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \

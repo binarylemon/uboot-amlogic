@@ -484,7 +484,7 @@ static int usb_charging_detect_call_back(char bc_mode)
 		case BC_MODE_UNKNOWN:
 		case BC_MODE_SDP:
 		default:
-			axp_charger_set_usbcur_limit(500); //Limit chargging current <= 500mA
+			axp_charger_set_usbcur_limit(900); //Limit chargging current <= 500mA
 			//Or detet dec-charger
 			break;
 	}
