@@ -179,16 +179,44 @@ u32 get_board_rev(void)
 static int  sdio_init(unsigned port)
 {	
     //todo add card detect 	
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-
-      return cpu_sdio_init(port);
+	//setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			//todo add card detect
+			setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+			break;
+		case SDIO_PORT_C:
+			//enable pull up
+			clrbits_le32(P_PAD_PULL_UP_REG3, 0x3ff<<0);
+			break;
+		default:
+			break;
+	}
+    return cpu_sdio_init(port);
 }
 static int  sdio_detect(unsigned port)
 {
 	int ret;
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-	ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
-	printf( " %s return %d\n",__func__,ret);
+	//setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+	//ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+	//printf( " %s return %d\n",__func__,ret);
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+			ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+			printf( " %s return %d\n",__func__,ret);
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
 	return 0;
 }
 static void sdio_pwr_prepare(unsigned port)
@@ -199,14 +227,40 @@ static void sdio_pwr_prepare(unsigned port)
 }
 static void sdio_pwr_on(unsigned port)
 {
-	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	//clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	//clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+			clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
     /// @todo NOT FINISH
 }
 static void sdio_pwr_off(unsigned port)
 {
-	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	//setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+	//clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+	{
+		case SDIO_PORT_A:
+			break;
+		case SDIO_PORT_B:
+			setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+			clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+			break;
+		case SDIO_PORT_C:
+			break;
+		default:
+			break;
+	}
 	/// @todo NOT FINISH
 }
 static void board_mmc_register(unsigned port)
@@ -216,42 +270,25 @@ static void board_mmc_register(unsigned port)
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
+    memset(mmc,0,sizeof(*mmc));
     aml_priv->sdio_init=sdio_init;
 	aml_priv->sdio_detect=sdio_detect;
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
 	sdio_register(mmc,aml_priv);
-#if 0    
-    strncpy(mmc->name,aml_priv->name,31);
-    mmc->priv = aml_priv;
-	aml_priv->removed_flag = 1;
-	aml_priv->inited_flag = 0;
-	aml_priv->sdio_init=sdio_init;
-	aml_priv->sdio_detect=sdio_detect;
-	aml_priv->sdio_pwr_off=sdio_pwr_off;
-	aml_priv->sdio_pwr_on=sdio_pwr_on;
-	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
-	mmc->send_cmd = aml_sd_send_cmd;
-	mmc->set_ios = aml_sd_cfg_swth;
-	mmc->init = aml_sd_init;
-	mmc->rca = 1;
-	mmc->voltages = MMC_VDD_33_34;
-	mmc->host_caps = MMC_MODE_4BIT | MMC_MODE_HS;
-	//mmc->host_caps = MMC_MODE_4BIT;
-	mmc->bus_width = 1;
-	mmc->clock = 300000;
-	mmc->f_min = 200000;
-	mmc->f_max = 50000000;
-	mmc_register(mmc);
-#endif	
+	/*
+	* Normal procedure here, if you want init quickly for emmc,
+	* do not set mmc->block_dev.if_type
+	*/
+	mmc->block_dev.if_type = IF_TYPE_SD;
 }
 
 int board_mmc_init(bd_t	*bis)
 {
 //board_mmc_register(SDIO_PORT_A);
 	board_mmc_register(SDIO_PORT_B);
-//	board_mmc_register(SDIO_PORT_C);
+	board_mmc_register(SDIO_PORT_C);
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;
 }
@@ -297,6 +334,12 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     }
 };
 
+static void board_pmu_init(void)
+{
+#ifdef CONFIG_AW_AXP20
+    // todo add your platform needed init code here
+#endif
+}
 
 static void board_i2c_init(void)
 {		
@@ -313,7 +356,8 @@ static void board_i2c_init(void)
 	/*M6 board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10000);
+    board_pmu_init();
 }
 #endif /*CONFIG_AML_I2C*/
 
