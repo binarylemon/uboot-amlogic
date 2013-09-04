@@ -1128,8 +1128,8 @@ uint8_t aml_nand_set_reg_value_toshiba(struct aml_nand_chip *aml_chip,  uint8_t 
 	struct mtd_info *mtd = &aml_chip->mtd;
 	int j;
 
-	if(aml_chip->new_nand_info.type != TOSHIBA_24NM)
-		return 0;
+	//if(aml_chip->new_nand_info.type != TOSHIBA_24NM)
+	//	return 0;
 
 
 	aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
@@ -1168,8 +1168,8 @@ void aml_nand_read_retry_handle_toshiba(struct mtd_info *mtd, int chipnr)
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	int cur_cnt;
 
-	if(aml_chip->new_nand_info.type != TOSHIBA_24NM)
-		return;
+	//if(aml_chip->new_nand_info.type != TOSHIBA_24NM)
+	//	return;
 	
 	if(aml_chip->toggle_mode) {
 		NFC_EXIT_SYNC_ADJ() ; 
@@ -1934,7 +1934,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
                 break;
             }
 			error = mtd->block_isbad(mtd, offset);
-			if (error) {
+			if (error == FACTORY_BAD_BLOCK_ERROR) {
 				adjust_offset += mtd->erasesize;
 				continue;
 			}
@@ -5851,7 +5851,7 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 //	struct menson_key *aml_menson_key;
 	env_t *env_ptr;
 	int error = 0, start_blk, total_blk, i, j, nr, phys_erase_shift;
-	loff_t offset;
+	loff_t offset =0;
 	error = aml_nand_env_init(mtd);
 	if (error)
 		return error;
@@ -5873,7 +5873,10 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 		}
 
 		phys_erase_shift = fls(mtd->erasesize) - 1;
-		offset = (1024 * mtd->writesize / aml_chip->plane_num);
+		if (nand_boot_flag)
+			offset = (1024 * mtd->writesize / aml_chip->plane_num);
+		else
+			offset = 0;
 #ifdef NEW_NAND_SUPPORT
 		if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 			offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
