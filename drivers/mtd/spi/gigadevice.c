@@ -30,6 +30,7 @@ static inline struct gigadevice_spi_flash *to_gigadevice_spi_flash(struct spi_fl
 
 #define GIGADEVICE_ID_GD25Q16 0x4015
 #define GIGADEVICE_ID_GD25Q32 0x4016
+#define GIGADEVICE_ID_GD25Q40 0x4013
 
 static const struct gigadevice_spi_flash_params gigadevice_spi_flash_table[] = {
 	{	.id			 = GIGADEVICE_ID_GD25Q16,
@@ -44,6 +45,12 @@ static const struct gigadevice_spi_flash_params gigadevice_spi_flash_table[] = {
 		.chip_size	 = 64*16*4*1024,
 		.name		 = "GD25Q32",
 	},	
+	{	.id			 = GIGADEVICE_ID_GD25Q40,
+		.sector_size = 4*1024,
+		.block_size	 = 16*4*1024 ,
+		.chip_size	 = 8*16*4*1024,
+		.name		 = "GD25Q40",
+	},
 };
 
 static int gigadevice_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
