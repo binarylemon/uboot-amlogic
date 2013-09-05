@@ -6,10 +6,7 @@
 
 //wait for pll lock
 //must wait first (100us+) then polling lock bit to check
-#define M6_PLL_WAIT_FOR_LOCK(pll) \
-	do{\
-		__udelay(1000);\
-	}while((READ_MPEG_REG(pll)&0x80000000)==0);
+#define M6_PLL_WAIT_FOR_LOCK(pll) 
 
 //M6 PLL control value 
 #define M6_PLL_CNTL_CST2 (0x814d3928)

@@ -62,7 +62,8 @@ COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
 	tvout/hdmi_tx_edid.o \
 	tvout/hdmi_tx_video.o \
 	tvout/enc_clk_config.o \
-	tvout/dsp.o
+	tvout/dsp.o \
+    $(patsubst %.c,%.o,$(wildcard tvout/hdmi_ucode/*.c))
 endif
 
 COBJS	:= $(COBJS-y)

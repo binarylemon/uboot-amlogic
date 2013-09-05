@@ -186,6 +186,22 @@ int tv_out_open(int mode)
         WRITE_MPEG_REG(VPP_POSTBLEND_H_SIZE, tvinfoTab[mode].xres);
 
 	set_disp_mode_auto(mode);
+#ifdef CONFIG_AML_MESON_8
+    printf("config HPLL\n");
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x69c88000);
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0xca563823);
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x00238100);
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL5, 0x00012286);
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL,  0x6001043d);
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL,  0x4001043d);
+    printf("waiting HPLL lock\n");
+    while(!(READ_MPEG_REG(HHI_VID_PLL_CNTL) & (1 << 31))) {
+        ;
+    }
+    WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x69c8ce00);
+    WRITE_MPEG_REG(HHI_HDMI_PHY_CNTL1, 2);
+    WRITE_MPEG_REG(HHI_HDMI_PHY_CNTL0, 0x08c38d0b);
+#endif
         return 0;
     }
 

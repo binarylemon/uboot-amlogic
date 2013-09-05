@@ -1102,7 +1102,7 @@ static void hdmi_hw_reset(Hdmi_tx_video_para_t *param)
     //tmp_add_data[2] = 1'b1;  // TX_AFE_FIFO channel 2 enable
     //tmp_add_data[1] = 1'b1;  // TX_AFE_FIFO channel 1 enable
     //tmp_add_data[0] = 1'b1;  // TX_AFE_FIFO channel 0 enable
-    tmp_add_data = 0x0f;
+    tmp_add_data = 0x7f;
     hdmi_wr_reg(TX_SYS5_FIFO_CONFIG, tmp_add_data);
     
     tmp_add_data  = 0;
@@ -1279,7 +1279,7 @@ static void hdmitx_set_pll(Hdmi_tx_video_para_t *param)
     }
         printf("%s[%d]\n", __func__, __LINE__);
 
-    M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
+//    M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
         printf("%s[%d]\n", __func__, __LINE__);
 
 }

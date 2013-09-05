@@ -53,6 +53,7 @@ static unsigned char init_powermode=0;
 
 void init_hdmi(void)
 {
+#if 0
     printf("hdmi init\n");
 	 HDMITX_M1B_Init(&hdmitx_device);
 
@@ -64,13 +65,16 @@ void init_hdmi(void)
 //            hdmitx_device.HWOp.Cntl(&hdmitx_device, HDMITX_HWCMD_LOWPOWER_SWITCH, init_powermode&0x1f);    
         }
     }
-
+#endif
+    printf("HDMI Init\n");
+    C_Entry();
 }
 
 #define PRINT_TEMP_BUF_SIZE 512
 
 int set_disp_mode_auto(int mode)
 {
+#if 0
     int ret=-1;
    char  mode_name[][16]=
    {
@@ -89,7 +93,9 @@ int set_disp_mode_auto(int mode)
     if(ret>=0){
         hdmitx_device.cur_VIC = vic;    
     }
-    return ret;
+    C_Entry();
+#endif
+    return 1;
 }    
 
 
