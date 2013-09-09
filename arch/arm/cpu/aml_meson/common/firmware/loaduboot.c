@@ -1,6 +1,9 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
+#ifdef CONFIG_M8
+#include <m8_smp.dat>
+#endif
 
 #if defined(CONFIG_M6_SECU_BOOT)
 #include "../../../../../../drivers/secure/sha2.c"
@@ -33,6 +36,22 @@ short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
 }
 #endif
 
+#ifdef CONFIG_M8
+SPL_STATIC_FUNC int load_m8_smp_code()
+{
+	serial_puts("Start load M8 SMP code!\n");
+	unsigned * paddr = (unsigned*)0x0;
+	unsigned size = sizeof(m8_smp_code)/sizeof(unsigned);
+
+	int i;
+	for(i = 0; i < size; i++){
+		*paddr = m8_smp_code[i];
+		paddr++;
+	}
+	serial_puts("Load M8 SMP code finished!\n");
+}
+#endif
+
 SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 	unsigned por_cfg=romboot_info->por_cfg;
@@ -40,6 +59,10 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned size;
 	int rc=0;
     serial_puts("\nHHH\n");
+
+#ifdef CONFIG_M8
+	load_m8_smp_code();
+#endif
 
 #ifdef  CONFIG_AML_SPL_L1_CACHE_ON
 	aml_cache_enable();
