@@ -7,7 +7,11 @@ else
 targetComplier=gcc
 endif
 
+
 all:	  
+ifdef CONFIG_M8
+	./bin2code m8_smp_code $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/m8_smp.bin $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/m8_smp.dat
+endif
 	$(MAKE) -f Makefile.$(targetComplier)
 	$(MAKE) -f Makefile.ddr_init
 ifeq ($(CONFIG_CMD_RUNARC),y)

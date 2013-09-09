@@ -40,7 +40,7 @@ short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
 SPL_STATIC_FUNC int load_m8_smp_code()
 {
 	serial_puts("Start load M8 SMP code!\n");
-	unsigned * paddr = (unsigned*)0x0;
+	unsigned * paddr = (unsigned*)PHYS_MEMORY_START;
 	unsigned size = sizeof(m8_smp_code)/sizeof(unsigned);
 
 	int i;
