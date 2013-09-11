@@ -32,9 +32,23 @@ void __efuse_write_byte( unsigned long addr, unsigned long data )
             CNTL1_AUTO_WR_ENABLE_BIT, CNTL1_AUTO_WR_ENABLE_SIZE );
     }
 
+#ifdef CONFIG_M8
+	unsigned int byte_sel = addr % 4;
+	addr = addr / 4;
+
     /* write the address */
     WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, addr,
         CNTL1_BYTE_ADDR_BIT, CNTL1_BYTE_ADDR_SIZE );
+
+	//auto write byte select (0-3), for m8
+	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL3, byte_sel,
+        CNTL1_AUTO_WR_START_BIT, 2 );
+#else
+	/* write the address */
+    WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, addr,
+        CNTL1_BYTE_ADDR_BIT, CNTL1_BYTE_ADDR_SIZE );
+#endif
+
     /* set starting byte address */
     WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_BYTE_ADDR_SET_ON,
         CNTL1_BYTE_ADDR_SET_BIT, CNTL1_BYTE_ADDR_SET_SIZE );
@@ -74,6 +88,10 @@ void __efuse_read_dword( unsigned long addr, unsigned long *data )
 	*data = p[addr>>2];
 	return;
 #endif		
+
+#ifdef CONFIG_M8
+	addr = addr / 4;	//each address have 4 bytes in m8
+#endif
     unsigned long auto_rd_is_enabled = 0;
     
     if( READ_EFUSE_REG(P_EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_RD_ENABLE_BIT ) )
@@ -127,7 +145,7 @@ int efuse_init(void)
     /* disable efuse encryption */
     WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL4, CNTL4_ENCRYPT_ENABLE_OFF,
         CNTL4_ENCRYPT_ENABLE_BIT, CNTL4_ENCRYPT_ENABLE_SIZE );
-#ifdef CONFIG_M6
+#if defined(CONFIG_M6) || defined(CONFIG_M8)
 	// clear power down bit
 	WRITE_EFUSE_REG_BITS(P_EFUSE_CNTL1, CNTL1_PD_ENABLE_OFF, 
 			CNTL1_PD_ENABLE_BIT, CNTL1_PD_ENABLE_SIZE);
