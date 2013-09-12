@@ -327,6 +327,7 @@ typedef struct table_entry {
 	char	*lname;		/* long (output) name to print for messages */
 } table_entry_t;
 
+int get_relocate_addr(char **of_flat_tree, __u32 rd_len, __u32 ft_len);
 /*
  * get_table_entry_id() scans the translation table trying to find an
  * entry that matches the given short name. If a matching entry is
