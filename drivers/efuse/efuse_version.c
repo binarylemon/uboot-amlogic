@@ -382,6 +382,85 @@ static efuseinfo_item_t efuseinfo_v4[] =
 };
 #endif
 
+//m8 efuse layout
+static efuseinfo_item_t efuseinfo_m8_v5[] = 
+{
+	{
+		.title = "licence",
+		.offset = 0,
+		.enc_len = 4,
+		.data_len = 4,
+		.we=0,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "nandextcmd",
+		.offset = 4,
+		.enc_len = 16,
+		.data_len = 16,
+		.we=1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac",    //for the main network interface
+		.offset = 436,
+		.enc_len = 6,
+		.data_len = 6,
+		.we=1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac_bt",  //for the second network interface or bt
+		.offset = 442,
+		.enc_len = 6,
+		.data_len = 6,
+		.we=1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac_wifi", //for the second network interface or bt
+		.offset = 448,
+		.enc_len = 6,
+		.data_len = 6,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "usid",
+		.offset = 454,
+		.enc_len = 48,
+		.data_len = 48,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "machineid", 
+		.offset = 502,
+		.enc_len = 4,
+		.data_len = 4,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "version",
+		.offset = M8_EFUSE_VERSION_OFFSET, //509
+		.enc_len = M8_EFUSE_VERSION_ENC_LEN, //1
+		.data_len = M8_EFUSE_VERSION_DATA_LEN,//1
+		.we = 1,
+		.bch_en = M8_EFUSE_VERSION_BCH_EN, //0
+		.bch_reverse = M8_EFUSE_VERSION_BCH_REVERSE, //0
+	},
+	{
+	},
+};
+
 efuseinfo_t efuseinfo[] = 
 {
 	{
@@ -406,7 +485,14 @@ efuseinfo_t efuseinfo[] =
 		.version = 4,
 	},
 #endif	
+	{
+		.efuseinfo_version = efuseinfo_m8_v5,
+		.size = sizeof(efuseinfo_m8_v5)/sizeof(efuseinfo_item_t),
+		.version = 5,
+	},
 };
+
+
 
 int efuseinfo_num = sizeof(efuseinfo)/sizeof(efuseinfo_t);
 int efuse_active_version = -1;
