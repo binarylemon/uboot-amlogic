@@ -21,6 +21,9 @@ void __efuse_write_byte( unsigned long addr, unsigned long data )
 	//printf("addr=%d, data=%x\n", addr, data);
     unsigned long auto_wr_is_enabled = 0;
 
+	//set efuse PD=0
+	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, 0, 27, 1);
+
     if ( READ_EFUSE_REG( P_EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_WR_ENABLE_BIT ) )
     {
         auto_wr_is_enabled = 1;
@@ -77,6 +80,10 @@ void __efuse_write_byte( unsigned long addr, unsigned long data )
         WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_WR_ENABLE_OFF,
             CNTL1_AUTO_WR_ENABLE_BIT, CNTL1_AUTO_WR_ENABLE_SIZE );
     }
+
+	//set efuse PD=1
+	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, 1, 27, 1);
+
 #endif   // endif trustzone    
 }
 
@@ -94,6 +101,9 @@ void __efuse_read_dword( unsigned long addr, unsigned long *data )
 #endif
     unsigned long auto_rd_is_enabled = 0;
     
+	//set efuse PD=0
+	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, 0, 27, 1);
+
     if( READ_EFUSE_REG(P_EFUSE_CNTL1) & ( 1 << CNTL1_AUTO_RD_ENABLE_BIT ) )
     {
         auto_rd_is_enabled = 1;
@@ -134,6 +144,9 @@ void __efuse_read_dword( unsigned long addr, unsigned long *data )
         WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
             CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
     }
+
+	//set efuse PD=1
+	WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, 1, 27, 1);
 
     //printf("__efuse_read_dword: addr=%ld, data=0x%lx\n", addr, *data);
 #endif   // end if trustzone    
