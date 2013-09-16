@@ -23,12 +23,15 @@ extern inline int set_charging_current(int current);
 static int do_getkey (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	static int key_enable = 0;
-	if(!key_enable)
-	{
+	int key_value = 0;
+	if(!key_enable){
 		key_init();
 		key_enable = 1;
+		//wait ready for gpio power key,  frank.chen
+        	mdelay(20);
 	}
-	return !get_key();
+	key_value = get_key();
+	return !key_value;
 }
 
 

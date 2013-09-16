@@ -21,6 +21,7 @@
 #include <common.h>
 #include <asm/arch/io.h>
 #include <asm/arch/canvas.h>
+#include <asm/arch/canvas_missed_define.h>
 
 //#define __DBG__CANVAS__
 #ifdef __DBG__CANVAS__

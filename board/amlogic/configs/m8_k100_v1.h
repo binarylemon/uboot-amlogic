@@ -49,14 +49,14 @@
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
-//#define CONFIG_VIDEO_AML 1
-//#define CONFIG_CMD_BMP 1
+#define CONFIG_VIDEO_AML 1
+#define CONFIG_CMD_BMP 1
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 #define CONFIG_VIDEO_AMLLCD
 #define LCD_BPP LCD_COLOR16
-#define LCD_TEST_PATTERN
+//#define LCD_TEST_PATTERN
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1

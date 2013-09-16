@@ -27,6 +27,8 @@
 #include <asm/arch/osd_hw.h>
 #include <asm/arch/canvas.h>
 #include <asm/arch/osd_hw_def.h>
+#include <asm/arch/canvas_missed_define.h>
+#include <asm/arch/vpp_misc_missed_define.h>
 
 //#define __DBG__OSD_HW__
 #ifdef __DBG__OSD_HW__
@@ -134,12 +136,20 @@ void osd_reg_debug(void)
 	printf("OSD1:\n");
 	for(i=0x1a10; i<0x1a30; i++)
 	{
-		printf("0x%x: 0x%x\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
+#ifdef CONFIG_AML_MESON_8
+		printf("0x%08x(0x%04x): 0x%x\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
+#else
+		printf("0x%08x: 0x%x\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
+#endif
 	}
 	printf("OSD2:\n");
 	for(i=0x1a30; i<0x1a50; i++)
 	{
+#ifdef CONFIG_AML_MESON_8
+                printf("0x%08x(0x%04x): 0x%x\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
+#else
 		printf("0x%x: 0x%x\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
+#endif
 	}
 }
 #endif
@@ -1286,6 +1296,15 @@ void osd_init_hw(void)
 	writel(data32, P_VIU_OSD1_CTRL_STAT);
 	writel(data32, P_VIU_OSD2_CTRL_STAT);
 
+	data32 = readl(P_VPP_OFIFO_SIZE);
+	#ifdef CONFIG_M8
+        data32 &= 0xffffe000; //0~13bit
+        #else
+        data32 = 0xfffff000;  //0~12bit
+        #endif
+	data32 |= 0x77f;
+	writel(data32, P_VPP_OFIFO_SIZE);
+
 #if defined(CONFIG_FB_OSD2_CURSOR)    
 	setbits_le32(P_VPP_MISC, VPP_POST_FG_OSD2|VPP_PRE_FG_OSD2);
 	osd_hw.osd_order=OSD_ORDER_10;
@@ -1313,7 +1332,13 @@ void osd_init_hw(void)
 	osd_hw.scale[OSD2].h_enable=osd_hw.scale[OSD2].v_enable=0;
 	osd_hw.mode_3d[OSD2].enable=osd_hw.mode_3d[OSD1].enable=0;
 	osd_hw.block_mode[OSD1] = osd_hw.block_mode[OSD2] = 0;
-	
+
+#if defined(CONFIG_AML_MESON_8)
+	writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);	
+	writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
+	writel(0x00000000, P_VPU_MEM_PD_REG0);
+	writel(0x00000000, P_VPU_MEM_PD_REG1);
+#endif
 	
 #ifdef FIQ_VSYNC
 	osd_hw.fiq_handle_item.handle=vsync_isr;

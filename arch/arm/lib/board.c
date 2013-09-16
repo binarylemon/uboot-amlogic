@@ -527,7 +527,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	//end 2013.07.16
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-	spl_boot_end = *((volatile unsigned int*)0x83a00000);
+	spl_boot_end = *((volatile unsigned int*)0x13a00000);
 	lib_board_init_r_start = get_utimer(0);
 
 	printf("\nfrom sys start to board_init_r time(us):%d\n",(lib_board_init_r_start-spl_boot_end));
@@ -603,6 +603,11 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		hang ();
 	}
 #endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+unsigned int before_nand_init =  get_utimer(0);
+#endif
+
 #if CONFIG_JERRY_NAND_TEST
 	nand_init();
 #endif
@@ -618,6 +623,12 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	nand_init();	/* go init the NAND */
 #endif
 #endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+unsigned int after_nand_init =  get_utimer(0);
+printf("\n nand init %d us \n", after_nand_init - before_nand_init);
+#endif
+
 
 #ifdef CONFIG_STORE_COMPATIBLE
 	get_storage_device_flag(init_ret);
@@ -745,8 +756,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int after_lcd_init =  get_utimer(0);
-printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
+unsigned int before_lcd_init =  get_utimer(0);
 #endif
 
 #if CONFIG_AUTO_START_SD_BURNING

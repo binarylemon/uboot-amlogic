@@ -57,6 +57,10 @@ static int do_saradc_get_in_range(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 	int val = get_adc_sample(current_channel);
 	min = simple_strtoul(argv[1], NULL, 10);
 	max = simple_strtoul(argv[2], NULL, 10);
+	int donot_setenv = 0;
+	if(argc > 3){
+		donot_setenv = simple_strtoul(argv[2], NULL, 10);
+	}
 	if((val<min) || (val>max))
 	{
 		debug("SARADC channel(%d) is 0x%x, Out of range(0x%x~0x%x)!\n",
@@ -66,7 +70,8 @@ static int do_saradc_get_in_range(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 	debug("SARADC channel(%d) is 0x%x (0x%x~0x%x).\n",
 		current_channel, val, min, max);
 	sprintf(value_str, "0x%x", val);
-	setenv(SARADC_VALUE, value_str);
+	if(!donot_setenv)
+		setenv(SARADC_VALUE, value_str);
 	return 0;
 }
 

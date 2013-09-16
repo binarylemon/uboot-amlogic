@@ -410,8 +410,10 @@ int drv_lcd_init (void)
 	lcddev.puts  = lcd_puts;		/* 'puts' function */
 
 	rc = stdio_register (&lcddev);
-	
+
+#if defined(CONFIG_AML_MESON_8)	
 	panel_oper.bl_on();
+#endif
 	
 	return (rc == 0) ? 1 : rc;
 }
