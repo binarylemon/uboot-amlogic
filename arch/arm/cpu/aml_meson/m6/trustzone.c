@@ -21,6 +21,7 @@
 #include <asm/arch/io.h>
 #include <amlogic/efuse.h>
 #include <asm/cache.h>
+#include <asm/arch/trustzone.h>
 
 #define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
 
@@ -198,15 +199,14 @@ uint32_t meson_trustzone_suspend()
 }
 
 
-#define CALL_TRUSTZONE_HAL_API		0x5
-#define TRUSTZONE_HAL_API_EFUSE	0x100
 
 #ifdef CONFIG_EFUSE
 int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 {	
-	dcache_invalid_range(arg->buffer_phy, (arg->size));
-	dcache_invalid_range(arg->retcnt_phy, (sizeof(unsigned int)));
-	dcache_invalid_range(arg, sizeof(struct efuse_hal_api_arg));
+	int ret;
+	dcache_flush_range(arg->buffer_phy, (arg->size));
+	dcache_flush_range(arg->retcnt_phy, (sizeof(unsigned int)));
+	dcache_flush_range(arg, sizeof(struct efuse_hal_api_arg));
 	
 	register int32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_EFUSE;
@@ -221,9 +221,49 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
             : "=r"(r0)
             : "r"(r0), "r"(r1), "r"(r2));
 	}while(0);
+	
+	ret=r0;
+	if(arg->cmd == EFUSE_HAL_API_READ)
+		ov_dcache_invalid_range(arg->buffer_phy, (arg->size));		
+	ov_dcache_invalid_range(arg->retcnt_phy, (sizeof(unsigned int)));
 		
-	return r0;
+	return ret;
 }
 	
 #endif
 
+
+#ifdef CONFIG_MESON_STORAGE_BURN
+int32_t meson_trustzone_storage(struct storage_hal_api_arg* arg)
+{
+	int ret;
+	dcache_flush_range(arg->name_phy_addr, arg->namelen);
+	dcache_flush_range(arg->data_phy_addr, arg->datalen);
+	dcache_flush_range(arg, sizeof(struct storage_hal_api_arg));
+		
+	register int32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register int32_t r1 asm("r1") = TRUSTZONE_HAL_API_STORAGE;
+	register int32_t r2 asm("r2") = (unsigned int)arg;
+	
+	do{
+		asm volatile(
+            __asmeq("%0", "r0")
+            __asmeq("%1", "r0")
+            __asmeq("%2", "r1")
+            __asmeq("%3", "r2")
+            "smc    #0  @switch to secure world\n"
+            : "=r"(r0)
+            : "r"(r0), "r"(r1), "r"(r2));
+	}while(0);
+	
+	ret=r0;
+#ifdef CONFIG_MESON_STORAGE_DEBUG	
+	if(arg->cmd == STORAGE_HAL_API_READ)
+		ov_dcache_invalid_range(arg->data_phy_addr, (arg->datalen));		
+#endif		
+	ov_dcache_invalid_range(arg->retval_phy_addr, (sizeof(unsigned int)));			
+	
+	return ret;
+}
+
+#endif

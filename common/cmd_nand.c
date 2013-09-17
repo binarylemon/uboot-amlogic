@@ -305,6 +305,19 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		return 0;
 	}
 #endif
+#ifdef CONFIG_SECURE_NAND
+	if (strcmp(cmd, "secure") == 0){
+		aml_chip->secure_protect = 1;		//force nand key can be erased
+		return 0;
+	}
+#endif
+
+#ifdef CONFIG_SECURE_NAND
+		if (strcmp(cmd, "secure") == 0){
+			aml_chip->secure_protect = 1;		//force nand key can be erased 
+			return 0;
+		}
+#endif
 
 	if(strcmp(cmd, "exist") == 0){
 		if(nand_info[1]){
@@ -334,6 +347,12 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 #endif
 
 	if (strcmp(cmd, "info") == 0) {
+	#ifdef CONFIG_AML_NAND_KEY
+		aml_chip->key_protect = 0;		//protect nand key can not be erased
+	#endif
+	#ifdef CONFIG_SECURE_NAND
+		aml_chip->secure_protect = 0;		//protect nand secure can not be erased
+	#endif
 
 		putc('\n');
 		for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++) {

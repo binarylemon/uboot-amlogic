@@ -184,6 +184,7 @@ LIBS  = lib/libgeneric.o
 LIBS += lib/lzma/liblzma.o
 LIBS += lib/lzo/liblzo.o
 LIBS += lib/ucl/libucl.o
+LIBS += lib/rand/librandom.o
 LIBS += $(shell if [ -f board/$(VENDOR)/common/Makefile ]; then echo \
 	"board/$(VENDOR)/common/lib$(VENDOR).o"; fi)
 LIBS += $(CPUDIR)/lib$(CPU).o
@@ -252,6 +253,7 @@ ifdef CONFIG_SARADC
 LIBS += drivers/adc/libadc.o
 endif
 LIBS += drivers/securitkey/libsecuritykey.o
+LIBS += drivers/securestorage/libsecurestoragekey.o
 
 LIBS += common/libcommon.o
 LIBS += drivers/secure/lib_secure.o

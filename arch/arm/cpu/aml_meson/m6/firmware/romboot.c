@@ -4,9 +4,6 @@
 
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <secureloader.c>
-#ifdef CONFIG_AML_SPL_L1_CACHE_ON
-#include <aml_a9_cache.c>
-#endif
 #endif
 
 #if CONFIG_UCL
@@ -541,13 +538,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     }
     
 #if defined(CONFIG_M6_SECU_BOOT)
-#if (defined(CONFIG_MESON_TRUSTZONE) && defined(CONFIG_AML_SPL_L1_CACHE_ON))
-	aml_cache_enable();
-#endif
 	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
-#if (defined(CONFIG_MESON_TRUSTZONE) && defined(CONFIG_AML_SPL_L1_CACHE_ON))
-	aml_cache_disable();
-#endif	
 #endif //CONFIG_M6_SECU_BOOT
 
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -602,9 +593,6 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
     int rc=sdio_read(temp_addr,size,por_cfg);
 
 #if defined(CONFIG_M6_SECU_BOOT)
-#if (defined(CONFIG_MESON_TRUSTZONE) && defined(CONFIG_AML_SPL_L1_CACHE_ON))
-	aml_cache_enable();
-#endif
 	aml_m6_sec_boot_check((const unsigned char *)temp_addr);
 #endif //CONFIG_M6_SECU_BOOT
 

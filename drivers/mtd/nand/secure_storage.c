@@ -67,13 +67,13 @@ static int aml_nand_read_secure (struct mtd_info *mtd, loff_t offset, u_char * b
 		error = mtd->read_oob(mtd, addr, aml_oob_ops);
 		if ((error != 0) && (error != -EUCLEAN)) {
 			printk("blk check good but read failed: %llx, %d\n", (uint64_t)addr, error);
-			err = 1;
+			err = -EIO;
 			goto exit;
 		}
 
-				    //if (memcmp(secure_oobinfo->name, SECURE_STORE_MAGIC, 4))
-		if ((secure_oobinfo->name != SECURE_STORE_MAGIC))
-			printk("invalid nand secure info magic: %llx\n", (uint64_t)addr);
+		if ((secure_oobinfo->name != SECURE_STORE_MAGIC)){
+			printk("invalid nand secure info magic: %llx, magic = ox%x\n", (uint64_t)addr, secure_oobinfo->name);
+		}
 
 		addr += mtd->writesize;
 		len = min(mtd->writesize, CONFIG_SECURE_SIZE - amount_loaded);
@@ -81,7 +81,7 @@ static int aml_nand_read_secure (struct mtd_info *mtd, loff_t offset, u_char * b
 		amount_loaded += mtd->writesize;
 	}
 	if (amount_loaded < CONFIG_SECURE_SIZE){
-		err = 1;
+		err = -EIO;
 		goto exit;
 	}
 
@@ -249,7 +249,9 @@ exit:
 		nand_erase_info->mtd = mtd;
 		nand_erase_info->addr = addr;
 		nand_erase_info->len = mtd->erasesize;
-
+#ifdef CONFIG_AML_NAND_KEY
+		aml_chip->key_protect = 1;
+#endif
 		aml_chip->secure_protect = 1;
 
 		error = mtd->erase(mtd, nand_erase_info);
@@ -259,12 +261,14 @@ exit:
 			goto exit;
 		}
 		aml_chip->secure_protect = 0;
-
-
-	}
-
 //	secure_ptr->crc = (crc32((0 ^ 0xffffffffL), secure_ptr->data, SECURE_SIZE) ^ 0xffffffffL);
 
+#ifdef CONFIG_AML_NAND_KEY
+		aml_chip->key_protect = 0;
+#endif
+
+	}
+	
 	if (aml_nand_write_secure(mtd, addr, (u_char *) secure_ptr)) {
 		printk("nand secure info update FAILED!\n");
 		error = 1;
@@ -352,6 +356,7 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 	}while(++remain_block< remain_tatol_block);
 
 	aml_chip->aml_nandsecure_info->start_block = remain_start_block;
+	aml_chip->aml_nandsecure_info->end_block = total_blk;
 	printk("%s,%d : secure start blk %d \n",__func__,__LINE__,aml_chip->aml_nandsecure_info->start_block);	
 #else
 	offset = mtd->size - mtd->erasesize;
@@ -373,7 +378,7 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 		remain_start_block--;
 	}while(++remain_block< remain_tatol_block);
 	aml_chip->aml_nandsecure_info->start_block -= (remain_block-1);
-	printk("key start_blk=%d,end_blk=%d,%s:%d\n",aml_chip->aml_nandsecure_info->start_block,aml_chip->aml_nandsecure_info->end_block,__func__,__LINE__);
+	printk("secure start_blk=%d,end_blk=%d,%s:%d\n",aml_chip->aml_nandsecure_info->start_block,aml_chip->aml_nandsecure_info->end_block,__func__,__LINE__);
 #endif
 
 	tmp_blk = start_blk = aml_chip->aml_nandsecure_info->start_block;
@@ -574,6 +579,8 @@ static int secure_info_check(struct mtd_info *mtd)
 
 	if (aml_chip->aml_nandsecure_info->secure_valid == 1){
 
+            goto exit;
+#if 0
 		offset = aml_chip->aml_nandsecure_info->secure_valid_node->phy_blk_addr;
 		offset *= mtd->erasesize;
 		offset += aml_chip->aml_nandsecure_info->secure_valid_node->phy_page_addr * mtd->writesize;
@@ -583,7 +590,7 @@ static int secure_info_check(struct mtd_info *mtd)
 			printk("nand secure info read failed: %llx, %d\n", (uint64_t)offset, error);
 			goto exit;
 		}
-
+#endif
 	}else{
 		printk("nand secure info save \n");
 		error = aml_nand_save_secure(mtd, (u_char *)secure_ptr);
@@ -625,4 +632,70 @@ exit_erro:
 	return ret;
 
 }
+
+int secure_storage_nand_read(char *buf,unsigned int len)
+{
+	int err,size;
+	u_char *storage_buf=NULL;
+	if(nand_secure_mtd == NULL){
+		printk("secure storage is init fail\n");
+		return 1;
+	}
+	storage_buf = kzalloc(CONFIG_SECURE_SIZE, GFP_KERNEL);
+	if(storage_buf == NULL){
+		printk("%s:%d,malloc mem fail\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	err = aml_nand_read_secure (nand_secure_mtd, 0, storage_buf);
+	if(err<0){
+		printk("%s:%d,read secure storage fail\n",__func__,__LINE__);
+		kfree(storage_buf);
+		return err;
+	}
+	else if(err==1) {
+		printk("%s:%d,no any key to be readed from secure storage \n",__func__,__LINE__);
+		return 0;
+	}
+
+	if(len > CONFIG_SECURE_SIZE){
+		size = CONFIG_SECURE_SIZE;
+		printk("%s:%d,secure read len:%d is more than %d,read %d byte\n",__func__,__LINE__,len,CONFIG_SECURE_SIZE,CONFIG_SECURE_SIZE);
+	}
+	else{
+		size = len;
+	}
+	memcpy(buf,storage_buf,size);
+	kfree(storage_buf);
+	return 0;
+}
+int secure_storage_nand_write(char *buf,unsigned int len)
+{
+	int err=0,size;
+	u_char *storage_buf=NULL;
+	if(nand_secure_mtd == NULL){
+		printk("secure storage is init fail\n");
+		return 1;
+	}
+	storage_buf = kzalloc(CONFIG_SECURE_SIZE, GFP_KERNEL);
+	if(storage_buf == NULL){
+		printk("%s:%d,malloc mem fail\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	if(len > CONFIG_SECURE_SIZE){
+		size = CONFIG_SECURE_SIZE;
+		printk("%s:%d,secure write len:%x is more than %x,write %x byte\n",__func__,__LINE__,len,CONFIG_SECURE_SIZE,CONFIG_SECURE_SIZE);
+	}
+	else{
+		size = len;
+	}
+	memcpy(storage_buf,buf,size);
+	err = aml_nand_save_secure(nand_secure_mtd, storage_buf);
+	if(err){
+		printk("%s:%d,secure storage write fail\n",__func__,__LINE__);
+	}
+
+	kfree(storage_buf);
+	return err;
+}
+
 

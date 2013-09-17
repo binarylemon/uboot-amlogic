@@ -56,6 +56,7 @@ struct efuse_hal_api_arg{
 };
 #define EFUSE_HAL_API_READ	0
 #define EFUSE_HAL_API_WRITE 1
+#define EFUSE_HAL_API_WRITE_PATTERN 2
 #endif
 
 #endif

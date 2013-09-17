@@ -36,15 +36,19 @@ int load_secureos(void)
 		goto exit;	
 #endif		
 */ 	
+
+	unsigned* psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
+	*psecureargs = 0;
+#ifdef CONFIG_MESON_SECUREARGS
+	*psecureargs = __secureargs;	
+#endif
+	
  	// UCL decompress 	 	
 #ifdef CONFIG_MESON_TRUSTZONE
 	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR)); 	
 //#else 	
 // 	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR+SECUREOS_HEAD_SIZE)); 	
 #endif 	 	
-#if (defined(CONFIG_MESON_TRUSTZONE) && defined(CONFIG_AML_SPL_L1_CACHE_ON))
-	aml_cache_disable();
-#endif	
 exit:
 	return rc; 	 	
  }

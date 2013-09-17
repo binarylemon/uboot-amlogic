@@ -90,9 +90,10 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos )
 #ifndef CONFIG_MESON_TRUSTZONE
 	//Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) |  (1 << 12) );
     
-    for (pc = buf; count--; ++pos, ++pc)
+    for (pc = buf; count>0;count--, ++pos, ++pc)
 		__efuse_write_byte(pos, *pc);		
 	*ppos = pos;	
+
 	   // Disable the Write mode
     //Wr( EFUSE_CNTL1, Rd(EFUSE_CNTL1) & ~(1 << 12) );
 	return count;

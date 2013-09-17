@@ -492,7 +492,7 @@ void secure_storage_spi_disable(void)
 #endif
 }
 
-int secure_storage_spi_write(u8 *buf,u32 len)
+int secure_storage_spi_write(char *buf,unsigned int len)
 {
 	int err;
 	if(len > SPI_SECURESTORAGE_AREA_VALID_SIZE){
@@ -507,7 +507,7 @@ int secure_storage_spi_write(u8 *buf,u32 len)
 	return err;
 }
 
-int secure_storage_spi_read(u8 *buf,u32 len)
+int secure_storage_spi_read(char *buf,unsigned int len)
 {
 	u32 size;
 	int err;
