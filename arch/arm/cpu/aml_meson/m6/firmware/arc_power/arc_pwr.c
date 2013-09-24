@@ -604,7 +604,7 @@ void enter_power_down()
     f_serial_puts("\n");
     wait_uart_empty();
 #endif
-	store_vid_pll();
+	//store_vid_pll();
 
    // Next, we reset all channels 
 	reset_mmc();
