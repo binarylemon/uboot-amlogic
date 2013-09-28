@@ -40,8 +40,8 @@
 
 /** All debug messages off */
 #define DBG_OFF		0
-#define DEBUG
-//#undef DEBUG
+//#define DEBUG
+#undef DEBUG
 #ifdef DEBUG
 #define DBG(fmt, args...)	\
 		printf("dwc_otg: %s: " fmt "\n" , __FUNCTION__ , ## args)
