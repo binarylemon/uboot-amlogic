@@ -1739,7 +1739,7 @@ usb_lowlevel_init(void)
 
     snpsid = dwc_read_reg32((uint32_t *) ((uint8_t *) dwc_otg_device->base + 0x40));
 
-    if ((snpsid & 0xFFFFF000) != 0x4F542000) {
+    if ((snpsid & 0xFFFF0000) != 0x4F540000) {
         ERR("Bad value for SNPSID: 0x%08x\n", snpsid);
         retval = -1;
         goto fail;
