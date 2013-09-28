@@ -540,6 +540,7 @@ void init_pctl(void)
         MMC_Wr( PUB_DX3GCR_ADDR, MMC_Rd(PUB_DX3GCR_ADDR) & 0xfffffffe);
     }
 
+    MMC_Wr( PUB_DXCCR_ADDR, 0x191);////DQS
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x18); //???????
 	//MMC_Wr( PUB_ZQ0CR1_ADDR, 0x7b); //???????
 #ifdef CONFIG_TURN_OFF_ODT

@@ -188,7 +188,7 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
         writel(readl(P_PUB_DX2GCR_ADDR) & 0xfffffffe, P_PUB_DX2GCR_ADDR);
         writel(readl(P_PUB_DX3GCR_ADDR) & 0xfffffffe, P_PUB_DX3GCR_ADDR);
     }
-	
+	writel(0x191,P_PUB_DXCCR_ADDR);//DQS
 #ifdef CONFIG_CMD_DDR_TEST
     if(zqcr)
 	#ifdef CONFIG_TURN_OFF_ODT
