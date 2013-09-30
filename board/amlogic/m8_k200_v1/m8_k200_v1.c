@@ -441,7 +441,11 @@ int board_init(void)
     nand_init();
     
 #endif    
-    
+
+    // LED
+    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 15));     
+    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 31));       
+
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
