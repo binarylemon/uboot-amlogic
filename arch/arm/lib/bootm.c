@@ -108,7 +108,7 @@ static void announce_and_cleanup(void)
 	printf("\nStarting kernel ...\n\n");
 
 #if defined(CONFIG_CMD_NAND)	
-	aml_nand_set_reg_default_hynix();
+//	aml_nand_set_reg_default_hynix();
 #endif
 #ifdef CONFIG_USB_DEVICE
 	{
@@ -251,6 +251,9 @@ static int bootm_linux_fdt(int machid, bootm_headers_t *images)
 	kernel_entry = (void (*)(int, int, void *))images->ep;
 
 	rd_len = images->rd_end - images->rd_start;
+
+	get_relocate_addr(of_flat_tree,images->rd_end - images->rd_start,images->ft_len);
+
 	ret = boot_ramdisk_high(lmb, images->rd_start, rd_len,
 				initrd_start, initrd_end);
 	if (ret)

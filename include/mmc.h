@@ -347,8 +347,10 @@ struct mmc {
 #ifdef CONFIG_MMC_MBLOCK
 	uint b_max;
 #endif
+    uint is_inited; // is initialize?
 };
 
+extern struct list_head mmc_devices;
 int mmc_register(struct mmc *mmc);
 int mmc_initialize(bd_t *bis);
 int mmc_init(struct mmc *mmc);

@@ -34,13 +34,18 @@
 /build
 /include/configs/amlogic
 include/configs/customer
-arch/arm/cpu/aml_meson/m6/firmware/arc_power/boot_code.dat
-arch/arm/cpu/aml_meson/m6/power_firmware.dat
 /customer
 
 #
 # Generated files
 #
+
+arch/arm/cpu/aml_meson/m6/power_firmware.dat
+arch/arm/cpu/aml_meson/m6/firmware/arc_power/boot_code.dat
+arch/arm/cpu/aml_meson/m6tv/power_firmware.dat
+arch/arm/cpu/aml_meson/m8/power_firmware.dat
+arch/arm/cpu/aml_meson/m8/firmware/m8_smp.dat
+
 
 *.depend
 /LOG

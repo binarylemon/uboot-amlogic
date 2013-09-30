@@ -112,7 +112,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
     amls->adr_base 	=(void*)0x40000000;
 #elif defined(CONFIG_AML_MESON_A3)
 	#error "please implement A3 SPI buffer address!"
-#elif defined(CONFIG_AML_MESON_6)
+#elif defined(CONFIG_AML_MESON_6) || defined(CONFIG_AML_MESON_8)
 	amls->adr_base 	=(void*)0xCC000000;
 #else
 	#error "please define [CONFIG_AML_MESON_1/2/3/A2/A2/A1] for SPI controler base address setting!"
@@ -243,7 +243,7 @@ int spi_claim_bus(struct spi_slave *slave)
 			#endif
 		#else //else for CONFIG_AML_MESON_3
 
-			#ifdef CONFIG_AML_MESON_6
+			#if defined(CONFIG_AML_MESON_6) || defined(CONFIG_AML_MESON_8)
 				//for MESON 6 @AppNote-M6-CorePinMux.doc
 				//BOOT_12-- SPI_NOR_D_A       -- NAND_ALE
 				//BOOT_13-- SPI_NOR_Q_A       -- NAND_CLE
@@ -297,7 +297,7 @@ void spi_release_bus(struct spi_slave *slave)
 		//for CONFIG_AML_MESON_2
 		CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,( (1<<7) | (1<<8) | (1<<9) | (1<<10)|(1<<11)|(1<<12)));
 	#else //else for CONFIG_AML_MESON_2
-		#if defined(CONFIG_AML_MESON_3) || defined (CONFIG_AML_MESON_6)
+		#if defined(CONFIG_AML_MESON_3) || defined (CONFIG_AML_MESON_6)|| defined(CONFIG_AML_MESON_8)
 			//for MESON 3 @chip\AppNote-M3-CorePinMux.xlsx
 			//for MESON 6 @AppNote-M6-CorePinMux.doc
 			CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5,((1<<0)|(1<<1)|(1<<2)|(1<<3)));

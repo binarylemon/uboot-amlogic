@@ -66,8 +66,7 @@ DECLARE_GLOBAL_DATA_PTR;
     !defined(CONFIG_ENV_IS_IN_AML_NAND)  && \
     !defined(CONFIG_ENV_IS_IN_EMMC)	&& \
     !defined(CONFIG_ENV_IS_NOWHERE)    && \
-    !defined(CONFIG_SPI_NAND_COMPATIBLE) && \
-	!defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE)
+	!defined(CONFIG_STORE_COMPATIBLE)
 # error Define one of CONFIG_ENV_IS_IN_{EEPROM|FLASH|DATAFLASH|ONENAND|\
 SPI_FLASH|MG_DISK|NVRAM|MMC|NOWHERE}
 #endif
@@ -836,7 +835,7 @@ static cmd_tbl_t cmd_env_sub[] = {
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
 	U_BOOT_CMD_MKENT(save, 1, 0, do_env_save, "", ""),
 #endif
-	U_BOOT_CMD_MKENT(set, CONFIG_SYS_MAXARGS, 0, do_env_set, "", ""),
+	U_BOOT_CMD_MKENT(set, (CONFIG_SYS_MAXARGS * 2), 0, do_env_set, "", ""),
 };
 
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
@@ -909,7 +908,7 @@ U_BOOT_CMD_COMPLETE(
 );
 
 U_BOOT_CMD_COMPLETE(
-	setenv, CONFIG_SYS_MAXARGS, 0,	do_env_set,
+	setenv, (CONFIG_SYS_MAXARGS * 2), 0,	do_env_set,
 	"set environment variables",
 	"name value ...\n"
 	"    - set environment variable 'name' to 'value ...'\n"

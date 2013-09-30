@@ -159,6 +159,12 @@ uint32_t crc32_wd (uint32_t, const unsigned char *, uint, uint);
 static void genimg_print_time (time_t timestamp);
 #endif
 
+
+#include <linux/byteorder/little_endian.h>
+#include <asm/types.h>
+
+__u32 relocate_addr=0x20000000;
+
 /*****************************************************************************/
 /* Legacy format routines */
 /*****************************************************************************/
@@ -1068,10 +1074,11 @@ int boot_ramdisk_high (struct lmb *lmb, ulong rd_data, ulong rd_len,
 			lmb_reserve(lmb, rd_data, rd_len);
 		} else {
 			if (initrd_high)
-				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, initrd_high);
+				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, relocate_addr);
+//				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, initrd_high);
 			else
-				*initrd_start = (ulong)lmb_alloc (lmb, rd_len, 0x1000);
-
+				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, relocate_addr);
+//				*initrd_start = (ulong)lmb_alloc (lmb, rd_len, 0x1000);
 			if (*initrd_start == 0) {
 				puts ("ramdisk - allocation error\n");
 				goto error;
@@ -1187,6 +1194,35 @@ static int fit_check_fdt (const void *fit, int fdt_noffset, int verify)
 #define CONFIG_SYS_FDT_PAD 0x3000
 #endif
 
+int get_relocate_addr(char **of_flat_tree, __u32 rd_len, __u32 ft_len)
+{
+    char* str;
+    int nodeoffset;
+    void *fdt_blob = *of_flat_tree;
+
+	if(fdt_check_header(fdt_blob)!= 0){
+        printf(" error: not a fdt\n");
+        return -1;
+    }
+
+	nodeoffset = fdt_path_offset(fdt_blob, "/memory");
+	if(nodeoffset < 0) {
+		printf(" dts: not find  node %s.\n",fdt_strerror(nodeoffset));
+		return -1;
+	}
+	str = fdt_getprop(fdt_blob, nodeoffset, "aml_reserved_end", NULL);
+	if(str == NULL){
+		printf("faild to get aml_reserved_end address\n");
+		printf("the default relocate ramdisk and fdt address-relocate_addr: 0x%x\n",relocate_addr);
+	}
+	else {
+		relocate_addr = __be32_to_cpup((__u32*)str) + 1 + ((rd_len + 0x1000 - 0x1)&(~(0x1000 - 0x1))) + ((ft_len + 0x1000 - 0x1)&(~(0x1000 - 0x1)))+CONFIG_SYS_FDT_PAD;
+		printf("From device tree /memory/ node aml_reserved_end property, for relocate ramdisk and fdt, relocate_addr: 0x%x\n",relocate_addr);
+	}
+
+	return 0;
+}
+
 /**
  * boot_relocate_fdt - relocate flat device tree
  * @lmb: pointer to lmb handle, will be used for memory mgmt
@@ -1226,8 +1262,10 @@ int boot_relocate_fdt (struct lmb *lmb, ulong bootmap_base,
 	/* position on a 4K boundary before the alloc_current */
 	/* Pad the FDT by a specified amount */
 	of_len = *of_size + CONFIG_SYS_FDT_PAD;
-	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000,
-			(CONFIG_SYS_BOOTMAPSZ + bootmap_base));
+
+	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000, relocate_addr);
+//	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000,
+//			(CONFIG_SYS_BOOTMAPSZ + bootmap_base));
 
 	if (of_start == 0) {
 		puts("device tree - allocation error\n");
@@ -1366,6 +1404,12 @@ int boot_get_fdt (int flag, int argc, char * const argv[], bootm_headers_t *imag
 		debug ("## Checking for 'FDT'/'FDT Image' at %08lx\n",
 				fdt_addr);
 
+#if defined(CONFIG_AML_MESON_FIT)
+		puts("Get ramdisk...\n");
+		printf("images.rd_start=0x%x\n",rd_addr);
+		if(ramdisk_addr != ~0)
+			rd_addr = ramdisk_addr;
+#endif
 		/* copy from dataflash if needed */
 		fdt_addr = genimg_get_image (fdt_addr);
 

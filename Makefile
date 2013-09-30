@@ -210,10 +210,22 @@ LIBS += drivers/i2c/libi2c.o
 LIBS += drivers/input/libinput.o
 LIBS += drivers/misc/libmisc.o
 LIBS += drivers/mmc/libmmc.o
+
+
+ifneq ($(CONFIG_NEXT_NAND),y)
+
 LIBS += drivers/mtd/libmtd.o
 LIBS += drivers/mtd/nand/libnand.o
 ifeq ($(CONFIG_JERRY_NAND_TEST),y)
 LIBS += drivers/mtd/aml_nand/libamlnand.o
+endif
+
+endif
+
+ifeq ($(CONFIG_NEXT_NAND),y)
+LIBS += drivers/amlnf/phy/libamlnf_phy.o
+LIBS += drivers/amlnf/logic/libamlnf_logic.o
+LIBS += drivers/amlnf/dev/libamlnf_dev.o
 endif
 LIBS += drivers/mtd/onenand/libonenand.o
 LIBS += drivers/mtd/ubi/libubi.o
@@ -254,6 +266,11 @@ LIBS += drivers/adc/libadc.o
 endif
 LIBS += drivers/securitkey/libsecuritykey.o
 LIBS += drivers/securestorage/libsecurestoragekey.o
+LIBS += drivers/keymanage/libkeymanage.o
+
+ifdef CONFIG_AML_V2_USBTOOL
+LIBS += drivers/usb/gadget/v2_burning/v2_burning.o
+endif
 
 LIBS += common/libcommon.o
 LIBS += drivers/secure/lib_secure.o
@@ -358,6 +375,9 @@ ALL += $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
 ifeq  ($(CONFIG_SELF_COMPRESS),y)
 ALL += $(obj)u-boot-comp.bin
 endif
+ifeq ($(CONFIG_VLSI_EMULATOR),y)
+ALL += $(obj)u-boot.hex
+endif 
 
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
 SECURE_OS_BIN := secure_os/otzone-ucl.bin
@@ -367,8 +387,18 @@ endif
 
 all:		$(ALL)
 
-$(obj)u-boot.hex:	$(obj)u-boot
-		$(OBJCOPY) ${OBJCFLAGS} -O ihex $< $@
+ifeq ($(CONFIG_VLSI_EMULATOR),y)
+$(obj)u-boot.hex:	$(obj)u-boot.bin
+		xxd -p -c1 $< > $@
+		$(OBJDUMP) -D -x build/firmware.out > firmware.asm
+		cp -rf $@ ../out
+		cp -rf $@ ../../software/out
+endif
+
+
+#$(obj)u-boot.hex:	$(obj)u-boot
+#		$(OBJCOPY) ${OBJCFLAGS} -O ihex $< $@
+#		cp -rf $@ ../../../project_m4/software/out
 
 $(obj)u-boot.srec:	$(obj)u-boot
 		$(OBJCOPY) -O srec $< $@
@@ -417,7 +447,11 @@ $(obj)u-boot-orig.bin:	$(obj)u-boot
 	$(BOARD_SIZE_CHECK)
 
 ifneq ($(CONFIG_IMPROVE_UCL_DEC),y)
+ifneq ($(CONFIG_VLSI_EMULATOR),y)
 $(obj)u-boot.bin:	$(obj)u-boot-comp.bin $(obj)firmware.bin
+else
+$(obj)u-boot.bin:	$(obj)u-boot-orig.bin $(obj)firmware.bin
+endif
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 else		
@@ -510,8 +544,19 @@ $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoco
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif #END CONFIG_IMPROVE_UCL_DEC
 else #NOT CONFIG_M6TV
+ifeq ($(CONFIG_M8),y)
+ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
+else #NOT CONFIG_IMPROVE_UCL_DEC
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+endif #END CONFIG_IMPROVE_UCL_DEC
+else #NOT CONFIG_M8
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
+endif #END CONFIG_M8
 endif #END CONFIG_M6TV
 endif #END CONFIG_M6
 endif #END CONFIG_M3

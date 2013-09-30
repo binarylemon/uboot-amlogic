@@ -239,6 +239,10 @@ int env_import(const char *buf, int check)
 
 void env_relocate (void)
 {
+
+#if defined (CONFIG_VLSI_EMULATOR)
+    set_default_env("!For emulator speed up");
+#else
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
 	extern void env_reloc(void);
 
@@ -254,6 +258,8 @@ void env_relocate (void)
 	} else {
 		env_relocate_spec ();
 	}
+#endif //#if !defined (CONFIG_VLSI_EMULATOR)
+
 }
 
 #ifdef CONFIG_AUTO_COMPLETE

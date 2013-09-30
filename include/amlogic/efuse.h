@@ -34,7 +34,7 @@ int efuse_read_usr(char *buf, size_t count, loff_t *ppos);
 int efuse_write_usr(char* buf, size_t count, loff_t* ppos);
 
 
-#if defined(CONFIG_M6) || defined (CONFIG_M6TV)
+#if defined(CONFIG_M6) || defined (CONFIG_M6TV) || defined(CONFIG_M8)
 // for m6 and after efuse length
 #define EFUSE_BYTES				512   //(EFUSE_BITS/8)
 #define EFUSE_DWORDS		128   //(EFUSE_BITS/32)

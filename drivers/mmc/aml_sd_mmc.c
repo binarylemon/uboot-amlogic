@@ -26,6 +26,7 @@
 #define PREG_SDIO_STAT_IRQ  CBUS_REG_ADDR(SDIO_STATUS_IRQ)
 #define PREG_SDIO_IRQ_CFG   CBUS_REG_ADDR(SDIO_IRQ_CONFIG)
 
+unsigned sdio_debug_1bit_flag = 0;
 extern void mdelay(unsigned long msec);
 
 /*
@@ -334,7 +335,11 @@ static int sd_inand_staff_init(struct mmc *mmc)
 	{	
 	    sdio->sdio_pwr_flag &=~CARD_SD_SDIO_PWR_OFF;
         base=get_timer(0);
+#if defined(CONFIG_VLSI_EMULATOR)
+ 		while(get_timer(base)<1);
+#else
         while(get_timer(base)<200);
+#endif 
     }
     sd_debug("pre power on");
     sdio->sdio_pwr_on(sdio->sdio_port,sdio);
@@ -345,7 +350,11 @@ static int sd_inand_staff_init(struct mmc *mmc)
     {    	
         sdio->sdio_pwr_flag &=~CARD_SD_SDIO_PWR_ON;
         base=get_timer(0);
+#if defined(CONFIG_VLSI_EMULATOR)
+ 		while(get_timer(base)<1);
+#else
         while(get_timer(base)<200);
+#endif 
     }
     aml_sd_cfg_swth(mmc);
     if(!sdio->inited_flag)
@@ -366,13 +375,29 @@ static int sd_inand_staff_init(struct mmc *mmc)
 	sd_debug("power off");
 	sdio->sdio_pwr_off(sdio->sdio_port);
     base=get_timer(0);
+#if defined(CONFIG_VLSI_EMULATOR)
+	while(get_timer(base)<1);
+#else
     while(get_timer(base)<200);
+#endif 
     sd_debug("pre power on");
     sdio->sdio_pwr_on(sdio->sdio_port);
     sdio->sdio_init(sdio->sdio_port);
+    
+    //clear sd d1~d3 pinmux,
+    //just for sdio debug board, only can work with 1bit mode
+    if((sdio->sdio_port == SDIO_PORT_B)&&(sdio_debug_1bit_flag)){   
+    	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);
+    	mmc->host_caps = MMC_MODE_HS;
+    }
+    	
     sd_debug("post power on");
     base=get_timer(0);
+#if defined(CONFIG_VLSI_EMULATOR)
+	while(get_timer(base)<1);
+#else
     while(get_timer(base)<200);
+#endif 
     aml_sd_cfg_swth(mmc);
     if(!sdio->inited_flag)
         sdio->inited_flag = 1;
@@ -720,10 +745,35 @@ void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 	mmc->bus_width = 1;
 	mmc->clock = 300000;
 	mmc->f_min = 200000;
-	mmc->f_max = 50000000;	
+	mmc->f_max = 50000000;
+    mmc->is_inited = false;
 	mmc_register(mmc);
 	
 	//WRITE_CBUS_REG(RESET6_REGISTER, (1<<8));
         WRITE_CBUS_REG(SDIO_AHB_CBUS_CTRL, 0);
 
 }
+
+void aml_sd_cs_high (void) // chip select high
+{
+    /*
+	 * Non-SPI hosts need to prevent chipselect going active during
+	 * GO_IDLE; that would put chips into SPI mode.  Remind them of
+	 * that in case of hardware that won't pull up DAT3/nCS otherwise.
+     *
+     * Now the way to accomplish this is: 
+     * 1) set DAT3-pin as a GPIO pin(by pinmux), and pulls up;
+     * 2) send CMD0;
+     * 3) set DAT3-pin as a card-dat3-pin(by pinmux);
+	 */
+    // clear bit[26] to make BOOT_3 used as a GPIO other than SD_D3_C
+    clrbits_le32(P_PERIPHS_PIN_MUX_6, (1 << 26)); // make BOOT_3 used as a GPIO other than SD_D3_C
+    setbits_le32 (P_PREG_PAD_GPIO3_O,(1 << 3)); // pull up GPIO
+    clrbits_le32(P_PREG_PAD_GPIO3_EN_N, (1 << 3));	// enable gpio output
+}
+
+void aml_sd_cs_dont_care (void) // chip select don't care
+{
+    setbits_le32(P_PERIPHS_PIN_MUX_6, (1 << 26)); // make BOOT_3 used as SD_D3_C other than a GPIO
+}
+
