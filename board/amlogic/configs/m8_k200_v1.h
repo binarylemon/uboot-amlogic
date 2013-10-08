@@ -234,8 +234,8 @@
     \
    	"storeargs="\
         "store read logo ${loadaddr_logo} 0 800000;unpackimg ${loadaddr_logo}; "\
-        "bmp scale ${bootup_offset} ${fb_addr};"\
-        "setenv bootargs init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} storage=${store} androidboot.firstboot=${firstboot}\0"\
+        "cp ${bootup_offset} ${fb_addr} ${bootup_size};"\
+        "setenv bootargs init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,${fb_addr},${hdmimode},full,needscaler hdmimode=${hdmimode} cvbsmode=${cvbsmode} storage=${store} androidboot.firstboot=${firstboot}\0"\
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;" \
