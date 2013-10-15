@@ -32,12 +32,10 @@
 #include <linux/list.h>
 #include <mmc.h>
 #include <div64.h>
-#include <asm/arch/sdio.h>
-#include "emmc_partitions.h"
 
 #include "emmc_key.h"
 
-struct list_head mmc_devices;
+static struct list_head mmc_devices;
 static int cur_dev_num = -1;
 
 #define MMC_RD_WR_MAX_BLK_NUM   (256)
@@ -84,24 +82,6 @@ struct mmc *find_mmc_device(int dev_num)
 
 	return NULL;
 }
-
-struct mmc *find_mmc_device_by_port (unsigned sdio_port)
-{
-    struct mmc *m;
-    struct aml_card_sd_info * sdio;
-    struct list_head *entry;
-
-    list_for_each(entry, &mmc_devices) {
-        m = list_entry(entry, struct mmc, link);
-        sdio = m->priv;
-
-        if (sdio->sdio_port == sdio_port)
-            return m;
-    }
-
-	return NULL;
-}
-
 
 #ifdef CONFIG_MMC_DEVICE
 struct mmc find_mmc_device_by_name(char *name)
@@ -301,21 +281,18 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 	return blkcnt;
 }
 
-// if not High Capacity Card, turn the unit from blk_len to byte
-#define TURN_TRANSFER_UNIT(val, is_high_cap, blk_len) ((is_high_cap)? (val):((val)*blk_len))
 static ulong
 mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 {
 	struct mmc_cmd cmd;
 	int err;
-	ulong end, max_end;
 	struct mmc *mmc = find_mmc_device(dev_num);
 #ifdef CONFIG_AML_EMMC_KEY
 	struct aml_emmckey_info_t *emmckey_info;
 #endif
-	
-    if (!mmc) 
-	  	return 0;
+
+	if (!mmc)
+		return 0;
 #ifdef CONFIG_AML_EMMC_KEY
 	emmckey_info = mmc->aml_emmckey_info;
 	if(mmc->key_protect){
@@ -327,130 +304,103 @@ mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
 	}
 #endif
 
-	max_end = mmc->capacity/512 - 1;//max end address in block
-	end = start + blkcnt - 1;
-
-	if (IS_SD(mmc)){
-		printf("card_type:sd or tsd\n");
-
-		int erase_ssize;
-
-		if(mmc->version = SD_VERSION_2){
-			erase_ssize = 8;//"8" is a setting value			
-		}
-		else{
+		if (IS_SD(mmc)) {
 			int erase_blk_en = (mmc->csd[2]>>14) & 0x1;
-			erase_ssize = ((mmc->csd[2]>>7) & 0x7f) + 1;
+			int erase_ssize = ((mmc->csd[2]>>7) & 0x7f) + 1;
+			uint erase_factor = 1;
 
-			if (erase_blk_en == 1)
-				erase_ssize = 1;
-		}
-		printf("erase_unit_size = %d\n",erase_ssize);
-			
-		start = start - start%erase_ssize;
-		end = blkcnt ? ((end/erase_ssize + 1)*erase_ssize-1): max_end;
+			//printf("\nDATA_STAT_AFTER_ERASE is %d\n",(mmc->scr[0]>>23) & 0x1);
+			//printf("erase_blk_en = %d\n",erase_blk_en);
+			//printf("erase_ssize = %d\n",erase_ssize);
 
-        if (end > max_end) {
-		     printf("MMC: group number 0x%llx exceeds max(0x%llx)\n",
-			   end , max_end);
+			if (erase_blk_en == 1) {
+				erase_factor = mmc->write_bl_len / 512;
+				erase_ssize = 1; //blk cnt
+			}
+
+      if ((start + blkcnt) > (mmc->block_dev.lba/erase_ssize*erase_factor)) {
+		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
+			   start + blkcnt, mmc->block_dev.lba/erase_ssize*erase_factor);
 		     return 1;
 	    }
-		cmd.cmdidx = SD_ERASE_WR_BLK_START;
-		cmd.resp_type = MMC_RSP_R1;
-		cmd.cmdarg = TURN_TRANSFER_UNIT(start, mmc->high_capacity, mmc->write_bl_len);
-		cmd.flags = 0;
-		err = mmc_send_cmd(mmc, &cmd, NULL);		
-		if (err)
-			return err;
 
-		cmd.cmdidx = SD_ERASE_WR_BLK_END;
-		cmd.resp_type = MMC_RSP_R1;
-		cmd.cmdarg = TURN_TRANSFER_UNIT(end, mmc->high_capacity, mmc->write_bl_len);
-		cmd.flags = 0;
-		err = mmc_send_cmd(mmc, &cmd, NULL);
-		if (err)
-			return err;		
-	}else {
-		printf("card_type:mmc or emmc\n");
+			cmd.cmdidx = SD_ERASE_WR_BLK_START;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = start*erase_ssize;
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
 
-		int erase_unit;
-		char ext_csd[512];			
-		
-		int err = mmc_send_ext_csd(mmc, ext_csd);		
-		if (err)
-			return err;
+			cmd.cmdidx = SD_ERASE_WR_BLK_END;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_ssize - 1) : (mmc->block_dev.lba*erase_factor-1);
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
 
-		if(ext_csd[175]){//erase_group_def
-			int erase_unit_byte = ((unsigned)ext_csd[224])*512*1024;//byte cnt
-			erase_unit = erase_unit_byte / mmc->write_bl_len;//blk cnt
-			printf("\next_csd:erase_unit = %d",erase_unit);
+		}else {
+
+		  int erase_gsize = (mmc->csd[2] >> 10) & 0x1f;
+		  int erase_gmult = (mmc->csd[2] >> 5) & 0x1f;
+		  int erase_unit = (erase_gsize + 1) * (erase_gmult + 1);//blk cnt
+		  //printf ("\nerase_gsize * erase_gmult = erase_unit\n");
+		 // printf ("%d * %d = %d\n", erase_gsize+1, erase_gmult+1, erase_unit);
+
+		  if ((start + blkcnt) > (mmc->block_dev.lba/erase_unit)) {
+		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
+			   start + blkcnt, mmc->block_dev.lba/erase_unit);
+		     return 1;
+	    }
+
+			cmd.cmdidx = MMC_TAG_ERASE_GROUP_START;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = start*erase_unit;
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
+
+			cmd.cmdidx = MMC_TAG_ERASE_GROUP_END;
+			cmd.resp_type = MMC_RSP_R1;
+			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_unit - 1) : (mmc->block_dev.lba-1);
+			cmd.flags = 0;
+			err = mmc_send_cmd(mmc, &cmd, NULL);
+			if (err)
+				return err;
 		}
-		else{			
-			int erase_gsize = (mmc->csd[2] >> 10) & 0x1f;
-			int erase_gmult = (mmc->csd[2] >> 5) & 0x1f;
-			erase_unit = (erase_gsize + 1) * (erase_gmult + 1);//blk cnt
-			printf("\ncsd:erase_unit = %d",erase_unit);
-		}
-
-		start = start - start%erase_unit;
-		end = blkcnt? ((end/erase_unit + 1)*erase_unit-1) : max_end;
-		if (end > max_end) {
-			printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
-				end, max_end);
-			return 1;
-		}
-		
-		cmd.cmdidx = MMC_TAG_ERASE_GROUP_START;
-		cmd.resp_type = MMC_RSP_R1;
-		cmd.cmdarg = TURN_TRANSFER_UNIT(start, mmc->high_capacity, mmc->write_bl_len);
-		cmd.flags = 0;
-		err = mmc_send_cmd(mmc, &cmd, NULL);
-		if (err)
-			return err;
-
-		cmd.cmdidx = MMC_TAG_ERASE_GROUP_END;
-		cmd.resp_type = MMC_RSP_R1;
-		cmd.cmdarg = TURN_TRANSFER_UNIT(end, mmc->high_capacity, mmc->write_bl_len);
+		cmd.cmdidx = SD_MMC_ERASE;
+		cmd.resp_type = MMC_RSP_R1b;
+		cmd.cmdarg = 0;
 		cmd.flags = 0;
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err)
 			return err;
-	}
-    printf("is being erased ...\n");
-	cmd.cmdidx = SD_MMC_ERASE;
-	cmd.resp_type = MMC_RSP_R1b;
-	cmd.cmdarg = 0;
-	cmd.flags = 0;
-	err = mmc_send_cmd(mmc, &cmd, NULL);
-	if (err)
-		return err;
 
 	unsigned int timeout = 0;
 	uint *res = (uint*)(&(cmd.response[0]));
-	do {		
+	do {
 		cmd.cmdidx = MMC_CMD_SEND_STATUS;
 		cmd.cmdarg = mmc->rca << 16;
 		cmd.resp_type = MMC_RSP_R1;
-		cmd.flags = 0;
-		
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err || (*res & 0xFDF92000)) {
 			printf("error %d requesting status %#x\n", err, *res);
 			return -1;
 		}
-		
 		timeout ++;
 		if (timeout > 10*60*1000)
 			return -1;
-		mdelay(1);		
-	} while (!(*res & R1_READY_FOR_DATA) || (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
-
-	printf("erase range(block unit):%#lx -- %#lx\n",start, end);
+		mdelay(1);
+	} while (!(*res & R1_READY_FOR_DATA) ||
+		 (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
 
 #ifdef CONFIG_AML_EMMC_KEY
 	mmc->key_protect = 1;
 #endif
 	return 0;
+
 }
 
 
@@ -467,7 +417,6 @@ int mmc_go_idle(struct mmc* mmc)
 
 	udelay(1000);
 
-    aml_sd_cs_high();
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
 	cmd.resp_type = MMC_RSP_NONE;
@@ -475,7 +424,6 @@ int mmc_go_idle(struct mmc* mmc)
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
-    aml_sd_cs_dont_care();
 	if (err)
 		return err;
 
@@ -504,10 +452,11 @@ sd_send_op_cond(struct mmc *mmc)
 
 		if (err == TIMEOUT)
 			return err;
-         else if(err){
-             udelay(10000);
-             continue; 
-         }   
+              else if(err)
+             {
+                    udelay(10000);
+                    continue; 
+             }   
               
 		cmd.cmdidx = SD_CMD_APP_SEND_OP_COND;
 		cmd.resp_type = MMC_RSP_R3;
@@ -1041,8 +990,8 @@ int mmc_startup(struct mmc *mmc)
 		}
 
 		if (mmc->card_caps & MMC_MODE_HS) {
-			mmc_set_clock(mmc, 30000000);
-			mmc->tran_speed = 20000000;
+			mmc_set_clock(mmc, 50000000);
+			mmc->tran_speed = 40000000;
 		} else {
 			mmc_set_clock(mmc, 25000000);
 			mmc->tran_speed = 20000000;
@@ -1143,12 +1092,8 @@ int mmc_send_if_cond(struct mmc *mmc)
 
 int mmc_register(struct mmc *mmc)
 {
-    struct aml_card_sd_info * sdio=mmc->priv;
-	int ret = 0;
-
 	/* Setup the universal parts of the block interface just once */
-    if (mmc->block_dev.if_type != IF_TYPE_SD)
-        mmc->block_dev.if_type = IF_TYPE_MMC;
+	mmc->block_dev.if_type = IF_TYPE_MMC;
 	mmc->block_dev.dev = cur_dev_num++;
 	mmc->block_dev.removable = 1;
 	mmc->block_dev.block_read = mmc_bread;
@@ -1164,15 +1109,6 @@ int mmc_register(struct mmc *mmc)
 	INIT_LIST_HEAD (&mmc->link);
 
 	list_add_tail (&mmc->link, &mmc_devices);
-
-	printf("[%s] add mmc dev_num=%d, port=%d\n", __FUNCTION__, mmc->block_dev.dev, sdio->sdio_port);
-
-    if ((sdio->sdio_port == SDIO_PORT_C) || (sdio->sdio_port == SDIO_PORT_XC_C)) { // eMMC OR TSD
-        is_partition_checked = false;
-        if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG)) { // if eMMC is exist
-            ret = mmc_init(mmc);
-        }
-    }
 
 	return 0;
 }
@@ -1190,15 +1126,13 @@ block_dev_desc_t *mmc_get_dev(int dev)
 int mmc_init(struct mmc *mmc)
 {
 	int err;
-	struct aml_card_sd_info * sdio=mmc->priv;
-
+	
 	err = mmc->init(mmc);
 	if (err)
 		return err;
 	
-	if(mmc->is_inited) // has been initialized
+	if(mmc->bus_width == 4)
         return 0;       
-
 	/* Reset the Card */
 	err = mmc_go_idle(mmc);
 	if (err)
@@ -1207,15 +1141,15 @@ int mmc_init(struct mmc *mmc)
 	
 	// check SDCARD/EMMC to reduce EMMC load env data cycles	
 	//tsd could not init as emmc (cmd1)
-	if(mmc->block_dev.if_type == IF_TYPE_SD)
+	if(mmc->block_dev.dev == SD_CARD_DEV || mmc->block_dev.if_type == IF_TYPE_SD)
 	{
 		/* Test for SD version 2 */
 		err = mmc_send_if_cond(mmc);
 		/* If we got an error other than timeout, we bail */
 		if (err && err != TIMEOUT)
 			return err;
-        else if(err)
-            err = mmc_go_idle(mmc);
+	       else if(err)
+	            err = mmc_go_idle(mmc);
 	
 		/* Now try to get the SD card's operating condition */
 		err = sd_send_op_cond(mmc);
@@ -1225,45 +1159,41 @@ int mmc_init(struct mmc *mmc)
 			err = mmc_send_op_cond(mmc);
 	
 			if (err) {
-				printf("[%s] %s:%d, SD or TSD: Card did not respond to voltage select! "
-                        "mmc->block_dev.if_type=%d\n",
-                        __FUNCTION__, mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type);
+				printf("Card did not respond to voltage select!\n");
 				return UNUSABLE_ERR;
 			}
 		}
 	}
-	else
+	else if(mmc->block_dev.dev == EMMC_INAND_DEV)//emmc
 	{
 		err = mmc_send_op_cond(mmc);
 		if (err) {
-				printf("[%s] %s:%d, eMMC: Card did not respond to voltage select! "
-                        "mmc->block_dev.if_type=%d\n",
-                        __FUNCTION__, mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type);
-            return UNUSABLE_ERR;
+		   printf("Card did not respond to voltage select!\n");
+		   return UNUSABLE_ERR;
+		   
 		}	    
 	}
+	else
+    {
+        printf("card device NO. is error\n");
+        return -1;
+    }
 	
-	err = mmc_startup(mmc);	
-	printf("[%s] %s:%d, if_type=%d, initialized %s!\n", __FUNCTION__,
-            mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type, (err==0)? "OK": "ERROR");
-	if(err){
-		return err;
-	} else {
-        mmc->is_inited = true; // init OK
-    }
+	
+	//return(mmc_startup(mmc));	
+	err = mmc_startup(mmc);
+	if(!err){
+		if(mmc->block_dev.dev == EMMC_INAND_DEV) {//emmc
+			#ifdef CONFIG_AML_EMMC_KEY
+				err = emmc_key_init(mmc);
+				if(err){
+					printf("%s:%d,emmc key fail\n",__func__,__LINE__);
+				}
+			#endif
+		}
+	}
+	return err;
 
-    if ((sdio->sdio_port == SDIO_PORT_C) || (sdio->sdio_port == SDIO_PORT_XC_C)) { // eMMC OR TSD
-	    if (!is_partition_checked) {
-            if (mmc_device_init(mmc) == 0) {
-                is_partition_checked = true;
-                printk("eMMC/TSD partition table have been checked OK!\n");
-            }
-            else
-                printk("eMMC/TSD partition table have been checked ERROR!\n");
-        }
-    }
-
-    return err;
 }
 
 /*

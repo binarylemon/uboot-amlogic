@@ -62,7 +62,7 @@
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
@@ -197,7 +197,7 @@
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
 
-#define CONFIG_STORE_COMPATIBLE
+//#define CONFIG_STORE_COMPATIBLE
 
 #ifdef  CONFIG_STORE_COMPATIBLE
 //spi

@@ -3,84 +3,51 @@
 #Run this script before your commit, make sure all board config of amlogic can be compiled successfully.
 #
 
-declare -i RESULT
+declare -i RESULT=0
 declare DETAIL
-RESULT=0
-make distclean
-make help
-make m6_skt_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL'#------------m6_skt_v1------failed-----#\n'
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL'#------------m6_skt_v1------pass-------#\n'
-fi
+declare CFG
+declare -a CONFIG=(
+  m6_skt_v1
+  m6_ref_v1
+  m6_ref_v2
+  m6l_skt_v1
+  m6s_skt_v1
+  m6tv_skt_v1
+  m6tv_ref_v1
+  m8_skt_v1
+  m8_k200_v1
+  m8_k100_v1
+  m8_k101_v1
+)
 
-make distclean
-make help
-make m6_ref_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL'#------------m6_ref_v1------failed-----#\n'
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL'#------------m6_ref_v1------pass-------#\n'
-fi
+declare -i BAR_TOTAL=14
+declare -i BAR_LOOP
 
-make distclean
-make help
-make m6_ref_v2_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL'#------------m6_ref_v2------failed-----#\n'
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL'#------------m6_ref_v2------pass-------#\n'
-fi
-
-make distclean
-make help
-make m6l_skt_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL'#------------m6l_skt_v1-----failed-----#\n'
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL'#------------m6l_skt_v1-----pass-------#\n'
-fi
-
-make distclean
-make help
-make m6s_skt_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL'#------------m6s_skt_v1-----failed-----#\n'
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL'#------------m6s_skt_v1-----pass-------#\n'
-fi
-
-make distclean
-make help
-make m6tv_skt_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL"#------------m6tv_skt_v1----failed-----#\n"
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL"#------------m6tv_skt_v1----pass-------#\n"
-fi
-
-make distclean
-make help
-make m6tv_ref_v1_config
-make -j
-if [ $? != 0 ]
-then DETAIL=$DETAIL"#------------m6tv_ref_v1----failed-----#\n"
-     RESULT=$RESULT+1
-else DETAIL=$DETAIL"#------------m6tv_ref_v1----pass-------#\n"
-fi
-
+for BD in ${CONFIG[@]}
+do
+  CFG=`echo "${BD}_config"`
+  DETAIL=$DETAIL'#------------'
+  DETAIL=$DETAIL$BD
+  BAR_LOOP=BAR_TOTAL-`expr length $BD`
+  if [ "$BAR_LOOP" -gt "0" ]
+  then
+    for tmp in `seq $BAR_LOOP`;do DETAIL=$DETAIL'-';done
+  fi
+  make distclean
+  make $CFG
+  make -j
+  if [ $? != 0 ]
+  then DETAIL=$DETAIL'---failed---'
+    RESULT=$RESULT+1
+  else DETAIL=$DETAIL'---pass-----'
+  fi
+  DETAIL=$DETAIL'#\n'
+done
 
 echo "#--------------------------------------#"
 echo "#---------compile check result---------#"
 echo "#--------------------------------------#"
-if [ $RESULT = 0 ]
+if [[ $RESULT = 0 ]]
 then
     echo "#-----------------PASS-----------------#"
 else
