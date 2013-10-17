@@ -7,15 +7,23 @@
 #include <sdpinmux.c>
 #include <memtest.c>
 #include <pll.c>
+//#include <hardi2c_lite.c>
+//#include <power.c>
 #include <ddr.c>
 #include <mtddevices.c>
 #include <sdio.c>
 #include <debug_rom.c>
 
 #include <loaduboot.c>
+#ifdef CONFIG_ACS
+#include <storage.c>
+#include <acs.c>
+#endif
+
+#include <asm/arch/reboot.h>
 
 #ifdef CONFIG_POWER_SPL
-#include <power.c>
+extern void power_init(); 
 #endif
 
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -25,6 +33,10 @@ unsigned int ovFlag;
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
+
+	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
+
+	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
 
 //write ENCI_MACV_N0 (CBUS 0x1b30) to 0, disable Macrovision
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV)
@@ -54,6 +66,34 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
+#if defined(CONFIG_M8)
+	//A9 JTAG enable
+	writel(0x102,0xda004004);
+	//TDO enable
+	writel(readl(0xc8100014)|0x4000,0xc8100014);
+
+	//detect sdio debug board
+	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
+
+	// clear sdio pinmux
+	setbits_le32(P_PREG_PAD_GPIO0_O,0x3f<<22);
+	setbits_le32(P_PREG_PAD_GPIO0_EN_N,0x3f<<22);
+	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);  //clear sd d1~d3 pinmux
+
+	if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){  //sd_d3 low, debug board in
+		serial_puts("\nsdio debug board detected ");
+		clrbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);   //clear AO uart pinmux
+		setbits_le32(P_PERIPHS_PIN_MUX_8,3<<9);
+
+		if((readl(P_PREG_PAD_GPIO0_I)&(1<<22)))
+			writel(0x220,P_AO_SECURE_REG1);  //enable sdio jtag
+	}
+	else{
+		serial_puts("\nno sdio debug board detected ");
+		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
+	}
+#endif
+
 
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
@@ -82,59 +122,56 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
 	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
 #endif
-		
+
+	//Note: Following msg is used to calculate romcode boot time
+	//         Please DO NOT remove it!
     serial_puts("\nTE : ");
-    serial_put_dec(get_utimer(0));
-
-#ifdef TEST_UBOOT_BOOT_SPEND_TIME
-	unsigned spl_boot_start,spl_boot_end;
-	spl_boot_start = TIMERE_GET();
-#endif
-
-#ifdef CONFIG_M6
-	#ifdef CONFIG_PWM_CORE_VOLTAGE
-	writel(0x632000, P_VGHL_PWM_REG0);
-	writel(0x632000, P_LED_PWM_REG0);
-	#else
-    writel(0x631000, P_VGHL_PWM_REG0);    //enable VGHL_PWM
-    #endif
-    __udelay(1000);
-#endif
-
-    // initial pll
-    pll_init(&__plls);
-	//serial_init(__plls.uart);
+    unsigned int nTEBegin = TIMERE_GET();
+    serial_put_dec(nTEBegin);
+    serial_puts("\nBT : ");
+	//Note: Following code is used to show current uboot build time
+	//         For some fail cases which in SPL stage we can not target
+	//         the uboot version quickly. It will cost about 5ms.
+	//         Please DO NOT remove it!
+	serial_puts(__TIME__);
+	serial_puts(" ");
+	serial_puts(__DATE__);
+	serial_puts("\n");
 
 #ifdef CONFIG_POWER_SPL
-	serial_puts("\n");
-	serial_puts("\ninit power for cpu\n");
     power_init();
 #endif
-#ifdef ENTRY_DEBUG_ROM
-    __udelay(100000);//wait for a uart input
+
+#if !defined(CONFIG_VLSI_EMULATOR)
+    // initial pll
+    pll_init(&__plls);
+	serial_init(__plls.uart);
 #else
-    __udelay(100);//wait for a uart input
-#endif
-	
-	 if(serial_tstc()){
-	    debug_rom(__FILE__,__LINE__);
-	 }	 
+	serial_init(readl(P_UART_CONTROL(UART_PORT_CONS))|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);
+	serial_puts("\n\nAmlogic log: UART OK for emulator!\n");
+#endif //#if !defined(CONFIG_VLSI_EMULATOR)
+
+
+	//TEMP add 
+	unsigned int nPLL = readl(P_HHI_SYS_PLL_CNTL);
+	unsigned int nDDRCLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+	serial_puts("\nCPU clock is ");
+	serial_put_dec(nDDRCLK);
+	serial_puts("MHz\n");
+
+
+    nTEBegin = TIMERE_GET();
 
     // initial ddr
     ddr_init_test();
 
-#if 0
-	serial_puts("\nMSR clk list:\n");
-	int i;
-	for(i=0;i<46;i++)
-	{
-		serial_put_hex(i,8);
-		serial_puts("=");
-		serial_put_dword(clk_util_clk_msr(i));
-   }
-#endif
+    serial_puts("\nDDR init use : ");
+    serial_put_dec(get_utimer(nTEBegin));
+    serial_puts(" us\n");
+
 	//asm volatile ("wfi");
 	
+    nTEBegin = TIMERE_GET();
     // load uboot
 #ifdef CONFIG_ENABLE_WATCHDOG
 	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
@@ -144,6 +181,18 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
     	load_uboot(__TEXT_BASE,__TEXT_SIZE);
 #endif
+
+#if defined(CONFIG_AML_V2_USBTOOL)
+    //tell uboot it loaded from internal device or external device
+    if( 1 == romboot_info->boot_id )//see loaduboot.c, only boot from sdcard when "boot_id == 1"
+    {
+        writel(MESON_SDC_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);
+    }
+#endif//#if defined(CONFIG_AML_V2_USBTOOL)
+
+    serial_puts("\nLoad UBOOT total use : ");
+    serial_put_dec(get_utimer(nTEBegin));
+    serial_puts(" us\n");
 
 	//asm volatile ("wfi");
 	// load secureOS
@@ -163,12 +212,20 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_puts("\nSystem Started\n");
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-	spl_boot_end = TIMERE_GET();
-	*((volatile unsigned int*)0x83a00000) = spl_boot_end;
+	unsigned int spl_boot_end = TIMERE_GET();
+	*((volatile unsigned int*)0x13a00000) = spl_boot_end;
 	serial_puts("\nspl boot time(us):");
-	serial_put_dword((spl_boot_end-spl_boot_start));
+	//serial_put_dword((spl_boot_end-spl_boot_start));
 #else
-	*((volatile unsigned int*)0x8fa00000) = 0;
+	*((volatile unsigned int*)0x1fa00000) = 0;
+#endif
+
+#if 0
+    //wait serial_puts end.
+    for(i = 0; i < 10; i++)
+		  __udelay(1000);
+#else
+	serial_wait_tx_empty();
 #endif
 
 #ifdef CONFIG_M6_TEST_CPU_SWITCH

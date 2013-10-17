@@ -34,6 +34,11 @@ __magic_word:
   .word 0x00000075
   .space 0x1fe - (. - _start)
   .short 0xaa55
+#ifdef CONFIG_ACS
+.globl _acs_start
+_acs_start:
+  .word __acs_set
+#endif
 #endif
 
 reset:

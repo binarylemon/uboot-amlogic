@@ -20,6 +20,9 @@ SECTIONS
 	}
 	
 	. = AHB_SRAM_BASE+0x200;
+	.acs_entry :{
+	  *acs_entry.o(.text)
+	}
 #endif
 	. = ALIGN(4);
 	.setting		:

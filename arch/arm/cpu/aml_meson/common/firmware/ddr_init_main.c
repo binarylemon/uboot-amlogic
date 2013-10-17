@@ -13,7 +13,12 @@
 #include <debug_rom.c>
 
 #include <loaduboot.c>
+#include <asm/arch/reboot.h>
 
+#ifdef CONFIG_ACS
+#include <storage.c>
+#include <acs.c>
+#endif
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
@@ -177,6 +182,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	while(1);
 
 #endif//CONFIG_M6_TEST_CPU_SWITCH
+
+#if defined(CONFIG_AML_V2_USBTOOL)
+    //tell TPL it loaded from USB otg
+    writel(MESON_USB_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);
+#endif//#if defined(CONFIG_AML_V2_USBTOOL)
 
     return 0;
 }

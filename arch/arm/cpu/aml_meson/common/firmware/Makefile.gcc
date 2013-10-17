@@ -32,7 +32,7 @@ AFLAGS	+= -DCONFIG_AMLROM_SPL -DTEXT_BASE=$(TEXT_BASE) -MD
 #CC=armcc --translate_gcc --gnu --c99
 
 ifndef CONFIG_M6_SECU_BOOT
-SOBJS	 = rom_spl.o magic.o
+SOBJS	 = rom_spl.o magic.o acs_entry.o
 else
 SOBJS	 = rom_spl.o
 endif
