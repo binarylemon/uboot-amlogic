@@ -27,7 +27,7 @@
 #define CONFIG_AML_NAND_KEY
 #endif
 
-#define CONFIG_NEXT_NAND
+//#define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
@@ -58,10 +58,10 @@
 
 
 //Enable storage devices
-#define CONFIG_CMD_NAND  1
-#define CONFIG_VIDEO_AML 1
-#define CONFIG_CMD_BMP 1
-#define CONFIG_VIDEO_AMLTVOUT 1
+//#define CONFIG_CMD_NAND  1
+//#define CONFIG_VIDEO_AML 1
+//#define CONFIG_CMD_BMP 1
+//#define CONFIG_VIDEO_AMLTVOUT 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -80,7 +80,7 @@
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
@@ -107,12 +107,12 @@
 #define CONFIG_SYS_I2C_SPEED	400000
 #endif	//#ifdef CONFIG_AML_I2C
 
-#define CONFIG_CMD_AML
+//#define CONFIG_CMD_AML
 /*
  * PMU definitions, all PMU devices must be include involved
  * in CONFIG_PLATFORM_HAS_PMU
  */
-#define CONFIG_PLATFORM_HAS_PMU
+//#define CONFIG_PLATFORM_HAS_PMU
 #ifdef CONFIG_PLATFORM_HAS_PMU
 
 #define CONFIG_RN5T618
@@ -268,7 +268,7 @@
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
 
-#define CONFIG_STORE_COMPATIBLE
+//#define CONFIG_STORE_COMPATIBLE
 
 #ifdef  CONFIG_STORE_COMPATIBLE
 //spi
