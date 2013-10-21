@@ -154,7 +154,7 @@
 #define CONFIG_SYS_LOAD_ADDR    0x12000000
 #endif
 
-#define CONFIG_SYS_MALLOC_LEN   (4<<20)
+#define CONFIG_SYS_MALLOC_LEN   (12<<20)
 
 #define CONFIG_SYS_MAXARGS      16
 #define CONFIG_SYS_CBSIZE          1024

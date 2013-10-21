@@ -51,6 +51,7 @@
 #include <mmc.h>
 #include <asm/cache.h>
 
+#include <asm/arch/reboot.h>
 
 #ifdef CONFIG_AML_RTC
 #include <aml_rtc.h>
@@ -73,6 +74,10 @@
 #ifdef CONFIG_LOGBUFFER
 #include <logbuff.h>
 #endif
+
+#if defined(CONFIG_AML_V2_USBTOOL)
+#include <amlogic/aml_v2_burning.h>
+#endif// #if defined(CONFIG_AML_V2_USBTOOL)
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -549,6 +554,22 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
 	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
 
+
+#ifdef CONFIG_GENERIC_MMC
+    puts("MMC:   ");
+    mmc_initialize(bd);
+#endif
+
+#if defined(CONFIG_AML_V2_USBTOOL)
+	if(is_tpl_loaded_from_usb())//is uboot loaded from usb otg
+	{
+#ifdef BOARD_LATE_INIT
+		board_late_init ();
+#endif
+        aml_v2_usb_producing(0, bd);//would NOT return if boot from usb,
+	}
+#endif// #if defined(CONFIG_AML_V2_USBTOOL)
+
 #if !defined(CONFIG_SYS_NO_FLASH)
 	puts ("Flash: ");
 
@@ -587,10 +608,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	onenand_init();
 #endif
 
-#ifdef CONFIG_GENERIC_MMC
-       puts("MMC:   ");
-       mmc_initialize(bd);
-#endif
 
 #ifdef CONFIG_HAS_DATAFLASH
 	AT91F_DataflashInit();
@@ -693,6 +710,21 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	puts("LCD Initialize:   \n");
 	aml_lcd_init();
 #endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+unsigned int after_lcd_init =  get_utimer(0);
+printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
+#endif
+
+#if CONFIG_AUTO_START_SD_BURNING
+    if(is_tpl_loaded_from_ext_sdmmc())
+    {
+        if(aml_check_is_ready_for_sdc_produce())
+        {
+            aml_v2_sdc_producing(0, bd);
+        }
+    }
+#endif// #if CONFIG_AUTO_START_SD_BURNING
 
 #ifdef CONFIG_POST
 	post_run (NULL, POST_RAM | post_bootmode_get(0));

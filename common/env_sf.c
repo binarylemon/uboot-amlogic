@@ -164,8 +164,13 @@ int spi_saveenv(void)
     	char	*res;
 
 	if (!env_flash) {
-		puts("Environment SPI flash not initialized\n");
-		return 1;
+        puts("Environment SPI flash not initialized, to probe\n");
+        env_flash = spi_flash_probe(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
+                CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE);
+        if (!env_flash){
+            puts("Fail in spi_flash_probe when save\n");
+            return 1;
+        }
 	}
 
 	/* Is the sector larger than the env (i.e. embedded) */
