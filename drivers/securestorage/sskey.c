@@ -4,9 +4,12 @@
 #include <asm/arch/io.h>
 #include <amlogic/secure_storage.h>
 #include <linux/rand_ext.h>
-#include <asm/arch/trustzone.h>
 
 #define SECUREOS_INTERFACE
+
+#ifdef SECUREOS_INTERFACE
+#include <asm/arch/trustzone.h>
+#endif
 
 #ifdef SECUREOS_INTERFACE
 #define SECUREOS_KEY_DEFAULT_ADDR	0xa00e0000
@@ -84,7 +87,8 @@ int securestore_key_init( char *seed,int len)
 	printf("\n");
 #endif
 	device = auto_find_device();
-	if((device != SECURE_STORAGE_NAND_TYPE) && (device != SECURE_STORAGE_SPI_TYPE)){
+	if((device != SECURE_STORAGE_NAND_TYPE) && (device != SECURE_STORAGE_SPI_TYPE)
+		&& (device != SECURE_STORAGE_EMMC_TYPE)){
 		printf("secure storage device not found\n");
 		return -1;
 	}
@@ -96,6 +100,11 @@ int securestore_key_init( char *seed,int len)
 	else if(device == SECURE_STORAGE_SPI_TYPE){
 		sstorekey_device_op.read = secure_storage_spi_read;
 		sstorekey_device_op.write = secure_storage_spi_write;
+		printf("secure storage found nor\n");
+	}
+	else if(device == SECURE_STORAGE_EMMC_TYPE){
+		sstorekey_device_op.read = secure_storage_emmc_read;
+		sstorekey_device_op.write = secure_storage_emmc_write;
 		printf("secure storage found nor\n");
 	}
 #if 0

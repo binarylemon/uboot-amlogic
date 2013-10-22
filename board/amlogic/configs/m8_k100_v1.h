@@ -10,6 +10,20 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//#define CONFIG_UNIFY_KEY_MANAGE
+
+//#define CONFIG_SECURESTORAGEKEY
+#ifdef CONFIG_SECURESTORAGEKEY
+#ifndef CONFIG_RANDOM_GENERATE
+#define CONFIG_RANDOM_GENERATE
+#endif
+#endif
+
+//#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#endif
+
 //#define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"

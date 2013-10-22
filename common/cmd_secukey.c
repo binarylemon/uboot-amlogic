@@ -33,6 +33,10 @@ extern int key_set_version(char *device);
                                                      __FILE__,__LINE__,__func__,## args);} \
                                          while (0)
 
+#ifndef SECUKEY_DEFAULT_ADDRESS
+#define SECUKEY_DEFAULT_ADDRESS	(PHYS_MEMORY_START + 0x02000000)
+#endif
+
 /* ------------------------------------------------------------------------- */
 int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 {
@@ -79,7 +83,7 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	if(!strcmp(cmd,"list"))
 	{
 		if (2==argc)
-			addr = 0x82000000;
+			addr = SECUKEY_DEFAULT_ADDRESS;
 		else if(3==argc)
 			addr = (ulong)simple_strtoul(argv[2], NULL, 16);
 		else {
@@ -111,7 +115,7 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		if(4==argc)
 			addr = (ulong)simple_strtoul(argv[3], NULL, 16);
 		else if(3==argc)
-			addr = 0x82000000;
+			addr = SECUKEY_DEFAULT_ADDRESS;
 		else{
 			printk("wrong command!!\n");
 			goto usage; 
@@ -270,7 +274,7 @@ int do_ssecukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			#endif
 		}
 		else{
-			addr = 0x82000000;
+			addr = SECUKEY_DEFAULT_ADDRESS;
 		}
 		if(ascii_flag){
 			error = uboot_key_put(device,keyname,(char*)addr,lenth,0);
@@ -298,7 +302,7 @@ int do_ssecukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			ascii_flag = 1;
 		}
 		else{
-			addr = 0x82000000;
+			addr = SECUKEY_DEFAULT_ADDRESS;
 			lenth = 4096;
 		}
 		if(ascii_flag){

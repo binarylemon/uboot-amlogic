@@ -1683,3 +1683,38 @@ int uboot_storer_write(char *buf,int len)
 	return 0;
 }
 
+/* function name: uboot_key_query
+ * device : nand,emmc,auto
+ * key_name: key name
+ * keystate: 0: key not exist, 1: key burned , other : reserve
+ * return : <0: fail, >=0 ok
+ * */
+ssize_t uboot_key_query(char *device,char *key_name,unsigned int *keystate)
+{
+	aml_key_t * keys;
+	int i;
+	ssize_t error=-1;
+	if(uboot_key_inited == 0){
+		error=uboot_key_initial(device);
+		if(error < 0){
+			printk("%s:%d,uboot key init error\n",__func__,__LINE__);
+			return -1;
+		}
+	}
+	if (!strcmp(device,"nand") || !strcmp(device,"emmc")|| (!strcmp(device,"auto"))){
+		error = 0;
+		*keystate = 0;
+		keys = key_schematic[keys_version]->keys;
+		for(i=0;i<key_schematic[keys_version]->count;i++)
+		{
+			if(keys[i].name[0] != 0){
+				if(strcmp(key_name,keys[i].name) == 0){
+					*keystate = 1;
+					break;
+				}
+			}
+		}
+	}
+	return error;
+}
+

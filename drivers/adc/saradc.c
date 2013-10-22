@@ -20,9 +20,10 @@
  *
  */
  
+#include <config.h>
+#include <common.h>
 #include <asm/arch/io.h>
 #include <asm/saradc.h>
-
 
 //#define AML_ADC_SAMPLE_DEBUG 1
 
@@ -59,6 +60,11 @@
 
 #define enable_sample_engine()		WRITE_CBUS_REG_BITS(SAR_ADC_REG0, 1, 0, 1)
 #define disable_sample_engine()		WRITE_CBUS_REG_BITS(SAR_ADC_REG0, 0, 0, 1)
+
+#ifdef CONFIG_M8
+#define saradc_power_on()	WRITE_CBUS_REG_BITS(SAR_ADC_DELTA_10, 1, 10, 1)
+//#define saradc_power_off()	WRITE_CBUS_REG_BITS(SAR_ADC_DELTA_10, 0, 10, 1)
+#endif
 
 /**********************************************************************************/
 // REG1 (0x21A1)
@@ -238,6 +244,11 @@ extern int printf(const char *fmt, ...);
 void saradc_enable(void)
 {
 	int i;
+
+#ifdef CONFIG_M8
+	saradc_power_on();
+	//printf("SAR_ADC_DELTA_10: 0x%x ,%s:%d\n",*(volatile unsigned long *)0xc11086a8,__func__,__LINE__);
+#endif
 
 	//set adc clock as 1.28Mhz @sys=27MHz
 	set_clock_divider(20);

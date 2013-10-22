@@ -34,6 +34,19 @@ static inline int secure_storage_spi_read(char *buf,unsigned int len)
 }
 #endif
 
+#ifdef CONFIG_EMMC_SECURE_STORAGE
+extern int secure_storage_emmc_write(char *buf,unsigned int len);
+extern int secure_storage_emmc_read(char *buf,unsigned int len);
+#else
+static inline int secure_storage_emmc_write(char *buf,unsigned int len)
+{
+	return -1;
+}
+static inline int secure_storage_emmc_read(char *buf,unsigned int len)
+{
+	return -1;
+}
+#endif
 
 #ifdef CONFIG_SECURESTORAGEKEY
 /* the CONFIG_SECURESTORAGEKEY is depend on CONFIG_EFUSE CONFIG_SPI_NOR_SECURE_STORAGE CONFIG_SECURE_NAND  CONFIG_RANDOM_GENERATE

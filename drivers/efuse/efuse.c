@@ -184,6 +184,19 @@ static int efuse_readversion(void)
 	return -1;
 #endif	
 }
+static int efuse_checkversion(char *buf)
+{
+	int i;
+	int ver = buf[0];
+	int err = -1;
+	for(i=0; i<efuseinfo_num; i++){
+		if(efuseinfo[i].version == ver){
+			err = 0;
+			break;
+		}
+	}
+	return err;
+}
 
 static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 {
@@ -377,6 +390,12 @@ int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 		printf("data length: 0 is error!\n");
 		return -1;
 	}	
+	if(strcmp(info.title, "version") == 0){
+		if(efuse_checkversion(buf) < 0){
+			printf("efuse version NO. error\n");
+			return -1;
+		}
+	}
 	
 	if(efuse_chk_written(pos, info.data_len)){
 		printf("error: efuse has written.\n");
