@@ -204,8 +204,13 @@ pub_init_ddr1:
 		writel((readl(P_DDR0_PUB_DSGCR))|(0x1<<06), P_DDR0_PUB_DSGCR); //eanble gate extension  dqs gate can help to bit deskew also
 		
 		writel(((readl(P_DDR0_PUB_ZQCR))&0xff01fffc), P_DDR0_PUB_ZQCR); //for vt bug disable IODLMT
+        #ifdef CONFIG_CMD_DDR_TEST
+        if(zqcr)
+            writel(zqcr, P_DDR0_PUB_ZQ0PR);
+        else
+        #endif
 		writel((timing_set->t_pub_zq0pr)|((readl(P_DDR0_PUB_ZQ0PR))&0xffffff00), 
-			P_DDR0_PUB_ZQ0PR); 
+			P_DDR0_PUB_ZQ0PR);        
 		writel((1<<1)|((readl(P_DDR0_PUB_ZQCR))&0xfffffffe), 
 			P_DDR0_PUB_ZQCR); 
 		
@@ -272,8 +277,13 @@ pub_init_ddr1:
 		writel(0x8, P_DDR1_PUB_DX3GCR3); 
 		writel((readl(P_DDR1_PUB_DSGCR))|(0x1<<06), P_DDR1_PUB_DSGCR); //eanble gate extension  dqs gate can help to bit deskew also
 
-		writel(((readl(P_DDR1_PUB_ZQCR))&0xff01fffc), P_DDR1_PUB_ZQCR);  //for vt bug disable IODLMT		
-		writel((timing_set->t_pub_zq0pr)|((readl(P_DDR1_PUB_ZQ0PR))&0xffffff00), P_DDR1_PUB_ZQ0PR); 
+		writel(((readl(P_DDR1_PUB_ZQCR))&0xff01fffc), P_DDR1_PUB_ZQCR);  //for vt bug disable IODLMT
+        #ifdef CONFIG_CMD_DDR_TEST
+        if(zqcr)
+            writel(zqcr, P_DDR1_PUB_ZQ0PR);
+        else
+        #endif
+		writel((timing_set->t_pub_zq0pr)|((readl(P_DDR1_PUB_ZQ0PR))&0xffffff00), P_DDR1_PUB_ZQ0PR);        
 		writel((1<<1)|((readl(P_DDR1_PUB_ZQCR))&0xfffffffe), P_DDR1_PUB_ZQCR); 
 
 		writel(timing_set->t_pub_dxccr, P_DDR1_PUB_DXCCR); 
@@ -904,9 +914,10 @@ pub_init_ddr1:
 		
 		writel(readl(P_DDR0_PUB_ZQCR) | (0x4), 
 			P_DDR0_PUB_ZQCR); //for power PZQ CELL save VDDQ power be careful with de sequence ,close zqcr then close clock	
-
+        #ifndef CONFIG_CMD_DDR_TEST
 		writel(readl(P_DDR0_CLK_CTRL) & (~1), 
-			P_DDR0_CLK_CTRL);  //for power pctl gate clk save EE power	
+			P_DDR0_CLK_CTRL);  //for power pctl gate clk save EE power
+        #endif
 	}
 	
 	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET) //DDR 1
@@ -915,9 +926,10 @@ pub_init_ddr1:
 			P_DDR1_PUB_PGCR3);
 		writel(readl(P_DDR1_PUB_ZQCR) | (0x4), 
 			P_DDR1_PUB_ZQCR);//for power PZQ CELL save VDDQ power be careful with de sequence ,close zqcr then close clock       	
-
+        #ifndef CONFIG_CMD_DDR_TEST
 		writel(readl(P_DDR1_CLK_CTRL) & (~1), 
-			P_DDR1_CLK_CTRL); //for power pctl gate clk save EE power 
+			P_DDR1_CLK_CTRL); //for power pctl gate clk save EE power
+        #endif
 	}
 
 	return nRet;
