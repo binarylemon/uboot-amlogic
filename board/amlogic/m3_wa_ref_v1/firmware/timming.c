@@ -265,7 +265,9 @@ static struct ddr_set __ddr_setting={
 
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
 ={
-    .sys_pll_cntl=0x664,//800M todo
+	.sys_pll_cntl=	(0  << 16) | //OD
+					(3  << 9 ) | //N
+					(102 << 0 ),	 //M
     .sys_clk_cntl=(1<<0)    |  //select sys pll for sys cpu
 	        (0<<2)    |  // divided 2
 	        (1<<4)    |  //APB_en

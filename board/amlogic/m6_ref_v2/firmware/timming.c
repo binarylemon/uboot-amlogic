@@ -176,7 +176,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//0x1098[0xc1104260]
 	.sys_pll_cntl=	(0  << 16) | //OD
 					(3  << 9 ) | //N
-					(100 << 0 ),	 //M
+					(102 << 0 ),	 //M
 	//A9 clock setting
 	//0x1067[0xc110419c]
     .sys_clk_cntl=	(1 << 7) | // 0:oscin 1:scale out
