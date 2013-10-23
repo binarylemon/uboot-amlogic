@@ -15,6 +15,7 @@ static  char cmd_buf[DEBUGROM_CMD_BUF_SIZE];
 
 void restart_arm(void);
 
+#ifdef AML_DEBUGROM
 STATIC_PREFIX char * get_cmd(void)
 {
     
@@ -368,6 +369,18 @@ STATIC_PREFIX int run_cmd(char * cmd)
     }
     return 1;
 }
+#else
+
+STATIC_PREFIX char * get_cmd(void)
+{
+	return 0;
+}
+STATIC_PREFIX int run_cmd(char * cmd)
+{
+	return 0;
+}
+#endif //if 0
+
 #ifdef AML_DEBUGROM
 #include <asm/arch/firm/nand.h>
 

@@ -40,9 +40,16 @@ STATIC_PREFIX unsigned int emmckey_calculate_checksum(unsigned char *buf,unsigne
 {
 	unsigned int checksum = 0;
 	unsigned int cnt;
+#if 0
 	for(cnt=0;cnt<lenth;cnt++){
 		checksum += buf[cnt];
 	}
+#else
+	cnt = lenth-1;
+	do{
+		checksum += buf[cnt];
+	}while(cnt-- != 0);
+#endif
 	return checksum;
 }
 STATIC_PREFIX int spi_secure_storage_get(int nor_addr,int mem_addr,int size)
@@ -55,9 +62,16 @@ STATIC_PREFIX int spi_secure_storage_get(int nor_addr,int mem_addr,int size)
 	unsigned char *pm = SPI_SECURESTORAGE_MAGIC;
 	mem_addr = SECURE_STORAGE_MEM_ADDR;
 	size = SECURE_STORAGE_MEM_SIZE;
+#if 0
 	for(i=0;i<9;i++){
 		magic[i] = pm[i];
 	}
+#else
+	i = 8;
+	do{
+		magic[i] = pm[i];
+	}while(i--!=0);
+#endif
 	memcpy(&part1_head,(unsigned *)(nor_addr+SPI_SECURESTORAGE_OFFSET),sizeof(struct spi_securestorage_head_t));
 	memcpy(&part2_head,(unsigned *)(nor_addr+SPI_SECURESTORAGE_OFFSET+SPI_SECURESTORAGE_AREA_SIZE),sizeof(struct spi_securestorage_head_t));
 	part1_flag = 0;
@@ -72,6 +86,7 @@ STATIC_PREFIX int spi_secure_storage_get(int nor_addr,int mem_addr,int size)
 			//serial_puts("\nspi secure storage read part2 1 error\n");
 		}
 	}
+
 	if((part1_head.magic_checksum != emmckey_calculate_checksum(&part1_head.magic[0],SPI_SECURESTORAGE_MAGIC_SIZE))){
 		part1_flag = 2;
 		//serial_puts("\nspi secure storage read part1 2 error\n");
@@ -110,10 +125,12 @@ STATIC_PREFIX int spi_secure_storage_get(int nor_addr,int mem_addr,int size)
 	}
 	if(valid_addr){
 		memcpy((unsigned *)mem_addr,(unsigned *)valid_addr,size);
-		serial_puts("\nspi secure storage read ok\n");
+		//serial_puts("\nspi secure storage read ok\n");
+		serial_puts("spi sskey R ok\n");
 		return 0;
 	}
-	serial_puts("\nspi secure storage read error\n");
+	//serial_puts("\nspi secure storage read error\n");
+	serial_puts("spi sskey R err\n");
 	return -1;
 }
 #endif

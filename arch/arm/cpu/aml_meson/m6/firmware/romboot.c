@@ -187,7 +187,8 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 	case AML_RSA_STAGE_2_2:break;
 	default:
 		{
-			serial_puts("\nError! SPL is corrupt!\n");
+			//serial_puts("\nError! SPL is corrupt!\n");
+			serial_puts("\nErr! SPL is corrupt!\n");
 			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 			while(1);
 		}break;
@@ -228,7 +229,8 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		}
 		else
 		{
-			serial_puts("\nError! Wrong MX chip!\n");
+			//serial_puts("\nError! Wrong MX chip!\n");
+			serial_puts("\nErr! Wrong MX chip!\n");
 			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 			while(1);
 		
@@ -365,7 +367,8 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 
 		if(memcmp_aml(szHashKey,pBlk->secure.szHashKey,sizeof(szHashKey)))
 		{
-			serial_puts("\nError! UBoot is corrupt!\n");
+			//serial_puts("\nError! UBoot is corrupt!\n");
+			serial_puts("\nErr! UBoot is corrupt!\n");
 			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 			while(1);			
 		}
@@ -377,7 +380,8 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 	}
 	else
 	{	
-		serial_puts("\nError! UBoot is corrupt!\n");
+		//serial_puts("\nError! UBoot is corrupt!\n");
+		serial_puts("\nErr! UBoot is corrupt!\n");
 		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 		while(1);	
 	}
@@ -409,7 +413,8 @@ static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 	if((!nSizeUCL) || (nSizeUCL > AML_UBOOT_SIZE_MAX) || //illegal uboot image size
 		sha_256(szHashUCL,pSRC,nSizeUCL))
 	{
-		serial_puts("\nError! UBoot is corrupt!\n");
+		//serial_puts("\nError! UBoot is corrupt!\n");
+		serial_puts("\nErr! UBoot is corrupt!\n");
 		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
 		while(1);
 	}	
@@ -426,30 +431,31 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 {
     serial_puts("Boot from");
     if(stage==0){
-        serial_puts(" internal device ");
+        //serial_puts(" internal device ");
+        serial_puts(" int dev ");
         if(POR_GET_1ST_CFG(por_cfg) != 0)	{
 	        switch(POR_GET_1ST_CFG(por_cfg))
 	        {
 	        		case POR_1ST_NAND:
-	        			serial_puts("1st NAND\n");
+	        			serial_puts("1stNAND\n");
 	        		break;
 	         		case POR_1ST_NAND_RB:
-	        			serial_puts("1st NAND RB\n");
+	        			serial_puts("1stNAND RB\n");
 	        		break;
 	        		case POR_1ST_SPI:
-	        			serial_puts("1st SPI\n");
+	        			serial_puts("1stSPI\n");
 	        		break;
 	        		case POR_1ST_SPI_RESERVED:
-	        			serial_puts("1st SPI RESERVED\n");
+	        			serial_puts("1stSPI RESERVED\n");
 	        		break;
 	        		case POR_1ST_SDIO_C:
-	        			serial_puts("1st SDIO C\n");
+	        			serial_puts("1stSDIO C\n");
 	        		break;
 	        		case POR_1ST_SDIO_B:
-	        			serial_puts("1st SDIO B\n");
+	        			serial_puts("1stSDIO B\n");
 	        		break;
 	        		case POR_1ST_SDIO_A:
-	        			serial_puts("1ST SDIO A\n");
+	        			serial_puts("1STSDIO A\n");
 	        		break;       				
 	        }
       }
@@ -472,7 +478,8 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
       }
       return;
     }
-    serial_puts(" external device ");
+    //serial_puts(" external device ");
+    serial_puts(" ext dev ");
     return ;
 }
 
@@ -518,14 +525,14 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
                 return rc;
             }
 #endif
-            serial_puts("Boot From SPI\n");
+            serial_puts("BootFrom SPI\n");
             memcpy((unsigned*)temp_addr,mem,size);
             #ifdef CONFIG_SPI_NOR_SECURE_STORAGE
             spi_secure_storage_get(NOR_START_ADDR,0,0);
             #endif
             break;
         case POR_1ST_SDIO_C:
-        	serial_puts("Boot From SDIO C\n");
+        	serial_puts("BootFrom SDIO C\n");
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<3);
         	break;
         case POR_1ST_SDIO_B:
