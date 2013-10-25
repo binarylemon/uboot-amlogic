@@ -342,7 +342,7 @@ static uint8_t aml_nand_get_onfi_features(struct aml_nand_chip *aml_chip,  uint8
 			aml_chip->aml_nand_select_chip(aml_chip, i);
 			aml_chip->aml_nand_command(aml_chip, NAND_CMD_GET_FEATURES, -1, -1, i);
 			chip->cmd_ctrl(mtd, addr, NAND_CTRL_CHANGE | NAND_NCE | NAND_ALE);
-			NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 5);
+			NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 20);
 			for (j=0; j<4; j++)
 				buf[j] = chip->read_byte(mtd);
 		}
@@ -363,7 +363,7 @@ static void aml_nand_set_onfi_features(struct aml_nand_chip *aml_chip,  uint8_t 
 			aml_chip->aml_nand_select_chip(aml_chip, i);
 			aml_chip->aml_nand_command(aml_chip, NAND_CMD_SET_FEATURES, -1, -1, i);
 			chip->cmd_ctrl(mtd, addr, NAND_CTRL_CHANGE | NAND_NCE | NAND_ALE);
-			NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 5);
+			NFC_SEND_CMD_IDLE(aml_chip->chip_selected, 20);
 			for (j=0; j<4; j++)
 				aml_chip->aml_nand_write_byte(aml_chip, buf[j]);
 			aml_chip->aml_nand_wait_devready(aml_chip, i);
