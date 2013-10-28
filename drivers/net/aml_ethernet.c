@@ -1,7 +1,7 @@
 /*
  * Amlogic Ethernet Driver
  *
- * Copyright (C) 2012 Amlogic, Inc.
+ * Copyright (C) 2013 Amlogic, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,23 +72,31 @@ static int g_mac_mode = MAC_MODE_RMII_CLK_EXTERNAL;
 static int g_debug = 0;
 //#define ET_DEBUG
 
+static unsigned int get_cpuid(){
+	return READ_CBUS_REG(0x1f53)&0xff;
+}
 
 
 
 
-#ifdef CONFIG_M6
 static void hardware_reset(void)
 {
-        /* PHY hardware reset */
-        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-        udelay(500000);
-        SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-        udelay(500000);
-        printf("ETH PHY hardware reset OK\n");
+	/* PHY hardware reset */
+	if(get_cpuid() == 0x16){
+		CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+		udelay(500000);
+		SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	}
+	if(get_cpuid() == 0x19){
+		CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+		udelay(500000);
+		SET_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+	}
+	udelay(500000);
+	printf("ETH PHY hardware reset OK\n");
 
-        return;
+	return;
 }
-#endif
 static void phy_reg_wr(int phyad, unsigned int reg, unsigned int val)
 {
 	unsigned long busy = 0, tmp = 0;
@@ -173,7 +181,7 @@ static void set_mac_mode(void)
 	} else {
 		/* RMII */
 		writel((ETH_MAC_0_Configuration_PS_MII | ETH_MAC_0_Configuration_FES_100M | ETH_MAC_0_Configuration_DM
-				| ETH_MAC_0_Configuration_RE | ETH_MAC_0_Configuration_TE), ETH_MAC_0_Configuration);
+					| ETH_MAC_0_Configuration_RE | ETH_MAC_0_Configuration_TE), ETH_MAC_0_Configuration);
 	}
 
 	writel((ETH_MAC_1_Frame_Filter_PM | ETH_MAC_1_Frame_Filter_RA), ETH_MAC_1_Frame_Filter);
@@ -204,51 +212,51 @@ static void netdev_chk(void)
 	{
 		//printf("use enforce net speed\n");
 		rint=phy_reg_rd(id,PHY_SR);
-		
+
 	}else{
-	do {
-		rint = phy_reg_rd(id, PHY_SR);
-		if ((rint & PHY_SR_ANCOMPLETE)) {
-			break;
+		do {
+			rint = phy_reg_rd(id, PHY_SR);
+			if ((rint & PHY_SR_ANCOMPLETE)) {
+				break;
+			}
+			udelay(1000);
+		} while (rint2-- > 0);
+		if (!(rint & PHY_SR_ANCOMPLETE)) {
+			printf("phy auto link failed\n");
 		}
-		udelay(1000);
-	} while (rint2-- > 0);
-	if (!(rint & PHY_SR_ANCOMPLETE)) {
-		printf("phy auto link failed\n");
-	}
 	}
 	if (old_rint != rint) {
 		if (g_debug > 1)
 			printf("netdev_chk() g_phy_Identifier: 0x%x\n", g_phy_Identifier);
 		switch (g_phy_Identifier) {
-		case PHY_ATHEROS_8032:
-			rint2 = phy_reg_rd(id, 17);
-			speed = (rint2 & (1 << 14)) >> 14;
-			full = ((rint2) & (1 << 13));
-			gS->linked = rint2 & (1 << 10);
-			break;
-		case PHY_ATHEROS_8035:
-			rint2 = phy_reg_rd(id, 17);
-			speed = (rint2 & (3 << 14)) >> 14;
-			full = ((rint2) & (1 << 13));
-			gS->linked = rint2 & (1 << 10);
-			break;
-		case PHY_IC_IP101ALF:
-			rint2 = phy_reg_rd(id,1);
-			gS->linked = rint2&(1<<2);
-			rint2 = phy_reg_rd(id,0);
-			speed = (rint2 & (0x1<<8))? 1:0;
-			rint2 = phy_reg_rd(id,5);
-			full = (rint2 & (0x1<<7))? 1:0;
-		break;
-		case PHY_SMSC_8700:
-		case PHY_SMSC_8720:
-		default:
-			rint2 = phy_reg_rd(id, 31);
-			speed = (rint2 & (1 << 3)) >> 3;
-			full = ((rint2 >> 4) & 1);
-			gS->linked = rint2 & (1 << 2);
-			break;
+			case PHY_ATHEROS_8032:
+				rint2 = phy_reg_rd(id, 17);
+				speed = (rint2 & (1 << 14)) >> 14;
+				full = ((rint2) & (1 << 13));
+				gS->linked = rint2 & (1 << 10);
+				break;
+			case PHY_ATHEROS_8035:
+				rint2 = phy_reg_rd(id, 17);
+				speed = (rint2 & (3 << 14)) >> 14;
+				full = ((rint2) & (1 << 13));
+				gS->linked = rint2 & (1 << 10);
+				break;
+			case PHY_IC_IP101ALF:
+				rint2 = phy_reg_rd(id,1);
+				gS->linked = rint2&(1<<2);
+				rint2 = phy_reg_rd(id,0);
+				speed = (rint2 & (0x1<<8))? 1:0;
+				rint2 = phy_reg_rd(id,5);
+				full = (rint2 & (0x1<<7))? 1:0;
+				break;
+			case PHY_SMSC_8700:
+			case PHY_SMSC_8720:
+			default:
+				rint2 = phy_reg_rd(id, 31);
+				speed = (rint2 & (1 << 3)) >> 3;
+				full = ((rint2 >> 4) & 1);
+				gS->linked = rint2 & (1 << 2);
+				break;
 		}
 		/* phy_auto_negotiation_set */
 		if (full) {
@@ -261,36 +269,37 @@ static void netdev_chk(void)
 		if (speed == 0) {
 			printf("10m\n");
 			writel(readl(ETH_MAC_0_Configuration) & ~ ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);
-#ifndef CONFIG_M6
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
-			// ---------------------------------------------
-			// Test 50Mhz Input Divide by 2
-			// ---------------------------------------------
-			// Select divide by 20
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DESEND, ETH_PLL_CNTL);  	// desc endianess "same order"
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DATEND, ETH_PLL_CNTL); 	// data endianess "little"
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 20
-			writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
-#endif
+			if(get_cpuid() >= 0x16){	
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
+				// ---------------------------------------------
+				// Test 50Mhz Input Divide by 2
+				// ---------------------------------------------
+				// Select divide by 20
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DESEND, ETH_PLL_CNTL);  	// desc endianess "same order"
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DATEND, ETH_PLL_CNTL); 	// data endianess "little"
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 20
+				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
+			}
 		} else if (speed == 1) {
 			printf("100m\n");
 			writel(readl(ETH_MAC_0_Configuration) | ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
-#ifndef CONFIG_M6
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
-			// ---------------------------------------------
-			// Test 50Mhz Input Divide by 2
-			// ---------------------------------------------
-			// Select divide by 2
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DESEND, ETH_PLL_CNTL);  	// desc endianess "same order"
-			writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DATEND, ETH_PLL_CNTL); 	// data endianess "little"
-			writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 2
-			writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
-#endif
+			if(get_cpuid() >= 0x16){	
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
+				// ---------------------------------------------
+				// Test 50Mhz Input Divide by 2
+				// ---------------------------------------------
+				// Select divide by 2
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DESEND, ETH_PLL_CNTL);  	// desc endianess "same order"
+				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DATEND, ETH_PLL_CNTL); 	// data endianess "little"
+				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 2
+				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
+			}	
 		} else {
 			printf("1000m\n");
-#ifdef CONFIG_M6
-			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII, ETH_MAC_0_Configuration);	// program mac
-#endif
+			if(get_cpuid() >= 0x16){	
+
+				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII, ETH_MAC_0_Configuration);	// program mac
+			}
 		}
 
 		/* link_changed */
@@ -318,15 +327,15 @@ static void set_phy_mode(void)
 	if (g_debug > 1)
 		printf("set_phy_mode() g_phy_Identifier: 0x%x\n", g_phy_Identifier);
 	switch (g_phy_Identifier) {
-	case PHY_ATHEROS_8032:
-	case PHY_ATHEROS_8035:
-		break;
-	case PHY_SMSC_8700:
-	case PHY_SMSC_8720:
-	default:
-		val = PHY_SPMD_MIIMODE_RMII | (PHY_MODE_BUS_ALL_AE << PHY_SPMD_MODE_P) | (phyad << PHY_SPMD_PHYAD_P);
-		phy_reg_wr(phyad, PHY_SPMD, val);
-		break;
+		case PHY_ATHEROS_8032:
+		case PHY_ATHEROS_8035:
+			break;
+		case PHY_SMSC_8700:
+		case PHY_SMSC_8720:
+		default:
+			val = PHY_SPMD_MIIMODE_RMII | (PHY_MODE_BUS_ALL_AE << PHY_SPMD_MODE_P) | (phyad << PHY_SPMD_PHYAD_P);
+			phy_reg_wr(phyad, PHY_SPMD, val);
+			break;
 	}
 }
 
@@ -338,12 +347,12 @@ static int eth_reset(struct _gStruct* emac_config)
 	unsigned int val,ori_ctl_val=0;
 	struct _gStruct* m=emac_config;
 
-#ifdef CONFIG_M6
-	/* make sure PHY power-on */
-	set_phy_mode();
-#endif
+	if(get_cpuid() >= 0x16){
+		/* make sure PHY power-on */
+		set_phy_mode();
+	}
 #define NET_MAX_RESET_TEST 1000
-	 if(g_speed_enforce) ori_ctl_val=phy_reg_rd(1, PHY_CR);
+	if(g_speed_enforce) ori_ctl_val=phy_reg_rd(1, PHY_CR);
 	for (i = 0; i < NET_MAX_RESET_TEST; i++) {
 		/* Software Reset MAC */
 		writel(ETH_DMA_0_Bus_Mode_SWR, ETH_DMA_0_Bus_Mode);
@@ -360,7 +369,7 @@ static int eth_reset(struct _gStruct* emac_config)
 		} else {
 			printf("Success: reset mac OK!(%d)\n", k);
 		}
-		
+
 		udelay(100000);
 		hardware_reset();
 		udelay(100000);
@@ -379,8 +388,12 @@ static int eth_reset(struct _gStruct* emac_config)
 		g_phy_Identifier |= val;
 		printf("find net phy id=0x%x, phyad=%d\n", (unsigned int)g_phy_Identifier, phyad);
 
-		if(g_phy_Identifier == PHY_IC_IP101ALF)
-			WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120); // phy ip101 need clock phase normal
+		if(g_phy_Identifier == PHY_IC_IP101ALF){
+			if(get_cpuid() == 0x16)
+				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120); // phy ip101 need clock phase normal
+			if(get_cpuid() == 0x16)
+				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0xf00); // phy ip101 need clock phase normal
+		}
 		/* Software Reset PHY */
 		phy_reg_wr(phyad, PHY_CR, PHY_CR_RST);
 		for (k = 0; k < NET_MAX_RESET_TEST; k++) {
@@ -411,7 +424,7 @@ static int eth_reset(struct _gStruct* emac_config)
 		while(!(phy_reg_rd(1,1)&(1<<2))){}; //wait line status stable
 		phy_reg_wr(phyad, PHY_CR, ori_ctl_val);
 		while(!(phy_reg_rd(1,1)&(1<<2))){}; //wait new state stable
-		
+
 	}
 	udelay(10);
 
@@ -431,9 +444,9 @@ static int eth_reset(struct _gStruct* emac_config)
 
 	/* config the interrupt */
 	writel(ETH_DMA_7_Interrupt_Enable_TUE | ETH_DMA_7_Interrupt_Enable_TJE
-	       | ETH_DMA_7_Interrupt_Enable_OVE | ETH_DMA_7_Interrupt_Enable_UNE | ETH_DMA_7_Interrupt_Enable_RIE
-	       | ETH_DMA_7_Interrupt_Enable_RUE | ETH_DMA_7_Interrupt_Enable_RSE | ETH_DMA_7_Interrupt_Enable_FBE
-	       | ETH_DMA_7_Interrupt_Enable_AIE | ETH_DMA_7_Interrupt_Enable_NIE, ETH_DMA_7_Interrupt_Enable);
+			| ETH_DMA_7_Interrupt_Enable_OVE | ETH_DMA_7_Interrupt_Enable_UNE | ETH_DMA_7_Interrupt_Enable_RIE
+			| ETH_DMA_7_Interrupt_Enable_RUE | ETH_DMA_7_Interrupt_Enable_RSE | ETH_DMA_7_Interrupt_Enable_FBE
+			| ETH_DMA_7_Interrupt_Enable_AIE | ETH_DMA_7_Interrupt_Enable_NIE, ETH_DMA_7_Interrupt_Enable);
 	writel(0, ETH_MAC_Interrupt_Mask);
 
 	printf("Ethernet reset OK\n");
@@ -665,13 +678,17 @@ NEXT_BUF:
 
 static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 {
-#ifdef CONFIG_M6
-	unsigned net_dma_start_addr = (unsigned)0x8f880000;
-	unsigned net_dma_end_addr   = (unsigned)0x8f8a0000;
-#else
-	unsigned net_dma_start_addr = (unsigned)&__net_dma_start;
-	unsigned net_dma_end_addr   = (unsigned)&__net_dma_end;
-#endif
+	unsigned net_dma_start_addr;
+	unsigned net_dma_end_addr;
+	if(get_cpuid() == 0x12){
+		net_dma_start_addr = (unsigned)0x8f880000;
+		net_dma_end_addr   = (unsigned)0x8f8a0000;
+	}
+	else{
+		printf("Amlogic Ethernet M8  Init\n");
+		net_dma_start_addr = (unsigned)&__net_dma_start;
+		net_dma_end_addr   = (unsigned)&__net_dma_end;
+	}
 	unsigned tx_start, rx_start;
 	struct _rx_desc * pRDesc;
 	struct _tx_desc * pTDesc;
@@ -686,8 +703,8 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 	/* init the dma descriptor 128k */
 	gS = (struct _gStruct*)malloc(sizeof(struct _gStruct));
 	if (net_dma_start_addr != 0 &&
-	    (net_dma_end_addr - net_dma_start_addr) > (CTX_BUFFER_NUM + CRX_BUFFER_NUM)*CBUFFER_SIZE +
-	    CRX_BUFFER_NUM * sizeof(struct _rx_desc) + CTX_BUFFER_NUM * sizeof(struct _tx_desc)) {
+			(net_dma_end_addr - net_dma_start_addr) > (CTX_BUFFER_NUM + CRX_BUFFER_NUM)*CBUFFER_SIZE +
+			CRX_BUFFER_NUM * sizeof(struct _rx_desc) + CTX_BUFFER_NUM * sizeof(struct _tx_desc)) {
 
 		g_rx = (struct _rx_desc*)((unsigned long)net_dma_start_addr + (CTX_BUFFER_NUM + CRX_BUFFER_NUM) * CBUFFER_SIZE);
 		g_tx = (struct _tx_desc*)((char *)g_rx + CRX_BUFFER_NUM * sizeof(struct _rx_desc));
@@ -781,7 +798,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 
 	/* get the mac and ip */
 	printf("MAC address is %02x:%02x:%02x:%02x:%02x:%02x\n", g_bi_enetaddr[0], g_bi_enetaddr[1],
-	           g_bi_enetaddr[2], g_bi_enetaddr[3], g_bi_enetaddr[4], g_bi_enetaddr[5]);
+			g_bi_enetaddr[2], g_bi_enetaddr[3], g_bi_enetaddr[4], g_bi_enetaddr[5]);
 #endif
 	/* start the dma para, but don't start the receive dma */
 	writel(ETH_DMA_6_Operation_Mode_EFC | ETH_DMA_6_Operation_Mode_TTC_16 | ETH_DMA_6_Operation_Mode_RSF | ETH_DMA_6_Operation_Mode_DT, ETH_DMA_6_Operation_Mode);
@@ -827,33 +844,33 @@ static int do_phyreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
-	case 'd':
-		printf("=== ethernet phy register dump:\n");
-		for (i = 0; i < 32; i++)
-			printf("[reg_%d] 0x%x\n", i, phy_reg_rd(phyad, i));
-		break;
-	case 'r':
-		if (argc != 3) {
-			return cmd_usage(cmdtp);
-		}
-		printf("=== ethernet phy register read:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
-		printf("[reg_%d] 0x%x\n", reg, phy_reg_rd(phyad, reg));
+		case 'd':
+			printf("=== ethernet phy register dump:\n");
+			for (i = 0; i < 32; i++)
+				printf("[reg_%d] 0x%x\n", i, phy_reg_rd(phyad, i));
+			break;
+		case 'r':
+			if (argc != 3) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== ethernet phy register read:\n");
+			reg = simple_strtoul(argv[2], NULL, 10);
+			printf("[reg_%d] 0x%x\n", reg, phy_reg_rd(phyad, reg));
 
-		break;
-	case 'w':
-		if (argc != 4) {
-			return cmd_usage(cmdtp);
-		}
-		printf("=== ethernet phy register write:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
-		value = simple_strtoul(argv[3], NULL, 16);
-		phy_reg_wr(phyad, reg, value);
-		printf("[reg_%d] 0x%x\n", reg, phy_reg_rd(phyad, reg));
-		break;
+			break;
+		case 'w':
+			if (argc != 4) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== ethernet phy register write:\n");
+			reg = simple_strtoul(argv[2], NULL, 10);
+			value = simple_strtoul(argv[3], NULL, 16);
+			phy_reg_wr(phyad, reg, value);
+			printf("[reg_%d] 0x%x\n", reg, phy_reg_rd(phyad, reg));
+			break;
 
-	default:
-		return cmd_usage(cmdtp);
+		default:
+			return cmd_usage(cmdtp);
 	}
 
 	return 0;
@@ -871,47 +888,47 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
-	case 'd':
-		printf("=== ETH_MAC register dump:\n");
-		//for (i = 0x0000; i <= 0x00FC; i += 0x4)
-		for (i = 0x0000; i <= 0x004C; i += 0x4)
-			printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
+		case 'd':
+			printf("=== ETH_MAC register dump:\n");
+			//for (i = 0x0000; i <= 0x00FC; i += 0x4)
+			for (i = 0x0000; i <= 0x004C; i += 0x4)
+				printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
 #if 0
-		printf("=== ETH_MMC register dump:\n");
-		for (i = 0x0100; i <= 0x0284; i += 0x4)
-			printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
+			printf("=== ETH_MMC register dump:\n");
+			for (i = 0x0100; i <= 0x0284; i += 0x4)
+				printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
 #endif
-		printf("=== ETH_DMA register dump:\n");
-		for (i = 0x1000; i <= 0x1054; i += 0x4)
-			printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
+			printf("=== ETH_DMA register dump:\n");
+			for (i = 0x1000; i <= 0x1054; i += 0x4)
+				printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
 
-		printf("=== ethernet board config register dump:\n");
-		printf("[0x1076] 0x%x\n", READ_CBUS_REG(0x1076));
-		printf("[0x2032] 0x%x\n", READ_CBUS_REG(0x2032));
-		printf("[0x2042] 0x%x\n", READ_CBUS_REG(0x2042));
-		break;
-	case 'r':
-		if (argc != 3) {
+			printf("=== ethernet board config register dump:\n");
+			printf("[0x1076] 0x%x\n", READ_CBUS_REG(0x1076));
+			printf("[0x2032] 0x%x\n", READ_CBUS_REG(0x2032));
+			printf("[0x2042] 0x%x\n", READ_CBUS_REG(0x2042));
+			break;
+		case 'r':
+			if (argc != 3) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== ethernet mac register read:\n");
+			reg = simple_strtoul(argv[2], NULL, 10);
+			printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + reg));
+
+			break;
+		case 'w':
+			if (argc != 4) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== ethernet mac register write:\n");
+			reg = simple_strtoul(argv[2], NULL, 10);
+			value = simple_strtoul(argv[3], NULL, 16);
+			writel(value, ETH_BASE + reg);
+			printf("[0x%04x] 0x%x\n", reg, value);
+			break;
+
+		default:
 			return cmd_usage(cmdtp);
-		}
-		printf("=== ethernet mac register read:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
-		printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + reg));
-
-		break;
-	case 'w':
-		if (argc != 4) {
-			return cmd_usage(cmdtp);
-		}
-		printf("=== ethernet mac register write:\n");
-		reg = simple_strtoul(argv[2], NULL, 10);
-		value = simple_strtoul(argv[3], NULL, 16);
-		writel(value, ETH_BASE + reg);
-		printf("[0x%04x] 0x%x\n", reg, value);
-		break;
-
-	default:
-		return cmd_usage(cmdtp);
 	}
 
 	return 0;
@@ -929,28 +946,28 @@ static int do_cbusreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	cmd = argv[1];
 	switch (*cmd) {
-	case 'r':
-		if (argc != 3) {
-			return cmd_usage(cmdtp);
-		}
-		printf("=== cbus register read:\n");
-		reg = simple_strtoul(argv[2], NULL, 16);
-		printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
+		case 'r':
+			if (argc != 3) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== cbus register read:\n");
+			reg = simple_strtoul(argv[2], NULL, 16);
+			printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
 
-		break;
-	case 'w':
-		if (argc != 4) {
-			return cmd_usage(cmdtp);
-		}
-		printf("=== cbus register write:\n");
-		reg = simple_strtoul(argv[2], NULL, 16);
-		value = simple_strtoul(argv[3], NULL, 16);
-		WRITE_CBUS_REG(reg, value);
-		printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
-		break;
+			break;
+		case 'w':
+			if (argc != 4) {
+				return cmd_usage(cmdtp);
+			}
+			printf("=== cbus register write:\n");
+			reg = simple_strtoul(argv[2], NULL, 16);
+			value = simple_strtoul(argv[3], NULL, 16);
+			WRITE_CBUS_REG(reg, value);
+			printf("[0x%04x] 0x%x\n", reg, READ_CBUS_REG(reg));
+			break;
 
-	default:
-		return cmd_usage(cmdtp);
+		default:
+			return cmd_usage(cmdtp);
 	}
 
 	return 0;
@@ -1003,9 +1020,6 @@ int do_ethchk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 static int do_ethrst(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-#ifdef CONFIG_M6
-//	hardware_reset();
-#endif
 	eth_reset(gS);
 
 	return 0;
@@ -1021,49 +1035,55 @@ static int do_ethmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
-	case '0':
-		g_mac_mode = 0;
-		printf("set MAC mode: RMII 100/10 Mbps (external clk).\n");
-		break;
-	case '1':
-		g_mac_mode = 1;
-		printf("set MAC mode: RMII 100/10 Mbps (internal clk).\n");
-		break;
-	case '2':
-		g_mac_mode = 2;
-		printf("set MAC mode: RGMII 1000/100/10 Mbps.\n");
-		break;
+		case '0':
+			g_mac_mode = 0;
+			printf("set MAC mode: RMII 100/10 Mbps (external clk).\n");
+			break;
+		case '1':
+			g_mac_mode = 1;
+			printf("set MAC mode: RMII 100/10 Mbps (internal clk).\n");
+			break;
+		case '2':
+			g_mac_mode = 2;
+			printf("set MAC mode: RGMII 1000/100/10 Mbps.\n");
+			break;
 
-	default:
-		return cmd_usage(cmdtp);
+		default:
+			return cmd_usage(cmdtp);
 	}
+	if(get_cpuid() >= 0x16){
+		/* config ethernet mode */
+		switch (g_mac_mode) {
+			case MAC_MODE_RMII_CLK_EXTERNAL:
+				if(get_cpuid() == 0x19){
+					WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0xf00);
+					WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x0000fde0);
+					WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
+				}
+				else{
+					WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130); //clock phase invert
+					WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
+					WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
+				}
+				break;
+			case MAC_MODE_RMII_CLK_INTERNAL:
+				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
+				WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+				WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
+				break;
+			case MAC_MODE_RGMII:
+				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
+				WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+				WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
+				break;
+			default:
+				break;
+		}
 
-#ifdef CONFIG_M6
-	/* config ethernet mode */
-	switch (g_mac_mode) {
-	case MAC_MODE_RMII_CLK_EXTERNAL:
-		WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130); //clock phase invert
-		WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x8007ffe0);
-		WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
-		break;
-	case MAC_MODE_RMII_CLK_INTERNAL:
-		WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
-		WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
-		WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
-		break;
-	case MAC_MODE_RGMII:
-		WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
-		WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
-		WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
-		break;
-	default:
-		break;
+		udelay(1000);
+		//hardware_reset();
+		eth_reset(gS);
 	}
-
-	udelay(1000);
-	//hardware_reset();
-	eth_reset(gS);
-#endif
 
 	return 0;
 }
@@ -1078,24 +1098,24 @@ static int do_ethdbg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	cmd = (unsigned char *)argv[1];
 	switch (*cmd) {
-	case '0':
-		g_debug = 0;
-		break;
-	case '1':
-		g_debug = 1;
-		break;
-	case '2':
-		g_debug = 2;
-		break;
-	case '3':
-		g_debug = 3;
-		break;
-	case '4':
-		g_debug = 4;
-		break;
+		case '0':
+			g_debug = 0;
+			break;
+		case '1':
+			g_debug = 1;
+			break;
+		case '2':
+			g_debug = 2;
+			break;
+		case '3':
+			g_debug = 3;
+			break;
+		case '4':
+			g_debug = 4;
+			break;
 
-	default:
-		return cmd_usage(cmdtp);
+		default:
+			return cmd_usage(cmdtp);
 	}
 	printf("set ethernet debug: %d\n", g_debug);
 
@@ -1114,8 +1134,8 @@ static unsigned int clk_util_clk_msr(unsigned int clk_mux)
 	CLEAR_CBUS_REG_MASK(MSR_CLK_REG0, ((1 << 18) | (1 << 17)));
 	CLEAR_CBUS_REG_MASK(MSR_CLK_REG0, (0x1f << 20));
 	SET_CBUS_REG_MASK(MSR_CLK_REG0, (clk_mux << 20) | // Select MUX
-						(1 << 19) |       // enable the clock
-						(1 << 16));       //enable measuring
+			(1 << 19) |       // enable the clock
+			(1 << 16));       //enable measuring
 	//Wait for the measurement to be done
 	regval = READ_CBUS_REG(MSR_CLK_REG0);
 	do {
@@ -1201,23 +1221,23 @@ static int  do_netspeed(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	int speed=100;
 	int full=0;
 	int data=0;
-	
+
 	if (argc  < 2) {
 
 		switch(g_phy_Identifier)
-	    	{
-	    	case PHY_ATHEROS_8032:
-		break;
-		case PHY_IC_IP101ALF:
-		break;
-		case PHY_SMSC_8700:
-		default:
-		data = phy_reg_rd(1,31);
-		speed = data & (1<<3);
-		full = ((data >>4) & 1);
-		printf("status: %sM %s-duplex\n",(speed?"100":"10"),(full?"full":"half"));
-		break;
-	    	}
+		{
+			case PHY_ATHEROS_8032:
+				break;
+			case PHY_IC_IP101ALF:
+				break;
+			case PHY_SMSC_8700:
+			default:
+				data = phy_reg_rd(1,31);
+				speed = data & (1<<3);
+				full = ((data >>4) & 1);
+				printf("status: %sM %s-duplex\n",(speed?"100":"10"),(full?"full":"half"));
+				break;
+		}
 		return cmd_usage(cmdtp);
 	}
 	speed = simple_strtoul(argv[1], NULL, 10);
@@ -1245,82 +1265,82 @@ static int  do_netspeed(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	}
 	phy_reg_wr(1, 0, data);
 	return 0;
-	
+
 }
 U_BOOT_CMD(
-	netspd_f, 3, 1, do_netspeed,
-	"enforce eth speed",
-	"0            - disable enforce mode,enable A/N\n"
-	"10  full   - enforce 10M full duplex mode\n"
-	"10  half   - enforce 10M half duplex mode\n"
-	"100 full   - enforce 100M full duplexmode\n"
-	"100 half   - enforce 100M half duplexmode\n"
-);
+		netspd_f, 3, 1, do_netspeed,
+		"enforce eth speed",
+		"0            - disable enforce mode,enable A/N\n"
+		"10  full   - enforce 10M full duplex mode\n"
+		"10  half   - enforce 10M half duplex mode\n"
+		"100 full   - enforce 100M full duplexmode\n"
+		"100 half   - enforce 100M half duplexmode\n"
+	  );
 U_BOOT_CMD(
-	phyreg, 4, 1, do_phyreg,
-	"ethernet phy register read/write/dump",
-	"d            - dump phy registers\n"
-	"       r reg        - read phy register\n"
-	"       w reg val    - write phy register"
-);
+		phyreg, 4, 1, do_phyreg,
+		"ethernet phy register read/write/dump",
+		"d            - dump phy registers\n"
+		"       r reg        - read phy register\n"
+		"       w reg val    - write phy register"
+	  );
 
 U_BOOT_CMD(
-	macreg, 4, 1, do_macreg,
-	"ethernet mac register read/write/dump",
-	"d            - dump mac registers\n"
-	"       r reg        - read mac register\n"
-	"       w reg val    - write mac register"
-);
+		macreg, 4, 1, do_macreg,
+		"ethernet mac register read/write/dump",
+		"d            - dump mac registers\n"
+		"       r reg        - read mac register\n"
+		"       w reg val    - write mac register"
+	  );
 
 U_BOOT_CMD(
-	cbusreg, 4, 1, do_cbusreg,
-	"cbus register read/write",
-	"r reg        - read cbus register\n"
-	"        w reg val    - write cbus register"
-);
+		cbusreg, 4, 1, do_cbusreg,
+		"cbus register read/write",
+		"r reg        - read cbus register\n"
+		"        w reg val    - write cbus register"
+	  );
 U_BOOT_CMD(
-	mdc_clk, 2, 1, do_mdc_clk,
-	"do mdc clock",
-	"mdc  data-- data is ETH_MAC_4_GMII_Addr[2..5]  "
-);
+		mdc_clk, 2, 1, do_mdc_clk,
+		"do mdc clock",
+		"mdc  data-- data is ETH_MAC_4_GMII_Addr[2..5]  "
+	  );
 U_BOOT_CMD(
-	autoping, 2, 1, do_autoping,
-	"do auto ping test",
-	"ip"
-);
+		autoping, 2, 1, do_autoping,
+		"do auto ping test",
+		"ip"
+	  );
 
 U_BOOT_CMD(
-	ethchk, 1, 1, do_ethchk,
-	"check ethernet status",
-	""
-);
+		ethchk, 1, 1, do_ethchk,
+		"check ethernet status",
+		""
+	  );
 
 U_BOOT_CMD(
-	ethrst, 1, 1, do_ethrst,
-	"reset ethernet phy",
-	"             - reset etherent phy\n"
-);
+		ethrst, 1, 1, do_ethrst,
+		"reset ethernet phy",
+		"             - reset etherent phy\n"
+	  );
 
 U_BOOT_CMD(
-	ethmode, 2, 1, do_ethmode,
-	"set ethernet mac mode",
-	"0         - set mac mode RMII (external clk).\n"
-	"        1         - set mac mode RMII (internal clk).\n"
-	"        2         - set mac mode RGMII.\n"
-);
+		ethmode, 2, 1, do_ethmode,
+		"set ethernet mac mode",
+		"0         - set mac mode RMII (external clk).\n"
+		"        1         - set mac mode RMII (internal clk).\n"
+		"        2         - set mac mode RGMII.\n"
+	  );
 
 U_BOOT_CMD(
-	ethdbg, 2, 1, do_ethdbg,
-	"set ethernet debug level",
-	"0         - disable ethernet debug\n"
-	"       1         - ethernet basic info\n"
-	"       2         - ethernet TX debug\n"
-	"       3         - ethernet RX debug\n"
-	"       4         - ethernet TX/RX debug\n"
-);
+		ethdbg, 2, 1, do_ethdbg,
+		"set ethernet debug level",
+		"0         - disable ethernet debug\n"
+		"       1         - ethernet basic info\n"
+		"       2         - ethernet TX debug\n"
+		"       3         - ethernet RX debug\n"
+		"       4         - ethernet TX/RX debug\n"
+	  );
 
 U_BOOT_CMD(
-	clkmsr, 2, 1, do_clkmsr,
-	"measure PLL clock",
-	"             - measure PLL clock.\n"
-);
+		clkmsr, 2, 1, do_clkmsr,
+		"measure PLL clock",
+		"             - measure PLL clock.\n"
+	  );
