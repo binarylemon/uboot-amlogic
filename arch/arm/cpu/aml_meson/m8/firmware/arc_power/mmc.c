@@ -39,7 +39,7 @@
   #undef hx_serial_put_hex
 #endif 
 
-#if 0
+#if 1
     #define hx_serial_puts    f_serial_puts
 	#define hx_serial_put_hex serial_put_hex
 #else
@@ -154,10 +154,12 @@ typedef enum {
 
 	_DDR_PLL_CNTL        , _DDR_PLL_CNTL1       , _DDR_PLL_CNTL2 	    , _DDR_PLL_CNTL3	    , _DDR_PLL_CNTL4,	//91
 	
+	_PUB_PLLCR,
+	
 } back_reg_index;
 
 //when above entend make sure g_ddr_settings is updae also    
-static unsigned int g_ddr_settings[100];
+static unsigned int g_ddr_settings[120];
 
 static void hx_ddr_setting_save()
 {	
@@ -178,6 +180,8 @@ static void hx_ddr_setting_save()
 	DDR_SUSPEND_SAVE( _SOFT_RESET);	       
 	DDR_SUSPEND_SAVE( _APD_CTRL);
 	DDR_SUSPEND_SAVE( _CLK_CTRL);
+	
+	DDR_SUSPEND_SAVE( _PUB_PLLCR);
 
 	//PUB
 	DDR_SUSPEND_SAVE( _PCTL_TOGCNT1U);
@@ -470,6 +474,7 @@ static void hx_dump_ddr_settings()
 #endif
 
 #if 0
+
 static void hx_dump_pub_pctl_all()
 {
 	hx_serial_puts("hx_dump_pub_pctl_all\n");
@@ -488,9 +493,9 @@ static void hx_dump_pub_pctl_all()
 	for(j = 0;j< 2;j++)
 	for(i = 0,nMax=254,id = 0xc8000000 + (j*0x2000);i<nMax;++i)
 	{
-		if(!((i+1)%20))
+		//if(!((i+1)%20))
 		{
-			hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PCTL dump\n");
+		//	hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PCTL dump\n");
 		}
 		DDR_SUSPEND_DUMP_ALL(id,i);
 	}
@@ -501,9 +506,9 @@ static void hx_dump_pub_pctl_all()
 	for(j = 0;j< 2;j++)
 	for(i = 0,nMax=434,id = 0xc8001000+(j*0x2000);i<nMax;++i)
 	{
-		if(!((i+1)%20))
+		//if(!((i+1)%20))
 		{
-			hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PUB dump\n");
+		//	hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PUB dump\n");
 		}	
 		DDR_SUSPEND_DUMP_ALL(id,i);
 	}
@@ -512,6 +517,8 @@ static void hx_dump_pub_pctl_all()
 
 #undef DDR_SUSPEND_DUMP_ALL 
 }
+
+
 
 static void hx_dump_mmc_dmc_all()
 {
@@ -596,6 +603,8 @@ static void hx_ddr_retention_set(int nFlagEnable)
 
 void hx_ddr_power_down_enter()
 {
+	//return ;
+	
 	hx_serial_puts("Aml log : hx_power_down_enter\n");
 
 	//verify pass, all keep same value before and after
@@ -614,14 +623,20 @@ void hx_ddr_power_down_enter()
 
 	if(CONFIG_M8_DDR1_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET]) //channel 0 used
 	{
-		writel(readl(P_DDR0_CLK_CTRL) | 1, P_DDR0_CLK_CTRL); 		
+		writel(readl(P_DDR0_CLK_CTRL) | 1, P_DDR0_CLK_CTRL);
+		writel(readl(P_DDR0_CLK_CTRL) | 1, P_DDR1_CLK_CTRL);
 	}
 	
 	if(CONFIG_M8_DDR0_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET]) //channel 1 used
 	{
-		writel(readl(P_DDR1_CLK_CTRL) | 1, P_DDR1_CLK_CTRL); 		
+		writel(readl(P_DDR1_CLK_CTRL) | 1, P_DDR1_CLK_CTRL); 
+		writel(readl(P_DDR1_CLK_CTRL) | 1, P_DDR0_CLK_CTRL);
 	}	
 
+	//hx_dump_pub_pctl_all();	
+
+	//hx_dump_mmc_dmc_all();
+	
 	//DDR setting save
 	hx_ddr_setting_save(); 
 		
@@ -630,13 +645,28 @@ void hx_ddr_power_down_enter()
 
 	//Clear PGCR3 CKEN to 00
 	//or you can try 11?
-	writel(readl(P_DDR0_PUB_PGCR3)&(~(0xFF<<16)),P_DDR0_PUB_PGCR3);
-	writel(readl(P_DDR1_PUB_PGCR3)&(~(0xFF<<16)),P_DDR1_PUB_PGCR3);
+	//writel(readl(P_DDR0_PUB_PGCR3)&(~(0xFF<<16)),P_DDR0_PUB_PGCR3);
+	//writel(readl(P_DDR1_PUB_PGCR3)&(~(0xFF<<16)),P_DDR1_PUB_PGCR3);
+	writel(g_ddr_settings[_PUB_PGCR3]&(~(0xFF<<16)),P_DDR0_PUB_PGCR3);
+	writel(g_ddr_settings[_PUB_PGCR3]&(~(0xFF<<16)),P_DDR1_PUB_PGCR3);
 
 	//asm volatile ("wfi");
 	
 	// enable retention
 	hx_ddr_retention_set(1);
+
+	//shut down PUB-PLL
+	//if(CONFIG_M8_DDR1_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET])
+	//	writel((readl(P_DDR0_PUB_PLLCR))|0x60000000, P_DDR0_PUB_PLLCR);				
+	//if(CONFIG_M8_DDR0_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET])
+	//	writel((readl(P_DDR1_PUB_PLLCR))|0x60000000, P_DDR1_PUB_PLLCR);
+
+	writel(g_ddr_settings[_PUB_PLLCR]|0x60000000, P_DDR0_PUB_PLLCR);
+	writel(g_ddr_settings[_PUB_PLLCR]|0x60000000, P_DDR1_PUB_PLLCR);
+
+
+	writel((1<<6)|(1<<4), P_DDR0_CLK_CTRL);
+	writel((1<<6)|(1<<4), P_DDR1_CLK_CTRL);
 
 	// shut down DDR PLL
 	writel(readl(AM_DDR_PLL_CNTL)|(1<<30),AM_DDR_PLL_CNTL);
@@ -753,7 +783,7 @@ pub_init_ddr1:
 
 	//uboot timming.c setting
 	//UPCTL and PUB clock and reset.
-    if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+    //if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
     {
     	hx_serial_puts("Aml log : DDR0 - init start...\n");
 		writel(0, P_DDR0_SOFT_RESET); //DDR 0
@@ -764,7 +794,7 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR0 - APD,CLK set done\n");
     }
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
     {
     	hx_serial_puts("Aml log : DDR1 - init start...\n");
 		writel(0, P_DDR1_SOFT_RESET); //DDR 0
@@ -774,6 +804,29 @@ pub_init_ddr1:
 		//writel(g_ddr_settings[_CLK_CTRL]|1,P_DDR1_CLK_CTRL);
 		hx_serial_puts("Aml log : DDR1 - APD,CLK set done\n");
     }	
+
+	if(CONFIG_M8_DDR1_ONLY == nM8_DDR_CHN_SET)
+	{	
+		//power down PLL
+		writel((readl(P_DDR0_PUB_PLLCR))|0x60000000, P_DDR0_PUB_PLLCR);
+		//__udelay(1);
+		//Disable DDR0 clock
+		writel((1<<6)|(1<<4), P_DDR0_CLK_CTRL);
+		//__udelay(1);
+		//writel(0, P_DDR0_SOFT_RESET); //DDR 0
+	}
+
+	
+	if(CONFIG_M8_DDR0_ONLY == nM8_DDR_CHN_SET)
+	{
+		//power down PLL
+		writel((readl(P_DDR1_PUB_PLLCR))|0x60000000, P_DDR1_PUB_PLLCR);
+		//__udelay(1);
+		//Disable DDR1 clock
+		writel((1<<6)|(1<<4), P_DDR1_CLK_CTRL);
+		//__udelay(1);
+		//writel(0, P_DDR1_SOFT_RESET); //DDR 1
+	}
 
 	/*DDR0*/
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
@@ -1507,7 +1560,9 @@ static void hx_ddr_resume(void)
 	
 	hx_dmc_init();
 
-	//hx_dump_pub_pctl_all();		
+	//hx_dump_pub_pctl_all();	
+
+	//hx_dump_mmc_dmc_all();
 }
 
 static void hx_ddr_pll_init()
@@ -1548,12 +1603,21 @@ static void hx_ddr_pll_init()
 
 void hx_ddr_power_down_leave()
 {	
+	//return ;
+	
 	hx_serial_puts("Aml log : hx_power_down_leave\n");
 
 	hx_ddr_pll_init();
 
 	//hx_dump_mmc_dmc_all();
 
+	//shut down PUB-PLL
+	//if(CONFIG_M8_DDR1_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET])
+	//	writel(g_ddr_settings[_PUB_PLLCR], P_DDR0_PUB_PLLCR);
+		
+	//if(CONFIG_M8_DDR0_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET])
+	//	writel(g_ddr_settings[_PUB_PLLCR], P_DDR1_PUB_PLLCR);
+	
 	//disable retention before init_pctl
 	//because init_pctl you need to data training stuff.
 	hx_ddr_retention_set(0);	

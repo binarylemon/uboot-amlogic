@@ -297,7 +297,7 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	arm_pci_init,
 #endif
-    hdmi_hdcp_clear_ksv_ram,
+   // hdmi_hdcp_clear_ksv_ram, //temp disable for it has bug to access DDR PCTL Reg
 #ifdef CONFIG_AML_EFUSE_INIT_PLUS
     efuse_aml_init_plus,
 #endif //CONFIG_AML_EFUSE_INIT_PLUS
