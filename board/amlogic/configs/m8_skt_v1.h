@@ -182,9 +182,6 @@
         "fi;"\
         "run recovery\0" \
     \
-   	"storeargs="\
-        "setenv bootargs ${bootargs} storage=${store}\0"\ 
-    \
 	"switch_bootmode="\
 		"echo switch_bootmode...;" \	
 		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
@@ -192,18 +189,17 @@
     \
 	"storeboot="\
         "echo Booting...; "\
-        "run storeargs;"\
-        "store read boot ${loadaddr} 0 600000;"\
+        "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
 	"recovery="\
         "echo enter recovery;"\
-        "run storeargs;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
-        "store read recovery ${loadaddr} 0 600000; bootm\0" \
+        "imgread kernel recovery ${loadaddr}; "\
+        "bootm\0" \
 
 
 #define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"

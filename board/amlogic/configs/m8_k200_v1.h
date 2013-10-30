@@ -44,11 +44,13 @@
 #endif
 
 #ifdef CONFIG_NEXT_NAND
+#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 #define CONFIG_AML_V2_USBTOOL 1
 #endif//#ifdef CONFIG_NEXT_NAND
 
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
 #ifdef CONFIG_ACS
 #define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
 #else
@@ -205,6 +207,9 @@
 	"store=0\0"\
 	"preboot="\
 		"echo preboot...;" \
+        "if itest ${upgrade_step} == 1; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+        "fi; "\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run update_key; " \
         "run switch_bootmode\0" \
@@ -233,9 +238,10 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "store read logo ${loadaddr_logo} 0 800000;unpackimg ${loadaddr_logo}; "\
+        "imgread res logo ${loadaddr_logo};"\
+        "unpackimg ${loadaddr_logo}; "\
         "cp ${bootup_offset} ${fb_addr} ${bootup_size};"\
-        "setenv bootargs init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,${fb_addr},${hdmimode},full,needscaler hdmimode=${hdmimode} cvbsmode=${cvbsmode} storage=${store} androidboot.firstboot=${firstboot}\0"\
+        "setenv bootargs ${bootargs} logo=osd1,${fb_addr},${hdmimode},full,needscaler hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;" \
@@ -247,7 +253,7 @@
 	"storeboot="\
         "echo Booting...; "\
         "run storeargs;"\
-        "store read boot ${loadaddr} 0 600000;"\
+        "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
@@ -257,7 +263,8 @@
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
-        "store read recovery ${loadaddr} 0 600000; bootm\0" \
+        "imgread kernel recovery ${loadaddr}; "\
+        "bootm\0" \
     \
 	"usb_burning=update 2000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"

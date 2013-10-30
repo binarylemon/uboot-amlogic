@@ -138,6 +138,11 @@ COBJS-$(CONFIG_CMD_MTDPARTS) += cmd_mtdparts.o
 COBJS-$(CONFIG_CMD_NAND) += cmd_nand.o
 COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += cmd_interface.o
 COBJS-$(CONFIG_SPI_NAND_EMMC_COMPATIBLE) += cmd_interface.o
+
+#ifeq ($(CONFIG_NEXT_NAND),y)
+COBJS-y += store_interface.o
+COBJS-y += cmd_burnup.o
+#endif
 COBJS-$(CONFIG_CMD_NET) += cmd_net.o
 COBJS-$(CONFIG_CMD_ONENAND) += cmd_onenand.o
 COBJS-$(CONFIG_CMD_OTP) += cmd_otp.o
@@ -171,6 +176,7 @@ COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_VFD) += cmd_vfd.o
 COBJS-$(CONFIG_CMD_SUSPEND) += cmd_suspend.o
 COBJS-$(CONFIG_CMD_AML) += cmd_aml.o
+COBJS-$(CONFIG_CMD_AML_MAGIC) += cmd_magic.o
 COBJS-$(CONFIG_EFUSE) += cmd_efuse.o
 COBJS-$(CONFIG_RTC_DAY_TEST) += cmd_rtc.o
 COBJS-$(CONFIG_CMD_SARADC) += cmd_saradc.o
@@ -178,6 +184,7 @@ COBJS-$(CONFIG_CMD_IMGPACK) += cmd_imgpack.o
 COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
 COBJS-$(CONFIG_CMD_GPIO_KEY) += cmd_gpiokey.o
+COBJS-$(CONFIG_CMD_IMGREAD) += cmd_imgread.o
 
 # others
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o

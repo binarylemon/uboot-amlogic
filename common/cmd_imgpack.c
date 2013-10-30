@@ -10,49 +10,87 @@
 #include <command.h>
 #include <asm/types.h>
 
-
 #define IH_MAGIC	0x27051956	/* Image Magic Number		*/
 #define IH_NMLEN		32	/* Image Name Length		*/
 
+#define AML_RES_IMG_ITEM_ALIGN_SZ   16
+#define AML_RES_IMG_VERSION         0x01
+#define AML_RES_IMG_V1_MAGIC_LEN    8
+#define AML_RES_IMG_V1_MAGIC        "AML_RES!"//8 chars
+#define AML_RES_IMG_HEAD_SZ         (AML_RES_IMG_ITEM_ALIGN_SZ * 4)//64
+#define AML_RES_ITEM_HEAD_SZ        (AML_RES_IMG_ITEM_ALIGN_SZ * 4)//64
 
-struct pack_header{
-	__u32	magic;	/* Image Header Magic Number	*/
-	__u32	hcrc;	/* Image Header CRC Checksum	*/
-	__u32	size;	/* Image Data Size		*/
-	__u32	start;	/* Data	 Load  Address		*/
-	__u32	end;		/* Entry Point Address		*/
-	__u32	next;	/* Image Creation Timestamp	*/
-	__u32	dcrc;	/* Image Data CRC Checksum	*/
-	__u8	index;		/* Operating System		*/
-	__u8	nums;	/* CPU architecture		*/
-	__u8	type;	/* Image Type			*/
-	__u8	comp;	/* Compression Type		*/
-	__u8	name[IH_NMLEN];	/* Image Name		*/
-} __attribute__ ((packed));
+#pragma pack(push, 1)
+typedef struct pack_header{
+	unsigned int 	magic;	/* Image Header Magic Number	*/
+	unsigned int 	hcrc;	/* Image Header CRC Checksum	*/
+	unsigned int	size;	/* Image Data Size		*/
+	unsigned int	start;	/* item data offset in the image*/
+	unsigned int	end;		/* Entry Point Address		*/
+	unsigned int	next;	/* Next item head offset in the image*/
+	unsigned int	dcrc;	/* Image Data CRC Checksum	*/
+	unsigned char	index;		/* Operating System		*/
+	unsigned char	nums;	/* CPU architecture		*/
+	unsigned char   type;	/* Image Type			*/
+	unsigned char 	comp;	/* Compression Type		*/
+	char 	name[IH_NMLEN];	/* Image Name		*/
+}AmlResItemHead_t;
+#pragma pack(pop)
+
+//typedef for amlogic resource image
+#pragma pack(push, 4)
+typedef struct {
+    __u32   crc;    //crc32 value for the resouces image
+    __s32   version;//current version is 0x01
+
+    __u8    magic[AML_RES_IMG_V1_MAGIC_LEN];  //resources images magic
+
+    __u32   imgSz;  //total image size in byte
+    __u32   imgItemNum;//total item packed in the image
+
+    __u32   alignSz;//AML_RES_IMG_ITEM_ALIGN_SZ
+    __u8    reserv[AML_RES_IMG_HEAD_SZ - 8 * 3 - 4];
+
+}AmlResImgHead_t;
+#pragma pack(pop)
+#define IH_MAGIC	0x27051956	/* Image Magic Number		*/
+#define IH_NMLEN		32	/* Image Name Length		*/
 
 
 static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	void *addr;
-	__u32 pos;
-	struct pack_header *pack_header_p;
+	__u32 pos = 0;
+	AmlResItemHead_t *pack_header_p = NULL;
 	char env_name[IH_NMLEN*2];
 	char env_data[IH_NMLEN*2];
+    AmlResImgHead_t* pImgHead = NULL;
+    int rc = 0;
 	
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		cmd_usage(cmdtp);
 		return -1;
 	}
-
 	addr = (void *)simple_strtoul (argv[1], NULL, 16);
-	pos = 0;
+
+    pImgHead = (AmlResImgHead_t*)addr;
+    rc = memcmp(pImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
+    if(rc)
+    {
+        printf("unpackimg:Magic [%s] error, use old format\n", pImgHead->magic);
+        pos = 0;
+    }
+    else
+    {//new format
+        pos = AML_RES_ITEM_HEAD_SZ;
+    }
+
 	while(1)
 	{
-		pack_header_p = (struct pack_header *)(addr + pos);
+		pack_header_p = (AmlResItemHead_t *)(addr + pos);
 		if(pack_header_p->magic != IH_MAGIC)
 		{
-			printf("wrong pack img!\n");
+			printf("unpackimg wrong!\n");
 			return -1;
 		}
 
@@ -85,7 +123,7 @@ static int do_get_img_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 {
 	void *addr;
 	__u32 pos;
-	struct pack_header *pack_header_p;
+	AmlResItemHead_t *pack_header_p;
 	char env_name[IH_NMLEN*2];
 	char env_data[IH_NMLEN*2];
 	
@@ -99,7 +137,7 @@ static int do_get_img_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 	pos = 0;
 	while(1)
 	{
-		pack_header_p = (struct pack_header *)(addr + pos);
+		pack_header_p = (AmlResItemHead_t *)(addr + pos);
 		if(pack_header_p->magic != IH_MAGIC)
 		{
 			printf("wrong pack img!\n");

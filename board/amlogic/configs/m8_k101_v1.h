@@ -35,8 +35,11 @@
 #endif
 
 #ifdef CONFIG_NEXT_NAND
+#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 #define CONFIG_AML_V2_USBTOOL 1
 #define CONFIG_SHA1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #ifdef CONFIG_ACS
 #define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
 #else
@@ -162,14 +165,6 @@
 #define CONFIG_BOOTDELAY	10
 #define CONFIG_BOOTFILE		boot.img
 
-//hold volume key and click power key 3 times
-#define ENV_BURNING_OR_NOT(name) #name \
-            "=if saradc get_in_range 0x50 0x150; then "\
-                 "msleep 500; "\
-                 "if getkey; then "\
-                     "if saradc get_in_range 0x50 0x150; then echo jump_to_burning; run aml_burning; fi; "\
-                  "fi; "\
-              "fi\0" 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x12000000\0" \
 	"testaddr=0x12400000\0" \
@@ -183,6 +178,7 @@
 	"upgrade_step=0\0" \
 	"initrd_high=30000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
+    "preloaddtb=imgread kernel boot $loadaddr;dtbload ${loadaddr}\0" \
 	"video_dev=panel\0" \
 	"display_width=768\0" \
 	"display_height=1024\0" \
@@ -192,40 +188,20 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
-	"partnum=2\0" \
-	"p0start=1000000\0" \
-	"p0size=400000\0" \
-	"p0path=uImage\0" \
-	"p1start=1400000\0" \
-	"p1size=8000000\0" \
-	"p1path=android.rootfs\0" \
-	"bootstart=0\0" \
-	"bootsize=60000\0" \
-	"bootpath=u-boot.bin\0" \
-    "sdcburncfg=aml_sdc_burn.ini\0"\
-	"normalstart=1000000\0" \
-	"normalsize=400000\0" \
-	"upgrade_step=0\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
 	"firstboot=1\0" \
+	"magic_key_status=none\0" \
 	"store=0\0"\
 	"preboot="\
-		"defenv;setenv bootargs ${bootargs} storage=${store}; setenv upgrade_step 2; save; "\
-		"get_rebootmode; clear_rebootmode; echo the_reboot_mode=${reboot_mode}; "\
-		"if test ${reboot_mode} = usb_burning; then "\
-			"run usb_burning; "\
-		"fi; "\
-		"store read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc};"\
-		"usbbc; chk_all_regulators; "\
-		"run batlow_or_not; setenv sleep_count 0; "\
-		"saradc open 0; run updatekey_or_not; run switch_bootmode\0" \
-		\
-	"upgrade_check="\
-		"if itest ${upgrade_step} == 0; then "\
-			"setenv bootargs ${bootargs} storage=${store}; save; run update; "\
-		"fi\0" \
+        "if itest ${upgrade_step} == 1; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+        "fi; "\
+		"get_rebootmode; clear_rebootmode; magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status}; "\
+		"usbbc; run batlow_or_not; setenv sleep_count 0; "\
+		"run switch_bootmode\0" \
 		\
 	"switch_bootmode="\
 		"if test ${reboot_mode} = normal; then "\
@@ -234,40 +210,50 @@
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
 			"run update; "\
+		"else if test ${reboot_mode} = usb_burning; then "\
+			"run usb_burning; "\
+		"else if test ${magic_key_status} = update; then "\
+			"run update; "\
+		"else if test ${magic_key_status} = poweron; then "\
+			"run prepare; bmp display ${poweron_offset}; run bootcmd; "\
 		"else "\
 			"run charging_or_not; "\
-		"fi; fi; fi\0" \
+		"fi; fi; fi; fi; fi; fi\0" \
 		\
 	"prepare="\
-		"store read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc}; "\
-		"video open; video clear; video dev bl_on\0" \
-		\
-    "update="\
-        /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
-   		"echo update...; "\
-        "run usb_burning; "\
+		"video open; video clear; video dev bl_on; " \
+		"imgread res logo ${loadaddr_misc}; "\
+        "unpackimg ${loadaddr_misc}; "\
+		"\0"\
+	"update="\
+		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+		"echo update...; "\
+		"run prepare; bmp display ${upgrade_logo_offset}; "\
 		"if mmcinfo; then "\
-            "if fatexist mmc 0 ${sdcburncfg}; then "\
-                "run sdc_burning; "\
-            "else "\
-                "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi; "\
-                "run recovery; "\
-            "fi;"\
-        "else "\
-            "run recovery;"\
-		"fi;\0"\
-		\
-	"recovery="\
-		"run prepare; bmp display ${bootup_offset}; "\
-        "if mmcinfo; then "\
-			"if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; "\
-			"if fatload mmc 0 ${loadaddr} uImage_recovery; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; "\
-		"fi; "\
-		"if store read recovery ${loadaddr} 0 600000; then "\
-			"setenv bootargs ${bootargs} storage=${store}; setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+			"if fatexist mmc 0 ${sdcburncfg}; then "\
+				"sdc_burn ${sdcburncfg}; "\
+			"else "\
+				"if fatload mmc 0 ${loadaddr} aml_autoscript; then "\
+					"autoscr ${loadaddr}; "\
+				"fi; "\
+				"if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; "\
+			"fi;"\
+		"fi;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
 		"else "\
 			"echo no recovery in flash; "\
 		"fi\0" \
+		\
+	"recovery="\
+		"run prepare; bmp display ${bootup_offset}; "\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
+	"usb_burning=update 2000\0" \
 		\
 	"charging_or_not="\
 		"if ac_online; then "\
@@ -275,11 +261,11 @@
 		"else if getkey; then "\
 			"echo power on; run prepare; bmp display ${poweron_offset}; run bootcmd; "\
 		"else "\
-			"echo poweroff; poweroff; "\
+			"echo poweroff; video dev disable; poweroff; "\
 		"fi; fi\0" \
 		\
-	"charging=video clear; run display_loop\0" \
-	"display_loop="\
+	"charging="\
+		"video clear;"\
 		"while itest 1 == 1; do "\
 			"get_batcap; "\
 			"if itest ${battery_cap} >= ${batfull_threshold}; then "\
@@ -323,7 +309,7 @@
 		"if getkey; then "\
 			"msleep 500; "\
 			"if getkey; then "\
-				"run bootcmd; "\
+				"video clear; bmp display ${poweron_offset};run bootcmd; "\
 			"fi; "\
 		"fi\0" \
 		\
@@ -338,13 +324,14 @@
 		"fi\0" \
 		\
 	"aconline_or_not="\
-		"if ac_online; then; else poweroff; fi\0" \
+		"if ac_online; then; else video dev disable; poweroff; fi\0" \
+		\
 	"batlow_or_not="\
 		"if ac_online; then; "\
 		"else "\
 			"get_batcap; "\
 			"if itest ${battery_cap} < ${batlow_threshold}; "\
-				"then run prepare; run batlow_warning; poweroff; "\
+				"then run prepare; run batlow_warning; video dev disable; poweroff; "\
 			"fi; "\
 		"fi\0" \
 		\
@@ -352,14 +339,12 @@
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 1000\0" \
-	"usb_burning=update 2000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 
 #define CONFIG_BOOTCOMMAND  \
-    "bmp display ${bootup_offset}; "\
-    "store read boot ${loadaddr} 0 600000; "\
-    "setenv bootargs ${bootargs} storage=${store} androidboot.firstboot=${firstboot}; "\
+    "imgread kernel boot ${loadaddr}; "\
+    "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
     "bootm"
 
 #define CONFIG_AUTO_COMPLETE	1
@@ -499,6 +484,7 @@
 
 //M8 L1 cache enable for uboot decompress speed up
 //#define CONFIG_AML_SPL_L1_CACHE_ON	1
+#define CONFIG_CMD_AML_MAGIC
 
 
 /*-----------------------------------------------------------------------
