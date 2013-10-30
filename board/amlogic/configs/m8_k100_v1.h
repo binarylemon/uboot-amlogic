@@ -99,12 +99,12 @@
 #define CONFIG_SYS_I2C_SPEED	400000
 #endif	//#ifdef CONFIG_AML_I2C
 
-//#define CONFIG_CMD_AML
+#define CONFIG_CMD_AML
 /*
  * PMU definitions, all PMU devices must be include involved
  * in CONFIG_PLATFORM_HAS_PMU
  */
-//#define CONFIG_PLATFORM_HAS_PMU
+#define CONFIG_PLATFORM_HAS_PMU
 #ifdef CONFIG_PLATFORM_HAS_PMU
 
 #define CONFIG_RN5T618

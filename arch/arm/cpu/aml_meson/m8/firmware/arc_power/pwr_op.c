@@ -277,6 +277,13 @@ void pmu_feed_watchdog(unsigned int flags)
 }
 #endif /* CONFIG_RESET_TO_SYSTEM */
 
+/*
+ * use globle virable to fast i2c speed
+ */
+static unsigned char reg_ldo     = 0;
+static unsigned char reg_ldo_rtc = 0;
+static unsigned char charge_timeout = 0;
+
 void rn5t618_power_off_at_24M()
 {
 //    printf_arc("%s\n", __func__);
@@ -302,7 +309,9 @@ void rn5t618_power_off_at_24M()
 #endif
     rn5t618_set_bits(0x0044, ~(LDO3_BIT | LDO4_BIT ), (LDO3_BIT | LDO4_BIT ));
 
-//    rn5t618_set_bits(0x002c, 0x00, 0x01);               // close DCDC1, vcck 
+    reg_ldo     = i2c_pmu_read_b(0x0044);
+    reg_ldo_rtc = i2c_pmu_read_b(0x0045);
+    rn5t618_set_bits(0x002c, 0x00, 0x01);               // close DCDC1, vcck 
 
     printf_arc("enter 32K\n");
 }
@@ -311,7 +320,9 @@ void rn5t618_power_on_at_24M()          // need match power sequence of  power_o
 {
     printf_arc("enter 24MHz\n");
 
-//    rn5t618_set_bits(0x002c, 0x01, 0x01);               // open DCDC1, vcck 
+    rn5t618_set_gpio(3, 1);                             // should open LDO1.2v before open VCCK
+    udelay__(6 * 1000);                                // must delay 25 ms before open vcck
+    rn5t618_set_bits(0x002c, 0x01, 0x01);               // open DCDC1, vcck 
 
 	rn5t618_set_bits(0x0044, LDO3_BIT | LDO4_BIT, (LDO3_BIT | LDO4_BIT ));
 	
@@ -328,10 +339,18 @@ void rn5t618_power_on_at_24M()          // need match power sequence of  power_o
     printf_arc("dc2 set to 1.2v\n");
 #endif
 	rn5t618_set_gpio(0, 0);                                     // need to open this in LCD driver?
-	rn5t618_set_gpio(1, 0);                                             // close vccx2
+	rn5t618_set_gpio(1, 0);                                     // close vccx2
     if (!vbus_status) {
         //rn5t618_set_gpio(1, 0);
     }
+    if (charge_timeout & 0x20) {
+        printf_arc("charge timeout detect, reset charger\n");
+        rn5t618_set_bits(0x00C5, 0x00, 0x20);                   // clear flag
+        rn5t618_set_bits(0x00B3, 0x00, 0x03);
+        udelay__(100 * 1000);
+        rn5t618_set_bits(0x00B3, 0x03, 0x03);
+    }
+    rn5t618_set_gpio(3, 0);                             // close ldo 1.2v when vcck is opened 
 }
 
 void rn5t618_power_off_at_32K_1()
@@ -339,19 +358,25 @@ void rn5t618_power_off_at_32K_1()
 //return;
     unsigned int reg;                               // change i2c speed to 1KHz under 32KHz cpu clock
     unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
+
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
 //    if (sleep_flag == 0x87654321) {                 // suspended in uboot
 //        reg |= (12) << 12;
 //    } else {
+	if(readl(P_AO_RTI_STATUS_REG2) == 0x87654321)
     	reg |= (10 << 12);           // suspended from kernel
+    else
+		reg |= (5 << 12);           // suspended from kernel
 //    }
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 	udelay__(100);
 
-    rn5t618_set_bits(0x0044, ~ LDO5_BIT,  LDO5_BIT);
+    reg_ldo &= ~(LDO5_BIT);
+    i2c_pmu_write_b(0x0044, reg_ldo);                   // close LDO5, AVDD1.8
 
-	rn5t618_set_bits(0x0045, 0x00, 0x10);				// close ext DCDC 3.3v
+    reg_ldo_rtc &= ~(0x10);
+    i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // close ext DCDC 3.3v
 
 //	rn5t618_set_bits(0x0044, ~LDO2_BIT, LDO2_BIT);//need power off lastly
 
@@ -369,7 +394,8 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
     unsigned int    reg;
 
 //	rn5t618_set_bits(0x0044, LDO2_BIT, LDO2_BIT);  //need power on firstly
-	rn5t618_set_bits(0x0045, 0x10, 0x10); 			  // open ext DCDC 3.3v
+    reg_ldo_rtc |= 0x10;
+    i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // open ext DCDC 3.3v
 
 #ifdef CONFIG_RESET_TO_SYSTEM
     pmu_feed_watchdog(0);
@@ -379,7 +405,8 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
     i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog 
 #endif
 
-    rn5t618_set_bits(0x0044,  LDO5_BIT,  LDO5_BIT);
+    reg_ldo |= (LDO5_BIT);
+    i2c_pmu_write_b(0x0044, reg_ldo);                   // open LDO5, AVDD1.8
 
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
@@ -417,15 +444,14 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
     writel(readl(P_AO_RTI_PULL_UP_REG)|(1 << 3)|(1<<19),P_AO_RTI_PULL_UP_REG);
 
-//	prev_status = get_charging_state();
+	prev_status = get_charging_state();
     do {
         /*
          * when extern power status has changed, we need break 
          * suspend loop and resume system.
          */
-#if 0      
 	    power_status = get_charging_state();
-        if (prev_status ^ prev_status) {
+        if (power_status ^ prev_status) {
             if (flags == 0x87654321) {      // suspend from uboot
                 ret = 1;
             }
@@ -446,10 +472,16 @@ unsigned int rn5t618_detect_key(unsigned int flags)
                 if (battery_voltage < 3480) {
                     break;
                 }
+            } else if (power_status) {
+                charge_timeout = i2c_pmu_read_b(0x00c5);
+                if (charge_timeout & 0x20) {
+                    break;    
+                } else {
+                    charge_timeout = 0;    
+                }
             }
             delay_cnt = 0;
         }
-#endif
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
         if(remote_detect_key()){
@@ -457,10 +489,10 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
 #endif
 
-	if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1)
-		break;
+	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1)
+		    break;
 	
-    } while (readl(P_AO_GPIO_I)&(1<<3));
+    } while (readl(P_AO_GPIO_I)&(1<<3));            // power key
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();

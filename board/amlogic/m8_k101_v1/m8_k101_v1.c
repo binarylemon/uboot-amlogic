@@ -285,15 +285,20 @@ int board_mmc_init(bd_t	*bis)
 static int usb_charging_detect_call_back(char bc_mode)
 {
 #ifdef CONFIG_PLATFORM_HAS_PMU
-    struct aml_pmu_driver *driver = aml_pmu_get_driver();
+    struct aml_pmu_driver    *driver = aml_pmu_get_driver();
+    struct battery_parameter *battery;
 #endif
 	switch(bc_mode){
 		case BC_MODE_DCP:
 		case BC_MODE_CDP:
 			//Pull up chargging current > 500mA
         #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * Policy:
+             * for charger and PC + charger, don't limit usb current
+             */
             if (driver && driver->pmu_set_usb_current_limit) {
-                driver->pmu_set_usb_current_limit(0);                  // do not limit usb current
+                driver->pmu_set_usb_current_limit(-1);                  // -1 means do not limit usb current
             }
         #endif
 			break;
@@ -304,7 +309,21 @@ static int usb_charging_detect_call_back(char bc_mode)
 			//Limit chargging current <= 500mA
 			//Or detet dec-charger
         #ifdef CONFIG_PLATFORM_HAS_PMU
-            if (driver && driver->pmu_set_usb_current_limit) {
+            /*
+             * for PC:
+             * If pmu_usbcur_limit is 1 in dts, then set usb current by 
+             * value pmu_usbcur set in dts. If pmu_usbcur_limit is 0, then don't 
+             * limit  usb current. If not find battery parameters, set usb current
+             * to 500mA as default
+             */
+            battery = get_battery_para();
+            if (driver && battery && driver->pmu_set_usb_current_limit) {
+                if (battery->pmu_usbcur_limit) {
+                    driver->pmu_set_usb_current_limit(battery->pmu_usbcur);
+                } else {
+                    driver->pmu_set_usb_current_limit(-1);
+                }
+            } else {
                 driver->pmu_set_usb_current_limit(500);
             }
         #endif

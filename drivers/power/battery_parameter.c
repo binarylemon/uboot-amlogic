@@ -1,6 +1,11 @@
 #include <common.h>
 #include <amlogic/battery_parameter.h>
 #include <asm/setup.h>
+#include <amlogic/aml_pmu_common.h>
+
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_DT_PRELOAD)
+#include <libfdt.h>
+#endif
 
 /*
  * These are both existed parameters for Amlogic PMU and AXP PMU, 
@@ -9,7 +14,7 @@
  */
 #ifdef CONFIG_AML_PMU
 #define MAX_CHARGE_CURRENT      2000000                 // max charging current, in uA
-#define MIN_CHARGE_CURRENT      1500000                 // min charging current, in uA
+#define MIN_CHARGE_CURRENT      0                       // min charging current, in uA
 #define MAX_CHARGE_VOLTAGE      4400000                 // max charge target voltage, in uV
 #define MIN_CHARGE_VOLTAGE      4050000                 // min charge target voltage, in uV
 #define MAX_CHARGE_END_RATE     20                      // max charge end rate, (charge current / target current)
@@ -28,7 +33,7 @@
 
 #ifdef CONFIG_AW_AXP20 
 #define MAX_CHARGE_CURRENT      1800000                 // max charging current, in uA
-#define MIN_CHARGE_CURRENT      300000                  // min charging current, in uA
+#define MIN_CHARGE_CURRENT      0                       // min charging current, in uA
 #define MAX_CHARGE_VOLTAGE      4360000                 // max charge target voltage, in uV
 #define MIN_CHARGE_VOLTAGE      4100000                 // min charge target voltage, in uV
 #define MAX_CHARGE_END_RATE     15                      // max charge end rate, (charge current / target current)
@@ -42,6 +47,25 @@
 #define MAX_VBUS_VOLTAGE_LIMIT  4700                    // max VBUS voltage limit, in mV
 #define MIN_VBUS_VOLTAGE_LIMIT  4000                    // min VBUS voltage limit
 #define MAX_VBUS_CURRENT_LIMIT  900                     // max VBUS current limit, in mA
+#define MIN_VBUS_CURRENT_LIMIT  100                     // min VBUS current limit
+#endif
+
+#ifdef CONFIG_RN5T618   // TODO:fix these parameters to this PMU 
+#define MAX_CHARGE_CURRENT      1800000                 // max charging current, in uA
+#define MIN_CHARGE_CURRENT      0                       // min charging current, in uA
+#define MAX_CHARGE_VOLTAGE      4350000                 // max charge target voltage, in uV
+#define MIN_CHARGE_VOLTAGE      4050000                 // min charge target voltage, in uV
+#define MAX_CHARGE_END_RATE     15                      // max charge end rate, (charge current / target current)
+#define MIN_CHARGE_END_RATE     10                      // min charge end rate
+#define MAX_ADC_FREQ            200                     // ADC frequent 
+#define MIN_ADC_FREQ            25
+#define MAX_PRE_CHARGE_TIME     80                      // max pre-charge(small current) time, in minutes
+#define MIN_PRE_CHARGE_TIME     40                      // min pre-charge time
+#define MAX_FAST_CHARGE_TIME    300                     // max fast charge(const current) time, in minutes
+#define MIN_FAST_CHARGE_TIME    120                     // min fast charge time
+#define MAX_VBUS_VOLTAGE_LIMIT  4400                    // max VBUS voltage limit, in mV
+#define MIN_VBUS_VOLTAGE_LIMIT  4100                    // min VBUS voltage limit
+#define MAX_VBUS_CURRENT_LIMIT  1500                    // max VBUS current limit, in mA
 #define MIN_VBUS_CURRENT_LIMIT  100                     // min VBUS current limit
 #endif
 
@@ -571,8 +595,15 @@ int check_parsed_parameters(void)
         return -1;
     }
     for (i = 0; i < 16; i++) {
-        if (board_battery_para.pmu_bat_curve[i].ocv == 0) {
+        if ((board_battery_para.pmu_bat_curve[i].ocv == 0) || 
+            (board_battery_para.pmu_bat_curve[i].charge_percent < 0 || board_battery_para.pmu_bat_curve[i].charge_percent > 100) ||
+            (board_battery_para.pmu_bat_curve[i].discharge_percent < 0 || board_battery_para.pmu_bat_curve[i].discharge_percent > 100)) {
             printf("wrong valus of battery curve\n");
+            printf("%d, ocv:%3d, %3d, %3d\n", 
+                   i, 
+                   board_battery_para.pmu_bat_curve[i].ocv, 
+                   board_battery_para.pmu_bat_curve[i].charge_percent,
+                   board_battery_para.pmu_bat_curve[i].discharge_percent);
             return -1;
         }
         if (!ocv_empty && board_battery_para.pmu_bat_curve[i].discharge_percent > 0 && i) {
@@ -589,6 +620,123 @@ int check_parsed_parameters(void)
     return 0;
 }
 
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_DT_PRELOAD)
+#define DBG_PARSE   0
+
+#define U32         0
+#define STR         1
+#define U32_ARRAY   2
+
+int get_member_from_dtb(char *addr, void *value, char *name, int type, int offset, int err_level)
+{
+    void *data;
+    int   i;
+    int  *array;
+
+    data = fdt_getprop(addr, offset, name, NULL);
+    if (data == NULL) {
+        printf("Got %s failed, ", name);
+        if (err_level) {
+            return -1;    
+        } else {
+            return 0;
+        }
+    }
+    switch (type) {
+    case U32:
+        *((u32*)value) = be32_to_cpup((u32*)data);
+        if (DBG_PARSE) {
+            printf("Got %s, %d\n", name, *((u32*)value));
+        }
+        break;
+
+    case STR:
+        strncpy(value, data, 20);
+        if (DBG_PARSE) {
+            printf("Got %s, %s\n", name, (char *)data);
+        }
+        break;
+
+    case U32_ARRAY:
+        array = (int *)value;
+        for (i = 0; i < 16 * 3; i++) {                                  // fixex size of array
+            *array = be32_to_cpup((u32*)data);
+            if (DBG_PARSE) {
+                printf("Got %s, i: %d, val:%d\n", name, i, *array);
+            }
+            data = (unsigned char *)data + 4;
+            array++;
+        }
+        break;
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+#define PARSE_MEMBER(a, b, c, d, e, f)              \
+    if (get_member_from_dtb(a, &b, c, d, e, f)) {   \
+        return -1;                                  \
+    }                                               \
+
+#define PARSE_ARRAY(a, b, c, d, e, f)               \
+    if (get_member_from_dtb(a, b, c, d, e, f)) {    \
+        return -1;                                  \
+    }                                               \
+
+int get_battery_para_form_dtb(char *addr, struct battery_parameter *b)
+{
+    int ret;
+    int offset;
+    
+    ret = fdt_check_header(addr);
+    if (ret) {
+        printf("check dts: %s, ", fdt_strerror(ret));
+        return -1;
+    }
+    offset = fdt_path_offset(addr, "/battery_parameter");
+    if (offset < 0) {
+        printf("Not find /battery_parameter %s, ",fdt_strerror(offset));
+        return -1;
+    }
+    PARSE_MEMBER(addr, b->pmu_twi_id,             "pmu_twi_id",             U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_irq_id,             "pmu_irq_id",             U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_twi_addr,           "pmu_twi_addr",           U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_battery_rdc,        "pmu_battery_rdc",        U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_battery_cap,        "pmu_battery_cap",        U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_battery_technology, "pmu_battery_technology", U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_battery_name,       "pmu_battery_name",       STR, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_init_chgvol,        "pmu_init_chgvol",        U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_chgend_rate,   "pmu_init_chgend_rate",   U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_chg_enabled,   "pmu_init_chg_enabled",   U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_adc_freq,      "pmu_init_adc_freq",      U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_adc_freqc,     "pmu_init_adc_freqc",     U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_chg_pretime,   "pmu_init_chg_pretime",   U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_chg_csttime,   "pmu_init_chg_csttime",   U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_init_chgcur,        "pmu_init_chgcur",        U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_suspend_chgcur,     "pmu_suspend_chgcur",     U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_resume_chgcur,      "pmu_resume_chgcur",      U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_shutdown_chgcur,    "pmu_shutdown_chgcur",    U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_usbcur_limit,       "pmu_usbcur_limit",       U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_usbcur,             "pmu_usbcur",             U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_usbvol_limit,       "pmu_usbvol_limit",       U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_usbvol,             "pmu_usbvol",             U32, offset, 1);
+    PARSE_MEMBER(addr, b->pmu_pwroff_vol,         "pmu_pwroff_vol",         U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pwron_vol,          "pmu_pwron_vol",          U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pekoff_time,        "pmu_pekoff_time",        U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pekoff_en,          "pmu_pekoff_en",          U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_peklong_time,       "pmu_peklong_time",       U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pwrok_time,         "pmu_pwrok_time",         U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pwrnoe_time,        "pmu_pwrnoe_time",        U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_intotp_en,          "pmu_intotp_en",          U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_pekon_time,         "pmu_pekon_time",         U32, offset, 0);
+    PARSE_MEMBER(addr, b->pmu_charge_efficiency,  "pmu_charge_efficiency",  U32, offset, 1);
+    PARSE_ARRAY (addr, b->pmu_bat_curve,          "pmu_bat_curve",          U32_ARRAY, offset, 1);
+
+    return 0;
+}
+#endif
+
 int parse_battery_parameters(void)
 {
     char *base_pointer;
@@ -596,6 +744,35 @@ int parse_battery_parameters(void)
     char *offset;
     int   size;
      
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_DT_PRELOAD)
+    char *dt_addr;
+    struct aml_pmu_driver *driver;
+
+    if (getenv("dtbaddr") == NULL) {
+    #ifdef CONFIG_DTB_LOAD_ADDR
+        dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
+    #else
+        dt_addr = (char *)0x83000000;
+    #endif
+    } else {
+        dt_addr = simple_strtoul (getenv ("dtbaddr"), NULL, 16);    
+        printf("Get dtb addr %x from env\n", dt_addr);
+    }
+    if (!get_battery_para_form_dtb(dt_addr, &board_battery_para)) {
+        if (check_parsed_parameters()) {
+            return -1;
+        }
+        printf("success parse battery parameter from dtb\n");
+        driver = aml_pmu_get_driver();
+        if (driver && driver->pmu_init_para) {
+            printf("init pmu according battery parameter\n");
+            driver->pmu_init_para(&board_battery_para);
+        }
+        return 1;  
+    }
+    printf("parse battery parameter from dtb failed\n");
+    return -1;
+#endif
     base_pointer = getenv(BATTERY_PARA_NAME);
     if (!base_pointer) {
         printf("Not find "BATTERY_PARA_NAME"\n");

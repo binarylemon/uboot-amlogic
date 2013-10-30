@@ -312,6 +312,7 @@ void enter_power_down()
 	{
 		if(vcin_state)//plug out ACIN
 		{
+			f_serial_puts("no extern power shutdown\n");
 			p_arc_pwr_op->shut_down();
 			do{
 				udelay__(2000);

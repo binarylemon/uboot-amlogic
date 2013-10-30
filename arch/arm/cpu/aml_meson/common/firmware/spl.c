@@ -7,8 +7,8 @@
 #include <sdpinmux.c>
 #include <memtest.c>
 #include <pll.c>
-//#include <hardi2c_lite.c>
-//#include <power.c>
+#include <hardi2c_lite.c>
+#include <power.c>
 #include <ddr.c>
 #include <mtddevices.c>
 #include <sdio.c>
@@ -139,7 +139,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts("\n");
 
 #ifdef CONFIG_POWER_SPL
-//    power_init();
+    //power_init();
 #endif
 
 #if !defined(CONFIG_VLSI_EMULATOR)

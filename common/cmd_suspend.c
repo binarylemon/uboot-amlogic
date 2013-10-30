@@ -8,6 +8,9 @@
 #include <common.h>
 #include <command.h>
 #include <asm/arch/ao_reg.h>
+#ifdef CONFIG_PLATFORM_HAS_PMU
+#include <amlogic/aml_pmu_common.h>
+#endif
 extern void meson_pm_suspend(void);
 #define readl(addr) (*(volatile unsigned int*)(addr))
 #define writel(b,addr) ((*(volatile unsigned int *) (addr)) = (b))
@@ -17,6 +20,18 @@ static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 #ifndef CONFIG_M6TV
 	run_command("video dev bl_off",1);
 	run_command("video dev disable",1);
+#endif
+    /*
+     * set suspend charger current according battery parameter
+     */
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    struct aml_pmu_driver    *driver;
+    struct battery_parameter *para;
+    driver = aml_pmu_get_driver();
+    para   = get_battery_para();
+    if (driver && driver->pmu_set_charge_current && para) {
+        driver->pmu_set_charge_current(para->pmu_shutdown_chgcur);
+    }
 #endif
 	meson_pm_suspend();
 	return 0;
