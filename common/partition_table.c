@@ -159,6 +159,17 @@ void set_storage_device_flag()
 	return ;
 }
 
+bool is_nand_exist (void) // is nand exist
+{
+    return ((device_boot_flag == NAND_BOOT_FLAG) || (device_boot_flag == SPI_NAND_FLAG));
+}
 
+bool is_emmc_exist (void) // is eMMC/TSD exist
+{
+    return ((device_boot_flag == EMMC_BOOT_FLAG) || (device_boot_flag == SPI_EMMC_FLAG));
+}
 
-
+bool is_spi_exist (void) // is spi exist
+{
+    return ((device_boot_flag == SPI_BOOT_FLAG) || (device_boot_flag == SPI_NAND_FLAG) || (device_boot_flag == SPI_EMMC_FLAG));
+}

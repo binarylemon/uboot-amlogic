@@ -138,11 +138,11 @@ static int  sdio_detect(unsigned port)
 			if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){ //sd_d3 low, debug board in
 				if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<22))){
 					printf("sdio debug board detected, sd card with 1bit mode\n");
-//		 			sdio_debug_1bit_flag = 1;
+		 			//sdio_debug_1bit_flag = 1;
 		 		}
 		 		else{ 
 		 			printf("sdio debug board detected, no sd card in\n");
-//		 			sdio_debug_1bit_flag = 0;
+		 			//sdio_debug_1bit_flag = 0;
 		 			return 1;
 		 		}
 		 	}
@@ -430,6 +430,40 @@ inline int get_key(void)
     return (readl(P_AO_GPIO_I) & (1 << 3)) ? 0 : 1;
 }
 
+int power_key_num = 0;
+int update_key_num = 0;
+
+void magic_checkstatus(int saveEnvFlag){
+	static int adc_init = 0;
+
+	if(!adc_init){
+		run_command("saradc open 0", 0);
+		adc_init = 1;
+	}
+	
+	if( 0 == run_command("getkey", 0)){
+		power_key_num++;
+	}
+	if( 0 == run_command("saradc get_in_range 0x95 0x150 1", 0)){
+		update_key_num++;
+	}
+
+	printf("magic_checkstatus power(%d) adc(%d)\n", power_key_num, update_key_num);
+
+	if(saveEnvFlag){
+		if(power_key_num >= 2 && update_key_num >= 2){
+			setenv("magic_key_status", "update");
+			return;
+		}
+
+		if(power_key_num >= 2){
+			setenv("magic_key_status", "poweron");
+			return;
+		}
+	}
+}
+
+
 static void board_i2c_init(void)
 {		
 	//set I2C pinmux with PCB board layout
@@ -446,8 +480,16 @@ static void board_i2c_init(void)
 	//udelay(10000);	
 
 	udelay(10000);
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int before_pmu_init =  get_utimer(0);
+#endif
+
 #ifdef CONFIG_PLATFORM_HAS_PMU
     board_pmu_init();
+#endif
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int after_pmu_init =  get_utimer(0);
+	printf("\nPMU init time %d\n", after_pmu_init-before_pmu_init);
 #endif
 }
 
@@ -459,7 +501,7 @@ int board_init(void)
     nand_init();
     
 #endif    
-    
+  run_command("magic_checkstatus", 0);
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
