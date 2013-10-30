@@ -18,18 +18,17 @@
 #include <amlogic/storage_if.h>
 
 #define BURN_DBG 0
-
 #if BURN_DBG
 #define SDC_DBG(fmt...) printf(fmt)
 #else
 #define SDC_DBG(fmt...) 
 #endif//if BURN_DBG
 
-#define SDC_MSG(fmt...) printf("%s L%d ", __FILE__, __LINE__),printf("MSG:"fmt)
-#define SDC_ERR(fmt...) printf("%s L%d ", __FILE__, __LINE__),printf("ERR:"fmt)
+#define SDC_MSG         DWN_MSG
+#define SDC_ERR         DWN_ERR
 
 static char _errInfo[512] = "";
-typedef void* __hdle;
+typedef int __hdle;
 
 //default is mmc 0:1, i.e, part 1 of first registered mmc device
 int device_probe(const char* interface, const char* inPart)
@@ -110,14 +109,15 @@ s64 storage_get_partition_size_in_byte(const char* partName)
         return 0;
     }
     size <<= 9;//trans sector to byte
-    DWN_MSG("part %s size is 0x%llx\n", partName, size);
+    DWN_MSG("part size 0x%llx\nB", size);
 #endif
 
     return size;
 }
 
 //0 is OK, others failed
-int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* fileFmt)
+int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* fileFmt,
+        const unsigned itemSizeNotAligned /* if item offset 3 and bytepercluste 4k, then it's 4k -3 */)
 {
     int rcode = 0;
     s64 partCapInByte   = 0;
@@ -139,8 +139,7 @@ int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* f
         SDC_ERR("fail in init down info, rcode %d\n", rcode);
         return __LINE__;
     }
-
-    rcode = optimus_buf_manager_tplcmd_init(destMediaType, partName, 0, fileFmt, imgItemSz, 0);
+    rcode = optimus_buf_manager_tplcmd_init(destMediaType, partName, 0, fileFmt, imgItemSz, 0, itemSizeNotAligned);
     if(rcode){
         SDC_ERR("Fail in buf manager init\n");
         return __LINE__;
@@ -181,7 +180,7 @@ int sdc_burn_verify(const char* verifyFile)
     return 0;
 }
 
-int optimus_burn_partition_image(const char* partName, const char* imgItemPath, const char* fileFmt, const char* verifyFile)
+int optimus_burn_partition_image(const char* partName, const char* imgItemPath, const char* fileFmt, const char* verifyFile, const unsigned itemSizeNotAligned)
 { 
     int rcode = 0;
     s64 imgItemSz       = 0;
@@ -198,7 +197,7 @@ int optimus_burn_partition_image(const char* partName, const char* imgItemPath, 
         return __LINE__;
     }
 
-    rcode = sdc_burn_buf_manager_init(partName, imgItemSz, fileFmt);
+    rcode = sdc_burn_buf_manager_init(partName, imgItemSz, fileFmt, itemSizeNotAligned);
     if(rcode){
         SDC_ERR("fail in sdc_burn_buf_manager_init, rcode %d\n", rcode);
         return __LINE__;
@@ -326,7 +325,7 @@ int do_sdc_update(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     }
 #endif//#if 0
 
-    rcode = optimus_burn_partition_image(partName, imgItemPath, fileFmt, verifyFile);
+    rcode = optimus_burn_partition_image(partName, imgItemPath, fileFmt, verifyFile, 0);
     if(rcode){
         SDC_ERR("Fail to burn partition (%s) with image file (%s) in format (%s)\n", partName, imgItemPath, fileFmt);
     }

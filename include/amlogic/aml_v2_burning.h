@@ -21,7 +21,7 @@ int is_tpl_loaded_from_ext_sdmmc(void);
 int v2_usbburning(unsigned timeout);
 
 //Enter sdcard burning
-int v2_sdc_burning(int flag);
+int aml_v2_sdc_producing(int flag, bd_t* bis);
 
 //Check if uboot loaded from external sdmmc or usb otg
 int check_uboot_loaded_for_burn(int flag);

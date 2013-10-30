@@ -1,6 +1,6 @@
 /*
  * \file        optimus_buffer_manager.c
- * \brief       buffer manager for download data: A thin layer between usb down and Media write
+ * \brief       buffer manager for download data: A thin layer between receiving partition data and writing flash
  *
  * \version     1.0.0
  * \date        2013/5/2
@@ -40,8 +40,8 @@ typedef struct bufManager{
     s16             pktTransferSta;
     u32             destMediaType;
 
-    u32             partBaseOffset;
-    u32             reserveToAlign64bits;
+    u32             partBaseOffset;//TODO: change it to memory address when dest media type is memory
+    u32             itemOffsetNotAlignClusterSz_f;//For sdcard burning, item offset of aml_upgrade_package.img is not aligned to bytespercluster of FAT fs(_f means not changed inited)
 
 }BufManager;
 
@@ -65,6 +65,8 @@ static BufManager _bufManager =
 
     .isUpload           = 0,
     .pktTransferSta     = PKT_TRANSFER_STA_EMPTY,
+
+    .itemOffsetNotAlignClusterSz_f  = 0,
 };
 
 int optimus_buf_manager_init(const unsigned mediaAlignSz)
@@ -86,20 +88,23 @@ int optimus_buf_manager_exit(void)
     return 0;
 }
 
-int optimus_buf_manager_tplcmd_init(const char* mediaType, const char* partName, const u64 partBaseOffset, 
-                            const char* imgType, const u64 pktTotalSz, const int isUpload)
+int optimus_buf_manager_tplcmd_init(const char* mediaType,  const char* partName,   const u64 partBaseOffset, 
+                            const char* imgType, const u64 pktTotalSz, const int isUpload, 
+                            const unsigned itemSizeNotAligned /* if item offset 3 and bytepercluste 4k, then it's 4k -3 */)
 {
     u32 writeBackUnitSz = OPTIMUS_VFAT_IMG_WRITE_BACK_SZ;
+    const u64 pktSz4BufManager = pktTotalSz - itemSizeNotAligned;
 
-    if(!strcmp("sparse", imgType))
+    if(!strcmp("sparse", imgType) 
+            || itemSizeNotAligned/* use max memory if item 'itemOffset % bytespercluster != 0'*/)
     {
         writeBackUnitSz = OPTIMUS_SIMG_WRITE_BACK_SZ;
     }
 
     if(!strcmp("bootloader", partName))
     {
-        if(pktTotalSz > _bufManager.transferBufSz) {
-            DWN_ERR("packet size 0x%x too large, max is 0x%x\n", (u32)pktTotalSz, _bufManager.transferBufSz);
+        if(pktSz4BufManager > _bufManager.transferBufSz) {
+            DWN_ERR("packet size 0x%x too large, max is 0x%x\n", (u32)pktSz4BufManager, _bufManager.transferBufSz);
             return OPT_DOWN_FAIL;
         }
         writeBackUnitSz = OPTIMUS_BOOTLOADER_MAX_SZ;
@@ -126,12 +131,10 @@ int optimus_buf_manager_tplcmd_init(const char* mediaType, const char* partName,
         DWN_ERR("write back size %d < align size %d\n", writeBackUnitSz, _bufManager.mediaAlignSz);
         return OPT_DOWN_FAIL;
     }
-    DWN_MSG("writeBackUnitSz = 0x%x, pktTotalSz = %lld\n", writeBackUnitSz, pktTotalSz);
+    DWN_DBG("writeBackUnitSz = 0x%x, pktSz4BufManager = %lld\n", writeBackUnitSz, pktSz4BufManager);
 
     _bufManager.writeBackUnitSz     = writeBackUnitSz;
     _bufManager.totalSlotNum        = 0;
-    _bufManager.leftDataSz          = 0;//data size in the buffer that already not write back to media
-    _bufManager.tplcmdTotalSz       = pktTotalSz;
     _bufManager.isUpload            = isUpload;
     _bufManager.pktTransferSta      = PKT_TRANSFER_STA_EMPTY;
 
@@ -141,9 +144,9 @@ int optimus_buf_manager_tplcmd_init(const char* mediaType, const char* partName,
     }
     else//has write back if download
     {
-        if(pktTotalSz < writeBackUnitSz)
+        if(pktSz4BufManager < writeBackUnitSz)
         {
-            _bufManager.nextWriteBackSlot  = ((u32)pktTotalSz + _bufManager.transferUnitSz - 1)/_bufManager.transferUnitSz;//first slot index to write back to media
+            _bufManager.nextWriteBackSlot  = ((u32)pktSz4BufManager + _bufManager.transferUnitSz - 1)/_bufManager.transferUnitSz;//first slot index to write back to media
         }
         else
         {
@@ -152,7 +155,11 @@ int optimus_buf_manager_tplcmd_init(const char* mediaType, const char* partName,
 
     }
 
-    optimus_progress_init((u32)(pktTotalSz>>32), (u32)pktTotalSz, 0, 100);
+    _bufManager.itemOffsetNotAlignClusterSz_f = itemSizeNotAligned;
+    _bufManager.leftDataSz                  = itemSizeNotAligned;//data size in the buffer that not write back to media yet in previous transfer
+    _bufManager.tplcmdTotalSz               = pktSz4BufManager;
+    
+    optimus_progress_init((u32)(_bufManager.tplcmdTotalSz>>32), (u32)_bufManager.tplcmdTotalSz, 0, 100);
     DWN_MSG("totalSlotNum = %d, nextWriteBackSlot %d\n", _bufManager.totalSlotNum, _bufManager.nextWriteBackSlot);
 
     return OPT_DOWN_OK;
@@ -168,7 +175,7 @@ int optimus_buf_manager_get_buf_for_bulk_transfer(char** pBuf, const unsigned wa
     const u32 BufBase = (OPTIMUS_MEDIA_TYPE_MEM != _bufManager.destMediaType)  ? (unsigned)_bufManager.transferBuf : _bufManager.partBaseOffset ;
     
     if(wantSz < _bufManager.transferUnitSz && !isLastTransfer){
-        DWN_ERR("only last transfer can less 64K, this index %d at size %d illegle\n", totalSlotNum + 1, wantSz);
+        DWN_ERR("only last transfer can less 64K, this index %d at size 0x%u illegle\n", totalSlotNum + 1, wantSz);
         return OPT_DOWN_FAIL;
     }
 
@@ -215,16 +222,18 @@ int optimus_buf_manager_report_transfer_complete(const u32 transferSz, char* err
         u32   burnSz   = 0;
         u32   leftSz   = _bufManager.leftDataSz;//data size not write to media in previous write back, > 0 only when not normal packet
         const u32 size = leftSz + thisWriteBackSz;
-        const u8* data = BufBase -leftSz;
+        const u8* data = (u8*)BufBase -leftSz;
+        const unsigned reserveNotAlignSz = leftPktSz ? _bufManager.itemOffsetNotAlignClusterSz_f : 0;//reserve 
 
         //call cb function to write to media
-        burnSz = optimus_download_img_data(data, size, errInfo);
+        DWN_DBG("size 0x%x, reserveNotAlignSz 0x%x\n", size, reserveNotAlignSz);
+        burnSz = optimus_download_img_data(data, size - reserveNotAlignSz, errInfo);
         if(burnSz <= leftSz || !burnSz){
             DWN_ERR("this burn size %d <= last left size %d, data 0x%p\n", burnSz, leftSz, data);
             return OPT_DOWN_FAIL;
         }
-        if(size < burnSz){
-            DWN_ERR("Exception:siz 0x%x < burnSz 0x%x\n", size, burnSz);
+        if(size - reserveNotAlignSz < burnSz){
+            DWN_ERR("Exception:siz 0x%x < burnSz 0x%x\n", size - reserveNotAlignSz, burnSz);
             return OPT_DOWN_FAIL;
         }
 

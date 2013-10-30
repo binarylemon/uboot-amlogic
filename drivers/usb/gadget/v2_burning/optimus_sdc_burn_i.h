@@ -70,9 +70,10 @@ int print_burn_parts_para(const BurnParts_t* pBurnParts);
 int sdc_burn_verify(const char* verifyFile);
 
 //burn a partition with a image file
-int optimus_burn_partition_image(const char* partName, const char* imgItemPath, const char* fileFmt, const char* verifyFile);
+int optimus_burn_partition_image(const char* partName, const char* imgItemPath, const char* fileFmt, const char* verifyFile, const unsigned itemSizeNotAligned);
 
-int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* fileFmt);
+int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* fileFmt, 
+                            const unsigned itemSizeNotAligned /* if item offset 3 and bytepercluste 4k, then it's 4k -3 */);
 
 int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfg);
 

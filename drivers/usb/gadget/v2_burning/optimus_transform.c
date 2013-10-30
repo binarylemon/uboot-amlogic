@@ -2,6 +2,7 @@
 #include <asm/arch/reboot.h>
 #include <sha1.h>
 #include "usb_pcd.h"
+#include "platform.h"
 #include "optimus_download.h"
 #include <environment.h>
 #include <amlogic/aml_v2_burning.h>
@@ -314,7 +315,7 @@ void optimus_reset(void)
 {
     unsigned i = 0x100;
 
-    close_usb_phy_clock();
+    close_usb_phy_clock(0);
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
     reboot_mode_clear();//clear the reboot mode
     /*writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn*/
@@ -383,17 +384,11 @@ int set_low_power_for_usb_burn(int arg, char* buff)
     return 0;
 }
 
+//I assume that store_inited yet when "bootloader_is_old"!!!!
 int optimus_erase_bootloader(char* info)
 {
     int ret = 0;
 
-    ret = optimus_storage_init(0);
-    if(ret) {
-        const char* err = "Failed to init flash with old code\n";
-        if(info) sprintf(info, err);
-        printf(err);
-        return __LINE__;
-    }
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
 
     return ret;
@@ -408,14 +403,15 @@ int is_the_flash_first_burned(void)
     return !strcmp(s, "0");//"0" indicate first boot
 }
 
+//FIXME: check whether 'saveenv' failed and exception when usb prodcing mode from code boot mode if without env_relocate
 static int set_burn_complete_flag(void)
 {
     int rc = 0;
 
-    /*env_relocate();//temporary add relocate to init env_sf.c for spi env*/
-    set_default_env("!<Burn completed>");//set env to default to avoid temperay env saved when burning
+    //Add env_relocate 'after disk_intial' if failed to saveenv, I may set some envs for boot
+    /*env_relocate();*/
 
-    DWN_MSG("set upgrade_step to 1\n");
+    DWN_MSG("Set upgrade_step to 1\n");
     rc = setenv("upgrade_step", "1");
     if(rc){
         DWN_ERR("Fail to set upgraded_step to 1\n");

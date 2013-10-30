@@ -19,8 +19,8 @@ typedef struct _AmlFirmwareItem_s
     __u32           itemId;
     __u32           fileType;           //image file type, sparse and normal
     __u64           curoffsetInItem;    //current offset in the item
-    __u64           offsetInImage;      //item offset in the image
-    __u64           itemSz;             //item size in the image
+    const __u64     offsetInImage;      //item offset in the image
+    const __u64     itemSz;             //item size in the image
     char            itemMainType[32];   //item main type and sub type used to index the item
     char            itemSubType[32];    //item main type and sub type used to index the item
     char            reserve[32];
@@ -82,6 +82,8 @@ int image_item_read(HIMAGE hImg, HIMAGEITEM hItem, void* pBuf, const __u32 wantS
 
 //relocate the read pointer to read the item data, like standard fseek
 int image_item_seek(HIMAGE , HIMAGEITEM , __s64 , __u32 );
+
+unsigned image_item_get_first_cluster_size(HIMAGEITEM hItem);
 
 #endif//ifndef __AMLIMAGE_IF_H__
 

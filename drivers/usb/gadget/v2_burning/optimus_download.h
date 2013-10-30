@@ -17,7 +17,8 @@
 int optimus_buf_manager_init(const unsigned mediaAlignSz);
 int optimus_buf_manager_exit(void);
 int optimus_buf_manager_tplcmd_init(const char* mediaType, const char* partName, u64 partBaseOffset,  
-                            const char* imgType, const u64 pktTotalSz, const int isUpload);
+                            const char* imgType, const u64 pktTotalSz, const int isUpload,
+                            const unsigned itemSizeNotAligned);
 int optimus_buf_manager_get_buf_for_bulk_transfer(char** pBuf, const unsigned wantSz, const unsigned sequenceNo, char* errInfo);
 int optimus_buf_manager_report_transfer_complete(const u32 transferSz, char* errInfo);
 int is_largest_data_transferring(void);
@@ -60,15 +61,11 @@ int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char*
  */
 unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyValLen, char* errInfo);
 
-#if defined(CONFIG_AML_MESON_8)
-#define DDR_MEM_ADDR_START  (0X000U<<20)
-#else
-#define DDR_MEM_ADDR_START  (0X800U<<20)
-#endif//
+#define DDR_MEM_ADDR_START  CONFIG_SYS_SDRAM_BASE
 
 //TODO: move memory mapping to comman shared header file
 //FIXME:Make sure [0x818<<20, 0x839<<20] not used by others
-#define OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW   (DDR_MEM_ADDR_START + (2U<<20))
+#define OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW   (DDR_MEM_ADDR_START + (2U<<20))//Don't access First 1M address 
 #define OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ    (0X40U<<20) //back up address for sparse image
 
 #define OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR      (OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW + OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ)//this buffer can't be 0x800u<<20 as sparse move data to the left
@@ -133,7 +130,8 @@ long do_fat_fopen(const char *filename);
 long do_fat_fread(int fd, __u8 *buffer, unsigned long maxsize);
 void do_fat_fclose(int fd);
 s64 do_fat_get_fileSz(const char* imgItemPath);
-int do_fat_fseek(int fd, unsigned int offset, int wherehence);
+int do_fat_fseek(int fd, const __u64 offset, int wherehence);
+unsigned do_fat_get_bytesperclust(int fd);
 int device_probe(const char* interface, const char* inPart);
 
 //<0 if failed, 0 is normal, 1 is sparse, others reserved

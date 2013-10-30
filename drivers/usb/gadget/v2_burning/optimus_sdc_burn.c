@@ -81,9 +81,11 @@ int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProg
     unsigned sequenceNo = 0;
     const char* fileFmt = NULL;
     /*static */char _errInfo[512];
+    unsigned itemSizeNotAligned = 0;
 
     printf("\n");
     DWN_MSG("=====>To burn part [%s]\n", partName);
+    optimus_progress_ui_printf("Burning part[%s]\n", partName);
     hImgItem = image_item_open(hImg, "PARTITION", partName);
     if(!hImgItem){
         DWN_ERR("Fail to open item for part (%s)\n", partName);
@@ -98,7 +100,9 @@ int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProg
 
     fileFmt = (IMAGE_ITEM_TYPE_SPARSE == image_item_get_type(hImgItem)) ? "sparse" : "normal";
 
-    rcode = sdc_burn_buf_manager_init(partName, imgItemSz, fileFmt);
+    itemSizeNotAligned = image_item_get_first_cluster_size(hImgItem);
+    leftItemSz        -= itemSizeNotAligned;
+    rcode = sdc_burn_buf_manager_init(partName, imgItemSz, fileFmt, itemSizeNotAligned);
     if(rcode){
         DWN_ERR("fail in sdc_burn_buf_manager_init, rcode %d\n", rcode);
         return __LINE__;
@@ -116,6 +120,17 @@ int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProg
         if(rcode){
             DWN_ERR("fail in get buf, msg[%s]\n", _errInfo);
             goto _finish;
+        }
+
+		//If the item head is not alinged to FAT cluster, Read it firstly to speed up mmc read
+        if(itemSizeNotAligned && !sequenceNo)
+        {
+            DWN_DBG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
+            rcode = image_item_read(hImg, hImgItem, downTransBuf - itemSizeNotAligned, itemSizeNotAligned);
+            if(rcode){
+                DWN_ERR("fail in read data from item,rcode %d, len 0x%x, sequenceNo %d\n", rcode, itemSizeNotAligned, sequenceNo);
+                goto _finish;
+            }
         }
 
         rcode = image_item_read(hImg, hImgItem, downTransBuf, thisReadLen);
@@ -139,6 +154,7 @@ _finish:
 
     if(rcode){
         DWN_ERR("Fail to burn part(%s) with in format (%s) before verify\n", partName, fileFmt);
+        optimus_progress_ui_printf("Failed at burn part[%s] befor VERIFY\n", partName);
         return rcode;
     }
 
@@ -151,6 +167,7 @@ _finish:
     }
     if(rcode) {
         printf("Fail in verify part(%s)\n", partName);
+        optimus_progress_ui_printf("Failed at VERIFY part[%s]\n", partName);
         return __LINE__;
     }
 #endif//#fi 0
@@ -175,7 +192,7 @@ int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiP
             return __LINE__;
         }
         burnNum = cfgParts->burn_num;
-        DWN_MSG("Data part num %d\n", burnNum);
+        DWN_DBG("Data part num %d\n", burnNum);
     }
     if(!burnNum){
         DWN_ERR("Data part num is 0!!\n");
@@ -199,7 +216,8 @@ int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiP
 //not need to verify as not config ??
 int optimus_sdc_burn_media_partition(const char* mediaImgPath, const char* verifyFile)
 {
-    return optimus_burn_partition_image("media", mediaImgPath, "normal", verifyFile);
+    //TODO:change configure to 'partName = image' and work it using cmd 'sdc_update'
+    return optimus_burn_partition_image("media", mediaImgPath, "normal", verifyFile, 0);
 }
 
 int optimus_burn_bootlader(HIMAGE hImg)
@@ -239,7 +257,6 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     extern ConfigPara_t g_sdcBurnPara ;
 
     int ret = 0;
-    s64 fileSz = 0;
     HIMAGE hImg = NULL;
     ConfigPara_t* pSdcCfgPara = &g_sdcBurnPara;
     const char* pkgPath = pSdcCfgPara->burnEx.pkgPath;
@@ -248,15 +265,8 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     ret = parse_ini_cfg_file(cfgFile);
     if(ret){
         DWN_ERR("Fail to parse file %s\n", cfgFile);
-        return __LINE__;
+        ret = __LINE__; goto _finish;
     }
-
-    fileSz = do_fat_get_fileSz(pkgPath);
-    if(!fileSz){
-        DWN_ERR("package [%s] not exist in external sdcard\n", pkgPath);
-        return __LINE__;
-    }
-    DWN_MSG("image sz 0x%llx\n", fileSz);
 
     if(pSdcCfgPara->custom.eraseBootloader)
     {
@@ -266,14 +276,14 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
             ret = optimus_erase_bootloader(NULL);
             if(ret){
                 DWN_ERR("Fail to erase bootloader\n");
-                return __LINE__;
+                ret = __LINE__; goto _finish;
             }
 
             DWN_MSG("Clear env upgrade_step to before reset\n");
             ret = run_command("defenv;saveenv", 0);
             if(ret){
                 DWN_ERR("Fail to defenv;saveenv to flash, before reset\n");
-                return __LINE__;
+                ret = __LINE__; goto _finish;
             }
 
             DWN_MSG("Reset to load NEW bootloader from external flash!\n");
@@ -285,14 +295,15 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     hImg = image_open(pkgPath);
     if(!hImg){
         DWN_ERR("Fail to open image %s\n", pkgPath);
-        return __LINE__;
-    }
-
-    ret = show_logo_to_report_burning(hImg);
-    if(ret){
-        DWN_ERR("Fail to show burning logo, ret %d\n", ret);
         ret = __LINE__; goto _finish;
     }
+
+    if(video_res_prepare_for_upgrade(hImg)){
+        DWN_ERR("Fail when prepare bm res or init video for upgrade\n");
+        ret = __LINE__; goto _finish;
+    }
+    show_logo_to_report_burning();
+
     hUiProgress = optimus_progress_ui_request_for_sdc_burn();
     if(!hUiProgress){
         DWN_ERR("request progress handle failed!\n");
@@ -347,6 +358,7 @@ _finish:
     image_close(hImg);
     optimus_progress_ui_report_upgrade_stat(hUiProgress, !ret);
     optimus_report_burn_complete_sta(ret);
+    optimus_progress_ui_release(hUiProgress);
     //optimus_storage_exit();//temporary not exit storage driver when failed as may continue burning after burn
     return ret;
 }
@@ -362,11 +374,13 @@ int optimus_burn_package_in_sdmmc(const char* sdc_cfg_file)
         return __LINE__;
     }
 
+#if 0//this asserted by 'run update' and 'aml_check_is_ready_for_sdc_produce'
     rcode = do_fat_get_fileSz(sdc_cfg_file);
     if(!rcode){
         printf("The [%s] not exist in bootable mmc card\n", sdc_cfg_file);
         return __LINE__;
     }
+#endif//#if 0
 
     rcode = optimus_burn_with_cfg_file(sdc_cfg_file);
 
@@ -383,6 +397,7 @@ int do_sdc_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         return __LINE__;
     }
 
+    show_logo_to_report_burning();//indicate enter flow of burning! when 'run update'
     rcode = optimus_burn_package_in_sdmmc(sdc_cfg_file);
 
     return rcode;

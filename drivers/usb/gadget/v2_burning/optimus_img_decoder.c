@@ -113,14 +113,28 @@ HIMAGEITEM image_item_open(HIMAGE hImg, const char* mainType, const char* subTyp
         return NULL;
     }
 
+    DWN_DBG("Item offset 0x%llx\n", pItem->offsetInImage);
     i = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
     if(i){
         DWN_ERR("fail to seek, offset is 0x%x\n", (u32)pItem->offsetInImage);
         return NULL;
     }
-    DWN_MSG("seek offset 0x%x\n", (u32)pItem->offsetInImage);
     
     return pItem;
+}
+
+//Need this if item offset in the image file is not aligned to bytesPerCluster of FAT
+unsigned image_item_get_first_cluster_size(HIMAGEITEM hItem)
+{
+    ItemInfo* pItem = (ItemInfo*)hItem;
+    unsigned itemSizeNotAligned = 0;
+    const unsigned fat_bytesPerCluste = do_fat_get_bytesperclust(_hFile);
+
+    itemSizeNotAligned = pItem->offsetInImage % fat_bytesPerCluste;
+    itemSizeNotAligned = fat_bytesPerCluste - itemSizeNotAligned;
+
+    DWN_DBG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
+    return itemSizeNotAligned;
 }
 
 //close a item
@@ -250,6 +264,20 @@ int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfgPara)
     return OPT_DOWN_OK;
 }
 
+__u64 image_get_item_size_by_index(HIMAGE hImg, const int itemId)
+{
+    ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
+    ItemInfo* pItem    = imgInfo->itemInfo + itemId;
+
+    if(itemId != pItem->itemId){
+        DWN_ERR("itemid %d err, should %d\n", pItem->itemId, itemId);
+        return __LINE__;
+    }
+    DWN_DBG("get item [%s, %s] at %d\n", pItem->itemMainType, pItem->itemSubType, itemId);
+     
+    return pItem->itemSz;
+}
+
 u64 get_data_parts_size(HIMAGE hImg)
 {
     int i = 0;
@@ -261,7 +289,6 @@ u64 get_data_parts_size(HIMAGE hImg)
     {
         const char* main_type = NULL;
         const char* sub_type  = NULL;
-        HIMAGEITEM hItem = NULL;
 
         ret = get_item_name(hImg, i, &main_type, &sub_type);
         if(ret){
@@ -272,9 +299,7 @@ u64 get_data_parts_size(HIMAGE hImg)
         if(strcmp("PARTITION", main_type)) continue;
         if(!strcmp("bootloader", sub_type))continue;
 
-        hItem = image_item_open(hImg, main_type, sub_type);
-        dataPartsSz += image_item_get_size(hItem);
-        image_item_close(hItem);
+        dataPartsSz += image_get_item_size_by_index(hImg, i);
     }
 
     return dataPartsSz;

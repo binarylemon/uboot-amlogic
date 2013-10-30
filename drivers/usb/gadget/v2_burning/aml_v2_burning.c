@@ -13,6 +13,7 @@
 #include <environment.h>
 #include <amlogic/aml_v2_burning.h>
 #include <asm/arch/reboot.h>
+#include <asm/arch/romboot.h>
 #include <mmc.h>
 #include <amlogic/aml_lcd.h>
 #include "optimus_download.h"
@@ -29,7 +30,6 @@ int aml_check_is_ready_for_sdc_produce(void)
     if(!is_the_flash_first_burned())//check if upgrade_step == 0
     {
         DWN_MSG("Boot from external mmc but upgrade_step not matched\n");
-        DWN_DBG("Boot from external mmc but upgrade_step not matched\n");
         return 0;//not ready
     }
 
@@ -67,7 +67,9 @@ int is_tpl_loaded_from_usb(void)
 //note only sdmmc supported by romcode when external device boot
 int is_tpl_loaded_from_ext_sdmmc(void)
 {
-    return (MESON_SDC_BURNER_REBOOT == readl(CONFIG_TPL_BOOT_ID_ADDR));
+    /*return (MESON_SDC_BURNER_REBOOT == readl(CONFIG_TPL_BOOT_ID_ADDR));*/
+    //see loaduboot.c, only boot from sdcard when "boot_id == 1"
+    return (1 == C_ROM_BOOT_DEBUG->boot_id);
 }
 
 //Check if uboot loaded from external sdmmc or usb otg

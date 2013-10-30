@@ -14,6 +14,13 @@
 #include "optimus_download.h"
 #include <amlogic/storage_if.h>
 
+#if defined(CONFIG_ACS)
+#include <asm/arch/cpu.h>
+#include <asm/arch/acs.h>
+#include <partition_table.h>
+#define MAGIC_ACS   "acs_"
+#endif//#if defined(CONFIG_ACS)
+
 #ifndef CONFIG_UNIFY_KEY_MANAGE
 int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo)
 {
@@ -83,6 +90,79 @@ struct imgBurnInfo_bootloader{
 
 COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 
+
+#if defined(CONFIG_ACS)
+static void _show_partition_table(const struct partitions* pPartsTab)
+{
+	int i=0;
+	const struct partitions* partInfo = pPartsTab;
+
+	for(i=0; i < MAX_PART_NUM; i++, ++partInfo)
+    {
+		if(partInfo->size == -1){
+			printf("part: %d, name : %10s, size : %-4s\n",i, partInfo->name, "end");
+			break;
+		}
+        printf("part: %d, name : %10s, size : %-4llx\n",i, partInfo->name, partInfo->size);
+	}
+	
+	return;
+}
+
+static int _check_partition_table_consistency(const unsigned uboot_bin)
+{
+    int rc = 0;
+    const int partitionTableSz = MAX_PART_NUM * sizeof(struct partitions);
+    const int acsOffsetInSpl   = START_ADDR - AHB_SRAM_BASE;
+    const int addrMapFromAhb2Bin = AHB_SRAM_BASE - uboot_bin;
+
+    const struct acs_setting* acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
+    const unsigned partTabAddrInBin             = acsSettingInBin->partition_table_addr - addrMapFromAhb2Bin;
+    const struct partitions*  partsTabInBin     = (const struct partitions*)partTabAddrInBin;
+
+    const struct acs_setting* acsSettingInSram  = (struct acs_setting*)(*(unsigned*)START_ADDR);
+    const struct partitions*  partsTabInSram    = (const struct partitions*)acsSettingInSram->partition_table_addr;
+
+    if(strncmp(MAGIC_ACS, acsSettingInBin->acs_magic, strlen(MAGIC_ACS))){
+        DWN_ERR("magic(%s) is not acs magic(%s)\n", acsSettingInBin->acs_magic, MAGIC_ACS);
+        return __LINE__;
+    }
+    if(strncmp(MAGIC_ACS, acsSettingInSram->acs_magic, strlen(MAGIC_ACS))){
+        DWN_ERR("magic(%s) is not acs magic(%s)\n", acsSettingInBin->acs_magic, MAGIC_ACS);
+        return __LINE__;
+    }
+
+    if(strncmp(TABLE_MAGIC_NAME, acsSettingInBin->partition_table_magic, strlen(TABLE_MAGIC_NAME))){
+        DWN_ERR("magic(%s) is not in part magic\n", TABLE_MAGIC_NAME);
+        return __LINE__;
+    }
+    if(strncmp(TABLE_MAGIC_NAME, acsSettingInSram->partition_table_magic, strlen(TABLE_MAGIC_NAME))){
+        DWN_ERR("magic(%s) is not in part magic\n", TABLE_MAGIC_NAME);
+        return __LINE__;
+    }
+
+    rc = memcmp(partsTabInSram, partsTabInBin, partitionTableSz);
+    DWN_MSG("Check MBR %s\n", !rc ? "OK" : "FAILED!");
+    if(rc)
+    {
+        DWN_MSG("acs_setting    0x%p, 0x%p\n", acsSettingInBin, acsSettingInSram);
+        DWN_MSG("partitions     0x%08x, 0x%p\n", partTabAddrInBin, partsTabInSram);
+        DWN_MSG("partition_table_addr 0x%x, 0x%x\n", acsSettingInSram->partition_table_addr, acsSettingInBin->partition_table_addr);
+
+        DWN_MSG("part in ubootbin:\n");
+        _show_partition_table(partsTabInBin);
+
+        DWN_MSG("part in spl:\n");
+        _show_partition_table(partsTabInSram);
+        return __LINE__;
+    }
+
+    return 0;
+}
+#else
+#define _check_partition_table_consistency(a)   0
+#endif//#if defined(CONFIG_ACS)
+
 //return value is the actual size it write
 static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 dataSzReceived, const u8* data)
 {
@@ -94,8 +174,14 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
         return 0;
     }
 
-    size = size < 0x60000 ? 0x60000 : size;
+    ret = _check_partition_table_consistency((unsigned)data);
+    if(ret){
+        DWN_ERR("Fail in _check_partition_table_consistency\n");
+        /*optimus_progress_ui_printf("Failed at check partition table\n");*/
+        return 0;
+    }
 
+    size = size < 0x60000 ? 0x60000 : size;
     ret = store_boot_write((unsigned char*)data, 0, size);
 
     return ret ? 0 : dataSzReceived;
@@ -572,8 +658,10 @@ int optimus_storage_init(int toErase)
         return 0;
     }
 
+#if 1
     DWN_MSG("Exit before re-init\n");
     store_exit();
+#endif//#if 1
 
     DWN_MSG("store_init\n");
     ret = store_init(toErase ? 2 : 1);
@@ -843,7 +931,7 @@ int optimus_parse_download_cmd(int argc, char* argv[])
         return __LINE__; 
     }
 
-    ret = optimus_buf_manager_tplcmd_init(mediaType, part_name, partBaseOffset, imgType, imgSzInBy, isUpload);
+    ret = optimus_buf_manager_tplcmd_init(mediaType, part_name, partBaseOffset, imgType, imgSzInBy, isUpload, 0);
     if(ret){
         DWN_ERR("Fail in init download info\n");
         return __LINE__; 

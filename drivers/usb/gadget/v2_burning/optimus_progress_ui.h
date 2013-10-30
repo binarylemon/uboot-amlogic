@@ -22,7 +22,7 @@
     ((allInPkg) ? (UPGRADE_STPES_AFTER_BURN_DATA_PARTS_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK - 1) : (UPGRADE_STPES_AFTER_BURN_DATA_PARTS_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK - 10))
 
 #if CONFIG_SD_BURNING_SUPPORT_UI
-int show_logo_to_report_burning(HIMAGE hImg);
+int show_logo_to_report_burning(void);//show bmp 'upgrade_upgrading'
 
 int show_logo_to_report_burn_failed(void); //Display logo to report burning result is failed
 
@@ -44,9 +44,15 @@ int optimus_progress_ui_report_upgrade_stat(__hdle hUiProgress, const int isSucc
 int optimus_progress_ui_set_smart_mode(__hdle hUiProgress, const u64 smartModeTotalBytes_f, const unsigned smartModePercents);
 int optimus_progress_ui_update_by_bytes(__hdle hUiPrgress, const unsigned nBytes);
 
+int optimus_progress_ui_printf(const char* fmt, ...);
+
+int video_res_prepare_for_upgrade(HIMAGE hImg);
+
 #else
 
-#define show_logo_to_report_burning(hImg)   0
+#define video_res_prepare_for_upgrade(hImg) 0
+
+#define show_logo_to_report_burning()  
 
 #define show_logo_to_report_burn_failed()   0
 
@@ -60,13 +66,15 @@ int optimus_progress_ui_update_by_bytes(__hdle hUiPrgress, const unsigned nBytes
 
 #define optimus_progress_ui_set_unfocus_bkg(hUiProgress, unfocusBmpAddr)    0
 
-#define optimus_progress_ui_direct_update_progress(hUiProgress, percents)   0
+#define optimus_progress_ui_direct_update_progress(a ...)   do{}while(0)
 
 //smart mode with bytes
-#define optimus_progress_ui_set_smart_mode(hUiProgress, smartModeTotalBytes_f, smartModePercents)   0
-#define optimus_progress_ui_update_by_bytes(hUiPrgress, nBytes) 0
+#define optimus_progress_ui_set_smart_mode(a ...)  0
+#define optimus_progress_ui_update_by_bytes(hUiPrgress, nBytes) do{}while(0)
 
-#define  optimus_progress_ui_report_upgrade_stat(hUiProgress, isSuccess) 0
+#define  optimus_progress_ui_report_upgrade_stat(a ...) do{}while(0)
+
+#define optimus_progress_ui_printf(a ...) do{}while(0)
 
 #endif//#if CONFIG_SD_BURNING_SUPPORT_UI
 

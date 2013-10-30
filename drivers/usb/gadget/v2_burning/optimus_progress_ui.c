@@ -22,13 +22,12 @@
 extern int lcd_drawchars (ushort x, ushort y, uchar *str, int count);
 
 //default env for display UI
-const char* env_ui_prepare = "echo UI prepare for burn; "\
-                               "if unpackimg ${loadaddr_misc}; then "\
-                                    "video open; "\
-                                    "video clear; "\
-                                    "video dev bl_on; "\
-                                    "video clear; "/* twice clear */\
-                               "fi;";
+const char* env_video_prepare_for_upgrade = "echo video prepare for upgrade; "\
+                            "video open; "\
+                            "video clear; "\
+                            "video dev bl_on; "\
+                            /* twice clear */ "video clear; ";
+
 const char* env_ui_report_burning = "bmp display ${upgrade_upgrading_offset}";
 
 const char* env_ui_report_burn_failed = "bmp display ${upgrade_fail_offset}";
@@ -36,117 +35,67 @@ const char* env_ui_report_burn_error = "bmp display ${upgrade_error_offset}";
 const char* env_ui_report_burn_success = "bmp display ${upgrade_success_offset}";
 
 //if env upgrade_logo_offset exist, use bmp resources existed in memory
-static int logo_res_relocate(HIMAGE hImg)
+int video_res_prepare_for_upgrade(HIMAGE hImg)
 {
-    const unsigned resAddr      = (const unsigned)OPTIMUS_DOWNLOAD_DISPLAY_BUF;
     char* env_name  = NULL;
     const char* env_value = NULL;
     int ret = 0;
 
-    //Don't use upgrading bmp in flash as it may erased, but env still valid
-#if 0
-    env_name    = "upgrade_upgrading_offset";
-    env_value   = getenv(env_name);
-    while(env_value)//logo resource already existed for burning
-    {
-        unsigned logo_old_addr = 0;
-        unsigned logo_size = 0;
-        unsigned logo_new_addr = 0;
-        const char* const upgrade_env[] = {
-            "upgrade_logo",         "upgrade_error",
-            "upgrade_upgrading",    "upgrade_unfocus",
-            "upgrade_bar",          "upgrade_fail",     "upgrade_success",
-        };
-        const int num_env = sizeof(upgrade_env)/sizeof(const char*);
-        int i = 0;
-
-        logo_new_addr = resAddr;
-        for(i=0; i < num_env; ++i)
-        {
-            const char* bmpName = upgrade_env[i];
-            char bmpAddrOffset_name[32];
-            char bmpSize_name[32];
-
-            sprintf(bmpAddrOffset_name, "%s_offset", bmpName);
-            env_value = getenv(bmpAddrOffset_name);
-            if(!env_value){
-                DWN_ERR("env[%s] not existed!\n", bmpAddrOffset_name);
-                break;
-            }
-            DWN_MSG("old[%s = %s]\n", bmpAddrOffset_name, env_value);
-            logo_old_addr   = simple_strtoul(env_value, NULL, 0);
-
-            sprintf(bmpSize_name, "%s_size", bmpName);
-            logo_size       = simple_strtoul(getenv(bmpSize_name), NULL, 0);
-
-            memcpy((char*)logo_new_addr, (void*)logo_old_addr, logo_size);
-            DWN_MSG("new(%x), old(%x), sz(%x)\n", logo_new_addr, logo_old_addr, logo_size);
-
-            sprintf(bmpSize_name, "0x%x", logo_new_addr);
-            setenv(bmpAddrOffset_name, bmpSize_name);
-            DWN_MSG("new[%s=%s]\n", bmpAddrOffset_name, bmpSize_name);
-            logo_new_addr   += logo_size;
-        }
-        if(i != num_env){
-            DWN_ERR("not enough upgrade env in existed logo, to use new in package.\n");
-            break;
-        }
-
-        return 0;
-    }
-#endif//
-
-    {
-        char env_buf[32];
+    env_value = "unpackimg ${loadaddr_misc}";
+    ret = run_command(env_value, 0);
+    if(ret)
+    {//Failed to load logo resources from memory, then Load it from package
+        void* resAddr      = (void*)simple_strtoul(getenv("loadaddr_misc"), NULL, 0);
         unsigned imgItemSz = 0;
-        HIMAGEITEM hItem = image_item_open(hImg, "PARTITION", "logo");
+        HIMAGEITEM hItem = NULL;
+
+        DWN_MSG("Use upgrade res in pkg\n");
+        hItem = image_item_open(hImg, "PARTITION", "logo");
         if(!hItem){
             DWN_ERR("Fail to get logo.PARTITION for display logo\n");
             return __LINE__;
         }
-        DWN_MSG("Use logo res in pkg\n");
-        imgItemSz = (unsigned)image_item_get_size(hItem);
 
-        ret = image_item_read(hImg, hItem, (void*)resAddr, imgItemSz);
+        imgItemSz = (unsigned)image_item_get_size(hItem);
+        ret = image_item_read(hImg, hItem, resAddr, imgItemSz);
         if(ret){
             DWN_ERR("Fail to read item logo\n");
             image_item_close(hItem); return __LINE__;
         }
         image_item_close(hItem);
 
-        sprintf(env_buf, "0x%x", resAddr);
-        ret = setenv("loadaddr_misc", env_buf);//relocate loadaddr_misc to buffer logo.partition for burning
+        ret = run_command(env_value, 0);
         if(ret){
-            DWN_ERR("Fail to setenv loadaddr_misc\n");
+            DWN_ERR("Exception: Fail to unpack image in the package.\n");
             return __LINE__;
         }
+    }
+
+    //video prepare to show upgrade bmp
+    {
+        char env_buf[32];
 
         env_name = "burn_logo_prepare";
-        if(setenv(env_name, env_ui_prepare)){
-            DWN_ERR("Fail to set env(%s=%s)\n", env_name, env_ui_prepare);
+        if(setenv(env_name, (char*)env_video_prepare_for_upgrade)){
+            DWN_ERR("Fail to set env(%s=%s)\n", env_name, env_video_prepare_for_upgrade);
             return __LINE__;
         }
         sprintf(env_buf, "run %s", env_name);
         ret = run_command(env_buf, 0);
         if(ret){
-            DWN_ERR("Fail in run_command[%s]\n", env_value);
+            DWN_ERR("Fail in run_command[%s]\n", env_buf);
             return __LINE__;
         }
+
     }
 
     return 0;
 }
 
 //Display logo to report platform is in burning state
-int show_logo_to_report_burning(HIMAGE hImg)
+int show_logo_to_report_burning(void)
 {
     int ret = 0;
-
-    ret = logo_res_relocate(hImg);
-    if(ret){
-        DWN_ERR("Fail to relocate resources for logo\n");
-        return __LINE__;
-    }
 
     ret = run_command(env_ui_report_burning, 0);
     if(ret){
@@ -255,7 +204,7 @@ __hdle optimus_progress_ui_request(int totalPercents_f, int startPercent, unsign
     pUiProgress->bmpAddr_f                  = bmpBarAddr;
     pUiProgress->progressBarWidth_f         = bmpHeadInfo->width;
     pUiProgress->progressBarHeight_f        = bmpHeadInfo->height;
-    DWN_MSG("w,h=%u,%u\n", pUiProgress->progressBarWidth_f, pUiProgress->progressBarHeight_f);
+    DWN_MSG("w,h[%u,%u]\n", pUiProgress->progressBarWidth_f, pUiProgress->progressBarHeight_f);
 
     pUiProgress->totalProgressBarWidth_f    = /* common multiple of totalPercents_f and progress bar width */
                      (display_width / commonMultiple) * commonMultiple;
@@ -288,7 +237,7 @@ int optimus_progress_ui_set_smart_mode(__hdle hUiProgress, const u64 smartModeTo
     }
     pUiProgress->smartModeTotalBytes_f     = smartModeTotalBytes_f;
     pUiProgress->nDownBytesOnePercent_f     = smartModeTotalBytes_f/smartModePercents;
-    DWN_MSG("nDownBytesOnePercent_f %d\n", pUiProgress->nDownBytesOnePercent_f);
+    DWN_DBG("nDownBytesOnePercent_f %d\n", pUiProgress->nDownBytesOnePercent_f);
     pUiProgress->smartModeLeftBytes     = 0;
 
     return 0;
@@ -539,7 +488,20 @@ int optimus_progress_ui_report_upgrade_stat(__hdle hUiProgress, const int isSucc
     return 0;
 }
 
-#define PROGRESS_BAR_TEST 1
+int optimus_progress_ui_printf(const char* fmt, ...)
+{
+	va_list args;
+	char buf[CONFIG_SYS_PBSIZE];
+
+	va_start(args, fmt);
+	vsprintf(buf, fmt, args);
+	va_end(args);
+
+	lcd_printf(buf);
+    return 0;
+}
+
+#define PROGRESS_BAR_TEST 0
 #if PROGRESS_BAR_TEST
 static int do_progress_bar_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {

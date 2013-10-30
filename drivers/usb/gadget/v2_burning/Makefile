@@ -28,7 +28,7 @@ LIB	:= $(obj)v2_burning.o
 COBJS-y += optimus_core.o 
 COBJS-y += aml_v2_burning.o optimus_transform.o optimus_download.o optimus_buffer_manager.o optimus_simg2img.o 
 COBJS-y += optimus_sdc_update.o optimus_progress.o optimus_img_decoder.o optimus_ini_parser.o optimus_sdc_burn.o
-COBJS-y += fat.o
+COBJS-y += optimus_fat.o
 
 ifdef CONFIG_UNIFY_KEY_MANAGE
 	COBJS-y += optimus_download_key.o
