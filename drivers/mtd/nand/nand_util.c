@@ -513,18 +513,22 @@ int nand_unlock(struct mtd_info *mtd, ulong start, ulong length)
  * @return image length including bad blocks
  */
 static size_t get_len_incl_bad (nand_info_t *nand, loff_t offset,
-				const size_t length)
+				 size_t *length)
 {
 	size_t len_incl_bad = 0;
 	size_t len_excl_bad = 0;
 	unsigned block_len;
 
-	while (len_excl_bad < length) {
+	while (len_excl_bad < *length) {
 		block_len = nand->erasesize - ((unsigned)offset & (nand->erasesize - 1));
 
 		if (!nand_block_isbad (nand, offset & ~((loff_t)nand->erasesize - 1)))
 		{
 			len_excl_bad += block_len;
+		}
+		else {
+			 
+			*length -= block_len;
 		}
 		len_incl_bad += block_len;
 		offset       += block_len;
@@ -577,7 +581,7 @@ int nand_write_skip_bad(nand_info_t *nand, loff_t offset, loff_t *length,
 		}
 	}
 
-	len_incl_bad = get_len_incl_bad (nand, offset, *length);
+	len_incl_bad = get_len_incl_bad (nand, offset, length);
 
 	if ((offset + len_incl_bad) > nand->size) {
 		printf ("Attempt to write outside the flash area\n");
@@ -698,13 +702,11 @@ int nand_read_skip_bad(nand_info_t *nand, loff_t offset, loff_t *length,
 	struct mtd_oob_ops oob_opts;
 	__u8 spareAsBytes[nand->oobsize];
 
-    //printf("%s\n", __func__);
-	len_incl_bad = get_len_incl_bad (nand, offset, *length);
+	len_incl_bad = get_len_incl_bad (nand, offset, length);
 	if ((offset + len_incl_bad) > nand->size) {
 		printf ("Attempt to read outside the flash area\n");
 		return -EINVAL;
 	}
-
 	if (len_incl_bad == *length) {
 		rval = nand_read (nand, offset, (size_t *)length, buffer);
 		if (!rval || rval == -EUCLEAN)
