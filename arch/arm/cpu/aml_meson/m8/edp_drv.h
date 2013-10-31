@@ -115,8 +115,8 @@
 
 // Link training constants
 #define VAL_EDP_MAX_TRAINING_ATTEMPTS				5
-#define VAL_EDP_CLOCK_REC_TIMEOUT					100 // in microseconds
-#define VAL_EDP_CHAN_EQ_TIMEOUT						400 // in microseconds
+#define VAL_EDP_CLOCK_REC_TIMEOUT					1//ms //100 // in microseconds
+#define VAL_EDP_CHAN_EQ_TIMEOUT						4//ms //400 // in microseconds
 #define VAL_EDP_MAX_DEFER_COUNT						7
 #define VAL_EDP_MAX_TIMEOUT_COUNT					5
 #define VAL_EDP_MAX_DELAY_CYCLES					10000 // 10us delay
@@ -237,6 +237,7 @@ typedef struct {
 	unsigned char main_stream_enable;
 	unsigned char use_dpcd_caps;
 	unsigned char auto_detection_enable;
+	unsigned char link_adaptive;
 } EDP_Link_Config_t;
 
 #endif

@@ -472,6 +472,7 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 #define CONFIG_CMD_MATH         1

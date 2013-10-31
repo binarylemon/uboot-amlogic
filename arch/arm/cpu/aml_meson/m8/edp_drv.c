@@ -296,7 +296,20 @@ static int dptx_init_lane_config(unsigned char link_rate, unsigned char lane_cou
 	if (status == VAL_EDP_TX_OPERATION_SUCCESS) {
 		WRITE_DPTX_REG(EDP_TX_LINK_BW_SET, link_rate);
 		WRITE_DPTX_REG(EDP_TX_LINK_COUNT_SET, lane_count);
-		WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0);	//power up phy
+		switch (lane_count) {
+			case 1:
+				WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0xe);	//power up lane 0
+				break;
+			case 2:
+				WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0xc);	//power up lane 0,1
+				break;
+			case 4:
+				WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0x0);	//power up lane 0,1,2,3
+				break;
+			default:
+				WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0x0);	//power up phy
+				break;
+		}
 	}
 	else {
 		DPRINT("error parameters\n");
@@ -1624,9 +1637,10 @@ static int dplpm_verify_link_status(void)
 static int dplpm_train_link(unsigned training_settings, unsigned link_rate_adjust_en)
 {
 	int status = 0;
+	EDP_Link_Config_t *link_config = dptx_get_link_config();
 	
 	//dplpm_main_stream_enable(0);	
-	status = trdp_run_training_loop(training_settings, link_rate_adjust_en, 0);
+	status = trdp_run_training_loop(training_settings, link_rate_adjust_en, link_config->link_adaptive);
 	
 	return status;
 }
@@ -1713,14 +1727,14 @@ static int dplpm_link_init(EDP_Link_Config_t *link_config)
 		WRITE_DPTX_REG(EDP_TX_PHY_RESET, 0xf);	//reset the PHY
 		
 		//reset edp tx fifo
-		WRITE_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
-		WRITE_CBUS_REG_BITS(RESET4_REGISTER, 1, 11, 1);
-		WRITE_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_REGISTER, 1, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
 		DBG_PRINT("reset edp tx\n");
 		mdelay(10);
-		WRITE_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
-		WRITE_CBUS_REG_BITS(RESET4_REGISTER, 0, 11, 1);
-		WRITE_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_REGISTER, 0, 11, 1);
+		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
 		DBG_PRINT("release reset edp tx\n");		
 		
 		WRITE_DPTX_REG(EDP_TX_AUX_CLOCK_DIVIDER, 170); // Set Aux clk-div by APB clk
@@ -1772,10 +1786,11 @@ int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_Video_Mode_t *vm)
 	link_config->max_link_rate = mlconfig->max_link_rate;
 	link_config->lane_count = mlconfig->lane_count;
 	link_config->link_rate = mlconfig->link_rate;
+	link_config->link_adaptive = mlconfig->link_adaptive;
 	link_config->vswing = mlconfig->vswing;
 	link_config->preemphasis = mlconfig->preemphasis;
 	link_config->ss_level = mlconfig->ss_level;
-	link_config->training_settings = 7;
+	link_config->training_settings = 0;
 	
 	status = dplpm_link_init(link_config);
 	
@@ -1820,9 +1835,9 @@ int dplpm_link_off(void)
 	WRITE_DPTX_REG(EDP_TX_PHY_POWER_DOWN, 0xf);	//need to set
 	WRITE_DPTX_REG(EDP_TX_TRANSMITTER_OUTPUT_ENABLE, 0);	//disable the transmitter
 	//mdelay(100);
-	WRITE_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
-	WRITE_CBUS_REG_BITS(RESET4_REGISTER, 1, 11, 1);
-	WRITE_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
+	WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
+	WRITE_LCD_CBUS_REG_BITS(RESET4_REGISTER, 1, 11, 1);
+	WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
 	return status;
 }
 

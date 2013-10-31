@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
  *
  * Author:  Tim Yao <timyao@amlogic.com>
- *
+ * Modify:  Evoke Zhang <evoke.zhang@amlogic.com>
  */
 
 #ifndef LCDOUTC_H
@@ -210,6 +210,7 @@ typedef enum
 	LCD_POWER_TYPE_INITIAL,
     LCD_POWER_TYPE_MAX,
 } Lcd_Power_Type_t;
+#define LCD_POWER_TYPE_NULL			LCD_POWER_TYPE_MAX
 
 #define	LCD_POWER_PMU_GPIO0			0
 #define	LCD_POWER_PMU_GPIO1			1
@@ -227,7 +228,7 @@ static const char* lcd_power_type_table[]={
 	"pmu",
 	"signal",
 	"init",
-	"null"
+	"null",
 };
 
 static const char* lcd_power_pmu_gpio_table[]={
@@ -236,7 +237,7 @@ static const char* lcd_power_pmu_gpio_table[]={
 	"GPIO2",
 	"GPIO3",
 	"GPIO4",
-	"null"
+	"null",
 }; 
 
 typedef enum
@@ -371,6 +372,10 @@ typedef struct {
 } Lcd_Effect_t;
 
 typedef struct DSI_Config_s{
+        unsigned int    dsi_clk_div;
+        unsigned int    dsi_clk_max;
+        unsigned int    dsi_clk_min;
+        unsigned int    dsi_cur_clk;
         unsigned int    pol_vs_hs_de;
         unsigned int    venc_color_type;
         unsigned int    dpi_color_type;
@@ -388,13 +393,17 @@ typedef struct DSI_Config_s{
 }DSI_Config_t;
 
 typedef struct {
+	unsigned lvds_vswing;
+	unsigned lvds_repack_user;
 	unsigned lvds_repack;
 	unsigned pn_swap;
 } LVDS_Config_t;
 
 typedef struct {
+	unsigned char link_user;
 	unsigned char lane_count;
-	unsigned char link_rate;	
+	unsigned char link_rate;
+	unsigned char link_adaptive;
 	unsigned char vswing;
 	unsigned char preemphasis;
 } EDP_Config_t;
@@ -405,7 +414,7 @@ typedef struct {
 } TTL_Config_t;
 
 typedef struct {
-	unsigned dphy_ctrl;
+	unsigned phy_ctrl;
 } DPHY_Config_t;
 
 typedef struct {
@@ -431,12 +440,12 @@ typedef struct {
 
 #define LCD_POWER_CTRL_STEP_MAX		15
 typedef struct {
-	Lcd_Power_Config_t lcd_power_on_uboot;
-	Lcd_Power_Config_t lcd_power_off_uboot;
-	Lcd_Power_Config_t lcd_power_on_config[LCD_POWER_CTRL_STEP_MAX];
-	Lcd_Power_Config_t lcd_power_off_config[LCD_POWER_CTRL_STEP_MAX];
-	int lcd_power_on_step;
-	int lcd_power_off_step;
+	Lcd_Power_Config_t power_on_uboot;
+	Lcd_Power_Config_t power_off_uboot;
+	Lcd_Power_Config_t power_on_config[LCD_POWER_CTRL_STEP_MAX];
+	Lcd_Power_Config_t power_off_config[LCD_POWER_CTRL_STEP_MAX];
+	int power_on_step;
+	int power_off_step;
 } Lcd_Power_Ctrl_t;
 
 typedef struct {

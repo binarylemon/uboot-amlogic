@@ -10,7 +10,7 @@
 #include <asm/arch/register.h>
 #endif
 
-#define PRINT_DEBUG_INFO
+//#define PRINT_DEBUG_INFO
 #ifdef PRINT_DEBUG_INFO
 #define DPRINT(...)		printf(__VA_ARGS__)
 #else
@@ -566,7 +566,7 @@ typedef enum tv_enc_lcd_type_e{
 int set_lcd_clk(unsigned int display_w, unsigned int display_h,
                 unsigned int color_code, unsigned int lane_num,
                 unsigned int refresh_rate);
-void init_mipi_dsi_phy( void );
+void init_mipi_dsi_phy(Lcd_Config_t *pConf);
 
 void start_mipi_dsi_host(void);                                             // close the default reset
 
@@ -590,22 +590,12 @@ void set_mipi_edpi(unsigned int edpi_allowed_cmd_size,                  // allow
                 unsigned int color_code                              // color code
                 );
 
-void set_mipi_dsi_host(int lane_num,                                    // lane number, from 1 to 4
-                int vcid,                                        // virtual id
-                int venc_color_code,                             // VENC output data width
-                int color_code,                                  // color code
-                int chroma_subsample,                            // chroma_subsample for YUV422 or YUV420 only
-                int trans_mode,                                  // video mode/ command mode
-                tv_enc_lcd_type_t output_type,                   // video type, such as 1080x720
-                int vid_mode_type,                               // video mode : burst/non_burst
-                int check_phy_status,                            // enable/disable phy lock check, disable for multiple pic test
-                unsigned char refresh_rate);
-
 extern void check_phy_st();                                                    // Check the status of the dphy: phylock and stopstateclklane
 
 extern void delay_us(int us);
 extern void config_video_para(tv_enc_lcd_type_t output_type,
-                unsigned int      color_code);                   // Configure video parameter such HFP/HSA/HBP/HACT...
+                unsigned int    color_code,                   // Configure video parameter such HFP/HSA/HBP/HACT...
+                Lcd_Config_t    *pConf);
 
 extern void wait_bta_ack();                                                    // wait ack from bta
 extern void wait_cmd_fifo_empty();                                             // wait generic fifo empty
