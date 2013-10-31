@@ -46,6 +46,8 @@ COBJS-y += cmd_help.o
 COBJS-y += cmd_nvedit.o
 COBJS-y += cmd_version.o
 //COBJS-y += cmd_tmp.o
+COBJS-$(CONFIG_DT_PRELOAD) += cmd_dtbload.o
+
 #remote support
 COBJS-$(CONFIG_IR_REMOTE) += cmd_irkey.o
 # environment

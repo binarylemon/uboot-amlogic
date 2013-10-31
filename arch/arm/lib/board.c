@@ -623,6 +623,12 @@ void board_init_r (gd_t *id, ulong dest_addr)
  		*((volatile unsigned long *)0xc8100000) = 0;
 #endif 
 
+#ifdef CONFIG_DT_PRELOAD
+	if ((s = getenv ("preloaddtb")) != NULL) {
+		run_command(s, 0);
+	}
+#endif
+
 #ifdef CONFIG_VFD
 	/* must do this after the framebuffer is allocated */
 	drv_vfd_init();
