@@ -77,12 +77,12 @@ static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
     rc = memcmp(pImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
     if(rc)
     {
-        printf("unpackimg:Magic [%s] error, use old format\n", pImgHead->magic);
+        printf("unpackimg:Magic error, use old format\n");
         pos = 0;
     }
     else
     {//new format
-        pos = AML_RES_ITEM_HEAD_SZ;
+        pos = AML_RES_IMG_HEAD_SZ;
     }
 
 	while(1)

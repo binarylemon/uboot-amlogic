@@ -131,7 +131,7 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
     rc = memcmp(pResImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
     if(rc)
     {
-        wrnP("Magic[%s] != right magic %s, read old version in size 0x%x\n", pResImgHead->magic, AML_RES_IMG_V1_MAGIC, RES_OLD_FMT_READ_SZ);
+        wrnP("Magic error, read old version in size 0x%x\n", RES_OLD_FMT_READ_SZ);
 
         rc = store_read_ops((unsigned char*)partName, loadaddr + (unsigned)flashReadOff, flashReadOff, RES_OLD_FMT_READ_SZ - flashReadOff);
         return rc;
@@ -145,7 +145,7 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 
         rc = store_read_ops((unsigned char*)partName, loadaddr + (unsigned)flashReadOff, flashReadOff, leftSz);
         if(rc){
-            errorP("Fail to read 0x%xB from part[%s] at offset 0\n", leftSz, partName, IMG_PRELOAD_SZ);
+            errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", leftSz, partName, IMG_PRELOAD_SZ);
             return __LINE__;
         }
     }
