@@ -142,6 +142,7 @@
 	"loadaddr=0x82000000\0" \
 	"testaddr=0x82400000\0" \
 	"loadaddr_misc=0x83000000\0" \
+	"dtbaddr=0x83000000\0" \
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
 	"mmcargs=setenv bootargs console=${console} " \
@@ -161,6 +162,7 @@
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
+	"preloaddtb=store read boot ${loadaddr} 0 600000;dtbload ${loadaddr}\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 hlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,panel,debug hdmitx=vdacoff,powermode1,unplug_powerdown\0" \
 	"preboot=nand read logo ${loadaddr_misc} 0 1000000; unpackimg ${loadaddr_misc}; chk_all_regulators; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then run usb_burning; fi; run upgrade_check; run batlow_or_not; setenv sleep_count 0; saradc open 4; run updatekey_or_not; run usb_burning_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 0; then defenv; save; run update; else if itest ${upgrade_step} == 1; then defenv_without reboot_mode; setenv upgrade_step 2; save; fi; fi\0" \
@@ -363,6 +365,9 @@
 
 #endif
 
+//#define CONFIG_OF_LIBFDT    1
+//#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
+//#define CONFIG_DT_PRELOAD
 /*-----------------------------------------------------------------------
  * power down
  */
