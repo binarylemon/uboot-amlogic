@@ -628,6 +628,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		run_command(s, 0);
 	}
 #endif
+#ifdef CONFIG_VPU_PRESET
+	vpu_probe();
+#endif
 
 #ifdef CONFIG_VFD
 	/* must do this after the framebuffer is allocated */
