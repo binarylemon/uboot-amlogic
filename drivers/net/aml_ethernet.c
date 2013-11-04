@@ -680,15 +680,8 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 {
 	unsigned net_dma_start_addr;
 	unsigned net_dma_end_addr;
-	if(get_cpuid() == 0x12){
-		net_dma_start_addr = (unsigned)0x8f880000;
-		net_dma_end_addr   = (unsigned)0x8f8a0000;
-	}
-	else{
-		printf("Amlogic Ethernet M8  Init\n");
-		net_dma_start_addr = (unsigned)&__net_dma_start;
-		net_dma_end_addr   = (unsigned)&__net_dma_end;
-	}
+	net_dma_start_addr = (unsigned)&__net_dma_start;
+	net_dma_end_addr   = (unsigned)&__net_dma_end;
 	unsigned tx_start, rx_start;
 	struct _rx_desc * pRDesc;
 	struct _tx_desc * pTDesc;
