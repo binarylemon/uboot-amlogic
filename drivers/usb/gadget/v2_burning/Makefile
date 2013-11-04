@@ -22,21 +22,17 @@
 #
 
 include $(TOPDIR)/config.mk
+CFLAGS += -I./v2_common -I./v2_usb_tool -I./v2_sdc_burn
 
 LIB	:= $(obj)v2_burning.o
 
-COBJS-y += optimus_core.o 
-COBJS-y += aml_v2_burning.o optimus_transform.o optimus_download.o optimus_buffer_manager.o optimus_simg2img.o 
-COBJS-y += optimus_sdc_update.o optimus_progress.o optimus_img_decoder.o optimus_ini_parser.o optimus_sdc_burn.o
-COBJS-y += optimus_fat.o
-
-ifdef CONFIG_UNIFY_KEY_MANAGE
-	COBJS-y += optimus_download_key.o
-endif
-
-ifdef CONFIG_SD_BURNING_SUPPORT_UI
-	COBJS-y += optimus_progress_ui.o
-endif
+COBJS-y += aml_v2_burning.o 
+COBJS-y += v2_common/optimus_download.o v2_common/optimus_buffer_manager.o v2_common/optimus_simg2img.o 
+COBJS-y += v2_common/optimus_progress.o v2_common/optimus_img_decoder.o v2_common/optimus_fat.o
+COBJS-y += v2_sdc_burn/optimus_sdc_update.o v2_sdc_burn/optimus_sdc_burn.o v2_sdc_burn/optimus_ini_parser.o 
+COBJS-y += v2_usb_tool/optimus_core.o v2_usb_tool/optimus_transform.o 
+COBJS-$(CONFIG_UNIFY_KEY_MANAGE) += v2_common/optimus_download_key.o
+COBJS-$(CONFIG_SD_BURNING_SUPPORT_UI) += v2_common/optimus_progress_ui.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

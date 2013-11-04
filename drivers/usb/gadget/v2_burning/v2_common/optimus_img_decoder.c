@@ -9,8 +9,7 @@
  * Copyright (c) 2013 Amlogic. All Rights Reserved.
  *
  */
-#include "optimus_sdc_burn_i.h"
-#include <malloc.h>
+#include "../v2_burning_i.h"
 
 #define IMAGE_MAGIC	                0x27b51956	 /* Image Magic Number		*/
 #define VERSION                     0x0001
@@ -215,52 +214,6 @@ int get_item_name(HIMAGE hImg, int itemId, const char** main_type, const char** 
     *main_type = pItem->itemMainType;
     *sub_type  = pItem->itemSubType;
      
-    return OPT_DOWN_OK;
-}
-
-int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfgPara)
-{
-    BurnParts_t* pburnPartsCfg = &pcfgPara->burnParts;
-    int i = 0;
-    int ret = 0;
-    int burnNum = 0;
-    const int totalItemNum = get_total_itemnr(hImg);
-
-    for (i = 0; i < totalItemNum; i++) 
-    {
-        const char* main_type = NULL;
-        const char* sub_type  = NULL;
-
-        ret = get_item_name(hImg, i, &main_type, &sub_type);
-        if(ret){
-            DWN_ERR("Exception:fail to get item name!\n");
-            return __LINE__;
-        }
-
-        if(!strcmp("PARTITION", main_type))
-        {
-            char* partName = pburnPartsCfg->burnParts[burnNum];
-
-            if(!strcmp("bootloader", sub_type))continue;
-
-            strcpy(partName, sub_type);
-            pburnPartsCfg->bitsMap4BurnParts |= 1U<<burnNum;
-            burnNum += 1;
-        }
-    }
-
-    if(burnNum)
-    {
-        pburnPartsCfg->burn_num = burnNum;
-
-        ret = check_cfg_burn_parts(pcfgPara);
-        if(ret){
-            DWN_ERR("Fail in check burn parts\n");
-            return __LINE__;
-        }
-        print_burn_parts_para(pburnPartsCfg);
-    }
-
     return OPT_DOWN_OK;
 }
 

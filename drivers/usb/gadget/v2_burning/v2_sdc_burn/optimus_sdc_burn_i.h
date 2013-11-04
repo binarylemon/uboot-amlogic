@@ -10,15 +10,10 @@
  *
  */
 #ifndef __OPTIMUS_SDC_BURN_I_H__
-#define  __OPTIMUS_SDC_BURN_I_H__
+#define __OPTIMUS_SDC_BURN_I_H__
 
-#include <common.h>
-#include <config.h>
+#include "../v2_burning_i.h"
 #include <part.h>
-#include "optimus_download.h"
-#include "amlImage_if.h"
-#include <amlogic/aml_v2_burning.h>
-#include "optimus_progress_ui.h"
 
 typedef struct _burnEx{
     char        pkgPath[128];

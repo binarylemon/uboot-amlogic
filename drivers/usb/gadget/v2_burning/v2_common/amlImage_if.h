@@ -85,5 +85,9 @@ int image_item_seek(HIMAGE , HIMAGEITEM , __s64 , __u32 );
 
 unsigned image_item_get_first_cluster_size(HIMAGEITEM hItem);
 
+int get_item_name(HIMAGE hImg, int itemId, const char** main_type, const char** sub_type);
+
+int get_total_itemnr(HIMAGE hImg);
+
 #endif//ifndef __AMLIMAGE_IF_H__
 

@@ -25,14 +25,10 @@
  * MA 02111-1307 USA
  */
 
-#include <common.h>
-#include <config.h>
-#include <fat.h>
-#include <asm/byteorder.h>
+#include "../v2_burning_i.h"
 #include <part.h>
-#include <malloc.h>
+#include <fat.h>
 
-#include "optimus_download.h"
 extern int disk_read (__u32 startblock, __u32 getsize, __u8 * bufptr);
 
 #undef  FAT_ERROR

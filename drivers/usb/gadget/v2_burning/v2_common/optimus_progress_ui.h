@@ -60,9 +60,9 @@ int video_res_prepare_for_upgrade(HIMAGE hImg);
 
 #define optimus_progress_ui_request(totalPercents_f,startPercent, bmpBarAddr,display_width,progressBarY_f ) 1
 
-#define optimus_progress_ui_request_for_sdc_burn() 1
+#define optimus_progress_ui_request_for_sdc_burn() (void*)1
 
-#define optimus_progress_ui_release(hUiPrgress)     0
+#define optimus_progress_ui_release(hUiPrgress)     do{}while(0)
 
 #define optimus_progress_ui_set_unfocus_bkg(hUiProgress, unfocusBmpAddr)    0
 

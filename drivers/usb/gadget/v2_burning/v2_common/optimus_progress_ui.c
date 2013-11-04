@@ -9,16 +9,11 @@
  * Copyright (c) 2013 Amlogic Inc.. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <config.h>
-#include <malloc.h>
+#include "../v2_burning_i.h"
 #include <bmp_layout.h>
-#include "optimus_download.h"
-#include "amlImage_if.h"
-#include "optimus_progress_ui.h"
-
 #include <lcd.h>
 #include <video_font.h>
+
 extern int lcd_drawchars (ushort x, ushort y, uchar *str, int count);
 
 //default env for display UI
@@ -75,6 +70,14 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
     {
         char env_buf[32];
 
+#ifdef CONFIG_VIDEO_AMLLCD
+        if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get())
+        {
+            DWN_MSG("LCD Initialize for upgrade:\n");
+            aml_lcd_init();
+        }
+#endif// #ifdef CONFIG_VIDEO_AMLLCD
+
         env_name = "burn_logo_prepare";
         if(setenv(env_name, (char*)env_video_prepare_for_upgrade)){
             DWN_ERR("Fail to set env(%s=%s)\n", env_name, env_video_prepare_for_upgrade);
@@ -86,7 +89,6 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
             DWN_ERR("Fail in run_command[%s]\n", env_buf);
             return __LINE__;
         }
-
     }
 
     return 0;
@@ -437,6 +439,7 @@ __hdle optimus_progress_ui_request_for_sdc_burn(void)
         show_logo_report_burn_ui_error(); return NULL;
     }
 
+    DWN_MSG("dw,dh[%u, %u]\n", display_width, display_height);
     hUiProgress = optimus_progress_ui_request(100, 0,barAddr, display_width, barYCor);
     if(!hUiProgress){
         DWN_ERR("Fail to request progress bar\n");

@@ -10,12 +10,9 @@
  * Copyright (c) 2013 Amlogic. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <config.h>
-#include <part.h>
-#include <fat.h>
-#include "optimus_download.h"
-#include <amlogic/storage_if.h>
+#include "optimus_sdc_burn_i.h"
+
+typedef int __hFileHdl;
 
 #define BURN_DBG 0
 #if BURN_DBG
@@ -28,7 +25,6 @@
 #define SDC_ERR         DWN_ERR
 
 static char _errInfo[512] = "";
-typedef int __hdle;
 
 //default is mmc 0:1, i.e, part 1 of first registered mmc device
 int device_probe(const char* interface, const char* inPart)
@@ -61,9 +57,9 @@ int device_probe(const char* interface, const char* inPart)
 }
 
 
-__hdle opt_file_open(const char* imgItemPath)
+__hFileHdl opt_file_open(const char* imgItemPath)
 {
-    __hdle hFile = 0;
+    __hFileHdl hFile = 0;
 
 #if 0
     //FIXME: Check this probe needed!!!
@@ -78,7 +74,7 @@ __hdle opt_file_open(const char* imgItemPath)
     return hFile;
 }
 
-int opt_file_read(__hdle hFile, u8* buffer, const unsigned size)
+int opt_file_read(__hFileHdl hFile, u8* buffer, const unsigned size)
 {
     unsigned readSz = do_fat_fread(hFile, buffer, size);
     if(readSz != size){
@@ -89,7 +85,7 @@ int opt_file_read(__hdle hFile, u8* buffer, const unsigned size)
     return 0;
 }
 
-int opt_file_close(__hdle hFile)
+int opt_file_close(__hFileHdl hFile)
 {
     do_fat_fclose(hFile);
 
@@ -186,7 +182,7 @@ int optimus_burn_partition_image(const char* partName, const char* imgItemPath, 
     s64 imgItemSz       = 0;
     s64 leftItemSz      = 0;
     u32 thisReadLen     = 0;
-    __hdle hImgItem     = 0;
+    __hFileHdl hImgItem     = 0;
     char* downTransBuf  = NULL;//get buffer from optimus_buffer_manager
     const unsigned ItemReadBufSz = OPTIMUS_DOWNLOAD_SLOT_SZ;//read this size from image item each time
     unsigned sequenceNo = 0;

@@ -9,9 +9,7 @@
  * Copyright (c) 2013 Amlogic Inc.. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <sha1.h>
-#include "optimus_download.h"
+#include "../v2_burning_i.h"
 
 #define OPTIMUS_SLOT_STA_FREE               (0)//buffer slot not used yet
 #define OPTIMUS_SLOT_STA_USED               (0xee)//buffer slot current used for download

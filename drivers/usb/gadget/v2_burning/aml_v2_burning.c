@@ -9,14 +9,8 @@
  * Copyright (c) 2013 Amlogic. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <environment.h>
-#include <amlogic/aml_v2_burning.h>
-#include <asm/arch/reboot.h>
-#include <asm/arch/romboot.h>
+#include "v2_burning_i.h"
 #include <mmc.h>
-#include <amlogic/aml_lcd.h>
-#include "optimus_download.h"
 
 extern int optimus_burn_package_in_sdmmc(const char* sdc_cfg_file);
 
@@ -85,13 +79,15 @@ int aml_v2_usb_producing(int flag, bd_t* bis)
 {
     flag = flag; bis = bis;//avoid compile warning
 
-    set_default_env("!for usb burn");
+    optimus_work_mode_set(OPTIMUS_WORK_MODE_USB_PRODUCE);
 
     return v2_usbburning(20000);
 }
 
 int aml_v2_sdc_producing(int flag, bd_t* bis)
 {
+    optimus_work_mode_set(OPTIMUS_WORK_MODE_SDC_PRODUCE);
+
     return optimus_burn_package_in_sdmmc(getenv("sdcburncfg"));
 }
 

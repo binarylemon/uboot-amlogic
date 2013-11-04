@@ -18,7 +18,53 @@ static int is_bootloader_old(void)
     return !sdc_boot;
 }
 
-#define VERIFY_FILE_NOT_EXIST   0x55 
+int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfgPara)
+{
+    BurnParts_t* pburnPartsCfg = &pcfgPara->burnParts;
+    int i = 0;
+    int ret = 0;
+    int burnNum = 0;
+    const int totalItemNum = get_total_itemnr(hImg);
+
+    for (i = 0; i < totalItemNum; i++) 
+    {
+        const char* main_type = NULL;
+        const char* sub_type  = NULL;
+
+        ret = get_item_name(hImg, i, &main_type, &sub_type);
+        if(ret){
+            DWN_ERR("Exception:fail to get item name!\n");
+            return __LINE__;
+        }
+
+        if(!strcmp("PARTITION", main_type))
+        {
+            char* partName = pburnPartsCfg->burnParts[burnNum];
+
+            if(!strcmp("bootloader", sub_type))continue;
+
+            strcpy(partName, sub_type);
+            pburnPartsCfg->bitsMap4BurnParts |= 1U<<burnNum;
+            burnNum += 1;
+        }
+    }
+
+    if(burnNum)
+    {
+        pburnPartsCfg->burn_num = burnNum;
+
+        ret = check_cfg_burn_parts(pcfgPara);
+        if(ret){
+            DWN_ERR("Fail in check burn parts\n");
+            return __LINE__;
+        }
+        print_burn_parts_para(pburnPartsCfg);
+    }
+
+    return OPT_DOWN_OK;
+}
+
+#define ITEM_NOT_EXIST   0x55 
 
 int optimus_verify_partition(const char* partName, HIMAGE hImg, char* _errInfo)
 {
@@ -33,7 +79,7 @@ int optimus_verify_partition(const char* partName, HIMAGE hImg, char* _errInfo)
     hImgItem = image_item_open(hImg, "VERIFY", partName);
     if(!hImgItem){
         DWN_ERR("Fail to open verify file for part (%s)\n", partName);
-        return VERIFY_FILE_NOT_EXIST;
+        return ITEM_NOT_EXIST;
     }
 
     imgItemSz = (int)image_item_get_size(hImgItem);
@@ -160,7 +206,7 @@ _finish:
 
 #if 1
     rcode = optimus_verify_partition(partName, hImg, _errInfo);
-    if(VERIFY_FILE_NOT_EXIST == rcode)
+    if(ITEM_NOT_EXIST == rcode)
     {
         printf("WRN:part(%s) NOT verified\n", partName);
         return 0;
@@ -252,6 +298,50 @@ int optimus_report_burn_complete_sta(int flag)
     return flag;
 }
 
+static int sdc_burn_dtb_load(HIMAGE hImg)
+{
+    s64 itemSz = 0;
+    HIMAGEITEM hImgItem = NULL;
+    int rc = 0;
+    const char* partName = "dtb";
+    const u64 partBaseOffset = OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR; 
+    unsigned char* dtbTransferBuf     = (unsigned char*)(unsigned)partBaseOffset;
+
+    hImgItem = image_item_open(hImg, partName, "meson");
+    if(!hImgItem){
+        DWN_ERR("Fail to open verify file for part (%s)\n", partName);
+        return ITEM_NOT_EXIST;
+    }
+
+    itemSz = image_item_get_size(hImgItem);
+    if(!itemSz){
+        DWN_ERR("Item size 0\n");
+        image_item_close(hImgItem); return __LINE__;
+    }
+
+    rc = image_item_read(hImg, hImgItem, dtbTransferBuf, (unsigned)itemSz);
+    if(rc){
+        DWN_ERR("Failed at item read, rc = %d\n", rc);
+        image_item_close(hImgItem); return __LINE__;
+    }
+    image_item_close(hImgItem);
+
+    rc = optimus_parse_img_download_info(partName, itemSz, "normal", "mem", partBaseOffset);
+    if(rc){
+        DWN_ERR("Failed in init down info\n"); return __LINE__;
+    }
+
+    {
+        unsigned wrLen = 0;
+        char errInfo[512];
+
+        wrLen = optimus_download_img_data(dtbTransferBuf, (unsigned)itemSz, errInfo);
+        rc = (wrLen == itemSz) ? 0 : wrLen;
+    }
+
+    return rc;
+}
+
 int optimus_burn_with_cfg_file(const char* cfgFile)
 {
     extern ConfigPara_t g_sdcBurnPara ;
@@ -295,6 +385,13 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     hImg = image_open(pkgPath);
     if(!hImg){
         DWN_ERR("Fail to open image %s\n", pkgPath);
+        ret = __LINE__; goto _finish;
+    }
+
+    //update dtb for burning drivers
+    ret = sdc_burn_dtb_load(hImg);
+    if(ret){
+        DWN_ERR("Fail in load dtb for sdc_burn\n");
         ret = __LINE__; goto _finish;
     }
 
@@ -397,6 +494,7 @@ int do_sdc_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         return __LINE__;
     }
 
+    optimus_work_mode_set(OPTIMUS_WORK_MODE_SDC_UPDATE);
     show_logo_to_report_burning();//indicate enter flow of burning! when 'run update'
     rcode = optimus_burn_package_in_sdmmc(sdc_cfg_file);
 

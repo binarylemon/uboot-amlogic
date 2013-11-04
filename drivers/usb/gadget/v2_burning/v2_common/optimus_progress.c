@@ -9,10 +9,7 @@
  * Copyright (c) 2013 Allwinner Technology. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <config.h>
-#include "optimus_download.h"
-#include "amlImage_if.h"
+#include "../v2_burning_i.h"
 
 #define OPTIMUS_PROMPT_SIZE_MIN     (4U<<20)//mininal size to prompt burning progress step
 

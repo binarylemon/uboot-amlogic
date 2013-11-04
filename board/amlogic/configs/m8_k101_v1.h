@@ -178,7 +178,7 @@
 	"upgrade_step=0\0" \
 	"initrd_high=30000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
-    "preloaddtb=imgread kernel boot $loadaddr;dtbload ${loadaddr}\0" \
+    "preloaddtb=imgread kernel boot ${loadaddr};dtbload ${loadaddr}\0" \
 	"video_dev=panel\0" \
 	"display_width=768\0" \
 	"display_height=1024\0" \

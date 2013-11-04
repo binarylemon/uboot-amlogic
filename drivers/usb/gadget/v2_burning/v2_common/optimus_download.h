@@ -146,5 +146,14 @@ void optimus_poweroff(void);
 int optimus_burn_complete(const int choice);
 int is_the_flash_first_burned(void);
 
+#define OPTIMUS_WORK_MODE_NONE            0
+#define OPTIMUS_WORK_MODE_USB_UPDATE      (0xefe5)
+#define OPTIMUS_WORK_MODE_USB_PRODUCE     (0xefe6)
+#define OPTIMUS_WORK_MODE_SDC_UPDATE      (0xefe7)
+#define OPTIMUS_WORK_MODE_SDC_PRODUCE     (0xefe8)
+int optimus_work_mode_get(void);
+int optimus_work_mode_set(int workmode);
+
+
 #endif//ifndef __OPTIMUS_DOWNLOAD_H__
 

@@ -15,13 +15,9 @@
  *
  * =====================================================================================
  */
-#include <common.h>
-#include <sha1.h>
-#include <asm/string.h>
-#include <asm-generic/errno.h>
-#include "optimus_download.h"
+#include "../v2_burning_i.h"
 #include "unify_key.h"
-#include "usb_pcd.h"
+//#include "usb_pcd.h"
 
 int decrypt_hdcp_license_to_raw_value(const char* keyName, const u8* keyVal, const unsigned keyValLen, char* errInfo,
                               const u8** keyRealVal, unsigned* keyRealValLen,

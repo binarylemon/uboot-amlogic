@@ -6,16 +6,12 @@
  * 2010-03-24 @ Shanghai
  *
  */
-#include <common.h>
-#include <asm/mach-types.h>
-#include <asm/arch/romboot.h>
+#include "../v2_burning_i.h"
 #include "platform.h"
 #include "usb_ch9.h"
 #include "dwc_pcd.h"
 #include "dwc_pcd_irq.h"
 #include "usb_pcd.h"
-#include "config.h"
-#include "optimus_download.h"
 
 static int do_bulk_cmd(char* cmd);
 

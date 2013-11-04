@@ -6,11 +6,11 @@
  * 2010-03-24 @ Shanghai
  *
  */
+#include "../v2_burning_i.h"
 #include "platform.h"
 #include "usb_ch9.h"
 #include "dwc_pcd.h"
 #include "dwc_pcd_irq.h"
-#include "optimus_download.h"
 
 pcd_struct_t this_pcd ;//FIXME:This PCD should point to different or cause bug!!
 

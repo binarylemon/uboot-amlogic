@@ -9,10 +9,8 @@
  * Copyright (c) 2013 Amlogic Inc. All Rights Reserved.
  *
  */
-#include <common.h>
-#include <sha1.h>
-#include "optimus_download.h"
-#include <amlogic/storage_if.h>
+#include "../v2_burning_i.h"
+#include <libfdt.h>
 
 #if defined(CONFIG_ACS)
 #include <asm/arch/cpu.h>
@@ -409,23 +407,30 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
             u8* buf = (u8*)(unsigned)addrOrOffsetInBy;
             if(buf != data){
                 DWN_ERR("buf(%llx) != data(%p)\n", addrOrOffsetInBy, data);
+                return 0;
             }
-            else
+            if(!strcmp("dtb", pDownInfo->partName))//as memory write back size = min[fileSz, 2G], so reach here if downloaded ok!
             {
-                if(!strcmp("dtb", pDownInfo->partName))//as memory write back size = min[fileSz, 2G], so reach here if downloaded ok!
-                {
-                    int rc = 0;
-                    char cmd[32] = "";
+                int rc = 0;
+                char* dtbLoadAddr = (char*)CONFIG_DTB_LOAD_ADDR;
+                const int DtbMaxSz = (2U<<20);
 
-                    sprintf(cmd, "dtbload 0x%llx", pDownInfo->partBaseOffset);
-                    rc = run_command(cmd, 0);
-                    if(rc){
-                        DWN_ERR("Fail run_command[%s]\n", cmd);
-                        return __LINE__;
-                    }
+                rc = fdt_check_header(data);
+                if(rc){
+                    sprintf(errInfo, "failed at fdt_check_header\n");
+                    DWN_ERR(errInfo);
+                    return 0;
+                }
+                if(DtbMaxSz <= dataSz){
+                    sprintf(errInfo, "failed: fdt header ok but sz 0%x > max 0x%x\n", dataSz, DtbMaxSz);
+                    DWN_ERR(errInfo);
+                    return 0;
                 }
 
+                DWN_MSG("load dtb to 0x%p\n", dtbLoadAddr);
+                memcpy(dtbLoadAddr, data, dataSz);
             }
+
             burnSz = dataSz;
         }
         break;
@@ -653,15 +658,16 @@ int optimus_storage_init(int toErase)
 {
     int ret = 0;
 
-    if(_disk_intialed_ok){
+    if(_disk_intialed_ok){//To assert only actual disk intialed once
         DWN_MSG("Disk inited again.\n");
         return 0;
     }
 
-#if 1
-    DWN_MSG("Exit before re-init\n");
-    store_exit();
-#endif//#if 1
+    if(OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get())//Already inited in other work mode
+    {
+        DWN_MSG("Exit before re-init\n");
+        store_exit();
+    }
 
     DWN_MSG("store_init\n");
     ret = store_init(toErase ? 2 : 1);
@@ -974,6 +980,19 @@ u32 optimus_dump_storage_data(u8* pBuf, const u32 wantSz, char* errInfo)
 _err:
     optimus_storage_close(pDownInfo);
     pDownInfo->imgBurnSta = OPTIMUS_IMG_STA_BURN_FAILED;////
+    return 0;
+}
+
+static int _optimusWorkMode = OPTIMUS_WORK_MODE_NONE;
+
+int optimus_work_mode_get(void)
+{
+    return _optimusWorkMode;
+}
+
+int optimus_work_mode_set(int workmode)
+{
+    _optimusWorkMode = workmode;
     return 0;
 }
 

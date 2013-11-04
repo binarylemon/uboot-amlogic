@@ -1,12 +1,6 @@
-#include <common.h>
-#include <asm/arch/reboot.h>
-#include <sha1.h>
+#include "../v2_burning_i.h"
 #include "usb_pcd.h"
 #include "platform.h"
-#include "optimus_download.h"
-#include <environment.h>
-#include <amlogic/aml_v2_burning.h>
-#include <amlogic/storage_if.h>
 
 #define MYDBG(fmt ...) printf("OPT]"fmt)
 
@@ -389,6 +383,11 @@ int optimus_erase_bootloader(char* info)
 {
     int ret = 0;
 
+    if(optimus_storage_init(0)){
+        DWN_ERR("Fail in storage_init\n");
+        return __LINE__;
+    }
+
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
 
     return ret;
@@ -512,7 +511,7 @@ int optimus_working (const char *cmd, char* buff)
 	}
     else if(!strcmp(optCmd, "bootloader_is_old"))
     {
-        ret = !is_tpl_loaded_from_usb();
+        ret = is_tpl_loaded_from_usb();
 		if(ret)sprintf(buff, "Failed, bootloader is new\n");
     }
     else if(!strcmp(optCmd, "erase_bootloader"))

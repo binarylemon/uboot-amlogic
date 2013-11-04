@@ -11,9 +11,7 @@
  * Copyright (c) 2013 Amlogic Inc. All Rights Reserved.
  *
  */
-#include <common.h>
-#include "sparse_format.h"
-#include "optimus_download.h"
+#include "../v2_burning_i.h"
 
 #define sperr               DWN_ERR
 #define spmsg(fmt ...)      //printf("spmsg:"fmt)
