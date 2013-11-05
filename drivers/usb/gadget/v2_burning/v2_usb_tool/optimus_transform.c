@@ -319,7 +319,7 @@ void optimus_reset(void)
     *((volatile unsigned long *)0xc8100000) = 0;
     while(--i);
 
-    disable_interrupts();
+    /*disable_interrupts();*/
 	reset_cpu(0);
 
     while(i++)
@@ -458,7 +458,9 @@ int optimus_burn_complete(const int choice)
             break;
 
         case 1:
-            optimus_reset();
+            {
+                optimus_reset();
+            }
             break;
 
 

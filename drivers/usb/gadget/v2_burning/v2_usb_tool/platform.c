@@ -135,19 +135,12 @@ static void set_usb_phy_config(int cfg)
 
 void close_usb_phy_clock(int cfg)
 {
-    usb_aml_regs_t * usb_aml_regs = (usb_aml_regs_t * )PREI_USB_PHY_REG_BASE;
-    usb_config_data_t config;
-    /*usb_ctrl_data_t control;*/
-
     cfg = cfg;//avoid compiler warning
 
-  	config.d32 = usb_aml_regs->config;
-
-//    config.b.clk_sel    = 0;
-//    config.b.clk_div    = 1; 
-//    config.b.clk_32k_alt_sel = 1;
-    config.b.clk_en = 0;
-  	usb_aml_regs->config = config.d32;
+    dwc_otg_pullup(0);//disconnect
+    __udelay(20);
+    dwc_otg_power_off_phy();//close phy
+    run_command("sleep 1", 0);
 
     return;
 }
@@ -198,6 +191,7 @@ static void set_usb_phy_config(int cfg)
 
 void close_usb_phy_clock(int cfg)
 {
+    dwc_otg_power_off_phy();//close phy
     return;
 }
 

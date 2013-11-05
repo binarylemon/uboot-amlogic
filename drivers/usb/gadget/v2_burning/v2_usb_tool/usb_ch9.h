@@ -291,14 +291,8 @@ struct usb_config_descriptor {
         __u8  bmAttributes;
         __u8  bMaxPower;
 
-        struct usb_interface *interface;
-
-        /// Extra descriptors
-        unsigned char *extra;
-
-        int extralen;
 } __attribute__ ((packed));
-typedef struct usb_config_descriptor usb_config_descriptor_t;
+//typedef struct usb_config_descriptor usb_config_descriptor_t;
 
 #define USB_DT_CONFIG_SIZE    9
 

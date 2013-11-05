@@ -110,7 +110,7 @@ static void dwc_otg_core_init() //Elvis Fool, add 'static'
 	dcfg.b.devspd = 1;//Hi speed phy run at Full speed
 	dwc_write_reg32(DWC_REG_DCFG, dcfg.d32);
 #else
-	printf("High Speed\n");
+	DBG("High Speed\n");
 	usbcfg.b.ulpi_utmi_sel = 1;
 	usbcfg.b.phyif = 0; // 16 bit
 	usbcfg.b.ddrsel = 0;
@@ -598,9 +598,11 @@ int dwc_otg_ep_req_start(pcd_struct_t *pcd,int ep_num)
 	ep->num = ep_num;
 	//DBG("dwc_otg_ep_req_start: ep%d\n",ep_num);
         /* EP0 Transfer? */
-	if (ep_num == 0) {
+	if (ep_num == 0) 
+    {
 		//DBG("EP0 State: %d\n",pcd->ep0state);
-		switch (pcd->ep0state) {
+		switch (pcd->ep0state) 
+        {
 			case EP0_IN_DATA_PHASE:
 				break;
 
@@ -633,7 +635,8 @@ int dwc_otg_ep_req_start(pcd_struct_t *pcd,int ep_num)
 		ep->maxpacket = 64;
 		dwc_otg_ep_start_transfer( ep );
 
-	} else {
+	} 
+    else {
 		/* Setup and start the Transfer for Bulk */
 		ep->start_xfer_buff = (uint8_t*)pcd->bulk_buf + pcd->bulk_xfer_len;
 		ep->xfer_buff = (uint8_t*)pcd->bulk_buf + pcd->bulk_xfer_len;

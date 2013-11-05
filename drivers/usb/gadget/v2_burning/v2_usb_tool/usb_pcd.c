@@ -13,6 +13,8 @@
 #include "dwc_pcd_irq.h"
 #include "usb_pcd.h"
 
+#define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]
+
 static int do_bulk_cmd(char* cmd);
 
 #define DWC_BLK_MAX_LEN         0X1000
@@ -22,7 +24,6 @@ static int do_bulk_cmd(char* cmd);
 #define DRIVER_VENDOR_ID	0x1B8E  //Amlogic's VerdorID
 #define DRIVER_PRODUCT_ID	0xC003
 #define DRIVER_VERSION       0x0100
-
 
 
 #define STRING_MANUFACTURER	1
@@ -46,54 +47,53 @@ device_desc = {
         __constant_cpu_to_le16(DRIVER_VENDOR_ID),	//__u16 idVendor;
         __constant_cpu_to_le16(DRIVER_PRODUCT_ID),	//__u16 idProduct;
         __constant_cpu_to_le16(0x0007),	//__u16 bcdDevice;
-        STRING_MANUFACTURER,		//__u8  iManufacturer;
-        STRING_PRODUCT,			//__u8  iProduct;
-        STRING_SERIAL,			//__u8  iSerialNumber;
+        0/*STRING_MANUFACTURER*/,		//__u8  iManufacturer;
+        0/*STRING_PRODUCT*/,			//__u8  iProduct;
+        0/*STRING_SERIAL*/,			//__u8  iSerialNumber;
         1				//__u8  bNumConfigurations;
 };
+
 #define INTF_CONFIG_DESC_LEN  23
 #define TOTAL_CONFIG_DESC_LEN	(INTF_CONFIG_DESC_LEN + USB_DT_CONFIG_SIZE)
-static const struct usb_config_descriptor
-config_desc = {
-	USB_DT_CONFIG_SIZE,		//__u8  bLength;
+
+#pragma pack(push, 1)
+struct _ConfigDesTotal_s{
+    struct usb_config_descriptor    configDesc;
+    char                            intfDesc[INTF_CONFIG_DESC_LEN] ;
+};
+#pragma pack(pop)
+COMPILE_TYPE_CHK(TOTAL_CONFIG_DESC_LEN == sizeof(struct _ConfigDesTotal_s), a);
+
+static const struct _ConfigDesTotal_s _configDescTotal = {
+    .configDesc     = 
+    {
+        USB_DT_CONFIG_SIZE,		//__u8  bLength;
         USB_DT_CONFIG,			//__u8  bDescriptorType;
         TOTAL_CONFIG_DESC_LEN,				//__u16 wTotalLength;
         1,				//__u8  bNumInterfaces;
         1,			//__u8  bConfigurationValue;
         0,//STRING_CONFIG,			//__u8  iConfiguration;
         USB_CONFIG_ATT_ONE | 
-        USB_CONFIG_ATT_SELFPOWER,	//__u8  bmAttributes;
+            USB_CONFIG_ATT_SELFPOWER,	//__u8  bmAttributes;
         1				//__u8  MaxPower;
-};
-/*
-static struct usb_interface_descriptor
-intf_desc = {
-	9,//sizeof intf_desc,		//__u8  bLength;
-	USB_DT_INTERFACE,		//__u8  bDescriptorType;
-					//
-	0,				//__u8  bInterfaceNumber;
-	0,				//__u8  bAlternateSetting;
-	2,				//__u8  bNumEndpoints;
-	USB_CLASS_MASS_STORAGE,		//__u8  bInterfaceClass;
-	USB_SC_SCSI,			//__u8  bInterfaceSubClass;
-	USB_PR_BULK,			//__u8  bInterfaceProtocol;
-	0//STRING_INTERFACE		//__u8  iInterface;
-};*/
-static const unsigned char intf_desc[INTF_CONFIG_DESC_LEN]={
-	0x09,// length
-	0x04,//USB_DT_INTERFACE
-	0x00,//bInterfaceNumber
-	0x00,//bAlternateSetting
-	0x02,//bNumEndpoints
-	0xFF,//bInterfaceClass, 0xFF =  USB_CLASS_VENDOR_SPEC
-	0x00,//bInterfaceSubClass
-	0x00,//bInterfaceProtocol
-	0x00,//iInterface
-	
-	0x07,//Length
-	0x05,//USB_DT_ENDPOINT
-	0x80 | BULK_IN_EP_NUM,// 1 -- IN
-	0x02,// Bulk
+    },
+
+    .intfDesc       =
+    {
+        0x09,// length
+        0x04,//USB_DT_INTERFACE
+        0x00,//bInterfaceNumber
+        0x00,//bAlternateSetting
+        0x02,//bNumEndpoints
+        0xFF,//bInterfaceClass, 0xFF =  USB_CLASS_VENDOR_SPEC
+        0x00,//bInterfaceSubClass
+        0x00,//bInterfaceProtocol
+        0x00,//iInterface
+
+        0x07,//Length
+        0x05,//USB_DT_ENDPOINT
+        0x80 | BULK_IN_EP_NUM,// 1 -- IN
+        0x02,// Bulk
 #ifndef USE_FULL_SPEED
 	0x00,//
 	0x02,// 64 bytes MPS
@@ -114,8 +114,12 @@ static const unsigned char intf_desc[INTF_CONFIG_DESC_LEN]={
 	0x40,//
 	0x00,// 64 bytes MPS
 #endif
-	0x00	
+        0x00	
+    }
 };
+
+static const struct usb_config_descriptor* config_desc = &_configDescTotal.configDesc;
+static const unsigned char* intf_desc = &_configDescTotal.intfDesc;
 
 #define DT_STRING_ID_LEN  4
 static const  char dt_string_id[DT_STRING_ID_LEN]={
@@ -125,7 +129,8 @@ static const  char dt_string_id[DT_STRING_ID_LEN]={
 	0x04,
 };
 #define DT_STRING_VID_LEN 16
-static const char dt_string_vid[DT_STRING_VID_LEN]={
+static const char dt_string_vid[DT_STRING_VID_LEN]=
+{
 	DT_STRING_VID_LEN,
 	USB_DT_STRING,
 	'A',
@@ -143,13 +148,23 @@ static const char dt_string_vid[DT_STRING_VID_LEN]={
 	'c',
 	0
 };
+
+#if defined(CONFIG_AML_MESON_8) 
+#define _PLATFORM_CHIP_INDEX    '8'
+#elif defined(CONFIG_AML_MESON_6)  
+#define _PLATFORM_CHIP_INDEX    '6'
+#else
+#error "chip not supported!"
+#endif// #if defined(CONFIG_AML_MESON_8) 
+
 #define DT_STRING_PID_LEN 16
-static const char dt_string_pid[DT_STRING_PID_LEN]={
+static const char dt_string_pid[DT_STRING_PID_LEN]=
+{
 	DT_STRING_PID_LEN,
 	USB_DT_STRING,
 	'M',
 	0,
-	'3',
+    _PLATFORM_CHIP_INDEX,
 	0,
 	'-',
 	0,
@@ -162,8 +177,10 @@ static const char dt_string_pid[DT_STRING_PID_LEN]={
 	'P',
 	0
 };
+
 #define DT_STRING_SERIAL_LEN	18
-static const char dt_string_serial[DT_STRING_SERIAL_LEN]={
+static const char dt_string_serial[DT_STRING_SERIAL_LEN]=
+{
 	DT_STRING_SERIAL_LEN,
 	USB_DT_STRING,
 	'2',
@@ -253,115 +270,109 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	
 	/* usually this just stores reply data in the pre-allocated ep0 buffer,
 	 * but config change events will also reconfigure hardware. */
-	switch (ctrl->bRequest) {
-
+	switch (ctrl->bRequest) 
+    {
 	  case USB_REQ_GET_DESCRIPTOR:
-		if (ctrl->bRequestType != (USB_DIR_IN | USB_TYPE_STANDARD |
-								USB_RECIP_DEVICE))
-			break;
-		//time_out_val = USB_ROM_DRIVER_TIMEOUT;// Wait SetConfig (PC install driver OK)
-		need_check_timeout = 0;
-		switch (w_value >> 8) {
-			case USB_DT_DEVICE:
-				DBG("get dev desc\n");
-				value = min(w_length, (u16) sizeof device_desc);
-				/*usb_memcpy(buff, (char*)&device_desc, value);*/
-				memcpy((void*)buff, &device_desc, value);
-				_pcd->buf = buff;
-				_pcd->length = value;
-				break;
-			case USB_DT_DEVICE_QUALIFIER:
-				DBG("get dev qual\n");
-				break;
-			case USB_DT_OTHER_SPEED_CONFIG: 
-				DBG("--get other speed configuration descriptor\n");
-				DBG("--other speed configuration descriptor length :%d\n", value);
-				break;
-			case USB_DT_CONFIG:
-                {
-                    static char _configDesc[TOTAL_CONFIG_DESC_LEN] = {0};
+          {
+              if (ctrl->bRequestType != (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE))
+                  break;
+              //time_out_val = USB_ROM_DRIVER_TIMEOUT;// Wait SetConfig (PC install driver OK)
+              need_check_timeout = 0;
+              switch (w_value >> 8) 
+              {
+                  case USB_DT_DEVICE:
+                      DBG("get dev desc\n");
+                      value = min(w_length, (u16) sizeof device_desc);
+                      /*usb_memcpy(buff, (char*)&device_desc, value);*/
+                      /*
+                       *memcpy((void*)buff, &device_desc, value);
+                       *_pcd->buf = buff;
+                       */
+                      _pcd->buf = &device_desc;
+                      _pcd->length = value;
+                      break;
+                  case USB_DT_DEVICE_QUALIFIER:
+                      DBG("get dev qual\n");
+                      break;
+                  case USB_DT_OTHER_SPEED_CONFIG: 
+                      DBG("--get other speed configuration descriptor\n");
+                      DBG("--other speed configuration descriptor length :%d\n", value);
+                      break;
+                  case USB_DT_CONFIG:
+                      {
+                          USB_DBG("--get configuration descriptor: size %d\n",w_length);
+                          if(w_length > USB_DT_CONFIG_SIZE){//request USB_DT_CONFIG_SIZE only					
+                              value = TOTAL_CONFIG_DESC_LEN;
+                          }
+                          else{
+                              value = w_length;
+                          }
+                          _pcd->buf = &_configDescTotal;
+                          _pcd->length = value;
+                          /*printf("--get configuration descriptor: size %d, ret length :%d\n\n", w_length, value);			*/
+                          printf("Get DT cfg\n");
 
-                    USB_DBG("--get configuration descriptor: size %d\n",w_length);
-                    if(w_length > USB_DT_CONFIG_SIZE)
-                    {					
-                        value = TOTAL_CONFIG_DESC_LEN;
-                        /*usb_memcpy(buff+USB_DT_CONFIG_SIZE,(void*)&intf_desc[0],INTF_CONFIG_DESC_LEN);*/
-                        /*usb_memcpy(_configDesc+USB_DT_CONFIG_SIZE, intf_desc, INTF_CONFIG_DESC_LEN);//todo:reduce copy*/
-                        memcpy(_configDesc+USB_DT_CONFIG_SIZE, intf_desc, INTF_CONFIG_DESC_LEN);//todo:reduce copy
-                    }
-                    else
-                        value = w_length;
-                    /*usb_memcpy(buff, (void*)&config_desc, USB_DT_CONFIG_SIZE);*/
-                    /*usb_memcpy(_configDesc, &config_desc, USB_DT_CONFIG_SIZE);*/
-                    memcpy(_configDesc, &config_desc, USB_DT_CONFIG_SIZE);
-                    _pcd->buf = _configDesc;
-                    /*_pcd->buf = &config_desc;*/
-                    _pcd->length = value;
-                    /*printf("--get configuration descriptor: size %d, ret length :%d\n\n", w_length, value);			*/
-                    printf("get cfg desc\n");
+                      }				
+                      break;
 
-                }				
-                break;
-                
-			case USB_DT_STRING:
-                {
-                    const char* str = NULL;
+                  case USB_DT_STRING:
+                      {
+                          const char* str = NULL;
 
-                    /*DBG("--get string Desc: id %d\n", w_value & 0xff);*/
-                    DBG("--get str Desc\n");
-                    switch(w_value & 0xff){
-                        case 0: // IDs
-                            /*usb_memcpy(buff,(void*)dt_string_id,DT_STRING_ID_LEN);*/
-                            str = dt_string_id;
-                            break;
+                          /*DBG("--get string Desc: id %d\n", w_value & 0xff);*/
+                          printf("Get str %x\n", w_value);
+                          switch(w_value & 0xff)
+                          {
+                              case 0: // IDs
+                                  /*usb_memcpy(buff,(void*)dt_string_id,DT_STRING_ID_LEN);*/
+                                  str = dt_string_id;
+                                  break;
 
-                        case 1: // STRING_MANUFACTURER
-                            /*usb_memcpy(buff,(void*)dt_string_vid,DT_STRING_VID_LEN);*/
-                            str = dt_string_vid;
-                            break;
+                              case 1: // STRING_MANUFACTURER
+                                  /*usb_memcpy(buff,(void*)dt_string_vid,DT_STRING_VID_LEN);*/
+                                  str = dt_string_vid;
+                                  break;
 
-                        case 2://STRING_PRODUCT
-                            /*usb_memcpy(buff,(void*)dt_string_pid,DT_STRING_PID_LEN);*/
-                            str = dt_string_pid;
-                            break;
+                              case 2://STRING_PRODUCT
+                                  /*usb_memcpy(buff,(void*)dt_string_pid,DT_STRING_PID_LEN);*/
+                                  str = dt_string_pid;
+                                  break;
 
-                        case 3://STRING_SERIAL
-                            /*usb_memcpy(buff,(void*)dt_string_serial,DT_STRING_SERIAL_LEN);*/
-                            str = dt_string_serial;
-                            break;
+                              case 3://STRING_SERIAL
+                                  /*usb_memcpy(buff,(void*)dt_string_serial,DT_STRING_SERIAL_LEN);*/
+                                  str = dt_string_serial;
+                                  break;
 
-                        default:
-                            USB_ERR("Error string id!\n");
-                            /*buff[0] = 0;*/
-                            str = NULL;
-                            break;	
-                    }
-                    /*
-                     *_pcd->buf = buff;
-                     *_pcd->length = buff[0];
-                     */
-                    _pcd->buf = (char*)str;
-                    _pcd->length = str[0];
-                    /*printf("--get str DESC: id %d ,return length %d\n", (w_value & 0xff), _pcd->length);*/
-                    printf("get str desc\n");
+                              default:
+                                  USB_ERR("Error string id!\n");
+                                  /*buff[0] = 0;*/
+                                  str = NULL;
+                                  break;	
+                          }
+                          _pcd->buf = (char*)str;
+                          _pcd->length = str[0];
+                          /*printf("--get str DESC: id %d ,return length %d\n", (w_value & 0xff), _pcd->length);*/
+                      }				
+                      break;
 
-                }				
-                break;
+              }
+		
+          }
+          break;
 
-			}
-			break;
+      case USB_REQ_SET_CONFIGURATION:
+          {
+              if (ctrl->bRequestType != (USB_DIR_OUT | USB_TYPE_STANDARD |
+                          USB_RECIP_DEVICE))
+                  break;
+              printf("set CFG\n");
+              _pcd->buf = 0;
+              _pcd->length = 0;
+              _pcd->request_config = 1;   /* Configuration changed */
+              //need_check_timeout = 0;
+          }
+          break;
 
-	case USB_REQ_SET_CONFIGURATION:
-		if (ctrl->bRequestType != (USB_DIR_OUT | USB_TYPE_STANDARD |
-				USB_RECIP_DEVICE))
-			break;
-		printf("set CFG\n");
-		_pcd->buf = 0;
-		_pcd->length = 0;
-		_pcd->request_config = 1;   /* Configuration changed */
-		//need_check_timeout = 0;
-		break;
-	
 	case USB_REQ_GET_CONFIGURATION:
 		if (ctrl->bRequestType != (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE))
 			break;
@@ -380,6 +391,7 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	w_index = 0; //remove compile warning
 	return ;
 }
+
 /**
  * This functions delegates vendor ctrl request.
  */
@@ -551,8 +563,8 @@ void do_vendor_out_complete( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 	volatile char * buf; 
 
 	//USB_DBG("do_vendor_out_complete(0x%x)\n", ctrl->bRequest);
-	switch (ctrl->bRequest) {
-
+	switch (ctrl->bRequest) 
+    {
 	  case AM_REQ_WRITE_MEM:
 		if (ctrl->bRequestType != (USB_DIR_OUT | USB_TYPE_VENDOR |
 				USB_RECIP_DEVICE))

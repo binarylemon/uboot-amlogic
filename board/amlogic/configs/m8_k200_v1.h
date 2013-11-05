@@ -266,7 +266,7 @@
         "imgread kernel recovery ${loadaddr}; "\
         "bootm\0" \
     \
-	"usb_burning=update 2000\0" \
+	"usb_burning=update 1000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 

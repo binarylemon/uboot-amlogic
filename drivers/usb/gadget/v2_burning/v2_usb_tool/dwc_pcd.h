@@ -163,7 +163,7 @@ typedef struct pcd_struct_s{
 	 int ep0state;
 
 	 /* for USB_REQ_GET_STATUS */
-	 unsigned short status;
+	 unsigned status;
 
      struct {
          u8     type;//1-->setup+out+in, others: reseved
@@ -174,6 +174,7 @@ typedef struct pcd_struct_s{
 
 	  /* request */
 	 volatile char * buf;
+
 	 int length;
 
 	  /* bulk req */
@@ -185,14 +186,16 @@ typedef struct pcd_struct_s{
 	 char bulk_out;	// flag 
 	 char bulk_lock;	// bulk transfering
 	 //short bulk_seq;
+
+     short isPktResended;//is this 64K transfer is re-send
      int bulk_xfer_len;//data len already transferred //added by Sam.Wu
      unsigned origiSum;//data checksum in every 64K transfer //added by Sam.Wu
-     int isPktResended;//is this 64K transfer is re-send
      unsigned sequenceNo;
      int      xferNeedReply;
 
 	 unsigned request_config : 1;
 	 unsigned request_enable : 1;
+     unsigned request_reserv : 30;
 	 
 }pcd_struct_t;
 

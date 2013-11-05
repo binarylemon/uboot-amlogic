@@ -87,120 +87,121 @@ static void pcd_in_completed(pcd_struct_t *_pcd)
 static void pcd_setup( pcd_struct_t *_pcd )
 {
 
-	struct usb_ctrlrequest	ctrl = _pcd->setup_pkt.req;
-	dwc_ep_t	*ep0 = &g_dwc_eps[0];
-	deptsiz0_data_t doeptsize0 = { 0};
+    struct usb_ctrlrequest	ctrl = _pcd->setup_pkt.req;
+    dwc_ep_t	*ep0 = &g_dwc_eps[0];
+    deptsiz0_data_t doeptsize0 = { 0};
 
-	if(_pcd->request_enable == 0)
-		return;
+    if(_pcd->request_enable == 0)
+        return;
 
-//	_pcd->setup_pkt.d32[0] = 0;
-//	_pcd->setup_pkt.d32[1] = 0;
-	_pcd->status = 0;
-	_pcd->request_enable = 0;
+    //	_pcd->setup_pkt.d32[0] = 0;
+    //	_pcd->setup_pkt.d32[1] = 0;
+    _pcd->status = 0;
+    _pcd->request_enable = 0;
 
-        doeptsize0.d32 = dwc_read_reg32( DWC_REG_OUT_EP_TSIZE(0));
+    doeptsize0.d32 = dwc_read_reg32( DWC_REG_OUT_EP_TSIZE(0));
 
-        if (ctrl.bRequestType & USB_DIR_IN) {        
-                ep0->is_in = 1;
-                _pcd->ep0state = EP0_IN_DATA_PHASE;
-        } else {
-                ep0->is_in = 0;
-                _pcd->ep0state = EP0_OUT_DATA_PHASE;
-        }
+    if (ctrl.bRequestType & USB_DIR_IN) {        
+        ep0->is_in = 1;
+        _pcd->ep0state = EP0_IN_DATA_PHASE;
+    } else {
+        ep0->is_in = 0;
+        _pcd->ep0state = EP0_OUT_DATA_PHASE;
+    }
 
 
-	if ((ctrl.bRequestType & USB_TYPE_MASK) != USB_TYPE_STANDARD) {
-		/* handle non-standard (class/vendor) requests in the gadget driver */
-		//do_gadget_setup(_pcd, &ctrl );
-		DBG("Vendor requset\n");
-		do_vendor_request(_pcd, &ctrl );
-		dwc_otg_ep_req_start(_pcd,0);
-		return;
-	}
+    if ((ctrl.bRequestType & USB_TYPE_MASK) != USB_TYPE_STANDARD) 
+    {
+        /* handle non-standard (class/vendor) requests in the gadget driver */
+        //do_gadget_setup(_pcd, &ctrl );
+        DBG("Vendor requset\n");
+        do_vendor_request(_pcd, &ctrl );
+        dwc_otg_ep_req_start(_pcd,0);
+        return;
+    }
 
-        /** @todo NGS: Handle bad setup packet? */
+    /** @todo NGS: Handle bad setup packet? */
 
-        switch (ctrl.bRequest) {
-
+    switch (ctrl.bRequest) 
+    {
         case USB_REQ_GET_STATUS:
 
-                _pcd->status = 0;
-                switch (ctrl.bRequestType & USB_RECIP_MASK) {
-					
-                	case USB_RECIP_DEVICE:
-                	 _pcd->status = 0; /* Default Bus Powered, no Remote wakeup */
-                	 //_pcd->status |= 0x1; /* Self powered */
-                	 //_pcd->status |= 0x2;//_pcd->remote_wakeup_enable << 1; 
-                	break;
-						
-                	case USB_RECIP_INTERFACE:
-                	 _pcd->status = 0;
-                	break;
-                }
-                _pcd->buf = (char *)&_pcd->status;
-                _pcd->length = 2;
-                dwc_otg_ep_req_start(_pcd,0);
-                break;
-#if 0
+            _pcd->status = 0;
+            switch (ctrl.bRequestType & USB_RECIP_MASK) {
+
+                case USB_RECIP_DEVICE:
+                    _pcd->status = 0; /* Default Bus Powered, no Remote wakeup */
+                    //_pcd->status |= 0x1; /* Self powered */
+                    //_pcd->status |= 0x2;//_pcd->remote_wakeup_enable << 1; 
+                    break;
+
                 case USB_RECIP_INTERFACE:
-                        *status = 0;
-                        break;                        
+                    _pcd->status = 0;
+                    break;
+            }
+            _pcd->buf = (char *)&_pcd->status;
+            _pcd->length = 2;
+            dwc_otg_ep_req_start(_pcd,0);
+            break;
+#if 0
+        case USB_RECIP_INTERFACE:
+            *status = 0;
+            break;                        
 
-                case USB_RECIP_ENDPOINT:
-                        ep = get_ep_by_addr(_pcd, ctrl.wIndex);
-                        if ( ep == 0 || ctrl.wLength > 2) {
-                                ep0_do_stall(_pcd, -EOPNOTSUPP);
-                                return;
-                        }
-                        /** @todo check for EP stall */
-                        *status = ep->stopped;
-                        break;
-                }
-                _pcd->ep0_pending = 1;
+        case USB_RECIP_ENDPOINT:
+            ep = get_ep_by_addr(_pcd, ctrl.wIndex);
+            if ( ep == 0 || ctrl.wLength > 2) {
+                ep0_do_stall(_pcd, -EOPNOTSUPP);
+                return;
+            }
+            /** @todo check for EP stall */
+            *status = ep->stopped;
+            break;
+            _pcd->ep0_pending = 1;
 
-                ep0->dwc_ep.start_xfer_buff = (uint8_t *)status;
-                ep0->dwc_ep.xfer_buff = (uint8_t *)status;
-                ep0->dwc_ep.dma_addr = _pcd->status_buf_dma_handle;
-                ep0->dwc_ep.xfer_len = 2;
-                ep0->dwc_ep.xfer_count = 0;
-                ep0->dwc_ep.total_len = ep0->dwc_ep.xfer_len;
-                dwc_otg_ep0_start_transfer( GET_CORE_IF(_pcd), &ep0->dwc_ep );
-                break;
+            ep0->dwc_ep.start_xfer_buff = (uint8_t *)status;
+            ep0->dwc_ep.xfer_buff = (uint8_t *)status;
+            ep0->dwc_ep.dma_addr = _pcd->status_buf_dma_handle;
+            ep0->dwc_ep.xfer_len = 2;
+            ep0->dwc_ep.xfer_count = 0;
+            ep0->dwc_ep.total_len = ep0->dwc_ep.xfer_len;
+            dwc_otg_ep0_start_transfer( GET_CORE_IF(_pcd), &ep0->dwc_ep );
+            break;
 
         case USB_REQ_CLEAR_FEATURE:
-                do_clear_feature( _pcd );
-                break;
+            do_clear_feature( _pcd );
+            break;
 
         case USB_REQ_SET_FEATURE:
-                do_set_feature( _pcd );
-                break;
- #endif               
+            do_set_feature( _pcd );
+            break;
+#endif               
         case USB_REQ_SET_ADDRESS:
-                if (ctrl.bRequestType == USB_RECIP_DEVICE) {
-                        dcfg_data_t dcfg = { 0 };
+            if (ctrl.bRequestType == USB_RECIP_DEVICE) 
+            {
+                dcfg_data_t dcfg = { 0 };
 
-			    //DBG("Set address: %d\n",ctrl.wValue);
-                        dcfg.b.devaddr = ctrl.wValue;
-                        dwc_modify_reg32(DWC_REG_DCFG,0, dcfg.d32);
-                        do_setup_in_status_phase( _pcd );
-                        return;
-                }
-                break;
+                printf("Set Addr %d\n",ctrl.wValue);
+                dcfg.b.devaddr = ctrl.wValue;
+                dwc_modify_reg32(DWC_REG_DCFG,0, dcfg.d32);
+                do_setup_in_status_phase( _pcd );
+                return;
+            }
+            break;
 
         case USB_REQ_SET_INTERFACE:
         case USB_REQ_SET_CONFIGURATION:
-                _pcd->request_config = 1;   /* Configuration changed */
-                do_gadget_setup(_pcd, &ctrl );
-                dwc_otg_ep_req_start(_pcd,0);
-                break;
-                
+            _pcd->request_config = 1;   /* Configuration changed */
+            do_gadget_setup(_pcd, &ctrl );
+            dwc_otg_ep_req_start(_pcd,0);
+            break;
+
         default:
-                /* Call the Gadget Driver's setup functions */        
-                do_gadget_setup(_pcd, &ctrl );
-                dwc_otg_ep_req_start(_pcd,0);
-		break;
-        }
+            /* Call the Gadget Driver's setup functions */        
+            do_gadget_setup(_pcd, &ctrl );
+            dwc_otg_ep_req_start(_pcd,0);
+            break;
+    }
 }
 
 /**

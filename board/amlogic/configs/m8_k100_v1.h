@@ -227,6 +227,7 @@
 		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
 		"echo update...; "\
 		"run prepare; bmp display ${upgrade_logo_offset}; "\
+        "run usb_burning; "\
 		"if mmcinfo; then "\
 			"if fatexist mmc 0 ${sdcburncfg}; then "\
 				"sdc_burn ${sdcburncfg}; "\
@@ -251,7 +252,7 @@
 			"echo no recovery in flash; "\
 		"fi\0" \
 		\
-	"usb_burning=update 2000\0" \
+	"usb_burning=update 1000\0" \
 		\
 	"charging_or_not="\
 		"if ac_online; then "\

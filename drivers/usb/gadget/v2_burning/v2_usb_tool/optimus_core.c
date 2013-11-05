@@ -31,11 +31,15 @@ int v2_usbburning(unsigned timeout)
 
 int do_v2_usbtool (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+    int rc = 0;
     unsigned timeout = simple_strtoul(argv[1], NULL, 0);
 
     optimus_work_mode_set(OPTIMUS_WORK_MODE_USB_UPDATE);
 
-	return v2_usbburning(timeout);
+	rc = v2_usbburning(timeout);
+    close_usb_phy_clock(0);
+
+    return rc;
 }
 
 

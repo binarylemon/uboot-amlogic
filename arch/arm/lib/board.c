@@ -715,10 +715,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 		}
 #endif
-#ifdef CONFIG_VIDEO_AMLLCD
-	puts("LCD Initialize:   \n");
-	aml_lcd_init();
-#endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 unsigned int after_lcd_init =  get_utimer(0);
@@ -734,6 +730,16 @@ printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
         }
     }
 #endif// #if CONFIG_AUTO_START_SD_BURNING
+
+#ifdef CONFIG_VIDEO_AMLLCD
+	puts("LCD Initialize:   \n");
+	aml_lcd_init();
+#endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+unsigned int after_lcd_init =  get_utimer(0);
+printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
+#endif
 
 #ifdef CONFIG_POST
 	post_run (NULL, POST_RAM | post_bootmode_get(0));
