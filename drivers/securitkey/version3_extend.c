@@ -424,6 +424,29 @@ static int32_t key_installed(aml_key_t * key,uint32_t id, char * buf)
 #endif //KEY_NEW_METHOD
 
 #ifdef KEY_NEW_METHOD
+static int32_t key_item_clean(void)
+{
+	int i;
+	struct v3_key_storage *tmp_node;
+	tmp_node = &storage_v4[0];
+	for(i=0;i<Keys_V4_MAX_COUNT;i++){
+		if(tmp_node->content){
+			kfree(tmp_node->content);
+			tmp_node->content = NULL;
+		}
+		memset(tmp_node,0,sizeof(*tmp_node));
+		tmp_node++;
+	}
+#if 0
+	tmp_node = &storage_v4[0];
+	for(i=0;i<Keys_V4_MAX_COUNT;i++){
+		printk("name:%s \n",tmp_node->name);
+		tmp_node++;
+	}
+#endif
+}
+
+
 static int32_t key_item_parse(struct v3_key_storage_head *head)
 {
 	struct v3_key_storage *tmp_content_storage,*tmp_node;
@@ -721,6 +744,7 @@ static int32_t version3_read(aml_keys_schematic_t * schematic)
 		if(prov->read){
 			prov->read(prov,(uint8_t *)head,1024,0);
 		}
+		key_item_clean();
 		if(strcmp(head->mark,KEY_HEAD_MARK) == 0){
 			if(head->size > 1024){
 				headsize = head->size;
