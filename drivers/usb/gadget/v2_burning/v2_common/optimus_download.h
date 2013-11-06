@@ -74,7 +74,7 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_DOWNLOAD_SLOT_SZ                (64<<10)    //64K
 #define OPTIMUS_DOWNLOAD_SLOT_NUM               (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/OPTIMUS_DOWNLOAD_SLOT_SZ)
 
-#define OPTIMUS_VFAT_IMG_WRITE_BACK_SZ          OPTIMUS_DOWNLOAD_SLOT_SZ
+#define OPTIMUS_VFAT_IMG_WRITE_BACK_SZ          (OPTIMUS_DOWNLOAD_SLOT_SZ*2)
 #define OPTIMUS_SIMG_WRITE_BACK_SZ              OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ
 #define OPTIMUS_MEMORY_WRITE_BACK_SZ            (0X2U<<30)//2GBytes
 #define OPTIMUS_BOOTLOADER_MAX_SZ               (2U<<20)//max size is 2M ??

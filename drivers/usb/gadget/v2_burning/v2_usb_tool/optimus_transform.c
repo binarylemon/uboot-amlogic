@@ -312,8 +312,8 @@ void optimus_reset(void)
     close_usb_phy_clock(0);
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
     reboot_mode_clear();//clear the reboot mode
-    /*writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn*/
-    printf("To Reset...\n");//Add printf to delay to save env
+    //writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn
+    printf("Reset...\n");//Add printf to delay to save env
 
     //if not clear, uboot command reset will fail -> blocked
     *((volatile unsigned long *)0xc8100000) = 0;

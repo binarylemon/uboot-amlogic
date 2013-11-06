@@ -674,6 +674,12 @@ int optimus_storage_init(int toErase)
     if(!ret)
     {
         _disk_intialed_ok = 1;
+
+        if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get())//env not relocated in this case
+        {
+            DWN_MSG("usb producing env_relocate\n");
+            env_relocate();
+        }
     }
 
     return ret;

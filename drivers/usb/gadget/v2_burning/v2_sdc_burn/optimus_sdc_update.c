@@ -124,7 +124,7 @@ int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* f
     {
         partCapInByte = storage_get_partition_size_in_byte(partName);
         if(partCapInByte < imgItemSz || !partCapInByte){
-            SDC_ERR("partCapInByte 0x[%x, %x], imgItemSz 0x[%x, %x]\n", 
+            SDC_ERR("partCapInByte 0x[%x, %x] < imgItemSz 0x[%x, %x]\n", 
                     (u32)(partCapInByte>>32), (u32)partCapInByte, (u32)(imgItemSz>>32), (u32)imgItemSz);
             return __LINE__;
         }

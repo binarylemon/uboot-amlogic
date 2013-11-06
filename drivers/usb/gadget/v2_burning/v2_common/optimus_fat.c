@@ -28,13 +28,44 @@
 #include "../v2_burning_i.h"
 #include <part.h>
 #include <fat.h>
-
-extern int disk_read (__u32 startblock, __u32 getsize, __u8 * bufptr);
+#include <partition_table.h>
 
 #undef  FAT_ERROR
 #define FAT_ERROR(fmt...) printf("[FAT_ERR]L%d,", __LINE__),printf(fmt)
 
 #define FAT_MSG(fmt...) printf("fat:"fmt)
+
+extern int disk_read (__u32 startblock, __u32 getsize, __u8 * bufptr);
+extern int device_boot_flag;
+
+static int v2_ext_mmc_read(__u32 startblock, __u32 nBlk, __u8 * bufptr)
+{
+    int ret = 0;
+
+    //Attention: So far the work flow of sdc_burn or sdc_update after store_init(0), so device_boot_flag is setup yet!
+    if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG))
+    {
+        static struct mmc *mmc = NULL;
+
+        if(!mmc)
+        {
+            mmc = find_mmc_device(0);
+            if(!mmc){
+                FAT_ERROR("Fail to find mmc 0 device");
+                return __LINE__;
+            }
+        }
+        ret = mmc_init(mmc);
+        if(ret){
+            FAT_ERROR("Fail to init mmc 0 device");
+            return __LINE__;
+        }
+    }
+
+    ret = disk_read(startblock, nBlk, bufptr);
+
+    return ret;
+}
 
 /*
  * Convert a string to lowercase.
@@ -155,7 +186,7 @@ static __u32 get_fatent(fsdata *mydata, __u32 entry/*cluster index*/)
 		startblock += mydata->fat_sect;	/* Offset from start of disk */
 
 		if (getsize > fatlength) getsize = fatlength;
-		if (disk_read(startblock, getsize, bufptr) < 0) {
+		if (v2_ext_mmc_read(startblock, getsize, bufptr) < 0) {
 			FAT_DPRINT("Error reading FAT blocks\n");
 			return ret;
 		}
@@ -226,14 +257,14 @@ get_cluster(fsdata *mydata, const __u32 clustnum, __u8 *buffer, const unsigned l
 	}
 
 	FAT_DPRINT("gc - clustnum: %d, startsect: %d\n", clustnum, startsect);
-	if (disk_read(startsect, size/FS_BLOCK_SIZE , buffer) < 0) {
+	if (v2_ext_mmc_read(startsect, size/FS_BLOCK_SIZE , buffer) < 0) {
 		FAT_DPRINT("Error reading data\n");
 		return -1;
 	}
 	if(size % FS_BLOCK_SIZE) {
 		__u8 tmpbuf[FS_BLOCK_SIZE];
 		idx= size/FS_BLOCK_SIZE;
-		if (disk_read(startsect + idx, 1, tmpbuf) < 0) {
+		if (v2_ext_mmc_read(startsect + idx, 1, tmpbuf) < 0) {
 			FAT_ERROR("Error reading data\n");
 			return -1;
 		}
@@ -825,7 +856,7 @@ long do_fat_fopen(const char *filename)
     while (1) {
 	int i;
 
-	if (disk_read (cursect, mydata->clust_size, _do_fat_read_block) < 0) {
+	if (v2_ext_mmc_read(cursect, mydata->clust_size, _do_fat_read_block) < 0) {
 	    FAT_ERROR ("Error: reading rootdir block\n");
         put_fd(fd);        
 	    return -1;
