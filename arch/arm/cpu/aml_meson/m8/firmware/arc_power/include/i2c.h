@@ -9,26 +9,6 @@
 #define EIO       111
 
 /*
- * if not defined DDR and AO suspend voltage, define a default value for them
- */
-#ifndef CONFIG_DDR_SUSPEND_VOLTAGE
-#define CONFIG_DDR_SUSPEND_VOLTAGE      1400
-#endif
-
-#ifndef CONFIG_VDDAO_SUSPEND_VOLTAGE
-#define CONFIG_VDDAO_SUSPEND_VOLTAGE    960
-#endif
-
-#ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
-#define CONFIG_DDR_VOLTAGE              1500
-#endif
-
-#ifndef CONFIG_VDDAO_VOLTAGE            // VDDAO voltage for resume
-#define CONFIG_VDDAO_VOLTAGE            1200
-#endif
-
-
-/*
  * i2c clock speed define for 32K and 24M mode
  */
 #define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED

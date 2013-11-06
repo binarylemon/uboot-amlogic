@@ -189,19 +189,33 @@ void rn5t618_power_init()
     hard_i2c_read8(DEVID, 0x0b);                                // clear watch dog 
     rn5t618_set_bits(0xB3, 0x40, 0x40);
     __udelay(100*1000);
-    rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage to 1.05v
+#ifdef CONFIG_VCCK_VOLTAGE
+    rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
     __udelay(2000);
-    rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);          // set VDDAO voltage to 1.1v
+#endif
+#ifdef CONFIG_VDDAO_VOLTAGE
+    rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);          // set VDDAO voltage
     __udelay(2000);
-    rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);            // set DDR voltage to 1.5v
+#endif
+#ifdef CONFIG_DDR_VOLTAGE
+    rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);            // set DDR voltage
     __udelay(100 * 1000);                                       // delay a short time
+#endif
     val = hard_i2c_read8(DEVID, 0x30);
     val |= 0x01;
     hard_i2c_write8(DEVID, 0x30, val);                          // Enable DCDC3--DDR
-    rn5t618_set_ldo_voltage(1, 2800);                           // VDDIO_AO28
-    rn5t618_set_ldo_voltage(2, 1800);                           // VDDIO_AO18
-    rn5t618_set_ldo_voltage(LDO_RTC2, 1100);                    // RTC_0V9 
-    rn5t618_set_ldo_voltage(3, 1800);                           // VCC1.8V 
+#ifdef CONFIG_VDDIO_AO28
+    rn5t618_set_ldo_voltage(1, CONFIG_VDDIO_AO28);              // VDDIO_AO28
+#endif
+#ifdef CONFIG_VDDIO_AO18
+    rn5t618_set_ldo_voltage(2, CONFIG_VDDIO_AO18);              // VDDIO_AO18
+#endif
+#ifdef CONFIG_RTC_0V9
+    rn5t618_set_ldo_voltage(LDO_RTC2, CONFIG_RTC_0V9);          // RTC_0V9 
+#endif
+#ifdef CONFIG_VCC1V8
+    rn5t618_set_ldo_voltage(3, CONFIG_VCC1V8);                  // VCC1.8V 
+#endif
 }
 #endif
 

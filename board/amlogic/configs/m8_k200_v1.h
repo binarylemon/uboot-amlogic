@@ -119,15 +119,37 @@
 
 #define CONFIG_RN5T618
 #ifdef CONFIG_RN5T618
-#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
-#define CONFIG_UBOOT_BATTERY_PARAMETERS 
+#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
+#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 
-#define CONFIG_POWER_SPL
-#define CONFIG_VCCK_VOLTAGE             1050
-#define CONFIG_VDDAO_VOLTAGE            1100
-#define CONFIG_DDR_VOLTAGE              1500
+/*
+ * under some cases default voltage of PMU output is 
+ * not suitable for application, so you should take care
+ * of the following macros which defined initial voltage
+ * of each power domain when in SPL stage of uboot.
+ */
+#define CONFIG_POWER_SPL                            // init power for all domians, must have
+#define CONFIG_VCCK_VOLTAGE             1050        // CPU core voltage when boot, must have
+#define CONFIG_VDDAO_VOLTAGE            1100        // VDDAO voltage when boot, must have
+#define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
 
-#define CONFIG_DCDC_PFM_PMW_SWITCH      1 
+#define CONFIG_VDDIO_AO28               2800        // VDDIO_AO28 voltage when boot, option
+#define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
+#define CONFIG_RTC_0V9                  1100        // RTC_0V9 voltage when boot, option
+#define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, optin
+
+/*
+ * set to 1 if you want decrease voltage of VDDAO when suspend
+ */
+#define CONFIG_VDDAO_VOLTAGE_CHANGE     1
+#ifdef CONFIG_VDDAO_VOLTAGE_CHANGE
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    825         // voltage of VDDAO when suspend
+#endif /* CONFIG_VDDAO_VOLTAGE_CHANGE */
+
+/*
+ * DCDC mode switch when suspend 
+ */
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1
 #endif /* CONFIG_RN5T618 */
 
 #endif /* CONFIG_PLATFORM_HAS_PMU */

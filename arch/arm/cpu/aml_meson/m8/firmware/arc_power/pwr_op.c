@@ -21,21 +21,6 @@
 #endif
 
 /*
- * if not defined DDR and AO suspend voltage, define a default value for them
- */
-#ifndef CONFIG_DDR_VOLTAGE              // ddr voltage for resume
-#define CONFIG_DDR_VOLTAGE              1500
-#endif
-
-#ifndef CONFIG_VDDAO_VOLTAGE            // VDDAO voltage for resume
-#define CONFIG_VDDAO_VOLTAGE            1200
-#endif
-
-#ifndef CONFIG_DCDC_PFM_PMW_SWITCH
-#define CONFIG_DCDC_PFM_PMW_SWITCH      1
-#endif
-
-/*
  * i2c clock speed define for 32K and 24M mode
  */
 #define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
@@ -221,6 +206,15 @@ void rn5t618_set_dcdc_voltage(int dcdc, int voltage)
     addr = 0x35 + dcdc;
     idx_to = find_idx(6000, voltage * 10, 125, 256);            // step is 12.5mV
     i2c_pmu_write_b(addr, idx_to);
+#if 1
+    printf_arc("set dcdc");
+    serial_put_hex(addr-36, 4);
+    wait_uart_empty();
+    printf_arc(" to 0x");
+    serial_put_hex(idx_to, 8);
+    wait_uart_empty();
+    printf_arc("\n");
+#endif
 }
 
 void rn5t618_set_dcdc_mode(int dcdc, int mode)
@@ -295,30 +289,30 @@ void rn5t618_power_off_at_24M()
     rn5t618_set_gpio(0, 1);                                             // close vccx3
     udelay__(2000);
 
+#if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
 #if CONFIG_VDDAO_VOLTAGE_CHANGE
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_SUSPEND_VOLTAGE);
-    printf_arc("dc2 set to 0.96v\n");
-    rn5t618_set_dcdc_voltage(3, CONFIG_DDR_SUSPEND_VOLTAGE);
-    printf_arc("dc3 set to 1.50v\n");
 #endif
+#endif
+#if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
     rn5t618_set_dcdc_mode(2, MODE_PSM);
     printf_arc("dc2 set to PSM\n");
     rn5t618_set_dcdc_mode(3, MODE_PSM);
     printf_arc("dc3 set to PSM\n");
 #endif
+#endif
     rn5t618_set_bits(0x0044, ~(LDO3_BIT | LDO4_BIT ), (LDO3_BIT | LDO4_BIT ));
 
     reg_ldo     = i2c_pmu_read_b(0x0044);
     reg_ldo_rtc = i2c_pmu_read_b(0x0045);
     rn5t618_set_bits(0x002c, 0x00, 0x01);               // close DCDC1, vcck 
-
     printf_arc("enter 32K\n");
 }
 
 void rn5t618_power_on_at_24M()          // need match power sequence of  power_off_at_24M
 {
-    printf_arc("enter 24MHz\n");
+    printf_arc("enter 24MHz.\n");
 
     rn5t618_set_gpio(3, 1);                             // should open LDO1.2v before open VCCK
     udelay__(6 * 1000);                                // must delay 25 ms before open vcck
@@ -326,17 +320,18 @@ void rn5t618_power_on_at_24M()          // need match power sequence of  power_o
 
 	rn5t618_set_bits(0x0044, LDO3_BIT | LDO4_BIT, (LDO3_BIT | LDO4_BIT ));
 	
+#if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
     rn5t618_set_dcdc_mode(3, MODE_PWM);
     printf_arc("dc3 set to pwm\n");
     rn5t618_set_dcdc_mode(2, MODE_PWM);
     printf_arc("dc2 set to pwm\n");
 #endif
+#endif
+#if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
 #if CONFIG_VDDAO_VOLTAGE_CHANGE
-    rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);
-    printf_arc("dc3 set to 1.5v\n");
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);
-    printf_arc("dc2 set to 1.2v\n");
+#endif
 #endif
 	rn5t618_set_gpio(0, 0);                                     // need to open this in LCD driver?
 	rn5t618_set_gpio(1, 0);                                     // close vccx2
