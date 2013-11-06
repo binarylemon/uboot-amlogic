@@ -129,7 +129,9 @@
 #define CONFIG_VDDIO_AO28               2800        // VDDIO_AO28 voltage when boot, option
 #define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
 #define CONFIG_RTC_0V9                  1100        // RTC_0V9 voltage when boot, option
-#define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, optin
+#define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
+#define CONFIG_VCC2V8                   2800        // VCC2.8v voltage when boot, option
+#define CONFIG_AVDD1V8                  1800        // AVDD1.8V voltage when boot, option
 
 /*
  * set to 1 if you want decrease voltage of VDDAO when suspend

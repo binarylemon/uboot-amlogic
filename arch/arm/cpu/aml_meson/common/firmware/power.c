@@ -216,6 +216,12 @@ void rn5t618_power_init()
 #ifdef CONFIG_VCC1V8
     rn5t618_set_ldo_voltage(3, CONFIG_VCC1V8);                  // VCC1.8V 
 #endif
+#ifdef CONFIG_VCC2V8
+    rn5t618_set_ldo_voltage(4, CONFIG_VCC2V8);                  // VCC2.8V 
+#endif
+#ifdef CONFIG_AVDD1V8
+    rn5t618_set_ldo_voltage(5, CONFIG_AVDD1V8);                 // AVDD1.8V 
+#endif
 }
 #endif
 
