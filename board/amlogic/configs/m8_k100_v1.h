@@ -243,7 +243,7 @@
 		"fi; fi; fi; fi; fi; fi\0" \
 		\
 	"prepare="\
-		"video open; video clear; video dev bl_on; " \
+		"video clear; video open; video clear; video dev bl_on; " \
 		"imgread res logo ${loadaddr_misc}; "\
         "unpackimg ${loadaddr_misc}; "\
         "\0"\
