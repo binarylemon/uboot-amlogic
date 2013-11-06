@@ -1654,5 +1654,32 @@ ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_l
 	}
 	return error;
 }
+int uboot_storer_read(char *buf,int len)
+{
+	int ret = -EINVAL;
+	if (keys_version == 0){
+		printk("%s:%d securitykey is not init\n",__func__,__LINE__);
+		return ret;
+	}
 
+	if (key_schematic[keys_version]->read(key_schematic[keys_version]) < 0){
+		printk("%s:%d securitykey read storer error\n");
+		return ret;
+	}
+
+	return 0;
+}
+int uboot_storer_write(char *buf,int len)
+{
+	int ret = -EINVAL;
+	if (keys_version == 0){
+		printk("%s:%d securitykey is not init\n",__func__,__LINE__);
+		return ret;
+	}
+	if (key_schematic[keys_version]->flush(key_schematic[keys_version]) < 0){
+		printk("%s:%d securitykey write storer error\n");
+        return -EINVAL;
+	}
+	return 0;
+}
 

@@ -64,11 +64,16 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		inited=1;
 		memset(key_device,0,sizeof(key_device));
 		strcpy(key_device,cmd);
-		printk("key save in %s\n",cmd);
+		if(!strcmp(cmd,"auto")){
+			printk("key save is auto select storer(nand or emmc)\n");
+		}
+		else{
+			printk("key save in %s\n",cmd);
+		}
 		return 0;
 	}
 	if(!inited){
-		printk("please input \"secukey device(nand or emmc)\" cmd\n");
+		printk("please input \"secukey device(nand or emmc or auto)\" cmd\n");
 		return -1;
 	}
 	if(!strcmp(cmd,"list"))
@@ -115,7 +120,7 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		error=uboot_key_read(namebuf, databuf);
 		if(error>=0){
 			char outputdata[2];
-			printk("read count=%d\n",error);
+			printk("key size=%d\n",error);
 			printk("the key name is :%s\n",namebuf);
 			printk("the key data is :");
 			memset(outputdata,0,2);
@@ -124,7 +129,6 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				printk("%c",outputdata[0]);
 			}
 			printk("\n");
-			printk("num:%d\n",error);
 			#if 0
 			flag=strlen(databuf)-1;
 			*((unsigned int *)addr)=flag;
@@ -187,6 +191,30 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		printk("lenth:%d\n",lenth);
 		return error;
 	}
+	if(!strcmp(cmd,"storer")){
+		char *operate;
+		if(argc != 3){
+			goto usage;
+		}
+		operate = argv[2];
+		if(!strcmp(operate,"read")){
+			int uboot_storer_read(char *buf,int len);
+			error = uboot_storer_read(operate,sizeof(operate));
+		}
+		else if(!strcmp(operate,"write")){
+			int uboot_storer_write(char *buf,int len);
+			error = uboot_storer_write(operate,sizeof(operate));
+		}
+		else{
+			goto usage;
+		}
+		if(error < 0){
+			printk("%s %s is error\n",cmd,operate);
+			return error;
+		}
+		printk("%s %s is ok\n",cmd,operate);
+		return 0;
+	}
 
 usage:
 	cmd_usage(cmdtp);
@@ -201,6 +229,8 @@ U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"secukey read keyname [addr]- read the key data\n"
 	"secukey in keyname keyaddr keylen\n"
 	"secukey out keyname keyaddr keylen\n"
+	"secukey storer read   -- read keydata from storer to memory\n"
+	"secukey storer write  -- write keydata from memory to storer\n"
 );
 
 ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);

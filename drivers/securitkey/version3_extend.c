@@ -114,7 +114,7 @@ static int32_t v3_key_update_status(aml_key_t * key)
 #ifdef KEY_NEW_METHOD
 static int32_t v3_key_write(aml_key_t * key, uint8_t *data)
 {
-    int32_t key_slot=AML_KEY_GETSLOT(key);
+    //int32_t key_slot=AML_KEY_GETSLOT(key);
     int i;
     struct v3_key_storage *key_storage=NULL;
 	//key_schem_print("#v3_key_write id=%d !!!\n",key_slot);
@@ -188,7 +188,7 @@ static int32_t v3_key_write(aml_key_t * key, uint8_t *data)
 }
 static int32_t v3_key_read(aml_key_t * key, uint8_t *data)
 {
-    int32_t key_slot = AML_KEY_GETSLOT(key);
+    //int32_t key_slot = AML_KEY_GETSLOT(key);
     struct v3_key_storage *key_storage=NULL;
     int i;
 	//key_schem_print("#key_read id=%d !!!\n",key_slot);
@@ -426,7 +426,7 @@ static int32_t key_installed(aml_key_t * key,uint32_t id, char * buf)
 #ifdef KEY_NEW_METHOD
 static int32_t key_item_parse(struct v3_key_storage_head *head)
 {
-	struct v3_key_storage *tmp_content_storage,*valid_node,*tmp_node,*pre_node,*free_node;
+	struct v3_key_storage *tmp_content_storage,*tmp_node;
 	char *temp_content,*item_content;
 	aml_key_t *aml_key;
 	int i,item_cnt;
@@ -444,6 +444,11 @@ static int32_t key_item_parse(struct v3_key_storage_head *head)
 	//printk("item_cnt:%d,%s:%d\n",item_cnt,__func__,__LINE__);
 	for(i=0;i<item_cnt;i++){
 		tmp_content_storage = (struct v3_key_storage *)&temp_content[head->item[i].position];
+		if(tmp_node->content){
+			kfree(tmp_node->content);
+			tmp_node->content = NULL;
+			//printk("%s:%d,tmp_node->content is exist\n",__func__,__LINE__);
+		}
 		if(tmp_node->content == NULL){
 			item_content = kzalloc(tmp_content_storage->storage_size, GFP_KERNEL);
 			if(item_content == NULL){
@@ -529,7 +534,7 @@ static int32_t key_item_merge(char **mem,uint32_t *size)
 int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
 {
 	aml_keybox_provider_t * prov= aml_keybox_provider_get(secure_dev);
-    int i,j;
+    int i;
     struct v3_key_storage_head *head;
     uint32_t headsize;
     if (IS_ERR_OR_NULL(prov))
@@ -560,7 +565,9 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
 			printk("kzalloc mem fail,%s\n",__func__);
 			return -ENOMEM;
 		}
-		prov->read(prov,head,1024,0);
+		if(prov->read){
+			prov->read(prov,(uint8_t *)head,1024,0);
+		}
 		if(strcmp(head->mark,KEY_HEAD_MARK) == 0){
 			if(head->size > 1024){
 				headsize = head->size;
@@ -570,7 +577,9 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
 					printk("kzalloc mem fail,%s\n",__func__);
 					return -ENOMEM;
 				}
-				prov->read(prov,head,headsize,0);
+				if(prov->read){
+					prov->read(prov,(uint8_t *)head,headsize,0);
+				}
 			}
 			key_item_parse(head);
 		}
@@ -641,7 +650,7 @@ static int32_t version3_inst(aml_keys_schematic_t * schematic, aml_install_key_t
 static int32_t version3_flush(aml_keys_schematic_t * schematic)
 {
 	aml_keybox_provider_t * prov = aml_keybox_provider_get(secure_device);
-	int i, j,err=0;
+	int i, err=0;
 	uint16_t st=0;
 	uint32_t size=0;
 	char *room=NULL;
@@ -702,7 +711,33 @@ static int32_t version3_read(aml_keys_schematic_t * schematic)
 		return 0;
 #endif
 #ifdef KEY_NEW_METHOD
-		//prov->read(prov, (uint8_t *)&storage,sizeof(storage),0);
+		struct v3_key_storage_head *head;
+		uint32_t headsize;
+		head = kzalloc(1024, GFP_KERNEL);
+		if(head == NULL){
+			printk("kzalloc mem fail,%s\n",__func__);
+			return -ENOMEM;
+		}
+		if(prov->read){
+			prov->read(prov,(uint8_t *)head,1024,0);
+		}
+		if(strcmp(head->mark,KEY_HEAD_MARK) == 0){
+			if(head->size > 1024){
+				headsize = head->size;
+				kfree(head);
+				head = kzalloc(headsize, GFP_KERNEL);
+				if(head == NULL){
+					printk("kzalloc mem fail,%s\n",__func__);
+					return -ENOMEM;
+				}
+				if(prov->read){
+					prov->read(prov,(uint8_t *)head,headsize,0);
+				}
+			}
+			key_item_parse(head);
+		}
+		kfree(head);
+
 		version3.state=KEYDATATRUE;
 		return 0;
 #endif
