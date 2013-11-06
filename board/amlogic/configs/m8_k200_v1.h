@@ -182,7 +182,7 @@
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
-	"cvbsmode=480cvbs\0" \
+	"cvbsmode=576cvbs\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
