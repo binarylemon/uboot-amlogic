@@ -52,6 +52,7 @@
 #include <asm/cache.h>
 
 #include <asm/arch/reboot.h>
+#include <partition_table.h>
 
 #ifdef CONFIG_AML_RTC
 #include <aml_rtc.h>
@@ -510,6 +511,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	char *s;
 	bd_t *bd;
 	ulong malloc_start;
+	int init_ret=0, ret = 0;
 #if !defined(CONFIG_SYS_NO_FLASH)
 	ulong flash_size;
 #endif
@@ -553,7 +555,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	/* The Malloc area is immediately below the monitor copy in DRAM */
 	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
 	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
-
+#ifdef CONFIG_ACS
+	get_partition_table();
+#endif
 
 #ifdef CONFIG_GENERIC_MMC
     puts("MMC:   ");
@@ -601,9 +605,20 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #endif
 #if defined(CONFIG_CMD_NAND)
 	puts ("NAND:  ");
-	nand_init();		/* go init the NAND */
+#ifdef  CONFIG_NEXT_NAND
+	ret = amlnf_init(0x0);  
+	init_ret = ret;
+// flag = 0,indicate normal boot;
+//flag = 1, indicate update; 
+//flag = 2, indicate need erase 
+#else
+	nand_init();	/* go init the NAND */
+#endif
 #endif
 
+#ifdef CONFIG_STORE_COMPATIBLE
+	get_storage_device_flag(init_ret);
+#endif
 #if defined(CONFIG_CMD_ONENAND)
 	onenand_init();
 #endif
@@ -616,7 +631,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 	/* initialize environment */
 	env_relocate ();
-
+#ifdef CONFIG_STORE_COMPATIBLE
+	set_storage_device_flag();
+#endif
 //#ifdef MX_REVD
 #if 1
  		//if not clear, uboot command reset will fail -> blocked

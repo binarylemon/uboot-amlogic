@@ -19,13 +19,10 @@
 #endif
 #endif
 
-//#define CONFIG_SECURITYKEY
-#ifdef CONFIG_SECURITYKEY
-#define CONFIG_AML_NAND_KEY
-#endif
+#define CONFIG_SECURITYKEY
 
-//#define CONFIG_NEXT_NAND
-//#define CONFIG_SECURE_NAND  1
+#define CONFIG_NEXT_NAND
+#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
@@ -56,7 +53,7 @@
 
 
 //Enable storage devices
-//#define CONFIG_CMD_NAND  1
+#define CONFIG_CMD_NAND  1
 //#define CONFIG_VIDEO_AML 1
 //#define CONFIG_CMD_BMP 1
 //#define CONFIG_VIDEO_AMLTVOUT 1
@@ -207,7 +204,7 @@
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
 
-//#define CONFIG_STORE_COMPATIBLE
+#define CONFIG_STORE_COMPATIBLE
 
 #ifdef  CONFIG_STORE_COMPATIBLE
 //spi

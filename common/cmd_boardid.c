@@ -66,6 +66,14 @@ int do_boardid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 	run_command("secukey emmc",0);
 #endif
 
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+    if (is_nand_exist()) {
+        run_command("secukey nand",0);
+    } else if (is_emmc_exist()) {
+        run_command("secukey emmc",0);
+    }
+#endif
+
 	ret=uboot_key_read("boardid",boardid_prefetch);
     if(ret >= 0) {
 #ifdef CONFIG_AML_NAND_KEY
@@ -75,6 +83,15 @@ int do_boardid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 #ifdef CONFIG_AML_EMMC_KEY
 		printf("boardid keys read from emmc success!\n");
 #endif
+
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+    if (is_nand_exist()) {
+		printf("boardid keys read from nand success!\n");
+    } else if (is_emmc_exist()) {
+		printf("boardid keys read from emmc success!\n");
+    }
+#endif
+
 		char outputdata[2];
 		memset(outputdata,0,2);
 		for(i=0;i<BOARDID_SIZE;i++){
@@ -93,6 +110,14 @@ int do_boardid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 
 #ifdef CONFIG_AML_EMMC_KEY
 			printf("emmc key read boardid fail,boardid valid\n");
+#endif
+
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+            if (is_nand_exist()) {
+                printf("nand key read boardid fail,boardid valid\n");
+            } else if (is_emmc_exist()) {
+                printf("emmc key read boardid fail,boardid valid\n");
+            }
 #endif
 		}else{
 			for(i=0,j=0;i<ret;j++){

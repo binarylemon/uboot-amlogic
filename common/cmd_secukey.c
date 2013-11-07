@@ -59,6 +59,38 @@ int do_secukey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	cmd = argv[1];
 	//first read nand key
 
+#ifdef CONFIG_STORE_COMPATIBLE 
+	if(!strcmp(cmd,"init") ){
+		char store[20];
+		if(is_nand_exist()){
+			sprintf(store,"%s","nand");
+		}else if (is_emmc_exist()){
+			sprintf(store,"%s","emmc");
+		}else{
+			sprintf(store,"%s","auto");
+		}
+		error =  uboot_key_initial(store);
+		if(error < 0){
+			printk("uboot key set version fail\n");
+			return -1;
+		}
+		inited=1;
+		memset(key_device,0,sizeof(key_device));
+		strcpy(key_device,store);
+		printk("key save in %s\n",store);
+		return 0;
+	}
+	if(!strcmp(cmd,"unlock") ){
+		if(is_nand_exist()){
+			run_command("amlnf disprotect key",0);
+		}else if (is_emmc_exist()){
+			run_command("mmc key",0);
+		}else{
+			printk("somthing wrong in key\n");
+		}
+		return 0;
+	}
+#endif
 	if ((!strcmp(cmd,"nand") )||(!strcmp(cmd,"emmc")) || (!strcmp(cmd,"auto") )){
 		error =  uboot_key_initial(cmd);
 		if(error < 0){
@@ -228,6 +260,8 @@ usage:
 U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"security KEY sub-system",
 	"list [addr] - show available security key name\n"
+	"secukey  init - auto init key in the right device\n"
+	"secukey  unlock - remove protection of key on devices\n"
 	"secukey  device(nand or emmc or auto) - init key in device\n"
 	"secukey write keyname data - wirte key data to nand/emmc\n"
 	"secukey read keyname [addr]- read the key data\n"

@@ -63,8 +63,15 @@ COBJS-$(CONFIG_ENV_IS_IN_MG_DISK) += env_mgdisk.o
 COBJS-$(CONFIG_ENV_IS_IN_MMC) += env_mmc.o
 COBJS-$(CONFIG_ENV_IS_IN_NAND) += env_nand.o
 
-COBJS-y += partition_table.o
+ifeq ($(CONFIG_NEXT_NAND),y)
+COBJS-$(CONFIG_ENV_IS_IN_AML_NAND) += env_amlnf.o
+endif
+
+ifneq ($(CONFIG_NEXT_NAND),y)
 COBJS-$(CONFIG_ENV_IS_IN_AML_NAND) += env_amlnand.o
+endif
+
+COBJS-$(CONFIG_NEXT_NAND) += partition_table.o
 COBJS-$(CONFIG_ENV_IS_IN_NVRAM) += env_nvram.o
 COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
@@ -72,6 +79,7 @@ COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 COBJS-$(CONFIG_ENV_IS_IN_EMMC) += env_emmc.o
 COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += env_amlnand.o env_sf.o env_switch.o
 COBJS-$(CONFIG_SPI_NAND_EMMC_COMPATIBLE) += env_amlnand.o env_sf.o env_mmc.o env_switch.o
+COBJS-$(CONFIG_STORE_COMPATIBLE) += env_amlnf.o env_sf.o env_mmc.o env_switch.o
 # command
 COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
 COBJS-$(CONFIG_SECURITYKEY) += cmd_usid.o cmd_uuid.o
@@ -138,15 +146,18 @@ COBJS-$(CONFIG_CMD_MII) += cmd_mii.o
 COBJS-$(CONFIG_CMD_MISC) += cmd_misc.o
 COBJS-$(CONFIG_CMD_MMC) += cmd_mmc.o
 COBJS-$(CONFIG_MP) += cmd_mp.o
+ifneq ($(CONFIG_NEXT_NAND),y)
 COBJS-$(CONFIG_CMD_MTDPARTS) += cmd_mtdparts.o
 COBJS-$(CONFIG_CMD_NAND) += cmd_nand.o
+endif
 COBJS-$(CONFIG_SPI_NAND_COMPATIBLE) += cmd_interface.o
 COBJS-$(CONFIG_SPI_NAND_EMMC_COMPATIBLE) += cmd_interface.o
 
-#ifeq ($(CONFIG_NEXT_NAND),y)
-COBJS-y += store_interface.o
-COBJS-y += cmd_burnup.o
-#endif
+ifeq ($(CONFIG_NEXT_NAND),y)
+COBJS-$(CONFIG_NEXT_NAND) += store_interface.o
+COBJS-$(CONFIG_NEXT_NAND) += cmd_burnup.o
+endif
+
 COBJS-$(CONFIG_CMD_NET) += cmd_net.o
 COBJS-$(CONFIG_CMD_ONENAND) += cmd_onenand.o
 COBJS-$(CONFIG_CMD_OTP) += cmd_otp.o

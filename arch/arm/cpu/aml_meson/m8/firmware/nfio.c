@@ -471,12 +471,19 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 	page_size = short_mode ? short_size :
 	ecc_mode<2 ? 64 : 128; // unit: 8 bytes;
 
-	for(i=0;i<pages;i++){
-	    	info_buf[i]=0;
-	}
+	memset(info_buf, 0, pages*PER_INFO_BYTE);
+
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	flush_dcache_range(info_buf,info_buf+pages*PER_INFO_BYTE);
+	invalidate_dcache_range(mem, mem+page_size * 8 * pages);
+#endif  
 
 	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 
+		//serial_puts("nand read addr=0x");        
+		//serial_put_hex(src,32);            
+		//serial_puts("\n");
+		
 	// set data/info address
 	writel(info_adr, P_NAND_IADR);
 	writel(mem, P_NAND_DADR);
@@ -528,9 +535,10 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 	writel((CE0 | IDLE ), P_NAND_CMD);           //send dummy cmd idle
 
 #if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	while((readl(P_NAND_CMD)>>22&0x1f) > 0);
 	do{
 	invalidate_dcache_range(info_buf,info_buf+pages*PER_INFO_BYTE);
-	}while((readl(P_NAND_CMD)>>22&0x1f) > 0);
+	}while(info_buf[pages-1]==0);
 #else
 	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 #endif //defined(CONFIG_AML_SPL_L1_CACHE_ON)
@@ -551,6 +559,21 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 			}
 
 			if(ret != ERROR_NAND_BLANK_PAGE){ //if randomization, check 0xff page, zero_cnt less than 10
+			    serial_puts("ERROR_NAND_ECC at:");
+		        serial_put_hex(k,8);            
+		        serial_puts(" info_buf:");		        
+#if 0//defined(CONFIG_AML_SPL_L1_CACHE_ON)		
+                serial_puts("\n");        		        
+            	for(i=0;i<pages;i++){
+            	   serial_put_hex(i,32);  
+            	   serial_puts("\t"); 
+            	   serial_put_hex(info_buf[i],64);          
+                   serial_puts("\n");
+            	}	
+#else
+        	    serial_put_hex(info_buf[k],32);          
+                serial_puts("\n");	            		                    
+#endif		    		
 				ret = ERROR_NAND_ECC;
 			}
 			break;
@@ -563,7 +586,9 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 
 		oob_buf[0] = (info_buf[k]&0xff);
 		oob_buf[1] = ((info_buf[k]>>8)&0xff);
-
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+		invalidate_dcache_range(oob_buf,oob_buf+2);
+#endif
 		oob_buf += 2;
 #else
 	    	if ((info_buf[k]&0xc000ffff) != 0xc000aa55) //magic word error
@@ -574,6 +599,10 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 #endif
 	}
 
+#if 0//defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	    invalidate_dcache_range(mem,mem+page_size * 8 * pages);
+#endif
+
 	return ret;
 }
 
@@ -581,7 +610,13 @@ STATIC_PREFIX short nfio_page_read(unsigned src, unsigned mem, unsigned char *oo
 {
 	unsigned read_page, new_nand_type, pages_in_block;
 	int retry_cnt, ret = 0;
-	struct nand_page0_info_t *page0_info = (NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t);
+	struct nand_page0_info_t *page0_info; 
+
+#if 0//defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	    invalidate_dcache_range((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t),(NAND_TEMP_BUF+384));
+#endif    
+    
+    page0_info = (NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t);
     
 	read_page = src;
 	if(page0_info->new_nand_type) {		//for new nand
@@ -599,7 +634,7 @@ STATIC_PREFIX short nfio_page_read(unsigned src, unsigned mem, unsigned char *oo
 page_retry:
 	ret = nfio_page_read_hwctrl(read_page, mem, oob_buf, ext);
 	if (ret == ERROR_NAND_ECC){
-		serial_puts("nand read addr=0x");
+		serial_puts("nand read page addr=0x");
 		serial_put_hex(read_page,32);
 		serial_puts("nfio_read read err here\n");
 
@@ -720,6 +755,11 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
     else {
         nand_retry.max = 0;
     }
+#endif
+
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        memset(NAND_TEMP_BUF, 0, 384);
+	    flush_dcache_range(NAND_TEMP_BUF, NAND_TEMP_BUF+384);
 #endif
 
 	// 4 copies of same data.
@@ -1313,12 +1353,13 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
     for(i=0,read_size=0; i<total_page && read_size<count; i++, read_size+=data_size){
 
 	        ret = nfio_page_read(page_base+i, mem + read_size, oob_buf, ext);
+#if 0	//mark here since already print in nfio_page_read.      
 	        if (ret == ERROR_NAND_ECC){
 	        	serial_puts("nand read addr=0x");	
 	        	serial_put_hex(i+page_base,32);
 	        	serial_puts("nfio_read read err here\n");
 	        }	        
-
+#endif
             for(k=0; k<pages; k++){
 				if(((*oob_buf&0xff) != 0x55) && ((((*(oob_buf+1)&0xff) != 0xaa)))){
 					ret = ERROR_NAND_MAGIC_WORD;
@@ -1337,11 +1378,16 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 	        	if(page_base > total_page)
                         break;
             }
+
+#if 0//defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        invalidate_dcache_range(read_size+target,read_size+target+data_size);
+#endif  
+            
     }
 #ifdef CONFIG_SECURE_NAND
 	//load os_key	
 	psecure = (unsigned char*)NAND_SECURE_BUF;
-	extern void * memset(void * s,char c,size_t count);
+	//extern void * memset(void * s,char c,size_t count);
 	memset(psecure, 0, 0x100);
 	nf_read_secure(target);
 #endif

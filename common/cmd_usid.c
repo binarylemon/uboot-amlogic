@@ -66,6 +66,14 @@ static int do_usid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 	run_command("secukey emmc",0);
 #endif
 
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+    if (is_nand_exist()) {
+        run_command("secukey nand",0);
+    } else if (is_emmc_exist()) {
+        run_command("secukey emmc",0);
+    }
+#endif
+
 	ret=uboot_key_read("usid",usid_prefetch);
     if(ret >= 0) {
 #ifdef CONFIG_AML_NAND_KEY
@@ -74,6 +82,14 @@ static int do_usid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 
 #ifdef CONFIG_AML_EMMC_KEY
 		printf("usid keys read from emmc success!\n");
+#endif
+
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+    if (is_nand_exist()) {
+		printf("usid keys read from nand success!\n");
+    } else if (is_emmc_exist()) {
+		printf("usid keys read from emmc success!\n");
+    }
 #endif
 		char outputdata[2];
 		memset(outputdata,0,2);
@@ -94,6 +110,14 @@ static int do_usid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 #ifdef CONFIG_AML_EMMC_KEY
 			printf("emmc key read usid fail,usid valid\n");
 #endif
+
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+            if (is_nand_exist()) {
+                printf("nand key read usid fail,usid valid\n");
+            } else if (is_emmc_exist()) {
+                printf("emmc key read usid fail,usid valid\n");
+            }
+#endif
 		}else{
 			for(i=0,j=0;i<ret;j++){
 				tmpbuf[j] = twoASCByteToByte(usid_prefetch[i],usid_prefetch[i+1]);
@@ -105,6 +129,14 @@ static int do_usid_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 
 #ifdef CONFIG_AML_EMMC_KEY
 			printf("emmc usid read OK,write to bootargs now...\n");
+#endif
+
+#ifdef CONFIG_STORE_COMPATIBLE && defined(CONFIG_SECURITYKEY)
+            if (is_nand_exist()) {
+                printf("nand usid read OK,write to bootargs now...\n");
+            } else if (is_emmc_exist()) {
+                printf("emmc usid read OK,write to bootargs now...\n");
+            }
 #endif
 			strcpy(str, getenv("bootargs"));
 			if(strstr(str,"androidboot.serialno") == NULL){
