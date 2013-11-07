@@ -138,11 +138,11 @@ static int  sdio_detect(unsigned port)
 			if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){ //sd_d3 low, debug board in
 				if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<22))){
 					printf("sdio debug board detected, sd card with 1bit mode\n");
-		 			//sdio_debug_1bit_flag = 1;
+		 			sdio_debug_1bit_flag = 1;
 		 		}
 		 		else{ 
 		 			printf("sdio debug board detected, no sd card in\n");
-		 			//sdio_debug_1bit_flag = 0;
+		 			sdio_debug_1bit_flag = 0;
 		 			return 1;
 		 		}
 		 	}

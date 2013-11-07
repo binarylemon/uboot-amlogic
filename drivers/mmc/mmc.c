@@ -32,15 +32,50 @@
 #include <linux/list.h>
 #include <mmc.h>
 #include <div64.h>
+#include <asm/arch/sdio.h>
+
+#ifdef CONFIG_STORE_COMPATIBLE
+#include <emmc_partitions.h>
+#endif
 
 #include "emmc_key.h"
 
-static struct list_head mmc_devices;
+struct list_head mmc_devices;
 static int cur_dev_num = -1;
 
 #define MMC_RD_WR_MAX_BLK_NUM   (256)
 
 extern void mdelay(unsigned long msec);
+
+/* If reserve partition is protected, we should not access it.
+ * 0--allow accessed 
+ * 1--NOT allow accessed
+ */
+bool emmckey_is_protected (struct mmc *mmc)
+{
+#ifdef CONFIG_SECURITYKEY
+	return mmc->key_protect;
+#else
+    return 0;
+#endif
+}
+
+bool emmckey_is_access_range_legal (struct mmc *mmc, ulong start, lbaint_t blkcnt)
+{
+#ifdef CONFIG_SECURITYKEY
+	struct aml_emmckey_info_t *emmckey_info;
+
+	emmckey_info = mmc->aml_emmckey_info;
+	if(mmc->key_protect){ // NOT allow accessing
+        if ((emmckey_info->lba_start <= (start+blkcnt-1)) && ((emmckey_info->lba_end-1) >= start)) {
+                printf("Emmckey: Access range is illegal!\n");
+			return false;
+        }
+	}
+#endif
+
+    return true;
+}
 
 int __board_mmc_getcd(u8 *cd, struct mmc *mmc) {
 	return -1;
@@ -82,6 +117,24 @@ struct mmc *find_mmc_device(int dev_num)
 
 	return NULL;
 }
+
+struct mmc *find_mmc_device_by_port (unsigned sdio_port)
+{
+    struct mmc *m;
+    struct aml_card_sd_info * sdio;
+    struct list_head *entry;
+
+    list_for_each(entry, &mmc_devices) {
+        m = list_entry(entry, struct mmc, link);
+        sdio = m->priv;
+
+        if (sdio->sdio_port == sdio_port)
+            return m;
+    }
+
+	return NULL;
+}
+
 
 #ifdef CONFIG_MMC_DEVICE
 struct mmc find_mmc_device_by_name(char *name)
@@ -157,22 +210,14 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 	lbaint_t cur, blocks_todo = blkcnt;
 
 	struct mmc *mmc = find_mmc_device(dev_num);
-#ifdef CONFIG_AML_EMMC_KEY
-	struct aml_emmckey_info_t *emmckey_info;
-#endif
+
 	if (!mmc)
 		return 0;
 
-#ifdef CONFIG_AML_EMMC_KEY
-	emmckey_info = mmc->aml_emmckey_info;
-	if(mmc->key_protect){
-		if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
-			||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
-				//printf("prohibit write\n");
-			return blkcnt;
-		}
-	}
-#endif
+    if (emmckey_is_access_range_legal(mmc, start, blkcnt) == false) {
+        return 0; // error: illegal
+    }
+
 	if (mmc_set_blocklen(mmc, mmc->write_bl_len))
 		return 0;
 
@@ -235,9 +280,6 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 {
 	lbaint_t cur, blocks_todo = blkcnt;
-#ifdef CONFIG_AML_EMMC_KEY
-	struct aml_emmckey_info_t *emmckey_info;
-#endif
 
 	if (blkcnt == 0)
 		return 0;
@@ -251,16 +293,10 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 			start + blkcnt, mmc->block_dev.lba);
 		return 0;
 	}
-#ifdef CONFIG_AML_EMMC_KEY
-	emmckey_info = mmc->aml_emmckey_info;
-	if(mmc->key_protect){
-		if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
-			||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
-				//printf("prohibit write\n");
-			return blkcnt;
-		}
-	}
-#endif
+
+    if (emmckey_is_access_range_legal(mmc, start, blkcnt) == false) {
+        return 0; // error: illegal
+    }
 
 	if (mmc_set_blocklen(mmc, mmc->read_bl_len))
 		return 0;
@@ -281,128 +317,153 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 	return blkcnt;
 }
 
+// if not High Capacity Card, turn the unit from blk_len to byte
+#define TURN_TRANSFER_UNIT(val, is_high_cap, blk_len) ((is_high_cap)? (val):((val)*blk_len))
 static ulong
-mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
+__mmc_berase(struct mmc *mmc, ulong start, lbaint_t blkcnt)
 {
 	struct mmc_cmd cmd;
 	int err;
-	struct mmc *mmc = find_mmc_device(dev_num);
-#ifdef CONFIG_AML_EMMC_KEY
-	struct aml_emmckey_info_t *emmckey_info;
-#endif
+	ulong end, max_end;
 
-	if (!mmc)
-		return 0;
-#ifdef CONFIG_AML_EMMC_KEY
-	emmckey_info = mmc->aml_emmckey_info;
-	if(mmc->key_protect){
-		//if(((start >= emmckey_info->lba_start)&&(start < emmckey_info->lba_end ))
-		//	||(((start+blkcnt) > emmckey_info->lba_start) && ((start+blkcnt)<emmckey_info->lba_end))){
-				//printf("prohibit write\n");
-			return blkcnt;
-		//}
-	}
-#endif
+	max_end = mmc->capacity/512 - 1;//max end address in block
+	end = start + blkcnt - 1;
 
-		if (IS_SD(mmc)) {
-			int erase_blk_en = (mmc->csd[2]>>14) & 0x1;
-			int erase_ssize = ((mmc->csd[2]>>7) & 0x7f) + 1;
-			uint erase_factor = 1;
+	if (IS_SD(mmc)){
+		printf("card_type:sd or tsd, ");
 
-			//printf("\nDATA_STAT_AFTER_ERASE is %d\n",(mmc->scr[0]>>23) & 0x1);
-			//printf("erase_blk_en = %d\n",erase_blk_en);
-			//printf("erase_ssize = %d\n",erase_ssize);
+		int erase_ssize;
 
-			if (erase_blk_en == 1) {
-				erase_factor = mmc->write_bl_len / 512;
-				erase_ssize = 1; //blk cnt
-			}
-
-      if ((start + blkcnt) > (mmc->block_dev.lba/erase_ssize*erase_factor)) {
-		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
-			   start + blkcnt, mmc->block_dev.lba/erase_ssize*erase_factor);
-		     return 1;
-	    }
-
-			cmd.cmdidx = SD_ERASE_WR_BLK_START;
-			cmd.resp_type = MMC_RSP_R1;
-			cmd.cmdarg = start*erase_ssize;
-			cmd.flags = 0;
-			err = mmc_send_cmd(mmc, &cmd, NULL);
-			if (err)
-				return err;
-
-			cmd.cmdidx = SD_ERASE_WR_BLK_END;
-			cmd.resp_type = MMC_RSP_R1;
-			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_ssize - 1) : (mmc->block_dev.lba*erase_factor-1);
-			cmd.flags = 0;
-			err = mmc_send_cmd(mmc, &cmd, NULL);
-			if (err)
-				return err;
-
-		}else {
-
-		  int erase_gsize = (mmc->csd[2] >> 10) & 0x1f;
-		  int erase_gmult = (mmc->csd[2] >> 5) & 0x1f;
-		  int erase_unit = (erase_gsize + 1) * (erase_gmult + 1);//blk cnt
-		  //printf ("\nerase_gsize * erase_gmult = erase_unit\n");
-		 // printf ("%d * %d = %d\n", erase_gsize+1, erase_gmult+1, erase_unit);
-
-		  if ((start + blkcnt) > (mmc->block_dev.lba/erase_unit)) {
-		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
-			   start + blkcnt, mmc->block_dev.lba/erase_unit);
-		     return 1;
-	    }
-
-			cmd.cmdidx = MMC_TAG_ERASE_GROUP_START;
-			cmd.resp_type = MMC_RSP_R1;
-			cmd.cmdarg = start*erase_unit;
-			cmd.flags = 0;
-			err = mmc_send_cmd(mmc, &cmd, NULL);
-			if (err)
-				return err;
-
-			cmd.cmdidx = MMC_TAG_ERASE_GROUP_END;
-			cmd.resp_type = MMC_RSP_R1;
-			cmd.cmdarg = blkcnt ? ((start+blkcnt)*erase_unit - 1) : (mmc->block_dev.lba-1);
-			cmd.flags = 0;
-			err = mmc_send_cmd(mmc, &cmd, NULL);
-			if (err)
-				return err;
+		if(mmc->version == SD_VERSION_2){
+			erase_ssize = 8;//"8" is a setting value			
 		}
-		cmd.cmdidx = SD_MMC_ERASE;
-		cmd.resp_type = MMC_RSP_R1b;
-		cmd.cmdarg = 0;
+		else{
+			int erase_blk_en = (mmc->csd[2]>>14) & 0x1;
+			erase_ssize = ((mmc->csd[2]>>7) & 0x7f) + 1;
+
+			if (erase_blk_en == 1)
+				erase_ssize = 1;
+		}
+		printf("erase_unit_size = %d, ",erase_ssize);
+			
+		start = start - start%erase_ssize;
+		end = blkcnt ? ((end/erase_ssize + 1)*erase_ssize-1): max_end;
+
+        if (end > max_end) {
+		     printf("MMC: group number 0x%lx exceeds max(0x%lx)\n", end , max_end);
+		     return 1;
+	    }
+		cmd.cmdidx = SD_ERASE_WR_BLK_START;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.cmdarg = TURN_TRANSFER_UNIT(start, mmc->high_capacity, mmc->write_bl_len);
+		cmd.flags = 0;
+		err = mmc_send_cmd(mmc, &cmd, NULL);		
+		if (err)
+			return err;
+
+		cmd.cmdidx = SD_ERASE_WR_BLK_END;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.cmdarg = TURN_TRANSFER_UNIT(end, mmc->high_capacity, mmc->write_bl_len);
+		cmd.flags = 0;
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err)
+			return err;		
+	}else {
+		printf("card_type:mmc or emmc, ");
+
+		int erase_unit;
+		char ext_csd[512];			
+		
+		int err = mmc_send_ext_csd(mmc, ext_csd);		
+		if (err)
+			return err;
+
+		if(ext_csd[175]){//erase_group_def
+			int erase_unit_byte = ((unsigned)ext_csd[224])*512*1024;//byte cnt
+			erase_unit = erase_unit_byte / mmc->write_bl_len;//blk cnt
+			printf("ext_csd:erase_unit = %d, ",erase_unit);
+		}
+		else{			
+			int erase_gsize = (mmc->csd[2] >> 10) & 0x1f;
+			int erase_gmult = (mmc->csd[2] >> 5) & 0x1f;
+			erase_unit = (erase_gsize + 1) * (erase_gmult + 1);//blk cnt
+			printf("csd:erase_unit = %d, ",erase_unit);
+		}
+
+		start = start - start%erase_unit;
+		end = blkcnt? ((end/erase_unit + 1)*erase_unit-1) : max_end;
+		if (end > max_end) {
+			printf("MMC: group number 0x%lx exceeds max(0x%lx)\n",
+				end, max_end);
+			return 1;
+		}
+		
+		cmd.cmdidx = MMC_TAG_ERASE_GROUP_START;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.cmdarg = TURN_TRANSFER_UNIT(start, mmc->high_capacity, mmc->write_bl_len);
 		cmd.flags = 0;
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err)
 			return err;
 
+		cmd.cmdidx = MMC_TAG_ERASE_GROUP_END;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.cmdarg = TURN_TRANSFER_UNIT(end, mmc->high_capacity, mmc->write_bl_len);
+		cmd.flags = 0;
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err)
+			return err;
+	}
+    printf("is being erased ...\n");
+	cmd.cmdidx = SD_MMC_ERASE;
+	cmd.resp_type = MMC_RSP_R1b;
+	cmd.cmdarg = 0;
+	cmd.flags = 0;
+	err = mmc_send_cmd(mmc, &cmd, NULL);
+	if (err)
+		return err;
+
 	unsigned int timeout = 0;
 	uint *res = (uint*)(&(cmd.response[0]));
-	do {
+	do {		
 		cmd.cmdidx = MMC_CMD_SEND_STATUS;
 		cmd.cmdarg = mmc->rca << 16;
 		cmd.resp_type = MMC_RSP_R1;
+		cmd.flags = 0;
+		
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 		if (err || (*res & 0xFDF92000)) {
 			printf("error %d requesting status %#x\n", err, *res);
 			return -1;
 		}
+		
 		timeout ++;
 		if (timeout > 10*60*1000)
 			return -1;
-		mdelay(1);
-	} while (!(*res & R1_READY_FOR_DATA) ||
-		 (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
+		mdelay(1);		
+	} while (!(*res & R1_READY_FOR_DATA) || (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
 
-#ifdef CONFIG_AML_EMMC_KEY
-	mmc->key_protect = 1;
-#endif
 	return 0;
-
 }
 
+static ulong mmc_berase(int dev_num, ulong start, lbaint_t blkcnt)
+{
+    int ret = 0;
+	struct mmc *mmc = find_mmc_device(dev_num);
+	
+    if (!mmc) 
+	  	return 0;
+    
+    if (emmckey_is_access_range_legal(mmc, start, blkcnt) == false) {
+        return blkcnt; // illegal error
+    }
+
+    ret = __mmc_berase(mmc, start, blkcnt);
+
+	printf("erase %#lx --> %#lx %s\n",start, start + blkcnt - 1, (ret == 0) ? "OK" : "ERROR");
+
+    return ret;
+}
 
 #include <asm/arch/io.h>
 
@@ -417,6 +478,7 @@ int mmc_go_idle(struct mmc* mmc)
 
 	udelay(1000);
 
+    aml_sd_cs_high();
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
 	cmd.resp_type = MMC_RSP_NONE;
@@ -424,6 +486,7 @@ int mmc_go_idle(struct mmc* mmc)
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
+    aml_sd_cs_dont_care();
 	if (err)
 		return err;
 
@@ -452,11 +515,10 @@ sd_send_op_cond(struct mmc *mmc)
 
 		if (err == TIMEOUT)
 			return err;
-              else if(err)
-             {
-                    udelay(10000);
-                    continue; 
-             }   
+         else if(err){
+             udelay(10000);
+             continue; 
+         }   
               
 		cmd.cmdidx = SD_CMD_APP_SEND_OP_COND;
 		cmd.resp_type = MMC_RSP_R3;
@@ -989,10 +1051,20 @@ int mmc_startup(struct mmc *mmc)
 			mmc_set_bus_width(mmc, 4);
 		}
 
-		if (mmc->card_caps & MMC_MODE_HS) {
+        if (mmc->card_caps & MMC_MODE_HS) {
+#ifdef CONFIG_STORE_COMPATIBLE
+            if (aml_is_emmc_tsd(mmc)) {
+                mmc_set_clock(mmc, 40000000);
+                mmc->tran_speed = 40000000;
+            } else {
+                mmc_set_clock(mmc, 30000000);
+                mmc->tran_speed = 20000000;
+            }
+#else
 			mmc_set_clock(mmc, 50000000);
 			mmc->tran_speed = 40000000;
-		} else {
+#endif
+        } else {
 			mmc_set_clock(mmc, 25000000);
 			mmc->tran_speed = 20000000;
 		}
@@ -1022,8 +1094,17 @@ int mmc_startup(struct mmc *mmc)
 		if (mmc->card_caps & MMC_MODE_HS) {
 			if (mmc->card_caps & MMC_MODE_HS_52MHz)
 				mmc_set_clock(mmc, 52000000);
-			else
-				mmc_set_clock(mmc, 26000000);
+			else {
+#ifdef CONFIG_STORE_COMPATIBLE
+                if (aml_is_emmc_tsd(mmc)) {
+                    mmc_set_clock(mmc, 40000000);
+                } else {
+                    mmc_set_clock(mmc, 26000000);
+                }
+#else
+                mmc_set_clock(mmc, 26000000);
+#endif
+            }
 		} else
 			mmc_set_clock(mmc, 20000000);
 	}
@@ -1092,8 +1173,11 @@ int mmc_send_if_cond(struct mmc *mmc)
 
 int mmc_register(struct mmc *mmc)
 {
+    struct aml_card_sd_info * sdio=mmc->priv;
+
 	/* Setup the universal parts of the block interface just once */
-	mmc->block_dev.if_type = IF_TYPE_MMC;
+    if (mmc->block_dev.if_type != IF_TYPE_SD)
+        mmc->block_dev.if_type = IF_TYPE_MMC;
 	mmc->block_dev.dev = cur_dev_num++;
 	mmc->block_dev.removable = 1;
 	mmc->block_dev.block_read = mmc_bread;
@@ -1109,6 +1193,8 @@ int mmc_register(struct mmc *mmc)
 	INIT_LIST_HEAD (&mmc->link);
 
 	list_add_tail (&mmc->link, &mmc_devices);
+
+	printf("[%s] add mmc dev_num=%d, port=%d\n", __FUNCTION__, mmc->block_dev.dev, sdio->sdio_port);
 
 	return 0;
 }
@@ -1126,13 +1212,14 @@ block_dev_desc_t *mmc_get_dev(int dev)
 int mmc_init(struct mmc *mmc)
 {
 	int err;
-	
+
 	err = mmc->init(mmc);
 	if (err)
 		return err;
 	
-	if(mmc->bus_width == 4)
+	if(mmc->is_inited) // has been initialized
         return 0;       
+
 	/* Reset the Card */
 	err = mmc_go_idle(mmc);
 	if (err)
@@ -1141,15 +1228,15 @@ int mmc_init(struct mmc *mmc)
 	
 	// check SDCARD/EMMC to reduce EMMC load env data cycles	
 	//tsd could not init as emmc (cmd1)
-	if(mmc->block_dev.dev == SD_CARD_DEV || mmc->block_dev.if_type == IF_TYPE_SD)
+	if(mmc->block_dev.if_type == IF_TYPE_SD)
 	{
 		/* Test for SD version 2 */
 		err = mmc_send_if_cond(mmc);
 		/* If we got an error other than timeout, we bail */
 		if (err && err != TIMEOUT)
 			return err;
-	       else if(err)
-	            err = mmc_go_idle(mmc);
+        else if(err)
+            err = mmc_go_idle(mmc);
 	
 		/* Now try to get the SD card's operating condition */
 		err = sd_send_op_cond(mmc);
@@ -1159,41 +1246,57 @@ int mmc_init(struct mmc *mmc)
 			err = mmc_send_op_cond(mmc);
 	
 			if (err) {
-				printf("Card did not respond to voltage select!\n");
+				printf("[%s] %s:%d, SD or TSD: Card did not respond to voltage select! "
+                        "mmc->block_dev.if_type=%d\n",
+                        __FUNCTION__, mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type);
 				return UNUSABLE_ERR;
 			}
 		}
 	}
-	else if(mmc->block_dev.dev == EMMC_INAND_DEV)//emmc
+	else
 	{
 		err = mmc_send_op_cond(mmc);
 		if (err) {
-		   printf("Card did not respond to voltage select!\n");
-		   return UNUSABLE_ERR;
-		   
+				printf("[%s] %s:%d, eMMC: Card did not respond to voltage select! "
+                        "mmc->block_dev.if_type=%d\n",
+                        __FUNCTION__, mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type);
+            return UNUSABLE_ERR;
 		}	    
 	}
-	else
-    {
-        printf("card device NO. is error\n");
-        return -1;
+	
+	err = mmc_startup(mmc);	
+	printf("[%s] %s:%d, if_type=%d, initialized %s!\n", __FUNCTION__,
+            mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type, (err==0)? "OK": "ERROR");
+	if(err){
+		return err;
+	} else {
+        mmc->is_inited = true; // init OK
     }
-	
-	
-	//return(mmc_startup(mmc));	
-	err = mmc_startup(mmc);
-	if(!err){
-		if(mmc->block_dev.dev == EMMC_INAND_DEV) {//emmc
-			#ifdef CONFIG_AML_EMMC_KEY
+
+    if (aml_is_emmc_tsd(mmc)) { // eMMC OR TSD
+#ifdef CONFIG_STORE_COMPATIBLE
+	    if (!is_partition_checked) {
+            if (mmc_device_init(mmc) == 0) {
+                is_partition_checked = true;
+                printk("eMMC/TSD partition table have been checked OK!\n");
+#endif
+			#ifdef CONFIG_SECURITYKEY
 				err = emmc_key_init(mmc);
 				if(err){
 					printf("%s:%d,emmc key fail\n",__func__,__LINE__);
 				}
+                // emmc_key_read();
+                // emmc_key_write();
 			#endif
-		}
-	}
-	return err;
+#ifdef CONFIG_STORE_COMPATIBLE
+            }
+            else
+                printk("eMMC/TSD partition table have been checked ERROR!\n");
+        }
+#endif
+    }
 
+    return err;
 }
 
 /*

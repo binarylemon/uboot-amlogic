@@ -512,6 +512,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	bd_t *bd;
 	ulong malloc_start;
 	int init_ret=0, ret = 0;
+#if defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)
+    struct mmc *mmc;
+#endif
 #if !defined(CONFIG_SYS_NO_FLASH)
 	ulong flash_size;
 #endif
@@ -623,6 +626,14 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	onenand_init();
 #endif
 
+#if defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)
+    if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG)) { // if eMMC/tSD is exist
+        mmc = find_mmc_device(1);
+        if (mmc) {
+            mmc_init(mmc); // init eMMC/tSD
+        }
+    }
+#endif
 
 #ifdef CONFIG_HAS_DATAFLASH
 	AT91F_DataflashInit();

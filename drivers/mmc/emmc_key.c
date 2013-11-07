@@ -25,6 +25,24 @@
 /*
  * uboot head file
  * ****************************/
+#ifdef CONFIG_STORE_COMPATIBLE
+#include <emmc_partitions.h>
+#endif
+
+static u64 emmckey_get_start_addr (struct mmc *card)
+{
+#ifdef CONFIG_STORE_COMPATIBLE
+    struct partitions *pp;
+
+    pp = find_mmc_partition_by_name(MMC_RESERVED_NAME);
+    if (!pp) {
+        return -1;
+    }
+	return (u64)(pp->offset + EMMCKEY_RESERVE_OFFSET);
+#else
+    return (u64)(card->capacity - EMMCKEY_AREA_PHY_SIZE);
+#endif
+}
 
 static u32 emmckey_calculate_checksum(u8 *buf,u32 lenth)
 {
@@ -208,7 +226,7 @@ static int emmc_key_uboot_rw(struct mmc *emmccard,struct emmckey_valid_node_t *e
 		n = emmccard->block_dev.block_read(dev, blk, cnt, buf);
 	}
 	emmccard->key_protect = 1;
-	return 0;
+	return (cnt == n)? 0: -1; // 0--OK, -1--error
 }
 #endif
 
@@ -253,6 +271,7 @@ static int aml_emmc_key_check(aml_keybox_provider_t *provider)
 		}
 		emmckey_valid_node->phy_addr = emmckey_info->keyarea_phy_addr + part_size * keypart_cnt;
 		emmckey_valid_node->phy_size = EMMC_KEYAREA_SIZE;
+		emmckey_valid_node->next = NULL;
 		emmckey_info->key_valid = 0;
 		if(emmckey_info->key_valid_node == NULL){
 			emmckey_info->key_valid_node = emmckey_valid_node;
@@ -334,22 +353,23 @@ static int32_t emmc_keybox_read(aml_keybox_provider_t * provider, uint8_t *buf,i
 	}
 
 	emmckey_valid_node = emmckey_info->key_valid_node;
-	while(emmckey_valid_node){
-		memset(emmckey_data,0,sizeof(*emmckey_data));
-		err = emmc_key_rw(provider,emmckey_valid_node,(u8*)emmckey_data,0);
-		if(err == 0){
-			emmc_key_transfer(emmckey_data->keyarea_mark,&emmckey_data->keyarea_mark_checksum,8,0);
-			if (!memcmp(emmckey_data->keyarea_mark, EMMC_KEY_AREA_SIGNAL, 8)){
-				checksum = emmckey_calculate_checksum(emmckey_data->data,EMMCKEY_DATA_VALID_LEN);
-				if(checksum == emmckey_data->checksum){
-					memcpy(buf,emmckey_data->data,size);
-					err = 0;
-					break;
-				}
-			}
-		}
-		emmckey_valid_node = emmckey_valid_node->next;
-	}
+    while(emmckey_valid_node){
+        memset(emmckey_data,0,sizeof(*emmckey_data));
+        err = emmc_key_rw(provider,emmckey_valid_node,(u8*)emmckey_data,0);
+        if(err == 0){ // read ok
+            if (!emmc_key_transfer(emmckey_data->keyarea_mark,&emmckey_data->keyarea_mark_checksum,8,0)) {
+                if (!memcmp(emmckey_data->keyarea_mark, EMMC_KEY_AREA_SIGNAL, 8)) {
+                    checksum = emmckey_calculate_checksum(emmckey_data->data,EMMCKEY_DATA_VALID_LEN);
+                    if(checksum == emmckey_data->checksum){
+                        memcpy(buf,emmckey_data->data,size);
+                        err = 0;
+                        break;
+                    }
+                }
+            }
+        }
+        emmckey_valid_node = emmckey_valid_node->next;
+    }
 	if(emmckey_data){
 		kfree(emmckey_data);
 	}
@@ -414,16 +434,16 @@ static int32_t emmc_keybox_write(aml_keybox_provider_t * provider, uint8_t *buf,
 #if 0
 static aml_keybox_provider_t emmc_provider;
 
-static unsigned char test_emmc_read_buf[1024*3];
-static unsigned char test_emmc_write_buf[2048];// ={"fffffffffffff  gggggggggg"};
+static unsigned char *test_emmc_read_buf;
+static unsigned char *test_emmc_write_buf;// ={"fffffffffffff  gggggggggg"};
 
-#define TEST_STRING_1  "11113451111111111"
-#define TEST_STRING_2  "2222222789222"
-#define TEST_STRING_3  "3333333333333333 3333333333333333"
+#define TEST_STRING_1  "uboot 11113451111111111"
+#define TEST_STRING_2  "uboot 2222222789222"
+#define TEST_STRING_3  "uboot 3333333333333333 3333333333333333"
 static void fill_data()
 {
 	int i;
-	memset(test_emmc_write_buf,0,sizeof(test_emmc_write_buf));
+	memset(test_emmc_write_buf,0,2048);
 	//for(i=0;i<EMMCKEY_DATA_VALID_LEN;i++){
 	//	test_emmc_write_buf[i]= 'a';
 	//}
@@ -435,17 +455,30 @@ static void fill_data()
 
 int emmc_key_read()
 {
-	memset(test_emmc_read_buf,0,sizeof(test_emmc_read_buf));
+    test_emmc_read_buf = kmalloc(EMMCKEY_DATA_VALID_LEN, 0);
+    if (!test_emmc_read_buf) {
+        printk("%s:%d,kmalloc memory fail\n",__func__,__LINE__);
+        return -1;
+    }
+
+	memset(test_emmc_read_buf,0,1024*3);
 	emmc_keybox_read(&emmc_provider, test_emmc_read_buf,EMMCKEY_DATA_VALID_LEN,0);
 	printk("%s:%d,%s\n",__func__,__LINE__,test_emmc_read_buf);
 	printk("%s:%d,%s\n",__func__,__LINE__,&test_emmc_read_buf[512]);
 	printk("%s:%d,%s\n",__func__,__LINE__,&test_emmc_read_buf[1024]);
+    kfree(test_emmc_read_buf);
 }
 int emmc_key_write()
 {
-	printk("%s:%d,kzalloc memory fail\n",__func__,__LINE__);
+    test_emmc_write_buf = kmalloc(EMMCKEY_DATA_VALID_LEN, 0);
+    if (!test_emmc_write_buf) {
+        printk("%s:%d,kmalloc memory fail\n",__func__,__LINE__);
+        return -1;
+    }
+
 	fill_data();
 	emmc_keybox_write(&emmc_provider,test_emmc_write_buf,EMMCKEY_DATA_VALID_LEN);
+    kfree(test_emmc_write_buf);
 }
 #endif
 
@@ -542,11 +575,15 @@ int emmc_key_init( void *keypara)
 		printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);
 	#endif
 #elif defined(EMMC_KEY_UBOOT)
+	addr = emmckey_get_start_addr(card);
+    if (addr < 0) {
+        return -1;
+    }
+
 	size = EMMCKEY_AREA_PHY_SIZE;
-	addr = (card->capacity - size);
 	blk_len = card->write_bl_len;
 	lba_start = addr >> uint_to_shift(card->write_bl_len);
-	lba_end = card->capacity >> uint_to_shift(card->write_bl_len);
+	lba_end = (addr + size) >> uint_to_shift(card->write_bl_len);
 	emmckey_info->key_init = 1;
 	card->key_protect = 1;
 	printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);

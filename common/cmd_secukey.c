@@ -260,8 +260,10 @@ usage:
 U_BOOT_CMD(secukey, CONFIG_SYS_MAXARGS, 1, do_secukey,
 	"security KEY sub-system",
 	"list [addr] - show available security key name\n"
+#ifdef CONFIG_STORE_COMPATIBLE
 	"secukey  init - auto init key in the right device\n"
 	"secukey  unlock - remove protection of key on devices\n"
+#endif
 	"secukey  device(nand or emmc or auto) - init key in device\n"
 	"secukey write keyname data - wirte key data to nand/emmc\n"
 	"secukey read keyname [addr]- read the key data\n"

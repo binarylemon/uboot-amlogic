@@ -102,7 +102,7 @@ void emmc_env_relocate_spec(void)
 		return ;
 	}
 	memset(env_buf->data, 0, ENV_SIZE);
-#if 0	
+#ifdef CONFIG_STORE_COMPATIBLE
     part_info = find_mmc_partition_by_name(name);
 	if(part_info == NULL){
 		printf("get partition info failed !!\n");

@@ -336,7 +336,7 @@ struct mmc {
 #ifdef CONFIG_MMC_DEVICE
 	mmc_device *device;
 #endif
-#ifdef CONFIG_AML_EMMC_KEY
+#ifdef CONFIG_SECURITYKEY
 	uint key_protect;
 	struct aml_emmckey_info_t *aml_emmckey_info;
 #endif
@@ -347,8 +347,10 @@ struct mmc {
 #ifdef CONFIG_MMC_MBLOCK
 	uint b_max;
 #endif
+    uint is_inited; // is initialize?
 };
 
+extern struct list_head mmc_devices;
 int mmc_register(struct mmc *mmc);
 int mmc_initialize(bd_t *bis);
 int mmc_init(struct mmc *mmc);
@@ -359,6 +361,7 @@ int mmc_set_dev(int dev_num);
 void print_mmc_devices(char separator);
 int board_mmc_getcd(u8 *cd, struct mmc *mmc);
 int mmc_switch_partition(struct mmc* mmc, unsigned int part);
+int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd);
 
 #ifdef CONFIG_GENERIC_MMC
 int atmel_mci_init(void *regs);

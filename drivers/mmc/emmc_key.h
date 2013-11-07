@@ -24,7 +24,9 @@
 //#define EMMCKEY_AREA_PHY_SIZE          (128*1024)
 //#define EMMCKEY_AREA_PHY_START_ADDR    (CONFIG_ENV_OFFSET+CONFIG_ENV_SIZE)
 #endif
-#define EMMCKEY_AREA_PHY_SIZE          (EMMC_KEYAREA_COUNT * EMMC_KEYAREA_SIZE)
+
+#define EMMCKEY_RESERVE_OFFSET          0x4000  // we store partition table in the previous 16KB space
+#define EMMCKEY_AREA_PHY_SIZE           (EMMC_KEYAREA_COUNT * EMMC_KEYAREA_SIZE)
 
 struct emmckey_valid_node_t {
 	u64 phy_addr;
