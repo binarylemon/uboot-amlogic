@@ -118,8 +118,8 @@ static const struct _ConfigDesTotal_s _configDescTotal = {
     }
 };
 
-static const struct usb_config_descriptor* config_desc = &_configDescTotal.configDesc;
-static const unsigned char* intf_desc = &_configDescTotal.intfDesc;
+/*static const struct usb_config_descriptor* config_desc = &_configDescTotal.configDesc;*/
+/*static const unsigned char* intf_desc = &_configDescTotal.intfDesc;*/
 
 #define DT_STRING_ID_LEN  4
 static const  char dt_string_id[DT_STRING_ID_LEN]={
@@ -288,7 +288,7 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
                        *memcpy((void*)buff, &device_desc, value);
                        *_pcd->buf = buff;
                        */
-                      _pcd->buf = &device_desc;
+                      _pcd->buf = (volatile char*)&device_desc;
                       _pcd->length = value;
                       break;
                   case USB_DT_DEVICE_QUALIFIER:
@@ -307,7 +307,7 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
                           else{
                               value = w_length;
                           }
-                          _pcd->buf = &_configDescTotal;
+                          _pcd->buf = (volatile char*)&_configDescTotal;
                           _pcd->length = value;
                           /*printf("--get configuration descriptor: size %d, ret length :%d\n\n", w_length, value);			*/
                           printf("Get DT cfg\n");

@@ -58,6 +58,7 @@
 #endif// #ifdef CONFIG_ACS
 #endif// #if CONFIG_AML_V2_USBTOOL
 
+#define CONFIG_UNIFY_KEY_MANAGE 1
 
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1

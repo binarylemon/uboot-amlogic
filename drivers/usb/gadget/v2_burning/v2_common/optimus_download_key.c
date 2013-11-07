@@ -17,7 +17,10 @@
  */
 #include "../v2_burning_i.h"
 #include "unify_key.h"
-//#include "usb_pcd.h"
+
+#ifndef CMD_BUFF_SIZE
+#define CMD_BUFF_SIZE (512)
+#endif// #ifndef CMD_BUFF_SIZE
 
 int decrypt_hdcp_license_to_raw_value(const char* keyName, const u8* keyVal, const unsigned keyValLen, char* errInfo,
                               const u8** keyRealVal, unsigned* keyRealValLen,
@@ -156,7 +159,7 @@ int v2_key_command(const int argc, char * const argv[], char *info)
     int subCmd_argc = argc - 1;
     char* const * subCmd_argv = argv + 1;
 
-    DWN_MSG("argc=%d, argv[%s, %s, %s, %s]\n", argc, argv[0], argv[1], argv[2], argv[3]);
+    DWN_DBG("argc=%d, argv[%s, %s, %s, %s]\n", argc, argv[0], argv[1], argv[2], argv[3]);
     if(argc < 2){
         printf("argc < 2, key sub-command init/uninit read/write/query not found\n");
         return __LINE__;
@@ -293,7 +296,7 @@ int v2_key_command(const int argc, char * const argv[], char *info)
         rcode = __LINE__;
     }
 
-    DWN_MSG("rcode 0x%x\n", rcode);
+    DWN_DBG("rcode 0x%x\n", rcode);
     return rcode;
 }
 
