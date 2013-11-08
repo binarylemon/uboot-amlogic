@@ -11,7 +11,7 @@
 #define 	NEW_NAND_SUPPORT
 
 #define	AML_NAND_DBG_M8
-
+#define AML_NAND_NEW_OOB
 
 /**************LOGIC****************/
 #define  PRINT aml_nftl_dbg

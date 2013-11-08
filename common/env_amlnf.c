@@ -224,11 +224,6 @@ int saveenv(void)
 	 int ret ,len, sector, page_sector;
 	 aml_nand_dbg("saveenv");
 
-	nftl_dev = aml_nftl_get_dev(name);
-	if(!nftl_dev){
-		aml_nand_dbg("nand get device failed");
-		return -1;
-	}
 	
 	env_ptr = (env_t *) aml_nand_malloc(CONFIG_ENV_SIZE);
 	if(env_ptr == NULL){
@@ -245,7 +240,12 @@ int saveenv(void)
 
 	env_ptr->crc  = crc32(0, env_ptr->data, ENV_SIZE);
 	aml_nand_dbg("save env_ptr->crc=%d",env_ptr->crc);
-	
+#if 0	
+	nftl_dev = aml_nftl_get_dev(name);
+	if(!nftl_dev){
+		aml_nand_dbg("nand get device failed");
+		return -1;
+	}
 	sector = CONFIG_ENV_SIZE /512;
 
 	page_sector = nftl_dev->nand_dev->writesize /512;
@@ -270,7 +270,15 @@ int saveenv(void)
 		ret = -1;
 		goto exit_error0;
 	}
+#else
+	ret = amlnf_env_save((unsigned char *)env_ptr,CONFIG_ENV_SIZE);
+	if(ret < 0){
+		aml_nand_msg("nand save env failed");
+		ret = -1;
+		goto exit_error0;
+	}
 
+#endif
 	printf("nand_saveenv : Successful!\n");
 	//return ret;
 	
@@ -293,9 +301,9 @@ int readenv (u_char * buf)
     	env_t	 * env_ptr = (env_t *)buf;
 	uint32_t crc;
 
-	unsigned char *env_data, * name = "env"; 
+	unsigned char * name = "env"; 
 	 int ret ,len, sector;
-
+#if 0
 	aml_nand_dbg("readenv");
 	nftl_dev = aml_nftl_get_dev(name);
 	if(!nftl_dev){
@@ -312,6 +320,15 @@ int readenv (u_char * buf)
 		return NAND_READ_FAILED;
 	}
 	
+#else
+	unsigned char *env_magic = "nenv";
+	aml_nand_dbg("readenv :#####");
+	ret = amlnf_env_read((unsigned char *)env_ptr,CONFIG_ENV_SIZE);
+	if(ret){	
+		aml_nand_msg("readenv : nand read env failed");
+		return NAND_READ_FAILED;
+	}
+#endif
 	crc = env_ptr->crc;
 
 	if (crc32(0, env_ptr->data, ENV_SIZE) != crc){

@@ -9,28 +9,23 @@ Header file: arch/arm/include/asm/arch-xx/storage.h
 //partition tables
 struct partitions partition_table[MAX_PART_NUM]={
 		{
-			.name = "env",
-			.size = 8*SZ_1M,
-			.mask_flags = STORE_CODE,
-		},
-		{
 			.name = "logo",
-			.size = 8*SZ_1M,
-			.mask_flags = STORE_CODE,
-		},
-		{
-			.name = "aml_logo",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{
 			.name = "recovery",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
+			.mask_flags = STORE_CODE,
+		},
+		{
+			.name = "misc",
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{
 			.name = "boot",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{

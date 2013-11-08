@@ -112,14 +112,15 @@ int amlphy_prepare(unsigned flag)
 
 int phydev_suspend(struct amlnand_phydev *phydev)
 {
+    struct amlnand_chip *aml_chip = (struct amlnand_chip *)phydev->priv;	
+    
 	if (!strncmp((char*)phydev->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))
 		return 0;
-
+	aml_nand_dbg("phydev_suspend: entered!");
 	spin_lock(&amlnf_lock);	
-	set_chip_state(phydev, CHIP_PM_SUSPENDED);
+	//set_chip_state(phydev, CHIP_PM_SUSPENDED);
+	set_chip_state(aml_chip, CHIP_PM_SUSPENDED);
 	spin_unlock(&amlnf_lock);
-
-	return 0;
 }
 
 int phydev_resume(struct amlnand_phydev *phydev)
@@ -479,6 +480,7 @@ int aml_sys_info_init(struct amlnand_chip *aml_chip)
 {
 	nand_arg_info * nand_key = &aml_chip->nand_key;  
 	nand_arg_info  * nand_secure= &aml_chip->nand_secure;
+	nand_arg_info *  uboot_env =  &aml_chip->uboot_env;
 
 	int ret =0;
 	
@@ -502,7 +504,15 @@ int aml_sys_info_init(struct amlnand_chip *aml_chip)
 		}
 #endif
 
-
+		
+	if((uboot_env->arg_valid == 0) && (boot_device_flag == 1)){
+		ret = aml_ubootenv_init(aml_chip);
+		if(ret < 0){
+			aml_nand_msg("nand uboot env init failed");
+			return ret;
+		}
+	}
+	
 	return ret;
 }
 

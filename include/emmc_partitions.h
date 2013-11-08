@@ -33,14 +33,17 @@
 #define     MMC_BOOT_NAME                   "bootloader"
 #define     MMC_BOOT_DEVICE_SIZE            (0x4*SZ_1M)
 
-#define     MMC_KEY_NAME                    "key"
-#define     MMC_KEY_SIZE                    (0x1*SZ_1M)
-
-#define     MMC_SECURE_NAME                 "secure"
-#define     MMC_SECURE_SIZE                 (0x1*SZ_1M)
-
 #define     MMC_RESERVED_NAME               "reserved"
-#define     MMC_RESERVED_SIZE               (0x20*SZ_1M)
+#define     MMC_RESERVED_SIZE               (64*SZ_1M)
+
+#define     MMC_ENV_NAME                    "env"
+#define     MMC_ENV_SIZE                    (8*SZ_1M)
+
+// #define     MMC_KEY_NAME                    "key"
+// #define     MMC_KEY_SIZE                    (0x1*SZ_1M)
+
+// #define     MMC_SECURE_NAME                 "secure"
+// #define     MMC_SECURE_SIZE                 (0x1*SZ_1M)
 
 #define     MMC_UBOOT_VERSION               "01.00.00"
 

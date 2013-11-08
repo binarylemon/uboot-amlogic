@@ -15,8 +15,9 @@ bool is_partition_checked = false;
 struct partitions emmc_partition_table[]={
     PARTITION_ELEMENT(MMC_BOOT_NAME, MMC_BOOT_DEVICE_SIZE, STORE_CODE),
     PARTITION_ELEMENT(MMC_RESERVED_NAME, MMC_RESERVED_SIZE, 0),
-    PARTITION_ELEMENT(MMC_KEY_NAME, MMC_KEY_SIZE, 0),
-    PARTITION_ELEMENT(MMC_SECURE_NAME, MMC_SECURE_SIZE, 0),
+    // PARTITION_ELEMENT(MMC_KEY_NAME, MMC_KEY_SIZE, 0),
+    // PARTITION_ELEMENT(MMC_SECURE_NAME, MMC_SECURE_SIZE, 0),
+    PARTITION_ELEMENT(MMC_ENV_NAME, MMC_ENV_SIZE, 0),
 };
 
 void show_mmc_patition (struct partitions *part, int part_num)
@@ -128,6 +129,11 @@ int mmc_get_partition_table (struct mmc *mmc)
 
     part_num_left = MAX_MMC_PART_NUM - part_num;
 	for(i=0; i < part_num_left ; i++){
+        if (!strncmp(part_table[i].name, MMC_ENV_NAME, MAX_MMC_PART_NAME_LEN)) { // skip env partition
+            printf("[%s] skip env partition.\n", __FUNCTION__);
+            continue;
+        }
+
 		strncpy(part_ptr[part_num].name, part_table[i].name, MAX_MMC_PART_NAME_LEN);
 		part_ptr[part_num].size = part_table[i].size;
         part_ptr[part_num].offset = part_ptr[part_num-1].offset

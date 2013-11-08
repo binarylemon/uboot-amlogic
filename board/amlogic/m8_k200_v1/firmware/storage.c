@@ -9,28 +9,23 @@ Header file: arch/arm/include/asm/arch-xx/storage.h
 //partition tables
 struct partitions partition_table[MAX_PART_NUM]={
 		{
-			.name = "env",
-			.size = 8*SZ_1M,
-			.mask_flags = STORE_CODE,
-		},
-		{
 			.name = "logo",
-			.size = 8*SZ_1M,
-			.mask_flags = STORE_CODE,
-		},
-		{
-			.name = "aml_logo",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{
 			.name = "recovery",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
+			.mask_flags = STORE_CODE,
+		},
+		{
+			.name = "misc",
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{
 			.name = "boot",
-			.size = 8*SZ_1M,
+			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 		{
@@ -48,11 +43,8 @@ struct partitions partition_table[MAX_PART_NUM]={
 			.size = NAND_PART_SIZE_FULL,
 			.mask_flags = STORE_DATA,
 		},
-		/*{
-			.name = "media",
-			.size = NAND_PART_SIZE_FULL,
-		},*/
 };
+
 
 struct store_config  store_configs ={
 		.store_device_flag = NAND_BOOT_FLAG,

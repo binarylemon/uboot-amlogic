@@ -10,7 +10,7 @@
 #include <mach/pinmux_queue.h>
 #endif
 //#define CONFIG_OF
-#define DRV_PHY_VERSION	   	 "1.01.001"
+#define DRV_PHY_VERSION	   	 "2.01.001"
 
 #ifdef CONFIG_NAND_AML_M8
 #define NAND_MFR_USER          0x100 
@@ -108,6 +108,7 @@ typedef union nand_core_clk {
 #define 	HYNIX_DEV_HEAD_MAGIC				"nhix"
 #define 	KEY_INFO_HEAD_MAGIC				"nkey"
 #define 	SECURE_INFO_HEAD_MAGIC 			"nsec"
+#define 	ENV_INFO_HEAD_MAGIC 			"nenv"
 
 #define 	FBBT_COPY_NUM  						1
 
@@ -123,7 +124,7 @@ typedef union nand_core_clk {
 #define 	MAX_BAD_BLK_NUM					2048
 #define 	MAX_SHIPPED_BAD_BLK_NUM			512
 #define 	MAX_BLK_NUM						8192
-#define	RESERVED_BLOCK_CNT					24
+#define	RESERVED_BLOCK_CNT					48
 
 #define 	NANS_PARA_BLOCK_CNT				1		//nand parameter for read retry, or fulture	
 
@@ -455,6 +456,7 @@ struct hw_controller{
 	unsigned char user_mode;
 	unsigned char ran_mode;
 	unsigned char oobavail;	
+	unsigned char oob_mod;
 	int oob_fill_data;
 	int oob_fill_boot;
 	unsigned char ecc_cnt_limit;
@@ -680,6 +682,7 @@ struct amlnand_chip {
 
 	 nand_arg_info  nand_key;
 	nand_arg_info  nand_secure;
+	nand_arg_info  uboot_env;
 #ifndef AML_NAND_UBOOT	
 	struct pinctrl *nand_pinctrl;
 	struct pinctrl_state *nand_pinstate;

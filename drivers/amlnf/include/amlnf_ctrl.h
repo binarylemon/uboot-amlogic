@@ -10,8 +10,8 @@
 #define 	AML_NAND_CE3         				0x7
 
 #define 	CE_PAD_DEFAULT				((AML_NAND_CE0) | (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12))
-#define 	RB_PAD_DEFAULT				((AML_NAND_CE0) | (AML_NAND_CE1 << 4))	
-
+//#define 	RB_PAD_DEFAULT				((AML_NAND_CE0) | (AML_NAND_CE1 << 4))	
+#define 	RB_PAD_DEFAULT				(AML_NAND_CE0)	
 #define 	MAX_CHIP_NUM							4
 
 #define 	PER_INFO_BYTE 						8
