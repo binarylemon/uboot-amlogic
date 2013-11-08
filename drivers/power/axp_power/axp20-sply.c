@@ -901,7 +901,10 @@ void axp_set_rdc(int rdc)
     axp_clr_bits(0xB9, 0x80);                           // start
 }
 
-extern void set_backlight_level(unsigned level);
+#ifdef CONFIG_VIDEO_AMLLCD
+#include <amlogic/aml_lcd.h>
+extern struct panel_operations panel_oper;
+#endif
 
 int axp_battery_calibrate(void)
 {
@@ -972,6 +975,11 @@ int axp_battery_calibrate(void)
     if (!axp_battery_calibrate_init()) {
         goto out;
     }
+#ifdef CONFIG_VIDEO_AMLLCD
+    if (panel_oper.set_bl_level) {                        // to save system current consume
+        panel_oper.set_bl_level(10);
+    }
+#endif
     ClearScreen(); 
     terminal_print(0, 1, "'Q' = quit, 'S' = Skip this step\n");
     terminal_print(0, 4, "coulomb     energy_c    ibat   prev_ibat    ocv"
@@ -1104,7 +1112,12 @@ int axp_battery_calibrate(void)
     } 
 
     terminal_print(0, 35, "do discharge calibration now, please don't plug DC power during test!\n");
-    set_backlight_level(255);
+#ifdef CONFIG_VIDEO_AMLLCD
+    if (panel_oper.set_bl_level) {                        // to fast discharge 
+        panel_oper.set_bl_level(200);
+    }
+#endif
+
     energy_c = 0;
     while (1) {
         if (tstc()) {

@@ -1340,7 +1340,10 @@ void  ClearScreen(void)                                 // screen clear for term
     printf(buff);
 }
 
-extern panel_operations_t panel_oper;
+#ifdef CONFIG_VIDEO_AMLLCD
+#include <amlogic/aml_lcd.h>
+extern struct panel_operations panel_oper;
+#endif
 
 int aml_battery_calibrate(void)
 {
@@ -1381,12 +1384,11 @@ int aml_battery_calibrate(void)
         udelay(10000);
     } 
 
-    if (panel_oper.set_bl_level) {
-        /*
-         * this value is a little bigger than BL_MIN_LEVEL, to save power when charge
-         */
-        panel_oper.set_bl_level(21);
+#ifdef CONFIG_VIDEO_AMLLCD
+    if (panel_oper.set_bl_level) {                        // to save system current consume
+        panel_oper.set_bl_level(10);
     }
+#endif
     ClearScreen(); 
     terminal_print(0, 1, "'Q' = quit, 'S' = Skip this step\n");
     terminal_print(0, 4, "coulomb     energy_c    ibat   prev_ibat    ocv"
@@ -1526,9 +1528,11 @@ int aml_battery_calibrate(void)
 
     terminal_print(0, 35, "do discharge calibration now, please don't plug DC power during test!\n");
 
-    if (panel_oper.set_bl_level) {
-        panel_oper.set_bl_level(255);
+#ifdef CONFIG_VIDEO_AMLLCD
+    if (panel_oper.set_bl_level) {                        // to fast discharge 
+        panel_oper.set_bl_level(200);
     }
+#endif
     energy_c = 0;
     while (1) {
         if (tstc()) {
