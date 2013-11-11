@@ -4,7 +4,7 @@ include $(TOPDIR)/config.mk
 LIB	:= $(obj)libamlnf_logic.o
 
 $(obj)/libamlnf_logic.o:
-	@cp ./libamlnf_logic_131108.z ../../../build/drivers/amlnf/logic/libamlnf_logic.o
+	@cp ./libamlnf_logic_131111.z ../../../build/drivers/amlnf/logic/libamlnf_logic.o
 
 #########################################################################
 

@@ -23,7 +23,7 @@
 													 & ~(((1L<<(len))-1)<<(start)))\
 													 | ((unsigned)((val)&((1L<<(len))-1)) << (start)))
 #define AMLNF_SET_REG_MASK(reg, mask)     			AMLNF_WRITE_REG(reg, AMLNF_READ_REG(reg) | (mask))
-#define AMLNF_CLEAR_REG_MASK(reg, mask) 				AMLNF_WRITE_REG(reg, AMLNF_READ_REG(reg) & (~mask)) 
+#define AMLNF_CLEAR_REG_MASK(reg, mask) 				AMLNF_WRITE_REG(reg, AMLNF_READ_REG(reg) & (~(mask))) 
 #else
 
 #define AMLNF_WRITE_REG(reg, val) 					(aml_write_reg32(reg, (val)))
@@ -86,7 +86,7 @@
 #define NFC_SET_TIMING_SYNC_ADJUST() 
 #define NFC_SET_DMA_MODE(is_apb,spare_only)             		AMLNF_WRITE_REG_BITS(P_NAND_CFG,((spare_only<<1)|(is_apb)),14,2)
 #define NFC_SET_OOB_MODE(mode)						AMLNF_SET_REG_MASK(P_NAND_CFG,mode);
-#define NFC_CLR_OOB_MODE(mode)						AMLNF_CLEAR_REG_MASK(P_NAND_CFG,mode);
+#define NFC_CLR_OOB_MODE(mode)						AMLNF_CLEAR_REG_MASK(P_NAND_CFG,(mode));
 /**
     Register Operation and Controller Status 
 */
