@@ -178,12 +178,18 @@ static int key_efuse_init(char *buf,unsigned int len)
 		return -EACCES;
 	}
 	ver = unifykey_get_efuse_version();
-	if(efuse_write_usr((char*)&ver, 1, &pos)<0){
-		printf("error: efuse write fail.\n");
-		return -1;
+	if(ver == 0){
+		printf("not config efuse version\n");
+		return 0;
 	}
 	else{
-		printf("%s written done.\n", info.title);
+		if(efuse_write_usr((char*)&ver, 1, &pos)<0){
+			printf("error: efuse write fail.\n");
+			return -1;
+		}
+		else{
+			printf("%s written done.\n", info.title);
+		}
 	}
 #else
 	return 0;
