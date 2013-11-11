@@ -305,50 +305,6 @@ int optimus_mem_md (int argc, char * const argv[], char *info)
 	return rc;
 }
 
-void optimus_reset(void)
-{
-    unsigned i = 0x100;
-
-    close_usb_phy_clock(0);
-    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
-    reboot_mode_clear();//clear the reboot mode
-    //writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn
-    printf("Reset...\n");//Add printf to delay to save env
-
-    //if not clear, uboot command reset will fail -> blocked
-    *((volatile unsigned long *)0xc8100000) = 0;
-    while(--i);
-
-    /*disable_interrupts();*/
-	reset_cpu(0);
-
-    while(i++)
-    {
-        unsigned ret = i;
-        unsigned mask = 1U<<20;
-
-        mask -= 1;
-        ret &= mask;
-        if(!ret){
-            printf("To reseting...\n");
-        }
-    }
-}
-
-void optimus_poweroff(void)
-{
-    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
-	reboot_mode_clear();
-
-#if USB_BURN_POWER_CONTROL
-    printf("To poweroff\n");
-    run_command("poweroff", 0);
-    printf("!!!After run command poweroff!!\n");
-#endif//#if USB_BURN_POWER_CONTROL
-
-	disable_interrupts();
-}
-
 int set_low_power_for_usb_burn(int arg, char* buff)
 {
     int ret = 0;
@@ -391,85 +347,6 @@ int optimus_erase_bootloader(char* info)
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
 
     return ret;
-}
-
-int is_the_flash_first_burned(void)
-{
-    const char* s = getenv("upgrade_step");
-
-    DWN_MSG("====>upgrade_step=%s<=====\n", s ? s : "<UNDEFINED>");
-
-    return !strcmp(s, "0");//"0" indicate first boot
-}
-
-//FIXME: check whether 'saveenv' failed and exception when usb prodcing mode from code boot mode if without env_relocate
-static int set_burn_complete_flag(void)
-{
-    int rc = 0;
-
-    //Add env_relocate 'after disk_intial' if failed to saveenv, I may set some envs for boot
-    /*env_relocate();*/
-
-    DWN_MSG("Set upgrade_step to 1\n");
-    rc = setenv("upgrade_step", "1");
-    if(rc){
-        DWN_ERR("Fail to set upgraded_step to 1\n");
-    }
-    rc = run_command("saveenv", 0);
-    if(rc){
-        DWN_ERR("Fail to saveenv to flash\n");
-    }
-    udelay(200);
-
-    return rc;
-}
-
-//use choice = 0xfu to query is_burn_completed
-int optimus_burn_complete(const int choice)
-{
-    static unsigned _isBurnComplete = 0;
-    int rc = 0;
-
-    if(0xfu == choice)
-    {
-        return _isBurnComplete;
-    }
-
-    if(is_the_flash_first_burned())
-    {
-        rc = set_burn_complete_flag();
-        if(rc){
-            DWN_ERR("Fail to set_burn_complete_flag\n");
-            return __LINE__;
-        }
-    }
-    _isBurnComplete = 1;
-
-    switch(choice)
-    {
-        case 2://wait power key to power off, for sdc_burn
-            DWN_MSG("PLS short-press power key to shut down\n");
-            do
-            {
-                rc = run_command("getkey", 0);
-            }while(rc);
-        case 0:
-            optimus_poweroff();
-            break;
-
-        case 1:
-            {
-                optimus_reset();
-            }
-            break;
-
-
-        default:
-            rc = 1;
-            DWN_ERR("Error burn_complete flag %d\n", choice);
-    }
-
-    return rc;
 }
 
 int cb_4_dis_connect_intr(void)
@@ -536,6 +413,7 @@ int optimus_working (const char *cmd, char* buff)
 	}
 	else if(strcmp(optCmd, "reset") == 0)
 	{
+        close_usb_phy_clock(0);
 		optimus_reset();
 	}
 	else if(strcmp(optCmd, "poweroff") == 0)
@@ -561,6 +439,8 @@ int optimus_working (const char *cmd, char* buff)
     else if(!strcmp("burn_complete", optCmd))
     {
         unsigned choice = simple_strtoul(argv[1], NULL, 0);//0 is poweroff, 1 is reset system
+
+        close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
         ret = optimus_burn_complete(choice);
     }
 	else if(strcmp(optCmd, "is_burn_completed") == 0)

@@ -10,6 +10,7 @@
  *
  */
 #include "optimus_sdc_burn_i.h"
+#include "optimus_led.h"
 
 static int is_bootloader_old(void)
 {
@@ -219,7 +220,6 @@ _finish:
 #endif//#fi 0
 
     return rcode;
-
 }
 
 int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiProgress)
@@ -280,12 +280,13 @@ int optimus_burn_bootlader(HIMAGE hImg)
 }
 
 //flag, 0 is burn completed, else burn failed
-int optimus_report_burn_complete_sta(int flag)
+static int optimus_report_burn_complete_sta(int isFailed)
 {
-    if(flag)
+    if(isFailed)
     {
         DWN_MSG("======sdc burn Failed!!!!!\n");
         DWN_MSG("PLS long-press power key to shut down\n");
+        optimus_led_show_burning_failure();
         while(1){
             /*if(ctrlc())*/
         }
@@ -294,8 +295,9 @@ int optimus_report_burn_complete_sta(int flag)
     }
 
     DWN_MSG("======sdc burn SUCCESS.\n");
+    optimus_led_show_burning_success();
     optimus_burn_complete(2);//set complete flag and poweroff if burn successful
-    return flag;
+    return 0;
 }
 
 static int sdc_burn_dtb_load(HIMAGE hImg)
@@ -380,6 +382,15 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
             optimus_reset();
             return __LINE__;//should never reach here!!
         }
+    }
+
+    if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get())//led not depend on image res, can init early
+    {
+        if(optimus_led_open(LED_TYPE_PWM)){
+            DWN_ERR("Fail to open led for sdc_produce\n");
+            return __LINE__;
+        }
+        optimus_led_show_in_process_of_burning();
     }
 
     hImg = image_open(pkgPath);
@@ -496,6 +507,12 @@ int do_sdc_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
     optimus_work_mode_set(OPTIMUS_WORK_MODE_SDC_UPDATE);
     show_logo_to_report_burning();//indicate enter flow of burning! when 'run update'
+    if(optimus_led_open(LED_TYPE_PWM)){
+        DWN_ERR("Fail to open led for burn\n");
+        return __LINE__;
+    }
+    optimus_led_show_in_process_of_burning();
+
     rcode = optimus_burn_package_in_sdmmc(sdc_cfg_file);
 
     return rcode;

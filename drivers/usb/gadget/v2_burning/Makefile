@@ -33,6 +33,7 @@ COBJS-y += v2_sdc_burn/optimus_sdc_update.o v2_sdc_burn/optimus_sdc_burn.o v2_sd
 COBJS-y += v2_usb_tool/optimus_core.o v2_usb_tool/optimus_transform.o 
 COBJS-$(CONFIG_UNIFY_KEY_MANAGE) += v2_common/optimus_download_key.o
 COBJS-$(CONFIG_SD_BURNING_SUPPORT_UI) += v2_common/optimus_progress_ui.o
+COBJS-$(CONFIG_SD_BURNING_SUPPORT_LED) += v2_sdc_burn/optimus_led.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

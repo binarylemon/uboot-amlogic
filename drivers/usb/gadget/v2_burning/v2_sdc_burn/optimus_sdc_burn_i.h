@@ -13,6 +13,7 @@
 #define __OPTIMUS_SDC_BURN_I_H__
 
 #include "../v2_burning_i.h"
+#include <fat.h>
 #include <part.h>
 
 typedef struct _burnEx{

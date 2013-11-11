@@ -4,6 +4,7 @@
 #define CONFIG_AML_MESON_8      1
 #define CONFIG_MACH_MESON8_K200_V1  // generate M8 K200 machid number
 
+
 #ifndef CONFIG_M8
 #define CONFIG_M8
 #endif // ifndef CONFIG_M8
@@ -13,7 +14,6 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-//#define CONFIG_UNIFY_KEY_MANAGE
 
 //#define CONFIG_SECURESTORAGEKEY
 #ifdef CONFIG_SECURESTORAGEKEY
@@ -51,6 +51,8 @@
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
 #define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_LED    1//1 then using led flickering states changing to show burning states when sdcard burning
+#define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
 #ifdef CONFIG_ACS
 #define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
 #else
@@ -59,6 +61,7 @@
 #endif// #if CONFIG_AML_V2_USBTOOL
 
 #define CONFIG_UNIFY_KEY_MANAGE 1
+#define CONFIG_CMD_PWM  1
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1

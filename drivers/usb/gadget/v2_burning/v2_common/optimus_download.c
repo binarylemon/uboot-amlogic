@@ -179,6 +179,17 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
         return 0;
     }
 
+    //set 'burn_complete_flag' before burn_bootloader, if this failed then bootloader wouldn't burned and no way to boot 
+    if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get() 
+            || OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get())//led not depend on image res, can init early
+    {
+        ret = optimus_set_burn_complete_flag();
+        if(ret){
+            DWN_ERR("Fail in set_burn_complete_flag\n");
+            return __LINE__;
+        }
+    }
+
     size = size < 0x60000 ? 0x60000 : size;
     ret = store_boot_write((unsigned char*)data, 0, size);
 
@@ -1000,5 +1011,133 @@ int optimus_work_mode_set(int workmode)
 {
     _optimusWorkMode = workmode;
     return 0;
+}
+
+int is_the_flash_first_burned(void)
+{
+    const char* s = getenv("upgrade_step");
+
+    DWN_MSG("====>upgrade_step=%s<=====\n", s ? s : "<UNDEFINED>");
+
+    return !strcmp(s, "0");//"0" indicate first boot
+}
+
+//FIXME: check whether 'saveenv' failed and exception when usb prodcing mode from code boot mode if without env_relocate
+int optimus_set_burn_complete_flag(void)
+{
+    int rc = 0;
+
+    //Add env_relocate 'after disk_intial' if failed to saveenv, I may set some envs for boot
+    /*env_relocate();*/
+
+    DWN_MSG("Set upgrade_step to 1\n");
+    rc = setenv("upgrade_step", "1");
+    if(rc){
+        DWN_ERR("Fail to set upgraded_step to 1\n");
+    }
+    rc = run_command("saveenv", 0);
+    if(rc){
+        DWN_ERR("Fail to saveenv to flash\n");
+    }
+    udelay(200);
+
+    return rc;
+}
+
+void optimus_reset(void)
+{
+    unsigned i = 0x100;
+
+    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
+    reboot_mode_clear();//clear the reboot mode
+    /*writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn*/
+    printf("Reset...\n");//Add printf to delay to save env
+
+    //if not clear, uboot command reset will fail -> blocked
+    *((volatile unsigned long *)0xc8100000) = 0;
+    while(--i);
+
+    /*disable_interrupts();*/
+	reset_cpu(0);
+
+    while(i++)
+    {
+        unsigned ret = i;
+        unsigned mask = 1U<<20;
+
+        mask -= 1;
+        ret &= mask;
+        if(!ret){
+            printf("To reseting...\n");
+        }
+    }
+}
+
+void optimus_poweroff(void)
+{
+    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
+	reboot_mode_clear();
+
+#if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
+    DWN_MSG("stop here as poweroff and powerkey not supported in platform!\n");
+    DWN_MSG("You can <Ctrl-c> to reboot\n");
+    while(!ctrlc())continue;
+    optimus_reset();
+#else
+    printf("To poweroff\n");
+    run_command("poweroff", 0);
+    printf("!!!After run command poweroff!!\n");
+#endif// #if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
+
+    return;
+}
+
+//use choice = 0xfu to query is_burn_completed
+int optimus_burn_complete(const int choice)
+{
+    static unsigned _isBurnComplete = 0;
+    int rc = 0;
+
+    if(0xfu == choice)
+    {
+        return _isBurnComplete;
+    }
+
+    _isBurnComplete = 1;
+
+    switch(choice)
+    {
+        case 2://wait power key to power off, for sdc_burn
+            {
+#if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
+                DWN_MSG("stop here as poweroff and powerkey not supported in platform!\n");
+                DWN_MSG("You can <Ctrl-c> to reboot\n");
+
+                while(!ctrlc())continue;
+                optimus_reset();
+#endif// #if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
+                DWN_MSG("PLS short-press power key to shut down\n");
+                do
+                {
+                    rc = run_command("getkey", 0);
+                }while(rc);
+            }
+        case 0:
+            optimus_poweroff();
+            break;
+
+        case 1:
+            {
+                optimus_reset();
+            }
+            break;
+
+
+        default:
+            rc = 1;
+            DWN_ERR("Error burn_complete flag %d\n", choice);
+    }
+
+    return rc;
 }
 

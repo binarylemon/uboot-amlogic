@@ -145,6 +145,7 @@ int optimus_storage_exit(void);
 void optimus_poweroff(void);
 int optimus_burn_complete(const int choice);
 int is_the_flash_first_burned(void);
+int optimus_set_burn_complete_flag(void);//set 'upgrade_step 1' after burnning success
 
 #define OPTIMUS_WORK_MODE_NONE            0
 #define OPTIMUS_WORK_MODE_USB_UPDATE      (0xefe5)

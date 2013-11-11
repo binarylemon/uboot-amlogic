@@ -207,6 +207,7 @@ COBJS-$(CONFIG_CMD_REBOOT) += cmd_reboot.o
 COBJS-$(CONFIG_CMD_MATH) += cmd_math.o
 COBJS-$(CONFIG_CMD_GPIO_KEY) += cmd_gpiokey.o
 COBJS-$(CONFIG_CMD_IMGREAD) += cmd_imgread.o
+COBJS-$(CONFIG_CMD_PWM) += cmd_pwm.o
 
 # others
 COBJS-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o

@@ -29,6 +29,7 @@
 #include <part.h>
 #include <fat.h>
 #include <partition_table.h>
+#include <mmc.h>
 
 #undef  FAT_ERROR
 #define FAT_ERROR(fmt...) printf("[FAT_ERR]L%d,", __LINE__),printf(fmt)
