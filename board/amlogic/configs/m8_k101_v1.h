@@ -214,7 +214,7 @@
 	"fb_addr=0x15100000\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"sleep_threshold=20\0" \
-	"batlow_threshold=10\0" \
+	"batlow_threshold=3\0" \
 	"batfull_threshold=100\0" \
 	"firstboot=1\0" \
 	"magic_key_status=none\0" \
