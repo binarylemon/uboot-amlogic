@@ -192,7 +192,7 @@ static int efuse_checkversion(char *buf)
 					}
 					break;
 				case EFUSE_SOC_CHIP_M8:
-					if(ver != 5){
+					if(ver != 20){
 						ver = -1;
 					}
 					break;

@@ -109,6 +109,11 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 			memcpy(buf, s, strlen(s));
 		else if( !strncmp(title,"hdcp",sizeof("hdcp")) )  			 //efuse write hdcp data(data is not string)
 			memcpy(buf, s, 288);
+		else if( !strncmp(title,"version",sizeof("version"))){
+			unsigned int ver;
+			ver = simple_strtoul(s, &end, 16);
+			buf[0]=(char)ver;
+		}
 		else													//efuse write version, mac, mac_bt, mac_wifi is data
 		{
 			for(i=0; i<info.data_len; i++){						
@@ -125,15 +130,22 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		
 #else
 
-		for(i=0; i<info.data_len; i++){
-			buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
-			if (s)
-				s = (*end) ? end+1 : end;
+		if( !strncmp(title,"version",sizeof("version"))){
+			unsigned int ver;
+			ver = simple_strtoul(s, &end, 16);
+			buf[0]=(char)ver;
 		}
+		else{
+			for(i=0; i<info.data_len; i++){
+				buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
+				if (s)
+					s = (*end) ? end+1 : end;
+			}
 
-		if(*s){
-			printf("error: The wriiten data length is too large.\n");
-			return -1;
+			if(*s){
+				printf("error: The wriiten data length is too large.\n");
+				return -1;
+			}
 		}
 #endif
 		

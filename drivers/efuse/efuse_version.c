@@ -383,7 +383,7 @@ static efuseinfo_item_t efuseinfo_v4[] =
 #endif
 
 //m8 efuse layout
-static efuseinfo_item_t efuseinfo_m8_v5[] = 
+static efuseinfo_item_t efuseinfo_m8_v20[] = 
 {
 	{
 		.title = "licence",
@@ -486,9 +486,9 @@ efuseinfo_t efuseinfo[] =
 	},
 #endif	
 	{
-		.efuseinfo_version = efuseinfo_m8_v5,
-		.size = sizeof(efuseinfo_m8_v5)/sizeof(efuseinfo_item_t),
-		.version = 5,
+		.efuseinfo_version = efuseinfo_m8_v20,
+		.size = sizeof(efuseinfo_m8_v20)/sizeof(efuseinfo_item_t),
+		.version = 20,
 	},
 };
 
