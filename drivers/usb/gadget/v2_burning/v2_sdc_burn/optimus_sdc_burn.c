@@ -459,6 +459,11 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
         DWN_ERR("Fail in burn bootloader\n");
         goto _finish;
     }
+    ret = optimus_set_burn_complete_flag();
+    if(ret){
+        DWN_ERR("Fail in set_burn_complete_flag\n");
+        ret = __LINE__; goto _finish;
+    }
 #endif
     optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK);
 

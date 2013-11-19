@@ -175,19 +175,7 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
     ret = _check_partition_table_consistency((unsigned)data);
     if(ret){
         DWN_ERR("Fail in _check_partition_table_consistency\n");
-        /*optimus_progress_ui_printf("Failed at check partition table\n");*/
         return 0;
-    }
-
-    //set 'burn_complete_flag' before burn_bootloader, if this failed then bootloader wouldn't burned and no way to boot 
-    if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get() 
-            || OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get())//led not depend on image res, can init early
-    {
-        ret = optimus_set_burn_complete_flag();
-        if(ret){
-            DWN_ERR("Fail in set_burn_complete_flag\n");
-            return __LINE__;
-        }
     }
 
     size = size < 0x60000 ? 0x60000 : size;
@@ -1050,7 +1038,7 @@ void optimus_reset(void)
 
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
     reboot_mode_clear();//clear the reboot mode
-    /*writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn*/
+    //writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn
     printf("Reset...\n");//Add printf to delay to save env
 
     //if not clear, uboot command reset will fail -> blocked
