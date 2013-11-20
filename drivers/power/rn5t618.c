@@ -836,9 +836,9 @@ static struct energy_array battery_energy_charge[16] = {
     {3801, 0, 0, 0, 0},                     // pmu_bat_para10
     {3836, 0, 0, 0, 0},                     // pmu_bat_para11
     {3872, 0, 0, 0, 0},                     // pmu_bat_para12
-    {3935, 0, 0, 0, 0},                     // pmu_bat_para13
-    {3998, 0, 0, 0, 0},                     // pmu_bat_para14
-    {4062, 0, 0, 0, 0},                     // pmu_bat_para15
+    {3942, 0, 0, 0, 0},                     // pmu_bat_para13
+    {4012, 0, 0, 0, 0},                     // pmu_bat_para14
+    {4083, 0, 0, 0, 0},                     // pmu_bat_para15
     {4153, 0, 0, 0, 0}                      // pmu_bat_para16   
 };
 
@@ -855,9 +855,9 @@ static struct energy_array battery_energy_discharge[16] = {
     {3801, 0, 0, 0, 0},                     // pmu_bat_para10
     {3836, 0, 0, 0, 0},                     // pmu_bat_para11
     {3872, 0, 0, 0, 0},                     // pmu_bat_para12
-    {3935, 0, 0, 0, 0},                     // pmu_bat_para13
-    {3998, 0, 0, 0, 0},                     // pmu_bat_para14
-    {4062, 0, 0, 0, 0},                     // pmu_bat_para15
+    {3942, 0, 0, 0, 0},                     // pmu_bat_para13
+    {4012, 0, 0, 0, 0},                     // pmu_bat_para14
+    {4083, 0, 0, 0, 0},                     // pmu_bat_para15
     {4153, 0, 0, 0, 0}                      // pmu_bat_para16   
 };
 
