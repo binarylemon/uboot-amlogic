@@ -19,6 +19,7 @@ int rn5t618_battery_calibrate(void);
 
 #define DBG(format, args...) printf("[RN5T618]"format,##args)
 static int rn5t618_curr_dir = 0;
+static int rn5t618_battery_test = 0;
 
 int rn5t618_write(int add, uint8_t val)
 {
@@ -417,7 +418,9 @@ int rn5t618_set_charging_current(int current)
         current = 1600;    
     }
     val = (current / 100) - 1;
-    printf("%s, %dmA\n", __func__, current);
+    if (!rn5t618_battery_test) {                // do not print when test
+        printf("%s, %dmA\n", __func__, current);
+    }
     return rn5t618_set_bits(0x00B8, val, 0x1f);
 }
 
@@ -773,7 +776,19 @@ int rn5t618_rdc_init(void)
     int rdc_total = 0;
     int success_cnt = 0;
     int rdc_tmp;
+    int vbat = 0;
     char buf[100];
+
+    rn5t618_battery_test = 1;
+    rn5t618_set_charging_current(300 * 1000);
+    do {
+        vbat = rn5t618_get_battery_voltage();
+        if (vbat < 3100) {
+            sprintf(buf, "battery voltage %4d, wait until come into rapid charge state\n", vbat);    
+            terminal_print(0, 35, buf);
+            udelay(2000 * 1000);
+        }
+    } while (vbat < 3100);
 
     for (i = 0; i < 8; i++) {
         rdc_tmp = rn5t618_calculate_rdc();
@@ -1249,6 +1264,7 @@ int rn5t618_battery_calibrate(void)
 
 out:
     terminal_print(0, 38, "\n\n");
+    rn5t618_battery_test = 0;
     return 1;
 }
 #endif /* CONFIG_UBOOT_BATTERY_PARAMETER_TEST */
