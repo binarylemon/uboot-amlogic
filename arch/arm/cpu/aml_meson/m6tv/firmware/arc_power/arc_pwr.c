@@ -561,8 +561,8 @@ int main(void)
 	    else if(c=='r')
 	    {
 	        writel(0,0xc8100030);
-	        f_serial_puts("arm boot succ\n");
-	        wait_uart_empty();
+	        //f_serial_puts("arm boot succ\n");
+	        //wait_uart_empty();
 	        #ifdef _UART_DEBUG_COMMUNICATION_
 	        //f_serial_puts("arm boot succ\n");
 	        //wait_uart_empty();
@@ -578,8 +578,15 @@ int main(void)
 	    }
 	    //cmd='f';
 	    //writel(cmd,P_AO_RTI_STATUS_REG1);
-		asm(".long 0x003f236f"); //add sync instruction.
-		asm("SLEEP");
+	    do
+	    {
+	       asm(".long 0x003f236f"); //add sync instruction.
+	       //asm("SLEEP");
+	       asm("flag 1");
+	       asm("nop");
+	       asm("nop");
+	       asm("nop");
+	    }while(1);
 	}
 	return 0;
 }
