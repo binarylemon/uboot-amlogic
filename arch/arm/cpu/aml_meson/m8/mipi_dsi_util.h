@@ -3,7 +3,7 @@
 
 #if 0
 #include <mach/register.h>
-#include "mipi_dsi_phy_reg.h"
+#include <asm/arch/mipi_dsi_reg.h>
 #include <linux/amlogic/vout/lcdoutc.h>
 #else
 #include <asm/arch/lcdoutc.h>

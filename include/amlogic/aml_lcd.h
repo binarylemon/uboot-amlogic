@@ -16,6 +16,7 @@ typedef struct panel_operations {
 	unsigned (*get_bl_level)(void);
 	void  (*power_on)(void);
 	void  (*power_off)(void);
+	void  (*test)(unsigned num);
 } panel_operations_t;
 
 extern panel_operations_t panel_oper;

@@ -124,7 +124,7 @@
    #define LCD_PACK_LITTLE          0   
    
 /* for video encoder */
-	#define	MIPI_DELAY				0
+	#define	MIPI_DELAY				2
 	#define	LVDS_DELAY				8
 	#define	EDP_DELAY				8
 	#define	TTL_DELAY				19
@@ -212,12 +212,15 @@ typedef enum
 } Lcd_Power_Type_t;
 #define LCD_POWER_TYPE_NULL			LCD_POWER_TYPE_MAX
 
-#define	LCD_POWER_PMU_GPIO0			0
-#define	LCD_POWER_PMU_GPIO1			1
-#define	LCD_POWER_PMU_GPIO2			2
-#define	LCD_POWER_PMU_GPIO3			3
-#define	LCD_POWER_PMU_GPIO4			4
-#define	LCD_POWER_PMU_GPIO_MAX		5
+typedef enum
+{
+	LCD_POWER_PMU_GPIO0 = 0,
+	LCD_POWER_PMU_GPIO1,
+	LCD_POWER_PMU_GPIO2,
+	LCD_POWER_PMU_GPIO3,
+	LCD_POWER_PMU_GPIO4,
+	LCD_POWER_PMU_GPIO_MAX,
+} Lcd_Power_Pmu_Gpio_t;
 
 #define	LCD_POWER_GPIO_OUTPUT_LOW	0
 #define	LCD_POWER_GPIO_OUTPUT_HIGH	1
@@ -260,7 +263,7 @@ static const char* lcd_type_table[]={
 static const char* lcd_type_table_match[]={
 	"mipi",
 	"lvds",
-	"edp"
+	"edp",
 	"ttl",
 	"invalid",
 };

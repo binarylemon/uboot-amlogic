@@ -64,27 +64,28 @@ extern GraphicDevice aml_gdev;
 static unsigned bl_level = 0;
 //*****************************************
 
-#include "../../../customer/include/panel/LP097X02.h"
+#include <amlogic/panel/LP097X02.h>
 //*****************************************
 // defined by hardware design
 //*****************************************
-// redefine LCD_BITS if the panel support bits option
-#if (BITS_OPTION == 1)
-#undef LCD_BITS
-#define LCD_BITS			6
-#endif
 
-#define CLK_SS_LEVEL		0	//0~5, 0 for disable spread spectrum
+#define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 
-#define TTL_RB_SWAP			0	//0: normal, 1: swap
-#define TTL_RGB_BIT_SWAP	0	//0: normal, 1: swap
+#define CLK_SS_LEVEL		0	/** ss_level(0=disable, 1=1%, 1=2%, 3=3%, 4=4%, 5=5%) */
+#define CLK_AUTO_GEN		1	/** 0=using customer clock parameters, 1=auto generate clock parameters by lcd_clock */
 
-#define LVDS_PN_SWAP		0	//0:normal, 1:swap
-#if (LCD_BITS == 6)
-#define LVDS_REPACK			0
-#else
-#define LVDS_REPACK			1
-#endif
+#define TTL_RB_SWAP			0	/** 0=normal, 1=swap */
+#define TTL_RGB_BIT_SWAP	0	/** 0=normal, 1=swap */
+
+#define LVDS_PN_SWAP		0	/** 0=normal, 1=swap */
+
+#define H_OFFSET_SIGN		1	/** 0 for negative, 1 for positive */
+#define H_OFFSET			0	/** horizontal display offset */
+#define V_OFFSET_SIGN		1	/** 0 for negative, 1 for positive */
+#define V_OFFSET			0	/** vertical display offset */
+
+#define VIDEO_ON_PIXEL		80
+#define VIDEO_ON_LINE		32
 //*****************************************
 
 
@@ -153,13 +154,13 @@ static void backlight_power_ctrl(Bool_t status)
 {
 	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
     if( status == ON )
-	{	    
-	    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);		
+	{
+	    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 		mdelay(20);	
 		//BL_EN: GPIOD_1(PWM_D)
 #if (BL_CTL==BL_CTL_GPIO)
 	    set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
-	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);		
+	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
 #elif (BL_CTL==BL_CTL_PWM)
 		WRITE_MPEG_REG(PWM_MISC_REG_CD, (READ_MPEG_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (PWM_PRE_DIV<<16) | (1<<1)));  //enable pwm clk & pwm output
 		WRITE_MPEG_REG(PERIPHS_PIN_MUX_2, READ_MPEG_REG(PERIPHS_PIN_MUX_2) | (1<<3));  //enable pwm pinmux
@@ -296,14 +297,18 @@ static Lvds_Phy_Control_t lcd_lvds_phy_control =
 
 static Lvds_Config_t lcd_lvds_config=
 {
-    .lvds_repack = LVDS_REPACK,
+#if (LCD_BITS == 6)
+	.lvds_repack = 0,
+#else
+	.lvds_repack = 1,
+#endif
 	.pn_swap = LVDS_PN_SWAP,
 };
 
 Lcd_Config_t lcd_config =
 {
     .lcd_basic = {
-		.model_name = PANEL_MODEL,
+		.model_name = MODEL_NAME,
         .h_active = H_ACTIVE,
         .v_active = V_ACTIVE,
         .h_period = H_PERIOD,
@@ -313,7 +318,11 @@ Lcd_Config_t lcd_config =
 		.screen_actual_width = ACITVE_AREA_WIDTH,
      	.screen_actual_height = ACITVE_AREA_HEIGHT,
         .lcd_type = LCD_TYPE,
+#if (BITS_OPTION == 1)
+		.lcd_bits = LCD_BITS_USER,
+#else
         .lcd_bits = LCD_BITS,
+#endif
     },
 
 	.lcd_timing = {
@@ -329,6 +338,8 @@ Lcd_Config_t lcd_config =
 		.hsync_bp = HS_BACK_PORCH,
 		.vsync_width = VS_WIDTH,
 		.vsync_bp = VS_BACK_PORCH,
+		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
+		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
 		
         .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
@@ -371,92 +382,6 @@ static void lcd_setup_gamma_table(Lcd_Config_t *pConf)
     }
 }
 
-static void lcd_tcon_config(Lcd_Config_t *pConf)
-{
-	unsigned short hstart, hend, vstart, vend;
-	unsigned short de_hstart, de_vstart;
-	
-	if (LCD_TYPE == LCD_DIGITAL_TTL) {
-		if (H_OFFSET_SIGN)
-			de_hstart = (VIDEO_ON_PIXEL + TTL_DELAY + H_PERIOD + TTL_H_OFFSET) % H_PERIOD;	
-		else
-			de_hstart = (VIDEO_ON_PIXEL + TTL_DELAY + H_PERIOD - TTL_H_OFFSET) % H_PERIOD;
-		
-		if (V_OFFSET_SIGN)
-			de_vstart = (VIDEO_ON_LINE + V_PERIOD + TTL_V_OFFSET) % V_PERIOD;	
-		else
-			de_vstart = (VIDEO_ON_LINE + V_PERIOD - TTL_V_OFFSET) % V_PERIOD;
-	}
-	else if (LCD_TYPE == LCD_DIGITAL_LVDS) {
-		de_hstart = VIDEO_ON_PIXEL + LVDS_DELAY;
-		de_vstart = VIDEO_ON_LINE;
-	}
-	else if (LCD_TYPE == LCD_DIGITAL_MINILVDS) {
-		de_hstart = VIDEO_ON_PIXEL + MLVDS_DELAY;
-		de_vstart = VIDEO_ON_LINE;
-	}
-	
-	pConf->lcd_timing.de_hstart = de_hstart;
-	pConf->lcd_timing.de_vstart = de_vstart;
-	
-	hstart = (de_hstart + H_PERIOD - HS_BACK_PORCH) % H_PERIOD;
-	hend = (de_hstart + H_PERIOD - HS_BACK_PORCH + HS_WIDTH) % H_PERIOD;
-	vstart = (de_vstart + V_PERIOD - VS_BACK_PORCH) % V_PERIOD;
-	vend = (de_vstart + V_PERIOD - VS_BACK_PORCH + VS_WIDTH - 1) % V_PERIOD;
-	if (LCD_TYPE == LCD_DIGITAL_TTL) {
-		if (HS_POL) {
-			pConf->lcd_timing.sth1_hs_addr = hstart;
-			pConf->lcd_timing.sth1_he_addr = hend;
-		}
-		else {
-			pConf->lcd_timing.sth1_he_addr = hstart;
-			pConf->lcd_timing.sth1_hs_addr = hend;
-		}
-		if (VS_POL) {
-			pConf->lcd_timing.stv1_vs_addr = vstart;
-			pConf->lcd_timing.stv1_ve_addr = vend;
-		}
-		else {
-			pConf->lcd_timing.stv1_ve_addr = vstart;
-			pConf->lcd_timing.stv1_vs_addr = vend;
-		}
-	}
-	else if (LCD_TYPE == LCD_DIGITAL_LVDS) {
-		if (HS_POL) {
-			pConf->lcd_timing.sth1_he_addr = hstart;
-			pConf->lcd_timing.sth1_hs_addr = hend;
-		}
-		else {
-			pConf->lcd_timing.sth1_hs_addr = hstart;
-			pConf->lcd_timing.sth1_he_addr = hend;
-		}
-		if (VS_POL) {
-			pConf->lcd_timing.stv1_ve_addr = vstart;
-			pConf->lcd_timing.stv1_vs_addr = vend;
-		}
-		else {
-			pConf->lcd_timing.stv1_vs_addr = vstart;
-			pConf->lcd_timing.stv1_ve_addr = vend;
-		}
-	}
-	else if (LCD_TYPE == LCD_DIGITAL_MINILVDS) {
-		//none
-	}
-	pConf->lcd_timing.sth1_vs_addr = 0;
-	pConf->lcd_timing.sth1_ve_addr = V_PERIOD - 1;
-	pConf->lcd_timing.stv1_hs_addr = 0;
-	pConf->lcd_timing.stv1_he_addr = H_PERIOD - 1;
-	
-	pConf->lcd_timing.oeh_hs_addr = de_hstart;
-	pConf->lcd_timing.oeh_he_addr = de_hstart + H_ACTIVE;
-	pConf->lcd_timing.oeh_vs_addr = de_vstart;
-	pConf->lcd_timing.oeh_ve_addr = de_vstart + V_ACTIVE - 1;
-
-	//printf("sth1_hs_addr=%d, sth1_he_addr=%d, sth1_vs_addr=%d, sth1_ve_addr=%d\n", pConf->lcd_timing.sth1_hs_addr, pConf->lcd_timing.sth1_he_addr, pConf->lcd_timing.sth1_vs_addr, pConf->lcd_timing.sth1_ve_addr);
-	//printf("stv1_hs_addr=%d, stv1_he_addr=%d, stv1_vs_addr=%d, stv1_ve_addr=%d\n", pConf->lcd_timing.stv1_hs_addr, pConf->lcd_timing.stv1_he_addr, pConf->lcd_timing.stv1_vs_addr, pConf->lcd_timing.stv1_ve_addr);
-	//printf("oeh_hs_addr=%d, oeh_he_addr=%d, oeh_vs_addr=%d, oeh_ve_addr=%d\n", pConf->lcd_timing.oeh_hs_addr, pConf->lcd_timing.oeh_he_addr, pConf->lcd_timing.oeh_vs_addr, pConf->lcd_timing.oeh_ve_addr);
-}
-
 static void power_on_backlight(void)
 {
 	//debug("%s\n", __FUNCTION__);
@@ -494,7 +419,6 @@ static int lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);	
 	
-	lcd_tcon_config(&lcd_config);
 	lcd_setup_gamma_table(&lcd_config);
     lcd_io_init();
     lcd_probe();

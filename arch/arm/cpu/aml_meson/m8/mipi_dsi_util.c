@@ -2,11 +2,10 @@
 //#include <mach/cpu.h>
 //#include <plat/cpu.h>
 //#include <linux/amlogic/vout/lcdoutc.h>
-#if 1//(MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
+
 //#include <linux/kernel.h>
 #include "mipi_dsi_util.h"
-#include "mipi_dsi_phy_reg.h"
-//#include <linux/amlogic/vout/lcd_reg.h>
+#include <asm/arch/mipi_dsi_reg.h>
 
 #include <asm/arch/io.h>
 #include <asm/arch/lcd_reg.h>
@@ -20,9 +19,6 @@
 #define VPP_OUT_SATURATE            (1 << 0)
 #endif
 
-#ifdef CONFIG_AM_TV_OUTPUT2
-extern unsigned int vpp2_sel; /*0,vpp; 1, vpp2 */
-#endif
 static unsigned int exp2_tbl[]={1,2,4,8};
 #ifndef FIN_FREQ
 #define FIN_FREQ        (24 * 1000)
@@ -30,12 +26,10 @@ static unsigned int exp2_tbl[]={1,2,4,8};
 
 void init_mipi_dsi_phy(Lcd_Config_t *p)
 {
-        unsigned int div, clk_min, clk_max;
+        unsigned int div;
         DSI_Config_t *cfg= p->lcd_control.mipi_config;
 
         div = cfg->dsi_clk_div;
-        clk_min = cfg->dsi_clk_min;
-        clk_max = cfg->dsi_clk_max;
 
         DPRINT("div=%d, clk_min=%d, clk_max=%d\n", div, clk_min, clk_max);
 
@@ -187,7 +181,6 @@ void set_mipi_dsi_host_to_command_mode(int lane_num,                            
                 tv_enc_lcd_type_t output_type,                          // video type, such as 1080x720
                 int vid_mode_type,                                      // video mode : burst/non_burst
                 int check_phy_status,                                   // enable/disable phy lock check, disable for multiple pic test
-                unsigned char refresh_rate,
                 Lcd_Config_t *p)
 {
         int real_lane_num = lane_num+1;
@@ -327,7 +320,6 @@ void set_mipi_dsi_host_to_video_mode(int lane_num,                              
                 tv_enc_lcd_type_t output_type,                          // video type, such as 1080x720
                 int vid_mode_type,                                      // video mode : burst/non_burst
                 int check_phy_status,                                   // enable/disable phy lock check, disable for multiple pic test
-                unsigned char refresh_rate,
                 Lcd_Config_t *p)
 
 {
@@ -504,10 +496,6 @@ void set_mipi_dsi_host_to_video_mode(int lane_num,                              
         }
 
 }
-void mipi_dphy_init()
-{
-
-}
 
 void startup_transfer_cmd(void)
 {
@@ -528,8 +516,7 @@ void print_info(int lane_num,                                           // lane 
                 int trans_mode,                                         // video mode/command mode
                 tv_enc_lcd_type_t output_type,                          // video type, such as 1080x720
                 int vid_mode_type,                                      // video mode : burst/non_burst
-                int check_phy_status,                                   // enable/disable phy lock check, disable for multiple pic test
-                unsigned char refresh_rate
+                int check_phy_status                                   // enable/disable phy lock check, disable for multiple pic test
                )
 {
         // Information display
@@ -917,129 +904,6 @@ extern void DCS_long_write_packet(unsigned int data_type,                      /
         }
 }
 
-#if 0
-void set_pll_mipi(Lcd_Config_t *p)
-{
-        int pll_lock;
-        int wait_loop = 100;
-
-        Lcd_Control_Config_t *pConf = &p->lcd_control;
-
-        pConf->mipi_config->venc_color_type = 2;
-        pConf->mipi_config->dpi_color_type  = 4;
-
-        pConf->mipi_config->trans_mode = 1;
-        pConf->mipi_config->venc_fmt = TV_ENC_LCD768x1024p;
-        pConf->mipi_config->lane_num = 3;
-        pConf->mipi_config->dpi_chroma_subsamp = 0;
-        pConf->mipi_config->refresh_rate = 60;
-
-	// Configure VS/HS/DE polarity before mipi_dsi_host.pixclk starts,
-	WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4))   |
-                          (1  << 4)               |
-                          (1  << 5)               |
-                          (0  << 6));
-
-         WRITE_CBUS_REG(HHI_VID_PLL_CNTL5,  0x00012286);
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL2, 0x0431aa1e);
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL3, 0xca45b023);
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL4, 0xd4000d67);
-
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL5, 0x00700111);
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL,  0x61000230);
-         WRITE_CBUS_REG(HHI_VID2_PLL_CNTL,  0x41000230);
-
-	do{
-		udelay(100);
-		pll_lock = (READ_CBUS_REG(HHI_VID2_PLL_CNTL) >> 31) & 0x1;
-		if (wait_loop < 20){
-			DPRINT("vid2_pll_locked=%u, wait_lock_loop=%d\n", pll_lock, (100 - wait_loop + 1));
-                }
-		wait_loop--;
-	}while((pll_lock == 0) && (wait_loop > 0));
-
-        WRITE_CBUS_REG(HHI_DSI_LVDS_EDP_CNTL1, READ_CBUS_REG(HHI_DSI_LVDS_EDP_CNTL1) & ~(1<<4)); //0x10d2
-        //WRITE_CBUS_REG(HHI_VID_DIVIDER_CNTL, 0x0001d923); //0x1066
-        WRITE_CBUS_REG(HHI_VIID_DIVIDER_CNTL, 0x0001d923); //0x104c
-        WRITE_CBUS_REG( HHI_VID2_PLL_CNTL5, READ_CBUS_REG(HHI_VID2_PLL_CNTL5)  | //0x10e4
-                         (1 << 23)               |   // Enable MIPI DSI PHY clock
-                         (1 << 24));                 // Enable LVDS clock for ENCL pixel clock
-
-        //WRITE_CBUS_REG( HHI_VID_CLK_CNTL, READ_CBUS_REG(HHI_VID_CLK_CNTL) |  (1 << 19) | (1 << 0));   //enable clk_div0, 0x105f
-        //WRITE_CBUS_REG( HHI_VID_CLK_CNTL, READ_CBUS_REG(HHI_VID_CLK_CNTL) |  (1 << 20) | (1 << 0));   //enable clk_div1, 0x105f
-
-        WRITE_CBUS_REG_BITS( HHI_VIID_CLK_CNTL, 4, 16, 3);//enable vid pll input, 0x104b
-	WRITE_CBUS_REG_BITS( HHI_VIID_CLK_CNTL, 1, 19, 1);	//vclk2_en0
-        //WRITE_CBUS_REG_BITS( HHI_VID_CLK_DIV,   0, 0, 8 ); //0x1059
-        //WRITE_CBUS_REG_BITS( HHI_VID_CLK_CNTL, 1, 0, 1);   //0x105f
-        //
-        WRITE_CBUS_REG_BITS( HHI_VIID_CLK_DIV, 0, 0, 4);//0x104a[0:4], N=0, bypass
-        WRITE_CBUS_REG_BITS( HHI_VIID_CLK_CNTL, 1, 0, 1);// 0x104b[0]=1 v2 clk div en
-        WRITE_CBUS_REG_BITS( HHI_VIID_CLK_DIV, 1, 19, 1);//0x104a[19], enable
-
-	WRITE_CBUS_REG_BITS( HHI_VIID_CLK_CNTL, 1, 15, 1);	//vclk2 reset
-	WRITE_CBUS_REG_BITS( HHI_VIID_CLK_CNTL, 0, 15, 1);	//vclk2 reset
-
-        WRITE_CBUS_REG_BITS( HHI_VIID_CLK_DIV,  8, 12, 4);//0x104a[12:15] v2_clk_div1
-        DPRINT("%s, %d\n", __func__, __LINE__);
-
-        //DPRINT("pll output stably, vid2 pll clk = %d", clk_util_clk_msr(6));
-        //DPRINT("pll output stably, cts_encl_clk = %d", clk_util_clk_msr(9));
-
-        //startup_mipi_dsi_host()
-        WRITE_CBUS_REG( HHI_DSI_LVDS_EDP_CNTL0, 0x0);                                          // Select DSI as the output for u_dsi_lvds_edp_top
-        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) | 0xf) );     // Release mipi_dsi_host's reset
-        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) & 0xfffffff0) );     // Release mipi_dsi_host's reset
-        WRITE_LCD_REG( MIPI_DSI_TOP_CLK_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CLK_CNTL) | 0x3) );            // Enable dwc mipi_dsi_host's clock
-
-}
-#endif
-
-void set_venc_mipi(Lcd_Config_t *pConf)
-{
-	WRITE_LCD_REG(ENCL_VIDEO_EN, 0);
-
-#ifdef CONFIG_AM_TV_OUTPUT2
-	if	(vpp2_sel) {
-		WRITE_LCD_REG_BITS(VPU_VIU_VENC_MUX_CTRL, 0, 2, 2);	//viu2 select encl
-		WRITE_LCD_REG(VPU_VIU_VENC_MUX_CTRL, (READ_LCD_REG(VPU_VIU_VENC_MUX_CTRL)&(~(0x3<<2)))|(0x0<<2)); //viu2 select encl
-	}
-	else {
-		WRITE_LCD_REG_BITS(VPU_VIU_VENC_MUX_CTRL, 0x88, 4, 8);//Select encl clock to VDIN, Enable VIU of ENC_l domain to VDIN
-		WRITE_LCD_REG_BITS(VPU_VIU_VENC_MUX_CTRL, 0, 0, 2);//viu1 select encl
-	}
-#else
-	WRITE_LCD_REG(VPU_VIU_VENC_MUX_CTRL, (0<<0) | (0<<2));	// viu1 & viu2 select encl
-#endif
-
-        WRITE_LCD_REG(ENCL_VIDEO_MODE,		0);
-        WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV,	0x0008);	// Sampling rate: 1
-
-        WRITE_LCD_REG(ENCL_VIDEO_FILT_CTRL,	0x1000);	// bypass filter
-
-        WRITE_LCD_REG(ENCL_VIDEO_MAX_PXCNT,	pConf->lcd_basic.h_period - 1);
-        WRITE_LCD_REG(ENCL_VIDEO_MAX_LNCNT,	pConf->lcd_basic.v_period - 1);
-
-        WRITE_LCD_REG(ENCL_VIDEO_HAVON_BEGIN,	pConf->lcd_timing.video_on_pixel);
-        WRITE_LCD_REG(ENCL_VIDEO_HAVON_END,	pConf->lcd_basic.h_active - 1 + pConf->lcd_timing.video_on_pixel);
-        WRITE_LCD_REG(ENCL_VIDEO_VAVON_BLINE,	pConf->lcd_timing.video_on_line);
-        WRITE_LCD_REG(ENCL_VIDEO_VAVON_ELINE,	pConf->lcd_basic.v_active - 1  + pConf->lcd_timing.video_on_line);
-
-	WRITE_LCD_REG(ENCL_VIDEO_HSO_BEGIN,	pConf->lcd_timing.video_on_pixel - pConf->lcd_timing.hsync_width - pConf->lcd_timing.hsync_bp +3 -1);
-	WRITE_LCD_REG(ENCL_VIDEO_HSO_END,	pConf->lcd_timing.video_on_pixel - pConf->lcd_timing.hsync_bp +3 -1);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_BEGIN,	pConf->lcd_timing.video_on_pixel - pConf->lcd_timing.hsync_width - pConf->lcd_timing.hsync_bp +3 -1);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_END,	pConf->lcd_timing.video_on_pixel - pConf->lcd_timing.hsync_width - pConf->lcd_timing.hsync_bp +3 -1);
-
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_BLINE,	pConf->lcd_timing.video_on_line  - pConf->lcd_timing.vsync_width - pConf->lcd_timing.vsync_bp);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_ELINE,	pConf->lcd_timing.video_on_line  - pConf->lcd_timing.vsync_bp);
-
-        WRITE_LCD_REG(ENCL_VIDEO_RGBIN_CTRL, 	(1 << 0));//(1 << 1) | (1 << 0));	//bit[0] 1:RGB, 0:YUV
-
-        WRITE_LCD_REG(ENCL_VIDEO_EN,           1);
-
-	// enable encl
-}
-
 void set_control_mipi(Lcd_Config_t *p)
 {
         unsigned int        mipi_dsi_dpi_color_type;
@@ -1052,7 +916,7 @@ void set_control_mipi(Lcd_Config_t *p)
         unsigned int        is_rgb;
         unsigned int        dith10_en, dith8_en, dith5_en;
         unsigned char       trans_mode;
-        unsigned char       refresh_rate; //available only for 2560x1600
+
 
 	//set VPU clk
         //WRITE_CBUS_REG(HHI_VPU_CLK_CNTL, 0x303); //vid pll clock, N = 0, enable //moved to vpu.c, default config by dts
@@ -1066,7 +930,6 @@ void set_control_mipi(Lcd_Config_t *p)
         mipi_dsi_dpi_color_type = pConf->mipi_config->dpi_color_type;
         lane_num                = pConf->mipi_config->lane_num;
         chroma_subsamp          = pConf->mipi_config->dpi_chroma_subsamp;
-        refresh_rate            = pConf->mipi_config->refresh_rate;
 
         DPRINT("%s, %d\n", __func__, __LINE__);
         print_info(lane_num,                        // Lane number
@@ -1077,8 +940,7 @@ void set_control_mipi(Lcd_Config_t *p)
                         trans_mode,                                          // DSI transfer mode, video or command
                         venc_format,                                         // Venc resolution format, eg, 240x160
                         MIPI_DSI_TRANS_VIDEO_MODE,                          //?????? // Video transfer mode, burst or non-burst
-                        1,                                                   // If check the phy status, need check when first pic
-                        refresh_rate);
+                        1);                                                   // If check the phy status, need check when first pic
 
 
         DPRINT("[TEST.C] Set mipi_dsi_host and mipi_dphy\n");
@@ -1097,7 +959,7 @@ void set_control_mipi(Lcd_Config_t *p)
                         venc_format,                                         // Venc resolution format, eg, 240x160
                         MIPI_DSI_TRANS_VIDEO_MODE,                          //?????? // Video transfer mode, burst or non-burst
                         1,                                                   // If check the phy status, need check when first pic
-                        refresh_rate, p);
+                        p);
 }
 void powerdown_mipi_analog(void)
 {
@@ -1215,7 +1077,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
         unsigned int        is_rgb;
         unsigned int        dith10_en, dith8_en, dith5_en;
         unsigned char       trans_mode;
-        unsigned char       refresh_rate; //available only for 2560x1600
+
 
         if(OFF == status){
 
@@ -1256,7 +1118,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
         mipi_dsi_dpi_color_type = pConf->mipi_config->dpi_color_type;
         lane_num                = pConf->mipi_config->lane_num;
         chroma_subsamp          = pConf->mipi_config->dpi_chroma_subsamp;
-        refresh_rate            = pConf->mipi_config->refresh_rate;
+
 
         startup_transfer_video();
 
@@ -1286,7 +1148,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
                         venc_format,                                         // Venc resolution format, eg, 240x160
                         MIPI_DSI_TRANS_VIDEO_MODE,                          //?????? // Video transfer mode, burst or non-burst
                         1,                                                   // If check the phy status, need check when first pic
-                        refresh_rate, p);
+                        p);
 
 }
 #if 0
@@ -1428,16 +1290,4 @@ U_BOOT_CMD(
 	  );
 //****************************************
 #endif
-#else
-void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status){}
 
-void set_pll_mipi(Lcd_Config_t *p){}
-
-void set_control_mipi(Lcd_Config_t *p){}
-
-void set_venc_mipi(Lcd_Config_t *pConf){}
-
-void set_tcon_mipi(Lcd_Config_t *p){}
-
-void init_phy_mipi(Lcd_Config_t *pConf){}
-#endif

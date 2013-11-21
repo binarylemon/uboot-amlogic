@@ -482,13 +482,13 @@ static int do_lcdoptcmd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	}
 	if(strcmp(argv[0], "enable") == 0)
 	{
-		lcd_is_enabled = 1;		
-		panel_oper.enable();		
+		lcd_is_enabled = 1;
+		panel_oper.enable();
 	}
 	else if(strcmp(argv[0], "disable") == 0)
 	{
 		lcd_is_enabled = 0;
-		panel_oper.disable();		
+		panel_oper.disable();
 	}
 	else if(strcmp(argv[0], "bl_on") == 0)
 	{
@@ -559,13 +559,13 @@ int lcd_opt_cmd(int argc, char * const argv[])
 {
 	if(strcmp(argv[0], "enable") == 0)
 	{
-		lcd_is_enabled = 1;		
-		panel_oper.enable();		
+		lcd_is_enabled = 1;
+		panel_oper.enable();
 	}
 	else if(strcmp(argv[0], "disable") == 0)
 	{
 		lcd_is_enabled = 0;
-		panel_oper.disable();		
+		panel_oper.disable();
 	}
 	else if(strcmp(argv[0], "bl_on") == 0)
 	{
@@ -583,12 +583,15 @@ int lcd_opt_cmd(int argc, char * const argv[])
 	{
 #ifdef LCD_TEST_PATTERN		
 		test_pattern();
-#endif		
+
 		printf("LCD Test!\n");    
 		lcd_printf("\n");
 		lcd_printf("   D   \n");
 		lcd_printf("lcd_test: FILE:%s:%d, FUNC:%s\n",\
                                                      __FILE__,__LINE__,__func__);
+#else
+		panel_oper.test(simple_strtoul(argv[1], NULL, 10));
+#endif
 	}
 	else
 	{
@@ -596,7 +599,7 @@ int lcd_opt_cmd(int argc, char * const argv[])
 		opt_cmd_help();
 		return 1;
 	}
-	return 0;	
+	return 0;
 }
 
 /*=================================================================================

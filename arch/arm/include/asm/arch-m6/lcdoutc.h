@@ -297,6 +297,8 @@ typedef struct {
 	u16 de_hstart;
 	u16 de_vstart;
 	u16 de_valid;
+	u32 h_offset;
+	u32 v_offset;
 
     u16 sth1_hs_addr;
     u16 sth1_he_addr;

@@ -1842,9 +1842,39 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 {
 	unsigned short hs_pol, vs_pol;
 	unsigned short hstart, hend, vstart, vend;
+	unsigned short h_delay = 0;
+	unsigned short h_offset = 0, v_offset = 0;
 	
 	hs_pol = (pConf->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1;
 	vs_pol = (pConf->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1;
+	
+	switch (pConf->lcd_basic.lcd_type) {
+		case LCD_DIGITAL_TTL:
+			h_delay = TTL_DELAY;
+			break;
+		case LCD_DIGITAL_LVDS:
+			h_delay = LVDS_DELAY;
+			break;
+		case LCD_DIGITAL_MINILVDS:
+			h_delay = MLVDS_DELAY;
+			break;
+		
+		default:
+			h_delay = 0;
+			break;
+	}
+	
+	h_offset = (pConf->lcd_timing.h_offset & 0xffff);
+	v_offset = (pConf->lcd_timing.v_offset & 0xffff);
+	if ((pConf->lcd_timing.h_offset >> 31) & 1)
+		pConf->lcd_timing.de_hstart = (pConf->lcd_timing.video_on_pixel + pConf->lcd_basic.h_period + h_delay + h_offset) % pConf->lcd_basic.h_period;
+	else
+		pConf->lcd_timing.de_hstart = (pConf->lcd_timing.video_on_pixel + pConf->lcd_basic.h_period + h_delay - h_offset) % pConf->lcd_basic.h_period;
+	if ((pConf->lcd_timing.v_offset >> 31) & 1)
+		pConf->lcd_timing.de_vstart = (pConf->lcd_timing.video_on_line + pConf->lcd_basic.v_period + v_offset) % pConf->lcd_basic.v_period;
+	else
+		pConf->lcd_timing.de_vstart = (pConf->lcd_timing.video_on_line + pConf->lcd_basic.v_period - v_offset) % pConf->lcd_basic.v_period;
+	
 	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
 		hstart = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
 		hend = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp + pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;
@@ -1928,8 +1958,8 @@ static void _lcd_config_init(Lcd_Config_t *pConf)
 	}
 	printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 	lcd_sync_duration(pConf);
-	if (dts_ready) {
-		lcd_tcon_config(pConf);
+	lcd_tcon_config(pConf);
+	if (dts_ready) {		
 #ifdef CONFIG_OF_LIBFDT
 		set_lcd_backlight_level(BL_LEVEL_DEFAULT);
 #endif
@@ -2022,51 +2052,39 @@ static inline void _enable_vsync_interrupt(void)
 }
 
 //for lcd_function_call by other module, compatible dts
-void _enable_backlight(void)
+static void _enable_backlight(void)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
 		lcd_backlight_power_ctrl(ON);
 #endif
 	}
-	else {
-		panel_oper.bl_on();
-	}
 }
-void _disable_backlight(void)
+static void _disable_backlight(void)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
 		lcd_backlight_power_ctrl(OFF);
 #endif
-	}
-	else {
-		panel_oper.bl_off();
 	}	
 }
-void _set_backlight_level(unsigned level)
+static void _set_backlight_level(unsigned level)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
 		set_lcd_backlight_level(level);
 #endif
 	}
-	else {
-		panel_oper.set_bl_level(level);
-	}
 }
-unsigned _get_backlight_level(void)
+static unsigned _get_backlight_level(void)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
 		return get_lcd_backlight_level();
 #endif
 	}
-	else {
-		return panel_oper.get_bl_level();
-	}
 }
-void _lcd_enable(void)
+static void _lcd_enable(void)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
@@ -2074,11 +2092,8 @@ void _lcd_enable(void)
 		lcd_probe();
 #endif
 	}
-	else {
-		panel_oper.enable();
-	}
 }
-void _lcd_disable(void)
+static void _lcd_disable(void)
 {
 	if (dts_ready) {
 #ifdef CONFIG_OF_LIBFDT
@@ -2087,9 +2102,71 @@ void _lcd_disable(void)
 		lcd_remove();
 #endif
 	}
-	else {
-		panel_oper.disable();
+}
+
+static void _lcd_test(unsigned num)
+{
+	unsigned venc_video_mode, venc_test_base;
+	
+	if (pDev->conf.lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
+		venc_video_mode = ENCT_VIDEO_MODE_ADV;
+		venc_test_base = ENCT_TST_EN;
 	}
+	else {
+		venc_video_mode = ENCL_VIDEO_MODE_ADV;
+		venc_test_base = ENCL_TST_EN;
+	}
+	
+	switch (num) {
+		case 0:
+			WRITE_MPEG_REG(venc_video_mode, 0x8);
+			printf("disable bist pattern\n");
+			printf("video dev test 1/2/3: show different test pattern\n");
+			break;
+		case 1:
+			WRITE_MPEG_REG(venc_video_mode, 0);
+			WRITE_MPEG_REG(venc_test_base+1, 1);
+			WRITE_MPEG_REG(venc_test_base+5, pDev->conf.lcd_basic.h_active / 8);
+			WRITE_MPEG_REG(venc_test_base+6, pDev->conf.lcd_basic.h_active / 8);
+			WRITE_MPEG_REG(venc_test_base, 1);
+			printf("show test pattern 1\n");
+			printf("video dev test 0: disable test pattern\n");
+			break;
+		case 2:
+			WRITE_MPEG_REG(venc_video_mode, 0);
+			WRITE_MPEG_REG(venc_test_base+1, 2);
+			WRITE_MPEG_REG(venc_test_base, 1);
+			printf("show test pattern 2\n");
+			printf("video dev test 0: disable test pattern\n");
+			break;
+		case 3:
+			WRITE_MPEG_REG(venc_video_mode, 0);
+			WRITE_MPEG_REG(venc_test_base+1, 3);
+			WRITE_MPEG_REG(venc_test_base, 1);
+			printf("show test pattern 3\n");
+			printf("video dev test 0: disable test pattern\n");
+			break;
+		default:
+			printf("un-support pattern num\n");
+			printf("video dev test 1/2/3: show different test pattern\n");
+			printf("video dev test 0: disable test pattern\n");
+			break;
+	}
+}
+
+static update_panel_operation(void)
+{
+	if (dts_ready) {
+#ifdef CONFIG_OF_LIBFDT
+		panel_oper.enable = _lcd_enable;
+		panel_oper.disable = _lcd_disable;
+		panel_oper.bl_on = _enable_backlight;
+		panel_oper.bl_off = _disable_backlight;
+		panel_oper.set_bl_level = _set_backlight_level;
+		panel_oper.get_bl_level = _get_backlight_level;
+#endif
+	}
+	panel_oper.test = _lcd_test;
 }
 //****************************************
 
@@ -2497,22 +2574,15 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "hsign_hoffset_vsign_voffset", NULL);
 	if(propdata == NULL){
 		DPRINT("don't find to match hsign_hoffset_vsign_voffset, use default setting.\n");
-		pConf->lcd_timing.de_hstart = pConf->lcd_timing.video_on_pixel + TTL_DELAY;
-		pConf->lcd_timing.de_vstart = pConf->lcd_timing.video_on_line;
+		pDev->pConf->lcd_timing.h_offset = 0;
+		pDev->pConf->lcd_timing.v_offset = 0;
 	}
 	else {
-		printf("ttl hsign = %u, hoffset = %u, vsign = %u, voffset = %u\n", be32_to_cpup((u32*)propdata), be32_to_cpup((((u32*)propdata)+1)), be32_to_cpup((((u32*)propdata)+2)), be32_to_cpup((((u32*)propdata)+3)));
-		if (be32_to_cpup((u32*)propdata) == 1)
-			pConf->lcd_timing.de_hstart = (pConf->lcd_timing.video_on_pixel + TTL_DELAY + pConf->lcd_basic.h_period + be32_to_cpup((((u32*)propdata)+1))) % pConf->lcd_basic.h_period;
-		else
-			pConf->lcd_timing.de_hstart = (pConf->lcd_timing.video_on_pixel + TTL_DELAY + pConf->lcd_basic.h_period - be32_to_cpup((((u32*)propdata)+1))) % pConf->lcd_basic.h_period;
-		
-		if (be32_to_cpup((((u32*)propdata)+2)) == 1)
-			pConf->lcd_timing.de_vstart = (pConf->lcd_timing.video_on_line + pConf->lcd_basic.v_period + be32_to_cpup((((u32*)propdata)+3))) % pConf->lcd_basic.v_period;
-		else
-			pConf->lcd_timing.de_vstart = (pConf->lcd_timing.video_on_line + pConf->lcd_basic.v_period - be32_to_cpup((((u32*)propdata)+3))) % pConf->lcd_basic.v_period;
+		pConf->lcd_timing.h_offset = ((be32_to_cpup((u32*)propdata) << 31) | ((be32_to_cpup((((u32*)propdata)+1)) & 0xffff) << 0));
+		pConf->lcd_timing.v_offset = ((be32_to_cpup((((u32*)propdata)+2)) << 31) | ((be32_to_cpup((((u32*)propdata)+3)) & 0xffff) << 0));
+		printf("h_offset = %s%u, ", (((pConf->lcd_timing.h_offset >> 31) & 1) ? "+" : "-"), (pConf->lcd_timing.h_offset & 0xffff));
+		printf("v_offset = %s%u\n", (((pConf->lcd_timing.v_offset >> 31) & 1) ? "+" : "-"), (pConf->lcd_timing.v_offset & 0xffff));
 	}
-	//DPRINT("ttl de_hs = %u, de_vs = %u\n", pConf->lcd_timing.de_hstart, pConf->lcd_timing.de_vstart);
 	propdata = fdt_getprop(dt_addr, nodeoffset, "lvds_phy_ctrl", NULL);
 	if(propdata == NULL){
 		DPRINT("don't find to match lvds_phy_ctrl, use default setting.\n");
@@ -3091,6 +3161,9 @@ int lcd_probe(void)
 #endif
 	
     _lcd_init(&pDev->conf);
+	
+	update_panel_operation();
+	
     return 0;
 }
 
