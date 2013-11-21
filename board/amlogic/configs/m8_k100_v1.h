@@ -309,6 +309,7 @@
 			"run into_sleep; setenv sleep_count 0; else calc ${sleep_count} + 1 sleep_count; "\
 		"fi\0" \
 	"into_sleep="\
+		"video dev disable; " \
 		"suspend; " \
 		"while itest ${sleep_enable} == 1; do "\
 			"run sleep_get_key; "\
