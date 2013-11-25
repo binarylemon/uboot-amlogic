@@ -280,7 +280,7 @@ int optimus_burn_bootlader(HIMAGE hImg)
 }
 
 //flag, 0 is burn completed, else burn failed
-static int optimus_report_burn_complete_sta(int isFailed)
+static int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 {
     if(isFailed)
     {
@@ -296,7 +296,7 @@ static int optimus_report_burn_complete_sta(int isFailed)
 
     DWN_MSG("======sdc burn SUCCESS.\n");
     optimus_led_show_burning_success();
-    optimus_burn_complete(2);//set complete flag and poweroff if burn successful
+    optimus_burn_complete(rebootAfterBurn ? 1 : 2);//set complete flag and poweroff if burn successful
     return 0;
 }
 
@@ -470,7 +470,7 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
 _finish:
     image_close(hImg);
     optimus_progress_ui_report_upgrade_stat(hUiProgress, !ret);
-    optimus_report_burn_complete_sta(ret);
+    optimus_report_burn_complete_sta(ret, pSdcCfgPara->custom.rebootAfterBurn);
     optimus_progress_ui_release(hUiProgress);
     //optimus_storage_exit();//temporary not exit storage driver when failed as may continue burning after burn
     return ret;

@@ -1037,9 +1037,10 @@ void optimus_reset(void)
     unsigned i = 0x100;
 
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
-    reboot_mode_clear();//clear the reboot mode
+    reboot_mode = AMLOGIC_NORMAL_BOOT;
+    //reboot_mode_clear();
     //writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn
-    printf("Reset...\n");//Add printf to delay to save env
+    printf("Burn Reboot...\n");//Add printf to delay to save env
 
     //if not clear, uboot command reset will fail -> blocked
     *((volatile unsigned long *)0xc8100000) = 0;

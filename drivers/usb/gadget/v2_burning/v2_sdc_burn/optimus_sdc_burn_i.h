@@ -29,10 +29,12 @@ typedef struct _burnEx{
 typedef struct _customPara{
     int         eraseBootloader;
     int         eraseFlash;
+    int         rebootAfterBurn;
     struct{
         unsigned eraseBootloader    : 1;
         unsigned eraseFlash         : 1;
-        unsigned resev              : 32 - 2;
+        unsigned rebootAfterBurn    : 1;
+        unsigned resev              : 32 - 3;
     }bitsMap;
 }CustomPara_t;
 

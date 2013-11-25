@@ -98,6 +98,7 @@ int print_sdc_burn_para(const ConfigPara_t* pCfgPara)
         printf("[%s]\n", SET_CUSTOM_PARA);
         printf("erase_bootloader = %d\n", pCustom->eraseBootloader);
         printf("erase_flash      = %d\n", pCustom->eraseFlash);
+        printf("reboot           = %d\n", pCustom->rebootAfterBurn);
         printf("\n");
     }
 
@@ -184,6 +185,20 @@ int parse_set_custom_para(const char* key, const char* strVal)
         {
             pCustome->eraseFlash = simple_strtoul(strVal, NULL, 0);
             pCustome->bitsMap.eraseFlash = 1;
+        }
+
+    }
+
+    if (!strcmp(key, "reboot"))
+    {
+        if (pCustome->bitsMap.rebootAfterBurn) {
+            goto _key_dup;
+        }
+
+        if(strVal)
+        {
+            pCustome->rebootAfterBurn = simple_strtoul(strVal, NULL, 0);
+            pCustome->bitsMap.rebootAfterBurn = 1;
         }
 
     }
