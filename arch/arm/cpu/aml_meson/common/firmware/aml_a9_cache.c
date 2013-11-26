@@ -351,6 +351,20 @@ static inline void mmu_setup(void)
 	uint nVal = 0;
 	for(i = 0 ; i < 0x1000;++i)
 	{
+#if defined (CONFIG_M8)
+
+		if(i< CONFIG_MMU_DDR_SIZE || 0xd90 == i)
+			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_WB);		
+		else if(i>= 0xC00 && i< 0xC13)
+			nVal = (i<<20)|(SEC_PROT_RW_NA | SEC_XN | SEC_SO_MEM);
+		else if((i>= 0xC42 && i< 0xC44) || (0xda0 == i))
+			nVal = (i<<20)|(SEC_PROT_RW_NA |  SEC_XN | SEC_DEVICE);
+		else if(i>= 0xC80 && i< 0xd02)
+			nVal = (i<<20)|(SEC_PROT_RW_NA | SEC_XN | SECTION);
+		else
+			nVal = 0;
+
+#else
 		if(i< 0x10)
 			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_SO_MEM);
 		if((i>= 0x10 && i< 0x800) ||
@@ -382,7 +396,8 @@ static inline void mmu_setup(void)
 				 
 		if(i>= 0xe00 && i<= 0xfff)
 			nVal = (i<<20)|(SEC_PROT_RW_RW | SEC_SO_MEM);
-	
+#endif //CONFIG_M8
+
 		*(pVMMUTable+i) = nVal;//(i << 20 | (SEC_PROT_RW_RW | SEC_WB));
 		
 	}
@@ -449,9 +464,10 @@ static void aml_cache_disable(void)
 	flush_dcache_all();
 	cache_disable(CR_I);
 	cache_disable(CR_C);
-	//temp for CONFIG_AML_SPL_L1_CACHE_ON + NAND boot
-	//extern void * memset(void * s,char c,size_t count);
-	//memset((void *)(0xd9000000 + 32 * 1024),0,0x4000);
+	unsigned int *pVMMUTable = (unsigned int *)(0xd9000000 + 32 * 1024);
+	int i = 0;
+	for(i = 0;i< 0x1000;++i)
+		*(pVMMUTable+i) = 0;	
 }
 
 static void aml_cache_enable(void)

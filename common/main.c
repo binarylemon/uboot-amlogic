@@ -228,7 +228,7 @@ static __inline__ int abortboot(int bootdelay)
 #ifdef CONFIG_MENUPROMPT
 	printf(CONFIG_MENUPROMPT);
 #else
-	printf("Hit any key to stop autoboot: %2d ", bootdelay);
+	printf("Hit any key to stop autoboot -- : %2d ", bootdelay);
 #endif
 
 #if defined CONFIG_ZERO_BOOTDELAY_CHECK
@@ -252,6 +252,7 @@ static __inline__ int abortboot(int bootdelay)
 		/* delay 100 * 10ms */
 		for (i=0; !abort && i<100; ++i) {
 			if (tstc()) {	/* we got a key press	*/
+				printf("tstc enter\n");
 				abort  = 1;	/* don't auto boot	*/
 				bootdelay = 0;	/* no more delay	*/
 # ifdef CONFIG_MENUKEY
@@ -268,7 +269,12 @@ static __inline__ int abortboot(int bootdelay)
 # endif
 				break;
 			}
-			udelay(10000);
+			//printf("%2d\n",i);
+#if defined(CONFIG_VLSI_EMULATOR)
+			udelay(100);//Victor, From 10000 to 10
+#else
+			udelay(10000);//10000us x 100 = 1s
+#endif //CONFIG_VLSI_EMULATOR
 		}
 
 		printf("\b\b\b%2d ", bootdelay);
@@ -292,7 +298,7 @@ static __inline__ int abortboot(int bootdelay)
     #endif
     }
 #endif
-
+	printf("exit abortboot: %d\n",abort);
 	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */

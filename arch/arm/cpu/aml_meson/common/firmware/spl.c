@@ -71,20 +71,20 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	writel(0x102,0xda004004);
 	//TDO enable
 	writel(readl(0xc8100014)|0x4000,0xc8100014);
-
+	
 	//detect sdio debug board
 	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
-
+	
 	// clear sdio pinmux
 	setbits_le32(P_PREG_PAD_GPIO0_O,0x3f<<22);
 	setbits_le32(P_PREG_PAD_GPIO0_EN_N,0x3f<<22);
 	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);  //clear sd d1~d3 pinmux
-
+	
 	if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){  //sd_d3 low, debug board in
 		serial_puts("\nsdio debug board detected ");
 		clrbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);   //clear AO uart pinmux
 		setbits_le32(P_PERIPHS_PIN_MUX_8,3<<9);
-
+		
 		if((readl(P_PREG_PAD_GPIO0_I)&(1<<22)))
 			writel(0x220,P_AO_SECURE_REG1);  //enable sdio jtag
 	}
@@ -92,7 +92,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		serial_puts("\nno sdio debug board detected ");
 		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
 	}
-#endif
+#endif 
 
 
 #ifdef AML_M6_JTAG_ENABLE
@@ -132,14 +132,14 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//Note: Following code is used to show current uboot build time
 	//         For some fail cases which in SPL stage we can not target
 	//         the uboot version quickly. It will cost about 5ms.
-	//         Please DO NOT remove it!
+	//         Please DO NOT remove it! 
 	serial_puts(__TIME__);
 	serial_puts(" ");
 	serial_puts(__DATE__);
-	serial_puts("\n");
+	serial_puts("\n");	
 
 #ifdef CONFIG_POWER_SPL
-    //power_init();
+    power_init();
 #endif
 
 #if !defined(CONFIG_VLSI_EMULATOR)
@@ -182,6 +182,13 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     	load_uboot(__TEXT_BASE,__TEXT_SIZE);
 #endif
 
+#if defined(CONFIG_AML_V2_USBTOOL)
+    //tell uboot it loaded from internal device or external device
+    if( 1 == romboot_info->boot_id )//see loaduboot.c, only boot from sdcard when "boot_id == 1"
+    {
+        writel(MESON_SDC_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);
+    }
+#endif//#if defined(CONFIG_AML_V2_USBTOOL)
 
     serial_puts("\nLoad UBOOT total use : ");
     serial_put_dec(get_utimer(nTEBegin));

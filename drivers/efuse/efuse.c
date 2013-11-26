@@ -126,95 +126,13 @@ static int cpu_is_before_m6(void)
 	return ((val & 0x40000000) == 0x40000000);
 }
 
-
-
-#if 0
-static char *soc_chip[]={
-	{"efuse soc chip m0"},
-	{"efuse soc chip m1"},
-	{"efuse soc chip m3"},
-	{"efuse soc chip m6"},
-	{"efuse soc chip m6tv"},
-	{"efuse soc chip m8"},
-	{"efuse soc chip unknow"},
-};
-#endif
-
-efuse_socchip_type_e efuse_get_socchip_type(void)
-{
-	efuse_socchip_type_e type;
-	unsigned int *pID1 =(unsigned int *)0xd9040004;
-	unsigned int *pID2 =(unsigned int *)0xd904002c;
-	type = EFUSE_SOC_CHIP_UNKNOW;
-	if(cpu_is_before_m6()){
-		type = EFUSE_SOC_CHIP_M3;
-	}
-	else if(0xe2000003 == *pID1 && 0x00000bbb == *pID2){
-		//M6 Rev-B
-		type = EFUSE_SOC_CHIP_M6;
-	}
-	else if(0x00000d67 == *pID1 && 0xe3a01000 == *pID2){
-		//M6 Rev-D
-		type = EFUSE_SOC_CHIP_M6;
-	}
-	else if(0x00001435 == *pID1 && 0x0e3a01000 == *pID2)
-	{	//M6TV
-		type = EFUSE_SOC_CHIP_M6TV;
-	}
-	else if(0x000025e2 == *pID1 && 0xe3a01000 == *pID2){
-		type = EFUSE_SOC_CHIP_M8;
-	}
-	//printf("%s \n",soc_chip[type]);
-	return type;
-}
-static int efuse_checkversion(char *buf)
-{
-	efuse_socchip_type_e soc_type;
-	int i;
-	int ver = buf[0];
-	for(i=0; i<efuseinfo_num; i++){
-		if(efuseinfo[i].version == ver){
-			soc_type = efuse_get_socchip_type();
-			switch(soc_type){
-				case EFUSE_SOC_CHIP_M3:
-					if(ver != 1){
-						ver = -1;
-					}
-					break;
-				case EFUSE_SOC_CHIP_M6:
-					if((ver != 2) && ((ver != 4))){
-						ver = -1;
-					}
-					break;
-				case EFUSE_SOC_CHIP_M6TV:
-					if(ver != 2){
-						ver = -1;
-					}
-					break;
-				case EFUSE_SOC_CHIP_M8:
-					if(ver != 20){
-						ver = -1;
-					}
-					break;
-				case EFUSE_SOC_CHIP_UNKNOW:
-				default:
-					printf("soc is unknow\n");
-					ver = -1;
-					break;
-			}
-			return ver;
-		}
-	}
-	return -1;
-}
-
 static int efuse_readversion(void)
 {
 #ifdef CONFIG_EFUSE	
 //	loff_t ppos;
 	char ver_buf[4], buf[4];
 	efuseinfo_item_t info;
-	int ret;
+	
 	#if defined(CONFIG_VLSI_EMULATOR)
         efuse_active_version = 2;
 	#endif //#if defined(CONFIG_VLSI_EMULATOR)
@@ -232,22 +150,6 @@ static int efuse_readversion(void)
 		efuse_bch_dec(buf, info.enc_len, ver_buf, info.bch_reverse);
 	else
 		memcpy(ver_buf, buf, sizeof(buf));
-
-#ifdef CONFIG_M1	//version=0
-	if(ver_buf[0] == 0){
-		efuse_active_version = ver_buf[0];
-		reurn ver_buf[0];
-	}
-	else
-		reurn -1;
-#else
-	ret = efuse_checkversion(ver_buf);   //m3,m6,m8
-	if((ret > 0) && (ver_buf[0] != 0)){
-		efuse_active_version = ver_buf[0];
-		return ver_buf[0];  // version right
-	}
-	return -1; //version err
-#endif
 
 #ifdef CONFIG_M6   //version=2
 #ifndef CONFIG_MESON_TRUSTZONE
@@ -286,6 +188,19 @@ static int efuse_readversion(void)
 	return -1;
 #endif	
 }
+static int efuse_checkversion(char *buf)
+{
+	int i;
+	int ver = buf[0];
+	int err = -1;
+	for(i=0; i<efuseinfo_num; i++){
+		if(efuseinfo[i].version == ver){
+			err = 0;
+			break;
+		}
+	}
+	return err;
+}
 
 static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 {
@@ -296,32 +211,12 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 	efuseinfo_item_t *item = NULL;
 	int size;
 	int ret = -1;		
-	efuse_socchip_type_e soc_type;
 	
 	unsigned versionPOS;
-#if 0
 	if(cpu_is_before_m6())
 		versionPOS = EFUSE_VERSION_OFFSET; //380;
 	else
 		versionPOS = V2_EFUSE_VERSION_OFFSET; //3;
-#else
-	soc_type = efuse_get_socchip_type();
-	switch(soc_type){
-		case EFUSE_SOC_CHIP_M3:
-			versionPOS = EFUSE_VERSION_OFFSET; //380;
-			break;
-		case EFUSE_SOC_CHIP_M6:
-		case EFUSE_SOC_CHIP_M6TV:
-			versionPOS = V2_EFUSE_VERSION_OFFSET; //3;
-			break;
-		case EFUSE_SOC_CHIP_M8:
-			versionPOS = M8_EFUSE_VERSION_OFFSET;//509
-			break;
-		case EFUSE_SOC_CHIP_UNKNOW:
-		default:
-			return ret;
-	}
-#endif
 	if(pos == versionPOS){
 		efuse_set_versioninfo(info);
 		return 0;
@@ -409,7 +304,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 		for (i = 0; i < enc_len; i++) {
 			if (buf[i]) {
 				printf("pos %d value is %d", (size_t)(pos + i), buf[i]);
-				return 1;
+				return 0;
 			}
 		}
 	}	
@@ -546,9 +441,7 @@ int efuse_write_usr(char* buf, size_t count, loff_t* ppos)
 void efuse_set_versioninfo(efuseinfo_item_t *info)
 {
 #ifdef CONFIG_EFUSE	
-	efuse_socchip_type_e soc_type;
 	strcpy(info->title, "version");			
-#if 0
 	if(cpu_is_before_m6()){
 			info->offset = EFUSE_VERSION_OFFSET; //380;		
 			info->data_len = EFUSE_VERSION_DATA_LEN; //3;	
@@ -565,41 +458,6 @@ void efuse_set_versioninfo(efuseinfo_item_t *info)
 			info->we = 1;									//add 
 			info->bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE;
 		}
-#else
-	soc_type = efuse_get_socchip_type();
-	switch(soc_type){
-		case EFUSE_SOC_CHIP_M3:
-			info->offset = EFUSE_VERSION_OFFSET; //380;		
-			info->data_len = EFUSE_VERSION_DATA_LEN; //3;	
-			info->enc_len = EFUSE_VERSION_ENC_LEN; //4;
-			info->bch_en = EFUSE_VERSION_BCH_EN; //1;		
-			info->we = 1;									//add 
-			info->bch_reverse = EFUSE_VERSION_BCH_REVERSE;
-			break;
-		case EFUSE_SOC_CHIP_M6:
-		case EFUSE_SOC_CHIP_M6TV:
-			info->offset = V2_EFUSE_VERSION_OFFSET; //3;		
-			info->data_len = V2_EFUSE_VERSION_DATA_LEN; //1;		
-			info->enc_len = V2_EFUSE_VERSION_ENC_LEN; //1;
-			info->bch_en = V2_EFUSE_VERSION_BCH_EN; //0;
-			info->we = 1;									//add 
-			info->bch_reverse = V2_EFUSE_VERSION_BCH_REVERSE;
-			break;
-		case EFUSE_SOC_CHIP_M8:
-			info->offset = M8_EFUSE_VERSION_OFFSET; //509
-			info->data_len = M8_EFUSE_VERSION_DATA_LEN;
-			info->enc_len = M8_EFUSE_VERSION_ENC_LEN;
-			info->bch_en = M8_EFUSE_VERSION_BCH_EN;
-			info->we = 1;
-			info->bch_reverse = M8_EFUSE_VERSION_BCH_REVERSE;
-			break;
-		case EFUSE_SOC_CHIP_UNKNOW:
-		default:
-			printf("efuse: soc is error\n");
-			break;
-	}
-
-#endif
 #endif		
 }
 
@@ -675,11 +533,9 @@ unsigned efuse_readcustomerid(void)
 	
 	loff_t ppos;
 	char buf[4];
-	efuse_socchip_type_e soc_type;
 	memset(buf, 0, sizeof(buf));
 	efuse_init();	
 	
-#if 0
 	if(cpu_is_before_m6()){
 		ppos = 380;
 		efuse_read(efuse_buf, 4, &ppos);
@@ -697,35 +553,6 @@ unsigned efuse_readcustomerid(void)
 		if(val != 0)
 			efuse_active_customerid = val;			
 	}
-#else
-	soc_type = efuse_get_socchip_type();
-	switch(soc_type){
-		case EFUSE_SOC_CHIP_M3:
-			ppos = 380;
-			efuse_read(efuse_buf, 4, &ppos);
-			efuse_bch_dec(efuse_buf, 4, buf, 0);
-			if((buf[1] != 0) || (buf[2] != 0))
-				efuse_active_customerid = (buf[2]<<8) + buf[1];		
-			break;
-		case EFUSE_SOC_CHIP_M6:
-		case EFUSE_SOC_CHIP_M6TV:
-			ppos = 4;
-			efuse_read(buf, 4, &ppos);
-			int i;
-			unsigned val = 0;
-			for(i=3; i>=0;i--)
-				val = ((val<<8) + buf[i]);
-			if(val != 0)
-				efuse_active_customerid = val;			
-			break;
-		case EFUSE_SOC_CHIP_M8:
-			break;
-		case EFUSE_SOC_CHIP_UNKNOW:
-		default:
-			printf("efuse: soc is unknow\n");
-			break;
-	}
-#endif
 	
 	return efuse_active_customerid;
 #else
@@ -782,12 +609,10 @@ char* efuse_dump(void)
 int efuse_aml_init_plus(void)
 {
 	int nRet = 0;
-	efuse_socchip_type_e soc_type;
 	//check efuse size
 	if(EFUSE_BYTES != 512)
 		return nRet;
 	
-#if 0
 	//check MX or not
 	if(cpu_is_before_m6())
 		return nRet;
@@ -824,48 +649,7 @@ int efuse_aml_init_plus(void)
 		//printf("AML efuse init\n");
 	}
 #undef AML_MX_EFUSE_CHECK_1	
-#else
-	soc_type = efuse_get_socchip_type();
-	if(soc_type == EFUSE_SOC_CHIP_M3){
-		return nRet;
-	}
-	else if((soc_type == EFUSE_SOC_CHIP_M6)||(soc_type == EFUSE_SOC_CHIP_M6TV)){
-		int i=0;
-		char szBuffer[EFUSE_BYTES];
-		memset(szBuffer,0,sizeof(szBuffer));
-		efuse_init();
 
-		// Enabel auto-read mode
-		WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_ON,
-				 CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-
-		for(i=0; i<EFUSE_BYTES; i+=4)
-			__efuse_read_dword(i,  (unsigned long*)(&(szBuffer[i])));	    
-			
-		 // Disable auto-read mode    
-		WRITE_EFUSE_REG_BITS( P_EFUSE_CNTL1, CNTL1_AUTO_RD_ENABLE_OFF,
-				 CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
-		
-		//check
-	#define AML_MX_EFUSE_CHECK_1FD (0x1FD)
-		if(szBuffer[AML_MX_EFUSE_CHECK_1FD])
-			return nRet;	
-	#undef AML_MX_EFUSE_CHECK_1FD
-
-	#define AML_MX_EFUSE_CHECK_1 (0x1)
-		if(!(szBuffer[AML_MX_EFUSE_CHECK_1] & 0x1))
-		{
-			efuse_init();		
-			szBuffer[AML_MX_EFUSE_CHECK_1] |= 0x01;
-			loff_t pos = AML_MX_EFUSE_CHECK_1;
-			efuse_write(&szBuffer[AML_MX_EFUSE_CHECK_1], 1, (loff_t*)&pos);	
-			//printf("AML efuse init\n");
-		}
-	#undef AML_MX_EFUSE_CHECK_1	
-	}
-	else if(soc_type == EFUSE_SOC_CHIP_M8){
-	}
-#endif
 	return nRet;
 }
 #endif //CONFIG_AML_EFUSE_INIT_PLUS

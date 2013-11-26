@@ -102,12 +102,17 @@ static int do_spi_flash_read_write(int argc, char * const argv[])
 		puts("Failed to map physical memory\n");
 		return 1;
 	}
+	
+	unsigned int nStart = readl(0xc1109954);
+	unsigned int nReadFlag = 1;
 
 	if (strcmp(argv[0], "read") == 0)
 		ret = spi_flash_read(flash, offset, len, buf);
 	else
-		ret = spi_flash_write(flash, offset, len, buf);
+        {	ret = spi_flash_write(flash, offset, len, buf); nReadFlag = 0;}
 
+	unsigned int nEnd = readl(0xc1109954);
+	printf("Amlogic log : SPI %s %d bytes data used about %d us\n",(nReadFlag ? "read" : "write") ,len,nEnd-nStart);
 	unmap_physmem(buf, len);
 
 	if (ret) {

@@ -238,6 +238,7 @@ fixnone:
 	LDR r0,=0x55555555              // all domains set to client
 	MCR p15,0,r0,c3,c0,0            // write Domain access control register
 	ldr r0,__mmu_table
+	add r0,r0,r9                    //the relocated address
 	mcr p15,0,r0,c2,c0,0      		// reset TTB0
 mmu_ignore:
 
@@ -303,10 +304,10 @@ cpu_init_crit:
 	 * disable MMU stuff and caches
 	 */
 	mrc	p15, 0, r0, c1, c0, 0
-	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
+	bic	r0, r0, #0x00003000	@ clear bits 13,12 (--VI-)
 	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
 	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align
-	orr	r0, r0, #0x00000800	@ set bit 12 (Z---) BTB
+	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
 	mcr	p15, 0, r0, c1, c0, 0
 
 	/*

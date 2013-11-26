@@ -300,9 +300,8 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 				+ ((ulong)temp_android_hdr->page_size - 1)) & (~((ulong)temp_android_hdr->page_size - 1));
 			images.ft_addr = (char *)fdt_addr;
 			images.ft_len = fdt_totalsize(fdt_addr);
-
 			printf("    Flat device tree start addr = 0x%x, len = 0x%x magic=0x%x\n",
-			(int *)images.ft_addr,images.ft_len, (*((int *)images.ft_addr)));
+			(int *)images.ft_addr,images.ft_len,*(unsigned int*)images.ft_addr);
 		}
 #endif
 		break;
@@ -780,6 +779,8 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	    printf("from main_loop start to kernel decompress finished time:%dus\n",boot_kernel_start-main_loop_start);
 	}
 #endif
+	ulong	temp_img_addr;
+
 
 	boot_fn(0, argc, argv, &images);
 
@@ -950,6 +951,7 @@ static void *boot_get_kernel (cmd_tbl_t *cmdtp, int flag, int argc, char * const
 	switch (genimg_get_format ((void *)img_addr)) {
 #if defined(CONFIG_ANDROID_IMG)
 	case IMAGE_FORMAT_ANDROID:
+		printf("## ANDROID Format IMAGE\n");
 		temp_img_addr = img_addr + 0x800;//Not break, just shift addr and go forward.
 #endif
 	case IMAGE_FORMAT_LEGACY:

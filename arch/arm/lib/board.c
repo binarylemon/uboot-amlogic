@@ -151,10 +151,14 @@ static int init_baudrate (void)
 {
 	char tmp[64];	/* long enough for environment variables */
 	int i = getenv_f("baudrate", tmp, sizeof (tmp));
+	
+#if !defined (CONFIG_VLSI_EMULATOR)
 	gd->baudrate = (i > 0)
 			? (int) simple_strtoul (tmp, NULL, 10)
 			: CONFIG_BAUDRATE;
-
+#else
+	gd->baudrate = 1930;
+#endif
 	return (0);
 }
 
@@ -278,7 +282,9 @@ init_fnc_t *init_sequence[] = {
 #endif
 	env_init,		/* initialize environment */
 	init_baudrate,		/* initialze baudrate settings */
-	serial_init,		/* serial communications setup */
+#if !defined (CONFIG_VLSI_EMULATOR)
+	//serial_init,		/* serial communications setup */
+#endif //#if !defined (CONFIG_VLSI_EMULATOR)
 	console_init_f,		/* stage 1 init of console */
 	display_banner,		/* say that we are here */
 #if defined(CONFIG_DISPLAY_CPUINFO)
@@ -512,7 +518,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	bd_t *bd;
 	ulong malloc_start;
 	int init_ret=0, ret = 0;
-#if defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)
+#ifdef CONFIG_GENERIC_MMC
     struct mmc *mmc;
 #endif
 #if !defined(CONFIG_SYS_NO_FLASH)
@@ -535,6 +541,8 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 	gd = id;
 	bd = gd->bd;
+
+	gd->env_addr += gd->reloc_off;
 
 	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
 
@@ -568,12 +576,12 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #endif
 
 #if defined(CONFIG_AML_V2_USBTOOL)
-	if(is_tpl_loaded_from_usb())//is uboot loaded from usb otg
+	if(is_tpl_loaded_from_usb())//is uboot loaded from usb or bootable sdcard
 	{
 #ifdef BOARD_LATE_INIT
 		board_late_init ();
 #endif
-        aml_v2_usb_producing(0, bd);//would NOT return if boot from usb,
+        aml_v2_usb_producing(0, bd);//would NOT return if 1)boot from usb, 2)boot from sdmmc and fatexist(aml_sdc_burn.ini)
 	}
 #endif// #if defined(CONFIG_AML_V2_USBTOOL)
 
@@ -633,11 +641,12 @@ printf("\n nand init %d us \n", after_nand_init - before_nand_init);
 #ifdef CONFIG_STORE_COMPATIBLE
 	get_storage_device_flag(init_ret);
 #endif
+
 #if defined(CONFIG_CMD_ONENAND)
 	onenand_init();
 #endif
 
-#if defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)
+#ifdef CONFIG_GENERIC_MMC
     if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG)) { // if eMMC/tSD is exist
         mmc = find_mmc_device(1);
         if (mmc) {
@@ -645,7 +654,7 @@ printf("\n nand init %d us \n", after_nand_init - before_nand_init);
         }
     }
 #endif
-
+    
 #ifdef CONFIG_HAS_DATAFLASH
 	AT91F_DataflashInit();
 	dataflash_print_info();
