@@ -4,25 +4,16 @@
 #define CONFIG_AML_MESON_8      1
 #define CONFIG_MACH_MESON8_SKT  // generate M8 SKT machid number
 
+#define CONFIG_SECURITYKEY
+
 //#define	CONFIG_VLSI_EMULATOR 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-//#define CONFIG_UNIFY_KEY_MANAGE
-
-//#define CONFIG_SECURESTORAGEKEY
-#ifdef CONFIG_SECURESTORAGEKEY
-#ifndef CONFIG_RANDOM_GENERATE
-#define CONFIG_RANDOM_GENERATE
-#endif
-#endif
-
-#define CONFIG_SECURITYKEY
-
 #define CONFIG_NEXT_NAND
-#define CONFIG_SECURE_NAND  1
+//#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
@@ -39,6 +30,7 @@
 #endif
 
 #ifdef CONFIG_NEXT_NAND
+#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 #define CONFIG_AML_V2_USBTOOL 1
 #endif//#ifdef CONFIG_NEXT_NAND
 
@@ -54,9 +46,9 @@
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
-//#define CONFIG_VIDEO_AML 1
-//#define CONFIG_CMD_BMP 1
-//#define CONFIG_VIDEO_AMLTVOUT 1
+#define CONFIG_VIDEO_AML 1
+#define CONFIG_CMD_BMP 1
+#define CONFIG_VIDEO_AMLTVOUT 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -69,11 +61,11 @@
 //#define CONFIG_SARADC 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
-//#define CONFIG_CMD_SUSPEND 1
+#define CONFIG_CMD_SUSPEND 1
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
@@ -129,7 +121,7 @@
 
 
 /* Environment information */
-#define CONFIG_BOOTDELAY	10
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -266,12 +258,12 @@
 #define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
+//For DDR PUB training not check the VT done flag
+#define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_M8_DDR_CLK    792 //696 //768  //792// (636)
-
-//#define CONFIG_DDR_LOW_POWER 1
 
 //On board DDR capactiy
 //#define CFG_M8_DDR3_1GB
@@ -286,9 +278,9 @@
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
 #if   defined(CFG_M8_DDR3_1GB)
 	//2Gb(X16) x 4pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (2)
+	#define CONFIG_M8_DDR3_ROW_SIZE (3)
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (14)
+	#define CONFIG_M8_DDR_ROW_BITS  (15)
 #elif defined(CFG_M8_DDR3_2GB)
 	//4Gb(X16) x 4pcs
 	#define CONFIG_M8_DDR3_ROW_SIZE (3)
@@ -319,7 +311,7 @@
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END        0x07000000  /* 0 ... 120 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
@@ -332,19 +324,40 @@
 //#define CONFIG_M8_SECU_BOOT	1
 
 //M8 L1 cache enable for uboot decompress speed up
-//#define CONFIG_AML_SPL_L1_CACHE_ON	1
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
 
 
 /*-----------------------------------------------------------------------
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
-//#define CONFIG_AML_SUSPEND 1
+#define CONFIG_AML_SUSPEND 1
 
 
 /*
 * CPU switch test for uboot
 */
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
+
+
+#if defined(CONFIG_VLSI_EMULATOR)
+   #undef CFG_M8_DDR3_2GB
+
+   #undef CONFIG_BOOTCOMMAND
+   #define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
+
+   #define CFG_M8_DDR3_1GB
+   #define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
+
+   #undef CONFIG_CMD_AUTOSCRIPT
+
+   #undef CONFIG_CMD_REBOOT
+   #undef CONFIG_PREBOOT
+
+   #undef CONFIG_AML_SUSPEND
+   #undef CONFIG_CMD_SUSPEND
+   
+#endif
+
 
 #endif //__CONFIG_M8_SKT_V1_H__

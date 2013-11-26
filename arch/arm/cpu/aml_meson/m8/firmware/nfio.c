@@ -546,7 +546,7 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 
 	for (k=0; k<pages; k++){
 
-	    	while(info_buf[k]==0);
+        while(info_buf[k]==0);
 
 		if((info_buf[k]>>16&0x3f) < 0xa){
 			ret = ERROR_NAND_BLANK_PAGE;
@@ -636,7 +636,7 @@ page_retry:
 	if (ret == ERROR_NAND_ECC){
 		serial_puts("nand read page addr=0x");
 		serial_put_hex(read_page,32);
-		serial_puts("nfio_read read err here\n");
+		serial_puts(" ecc err\n");
 
             // read retry
             if (ret == ERROR_NAND_ECC) {
@@ -1387,7 +1387,7 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 #ifdef CONFIG_SECURE_NAND
 	//load os_key	
 	psecure = (unsigned char*)NAND_SECURE_BUF;
-	//extern void * memset(void * s,char c,size_t count);
+	extern void * memset(void * s,char c,size_t count);
 	memset(psecure, 0, 0x100);
 	nf_read_secure(target);
 #endif

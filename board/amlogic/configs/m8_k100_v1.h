@@ -4,28 +4,16 @@
 #define CONFIG_AML_MESON_8      1
 #define CONFIG_MACH_MESON8_K100_V1  // generate M8 K100 machid number
 
+#define CONFIG_SECURITYKEY
+
 //#define	CONFIG_VLSI_EMULATOR 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-//#define CONFIG_UNIFY_KEY_MANAGE
-
-//#define CONFIG_SECURESTORAGEKEY
-#ifdef CONFIG_SECURESTORAGEKEY
-#ifndef CONFIG_RANDOM_GENERATE
-#define CONFIG_RANDOM_GENERATE
-#endif
-#endif
-
-#define CONFIG_SECURITYKEY
-#ifdef CONFIG_SECURITYKEY
-#define CONFIG_AML_NAND_KEY
-#endif
-
 #define CONFIG_NEXT_NAND
-#define CONFIG_SECURE_NAND  1
+//#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 
@@ -163,7 +151,7 @@
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-//#define CONFIG_CMD_USB 1
+#define CONFIG_CMD_USB 1
 #if defined(CONFIG_CMD_USB)
 	#define CONFIG_M8_USBPORT_BASE_A	0xC9040000
 	#define CONFIG_M8_USBPORT_BASE_B	0xC90C0000
@@ -218,8 +206,6 @@
 	"magic_key_status=none\0" \
 	"store=0\0"\
 	"preboot="\
-        "if itest ${upgrade_step} == 0; then run update; fi; "\
-        "if itest ${upgrade_step} == 3; then run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
@@ -364,8 +350,8 @@
 	"batlow_warning="\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
-		"bmp display ${batterylow_offset}; msleep 1000\0" \
-    "sdc_burning=sdc_burn ${sdcburncfg}\0"
+		"bmp display ${batterylow_offset}; msleep 1000\0"
+
 
 
 #define CONFIG_BOOTCOMMAND  \
@@ -439,12 +425,12 @@
 #define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
+//For DDR PUB training not check the VT done flag
+#define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_M8_DDR_CLK    696 //768  //792// (636)
-
-//#define CONFIG_DDR_LOW_POWER 1
 
 //On board DDR capactiy
 //#define CFG_M8_DDR3_1GB
@@ -492,7 +478,7 @@
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END        0x07000000  /* 0 ... 120 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
@@ -510,9 +496,8 @@
 //#define CONFIG_M8_SECU_BOOT	1
 
 //M8 L1 cache enable for uboot decompress speed up
-//#define CONFIG_AML_SPL_L1_CACHE_ON	1
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
 #define CONFIG_CMD_AML_MAGIC
-
 
 /*-----------------------------------------------------------------------
  * power down

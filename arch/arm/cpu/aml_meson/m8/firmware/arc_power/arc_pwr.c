@@ -542,7 +542,20 @@ void store_restore_plls(int flag)
 	M8_PLL_SETUP(mpll_settings[0], P_HHI_MPLL_CNTL);	//2.55G, FIXED
 	M8_PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);	//set reset bit to 0
 
-	M8_PLL_WAIT_FOR_LOCK(P_HHI_MPLL_CNTL); //need bandgap reset?
+//	M8_PLL_WAIT_FOR_LOCK(P_HHI_MPLL_CNTL); //need bandgap reset?
+
+	do{
+		udelay__(500);
+		f_serial_puts(" Lock mpll~\n");
+		wait_uart_empty();
+		//M8_PLL_LOCK_CHECK(n_pll_try_times,5);
+		if((readl(P_HHI_MPLL_CNTL)&(1<<31))!=0)
+			break;
+		writel(readl(P_HHI_MPLL_CNTL) | (1<<29), P_HHI_MPLL_CNTL);
+		udelay__(500);
+		M8_PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);
+		udelay__(500);
+	}while((readl(P_HHI_MPLL_CNTL)&(1<<31))==0);
 
 }
 

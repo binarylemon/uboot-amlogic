@@ -136,16 +136,18 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             }
 #endif
             serial_puts("Boot From SPI\n");
-            memcpy((unsigned*)temp_addr,mem,size);
+            //memcpy((unsigned*)temp_addr,mem,size);
+            extern void ipl_memcpy(void*, const void *, __kernel_size_t);
+			ipl_memcpy((unsigned*)temp_addr,mem,size);
             break;
         case POR_1ST_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
-        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<3);
+        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<2);
         	break;
         case POR_1ST_SDIO_B:
-        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<3);break;
+        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<2);break;
         case POR_1ST_SDIO_A:
-           rc=sdio_read(temp_addr,size,POR_2ND_SDIO_A<<3);break;
+           rc=sdio_read(temp_addr,size,POR_2ND_SDIO_A<<2);break;
            break;
         default:
            return 1;

@@ -38,7 +38,7 @@
 #endif
 #include "edp_drv.h"
 #include "mipi_dsi_util.h"
-#include <asm/arch/mipi_dsi_reg.h>
+#include <asm/arch-m8/mipi_dsi_reg.h>
 #ifdef CONFIG_PLATFORM_HAS_PMU
 #include <amlogic/aml_pmu_common.h>
 #define BATTERY_LOW_THRESHOLD       20
@@ -586,8 +586,8 @@ static void set_tcon_lcd(Lcd_Config_t *pConf)
 	Lcd_Timing_t *tcon_adr = &(pConf->lcd_timing);
 	unsigned hs_pol, vs_pol;
 	Lcd_Control_Config_t *p = &pConf->lcd_control;
-	int lcd_type;
-	lcd_type = pConf->lcd_basic.lcd_type; 
+	int lcd_type;                                                                                                                                                                                                                                                                                            
+	lcd_type                = pConf->lcd_basic.lcd_type; 
 	
 	set_gamma_table_lcd(pConf->lcd_effect.GammaTableR, LCD_H_SEL_R, pConf->lcd_effect.gamma_r_coeff);
 	set_gamma_table_lcd(pConf->lcd_effect.GammaTableG, LCD_H_SEL_G, pConf->lcd_effect.gamma_g_coeff);
@@ -979,11 +979,14 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 	
 	switch(lcd_type){
 		case LCD_DIGITAL_MIPI:
-			WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4)) | (1 << 4)  | (1 << 5) | (0 << 6));
-			WRITE_CBUS_REG( HHI_DSI_LVDS_EDP_CNTL0, 0x0);                                          // Select DSI as the output for u_dsi_lvds_edp_top
-			WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) | 0xf) );     // Release mipi_dsi_host's reset
-			WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) & 0xfffffff0) );     // Release mipi_dsi_host's reset
-			WRITE_LCD_REG( MIPI_DSI_TOP_CLK_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CLK_CNTL) | 0x3) );            // Enable dwc mipi_dsi_host's clock 
+       WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4))   |
+                          (1  << 4)               |
+                          (1  << 5)               |
+                          (0  << 6));
+        WRITE_CBUS_REG( HHI_DSI_LVDS_EDP_CNTL0, 0x0);                                          // Select DSI as the output for u_dsi_lvds_edp_top
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) | 0xf) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) & 0xfffffff0) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_CLK_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CLK_CNTL) | 0x3) );            // Enable dwc mipi_dsi_host's clock 
 			break;
 		case LCD_DIGITAL_LVDS:
 			clk_util_lvds_set_clk_div(1, pll_div_post, phy_clk_div2);
@@ -1008,18 +1011,60 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 	}
 }
 
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
+void set_pll_mipi(Lcd_Config_t *pConf)
+{
+        int pll_lock;
+        int wait_loop = 100;
+
+        DSI_Config_t *cfg = pConf->lcd_control.mipi_config;
+
+	// Configure VS/HS/DE polarity before mipi_dsi_host.pixclk starts,
+	WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4))   |
+                          (1  << 4)               |
+                          (1  << 5)               |
+                          (0  << 6));
+
+        unsigned pll_reg, div_reg, clk_reg, xd;
+        int vclk_sel;
+        int lcd_type, ss_level;
+
+        pll_reg = pConf->lcd_timing.pll_ctrl;
+        div_reg = pConf->lcd_timing.div_ctrl;
+        clk_reg = pConf->lcd_timing.clk_ctrl;
+        ss_level = (((clk_reg >> CLK_CTRL_SS) & 0xf) > 0 ? 1 : 0);
+        vclk_sel = (clk_reg >> CLK_CTRL_VCLK_SEL) & 0x1;
+        xd = (clk_reg >> CLK_CTRL_XD) & 0xf;
+
+        lcd_type = pConf->lcd_basic.lcd_type;
+
+        DBG_PRINT("ss_level=%u(%s), pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, lcd_ss_level_table[ss_level], pll_reg, div_reg, xd);
+        vclk_set_lcd(lcd_type, vclk_sel, pll_reg, div_reg, clk_reg);
+        set_lcd_spread_spectrum(ss_level);
+
+        //startup_mipi_dsi_host()
+        WRITE_CBUS_REG( HHI_DSI_LVDS_EDP_CNTL0, 0x0);                                          // Select DSI as the output for u_dsi_lvds_edp_top
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) | 0xf) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) & 0xfffffff0) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_CLK_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CLK_CNTL) | 0x3) );            // Enable dwc mipi_dsi_host's clock
+
+}
+#endif
+
 static void set_venc_lcd(Lcd_Config_t *pConf)
 {
 	DBG_PRINT("%s\n",__FUNCTION__);
-
+	int lcd_type;
+	lcd_type = pConf->lcd_basic.lcd_type; 
+	
 	WRITE_LCD_REG(ENCL_VIDEO_EN, 0);
 
 	WRITE_LCD_REG(VPU_VIU_VENC_MUX_CTRL, (0<<0) | (0<<2));	//viu1, viu2 select encl
 	
 	WRITE_LCD_REG(ENCL_VIDEO_MODE,			0);
-	WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV,		0x8); // Sampling rate: 1
+    WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV,		0x8); // Sampling rate: 1
 
-	WRITE_LCD_REG(ENCL_VIDEO_FILT_CTRL,	0x1000);	// bypass filter
+ 	WRITE_LCD_REG(ENCL_VIDEO_FILT_CTRL,	0x1000);	// bypass filter
 
 	WRITE_LCD_REG(ENCL_VIDEO_MAX_PXCNT,	pConf->lcd_basic.h_period - 1);
 	WRITE_LCD_REG(ENCL_VIDEO_MAX_LNCNT,	pConf->lcd_basic.v_period - 1);
@@ -1038,7 +1083,7 @@ static void set_venc_lcd(Lcd_Config_t *pConf)
 
 	WRITE_LCD_REG(ENCL_VIDEO_RGBIN_CTRL, 	(1 << 0));//(1 << 1) | (1 << 0));	//bit[0] 1:RGB, 0:YUV
 
-	WRITE_LCD_REG(ENCL_VIDEO_EN,           1);	// enable encl
+    WRITE_LCD_REG(ENCL_VIDEO_EN,           1);	// enable encl
 }
 
 static void set_control_lvds(Lcd_Config_t *pConf)
@@ -1304,9 +1349,9 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 			div_pre_sel_max = DIV_PRE_SEL_MAX;
 			div_post = 1;
 			crt_xd_max = 16;
-			dsi_clk_min = fout*8-40*1000;
+      dsi_clk_min = fout*8-40*1000;
 			dsi_clk_max = fout*8+40*1000;
-			dsi_clk_div = 2; //2,4,8
+			dsi_clk_div = 2; //2¡¢4¡¢8
 			pConf->lcd_control.mipi_config->dsi_clk_div=dsi_clk_div;
 			iflogic_vid_clk_in_max = MIPI_MAX_VID_CLK_IN;
 			break;
@@ -1815,10 +1860,10 @@ static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
 	switch(lcd_type){
 		case LCD_DIGITAL_MIPI:
 			set_pll_lcd(pConf);
-			init_dphy(pConf); //analog
-			set_control_mipi(pConf); //2step
-			set_venc_lcd(pConf);
-			set_tcon_lcd(pConf);
+      init_dphy(pConf); //analog
+      set_control_mipi(pConf); //2step
+      set_venc_lcd(pConf);
+      set_tcon_lcd(pConf);
 			break;
 		case LCD_DIGITAL_LVDS:
 			set_pll_lcd(pConf);
@@ -2963,7 +3008,7 @@ int lcd_probe(void)
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
 	int ret;
-
+	
 #ifdef CONFIG_DTB_LOAD_ADDR
 	dt_addr = CONFIG_DTB_LOAD_ADDR;
 #else

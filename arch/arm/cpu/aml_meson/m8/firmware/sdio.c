@@ -6,6 +6,9 @@
 #include "nfio.c"
 //#include <asm/arch/firm/config.h>
 
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+#include <aml_a9_cache.c>
+#endif //defined(CONFIG_AML_SPL_L1_CACHE_ON)
 
 /**
 **/
@@ -183,9 +186,11 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
       
       cur_size=(size-read_size)>CONFIG_SDIO_BUFFER_SIZE?CONFIG_SDIO_BUFFER_SIZE:(size-read_size);
 
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        invalidate_dcache_range(read_size+target,read_size+target+cur_size);
+#endif  
 
       WRITE_CBUS_REG(SDIO_M_ADDR,read_size+target);
-      read_size+=cur_size;
 
       WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)) << 16);
       if((card_type==CARD_TYPE_SDHC)||(card_type==CARD_TYPE_EMMC))
@@ -210,6 +215,8 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
           ((0x40+12) << cmd_command_bit),0,TIMEOUT_DATA,ERROR_STOP_TRANSMISSION);
         if(error)
             return error;
+
+        read_size+=cur_size;
     }
     return 0;
     

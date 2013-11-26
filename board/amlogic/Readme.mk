@@ -41,6 +41,14 @@ help: help_customer
 	@echo config command: \"make m6tv_ref_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M8_PXP"
+	@echo config command: \"make m8_pxp_config\"
+	
+	@echo =======================================================================
+	@echo The mark in board is "M8_ZEBU"
+	@echo config command: \"make m8_ZeBu_config\"
+	
+	@echo =======================================================================
 	@echo The mark in board is "M8_SKT_V1"
 	@echo config command: \"make m8_skt_v1_config\"
 
@@ -53,8 +61,37 @@ help: help_customer
 	@echo config command: \"make m8_k100_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M8_K04_M3X13_V1"
+	@echo config command: \"make m8_k04_m3x13_v1_config\"
+
+
+	@echo =======================================================================
 	@echo The mark in board is "M8_K101_V1"
 	@echo config command: \"make m8_k101_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "m8_k03_M101_v1"
+	@echo config command: \"make m8_k03_M101_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "m8_k03_M102_v1"
+	@echo config command: \"make m8_k03_M102_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "m8_k03_M901_v1"
+	@echo config command: \"make m8_k03_M901_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "m8_k03_M902_v1"
+	@echo config command: \"make m8_k03_M902_v1_config\"
+	
+	@echo =======================================================================
+	@echo The mark in board is "m8_k05_hp"
+	@echo config command: \"make m8_k05_hp_config\"
+	
+	@echo =======================================================================
+	@echo The mark in board is "m8_k06_NabiJR_v1"
+	@echo config command: \"make m8_k06_NabiJR_v1_config\"
 	
 	@echo
 

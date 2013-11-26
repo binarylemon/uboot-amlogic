@@ -142,7 +142,17 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	M8_PLL_SETUP(HHI_MPLL_CNTL, plls->mpll_cntl);	//2.55G, FIXED
 	M8_PLL_RELEASE_RESET(HHI_MPLL_CNTL);	//set reset bit to 0
 
-	M8_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
+	//M8_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
+	n_pll_try_times=0;
+	do{
+		M8_PLL_LOCK_CHECK(n_pll_try_times,5);
+		if((Rd_cbus(HHI_MPLL_CNTL)&(1<<31))!=0)
+			break;
+		Wr_cbus(HHI_MPLL_CNTL,Rd_cbus(HHI_MPLL_CNTL) | (1<<29));
+		__udelay(1000);
+		M8_PLL_RELEASE_RESET(HHI_MPLL_CNTL);
+		__udelay(1000);
+	}while((Rd_cbus(HHI_MPLL_CNTL)&(1<<31))==0);
 
 	//MPLL is fixed to 2.55GHz
 	//clk81=fclk_div4 /2=637.5/4=159.375M

@@ -406,7 +406,7 @@ typedef struct {
 	unsigned char link_user;
 	unsigned char lane_count;
 	unsigned char link_rate;
-	unsigned char link_adaptive;
+	unsigned char link_adaptive;	
 	unsigned char vswing;
 	unsigned char preemphasis;
 } EDP_Config_t;

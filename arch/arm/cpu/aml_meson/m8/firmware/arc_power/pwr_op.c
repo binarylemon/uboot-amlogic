@@ -428,6 +428,8 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     int prev_status;
     int battery_voltage;
     int ret = 0;
+    int gpio_sel0;
+    int gpio_mask;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
@@ -438,6 +440,14 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
     writel(readl(P_AO_RTI_PULL_UP_REG)|(1 << 3)|(1<<19),P_AO_RTI_PULL_UP_REG);
+
+	//save gpio intr setting
+	gpio_sel0 = readl(0xc8100084);
+	gpio_mask = readl(0xc8100080);
+
+	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
+	writel(readl(0xc8100080) | (1<<8),0xc8100080);
+	writel(1<<8,0xc810008c); //clear intr
 
 	prev_status = get_charging_state();
     do {
@@ -486,8 +496,13 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1)
 		    break;
-	
-    } while (readl(P_AO_GPIO_I)&(1<<3));            // power key
+
+    } while (!(readl(0xc8100088) & (1<<8))/* && (readl(P_AO_GPIO_I)&(1<<3))*/);            // power key
+
+	writel(1<<8,0xc810008c);
+	writel(gpio_sel0, 0xc8100084);
+	writel(gpio_mask,0xc8100080);
+
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();

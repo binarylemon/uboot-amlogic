@@ -36,7 +36,7 @@
 
 //**** define backlight PWM control ***//
 #define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-#define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
+#define BL_PWM_USE_GPIO		1			/** pwm gpio used(0 for use pwm_port only, 1 for use bl_gpio_port to control on/off) */
 
 #define	BL_PWM_FREQ			1000	/** backlight control pwm frequency(unit: Hz) */
 #define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
@@ -56,24 +56,24 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 #define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 
 //**** recommend settings, you can modify them if needed ***//
-#define VALID_HVSYNC		1	/** 0=disable signal, 1=enable signal */
-#define VALID_DE			1	/** 0=disable signal, 1=enable signal */
+#define VALID_HVSYNC		1	/** 0 for disable signal, 1 for enable signal */
+#define VALID_DE			1	/** 0 for disable signal, 1 for enable signal */
 
-#define H_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define H_OFFSET_SIGN		1	/** 0 for negative, 1 for positive */
 #define H_OFFSET			0	/** horizontal display offset */
-#define V_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define V_OFFSET_SIGN		1	/** 0 for negative, 1 for positive */
 #define V_OFFSET			0	/** vertical display offset */
 
-#define DITHER_USER			0		/** 0=auto setting, 1=user define */
+#define DITHER_USER			0		/** 0 for auto setting, 1 for user define */
 #define DITHER_CTRL			0x600	/** user defined dither control, only valid when user_define=1 */
 
 #define VADJ_BRIGHTNESS		0x0		/** video adjust brightness */
 #define VADJ_CONTRAST		0x80	/** video adjust contrast */
 #define VADJ_SATURATION		0x100	/** video adjust saturation */
 
-#define GAMMA_EN			1		/** 0=disable gamma table, 1=enable gamma table */
-#define GAMMA_REVERT		0		/** 0=normal, 1=revert */
-#define GAMMA_MULTI			0		/** gamma_multi(0=single gamma, RGB are same, 1=multi gamma, RGB are different) */
+#define GAMMA_EN			1		/** 0 for disable gamma table, 1 for enable gamma table */
+#define GAMMA_REVERT		0		/** 0 for normal, 1 for revert */
+#define GAMMA_MULTI			0		/** gamma_multi(0 for single gamma, RGB are same, 1 for multi gamma, RGB are different) */
 									/** if gamma_multi=1, there must be 3 gamma tables, named as gamma_table_r, gamma_table_g, gamma_table_b */
 #define	GAMMA_R_COEFF		100		/** unit: % */
 #define	GAMMA_G_COEFF		100		/** unit: % */
@@ -92,7 +92,7 @@ static unsigned short gamma_table[256] = {
 
 //**** default settings, don't modify them unless there is display problem ***//
 #define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
-#define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
+#define CLK_AUTO_GENERATION		1	/** 0 for using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1 for auto generate clock parameters by lcd_clock */
 #define PLL_CTRL				0x10220	/** only valid when CLK_AUTO_GENERATION=0 */
 #define DIV_CTRL				0x18803	/** only valid when CLK_AUTO_GENERATION=0 */
 #define CLK_CTRL				0x1111	/** only valid when CLK_AUTO_GENERATION=0 */
@@ -110,23 +110,23 @@ static DSI_Config_t lcd_mipi_config = {
 
 static LVDS_Config_t lcd_lvds_config = {
 	.lvds_vswing = 1,	/** lvds_vswing_level(default level=1, support level 0,1,2,3,4) */
-	.lvds_repack_user = 0,	/** 0=auto setting, 1=user define repack*/
-	.lvds_repack = 1,	/** user defined repack(0=JEIDA data mapping, 1=VESA data mapping. only valid when lvds_repack_user=1) */
-	.pn_swap = 0,		/** 0=normal, 1=swap */
+	.lvds_repack_user = 0,	/** 0 for auto setting, 1 for user define repack*/
+	.lvds_repack = 1,	/** user defined repack(0 for JEIDA data mapping, 1 for VESA data mapping. only valid when lvds_repack_user=1) */
+	.pn_swap = 0,		/** 0 for normal, 1 for swap */
 };
 
 static EDP_Config_t lcd_edp_config = {
-	.link_user = 1,		/** 0=auto setting, 1=user define link config */
-	.link_rate = 1,		/** 0=1.62G, 1=2.7G, only valid when link_user=1 */
+	.link_user = 1,		/** 0 for auto setting, 1 for user define link config */
+	.link_rate = 1,		/** 0 for 1.62G, 1 for 2.7G, only valid when link_user=1 */
 	.lane_count = 4,	/** 1,2,4, only valid when edp_user=1 */
-	.link_adaptive = 0,	/** 0=fixed user defined vswing, 1=auto setting vswing by training */
+	.link_adaptive = 0,	/** 0 for fixed user defined vswing, 1 for auto setting vswing by training */
 	.vswing = 0,		/** support level 0,1,2,3, user defined vswing, only valid when adaptive=0 */
 	.preemphasis = 0,	/** fixed vaule */
 };
 
 static TTL_Config_t lcd_ttl_config = {
-	.rb_swap = 0,	/** 0=normal, 1=swap */
-	.bit_swap = 0,	/** 0=normal, 1=swap */
+	.rb_swap = 0,	/** 0 for normal, 1 for swap */
+	.bit_swap = 0,	/** 0 for normal, 1 for swap */
 };
 
 static DPHY_Config_t lcd_dphy_config = {

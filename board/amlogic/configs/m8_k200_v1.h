@@ -4,6 +4,7 @@
 #define CONFIG_AML_MESON_8      1
 #define CONFIG_MACH_MESON8_K200_V1  // generate M8 K200 machid number
 
+#define CONFIG_SECURITYKEY
 
 #ifndef CONFIG_M8
 #define CONFIG_M8
@@ -22,13 +23,13 @@
 #endif
 #endif
 
-#define CONFIG_SECURITYKEY
+//#define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
 #define CONFIG_AML_NAND_KEY
 #endif
 
 #define CONFIG_NEXT_NAND
-#define CONFIG_SECURE_NAND  1
+//#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 
@@ -65,9 +66,9 @@
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
-//#define CONFIG_VIDEO_AML 1
-//#define CONFIG_CMD_BMP 1
-//#define CONFIG_VIDEO_AMLTVOUT 1
+#define CONFIG_VIDEO_AML 1
+#define CONFIG_CMD_BMP 1
+#define CONFIG_VIDEO_AMLTVOUT 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -86,7 +87,7 @@
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-//#define CONFIG_CMD_NET   1
+#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define CONFIG_NET_MULTI 1
@@ -197,7 +198,7 @@
 
 
 /* Environment information */
-#define CONFIG_BOOTDELAY	10
+#define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -235,8 +236,6 @@
 	"store=0\0"\
 	"preboot="\
 		"echo preboot...;" \
-        "if itest ${upgrade_step} == 0; then run update; fi; "\
-        "if itest ${upgrade_step} == 3; then run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
@@ -271,7 +270,7 @@
         "imgread res logo ${loadaddr_logo};"\
         "unpackimg ${loadaddr_logo}; "\
         "cp ${bootup_offset} ${fb_addr} ${bootup_size};"\
-        "setenv bootargs ${bootargs} logo=osd1,${fb_addr},${hdmimode},full,needscaler hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
+        "setenv bootargs ${bootargs} logo=osd1,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;" \
@@ -367,12 +366,12 @@
 #define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
+//For DDR PUB training not check the VT done flag
+#define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_M8_DDR_CLK    696 //768  //792// (636)
-
-//#define CONFIG_DDR_LOW_POWER 1
 
 //On board DDR capactiy
 //#define CFG_M8_DDR3_1GB
@@ -420,7 +419,7 @@
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END        0x07000000  /* 0 ... 120 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
@@ -434,7 +433,7 @@
 //#define CONFIG_M8_SECU_BOOT	1
 
 //M8 L1 cache enable for uboot decompress speed up
-//#define CONFIG_AML_SPL_L1_CACHE_ON	1
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
 
 
 /*-----------------------------------------------------------------------

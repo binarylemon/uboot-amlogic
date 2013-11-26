@@ -39,7 +39,7 @@
   #undef hx_serial_put_hex
 #endif 
 
-#if 1
+#if 0
     #define hx_serial_puts    f_serial_puts
 	#define hx_serial_put_hex serial_put_hex
 #else
@@ -602,9 +602,7 @@ static void hx_ddr_retention_set(int nFlagEnable)
 }
 
 void hx_ddr_power_down_enter()
-{
-	//return ;
-	
+{	
 	hx_serial_puts("Aml log : hx_power_down_enter\n");
 
 	//verify pass, all keep same value before and after
@@ -665,8 +663,8 @@ void hx_ddr_power_down_enter()
 	writel(g_ddr_settings[_PUB_PLLCR]|0x60000000, P_DDR1_PUB_PLLCR);
 
 
-	writel((1<<6)|(1<<4), P_DDR0_CLK_CTRL);
-	writel((1<<6)|(1<<4), P_DDR1_CLK_CTRL);
+	writel((1<<2)|(1<<6)|(1<<4), P_DDR0_CLK_CTRL);
+	writel((1<<2)|(1<<6)|(1<<4), P_DDR1_CLK_CTRL);
 
 	// shut down DDR PLL
 	writel(readl(AM_DDR_PLL_CNTL)|(1<<30),AM_DDR_PLL_CNTL);
@@ -805,6 +803,7 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR1 - APD,CLK set done\n");
     }	
 
+#if 0
 	if(CONFIG_M8_DDR1_ONLY == nM8_DDR_CHN_SET)
 	{	
 		//power down PLL
@@ -827,9 +826,10 @@ pub_init_ddr1:
 		//__udelay(1);
 		//writel(0, P_DDR1_SOFT_RESET); //DDR 1
 	}
+#endif
 
 	/*DDR0*/
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 	{
 		//PCTL memory timing registers	
 		DDR0_SUSPEND_LOAD(_PCTL_TOGCNT1U);
@@ -891,7 +891,7 @@ pub_init_ddr1:
 
 	
 	/*DDR1*/
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 	{
 		//PCTL memory timing registers	
 		DDR1_SUSPEND_LOAD(_PCTL_TOGCNT1U);
@@ -951,39 +951,39 @@ pub_init_ddr1:
 	}
 
 	// Monitor DFI initialization status.
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 	{
 		while(!(readl(P_DDR0_PCTL_DFISTSTAT0) & 1)) {} //DDR 0
 		hx_serial_puts("Aml log : DDR0 - DFI status check done\n");
 	}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 	{
 		while(!(readl(P_DDR1_PCTL_DFISTSTAT0) & 1)) {} //DDR1
 		hx_serial_puts("Aml log : DDR1 - DFI status check done\n");
 	}
 
 	//power up PCTL
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 		writel(1, P_DDR0_PCTL_POWCTL);				//DDR 0	
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(1, P_DDR1_PCTL_POWCTL);				//DDR 1
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 	{
 		while(!(readl(P_DDR0_PCTL_POWSTAT) & 1) ) {}
 		hx_serial_puts("Aml log : DDR0 - PCTL power up\n");
 	}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 	{
 		while(!(readl(P_DDR1_PCTL_POWSTAT) & 1) ) {}
 		hx_serial_puts("Aml log : DDR1 - PCTL power up\n");
 	}
 
 	//Initial UPCTL0 DDR timing.
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 	{	
 		writel(g_ddr_settings[_PCTL_TREFI] & (~(1<<31)), P_DDR0_PCTL_TREFI);	
 		DDR0_SUSPEND_LOAD(_PCTL_TREFI_MEM_DDR3);
@@ -1025,7 +1025,7 @@ pub_init_ddr1:
 
 
 	//Initial UPCTL1 DDR timing.
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 	{	
 		writel(g_ddr_settings[_PCTL_TREFI] & (~(1<<31)), P_DDR1_PCTL_TREFI);	
 		DDR1_SUSPEND_LOAD(_PCTL_TREFI_MEM_DDR3);
@@ -1067,20 +1067,20 @@ pub_init_ddr1:
 
 
 	//Set PCTL to config mode
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 		writel(UPCTL_CMD_CONFIG, P_DDR0_PCTL_SCTL); //DDR 0
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(UPCTL_CMD_CONFIG, P_DDR1_PCTL_SCTL); //DDR 1
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
 		while(!(readl(P_DDR0_PCTL_STAT) & 1)) {}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 		while(!(readl(P_DDR1_PCTL_STAT) & 1)) {}
 
 	
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 	{
 		//DDR 0 DFI
 		DDR0_SUSPEND_LOAD(_PCTL_PPCFG);
@@ -1111,7 +1111,7 @@ pub_init_ddr1:
 	}
 
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 	{
 		//DDR 1 DFI
 		DDR1_SUSPEND_LOAD(_PCTL_PPCFG);
@@ -1141,16 +1141,16 @@ pub_init_ddr1:
 	}
 
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 		writel(1,P_DDR0_PCTL_CMDTSTATEN);			//DDR 0
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(1,P_DDR1_PCTL_CMDTSTATEN);			//DDR 0
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 		while(!(readl(P_DDR0_PCTL_CMDTSTAT) & 0x1)) {}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 		while(!(readl(P_DDR1_PCTL_CMDTSTAT) & 0x1)) {}
 
 
@@ -1162,17 +1162,17 @@ pub_init_ddr1:
 	//PLL,DCAL,PHY RST,ZCAL
 	nTempVal =	PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL | PUB_PIR_PHYRST;
 	
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0	
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1	
 
 		
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 	
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 	
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
@@ -1201,16 +1201,16 @@ pub_init_ddr1:
 	//DRAM INIT
 	nTempVal =	PUB_PIR_DRAMRST | PUB_PIR_DRAMINIT ;
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
@@ -1426,19 +1426,19 @@ pub_init_ddr1:
 		DDR1_SUSPEND_LOAD(_PUB_DXCCR);
 	
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 		writel(UPCTL_CMD_GO, P_DDR0_PCTL_SCTL); //DDR 0 
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1	
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1	
 		writel(UPCTL_CMD_GO, P_DDR1_PCTL_SCTL); //DDR 1
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0	
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0	
 	{
 		while ((readl(P_DDR0_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {}
 		hx_serial_puts("Aml log : DDR0 - PCTL enter run state\n");
 	}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 	{
 		while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {}
 		hx_serial_puts("Aml log : DDR1 - PCTL enter run state\n");
@@ -1494,9 +1494,10 @@ pub_init_ddr1:
 		}
 	}
 
+#if 0
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
 	{
-		DDR0_SUSPEND_LOAD(_PUB_ZQCR);				
+		DDR0_SUSPEND_LOAD(_PUB_ZQCR);
 		writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);  //for power pctl gate clk save EE power	
 	}
 	
@@ -1505,6 +1506,7 @@ pub_init_ddr1:
 		DDR1_SUSPEND_LOAD(_PUB_ZQCR);
 		writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL); //for power pctl gate clk save EE power	
 	}
+#endif
 
 	nRet = 0;
 	return nRet;
@@ -1563,6 +1565,59 @@ static void hx_ddr_resume(void)
 	//hx_dump_pub_pctl_all();	
 
 	//hx_dump_mmc_dmc_all();
+
+	writel((0x7f<<9)|(readl(P_DDR0_PUB_PGCR3)),
+		P_DDR0_PUB_PGCR3);
+	writel(readl(P_DDR0_PUB_ZQCR) | (0x4),
+		P_DDR0_PUB_ZQCR);
+
+	writel((0x7f<<9)|(readl(P_DDR1_PUB_PGCR3)),
+		P_DDR1_PUB_PGCR3);
+	writel(readl(P_DDR1_PUB_ZQCR) | (0x4),
+		P_DDR1_PUB_ZQCR);
+
+	__udelayx(1);
+
+	switch(g_ddr_settings[M8_DDR_CHANNEL_SET])
+	{
+	case CONFIG_M8_DDR0_ONLY:
+		{
+			//close DDR-1
+			writel(UPCTL_CMD_SLEEP, P_DDR1_PCTL_SCTL);
+			while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_LOW_POWER ) {}
+
+			writel(1<<29, P_DDR1_PUB_PLLCR);
+			__udelayx(1);
+			writel((1<<2)|(1<<6)|(1<<4),
+				P_DDR1_CLK_CTRL);
+
+			writel(readl(P_DDR0_CLK_CTRL) & (~1),
+				P_DDR0_CLK_CTRL);
+		}break;
+	case CONFIG_M8_DDR1_ONLY:
+		{
+			//close DDR-0
+			writel(UPCTL_CMD_SLEEP, P_DDR0_PCTL_SCTL);
+			while ((readl(P_DDR0_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_LOW_POWER ) {}
+
+			writel(1<<29, P_DDR0_PUB_PLLCR);
+			__udelayx(1);
+			writel((1<<2)|(1<<6)|(1<<4),
+				P_DDR0_CLK_CTRL);
+
+			writel(readl(P_DDR1_CLK_CTRL) & (~1),
+				P_DDR1_CLK_CTRL);
+		}break;
+	default:
+		{
+			writel(readl(P_DDR0_CLK_CTRL) & (~1),
+				P_DDR0_CLK_CTRL);
+			writel(readl(P_DDR1_CLK_CTRL) & (~1),
+				P_DDR1_CLK_CTRL);
+		}break;
+	}
+
+	__udelayx(1);	
 }
 
 static void hx_ddr_pll_init()
@@ -1602,9 +1657,7 @@ static void hx_ddr_pll_init()
 }
 
 void hx_ddr_power_down_leave()
-{	
-	//return ;
-	
+{		
 	hx_serial_puts("Aml log : hx_power_down_leave\n");
 
 	hx_ddr_pll_init();
