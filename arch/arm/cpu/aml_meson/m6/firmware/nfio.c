@@ -108,12 +108,19 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 	page_size = short_mode ? short_size :
 	ecc_mode<2 ? 64 : 128; // unit: 8 bytes;
 
-	for(i=0;i<pages;i++){
-	    	info_buf[i]=0;
-	}
+	memset(info_buf, 0, pages*PER_INFO_BYTE);
+
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	flush_dcache_range(info_buf,info_buf+pages*PER_INFO_BYTE);
+	invalidate_dcache_range(mem, mem+page_size * 8 * pages);
+#endif  
 
 	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 
+		//serial_puts("nand read addr=0x");        
+		//serial_put_hex(src,32);            
+		//serial_puts("\n");
+		
 	// set data/info address
 	writel(info_adr, P_NAND_IADR);
 	writel(mem, P_NAND_DADR);
@@ -171,9 +178,10 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 	do {
 		invalidate_dcache_range(info_buf, info_buf+pages*PER_INFO_BYTE);
 	}while(info_buf[pages-1]==0);
-#else	
-	while(info_buf[pages-1]==0);
+
+	
 #endif //#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	while(info_buf[pages-1]==0);
 
 	for (k=0; k<pages; k++){
 
@@ -218,7 +226,9 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 
 		oob_buf[0] = (info_buf[k]&0xff);
 		oob_buf[1] = ((info_buf[k]>>8)&0xff);
-
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+		invalidate_dcache_range(oob_buf,oob_buf+2);
+#endif
 		oob_buf += 2;
 #else
 	    	if ((info_buf[k]&0xc000ffff) != 0xc000aa55) //magic word error
@@ -229,6 +239,9 @@ STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned ch
 #endif
 	}
 
+#if 0//defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	    invalidate_dcache_range(mem,mem+page_size * 8 * pages);
+#endif
 	return ret;
 }
 
@@ -331,6 +344,11 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 				a2h_cmd_flag = 0;
 				break;
 			}
+
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        memset(NAND_TEMP_BUF, 0, 384);
+	    flush_dcache_range(NAND_TEMP_BUF, NAND_TEMP_BUF+384);
+#endif
 
 			// read only 1 ecc page, 384 bytes.
 			default_dma_mode = DEFAULT_ECC_MODE;
