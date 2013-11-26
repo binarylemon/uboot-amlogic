@@ -45,7 +45,6 @@ struct partitions partition_table[MAX_PART_NUM]={
 		},
 };
 
-
 struct store_config  store_configs ={
 		.store_device_flag = NAND_BOOT_FLAG,
 		.nand_configs = {
@@ -54,7 +53,7 @@ struct store_config  store_configs ={
 			.reserved = 0,
 		},
 		.mmc_configs = {
-			.type = 0,
+			.type = (PORT_A_CARD_TYPE | (PORT_B_CARD_TYPE << 4) | (PORT_C_CARD_TYPE << 8)),
 			.port = 0,
 			.reserved = 0,
 		},

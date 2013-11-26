@@ -44,7 +44,7 @@ extern int  device_boot_flag;
 
 #define START_ADDR 			0xd9000200
 #define TABLE_MAGIC_NAME  		"part"
-
+#define STORE_MAGIC_NAME  		"stor"
 #define ACS_SET_LEN 			 128
 
 extern struct partitions * part_table;

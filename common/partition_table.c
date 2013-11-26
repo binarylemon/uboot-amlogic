@@ -5,6 +5,7 @@
 #define ENV_NAME   "env"
 struct partitions * part_table = NULL;
 int device_boot_flag = -1;   // indicate spi nand emmc 
+int aml_card_type = 0;
 
 void show_partition_table()
 {
@@ -51,29 +52,35 @@ void init_partiton_table(uint64_t addr)
 
 }
 
-int  get_partition_table()
+char * get_acs_struct_addr (char *name)
 {
 	uint64_t _acs_set_addr, _acs_tmp_addr;
-	uint64_t partition_table_addr;
-	int ret=0;
 
 	_acs_set_addr =  *((volatile unsigned int*)START_ADDR);
 	_acs_tmp_addr = _acs_set_addr;
 
-	partition_table_addr = 0;
-
 	while(_acs_set_addr < (_acs_tmp_addr + ACS_SET_LEN)){
-
-		if(!memcmp((unsigned char *)_acs_set_addr, TABLE_MAGIC_NAME, 4)){
-			partition_table_addr = _acs_set_addr + 12;
-			partition_table_addr = *((volatile uint64_t *)partition_table_addr);
-			//printf("get_patition_table: partition_table_addr =%llx:\n",partition_table_addr);
-			break;
+		if(!memcmp((unsigned char *)_acs_set_addr, name, 4)){
+            return _acs_set_addr;
 		}
 		_acs_set_addr  = _acs_set_addr  + 16;
 	}
 
-	if(partition_table_addr){
+    return NULL;
+}
+
+int  get_partition_table()
+{
+	int ret=0;
+    struct store_config *sc;
+	uint64_t addr;
+
+	addr = (uint64_t)get_acs_struct_addr(TABLE_MAGIC_NAME);
+	if(addr){
+        addr = addr + 12;
+        addr = *((volatile uint64_t *)addr);
+        // printf("get_patition_table: addr =%llx:\n",addr);
+        
 		part_table = malloc((MAX_PART_NUM * sizeof(struct partitions)));
 		if(part_table == NULL){
 			printf("partition_table malloc failed!\n");
@@ -81,11 +88,26 @@ int  get_partition_table()
 			goto exit_err;
 		}
 
-		init_partiton_table(partition_table_addr);
+		init_partiton_table(addr);
 
 		show_partition_table();
 	}else{
 		printf("get_patition_table: get partition table failed!!\n");
+		ret = -1;
+		goto exit_err;
+	}
+    
+	addr = (uint64_t)get_acs_struct_addr(STORE_MAGIC_NAME);
+	if(addr) {
+        addr = addr + 12;
+        addr = *((volatile uint64_t *)addr);
+        // printf("get_patition_table: store config addr %llx:\n",addr);
+        
+        sc = (struct store_config *)addr;
+        aml_card_type = sc->mmc_configs.type;
+        printf("aml_card_type=%#x\n", aml_card_type);
+	}else{
+		printf("get_patition_table: get store config failed!!\n");
 		ret = -1;
 		goto exit_err;
 	}

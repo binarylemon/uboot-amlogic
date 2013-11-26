@@ -183,7 +183,7 @@ static void sdio_pwr_off(unsigned port)
     return;
 }
 
-#define CONFIG_TSD      1
+// #define CONFIG_TSD      1
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
@@ -198,13 +198,13 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
     
-#ifdef CONFIG_TSD
-    // if(mmc->block_dev.dev > 0)//tsd
-          mmc->block_dev.if_type = IF_TYPE_SD;
-#else
-    // if(mmc->block_dev.dev > 0)//emmc
-          mmc->block_dev.if_type = IF_TYPE_MMC;
-#endif
+// #ifdef CONFIG_TSD
+    // // if(mmc->block_dev.dev > 0)//tsd
+          // mmc->block_dev.if_type = IF_TYPE_SD;
+// #else
+    // // if(mmc->block_dev.dev > 0)//emmc
+          // mmc->block_dev.if_type = IF_TYPE_MMC;
+// #endif
 
 	sdio_register(mmc, aml_priv);
 

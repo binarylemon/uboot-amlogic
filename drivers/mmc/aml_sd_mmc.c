@@ -14,6 +14,7 @@
 #include <asm/dma-mapping.h>
 #include <asm/arch/io.h>
 #include <asm/arch/sdio.h>
+#include <asm/arch/storage.h>
 #include <mmc.h>
 
 #define sd_debug(a...) debug("[%08u,%s]:",(unsigned int)get_timer(0),__func__);debug(a);debug("\n")
@@ -727,8 +728,11 @@ int aml_sd_init(struct mmc *mmc)
 		return 1;
 }
 
+extern int aml_card_type;
 void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 {
+    int card_type;
+
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
 	aml_priv->removed_flag = 1;
@@ -757,6 +761,13 @@ void sdio_register(struct mmc* mmc,struct aml_card_sd_info * aml_priv)
 	//WRITE_CBUS_REG(RESET6_REGISTER, (1<<8));
         WRITE_CBUS_REG(SDIO_AHB_CBUS_CTRL, 0);
 
+    card_type = AML_GET_CARD_TYPE(aml_card_type, aml_priv->sdio_port);
+    if (card_type == CARD_TYPE_MMC)
+        mmc->block_dev.if_type = IF_TYPE_MMC;
+    else
+        mmc->block_dev.if_type = IF_TYPE_SD;
+    // printf("\033[0;40;32m [%s] port=%d, aml_card_type=%#x, card_type=%d, mmc->block_dev.if_type=%d \033[0m\n", 
+            // __FUNCTION__, aml_priv->sdio_port, aml_card_type, card_type, mmc->block_dev.if_type);
 }
 
 void aml_sd_cs_high (void) // chip select high
