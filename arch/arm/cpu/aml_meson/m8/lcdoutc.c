@@ -1704,7 +1704,7 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 static void select_edp_link_config(Lcd_Config_t *pConf)
 {
 	unsigned bit_rate;
-	
+	unsigned link_rate;
 	bit_rate = (pConf->lcd_timing.lcd_clk / 1000) * pConf->lcd_basic.lcd_bits * 3 / 1000;	//Mbps
 	
 	if (pConf->lcd_control.edp_config->link_user == 0) {
@@ -1740,6 +1740,77 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 	}
 	else {
 		pConf->lcd_control.edp_config->link_rate = (pConf->lcd_control.edp_config->link_rate == 0) ? VAL_EDP_TX_LINK_BW_SET_162 : VAL_EDP_TX_LINK_BW_SET_270;
+		link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
+		if (bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+			if(pConf->lcd_basic.lcd_bits == 8){
+					pConf->lcd_basic.lcd_bits = 6;
+					bit_rate = (pConf->lcd_timing.lcd_clk / 1000) * pConf->lcd_basic.lcd_bits * 3 / 1000;	//Mbps
+					if (bit_rate > 	link_rate*pConf->lcd_control.edp_config->lane_count){
+							if(pConf->lcd_control.edp_config->lane_count == 1||pConf->lcd_control.edp_config->lane_count == 2){
+									pConf->lcd_control.edp_config->lane_count = 4;
+									if(bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+										if(pConf->lcd_control.edp_config->link_rate == VAL_EDP_TX_LINK_BW_SET_162){
+											pConf->lcd_control.edp_config->link_rate =VAL_EDP_TX_LINK_BW_SET_270;
+											link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
+											if(bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+												printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+												pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+											}
+										}
+										else{
+											printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+											pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+										}
+									}
+							}
+							else if(pConf->lcd_control.edp_config->link_rate == VAL_EDP_TX_LINK_BW_SET_162){
+									pConf->lcd_control.edp_config->link_rate =VAL_EDP_TX_LINK_BW_SET_270;
+									link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
+										if(bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+											printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+											pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+										}
+						 }
+						 else{
+						 			printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+									pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+						}						 	
+					}
+				}
+			else {
+					if(pConf->lcd_control.edp_config->lane_count == 1||pConf->lcd_control.edp_config->lane_count == 2){
+							pConf->lcd_control.edp_config->lane_count = 4;
+							if(bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+									if(pConf->lcd_control.edp_config->link_rate == VAL_EDP_TX_LINK_BW_SET_162){
+											pConf->lcd_control.edp_config->link_rate =VAL_EDP_TX_LINK_BW_SET_270;
+											link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
+												if(bit_rate >link_rate*pConf->lcd_control.edp_config->lane_count){
+														printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+														pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+												}
+									}
+									else {
+										printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+										pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+									}
+						}
+				}
+				else {
+						if(pConf->lcd_control.edp_config->link_rate == VAL_EDP_TX_LINK_BW_SET_162){
+								pConf->lcd_control.edp_config->link_rate =VAL_EDP_TX_LINK_BW_SET_270;
+								link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
+										if(bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
+												printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+												pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+											}
+						}
+						else {
+									printf("lane speed cannot satified with bit_rate.please check the setting of lcd_clk and use default setting\n");
+									pConf->lcd_timing.lcd_clk =50 *pConf->lcd_basic.h_period * pConf->lcd_basic.v_period ;
+						}
+				}
+			}
+		}
 	}
 }
 
