@@ -646,7 +646,7 @@ printf("\n nand init %d us \n", after_nand_init - before_nand_init);
 	onenand_init();
 #endif
 
-#ifdef CONFIG_GENERIC_MMC
+#if defined (CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)
     if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG)) { // if eMMC/tSD is exist
         mmc = find_mmc_device(1);
         if (mmc) {

@@ -12,7 +12,7 @@
 #include <linux/err.h>
 #include <asm/arch/poc.h>
 #include<partition_table.h>
-#ifdef CONFIG_STORE_COMPATIBLE 
+#if defined(CONFIG_STORE_COMPATIBLE) || defined (CONFIG_SPI_NAND_COMPATIBLE) || defined (CONFIG_SPI_NAND_EMMC_COMPATIBLE)
 
 DECLARE_GLOBAL_DATA_PTR;
 
