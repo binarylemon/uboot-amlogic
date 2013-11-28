@@ -1175,7 +1175,7 @@ pub_init_ddr1:
 	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 	
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 	{
 		while((readl(P_DDR0_PUB_PGSR0) != 0x8000000f) &&
 			(readl(P_DDR0_PUB_PGSR0) != 0xC000000f))
@@ -1186,7 +1186,7 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR0 - PLL,DCAL,RST,ZCAL done\n");
 	}
 		
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)		//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)		//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000000f) && 
 			(readl(P_DDR1_PUB_PGSR0) != 0xC000000f))
@@ -1213,7 +1213,7 @@ pub_init_ddr1:
 	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
+	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)	//DDR 0
 	{
 		while((readl(P_DDR0_PUB_PGSR0) != 0x8000001f) &&
 			(readl(P_DDR0_PUB_PGSR0) != 0xC000001f))
@@ -1224,7 +1224,7 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR0 - DRAM INIT done\n");
 	}
 
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
+	//if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000001f) &&
 			(readl(P_DDR1_PUB_PGSR0) != 0xC000001f))
