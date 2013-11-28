@@ -620,9 +620,9 @@ pub_init_ddr1:
 #endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR);
 
-//#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
-//#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	{
 		while((readl(P_DDR0_PUB_PGSR0) != 0x8000000f) &&
 			(readl(P_DDR0_PUB_PGSR0) != 0xC000000f))
@@ -639,9 +639,9 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR0 - PLL,DCAL,RST,ZCAL done\n");
 	}
 
-//#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET) //DDR 1
-//#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000000f) && 
 			(readl(P_DDR1_PUB_PGSR0) != 0xC000000f))
@@ -684,9 +684,9 @@ pub_init_ddr1:
 #endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR);
 
-//#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
-//#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	{
 		while((readl(P_DDR0_PUB_PGSR0) != 0x8000001f) &&
 			(readl(P_DDR0_PUB_PGSR0) != 0xC000001f))
@@ -698,9 +698,9 @@ pub_init_ddr1:
 		hx_serial_puts("Aml log : DDR0 - DRAM INIT done\n");
 	}
 
-//#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET) //DDR 1
-//#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
+#endif //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000001f) &&
 			(readl(P_DDR1_PUB_PGSR0) != 0xC000001f))
