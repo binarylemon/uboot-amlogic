@@ -26,6 +26,7 @@ COBJS += vpu.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += edp_drv.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += mipi_dsi_util.o
+COBJS-$(CONFIG_AML_GATE_INIT) += gate_init.o
 
 ifdef CONFIG_AML_SUSPEND
 COBJS += suspend.o

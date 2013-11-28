@@ -648,6 +648,12 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	ulong		load_end = 0;
 	int		ret;
 	boot_os_fn	*boot_fn;
+	
+
+#ifdef CONFIG_AML_GATE_INIT
+extern void gate_init(void);
+	gate_init();
+#endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	bootm_start_time = get_utimer(0);

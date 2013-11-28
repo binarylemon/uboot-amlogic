@@ -123,6 +123,7 @@
 #define CONFIG_CMD_REBOOT 1
 #define CONFIG_PREBOOT 
 
+#define  CONFIG_AML_GATE_INIT	1
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1

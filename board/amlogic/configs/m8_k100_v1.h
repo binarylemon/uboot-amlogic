@@ -40,6 +40,8 @@
 #endif// #ifdef CONFIG_ACS
 #endif//#ifdef CONFIG_NEXT_NAND
 
+#define  CONFIG_AML_GATE_INIT	1
+
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
