@@ -213,6 +213,8 @@
 	"magic_key_status=none\0" \
 	"store=0\0"\
 	"preboot="\
+        "if itest ${upgrade_step} == 0; then run update; fi; "\
+        "if itest ${upgrade_step} == 3; then run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
