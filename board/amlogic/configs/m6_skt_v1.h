@@ -315,8 +315,9 @@ save
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
-
-//////////////////////////////////////////////////////////////////////////
+/* Pass open firmware flat tree */
+#define CONFIG_OF_LIBFDT    1
+#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 
 //M6 security boot enable
 //#define CONFIG_M6_SECU_BOOT		 1
