@@ -142,38 +142,36 @@ pub_init_ddr1:
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0 is used
 	{
 		hx_serial_puts("\nAml log : DDR0 - init start...\n");
-		writel(0, P_DDR0_SOFT_RESET);
-		writel(0xf, P_DDR0_SOFT_RESET);
-		writel(timing_set->t_ddr_apd_ctrl, P_DDR0_APD_CTRL);
-		writel(timing_set->t_ddr_clk_ctrl, P_DDR0_CLK_CTRL); 
 		hx_serial_puts("Aml log : DDR0 - APD,CLK done\n");
 	}
-	else
-	{	
-		//for power saving, enable DDR0 for later power down
-		writel(0x0, P_DDR0_SOFT_RESET);
-		writel(0xf, P_DDR0_SOFT_RESET);
-		writel(timing_set->t_ddr_apd_ctrl, P_DDR0_APD_CTRL);
-		writel(timing_set->t_ddr_clk_ctrl, P_DDR0_CLK_CTRL);
-	}
+
+	writel(0x0, P_DDR0_SOFT_RESET);
+	writel(0xf, P_DDR0_SOFT_RESET);
+
+#if defined(CONFIG_M8_DDR_LOW_POWER_DISABLE)
+	writel((timing_set->t_ddr_apd_ctrl & (~0xFF)), P_DDR0_APD_CTRL);
+#else
+	writel(timing_set->t_ddr_apd_ctrl, P_DDR0_APD_CTRL);
+#endif
+
+	writel(timing_set->t_ddr_clk_ctrl, P_DDR0_CLK_CTRL);
 
 	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET) //DDR 1 is used
 	{
 		hx_serial_puts("Aml log : DDR1 - init start...\n");
-		writel(0, P_DDR1_SOFT_RESET);
-		writel(0xf, P_DDR1_SOFT_RESET);
-		writel(timing_set->t_ddr_apd_ctrl, P_DDR1_APD_CTRL);
-		writel(timing_set->t_ddr_clk_ctrl, P_DDR1_CLK_CTRL); 	
 		hx_serial_puts("Aml log : DDR1 - APD,CLK done\n");
 	}
-	else
-	{	
-		//for power saving, enable DDR1 for later power down
-		writel(0x0, P_DDR1_SOFT_RESET);
-		writel(0xf, P_DDR1_SOFT_RESET);
-		writel(timing_set->t_ddr_apd_ctrl, P_DDR1_APD_CTRL);
-		writel(timing_set->t_ddr_clk_ctrl, P_DDR1_CLK_CTRL);
-	}
+
+	writel(0x0, P_DDR1_SOFT_RESET);
+	writel(0xf, P_DDR1_SOFT_RESET);
+
+#if defined(CONFIG_M8_DDR_LOW_POWER_DISABLE)
+	writel((timing_set->t_ddr_apd_ctrl & (~0xFF)), P_DDR1_APD_CTRL);
+#else
+	writel(timing_set->t_ddr_apd_ctrl, P_DDR1_APD_CTRL);
+#endif
+
+	writel(timing_set->t_ddr_clk_ctrl, P_DDR1_CLK_CTRL);
 
 	//DDR0  timing registers	
 #if !defined(M8_DDR_CHN_OPEN_CLOSE)
@@ -186,7 +184,12 @@ pub_init_ddr1:
 		writel(timing_set->t_pctl_rsth_us,   P_DDR0_PCTL_TRSTH);       // 0 for ddr2;  2 for simulation; 500 for ddr3.
 		writel(timing_set->t_pctl_rstl_us,   P_DDR0_PCTL_TRSTL);       // 0 for ddr2;  2 for simulation; 500 for ddr3.
 
+	#if defined(CONFIG_M8_DDR_LOW_POWER_DISABLE)
+		writel((timing_set->t_pctl_mcfg & (~(0xFF<<8))),  P_DDR0_PCTL_MCFG );
+	#else
 		writel(timing_set->t_pctl_mcfg,  P_DDR0_PCTL_MCFG );
+	#endif
+
 		writel(timing_set->t_pctl_mcfg1, P_DDR0_PCTL_MCFG1);  //enable hardware c_active_in;
 
 		writel(timing_set->t_pub_dcr, P_DDR0_PUB_DCR);
@@ -263,8 +266,12 @@ pub_init_ddr1:
 		writel(timing_set->t_pctl_rsth_us,   P_DDR1_PCTL_TRSTH);       // 0 for ddr2;  2 for simulation; 500 for ddr3.
 		writel(timing_set->t_pctl_rstl_us,   P_DDR1_PCTL_TRSTL); 
 
-		
+	#if defined(CONFIG_M8_DDR_LOW_POWER_DISABLE)
+		writel((timing_set->t_pctl_mcfg & (~(0xFF<<8))),   P_DDR1_PCTL_MCFG  );
+	#else
 		writel(timing_set->t_pctl_mcfg,   P_DDR1_PCTL_MCFG  );
+	#endif
+
 		writel( timing_set->t_pctl_mcfg1, P_DDR1_PCTL_MCFG1 );  //enable hardware c_active_in;
 
 		writel(timing_set->t_pub_dcr, P_DDR1_PUB_DCR);
@@ -1028,14 +1035,25 @@ m8_ddr_vlsi_emulator_done:
 
 	serial_puts("\n");
 
+#if defined(CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE)
+	writel((readl(P_DDR0_PUB_PGCR0) & (~0x3F)),P_DDR0_PUB_PGCR0);
+	writel((readl(P_DDR1_PUB_PGCR0) & (~0x3F)),P_DDR1_PUB_PGCR0);
+#endif
+
 	nRet = 0;
 
 #if !defined(M8_DDR_CHN_OPEN_CLOSE)
 	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET) //DDR 0
 	{
+
+	#if defined(CONFIG_M8_GATEACDDRCLK_DISABLE)
+		writel((0x7d<<9)|(readl(P_DDR0_PUB_PGCR3)), 
+			P_DDR0_PUB_PGCR3);
+	#else
 		writel((0x7f<<9)|(readl(P_DDR0_PUB_PGCR3)), 
 			P_DDR0_PUB_PGCR3);
-		
+	#endif
+	
 		writel(readl(P_DDR0_PUB_ZQCR) | (0x4), 
 			P_DDR0_PUB_ZQCR); //for power PZQ CELL save VDDQ power be careful with de sequence ,close zqcr then close clock	
         #ifndef CONFIG_CMD_DDR_TEST
@@ -1051,8 +1069,13 @@ m8_ddr_vlsi_emulator_done:
 	
 	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET) //DDR 1
 	{
+	#if defined(CONFIG_M8_GATEACDDRCLK_DISABLE)
+		writel((0x7d<<9)|(readl(P_DDR1_PUB_PGCR3)), 
+			P_DDR1_PUB_PGCR3);
+	#else
 		writel((0x7f<<9)|(readl(P_DDR1_PUB_PGCR3)), 
 			P_DDR1_PUB_PGCR3);
+	#endif
 		writel(readl(P_DDR1_PUB_ZQCR) | (0x4), 
 			P_DDR1_PUB_ZQCR);//for power PZQ CELL save VDDQ power be careful with de sequence ,close zqcr then close clock       	
         #ifndef CONFIG_CMD_DDR_TEST
@@ -1067,13 +1090,25 @@ m8_ddr_vlsi_emulator_done:
 	}
 #else //#if !defined(M8_DDR_CHN_OPEN_CLOSE)
 
+  #if defined(CONFIG_M8_GATEACDDRCLK_DISABLE)
+	writel((0x7d<<9)|(readl(P_DDR0_PUB_PGCR3)),
+		P_DDR0_PUB_PGCR3);
+  #else
 	writel((0x7f<<9)|(readl(P_DDR0_PUB_PGCR3)),
 		P_DDR0_PUB_PGCR3);
+  #endif
+  
 	writel(readl(P_DDR0_PUB_ZQCR) | (0x4),
 		P_DDR0_PUB_ZQCR);
 
+  #if defined(CONFIG_M8_GATEACDDRCLK_DISABLE)
+	writel((0x7d<<9)|(readl(P_DDR1_PUB_PGCR3)),
+		P_DDR1_PUB_PGCR3);
+  #else
 	writel((0x7f<<9)|(readl(P_DDR1_PUB_PGCR3)),
 		P_DDR1_PUB_PGCR3);
+  #endif
+	
 	writel(readl(P_DDR1_PUB_ZQCR) | (0x4),
 		P_DDR1_PUB_ZQCR);
 
