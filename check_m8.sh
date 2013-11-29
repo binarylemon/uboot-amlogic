@@ -33,6 +33,7 @@ else
     m8_k100_v1
     m8_k101_v1
   )
+fi
 
 declare -i BAR_TOTAL=20
 declare -i BAR_LOOP
