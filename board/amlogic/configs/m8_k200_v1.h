@@ -33,7 +33,7 @@
 #define CONFIG_AML_NAND_KEY
 #endif
 
-#define  CONFIG_AML_GATE_INIT	1
+//#define  CONFIG_AML_GATE_INIT	1
 #define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
