@@ -64,7 +64,7 @@ extern GraphicDevice aml_gdev;
 static unsigned bl_level = 0;
 //*****************************************
 
-#include <amlogic/panel/TM081JFH01.h>
+#include <amlogic/panel/lvds/TM081JFH01.h>
 //*****************************************
 // defined by hardware design
 //*****************************************

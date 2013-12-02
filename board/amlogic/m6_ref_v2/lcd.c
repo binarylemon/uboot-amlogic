@@ -65,7 +65,7 @@ extern GraphicDevice aml_gdev;
 static unsigned bl_level = 0;
 //*****************************************
 
-#include <amlogic/panel/LP097X02.h>
+#include <amlogic/panel/lvds/LP097X02.h>
 //*****************************************
 // defined by hardware design
 //*****************************************
