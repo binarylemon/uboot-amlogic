@@ -28,7 +28,6 @@
 #include <asm/arch/osd_hw.h>
 #include <aml_i2c.h>
 #include <amlogic/aml_lcd.h>
-//#include <amlogic/vinfo.h>
 #include <sn7325.h>
 #include <video_fb.h>
 
@@ -40,7 +39,9 @@
 
 extern GraphicDevice aml_gdev;
 
-// Define backlight control method
+//*****************************************
+//Define backlight control method
+//*****************************************
 #define BL_CTL_GPIO		0
 #define BL_CTL_PWM		1
 #define BL_CTL			BL_CTL_GPIO
@@ -48,12 +49,12 @@ extern GraphicDevice aml_gdev;
 //backlight controlled level in driver, define the real backlight level
 #if (BL_CTL==BL_CTL_GPIO)
 #define	DIM_MAX			0x0
-#define	DIM_MIN			0xd	
+#define	DIM_MIN			0xd
 #elif (BL_CTL==BL_CTL_PWM)
 #define	PWM_CNT			600			//PWM_CNT <= 65535
-#define	PWM_PRE_DIV		0				//pwm_freq = 24M / (pre_div + 1) / PWM_CNT
-#define PWM_MAX         (PWM_CNT * 100 / 100)		
-#define PWM_MIN         (PWM_CNT * 10 / 100)	
+#define	PWM_PRE_DIV		0			//pwm_freq = 24M / (pre_div + 1) / PWM_CNT
+#define PWM_MAX         (PWM_CNT * 100 / 100)
+#define PWM_MIN         (PWM_CNT * 10 / 100)
 #endif
 
 #define BL_MAX_LEVEL		255
@@ -87,11 +88,10 @@ static unsigned bl_level = 0;
 #define VIDEO_ON_LINE		32
 //*****************************************
 
-
 static void ttl_ports_ctrl(Bool_t status)
 { 
     debug("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
-	if (status) 
+	if (status)
 	{
 		WRITE_MPEG_REG(PERIPHS_PIN_MUX_1, READ_MPEG_REG(PERIPHS_PIN_MUX_1) | ((1<<14)|(1<<17)|(1<<18)|(1<<19))); //set tcon pinmux
 #if (LCD_BITS == 6)
@@ -109,7 +109,7 @@ static void ttl_ports_ctrl(Bool_t status)
 #endif
 		WRITE_MPEG_REG(PERIPHS_PIN_MUX_1, READ_MPEG_REG(PERIPHS_PIN_MUX_1) & ~((1<<14)|(1<<17)|(1<<18)|(1<<19)));  //clear tcon pinmux        		
 		WRITE_MPEG_REG(PREG_PAD_GPIO2_EN_N, READ_MPEG_REG(PREG_PAD_GPIO2_EN_N) | ((1<<18)|(1<<19)|(1<<20)|(1<<23)));  //GPIOD_2 D_3 D_4 D_7 
-    }	
+    }
 }
 
 static void lvds_ports_ctrl(Bool_t status)
@@ -118,11 +118,11 @@ static void lvds_ports_ctrl(Bool_t status)
 	if (status) 
 	{
         WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) | (1 << 3)); // enable fifo
-#if (LCD_BITS == 6)		
+#if (LCD_BITS == 6)
         WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) | (0x27<<0));  //enable LVDS phy 3 channels
 #else
 		WRITE_MPEG_REG(LVDS_PHY_CNTL4, READ_MPEG_REG(LVDS_PHY_CNTL4) | (0x2f<<0));  //enable LVDS phy 4 channels
-#endif		
+#endif
     }else {
 		WRITE_MPEG_REG(LVDS_PHY_CNTL3, READ_MPEG_REG(LVDS_PHY_CNTL3) & ~(1<<0));
         WRITE_MPEG_REG(LVDS_PHY_CNTL5, READ_MPEG_REG(LVDS_PHY_CNTL5) & ~(1<<11));  //shutdown lvds phy
@@ -155,7 +155,7 @@ static void backlight_power_ctrl(Bool_t status)
     if( status == ON )
 	{
 	    WRITE_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
-		mdelay(20);	
+		mdelay(20);
 		//BL_EN: GPIOD_1(PWM_D)
 #if (BL_CTL==BL_CTL_GPIO)
 	    set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 1);
@@ -171,7 +171,7 @@ static void backlight_power_ctrl(Bool_t status)
 		set_gpio_val(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), 0);
 	    set_gpio_mode(GPIOD_bank_bit0_9(1), GPIOD_bit_bit0_9(1), GPIO_OUTPUT_MODE);
 	    WRITE_MPEG_REG(PWM_MISC_REG_CD, READ_MPEG_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port	    
-	}	
+	}
 }
 
 #define BL_MID_LEVEL    128
@@ -179,20 +179,19 @@ static void backlight_power_ctrl(Bool_t status)
 static void set_backlight_level(unsigned level)
 {
 	debug("%s :%d\n", __FUNCTION__,level);
-    level = (level > BL_MAX_LEVEL ? BL_MAX_LEVEL : (level < BL_MIN_LEVEL ? BL_MIN_LEVEL : level));
-	bl_level=level;
-
-	if (level > BL_MID_LEVEL) {
-		level = ((level - BL_MID_LEVEL)*(BL_MAX_LEVEL - BL_MAPPED_MID_LEVEL))/(BL_MAX_LEVEL - BL_MID_LEVEL) + BL_MAPPED_MID_LEVEL; 
-	} else {
-		//level = (level*BL_MAPPED_MID_LEVEL)/BL_MID_LEVEL;
-		level = ((level - BL_MIN_LEVEL)*(BL_MAPPED_MID_LEVEL - BL_MIN_LEVEL))/(BL_MID_LEVEL - BL_MIN_LEVEL) + BL_MIN_LEVEL; 
-	}
+	level = (level > BL_MAX_LEVEL ? BL_MAX_LEVEL : (level < BL_MIN_LEVEL ? BL_MIN_LEVEL : level));
+	bl_level =  level;
+ 
+    if (level > BL_MID_LEVEL) {
+        level = ((level - BL_MID_LEVEL)*(BL_MAX_LEVEL-BL_MAPPED_MID_LEVEL))/(BL_MAX_LEVEL - BL_MID_LEVEL) + BL_MAPPED_MID_LEVEL; 
+    } else {
+		level = ((level - BL_MIN_LEVEL)*(BL_MAPPED_MID_LEVEL - BL_MIN_LEVEL))/(BL_MID_LEVEL - BL_MIN_LEVEL) + BL_MIN_LEVEL;
+    }
 #if (BL_CTL==BL_CTL_GPIO)
 	level = DIM_MIN - ((level - BL_MIN_LEVEL) * (DIM_MIN - DIM_MAX)) / (BL_MAX_LEVEL - BL_MIN_LEVEL);
 	WRITE_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
 #elif (BL_CTL==BL_CTL_PWM)
-	level = (PWM_MAX - PWM_MIN) * (level - BL_MIN_LEVEL) / (BL_MAX_LEVEL - BL_MIN_LEVEL) + PWM_MIN;	
+	level = (PWM_MAX - PWM_MIN) * (level - BL_MIN_LEVEL) / (BL_MAX_LEVEL - BL_MIN_LEVEL) + PWM_MIN;
 	WRITE_MPEG_REG(PWM_PWM_D, (level << 16) | (PWM_CNT - level));  //pwm duty
 #endif
 }
@@ -272,13 +271,22 @@ static Lvds_Phy_Control_t lcd_lvds_phy_control =
     .lvds_ref_ctl = 0x15,
 };
 
+#if (BITS_OPTION == 1)
+#if (LCD_BITS_USER == 6)
+#define LVDS_REPACK		0
+#else
+#define LVDS_REPACK		1
+#endif
+#else
+#if (LCD_BITS == 6)
+#define LVDS_REPACK		0
+#else
+#define LVDS_REPACK		1
+#endif
+#endif
 static Lvds_Config_t lcd_lvds_config=
 {
-#if (LCD_BITS == 6)
-	.lvds_repack = 0,
-#else
-	.lvds_repack = 1,
-#endif
+	.lvds_repack = LVDS_REPACK,
 	.pn_swap = LVDS_PN_SWAP,
 };
 
@@ -394,7 +402,7 @@ static void lcd_io_init(void)
 
 static int lcd_enable(void)
 {
-	debug("%s\n", __FUNCTION__);	
+	debug("%s\n", __FUNCTION__);
 	
 	lcd_setup_gamma_table(&lcd_config);
     lcd_io_init();

@@ -345,10 +345,10 @@ typedef struct {
 	u16 dith_user;
     u16 dith_cntl_addr;
     
-    s16 brightness[33];
-    s16 contrast[33];
-    s16 saturation[33];
-    s16 hue[33];
+    // s16 brightness[33];
+    // s16 contrast[33];
+    // s16 saturation[33];
+    // s16 hue[33];
 
 	u32 vadj_brightness;
 	u32 vadj_contrast;
