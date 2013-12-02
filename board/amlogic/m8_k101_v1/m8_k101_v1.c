@@ -493,6 +493,14 @@ static void board_i2c_init(void)
 #endif
 }
 
+void wifi_power_init()
+{
+	printf("mcli -- wifi_power_init in uboot --\n");
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<22);
+	clrbits_le32(P_AO_RTI_PIN_MUX_REG,1<<18);
+	clrbits_le32(P_AO_GPIO_O_EN_N,1<<6);
+}
+
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
@@ -512,6 +520,9 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
 	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+	
+	wifi_power_init();
+	
 	return 0;
 }
 
