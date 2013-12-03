@@ -31,7 +31,6 @@ then
     m6_asd_pi3100
     m6_asd_pi3900
     m6_chinach_v1
-    m6_chinach_v1_tee
     m6_g33new_512M
     m6_g33new_1GB
     m6_g33_1212
@@ -39,23 +38,17 @@ then
     m6_yifang_m7000nbd
     mx_dongle_g02
     m6_mbx_v1
-    m6_mbx_v1_tee
     m6_mbx_v1_r2
-    m6_mbx_v1_r2_tee
     m6_dongle
     m6_dongle_v131
-    m6_dongle_v131_tee
     m6_dongle_g40ref
     m6_duokan_mbx_g19ref
-    m6_letv_g28ref
-    m6_letv_g29ref
     m6tv_h02_v1
     m6tv_h03_v1
     m6_dvb_g17
     m6tv_h04_v1
     m6tv_h05_v1
     m6tv_h06_v1
-    m6tv_h100
     m6_gadmei_g11t80
     )
 else
