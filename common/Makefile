@@ -85,7 +85,6 @@ COBJS-$(CONFIG_SPI_NAND_EMMC_COMPATIBLE) += env_amlnand.o env_sf.o env_mmc.o env
 # command
 COBJS-$(CONFIG_SECURITYKEY) += cmd_secukey.o
 COBJS-$(CONFIG_SECURITYKEY) += cmd_usid.o cmd_uuid.o
-COBJS-$(CONFIG_CMD_RANDOM) +=  cmd_random.o
 COBJS-$(CONFIG_CMD_SECURESTORE) += cmd_securestore.o
 COBJS-$(CONFIG_CMD_RANDOM) +=  cmd_randomb.o
 COBJS-$(CONFIG_HDCP_PREFETCH) += cmd_hdcp.o
