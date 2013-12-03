@@ -34,7 +34,7 @@
 #endif
 
 #define PANEL_NAME	"panel"
-#define DRIVER_DATE		"20130718"
+#define DRIVER_DATE		"20131203"
 #define DRIVER_VER		"u-dt"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -1722,7 +1722,14 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 	unsigned error = MAX_ERROR;
 	
 	unsigned fin = 24000;	//kHz
-	unsigned fout = (pConf->lcd_timing.lcd_clk) / 1000;  //kHz
+	unsigned fout = pConf->lcd_timing.lcd_clk;
+	
+	if (fout >= 200) {//clk
+		fout = fout / 1000;  //kHz
+	}
+	else {//frame_rate
+		fout = (fout * pConf->lcd_basic.h_period * pConf->lcd_basic.v_period) / 1000;	//kHz
+	}
 	
 	unsigned clk_num = 0;	
 	for (n = PLL_N_MIN; n <= PLL_N_MAX; n++) {
@@ -2574,8 +2581,8 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "hsign_hoffset_vsign_voffset", NULL);
 	if(propdata == NULL){
 		DPRINT("don't find to match hsign_hoffset_vsign_voffset, use default setting.\n");
-		pDev->pConf->lcd_timing.h_offset = 0;
-		pDev->pConf->lcd_timing.v_offset = 0;
+		pConf->lcd_timing.h_offset = 0;
+		pConf->lcd_timing.v_offset = 0;
 	}
 	else {
 		pConf->lcd_timing.h_offset = ((be32_to_cpup((u32*)propdata) << 31) | ((be32_to_cpup((((u32*)propdata)+1)) & 0xffff) << 0));
