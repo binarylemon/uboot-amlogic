@@ -53,11 +53,15 @@ void env_relocate_spec(void)
 		printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "SPI Flash";
 		spi_env_relocate_spec();
-	}else if(POR_EMMC_BOOT()) {
+	}
+#if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
+	else if(POR_EMMC_BOOT()) {
 		printk("MMC BOOT, emmc_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "eMMC";
 		emmc_env_relocate_spec();
-	}else{
+	}
+#endif
+	else{
 		printk("BOOT FROM CARD? env_relocate_spec\n");
 		if(!run_command("sf probe 2", 0)){
 			printk("SPI BOOT, spi_env_relocate_spec %s %d \n",__func__,__LINE__);
@@ -67,11 +71,15 @@ void env_relocate_spec(void)
 			printk("NAND BOOT, nand_env_relocate_spec %s %d \n",__func__,__LINE__);
 			env_name_spec = "NAND";
 			nand_env_relocate_spec();
-		}else if(!run_command("mmcinfo 1", 0)){
+		}
+#if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
+		else if(!run_command("mmcinfo 1", 0)){
 			printk("MMC BOOT, emmc_env_relocate_spec %s %d \n",__func__,__LINE__);
 			env_name_spec = "eMMC";
 			emmc_env_relocate_spec();
-		}else{
+		}
+#endif
+		else{
 			env_name_spec = "None";
 			set_default_env("error init device");
 		}
@@ -88,10 +96,14 @@ int saveenv(void)
 	}else if(POR_SPI_BOOT()){
 		printk("SPI BOOT,spi_saveenv : %s %d \n",__func__,__LINE__);
 		ret = spi_saveenv();
-	}else if(POR_EMMC_BOOT()){
+	}
+#if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
+	else if(POR_EMMC_BOOT()){
 		printk("MMC BOOT,emmc_saveenv : %s %d \n",__func__,__LINE__);
 		ret = emmc_saveenv();
-	}else if (POR_CARD_BOOT()){
+	}
+#endif
+	else if (POR_CARD_BOOT()){
 		printk("BOOT FROM CARD?\n");
 		if(!run_command("sf probe 2", 0)){
 			printk("SPI BOOT, spi_saveenv %s %d \n",__func__,__LINE__);
@@ -101,11 +113,15 @@ int saveenv(void)
 			printk("NAND BOOT, nand_saveenv %s %d \n",__func__,__LINE__);
 			env_name_spec = "NAND";
 			nand_saveenv();
-		}else if(!run_command("mmcinfo 1", 0)){
+		}	
+#if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
+		else if(!run_command("mmcinfo 1", 0)){
 			printk("MMC BOOT, emmc_saveenv %s %d \n",__func__,__LINE__);
 			env_name_spec = "eMMC";
 			emmc_saveenv();
-		}else{
+		}
+#endif		
+		else{
 			printk("error init devices, saveenv fail\n");
 		}
 	}
