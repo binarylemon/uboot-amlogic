@@ -34,7 +34,9 @@ static void set_hpll_clk_out(unsigned clk)
         default:
             break;
     }
+#ifdef CONFIG_AML_MESON_8
     WRITE_CBUS_REG(HHI_HDMI_PHY_CNTL1, READ_CBUS_REG(HHI_HDMI_PHY_CNTL1) | (1 << 1));
+#endif
     WRITE_CBUS_REG(HHI_VID_PLL_CNTL, READ_CBUS_REG(HHI_VID_PLL_CNTL) | (1 << 30));
     printf("wait hpll lock\n");
 #if 0
