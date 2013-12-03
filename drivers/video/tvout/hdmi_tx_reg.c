@@ -42,11 +42,16 @@ unsigned long hdmi_rd_reg(unsigned long addr)
 {
     unsigned long data;
     check_cts_hdmi_sys_clk_status();
+#ifdef CONFIG_AML_MESON_8
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-    
     data = READ_APB_HDMI_REG(HDMI_DATA_PORT);
-    
+#else
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    data = READ_APB_REG(HDMI_DATA_PORT);
+#endif
+  
     return (data);
 }
 
@@ -54,10 +59,17 @@ unsigned long hdmi_rd_reg(unsigned long addr)
 void hdmi_wr_only_reg(unsigned long addr, unsigned long data)
 {
     check_cts_hdmi_sys_clk_status();
+#ifdef CONFIG_AML_MESON_8
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     
     WRITE_APB_HDMI_REG(HDMI_DATA_PORT, data);
+#else
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+
+    WRITE_APB_REG(HDMI_DATA_PORT, data);
+#endif
 }
 
 void hdmi_wr_reg(unsigned long addr, unsigned long data)
@@ -65,10 +77,17 @@ void hdmi_wr_reg(unsigned long addr, unsigned long data)
     unsigned long rd_data;
     
     check_cts_hdmi_sys_clk_status();
+#ifdef CONFIG_AML_MESON_8
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     
     WRITE_APB_HDMI_REG(HDMI_DATA_PORT, data);
+#else
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+
+    WRITE_APB_REG(HDMI_DATA_PORT, data);
+#endif
     rd_data = hdmi_rd_reg (addr);
     if (rd_data != data) 
     {
