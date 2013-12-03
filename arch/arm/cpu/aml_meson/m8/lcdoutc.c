@@ -54,7 +54,7 @@
 
 #define VPP_OUT_SATURATE            (1 << 0)
 
-//#define LCD_DEBUG_INFO
+#define LCD_DEBUG_INFO
 #ifdef LCD_DEBUG_INFO
 #define DBG_PRINT(...)		printf(__VA_ARGS__)
 #else
@@ -1349,10 +1349,9 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 			div_pre_sel_max = DIV_PRE_SEL_MAX;
 			div_post = 1;
 			crt_xd_max = 16;
-      dsi_clk_min = fout*8-40*1000;
-			dsi_clk_max = fout*8+40*1000;
-			dsi_clk_div = 2; //2¡¢4¡¢8
-			pConf->lcd_control.mipi_config->dsi_clk_div=dsi_clk_div;
+      dsi_clk_min =pConf->lcd_control.mipi_config->dsi_clk_min; 
+			dsi_clk_max =pConf->lcd_control.mipi_config->dsi_clk_max; 
+			dsi_clk_div = pConf->lcd_control.mipi_config->dsi_clk_div; 
 			iflogic_vid_clk_in_max = MIPI_MAX_VID_CLK_IN;
 			break;
 		case LCD_DIGITAL_LVDS:
@@ -1387,20 +1386,20 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 			if (fout < ENCL_MAX_CLK_IN) {
 				for (xd = 1; xd <= crt_xd_max; xd++) {
 					div_post_out = fout * xd;
-					//DBG_PRINT("div_post_out=%d, xd=%d, fout=%d\n",div_post_out, xd, fout);
+					DBG_PRINT("div_post_out=%d, xd=%d, fout=%d\n",div_post_out, xd, fout);
 					if (div_post_out <= CRT_VID_MAX_CLK_IN) {
 						div_pre_out = div_post_out * div_post;
 						if (div_pre_out <= DIV_POST_MAX_CLK_IN) {
 							for (pre_div_sel = 0; pre_div_sel < div_pre_sel_max; pre_div_sel++) {
 								div_pre = div_pre_table[pre_div_sel];
 								fout_pll = div_pre_out * div_pre;
-								//DBG_PRINT("pre_div_sel=%d, div_pre=%d, fout_pll=%d\n", pre_div_sel, div_pre, fout_pll);
+								DBG_PRINT("pre_div_sel=%d, div_pre=%d, fout_pll=%d\n", pre_div_sel, div_pre, fout_pll);
 
-								if ((fout_pll <= dsi_clk_div*dsi_clk_max) && (fout_pll >= dsi_clk_div*dsi_clk_min)){
+								if ((fout_pll <= dsi_clk_div*dsi_clk_max*1000) && (fout_pll >= dsi_clk_div*dsi_clk_min*1000)){
 									for (od_sel = OD_SEL_MAX; od_sel > 0; od_sel--) {
 										od = od_table[od_sel - 1];
 										pll_vco = fout_pll * od;
-										//DBG_PRINT("od_sel=%d, od=%d, pll_vco=%d\n", od_sel, od, pll_vco);
+										DBG_PRINT("od_sel=%d, od=%d, pll_vco=%d\n", od_sel, od, pll_vco);
 										if ((pll_vco >= PLL_VCO_MIN) && (pll_vco <= PLL_VCO_MAX)) {
 											if ((pll_vco >= 2500000) && (pll_vco <= PLL_VCO_MAX)) {
 												od_fb = 1;
@@ -1425,8 +1424,8 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 											crt_xd = xd;
 
 											clk_num = 1;
-											//DBG_PRINT("pll_m=0x%x, pll_n=0x%x, pll_od=0x%x, vid_div_pre=0x%x, crt_xd=0x%x, pll_frac=0x%x, pll_level=%d\n",
-											//				pll_m, pll_n, pll_od, vid_div_pre, crt_xd, pll_frac, pll_level);
+											DBG_PRINT("pll_m=0x%x, pll_n=0x%x, pll_od=0x%x, vid_div_pre=0x%x, crt_xd=0x%x, pll_frac=0x%x, pll_level=%d\n",
+															pll_m, pll_n, pll_od, vid_div_pre, crt_xd, pll_frac, pll_level);
 										}
 										if (clk_num > 0)
 											break;
@@ -1968,8 +1967,6 @@ static void _init_lcd_driver_post(Lcd_Config_t *pConf)	//after power on lcd
 {
 	switch(pConf->lcd_basic.lcd_type){
 		case LCD_DIGITAL_MIPI:
-			//set_venc_mipi(pDev->pConf); //4step
-			//set_tcon_mipi(pDev->pConf); //3step
 			break;
 		case LCD_DIGITAL_EDP:
 			set_control_edp(pConf);
@@ -2285,45 +2282,55 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		pConf->lcd_timing.pol_cntl_addr = (pConf->lcd_timing.pol_cntl_addr & ~((1 << LCD_HS_POL) | (1 << LCD_VS_POL))) | ((be32_to_cpup((u32*)propdata) << LCD_HS_POL) | (be32_to_cpup((((u32*)propdata)+1)) << LCD_VS_POL));
 	}
 	DBG_PRINT("pol hsync = %u, vsync = %u\n", (pConf->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1, (pConf->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1);
-
+/////////////////////////
 	if (LCD_DIGITAL_MIPI == pDev->pConf->lcd_basic.lcd_type) {
 		DSI_Config_t *cfg = pDev->pConf->lcd_control.mipi_config;
 		propdata = fdt_getprop(dt_addr, nodeoffset, "lane_num", NULL);
 		if(propdata == NULL){
 			printf("faild to get lane num\n");
 			cfg->lane_num = 3;
-		} else {
-			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata)) - 1;
+		} 
+		else {
+			cfg->lane_num = (unsigned short)(be32_to_cpup((u32*)propdata)) - 1;
 		}
 		DBG_PRINT("lane num= %d\n",  cfg->lane_num+1);
-
-		// cfg->venc_color_type = 2;
 		cfg->trans_mode = 1;
+		DBG_PRINT("trans mode= %u\n",  cfg->trans_mode);
 		cfg->venc_fmt = TV_ENC_LCD768x1024p;
 		if(pDev->pConf->lcd_basic.lcd_bits==6){
-											cfg->dpi_color_type  = 4;
-											cfg->venc_color_type = 2;
-		}else{
-											cfg->dpi_color_type  = 5;
-											cfg->venc_color_type = 1;
+				cfg->dpi_color_type  = 4;
+				cfg->venc_color_type = 2;
 		}
-		cfg->dpi_chroma_subsamp = 0;
-/*
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dpi_color_type", NULL);
-		if(propdata == NULL){
-			printf("faild to get dpi color type\n");
-			cfg->dpi_color_type  = 4;
-			cfg->dpi_chroma_subsamp = 0;
-		} else {
-			cfg->dpi_color_type = (unsigned int)(be32_to_cpup((u32*)propdata));
-			cfg->dpi_chroma_subsamp = (unsigned int)(be32_to_cpup((((u32*)propdata)+1)));
+		else {
+				cfg->dpi_color_type  = 5;
+				cfg->venc_color_type = 1;
 		}
-*/
 		DBG_PRINT("dpi_color_type= %d, dpi_chroma_subsamp=%d\n",  cfg->dpi_color_type, cfg->dpi_chroma_subsamp );
-
-		DBG_PRINT("trans mode= %u\n",  cfg->trans_mode);
+		cfg->dsi_clk_div = 1;
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_clk", NULL);
+		if(propdata == NULL){
+				printf("faild to get dsi_clk\n");
+				cfg->dsi_clk_min = 900;
+				cfg->dsi_clk_max = 1000;
+		} 
+		else {
+			  cfg->dsi_clk_min = (unsigned short)(be32_to_cpup((u32*)propdata));
+				cfg->dsi_clk_max = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		}
+	 DBG_PRINT("dsi_clk_min_max_div= %d %d %d \n", cfg->dsi_clk_min,cfg->dsi_clk_max,cfg->dsi_clk_div);
+	 propdata = fdt_getprop(dt_addr, nodeoffset, "factor", NULL);
+	 if(propdata == NULL){
+			 printf("faild to get factor\n");
+			 cfg->numerator = 0;
+			 cfg->denominator = 0;
+	 } 
+	 else {
+			 cfg->denominator  = (unsigned short)(be32_to_cpup((u32*)propdata));
+			 cfg->numerator= (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+			}
+	 DPRINT("cfg->denominator=%d, cfg->numerator=%d",cfg->denominator, cfg->numerator);
 	}
-
+/////////////////////////////////
 	return ret;
 }
 
