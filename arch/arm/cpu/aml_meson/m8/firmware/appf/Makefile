@@ -84,7 +84,7 @@ LDFLAGS= --verbose --map --fpu=none --symbols --noremove --datacompressor=off --
 
 endif
 
-all: clean $(OUTDIR)/appf.axf $(OUTDIR)/appf.bin $(OUTDIR)/appf_srec.txt
+all: $(OUTDIR)/appf.axf $(OUTDIR)/appf.bin $(OUTDIR)/appf_srec.txt
 
 clean:
 	rm -f $(OBJECTS)
@@ -93,9 +93,11 @@ clean:
 	rm -f $(OUTDIR)/appf.bin
 	rm -f $(OUTDIR)/appf_srec.txt
 	rm -f $(EXTINCDIR)/power_firmware.dat
+	rm -f $(SRCTREE)/arch/arm/cpu/aml_meson/m8/power_firmware.dat
 	mkdir -p $(OUTDIR)/platform/$(PLATFORM)
 	
 $(OUTDIR)/%.o : %.c Makefile $(MAPFILE) $(HEADERS)
+		mkdir -p $(OUTDIR)/platform/$(PLATFORM)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 $(OUTDIR)/appf.axf: $(OBJECTS) $(MAPFILE) Makefile
@@ -104,10 +106,7 @@ $(OUTDIR)/appf.axf: $(OBJECTS) $(MAPFILE) Makefile
 $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	$(fromelf) -O binary $<  $@
 	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
-
-ifeq "$(FIRMWARE_AUTO_UPDATE)" "y"
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m6/power_firmware.dat
-endif
+	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m8/power_firmware.dat
 
 $(OUTDIR)/appf_srec.txt: $(OUTDIR)/appf.axf
 	$(fromelf) --gap-fill 0xff -O srec $< $@
