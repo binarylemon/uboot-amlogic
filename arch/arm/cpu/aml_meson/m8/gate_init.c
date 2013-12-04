@@ -63,7 +63,7 @@ void gate_init(void)
     /* can't bootup if close HDMI_PCLK */
 //  CLK_GATE_OFF(HDMI_PCLK);                        // CBUS[0x1052], gate off HDMI PCLK
     CLK_GATE_OFF(MISC_DVIN);                        // CBUS[0x1052], gate off DVIN 
-    CLK_GATE_OFF(SECURE_AHP_APB3);                  // CBUS[0x1052], gate off Secure AHB to APB3 Bridge
+   // CLK_GATE_OFF(SECURE_AHP_APB3);                  // CBUS[0x1052], gate off Secure AHB to APB3 Bridge
 
 
 	/* close UARTS */
