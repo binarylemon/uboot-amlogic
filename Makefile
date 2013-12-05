@@ -454,6 +454,9 @@ $(obj)u-boot.bin:	$(obj)u-boot-orig.bin $(obj)firmware.bin
 endif
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+ifeq ($(CONFIG_M8_SECU_BOOT),y)
+	@./tools/secu_boot/encrypto3 $@
+endif #END CONFIG_M8_SECU_BOOT
 else		
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
 ifndef CONFIG_MESON_TRUSTZONE
