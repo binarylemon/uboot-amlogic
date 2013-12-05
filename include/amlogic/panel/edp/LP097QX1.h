@@ -10,7 +10,7 @@
 #define ACITVE_AREA_HEIGHT	147	/** lcd active_area or display_area vertical size(unit in mm, you can find it on the home page of lcd spec) */
 #define LCD_TYPE			LCD_DIGITAL_EDP   /** lcd interface(LCD_DIGITAL_MIPI, LCD_DIGITAL_LVDS, LCD_DIGITAL_EDP, LCD_DIGITAL_TTL) */
 #define LCD_BITS			8	/** lcd bits(6, 8) */
-#define BITS_OPTION			0	/** bits_option(0 for only support one mode as LCD_BITS define, 1 for both support 6/8bit) */
+#define BITS_OPTION			0	/** bits_option(0=only support one mode as LCD_BITS define, 1=both support 6/8bit) */
 
 #define H_ACTIVE			2048	/** horizontal resolution */
 #define V_ACTIVE			1536	/** vertical resolution */
@@ -21,10 +21,10 @@
 #define CLK_POL				0			/** clk_polarity(only valid for TTL) */
 #define HS_WIDTH			5	/** hsync_width */
 #define HS_BACK_PORCH		120	/** hsync_backporch(include hsync_width) */
-#define HS_POL				0	/** hsync_polarity(0 for negative, 1 for positive) */
+#define HS_POL				0	/** hsync_polarity(0=negative, 1=positive) */
 #define VS_WIDTH			1	/** vsync_width */
 #define VS_BACK_PORCH		22	/** vsync_backporch(include vsync_width) */
-#define VS_POL				0	/** vsync_polarity(0 for negative, 1 for positive) */
+#define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
 //************************************************
 
 #endif
