@@ -17,7 +17,7 @@
 #define H_PERIOD			1056	/** horizontal period(htotal) */
 #define V_PERIOD			525		/** vertical period(vtotal) */
 
-#define	LCD_CLK				33000000/** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
+#define	LCD_CLK				33300000/** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
 #define CLK_POL				0	/** clk_polarity(only valid for TTL) */
 #define HS_WIDTH			10	/** hsync_width */
 #define HS_BACK_PORCH		46	/** hsync_backporch(include hsync_width) */
