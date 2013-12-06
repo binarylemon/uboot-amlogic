@@ -141,7 +141,7 @@
  */
 #define CONFIG_POWER_SPL                            // init power for all domians, must have
 #define CONFIG_VCCK_VOLTAGE             1050        // CPU core voltage when boot, must have
-#define CONFIG_VDDAO_VOLTAGE            1100        // VDDAO voltage when boot, must have
+#define CONFIG_VDDAO_VOLTAGE            1150        // VDDAO voltage when boot, must have
 #define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
 
 #define CONFIG_VDDIO_AO28               2800        // VDDIO_AO28 voltage when boot, option
@@ -387,7 +387,7 @@
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    540 //696 //768  //792// (636)
+#define CFG_M8_DDR_CLK    648 //696 //768  //792// (636)
 
 //On board DDR capactiy
 #define CFG_M8_DDR3_1GB
