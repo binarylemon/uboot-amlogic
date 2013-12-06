@@ -186,9 +186,6 @@
 	/* clk max error */
 	#define MAX_ERROR				(2 * 1000)
 
-#define EDP_TX_LINK_CAPACITY_162	1296	//Mbps
-#define EDP_TX_LINK_CAPACITY_270	2160	//Mbps
-
 #define CRT_VID_DIV_MAX				15
 #define OD_SEL_MAX					4
 #define DIV_PRE_SEL_MAX				6
@@ -199,12 +196,12 @@ static const unsigned od_table[OD_SEL_MAX] = {1,2,4,8};
 static const unsigned div_pre_table[DIV_PRE_SEL_MAX] = {1,2,3,4,5,6};
 static const unsigned edp_div0_table[EDP_DIV0_SEL_MAX]={1,2,3,4,5,7,8,9,11,13,17,19,23,29,31};
 static const unsigned edp_div1_table[EDP_DIV1_SEL_MAX]={1,2,4,5,6,7,9,13};
-//********************************************//	
+//********************************************//
 	
 /* for lcd power on/off config */
 typedef enum
 {
-    LCD_POWER_TYPE_CPU = 0,	
+    LCD_POWER_TYPE_CPU = 0,
     LCD_POWER_TYPE_PMU,
 	LCD_POWER_TYPE_SIGNAL,
 	LCD_POWER_TYPE_INITIAL,
@@ -245,8 +242,8 @@ static const char* lcd_power_pmu_gpio_table[]={
 
 typedef enum
 {
-    LCD_DIGITAL_MIPI = 0,	
-    LCD_DIGITAL_LVDS,	
+    LCD_DIGITAL_MIPI = 0,
+    LCD_DIGITAL_LVDS,
 	LCD_DIGITAL_EDP,
 	LCD_DIGITAL_TTL,
     LCD_TYPE_MAX,
@@ -406,9 +403,10 @@ typedef struct {
 	unsigned char link_user;
 	unsigned char lane_count;
 	unsigned char link_rate;
-	unsigned char link_adaptive;	
+	unsigned char link_adaptive;
 	unsigned char vswing;
 	unsigned char preemphasis;
+	unsigned int bit_rate;
 } EDP_Config_t;
 
 typedef struct {

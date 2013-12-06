@@ -49,7 +49,7 @@
 #define DRV_TYPE "c8"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20131111"
+#define DRIVER_DATE		"20131203"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -1147,31 +1147,47 @@ static void set_control_lvds(Lcd_Config_t *pConf)
 //**************************************************//
 // for edp link maintain control
 //**************************************************//
-int edp_clk_config_update(unsigned char link_rate)
+static void generate_clk_parameter(Lcd_Config_t *pConf);
+static void lcd_sync_duration(Lcd_Config_t *pConf);
+unsigned edp_clk_config_update(unsigned char link_rate)
 {
-	//to do
-	return 0;
+	unsigned bit_rate;
+	
+	pDev->pConf->lcd_control.edp_config->link_rate = link_rate;
+	generate_clk_parameter(pDev->pConf);
+	lcd_sync_duration(pDev->pConf);
+	
+	bit_rate = (pDev->pConf->lcd_timing.lcd_clk / 1000) * pDev->pConf->lcd_basic.lcd_bits * 3 / 1000;	//Mbps
+	pDev->pConf->lcd_control.edp_config->bit_rate = bit_rate;
+	
+	//update lcd_info
+	pDev->lcd_info.sync_duration_num = pDev->pConf->lcd_timing.sync_duration_num;
+	pDev->lcd_info.sync_duration_den = pDev->pConf->lcd_timing.sync_duration_den;
+	
+	set_pll_lcd(pDev->pConf);	//real change the clk
+	
+	return bit_rate;
 }
 
 void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx)
 {
-	unsigned vswing, preemphasis;
+	unsigned vswing_ctrl, preemphasis_ctrl;
 	
 	switch (vswing_tx) {
 		case VAL_EDP_TX_PHY_VSWING_0:	//0.4V
-			vswing = 0x8038;
+			vswing_ctrl = 0x8018;	//0x8038;
 			break;
 		case VAL_EDP_TX_PHY_VSWING_1:	//0.6V
-			vswing = 0x8088;
+			vswing_ctrl = 0x8088;
 			break;
 		case VAL_EDP_TX_PHY_VSWING_2:	//0.8V
-			vswing = 0x80c8;
+			vswing_ctrl = 0x80c8;
 			break;
 		case VAL_EDP_TX_PHY_VSWING_3:	//1.2V
-			vswing = 0x80f8;
+			vswing_ctrl = 0x80f8;
 			break;
 		default:
-			vswing = 0x80f8;
+			vswing_ctrl = 0x80f8;
 			break;
 	}
 	
@@ -1181,16 +1197,18 @@ void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx)
 		case VAL_EDP_TX_PHY_PREEMPHASIS_2:	//6db
 		case VAL_EDP_TX_PHY_PREEMPHASIS_3:	//9.5db
 		default:
-			preemphasis = 0x0;	//to do
+			preemphasis_ctrl = 0x0;	//to do
 			break;
 	}
 	
-	//WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, vswing_tx);
+	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, vswing_ctrl);
+	printf("edp link adaptive: vswing=0x%02x, preemphasis=0x%02x\n", vswing_tx, preemp_tx);
 }
 //**************************************************//
 
-static void set_control_edp(Lcd_Config_t *pConf)
+static int set_control_edp(Lcd_Config_t *pConf)
 {
+	int ret = 0;
 	EDP_Video_Mode_t  vm;
 	EDP_Link_Config_t link_config;
 	
@@ -1204,6 +1222,7 @@ static void set_control_edp(Lcd_Config_t *pConf)
 	link_config.link_adaptive = pConf->lcd_control.edp_config->link_adaptive;
 	link_config.vswing = pConf->lcd_control.edp_config->vswing;
 	link_config.preemphasis = pConf->lcd_control.edp_config->preemphasis;
+	link_config.bit_rate = pConf->lcd_control.edp_config->bit_rate;
 	
 	//edp main stream attribute
 	vm.h_active = pConf->lcd_basic.h_active;
@@ -1224,13 +1243,16 @@ static void set_control_edp(Lcd_Config_t *pConf)
 	vm.bpc = pConf->lcd_basic.lcd_bits;	//bits per color
 	
 	//edp link maintain
-	dplpm_link_policy_maker(&link_config, &vm);
-	
+	ret = dplpm_link_policy_maker(&link_config, &vm);
+
 	//save feedback config by edp link maintain
 	pConf->lcd_control.edp_config->link_rate = link_config.link_rate;
 	pConf->lcd_control.edp_config->lane_count = link_config.lane_count;
 	pConf->lcd_control.edp_config->vswing = link_config.vswing;
 	pConf->lcd_control.edp_config->preemphasis = link_config.preemphasis;
+	pConf->lcd_control.edp_config->bit_rate = link_config.bit_rate;
+	
+	return ret;
 }
 
 static void set_control_ttl(Lcd_Config_t *pConf)
@@ -1281,7 +1303,28 @@ static void init_phy_lvds(Lcd_Config_t *pConf)
 
 static void init_phy_edp(Lcd_Config_t *pConf)
 {
-	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x8018);//[7:4]swing b:800mv, step 50mv
+	unsigned swing_ctrl;
+	DBG_PRINT("%s\n", __FUNCTION__);
+	
+	switch (pConf->lcd_control.edp_config->vswing) {
+		case VAL_EDP_TX_PHY_VSWING_0:	//0.4V
+			swing_ctrl = 0x8018;
+			break;
+		case VAL_EDP_TX_PHY_VSWING_1:	//0.6V
+			swing_ctrl = 0x8088;
+			break;
+		case VAL_EDP_TX_PHY_VSWING_2:	//0.8V
+			swing_ctrl = 0x80c8;
+			break;
+		case VAL_EDP_TX_PHY_VSWING_3:	//1.2V
+			swing_ctrl = 0x80f8;
+			break;
+		default:
+			swing_ctrl = 0x8018;
+			break;
+	}
+	
+	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, swing_ctrl);//[7:4]swing b:800mv, step 50mv
 	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, ((0x6 << 16) | (0xf5d7 << 0)));
 	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, ((0xc2b2 << 16) | (0x600 << 0)));//0xd2b0fe00);
 }
@@ -1706,6 +1749,7 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 	unsigned bit_rate;
 	unsigned link_rate;
 	bit_rate = (pConf->lcd_timing.lcd_clk / 1000) * pConf->lcd_basic.lcd_bits * 3 / 1000;	//Mbps
+	pConf->lcd_control.edp_config->bit_rate = bit_rate;
 	
 	if (pConf->lcd_control.edp_config->link_user == 0) {
 		if (bit_rate < EDP_TX_LINK_CAPACITY_162 * 1) {
@@ -1739,7 +1783,20 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 		}
 	}
 	else {
-		pConf->lcd_control.edp_config->link_rate = (pConf->lcd_control.edp_config->link_rate == 0) ? VAL_EDP_TX_LINK_BW_SET_162 : VAL_EDP_TX_LINK_BW_SET_270;
+		//pConf->lcd_control.edp_config->link_rate = (pConf->lcd_control.edp_config->link_rate == 0) ? VAL_EDP_TX_LINK_BW_SET_162 : VAL_EDP_TX_LINK_BW_SET_270;
+		switch (pConf->lcd_control.edp_config->link_rate) {
+			case VAL_EDP_TX_LINK_BW_SET_162:
+			case 0:
+				pConf->lcd_control.edp_config->link_rate = VAL_EDP_TX_LINK_BW_SET_162;
+				break;
+			case VAL_EDP_TX_LINK_BW_SET_270:
+			case 1:
+				pConf->lcd_control.edp_config->link_rate = VAL_EDP_TX_LINK_BW_SET_270;
+				break;
+			default:
+				pConf->lcd_control.edp_config->link_rate = VAL_EDP_TX_LINK_BW_SET_270;
+				break;
+		}
 		link_rate=(pConf->lcd_control.edp_config->link_rate==VAL_EDP_TX_LINK_BW_SET_162)?EDP_TX_LINK_CAPACITY_162:EDP_TX_LINK_CAPACITY_270;
 		if (bit_rate > link_rate*pConf->lcd_control.edp_config->lane_count){
 			if(pConf->lcd_basic.lcd_bits == 8){
@@ -1881,7 +1938,6 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	struct aml_pmu_driver *pmu_driver;
 	int battery_percent;
 #endif
-	lcd_control_config(pConf);
 	
 	if (pConf->lcd_timing.clk_ctrl & (1 << CLK_CTRL_AUTO)) {
 		printf("Auto generate clock parameters.\n");
@@ -1894,6 +1950,7 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	}	
 	lcd_sync_duration(pConf);
 	lcd_tcon_config(pConf);
+	lcd_control_config(pConf);
 	
 #ifdef CONFIG_PLATFORM_HAS_PMU
 	/* if battery percentage is very low, set backlight level as low as possible  */
@@ -1963,16 +2020,18 @@ static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
 	printf("%s finished.\n", __FUNCTION__);
 }
 
-extern int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_Video_Mode_t *vm);
-static void _init_lcd_driver_post(Lcd_Config_t *pConf)	//after power on lcd
+static int _init_lcd_driver_post(Lcd_Config_t *pConf)	//after power on lcd
 {
+	int ret = 0;
+	
 	switch(pConf->lcd_basic.lcd_type){
 		case LCD_DIGITAL_MIPI:
 			//set_venc_mipi(pDev->pConf); //4step
 			//set_tcon_mipi(pDev->pConf); //3step
 			break;
 		case LCD_DIGITAL_EDP:
-			set_control_edp(pConf);
+			ret = set_control_edp(pConf);
+			mdelay(200);
 			break;
 		case LCD_DIGITAL_LVDS:
 		case LCD_DIGITAL_TTL:
@@ -1980,6 +2039,8 @@ static void _init_lcd_driver_post(Lcd_Config_t *pConf)	//after power on lcd
 			break;
 	}
 	printf("%s finished.\n", __FUNCTION__);
+	
+	return ret;
 }
 
 static void _disable_lcd_driver_pre(Lcd_Config_t *pConf)	//before power off lcd
@@ -2036,10 +2097,23 @@ static inline void _enable_vsync_interrupt(void)
 
 static void _lcd_module_enable(void)
 {
+	int ret = 0;
+	
 	BUG_ON(pDev==NULL);
 	_init_lcd_driver(pDev->pConf);
 	lcd_power_ctrl(ON);
-	_init_lcd_driver_post(pDev->pConf);
+	ret = _init_lcd_driver_post(pDev->pConf);
+	if (pDev->pConf->lcd_basic.lcd_type == LCD_DIGITAL_EDP) {
+		if (ret > 0) {
+			_disable_lcd_driver_pre(pDev->pConf);
+			lcd_power_ctrl(OFF);
+			_disable_lcd_driver(pDev->pConf);
+			mdelay(30);
+			_init_lcd_driver(pDev->pConf);
+			lcd_power_ctrl(ON);
+			_init_lcd_driver_post(pDev->pConf);
+		}
+	}
 	//lcd_backlight_power_ctrl(ON);	//disable backlight at pannel init
 	_enable_vsync_interrupt();
 }
@@ -2583,7 +2657,7 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 		pConf->lcd_control.edp_config->link_adaptive = (unsigned char)(be32_to_cpup((u32*)propdata));
 		pConf->lcd_control.edp_config->vswing = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
 		pConf->lcd_control.edp_config->preemphasis = 0;
-		if (be32_to_cpup((u32*)propdata) > 0) {
+		if (be32_to_cpup((u32*)propdata) == 0) {
 			if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_EDP)
 				printf("edp swing_level = %u\n", pConf->lcd_control.edp_config->vswing);
 			else

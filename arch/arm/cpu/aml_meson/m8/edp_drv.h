@@ -115,11 +115,11 @@
 
 // Link training constants
 #define VAL_EDP_MAX_TRAINING_ATTEMPTS				5
-#define VAL_EDP_CLOCK_REC_TIMEOUT					1//ms //100 // in microseconds
-#define VAL_EDP_CHAN_EQ_TIMEOUT						4//ms //400 // in microseconds
+#define VAL_EDP_CLOCK_REC_TIMEOUT					1//ms //100 //us
+#define VAL_EDP_CHAN_EQ_TIMEOUT						4//ms //400 //us
 #define VAL_EDP_MAX_DEFER_COUNT						7
 #define VAL_EDP_MAX_TIMEOUT_COUNT					5
-#define VAL_EDP_MAX_DELAY_CYCLES					10000 // 10us delay
+#define VAL_EDP_MAX_DELAY_CYCLES					10 // 10us delay
 
 // Link training state constants
 #define VAL_EDP_TS_CLOCK_REC						0x01
@@ -228,7 +228,7 @@ typedef struct {
 	unsigned char max_link_rate;
 	unsigned char enhanced_framing_en;
 	unsigned char lane_count;
-	unsigned char link_rate;	
+	unsigned char link_rate;
 	unsigned char vswing;
 	unsigned char preemphasis;
 	unsigned char ss_level;
@@ -236,8 +236,18 @@ typedef struct {
 	unsigned char training_settings;
 	unsigned char main_stream_enable;
 	unsigned char use_dpcd_caps;
-	unsigned char auto_detection_enable;
+	unsigned char link_rate_adjust_en;
 	unsigned char link_adaptive;
+	unsigned int bit_rate;	//Mbps
 } EDP_Link_Config_t;
 
+#define EDP_TX_LINK_CAPACITY_162	1296	//Mbps
+#define EDP_TX_LINK_CAPACITY_270	2160	//Mbps
+#define EDP_TX_LINK_CAPACITY_540	4320	//Mbps
+
+extern int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_Video_Mode_t *vm);
+extern int dplpm_link_off(void);
+
+extern unsigned edp_clk_config_update(unsigned char link_rate);
+extern void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx);
 #endif
