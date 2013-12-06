@@ -153,20 +153,37 @@ int rn5t618_set_dcdc_voltage(int dcdc, int voltage)
     hard_i2c_write8(DEVID, addr, idx_to);
 }
 
-#define LDO_RTC2        20
+#define LDO_RTC1        10 
+#define LDO_RTC2        11
 int rn5t618_set_ldo_voltage(int ldo, int voltage)
 {
     int addr;
     int idx_to, idx_cur;
     int start = 900;
 
-    if (ldo != LDO_RTC2) {
-        addr = 0x4b + ldo;
-    } else {
-        addr = 0x57; 
-    }
-    if (ldo == 3) {
+    switch (ldo) {
+    case LDO_RTC1:
+        addr  = 0x56;
+        start = 1700;
+        break;
+    case LDO_RTC2:
+        addr  = 0x57;
+        start = 900;
+        break;
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+        start = 900;
+        addr  = 0x4b + ldo;
+        break;
+    case 3:
         start = 600;
+        addr  = 0x4b + ldo;
+        break;
+    default:
+        serial_puts("wrong LDO value\n");
+        break;
     }
     idx_to = find_idx(start, voltage, 25, 128);                 // step is 25mV
     idx_cur = hard_i2c_read8(DEVID, addr);
@@ -210,9 +227,6 @@ void rn5t618_power_init()
 #ifdef CONFIG_VDDIO_AO18
     rn5t618_set_ldo_voltage(2, CONFIG_VDDIO_AO18);              // VDDIO_AO18
 #endif
-#ifdef CONFIG_RTC_0V9
-    rn5t618_set_ldo_voltage(LDO_RTC2, CONFIG_RTC_0V9);          // RTC_0V9 
-#endif
 #ifdef CONFIG_VCC1V8
     rn5t618_set_ldo_voltage(3, CONFIG_VCC1V8);                  // VCC1.8V 
 #endif
@@ -221,6 +235,12 @@ void rn5t618_power_init()
 #endif
 #ifdef CONFIG_AVDD1V8
     rn5t618_set_ldo_voltage(5, CONFIG_AVDD1V8);                 // AVDD1.8V 
+#endif
+#ifdef CONFIG_VDD_LDO
+    rn5t618_set_ldo_voltage(LDO_RTC1, CONFIG_VDD_LDO);          // VDD_LDO
+#endif
+#ifdef CONFIG_RTC_0V9
+    rn5t618_set_ldo_voltage(LDO_RTC2, CONFIG_RTC_0V9);          // RTC_0V9 
 #endif
 }
 #endif
