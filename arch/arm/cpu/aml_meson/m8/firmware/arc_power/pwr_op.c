@@ -223,8 +223,11 @@ void rn5t618_set_dcdc_mode(int dcdc, int mode)
     unsigned char bits = (mode << 4) & 0xff; 
 
     rn5t618_set_bits(addr, bits, 0x30);
-    udelay__(100);
+    udelay__(50);
 }
+
+static unsigned char gpio_dir = 0xff;
+static unsigned char gpio_out = 0;
 
 void rn5t618_set_gpio(int gpio, int output)
 {
@@ -232,9 +235,18 @@ void rn5t618_set_gpio(int gpio, int output)
     if (gpio < 0 || gpio > 3) {
         return ;
     }
-    rn5t618_set_bits(0x0091, val << gpio, 1 << gpio);       // set out put value
-    rn5t618_set_bits(0x0090, 1 << gpio, 1 << gpio);         // set pin to output mode
-    udelay__(100);
+    if (gpio_dir == 0xff) {
+        gpio_dir = i2c_pmu_read_b(0x0090);
+    }
+    if (!gpio_out) {
+        gpio_out = i2c_pmu_read_b(0x0091);    
+    }
+    gpio_out &= ~(1 << gpio);
+    gpio_out |= (val << gpio);
+    i2c_pmu_write_b(0x0091, gpio_out);                      // set output
+    gpio_dir |= (1 << gpio);
+    i2c_pmu_write_b(0x0090, gpio_dir);                      // set output mode 
+    udelay__(50);
 }
 
 void rn5t618_get_gpio(int gpio, unsigned char *val)
@@ -252,8 +264,6 @@ int pmu_get_battery_voltage(void)
     unsigned char val[2];
     int result;
 
-    rn5t618_set_bits(0x0066, 0x01, 0x07);                   // select vbat channel
-    udelay__(200);
     result = i2c_pmu_read_w(0x006A);
     val[0] = result & 0xff;
     val[1] = (result >> 8) & 0xff;
@@ -276,18 +286,21 @@ void pmu_feed_watchdog(unsigned int flags)
  */
 static unsigned char reg_ldo     = 0;
 static unsigned char reg_ldo_rtc = 0;
+static unsigned char dcdc1_ctrl  = 0;
 static unsigned char charge_timeout = 0;
 
 void rn5t618_power_off_at_24M()
 {
-//    printf_arc("%s\n", __func__);
+    i2c_pmu_write_b(0x66, 0x29);                                        // select vbat channel
+#if 0
     rn5t618_get_gpio(1, &vbus_status);
     if (!vbus_status) {
     //  rn5t618_set_gpio(1, 1);                                         // close boost
     }
+#endif
 	rn5t618_set_gpio(1, 1);                                             // close vccx2
     rn5t618_set_gpio(0, 1);                                             // close vccx3
-    udelay__(2000);
+    udelay__(500);
 
 #if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
 #if CONFIG_VDDAO_VOLTAGE_CHANGE
@@ -302,23 +315,28 @@ void rn5t618_power_off_at_24M()
     printf_arc("dc3 set to PSM\n");
 #endif
 #endif
-    rn5t618_set_bits(0x0044, ~(LDO3_BIT | LDO4_BIT ), (LDO3_BIT | LDO4_BIT ));
-
     reg_ldo     = i2c_pmu_read_b(0x0044);
     reg_ldo_rtc = i2c_pmu_read_b(0x0045);
-    rn5t618_set_bits(0x002c, 0x00, 0x01);               // close DCDC1, vcck 
+    dcdc1_ctrl  = i2c_pmu_read_b(0x002c);
+    reg_ldo &= ~(LDO3_BIT | LDO4_BIT);
+    i2c_pmu_write_b(0x0044, reg_ldo);                                   // close LDO3 & 4
+
+    dcdc1_ctrl &= ~(0x01);                                              // close DCDC1, vcck
+    i2c_pmu_write_b(0x002c, dcdc1_ctrl);
     printf_arc("enter 32K\n");
 }
 
-void rn5t618_power_on_at_24M()          // need match power sequence of  power_off_at_24M
+void rn5t618_power_on_at_24M()                                          // need match power sequence of  power_off_at_24M
 {
     printf_arc("enter 24MHz.\n");
 
-    rn5t618_set_gpio(3, 1);                             // should open LDO1.2v before open VCCK
-    udelay__(6 * 1000);                                // must delay 25 ms before open vcck
-    rn5t618_set_bits(0x002c, 0x01, 0x01);               // open DCDC1, vcck 
+    rn5t618_set_gpio(3, 1);                                             // should open LDO1.2v before open VCCK
+    udelay__(6 * 1000);                                                 // must delay 25 ms before open vcck
+    dcdc1_ctrl |= 0x01;
+    i2c_pmu_write_b(0x002c, dcdc1_ctrl);                                // open DCDC1, vcck
 
-	rn5t618_set_bits(0x0044, LDO3_BIT | LDO4_BIT, (LDO3_BIT | LDO4_BIT ));
+    reg_ldo |= (LDO3_BIT | LDO4_BIT);
+    i2c_pmu_write_b(0x0044, reg_ldo);
 	
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
@@ -335,45 +353,41 @@ void rn5t618_power_on_at_24M()          // need match power sequence of  power_o
 #endif
 	rn5t618_set_gpio(0, 0);                                     // need to open this in LCD driver?
 	rn5t618_set_gpio(1, 0);                                     // close vccx2
+#if 0
     if (!vbus_status) {
         //rn5t618_set_gpio(1, 0);
     }
+#endif
     if (charge_timeout & 0x20) {
         printf_arc("charge timeout detect, reset charger\n");
         rn5t618_set_bits(0x00C5, 0x00, 0x20);                   // clear flag
         rn5t618_set_bits(0x00B3, 0x00, 0x03);
-        udelay__(100 * 1000);
+        udelay__(10 * 1000);
         rn5t618_set_bits(0x00B3, 0x03, 0x03);
     }
-    rn5t618_set_gpio(3, 0);                             // close ldo 1.2v when vcck is opened 
+    rn5t618_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened 
 }
 
 void rn5t618_power_off_at_32K_1()
 {
-//return;
     unsigned int reg;                               // change i2c speed to 1KHz under 32KHz cpu clock
     unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
 
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xFFC00FFF;
-//    if (sleep_flag == 0x87654321) {                 // suspended in uboot
-//        reg |= (12) << 12;
-//    } else {
-	if(readl(P_AO_RTI_STATUS_REG2) == 0x87654321)
-    	reg |= (10 << 12);           // suspended from kernel
-    else
-		reg |= (5 << 12);           // suspended from kernel
-//    }
+	if  (readl(P_AO_RTI_STATUS_REG2) == 0x87654321) {
+    	reg |= (10 << 12);              // suspended from uboot 
+    } else {
+		reg |= (5 << 12);               // suspended from kernel
+    }
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
-	udelay__(100);
+	udelay__(10);
 
     reg_ldo &= ~(LDO5_BIT);
     i2c_pmu_write_b(0x0044, reg_ldo);                   // close LDO5, AVDD1.8
 
     reg_ldo_rtc &= ~(0x10);
     i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // close ext DCDC 3.3v
-
-//	rn5t618_set_bits(0x0044, ~LDO2_BIT, LDO2_BIT);//need power off lastly
 
 #ifdef CONFIG_RESET_TO_SYSTEM
     i2c_pmu_write_b(0x000b, 0x00);                      // disable watchdog 
@@ -385,10 +399,8 @@ void rn5t618_power_off_at_32K_1()
 
 void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_off_at_32K_1
 {
-//	return;
     unsigned int    reg;
 
-//	rn5t618_set_bits(0x0044, LDO2_BIT, LDO2_BIT);  //need power on firstly
     reg_ldo_rtc |= 0x10;
     i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // open ext DCDC 3.3v
 
@@ -407,7 +419,7 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
 	reg &= 0xFFC00FFF;
 	reg |= (I2C_RESUME_SPEED << 12);
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
-	udelay__(100);
+	udelay__(10);
 	
 }
 
@@ -477,12 +489,18 @@ unsigned int rn5t618_detect_key(unsigned int flags)
                 if (battery_voltage < 3480) {
                     break;
                 }
+                if ((readl(0xc8100088) & (1<<8))) {        // power key
+                    break;
+                }
             } else if (power_status) {
                 charge_timeout = i2c_pmu_read_b(0x00c5);
                 if (charge_timeout & 0x20) {
                     break;    
                 } else {
                     charge_timeout = 0;    
+                }
+                if ((readl(0xc8100088) & (1<<8))) {        // power key
+                    break;
                 }
             }
             delay_cnt = 0;
@@ -502,7 +520,6 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(1<<8,0xc810008c);
 	writel(gpio_sel0, 0xc8100084);
 	writel(gpio_mask,0xc8100080);
-
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 	resume_remote_register();
