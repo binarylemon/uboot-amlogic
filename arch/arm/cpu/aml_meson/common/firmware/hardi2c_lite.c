@@ -20,17 +20,46 @@
 #define  I2C_DATA_LAST         0x5
 #define  I2C_STOP              0x6
 
+#define I2C_WAIT_CNT        (24 * 8 * 1000)
+
 void hard_i2c_init(void)
 {
-    (*I2C_CONTROL_REG) = ((*I2C_CONTROL_REG) & ~(0x3FF << 12)) | (500 << 12);
+    (*I2C_CONTROL_REG) = ((*I2C_CONTROL_REG) & ~(0x3FF << 12)) | (60 << 12);
     
     setbits_le32(P_AO_RTI_PIN_MUX_REG, 3 << 5);
+}
+
+int hard_i2c_check_error(void)
+{
+    if (*I2C_CONTROL_REG & 0x08) {
+        serial_puts("-- i2c error, CTRL:\n");    
+        serial_put_hex(*I2C_CONTROL_REG, 32);
+        serial_puts("\n");
+        return -1;
+    }
+    return 0;
+}
+
+int hard_i2c_wait_complete(void)
+{
+    int delay = 0;
+
+    while (delay < I2C_WAIT_CNT) {
+        if (!((*I2C_CONTROL_REG) & (1 << 2))) {     // idle
+            break;
+        }
+        delay++;
+    }
+    if (delay >= I2C_WAIT_CNT) {
+        serial_puts("i2c timeout\n");    
+    }
+    return hard_i2c_check_error();   
 }
 
 //uncomment this function if you need read back
 
 unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
-{    
+{
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
@@ -47,7 +76,8 @@ unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
     // Start and Wait
     (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
     (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
-    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+
+    hard_i2c_wait_complete();
 
     return( (unsigned char)((*I2C_TOKEN_RDATA_REG0) & 0xFF) );
 }
@@ -68,7 +98,8 @@ void hard_i2c_write8(unsigned char SlaveAddr, unsigned char RegAddr, unsigned ch
     // Start and Wait
     (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
     (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
-    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+
+    hard_i2c_wait_complete();
 }
 
 unsigned char hard_i2c_read168(unsigned char SlaveAddr, unsigned short RegAddr)
@@ -93,7 +124,8 @@ unsigned char hard_i2c_read168(unsigned char SlaveAddr, unsigned short RegAddr)
     // Start and Wait
     (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
     (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
-    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+
+    hard_i2c_wait_complete();
 
     data = *I2C_TOKEN_RDATA_REG0 & 0xff;
     return data;
@@ -118,7 +150,7 @@ void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, unsigned
     // Start and Wait
     (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
     (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
-    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
-}
 
+    hard_i2c_wait_complete();
+}
 
