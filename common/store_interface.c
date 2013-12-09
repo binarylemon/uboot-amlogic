@@ -90,7 +90,8 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	loff_t off=0, size=0;	
 	char *cmd, *s, *area;
 	char	str[128];
-
+    unsigned char *tmp_buf= NULL;
+    
 	if (argc < 2)
 		goto usage;
 
@@ -135,7 +136,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 
 				store_dbg("MMC BOOT,erase uboot :  %s %d  off =%llx ,size=%llx",__func__,__LINE__,off,size);
 				
-				sprintf(str, "mmc  erase bootloader 0x%llx  0x%llx",off, size);
+				sprintf(str, "mmc  erase bootloader");
 				ret = run_command(str, 0);
 				if(ret != 0){
 					store_msg("mmc cmd %s failed",cmd);
@@ -362,7 +363,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		else if(POR_EMMC_BOOT()){
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
-			unsigned char *tmp_buf= (unsigned char *)addr;
+			tmp_buf= (unsigned char *)addr;
 			//modify the 55 AA info for emmc uboot
 			tmp_buf[510]=0;
 			tmp_buf[511]=0;
@@ -412,11 +413,14 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
 			sprintf(str, "mmc  read bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
 			store_dbg("command: %s\n", str);
+			tmp_buf= (unsigned char *)addr;
 			ret = run_command(str, 0);
 			if(ret != 0){
 				store_msg("mmc cmd %s failed \n",cmd);
 				return -1;
 			}
+		    tmp_buf[510]=0x55;
+			tmp_buf[511]=0xaa;
 			return ret;
 		}else{
 			store_dbg("CARD BOOT, %s %d ",__func__,__LINE__);
