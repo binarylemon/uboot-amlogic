@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
  *
  * Author:  Tim Yao <timyao@amlogic.com>
- *
+ * Modify:  Evoke Zhang <evoke.zhang@amlogic.com>
  */
 
 #ifndef LCDOUTC_H
@@ -56,9 +56,9 @@
    #define LCD_HADR                 0
 
 /* for POL_CNTL_ADDR */
-   #define LCD_DCLK_SEL             14    //FOR DCLK OUTPUT   
-   #define LCD_TCON_VSYNC_SEL_DVI   11	 // FOR RGB format DVI output   
-   #define LCD_TCON_HSYNC_SEL_DVI   10	 // FOR RGB format DVI output   
+   #define LCD_DCLK_SEL             14    //FOR DCLK OUTPUT
+   #define LCD_TCON_VSYNC_SEL_DVI   11	 // FOR RGB format DVI output
+   #define LCD_TCON_HSYNC_SEL_DVI   10	 // FOR RGB format DVI output
    #define LCD_TCON_DE_SEL_DVI      9	 // FOR RGB format DVI output
    #define LCD_CPH3_POL             8
    #define LCD_CPH2_POL             7
@@ -124,60 +124,92 @@
    #define LCD_PACK_LITTLE          0   
    
 /* for video encoder */
-   #define	TTL_DELAY				19
    #define	LVDS_DELAY				0
+   #define	TTL_DELAY				19
+
    #define	MLVDS_DELAY				0
    
-/* for clk parameters auto generation */
-   #define	PLL_CTRL_OD				16
-   #define	PLL_CTRL_N				9
-   #define	PLL_CTRL_M				0
-   #define	DIV_CTRL_DIV_PRE		4
-   #define	CLK_CTRL_AUTO			20
-   #define	CLK_CTRL_SS				16
-   #define	CLK_CTRL_PLL_SEL		12
-   #define	CLK_CTRL_DIV_SEL		8
-   #define	CLK_CTRL_VCLK_SEL		4
-   #define	CLK_CTRL_XD				0
+//********************************************//
+// for clk parameter auto generation
+//********************************************//
+//**** clk parameters bit ***/
+	#define PLL_CTRL_LOCK			31
+	#define PLL_CTRL_PD				30
+	#define	PLL_CTRL_OD				16
+	#define	PLL_CTRL_N				9
+	#define	PLL_CTRL_M				0	//[8:0]
+	
+	#define DIV_CTRL_DIV_POST		12	//[14:12]
+	#define DIV_CTRL_LVDS_CLK_EN	11
+	#define DIV_CTRL_PHY_CLK_DIV2	10
+	#define DIV_CTRL_POST_SEL		8	//[9:8]
+	#define	DIV_CTRL_DIV_PRE		4	//[6:4]
 
-	/* PLL parameters */
+	#define	CLK_TEST_FLAG			31
+	#define	CLK_CTRL_AUTO			30
+	//#define	CLK_CTRL_PLL_SEL		10
+	//#define	CLK_CTRL_DIV_SEL		9
+	#define	CLK_CTRL_VCLK_SEL		8
+	#define	CLK_CTRL_SS				4	//[7:4]
+	#define	CLK_CTRL_XD				0	//[3:0]
+
+	#define PLL_WAIT_LOCK_CNT		100
+//**** clk frequency limit ***/
+	/* PLL */
+	#define FIN_FREQ				(24 * 1000)
 	#define PLL_M_MIN				2
 	#define PLL_M_MAX				100
 	#define PLL_N_MIN				1
 	#define PLL_N_MAX				1
+	
 	#define PLL_FREF_MIN			(5 * 1000)
 	#define PLL_FREF_MAX			(30 * 1000)
 	#define PLL_VCO_MIN				(750 * 1000)
 	#define PLL_VCO_MAX				(1500 * 1000)
-	#define PLL_OD_MIN				0
-	#define PLL_OD_MAX				1
 
 	/* VID_DIV */
 	#define DIV_PRE_MAX_CLK_IN		(1300 * 1000)
-	#define DIV_PRE_MIN				1
-	#define DIV_PRE_MAX				6
 	#define DIV_POST_MAX_CLK_IN		(800 * 1000)
 
 	/* CRT_VIDEO */
 	#define CRT_VID_MAX_CLK_IN		(600 * 1000)
-	#define CRT_VID_DIV_MAX			15
-
+	/* ENCL */
+	#define LCD_VENC_MAX_CLK_IN		(208 * 1000)
+	/* lcd interface video clk */
+	#define LVDS_MAX_VID_CLK_IN		LCD_VENC_MAX_CLK_IN
+	#define TTL_MAX_VID_CLK_IN		LCD_VENC_MAX_CLK_IN
+	#define MLVDS_MAX_VID_CLK_IN	LCD_VENC_MAX_CLK_IN
+	/* clk max error */
 	#define MAX_ERROR				(5 * 1000)
+	
+#define CRT_VID_DIV_MAX				15
+#define OD_SEL_MAX					2
+#define DIV_PRE_SEL_MAX				6
+	
+static const unsigned od_table[OD_SEL_MAX] = {1,2};
+static const unsigned div_pre_table[DIV_PRE_SEL_MAX] = {1,2,3,4,5,6};
+//********************************************//
 
 /* for lcd power on/off config */
-#define	LCD_POWER_TYPE_CPU			0
-#define	LCD_POWER_TYPE_AXP202		1
-#define	LCD_POWER_TYPE_AML1212		2
-#define	LCD_POWER_TYPE_SIGNAL		3
-#define	LCD_POWER_TYPE_INIT			4
-#define	LCD_POWER_TYPE_NULL			5
+typedef enum
+{
+    LCD_POWER_TYPE_CPU = 0,
+    LCD_POWER_TYPE_PMU,
+	LCD_POWER_TYPE_SIGNAL,
+	LCD_POWER_TYPE_INITIAL,
+    LCD_POWER_TYPE_MAX,
+} Lcd_Power_Type_t;
+#define LCD_POWER_TYPE_NULL			LCD_POWER_TYPE_MAX
 
-#define	LCD_POWER_PMU_GPIO0			0
-#define	LCD_POWER_PMU_GPIO1			1
-#define	LCD_POWER_PMU_GPIO2			2
-#define	LCD_POWER_PMU_GPIO3			3
-#define	LCD_POWER_PMU_GPIO4			4
-#define	LCD_POWER_PMU_GPIO_NULL		5
+typedef enum
+{
+	LCD_POWER_PMU_GPIO0 = 0,
+	LCD_POWER_PMU_GPIO1,
+	LCD_POWER_PMU_GPIO2,
+	LCD_POWER_PMU_GPIO3,
+	LCD_POWER_PMU_GPIO4,
+	LCD_POWER_PMU_GPIO_MAX,
+} Lcd_Power_Pmu_Gpio_t;
 
 #define	LCD_POWER_GPIO_OUTPUT_LOW	0
 #define	LCD_POWER_GPIO_OUTPUT_HIGH	1
@@ -185,8 +217,7 @@
 
 static const char* lcd_power_type_table[]={
 	"cpu",
-	"axp202",
-	"aml1212",
+	"pmu",
 	"signal",
 	"init",
 	"null",
@@ -203,83 +234,61 @@ static const char* lcd_power_pmu_gpio_table[]={
 
 typedef enum
 {
-    LCD_NULL = 0,
-    LCD_DIGITAL_TTL,
-    LCD_DIGITAL_LVDS,
-    LCD_DIGITAL_MINILVDS,
-    LCD_TYPE_NULL,
+	//LCD_DIGITAL_MIPI = 0,
+	LCD_DIGITAL_LVDS = 1,
+	//LCD_DIGITAL_EDP = 2,
+	LCD_DIGITAL_TTL = 3,
+	LCD_DIGITAL_MINILVDS = 4,
+	LCD_TYPE_MAX,
 } Lcd_Type_t;
 
 static const char* lcd_type_table[]={
-	"NULL",
-	"TTL",
+	"MIPI",	
 	"LVDS",
+	"eDP",
+	"TTL",
 	"miniLVDS",
 	"invalid",
-}; 
+};
 
 static const char* lcd_type_table_match[]={
-	"null",
-	"ttl",
+	"mipi",
 	"lvds",
+	"edp",
+	"ttl",
 	"minilvds",
 	"invalid",
-}; 
-   
-typedef struct {
-    int channel_num;
-    int hv_sel;
-    int tcon_1st_hs_addr;
-    int tcon_1st_he_addr;
-    int tcon_1st_vs_addr;
-    int tcon_1st_ve_addr;
-    int tcon_2nd_hs_addr;
-    int tcon_2nd_he_addr;
-    int tcon_2nd_vs_addr;
-    int tcon_2nd_ve_addr;
-} Mlvds_Tcon_Config_t;
+};
 
-typedef struct {      
-	unsigned int lvds_prem_ctl;
-    unsigned int lvds_swing_ctl;
-    unsigned int lvds_vcm_ctl;
-    unsigned int lvds_ref_ctl;    
-} Lvds_Phy_Control_t;
-
-typedef struct {
-    int mlvds_insert_start;
-    int total_line_clk;
-    int test_dual_gate;    
-    int test_pair_num;
-    int phase_select;
-    int TL080_phase;    
-    int scan_function;
-} Mlvds_Config_t;
-
-typedef struct {    
-    int lvds_repack;
-    int pn_swap;    
-} Lvds_Config_t;   
+static const char *lcd_ss_level_table[]={
+	"0",
+	"0.5%",
+	"1%",
+	"2%",
+	"3%",
+	"4%",
+	"5%",
+};
 
 #define PANEL_MODEL_DEFAULT	"Panel_Default"
 typedef struct {
 	char *model_name;
     u16 h_active;   	// Horizontal display area
-    u16 v_active;     	// Vertical display area 
-    u16 h_period;       // Horizontal total period time 
-    u16 v_period;       // Vertical total period time 
+    u16 v_active;     	// Vertical display area
+    u16 h_period;       // Horizontal total period time
+    u16 v_period;       // Vertical total period time
     u32 screen_ratio_width;      // screen aspect ratio width 
     u32 screen_ratio_height;     // screen aspect ratio height 
-    u32 screen_actual_width;/* screen physical width in "mm" unit */
-    u32 screen_actual_height;/* screen physical height in "mm" unit */
-   
+    u32 h_active_area;/* screen physical width in "mm" unit */
+    u32 v_active_area;/* screen physical height in "mm" unit */
+
     Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
     u16 lcd_bits;         // 6 or 8 bits
 	u16 lcd_bits_option;  //option=0, means the panel only support one lcd_bits option
 }Lcd_Basic_t;
 
 typedef struct {
-    u32 pll_ctrl;        /* video PLL settings */    
+    u32 pll_ctrl;        /* video PLL settings */
     u32 div_ctrl;        /* video pll div settings */
 	u32 clk_ctrl;        /* video clock settings */  //[20]clk_auto, [19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
 	u32 lcd_clk;		/* lcd clock*/
@@ -290,10 +299,10 @@ typedef struct {
     u16 video_on_line;
 	
 	u16 hsync_width;
-	u16 hsync_bp;	
+	u16 hsync_bp;
 	u16 vsync_width;
 	u16 vsync_bp;
-	u16 hvsync_valid;	
+	u16 hvsync_valid;
 	u16 de_hstart;
 	u16 de_vstart;
 	u16 de_valid;
@@ -304,7 +313,7 @@ typedef struct {
     u16 sth1_he_addr;
     u16 sth1_vs_addr;
     u16 sth1_ve_addr;
-    
+
     u16 oeh_hs_addr;
     u16 oeh_he_addr;
     u16 oeh_vs_addr;
@@ -332,7 +341,6 @@ typedef struct {
     u16 pol_cntl_addr;
     u16 inv_cnt_addr;
     u16 tcon_misc_sel_addr;
-    u16 dual_port_cntl_addr;
 } Lcd_Timing_t;
 
 // Fine Effect Tune
@@ -344,16 +352,12 @@ typedef struct {
     u16 rgb_coeff_addr;
 	u16 dith_user;
     u16 dith_cntl_addr;
-    
-    // s16 brightness[33];
-    // s16 contrast[33];
-    // s16 saturation[33];
-    // s16 hue[33];
 
 	u32 vadj_brightness;
 	u32 vadj_contrast;
 	u32 vadj_saturation;
-
+	
+	unsigned char gamma_revert;
 	u16 gamma_r_coeff;
 	u16 gamma_g_coeff;
 	u16 gamma_b_coeff;
@@ -362,13 +366,52 @@ typedef struct {
     u16 GammaTableB[256];
 } Lcd_Effect_t;
 
-typedef struct {    
-	Lvds_Config_t *lvds_config;
-	Mlvds_Config_t *mlvds_config;
-	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7    
-	Lvds_Phy_Control_t *lvds_phy_control;
-	unsigned int lvds_phy_ctrl;
-} Lvds_Mlvds_Config_t;
+typedef struct {
+	unsigned lvds_vswing;
+	unsigned lvds_repack_user;
+	unsigned lvds_repack;
+	unsigned pn_swap;
+} LVDS_Config_t;
+
+typedef struct {
+	unsigned char rb_swap;
+	unsigned char bit_swap;
+} TTL_Config_t;
+
+typedef struct {
+    int channel_num;
+    int hv_sel;
+    int tcon_1st_hs_addr;
+    int tcon_1st_he_addr;
+    int tcon_1st_vs_addr;
+    int tcon_1st_ve_addr;
+    int tcon_2nd_hs_addr;
+    int tcon_2nd_he_addr;
+    int tcon_2nd_vs_addr;
+    int tcon_2nd_ve_addr;
+} MLVDS_Tcon_Config_t;
+
+typedef struct {
+    int mlvds_insert_start;
+    int total_line_clk;
+    int test_dual_gate;
+    int test_pair_num;
+    int phase_select;
+    int TL080_phase;
+    int scan_function;
+} MLVDS_Config_t;
+
+typedef struct {
+	unsigned phy_ctrl;
+} PHY_Config_t;
+
+typedef struct {
+	LVDS_Config_t *lvds_config;
+	TTL_Config_t *ttl_config;
+	MLVDS_Config_t *mlvds_config;
+	MLVDS_Tcon_Config_t *mlvds_tcon_config;	//Point to TCON0~7
+	PHY_Config_t *phy_config;
+} Lcd_Control_Config_t;
 
 typedef enum {
     OFF = 0,
@@ -383,24 +426,66 @@ typedef struct {
 	unsigned short delay;
 } Lcd_Power_Config_t;
 
+#define LCD_POWER_CTRL_STEP_MAX		15
 typedef struct {
-	Lcd_Power_Config_t lcd_power_on_uboot;
-	Lcd_Power_Config_t lcd_power_off_uboot;
-	Lcd_Power_Config_t lcd_power_on_config[10];
-	Lcd_Power_Config_t lcd_power_off_config[10];
-	int lcd_power_on_step;
-	int lcd_power_off_step;
+	Lcd_Power_Config_t power_on_uboot;
+	Lcd_Power_Config_t power_off_uboot;
+	Lcd_Power_Config_t power_on_config[LCD_POWER_CTRL_STEP_MAX];
+	Lcd_Power_Config_t power_off_config[LCD_POWER_CTRL_STEP_MAX];
+	int power_on_step;
+	int power_off_step;
 } Lcd_Power_Ctrl_t;
 
 typedef struct {
     Lcd_Basic_t lcd_basic;
-    Lcd_Timing_t lcd_timing;    
-    Lcd_Effect_t lcd_effect; 
-	Lvds_Mlvds_Config_t lvds_mlvds_config;	
-	Lcd_Power_Ctrl_t lcd_power_ctrl; 
+    Lcd_Timing_t lcd_timing;
+    Lcd_Effect_t lcd_effect;
+	Lcd_Control_Config_t lcd_control;
+	Lcd_Power_Ctrl_t lcd_power_ctrl;
 } Lcd_Config_t;
 
-Lcd_Config_t lcd_config;
+Lcd_Config_t lcd_config_dft;
+
+//****************************************//
+// backlight control
+//****************************************//
+#define BL_CTL_GPIO				0
+#define BL_CTL_PWM_NEGATIVE		1
+#define BL_CTL_PWM_POSITIVE		2
+#define BL_PWM_A				0
+#define BL_PWM_B				1
+#define BL_PWM_C				2
+#define BL_PWM_D				3
+
+#define BL_LEVEL_MAX    		255
+#define BL_LEVEL_MIN    		10
+#define BL_LEVEL_OFF			1
+
+#define BL_LEVEL_MID    		128
+#define BL_LEVEL_MAPPED_MID		102
+
+#define BL_LEVEL_DEFAULT		128
+
+typedef struct {
+	unsigned level_default;
+	unsigned char method;
+	int gpio;
+	unsigned dim_max;
+	unsigned dim_min;
+	unsigned short pwm_port;
+	unsigned char pwm_gpio_used;
+	unsigned pwm_cnt;
+	unsigned pwm_pre_div;
+	unsigned pwm_max;
+	unsigned pwm_min;
+	unsigned pinmux_set_num;
+	unsigned pinmux_set[5][2];
+	unsigned pinmux_clr_num;
+	unsigned pinmux_clr[5][2];
+} Lcd_Bl_Config_t;
+
+Lcd_Bl_Config_t bl_config_dft;
+//*************************************//
 
 extern void mdelay(unsigned long msec);
 
@@ -599,7 +684,7 @@ typedef enum {
 	GPIOAO_9=191,
 	GPIOAO_10=192,
 	GPIOAO_11=193,
-	GPIO_NULL=194,
+	GPIO_MAX=194,
 }gpio_t;
 
 static const char* amlogic_gpio_type_table[]={
@@ -797,7 +882,7 @@ static const char* amlogic_gpio_type_table[]={
 	"GPIOAO_9",
 	"GPIOAO_10",
 	"GPIOAO_11",
-	"GPIO_NULL",
+	"GPIO_MAX",
 }; 
 
 #endif /* LCDOUTC_H */
