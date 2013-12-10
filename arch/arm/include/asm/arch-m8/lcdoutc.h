@@ -133,9 +133,9 @@
 // for clk parameter auto generation
 //********************************************//
 //**** clk parameters bit ***/
-	#define  PLL_CTRL_LOCK			31
-	#define  PLL_CTRL_EN				30
-	#define  PLL_CTRL_RST			29
+	#define PLL_CTRL_LOCK			31
+	#define PLL_CTRL_EN				30
+	#define PLL_CTRL_RST			29
 	#define	PLL_CTRL_OD				9	//[10:9]
 	#define	PLL_CTRL_N				24	//[28:24]
 	#define	PLL_CTRL_M				0	//[8:0]
@@ -143,7 +143,9 @@
 	#define	DIV_CTRL_EDP_DIV1		24	//[26:24]
 	#define	DIV_CTRL_EDP_DIV0		20	//[23:20]
 	#define DIV_CTRL_DIV_POST		12	//[14:12]
-	#define DIV_CTRL_PHY_CLK_DIV2	10	
+	#define DIV_CTRL_LVDS_CLK_EN	11
+	#define DIV_CTRL_PHY_CLK_DIV2	10
+	#define DIV_CTRL_POST_SEL		8	//[9:8]
 	#define	DIV_CTRL_DIV_PRE		4	//[6:4]
 
 	#define	CLK_TEST_FLAG			31
@@ -242,11 +244,12 @@ static const char* lcd_power_pmu_gpio_table[]={
 
 typedef enum
 {
-    LCD_DIGITAL_MIPI = 0,
-    LCD_DIGITAL_LVDS,
-	LCD_DIGITAL_EDP,
-	LCD_DIGITAL_TTL,
-    LCD_TYPE_MAX,
+	LCD_DIGITAL_MIPI = 0,
+	LCD_DIGITAL_LVDS = 1,
+	LCD_DIGITAL_EDP = 2,
+	LCD_DIGITAL_TTL = 3,
+	//LCD_DIGITAL_MINILVDS = 4,
+	LCD_TYPE_MAX,
 } Lcd_Type_t;
 
 static const char* lcd_type_table[]={
@@ -254,6 +257,7 @@ static const char* lcd_type_table[]={
 	"LVDS",
 	"eDP",
 	"TTL",
+	"miniLVDS",
 	"invalid",
 };
 
@@ -262,6 +266,7 @@ static const char* lcd_type_table_match[]={
 	"lvds",
 	"edp",
 	"ttl",
+	"minilvds",
 	"invalid",
 };
 
@@ -423,7 +428,7 @@ typedef struct {
 	LVDS_Config_t *lvds_config;
 	EDP_Config_t *edp_config;
 	TTL_Config_t *ttl_config;
-	DPHY_Config_t *dphy_config;
+	DPHY_Config_t *phy_config;
 } Lcd_Control_Config_t;
 
 typedef enum {

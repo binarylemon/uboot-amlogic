@@ -4,18 +4,18 @@
 
 #define LCD_REG_BASE_ADDR				0xd0100000
 #define LCD_CBUS_BASE_ADDR				0xc1100000
-#define LCD_DSI_BASE_ADDR                               0xd0150000
+#define LCD_DSI_BASE_ADDR				0xd0150000
 #define LCD_DPTX_BASE_ADDR				0xd0160000
 
-#define LCD_REG_OFFSET(reg)				(reg << 2)
-#define LCD_CBUS_OFFSET(reg)			(reg << 2)
-#define LCD_DSI_OFFSET(reg)                             (reg << 2)
+#define LCD_REG_OFFSET(reg)				((reg) << 2)
+#define LCD_CBUS_OFFSET(reg)			((reg) << 2)
+#define LCD_DSI_OFFSET(reg)				((reg) << 2)
 #define LCD_DPTX_OFFSET(reg)			(reg)
 
 #define LCD_REG_ADDR(reg)				(LCD_REG_BASE_ADDR + LCD_REG_OFFSET(reg))
 #define LCD_CBUS_ADDR(reg)				(LCD_CBUS_BASE_ADDR + LCD_CBUS_OFFSET(reg))
 #define LCD_DPTX_ADDR(reg)				(LCD_DPTX_BASE_ADDR + LCD_DPTX_OFFSET(reg))
-#define LCD_DSI_ADDR(reg)                               (LCD_DSI_BASE_ADDR + LCD_DSI_OFFSET(reg))
+#define LCD_DSI_ADDR(reg)				(LCD_DSI_BASE_ADDR + LCD_DSI_OFFSET(reg))
 
 #define WRITE_LCD_REG(reg, val) *(volatile unsigned *)LCD_REG_ADDR(reg) = (val)//__raw_writel(val, LCD_REG_ADDR(reg))
 #define READ_LCD_REG(reg) *(volatile unsigned *)LCD_REG_ADDR(reg)//(__raw_readl(LCD_REG_ADDR(reg)))

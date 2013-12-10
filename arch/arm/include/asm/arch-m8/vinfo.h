@@ -62,8 +62,8 @@ typedef struct {
 	u32			aspect_ratio_den;
 	u32			sync_duration_num;
 	u32			sync_duration_den;
-	u32                screen_real_width;
-        u32                screen_real_height;
+	u32			screen_real_width;
+	u32			screen_real_height;
 } vinfo_t;
 
 #endif /* TVMODE_H */
