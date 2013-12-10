@@ -2786,7 +2786,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		propdata = fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port", NULL);
 		if (propdata == NULL) {
 			printf("faild to get bl_gpio_port\n");
-			bl_conf->gpio = GPIODV_28;
+			bl_conf->gpio = GPIOD_1;
 		}
 		else {
 			bl_conf->gpio = amlogic_gpio_name_map_num(propdata);
