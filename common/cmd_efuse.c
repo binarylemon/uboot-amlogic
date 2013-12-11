@@ -9,6 +9,19 @@
 #define EFUSE_READ 1
 #define EFUSE_DUMP 2
 //#define EFUSE_VERSION 3
+#define EFUSE_SECURE_BOOT_SET 6
+
+int __aml_sec_boot_check_efuse(unsigned char *pSRC)
+{	
+	return -1;
+}
+
+//Note: each Meson chip should make its own implementation
+//         aml_sec_boot_check_efuse() for EFUSE programming with
+//         secure boot.
+int aml_sec_boot_check_efuse(unsigned char *pSRC)
+	__attribute__((weak, alias("__aml_sec_boot_check_efuse")));
+
 
 int cmd_efuse(int argc, char * const argv[], char *buf)
 {
@@ -28,6 +41,8 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 #endif		
 	/*else if(strcmp(argv[1], "version") == 0)
 		action = EFUSE_VERSION;*/
+	else if(strcmp(argv[1], "secure_boot_set") == 0)
+		action=EFUSE_SECURE_BOOT_SET;
 	else{
 		printf("%s arg error\n", argv[1]);
 		return -1;
@@ -156,7 +171,17 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		else
 			printf("%s written done.\n", info.title);					
 	}
-
+	else if ((EFUSE_SECURE_BOOT_SET == action) && (3 == argc))
+	{
+		s = argv[2];
+		unsigned int nAddr = simple_strtoul(s, &end, 16);
+		if(aml_sec_boot_check_efuse(nAddr))
+			printf("aml log : efuse pattern check fail!\n");
+		else
+		{	unsigned int pos = 0;
+			efuse_write(nAddr, EFUSE_BYTES, (loff_t*)&pos);
+		}
+	}
 	else{
 		printf("arg error\n");
 		return -1;	
@@ -192,7 +217,12 @@ U_BOOT_CMD(
 	"				write to write efuse\n"
 	"	   [mem_addr] usr do \n"
 	"efuse [dump]\n"
-	"	   dump raw efuse data\n"	
+	"	   dump raw efuse data\n"
+	"efuse [secure_boot_set] [mem_addr]\n"
+	"	   decrypt the EFUSE pattern from address mem_addr which contain setting\n"	
+	"	   for secure boot, if pass then the setting will be programmed to the chip\n"
+	"	   DO NOT TRY THIS FEATURE IF NO CONFIRMATION FROM AMLOGIC IN WRITING\n" 
+	"	   OTHERWISE IT WILL CAUSE UNCORRECTABLE DAMAGE TO AMLOGIC CHIPS\n"
 );
 
 /****************************************************/

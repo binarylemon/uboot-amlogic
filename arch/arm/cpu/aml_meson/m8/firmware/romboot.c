@@ -2,6 +2,10 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
+#if defined(CONFIG_M8_SECU_BOOT)
+#include "secure.c"
+#endif//#if defined(CONFIG_M8_SECU_BOOT)
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
@@ -34,165 +38,6 @@ STATIC_PREFIX short check_sum(unsigned * addr,unsigned short check_sum,unsigned 
     return 0;
 }
 #endif
-
-#if defined(CONFIG_M8_SECU_BOOT)
-static int aml_m8_sec_boot_check(unsigned char *pSRC)
-{
-
-#if !defined(CONFIG_AMLROM_SPL)
-	#define ipl_memcpy memcpy
-#endif //
-
-#define AMLOGIC_CHKBLK_ID  (0x434C4D41) //414D4C43 AMLC
-#define AMLOGIC_CHKBLK_VER (1)
-
-	typedef struct {
-		unsigned int	nSizeH; 		  ///4
-		struct st_secure{
-			unsigned int	nORGFileLen;  ///4
-			unsigned int	nSkippedLen;  ///4
-			unsigned int	nHASHLength;  ///4
-			unsigned int	nAESLength;   ///4
-			unsigned char	szHashKey[116];//116
-		}secure; //136
-		unsigned char	szAES_Key_IMG[108];//108
-		unsigned int	nSizeT; 		  ///4
-		unsigned int	nVer;			  ///4
-		unsigned int	unAMLID;		  ///4 AMLC
-	}st_aml_chk_blk; //256
-
-	typedef struct{
-		int ver;
-		int len;
-		unsigned char szBuffer[200];
-	} rsa_context;
-
-	typedef struct{
-		int nr;
-		unsigned int buff[80];
-	} aes_context;
-
-	int i;
-	int nRet = -1;
-	rsa_context rsa_ctx;
-
-	unsigned int action[2][10]={
-		{0xd90402F4,0xd904038c,0xd904706c,0xd904441c,0xd9047458,
-		 0xd9044518,0xd904455c,0xd904459c,0xd9046e44,0xd9046ef4},
-		{0xd90402F4,0xd904038c,0xd904706c,0xd904441c,0xd9047458,
-		 0xd9044518,0xd904455c,0xd904459c,0xd9046e44,0xd9046ef4}};
-
-	int nStep = 0;
-	switch(* (unsigned int *)0xd9040004)
-	{
-	case 0x25e2:break;
-	default: goto exit;break;
-	}
-
-	typedef  void (*func_1)( unsigned int * p, unsigned int a ,unsigned int b);
-	typedef  void (*func_2)( rsa_context *ctx, int a, int b);
-	typedef  int  (*func_3)( rsa_context *ctx, int a );
-	typedef  int  (*func_4)( rsa_context *ctx, const unsigned char *pa,unsigned char *pb);
-	typedef  void (*func_5)( aes_context *ctx, const char *p);
-	typedef  void (*func_6)( unsigned char *iv );
-	typedef  void (*func_7)( aes_context *ctx,unsigned char *pa, unsigned int *pb, unsigned int *pc );
-	typedef  void (*func_8)( const unsigned char *pa, unsigned int a,unsigned char *pb, int b );
-
-	func_1 fp_1 = (func_1)action[nStep][1];
-	func_2 fp_2 = (func_2)action[nStep][2];
-	func_3 fp_3 = (func_3)action[nStep][3];
-	func_4 fp_4 = (func_4)action[nStep][4];
-	func_5 fp_5 = (func_5)action[nStep][5];
-	func_6 fp_6 = (func_6)action[nStep][6];
-	func_7 fp_7 = (func_7)action[nStep][7];
-	func_8 fp_8 = (func_8)action[nStep][8];
-
-	unsigned int nState  = 0;
-	fp_1(&nState,0,4);
-	fp_2(&rsa_ctx,0,0);
-	fp_3(&rsa_ctx,(nState & (1<<23)) ? 1 : 0);
-	rsa_ctx.len = (nState & (1<<23)) ? 256 : 128;
-
-	st_aml_chk_blk chk_blk;
-	ipl_memcpy((unsigned char*)&chk_blk,(unsigned char*)pSRC,sizeof(chk_blk));
-	unsigned char *pRSABuf = (unsigned char *)&chk_blk;
-	for(i = 0;i< sizeof(chk_blk);i+=rsa_ctx.len)
-		if(fp_4(&rsa_ctx, pRSABuf+i, pRSABuf+i ))
-			goto exit;
-
-	//check ID
-	if(AMLOGIC_CHKBLK_ID != chk_blk.unAMLID ||
-			AMLOGIC_CHKBLK_VER < chk_blk.nVer)
-			goto exit;
-
-
-	//size is match or not
-	if(sizeof(st_aml_chk_blk) != chk_blk.nSizeH ||
-		sizeof(st_aml_chk_blk) != chk_blk.nSizeT ||
-		chk_blk.nSizeT != chk_blk.nSizeH)
-		goto exit;
-
-	//check skipped len
-	if((sizeof(st_aml_chk_blk) != chk_blk.secure.nSkippedLen))
-		goto exit;
-
-	if(chk_blk.secure.nSkippedLen)
-		ipl_memcpy((unsigned char*)pSRC,(unsigned char*)(pSRC+chk_blk.secure.nORGFileLen),
-			chk_blk.secure.nSkippedLen);
-
-	aes_context aes_ctx;
-	uint8_t aes_key[32+16], *aes_IV;
-
-	ipl_memcpy((unsigned char*)aes_key,(unsigned char*)chk_blk.szAES_Key_IMG,sizeof(aes_key));
-	aes_IV = &aes_key[32];
-
-	unsigned int *ct32 = (unsigned int *)(pSRC);
-
-	fp_5( &aes_ctx, aes_key );
-	fp_6(aes_IV);
-
-	for (i=0; i<(chk_blk.secure.nAESLength)/16; i++)
-		fp_7 ( &aes_ctx, aes_IV, &ct32[i*4], &ct32[i*4] );
-
-	unsigned char hashIMGCHK[32];
-	fp_8( pSRC,chk_blk.secure.nHASHLength, hashIMGCHK, 0 );
-
-	for(i = 0;i<sizeof(hashIMGCHK);++i)
-		if(hashIMGCHK[i] != chk_blk.secure.szHashKey[i])
-			goto exit;
-
-	nRet = 0;
-
-exit:
-
-	if(nRet)
-	{
-#if defined(CONFIG_AMLROM_SPL)
-		serial_puts("Aml log : ERROR! TPL secure check fail!\n");
-#else
-		printf("Aml log : ERROR! Image secure check fail!\n");
-#endif
-	}
-	else
-	{
-
-#if defined(CONFIG_AMLROM_SPL)
-		serial_puts("Aml log : TPL secure check pass!\n");
-#else
-		printf(" Aml log : Image secure check pass!\n");
-
-#endif
-
-	}
-
-#if !defined(CONFIG_AMLROM_SPL)
-	#undef ipl_memcpy
-#endif //
-	return nRet;
-}
-	
-#endif //CONFIG_M8_SECU_BOOT
-
 
 SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 {
@@ -314,8 +159,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     serial_puts(" us\n");
 
 #if defined(CONFIG_M8_SECU_BOOT)
-
-	if(aml_m8_sec_boot_check((unsigned char *)temp_addr))
+	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
 		while(1);
@@ -368,7 +212,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
     int rc=sdio_read(temp_addr,size,por_cfg);   
 
 #if defined(CONFIG_M8_SECU_BOOT)
-	if(aml_m8_sec_boot_check((unsigned char *)temp_addr))
+	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
 		while(1);
