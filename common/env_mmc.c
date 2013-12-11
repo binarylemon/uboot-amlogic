@@ -162,7 +162,7 @@ int emmc_saveenv(void)
     env_t *env_new_p = NULL;
     ssize_t	len;
     char	*res;
-#if   0//def CONFIG_STORE_COMPATIBLE
+#ifdef  CONFIG_STORE_COMPATIBLE
 	char *name = "env";
 	struct partitions *part_info = NULL;
 	int blk_shift = 0;
@@ -204,7 +204,7 @@ int emmc_saveenv(void)
 	}
 	env_new_p->crc   = crc32(0, env_new_p->data, ENV_SIZE);	
 	mmc_init(mmc);
-#if  0//def CONFIG_STORE_COMPATIBLE
+#ifdef CONFIG_STORE_COMPATIBLE
 	blk_shift =  ffs(mmc->read_bl_len) - 1;
 	blk = part_info->offset >> blk_shift;
 	store_dbg("cnt %llx",cnt);
