@@ -26,9 +26,8 @@
 #define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
 #define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
 
-#define I2C_RN5T618_ADDR   (0x64 >> 1)
-#define i2c_pmu_write_b(reg, val)       i2c_pmu_write_12(reg, 1, val)
-#define i2c_pmu_write_w(reg, val)       i2c_pmu_write_12(reg, 2, val)
+#define I2C_RN5T618_ADDR   (0x32 << 1)
+#define i2c_pmu_write_b(reg, val)       i2c_pmu_write(reg, val)
 #define i2c_pmu_read_b(reg)             (unsigned  char)i2c_pmu_read_12(reg, 1)
 #define i2c_pmu_read_w(reg)             (unsigned short)i2c_pmu_read_12(reg, 2)
 static unsigned char vbus_status;
@@ -39,56 +38,106 @@ void printf_arc(const char *str)
     wait_uart_empty();
 }
 
-void i2c_pmu_write_12(unsigned int reg, int size, unsigned short val)
+#define  I2C_CONTROL_REG      (volatile unsigned long *)0xc8100500
+#define  I2C_SLAVE_ADDR       (volatile unsigned long *)0xc8100504
+#define  I2C_TOKEN_LIST_REG0  (volatile unsigned long *)0xc8100508
+#define  I2C_TOKEN_LIST_REG1  (volatile unsigned long *)0xc810050c
+#define  I2C_TOKEN_WDATA_REG0 (volatile unsigned long *)0xc8100510
+#define  I2C_TOKEN_WDATA_REG1 (volatile unsigned long *)0xc8100514
+#define  I2C_TOKEN_RDATA_REG0 (volatile unsigned long *)0xc8100518
+#define  I2C_TOKEN_RDATA_REG1 (volatile unsigned long *)0xc810051c
+
+#define  I2C_END               0x0
+#define  I2C_START             0x1
+#define  I2C_SLAVE_ADDR_WRITE  0x2
+#define  I2C_SLAVE_ADDR_READ   0x3
+#define  I2C_DATA              0x4
+#define  I2C_DATA_LAST         0x5
+#define  I2C_STOP              0x6
+
+unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
+{    
+    // Set the I2C Address
+    (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
+    // Fill the token registers
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP  << 24)            |
+                             (I2C_DATA_LAST << 20)        |  // Read Data
+                             (I2C_SLAVE_ADDR_READ << 16)  |
+                             (I2C_START << 12)            |
+                             (I2C_DATA << 8)              |  // Read RegAddr
+                             (I2C_SLAVE_ADDR_WRITE << 4)  |
+                             (I2C_START << 0);
+
+    // Fill the write data registers
+    (*I2C_TOKEN_WDATA_REG0) = (RegAddr << 0);
+    // Start and Wait
+    (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
+    (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
+    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+
+    return( (unsigned char)((*I2C_TOKEN_RDATA_REG0) & 0xFF) );
+}
+
+void hard_i2c_write8(unsigned char SlaveAddr, unsigned char RegAddr, unsigned char Data)
 {
-	unsigned char buff[3];
-	buff[0] = reg & 0xff;
-	buff[1] = val & 0xff;
+    // Set the I2C Address
+    (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
+    // Fill the token registers
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP << 16)             |
+                             (I2C_DATA << 12)             |    // Write Data
+                             (I2C_DATA << 8)              |    // Write RegAddr
+                             (I2C_SLAVE_ADDR_WRITE << 4)  |
+                             (I2C_START << 0);
 
-    if (size == 2) {
-    	buff[2] = (val >> 8) & 0xff;
-    }
+    // Fill the write data registers
+    (*I2C_TOKEN_WDATA_REG0) = (Data << 8) | (RegAddr << 0);
+    // Start and Wait
+    (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
+    (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
+    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+}
 
-	struct i2c_msg msg[] = {
-        {
-            .addr  = I2C_RN5T618_ADDR,
-            .flags = 0,
-            .len   = 1 + size,
-            .buf   = buff,
-        }
-    };
+unsigned short hard_i2c_read8_16(unsigned char SlaveAddr, unsigned char RegAddr)
+{
+    unsigned char *pr = (unsigned char*)&RegAddr;
+    unsigned short data;
 
-    if (do_msgs(msg, 1) < 0) {
-        printf_arc("i2c write failed\n");
-    }
+    // Set the I2C Address
+    (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
+    // Fill the token registers
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP << 28)             |
+                             (I2C_DATA_LAST << 24)        |  // Read Data
+                             (I2C_SLAVE_ADDR_READ << 20)  |
+                             (I2C_SLAVE_ADDR_READ << 16)  |
+                             (I2C_START << 12)            |
+                             (I2C_DATA << 8)              |  // Read RegAddr
+                             (I2C_SLAVE_ADDR_WRITE << 4)  |
+                             (I2C_START << 0);
+
+    // Fill the write data registers
+    (*I2C_TOKEN_WDATA_REG0) = *pr;
+    // Start and Wait
+    (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
+    (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
+    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+
+    data = *I2C_TOKEN_RDATA_REG0 & 0xffff;
+    return data;
+}
+
+void i2c_pmu_write(unsigned char reg, unsigned char val)
+{
+    return hard_i2c_write8(I2C_RN5T618_ADDR, reg, val);
 }
 
 unsigned short i2c_pmu_read_12(unsigned int reg, int size)
 {
-	unsigned char buff[1];
-    unsigned short val = 0;
-	buff[0] = reg & 0xff;
-    
-    struct i2c_msg msgs[] = {
-        {
-            .addr = I2C_RN5T618_ADDR,
-            .flags = 0,
-            .len = 1,
-            .buf = buff,
-        },
-        {
-            .addr = I2C_RN5T618_ADDR,
-            .flags = I2C_M_RD,
-            .len = size,
-            .buf = &val,
-        }
-    };
-
-    if (do_msgs(msgs, 2)< 0) {
-       printf_arc("i2c read error\n");
+    unsigned short val;
+    if (size == 1) {
+        val = hard_i2c_read8(I2C_RN5T618_ADDR, reg);
+    } else {
+        val = hard_i2c_read8_16(I2C_RN5T618_ADDR, reg);    
     }
-//	printf_arc("i2c read \n");
-
     return val;
 }
 
@@ -265,8 +314,8 @@ int pmu_get_battery_voltage(void)
     int result;
 
     result = i2c_pmu_read_w(0x006A);
-    val[0] = result & 0xff;
-    val[1] = (result >> 8) & 0xff;
+    val[1] = result & 0xff;
+    val[0] = (result >> 8) & 0xff;
     result = (val[0] << 4) | (val[1] & 0x0f);
     result = (result * 5000) / 4096;                        // resolution: 1.221mV
 
@@ -288,6 +337,7 @@ static unsigned char reg_ldo     = 0;
 static unsigned char reg_ldo_rtc = 0;
 static unsigned char dcdc1_ctrl  = 0;
 static unsigned char charge_timeout = 0;
+static unsigned char exit_reason = 0;
 
 void rn5t618_power_off_at_24M()
 {
@@ -328,7 +378,12 @@ void rn5t618_power_off_at_24M()
 
 void rn5t618_power_on_at_24M()                                          // need match power sequence of  power_off_at_24M
 {
-    printf_arc("enter 24MHz.\n");
+    printf_arc("enter 24MHz. reason:");
+
+    serial_put_hex(exit_reason, 8);
+    wait_uart_empty();
+    printf_arc("\n");
+
 
     rn5t618_set_gpio(3, 1);                                             // should open LDO1.2v before open VCCK
     udelay__(6 * 1000);                                                 // must delay 25 ms before open vcck
@@ -472,6 +527,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
             if (flags == 0x87654321) {      // suspend from uboot
                 ret = 1;
             }
+            exit_reason = 1;
             break;
         }
         delay_cnt++;
@@ -487,19 +543,23 @@ unsigned int rn5t618_detect_key(unsigned int flags)
                  */
                 battery_voltage = pmu_get_battery_voltage();
                 if (battery_voltage < 3480) {
+                    exit_reason = 2;
                     break;
                 }
                 if ((readl(0xc8100088) & (1<<8))) {        // power key
+                    exit_reason = 3;
                     break;
                 }
             } else if (power_status) {
                 charge_timeout = i2c_pmu_read_b(0x00c5);
                 if (charge_timeout & 0x20) {
+                    exit_reason = 4;
                     break;    
                 } else {
                     charge_timeout = 0;    
                 }
                 if ((readl(0xc8100088) & (1<<8))) {        // power key
+                    exit_reason = 5;
                     break;
                 }
             }
@@ -508,12 +568,15 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
         if(remote_detect_key()){
+            exit_reason = 6;
         	break;
         }
 #endif
 
-	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1)
+	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
+            exit_reason = 7;
 		    break;
+        }
 
     } while (!(readl(0xc8100088) & (1<<8))/* && (readl(P_AO_GPIO_I)&(1<<3))*/);            // power key
 
