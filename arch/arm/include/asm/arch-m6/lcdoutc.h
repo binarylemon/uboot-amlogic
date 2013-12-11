@@ -392,6 +392,12 @@ typedef struct {
 } MLVDS_Tcon_Config_t;
 
 typedef struct {
+	unsigned *tcon_pinmux;
+	unsigned *tcon_pinmux_pins;
+	unsigned *tcon_gpio;
+} MLVDS_Pinmux_t;
+
+typedef struct {
     int mlvds_insert_start;
     int total_line_clk;
     int test_dual_gate;
@@ -399,6 +405,7 @@ typedef struct {
     int phase_select;
     int TL080_phase;
     int scan_function;
+	MLVDS_Pinmux_t *mlvds_pinmux;
 } MLVDS_Config_t;
 
 typedef struct {

@@ -238,6 +238,28 @@ static void lcd_ports_ctrl_ttl(Bool_t status)
 	DBG_PRINT("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
 }
 
+static void lcd_ports_ctrl_minilvds(Bool_t status)
+{
+	unsigned pinmux_reg, pinmux_bit;
+	unsigned n, i;
+	
+	pinmux_reg = pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux[0] + PERIPHS_PIN_MUX_0;
+	pinmux_bit = pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux[1];
+	n = ARRAY_SIZE(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux_pins);
+	
+	if (status) {
+		WRITE_LCD_CBUS_REG(pinmux_reg, (READ_LCD_CBUS_REG(pinmux_reg) | pinmux_bit));
+		amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[1]);
+	}else {
+		WRITE_LCD_CBUS_REG(pinmux_reg, (READ_LCD_CBUS_REG(pinmux_reg) & ~(pinmux_bit)));
+		for (i=0; i<n; i++) {
+			amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux_pins[i], LCD_POWER_GPIO_INPUT);
+		}
+		amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], LCD_POWER_GPIO_INPUT);
+	}
+	DBG_PRINT("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
+}
+
 static void lcd_ports_ctrl(Bool_t status)
 {	
 	switch(pDev->pConf->lcd_basic.lcd_type){
@@ -248,8 +270,8 @@ static void lcd_ports_ctrl(Bool_t status)
 			lcd_ports_ctrl_ttl(status);
 			break;
 		case LCD_DIGITAL_MINILVDS:
-			//minilvds_ports_ctrl(status);
-			 break;
+			lcd_ports_ctrl_minilvds(status);
+			break;
 		default:
 			printf("Invalid LCD type.\n");
 			break;
