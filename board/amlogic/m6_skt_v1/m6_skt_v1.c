@@ -242,12 +242,17 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
-	sdio_register(mmc,aml_priv);
-	/*
-	* Normal procedure here, if you want init quickly for emmc,
-	* do not set mmc->block_dev.if_type
-	*/
-	mmc->block_dev.if_type = IF_TYPE_SD;
+    
+#ifdef CONFIG_TSD
+    // if(mmc->block_dev.dev > 0)//tsd
+          mmc->block_dev.if_type = IF_TYPE_SD;
+#else
+    // if(mmc->block_dev.dev > 0)//emmc
+          mmc->block_dev.if_type = IF_TYPE_MMC;
+#endif
+
+	sdio_register(mmc, aml_priv);
+
 #if 0    
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;

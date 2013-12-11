@@ -1,6 +1,8 @@
 #ifndef __CONFIG_M6_SKT_V1_H__
 #define __CONFIG_M6_SKT_V1_H__
 
+#define CONFIG_TSD      1
+
 #define M6_SKT_V1_20120201 1
 #define CONFIG_MACH_MESON6_SKT  // generate M6 SKT machid number
 
