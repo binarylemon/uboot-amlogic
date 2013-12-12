@@ -1749,8 +1749,8 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 			post_div = 1;
 			break;
 	}
-	
-	lcd_clk = ((m * 24 * 1000) / (n * od * (pre_div + 1) * xd * post_div)) * 1000;
+
+	lcd_clk = ((m * FIN_FREQ) / (n * od * pre_div * xd * post_div)) * 1000;
 	pConf->lcd_timing.lcd_clk = lcd_clk;
 	sync_duration = ((lcd_clk / h_period) * 100) / v_period;
 	sync_duration = (sync_duration + 5) / 10;
