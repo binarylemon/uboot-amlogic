@@ -191,32 +191,15 @@ int rn5t618_get_battery_current(void)
 {
     uint8_t val[2];
     int result;
-    static int first = 0;
-#if 0
-    int charge_status = rn5t618_get_charge_status(0);
-    if (charge_status == 1) {                                   // charging
-        rn5t618_set_bits(0x0066, 0x00, 0x07);                   // select vbat channel
-        udelay(200);
-        rn5t618_reads(0x0068, val, 2);
-        result = (val[0] << 4) | (val[1] & 0x0f);
-        result = (result * 5000) / 4096;                        // resolution: 1.221mA
+
+    rn5t618_reads(0x00FB, val, 2);
+    result = ((val[0] & 0x3f) << 8) | (val[1]);
+    if (result & 0x2000) {                                  // discharging, complement code
+        result = result ^ 0x3fff;
+        rn5t618_curr_dir = -1;
     } else {
-#endif
-        if (!first) {                                           // wait at least 1 second for current stable
-            udelay(1000 * 1000);
-            first = 1;
-        }
-        rn5t618_reads(0x00FB, val, 2);
-        result = ((val[0] & 0x3f) << 8) | (val[1]);
-        if (result & 0x2000) {                                  // discharging, complement code
-            result = result ^ 0x3fff;
-            rn5t618_curr_dir = -1;
-        } else {
-            rn5t618_curr_dir = 1;
-        }
-#if 0
+        rn5t618_curr_dir = 1;
     }
-#endif
 
     return result;
 }
@@ -534,7 +517,6 @@ int rn5t618_set_recharge_voltage(int voltage)
 int rn5t618_inti_para(struct battery_parameter *battery)
 {
     if (battery) {
-        rn5t618_set_charging_current   (battery->pmu_init_chgcur);
         rn5t618_set_full_charge_voltage(battery->pmu_init_chgvol);
         rn5t618_set_charge_end_current (150000);
         rn5t618_set_trickle_time       (battery->pmu_init_chg_pretime);
