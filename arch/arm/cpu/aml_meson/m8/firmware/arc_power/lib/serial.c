@@ -44,6 +44,9 @@ void __udelay(int n)
 
 void uart_reset()
 {
+	if(arc_param->serial_disable)
+		return;
+
 	if(readl(P_UART_REG5(UART_PORT_CONS))==0){
 	unsigned uart_cfg = readl(P_UART_CONTROL(UART_PORT_CONS));
 	unsigned uart_misc = readl(P_AO_UART_MISC);
@@ -67,6 +70,9 @@ void uart_reset()
 }
 static void serial_init(unsigned set,unsigned tag)
 {
+	if(arc_param->serial_disable)
+		return;
+
     /* baud rate */
     /*unsigned baud_para=0;*/
     if(tag){//reset uart.
@@ -94,9 +100,13 @@ static void serial_init(unsigned set,unsigned tag)
 	    UART_CNTL_MASK_RST_TX | UART_CNTL_MASK_RST_RX | UART_CNTL_MASK_CLR_ERR);
 
 }
+extern struct ARC_PARAM *arc_param;
 
 static void serial_putc(const char c)
 {
+	if(arc_param->serial_disable)
+		return;
+
     if (c == '\n'){
         while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_FULL));
         writel('\r', P_UART_WFIFO(UART_PORT_CONS));
@@ -107,51 +117,10 @@ static void serial_putc(const char c)
     /* Wait till dataTx register is empty */
 }
 
-/*
- * Read a single byte from the serial port. Returns 1 on success, 0
- * otherwise 0.
- */
-#if 0
-SPL_STATIC_FUNC
-int serial_tstc(void)
-{
-	return (readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_RFIFO_CNT);
-}
-
-/*
- * Read a single byte from the serial port. 
- */
-SPL_STATIC_FUNC
-int serial_getc(void)
-{
-    unsigned char ch;   
-    /* Wait till character is placed in fifo */
-  	while((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_RFIFO_CNT)==0) ;
-    
-    /* Also check for overflow errors */
-    if (readl(P_UART_STATUS(UART_PORT_CONS)) & (UART_STAT_MASK_PRTY_ERR | UART_STAT_MASK_FRAM_ERR))
-	{
-	    setbits_le32(P_UART_CONTROL(UART_PORT_CONS),UART_CNTL_MASK_CLR_ERR);
-	    clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),UART_CNTL_MASK_CLR_ERR);
-	}
-
-    ch = readl(P_UART_RFIFO(UART_PORT_CONS)) & 0x00ff;
-    return ((int)ch);
-}
-
-
-
-SPL_STATIC_FUNC
-void serial_puts(const char *s)
-{
-    while (*s != '\0') {
-        serial_putc(*s++);
-    }
-    delay_tick(32*1000);
-}
-#endif
 void f_serial_puts(const char *s)
 {
+	if(arc_param->serial_disable)
+		return;
     while (*s != '\0') {
         serial_putc(*s++);
     }
@@ -159,6 +128,9 @@ void f_serial_puts(const char *s)
 
 void wait_uart_empty()
 {
+	if(arc_param->serial_disable)
+		return;
+
 //	while((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_TFIFO_EMPTY) == 0)
 //		delay_tick(4);
     unsigned int count=0;
@@ -174,25 +146,12 @@ void wait_uart_empty()
         count++;
     }while(count<20000);
 }
-/*
-SPL_STATIC_FUNC
-void serial_puts_no_delay(const char *s)
-{
-    while (*s != '\0') {
-        serial_putc(*s++);
-    }
-}
 
-
-
-void k_delay(void)
-{
-   delay_tick(32*1000);
-}
-*/
 void serial_put_hex(unsigned int data,unsigned bitlen)
 {
 	int i;
+	if(arc_param->serial_disable)
+		return;
   for (i=bitlen-4;i>=0;i-=4){
         if((data>>i)==0)
         {
@@ -206,23 +165,4 @@ void serial_put_hex(unsigned int data,unsigned bitlen)
             serial_putc(0x61+s-10);
     }
 }
-/*
-void do_exception(unsigned reason)
-{
-    serial_puts("Enter Exception:");
-    serial_put_dword(reason);
-    writel((1<<22)|1000000,P_WATCHDOG_TC);//enable Watchdog
-}
 
-
-
-void disp_uart_ctrl(void)
-{
-	serial_puts("uart_ctrl:");
-	serial_put_hex(readl(P_UART_CONTROL(UART_PORT_CONS)),32);
-}
-
-unsigned get_uart_ctrl(void)
-{
-	return (readl(P_UART_CONTROL(UART_PORT_CONS)) & 0xFFF);
-}*/

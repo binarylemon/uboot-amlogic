@@ -337,6 +337,8 @@ void enter_power_down()
 
 //#define ART_CORE_TEST
 
+struct ARC_PARAM *arc_param=ARC_PARAM_ADDR;//
+
 #define _UART_DEBUG_COMMUNICATION_
 
 int main(void)
@@ -348,7 +350,6 @@ int main(void)
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
 	writel(0,P_AO_RTI_STATUS_REG1);
 	f_serial_puts("sleep .......\n");
-	
 
 	while(1){
 		
@@ -526,8 +527,13 @@ void store_restore_plls(int flag)
 		M8_PLL_SETUP(pll_settings[0], P_HHI_SYS_PLL_CNTL);
 		M8_PLL_RELEASE_RESET(P_HHI_SYS_PLL_CNTL);
 
-	f_serial_puts(" Lock sys pll\n");
-				wait_uart_empty();
+		if(arc_param->serial_disable)
+			udelay__(1000);
+		else
+		{
+			f_serial_puts(" Lock sys pll\n");
+			wait_uart_empty();
+		}
 
 	}while((readl(P_HHI_SYS_PLL_CNTL)&(1<<31))==0);
 
@@ -545,9 +551,14 @@ void store_restore_plls(int flag)
 //	M8_PLL_WAIT_FOR_LOCK(P_HHI_MPLL_CNTL); //need bandgap reset?
 
 	do{
-		udelay__(500);
-		f_serial_puts(" Lock mpll~\n");
-		wait_uart_empty();
+		if(arc_param->serial_disable)
+			udelay__(1000);
+		else
+		{
+			udelay__(500);
+			f_serial_puts(" Lock mpll~\n");
+			wait_uart_empty();
+		}
 		//M8_PLL_LOCK_CHECK(n_pll_try_times,5);
 		if((readl(P_HHI_MPLL_CNTL)&(1<<31))!=0)
 			break;
