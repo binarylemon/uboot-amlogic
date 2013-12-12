@@ -205,6 +205,7 @@ void rn5t618_power_init()
 
     hard_i2c_read8(DEVID, 0x0b);                                // clear watch dog 
     rn5t618_set_bits(0xB3, 0x40, 0x40);
+    rn5t618_set_bits(0xB8, 0x02, 0x1f);                         // set charge current to 300mA
     __udelay(100*1000);
 #ifdef CONFIG_VCCK_VOLTAGE
     rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
