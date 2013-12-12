@@ -43,10 +43,14 @@ static int auto_find_device(void)
 	return dev;
 }
 
-#define OTZ_OK                0
-#define OTZ_EFAIL            -1
-#define OTZ_ENOMEM           -2
-#define OTZ_ILLEGAL_ARGUMENT -3
+#define SMC_ENOMEM          7
+#define SMC_EOPNOTSUPP      6
+#define SMC_EINVAL_ADDR     5
+#define SMC_EINVAL_ARG      4
+#define SMC_ERROR           3
+#define SMC_INTERRUPTED     2
+#define SMC_PENDING         1
+#define SMC_SUCCESS         0
 
 
 #endif
@@ -227,7 +231,7 @@ int securestore_key_write(char *keyname, char *keybuf,unsigned int keylen,int ke
 	cmd_arg.retval_phy_addr = (unsigned int)&retval;
 	err = meson_trustzone_storage(&cmd_arg);
 	if(err){
-		if(err == OTZ_ENOMEM ){
+		if(err == SMC_ENOMEM ){
 			err = 0x1fe;
 			printf("%s:%d,secure storage no space to save key\n",__func__,__LINE__);
 		}
