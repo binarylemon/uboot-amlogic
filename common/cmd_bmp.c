@@ -34,7 +34,11 @@
 
 static int bmp_info (ulong addr);
 static int bmp_display (ulong addr, int x, int y);
+#ifdef CONFIG_OSD_SCALE_ENABLE
+static int bmp_scale(void);
+#else
 static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsigned new_height);
+#endif
 
 /*
  * Allocate and decompress a BMP image using gunzip().
@@ -120,8 +124,13 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 		break;
 	case 2:		/* use argument */
 		addr = simple_strtoul(argv[1], NULL, 16);
+#ifdef CONFIG_OSD_SCALE_ENABLE
+		x = 0;
+		y = 0;
+#else
 		x = -1;
 		y = -1;
+#endif
 		break;
 	case 4:
 		addr = simple_strtoul(argv[1], NULL, 16);
@@ -137,6 +146,7 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 
 static int do_bmp_scale(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
+#ifndef CONFIG_OSD_SCALE_ENABLE
 	ulong src_addr,dst_addr;
 	unsigned width,height;
 
@@ -153,6 +163,9 @@ static int do_bmp_scale(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 		break;
 	}
 	return (bmp_scale(src_addr, dst_addr, width,height));
+#else
+	return (bmp_scale());
+#endif
 }
 
 static cmd_tbl_t cmd_bmp_sub[] = {
@@ -274,6 +287,15 @@ static int bmp_display(ulong addr, int x, int y)
 	return ret;
 }
 
+#ifdef CONFIG_OSD_SCALE_ENABLE
+static int bmp_scale(void)
+{
+	int ret = 0;
+	extern int video_scale_bitmap (void);
+	ret = video_scale_bitmap();
+	return 0;
+}
+#else
 static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsigned new_height)
 {
 	//ulong new_width,new_height;
@@ -327,6 +349,6 @@ static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,unsi
 	printf("End bmp scale \n");
 	return 0;
 }
-
+#endif
 
 

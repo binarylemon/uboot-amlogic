@@ -23,8 +23,10 @@ typedef  enum{
 	OSD_COLOR_KEY_ENABLE,
 	OSD_GBL_ALPHA,
 	OSD_CHANGE_ORDER,
+	OSD_FREESCALE_COEF,
 	DISP_GEOMETRY,
 	DISP_SCALE_ENABLE,
+	DISP_FREESCALE_ENABLE,
 	HW_REG_INDEX_MAX
 }hw_reg_index;
 
@@ -45,6 +47,7 @@ typedef struct {
 #define OSD_TC_ALPHA_ENABLE_DEF 0  //disable tc_alpha
 #define   REG_OFFSET		(0x20<<2)
 
+extern int   tv_out_cur_mode(void);
 extern void  osd_set_colorkey_hw(u32 index,u32 bpp,u32 colorkey ) ;
 extern void  osd_srckey_enable_hw(u32  index,u8 enable);
 extern void  osd_set_gbl_alpha_hw(u32 index,u32 gbl_alpha);
@@ -71,6 +74,14 @@ extern void  osddev_update_disp_axis_hw(
                   	u32 yoffset,
                   	u32 mode_change,
                   	u32 index) ;
+extern void osd_free_scale_enable_hw(u32 index,u32 enable);
+extern void osd_get_free_scale_enable_hw(u32 index, u32 * free_scale_enable);
+extern void osd_free_scale_mode_hw(u32 index,u32 freescale_mode);
+extern void osd_get_free_scale_mode_hw(u32 index, u32 *freescale_mode);
+extern void osd_get_free_scale_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1);
+extern void osd_set_free_scale_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1);
+extern void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1);
+extern void osd_set_window_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1);
 extern void osd_enable_3d_mode_hw(int index,int enable);
 extern void osd_set_2x_scale_hw(u32 index,u16 h_scale_enable,u16 v_scale_enable);
 extern void osd_setpal_hw(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp,int index);

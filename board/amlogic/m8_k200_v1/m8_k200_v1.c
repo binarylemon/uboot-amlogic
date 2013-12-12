@@ -92,6 +92,19 @@ u32 get_board_rev(void)
 	return 0x20;
 }
 
+#if CONFIG_AML_HDMI_TX
+/*
+ * Init hdmi related power configuration
+ * Refer to your board SCH, power including HDMI5V, HDMI1.8V, AVDD18_HPLL, etc
+ */
+extern void hdmi_tx_power_init(void);
+void hdmi_tx_power_init(void)
+{
+    // 
+    printf("hdmi tx power init\n");
+}
+#endif
+
 #if CONFIG_CMD_MMC
 #include <mmc.h>
 #include <asm/arch/sdio.h>

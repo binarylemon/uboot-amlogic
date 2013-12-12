@@ -5,7 +5,6 @@
 typedef struct vidinfo {
 	ushort	vl_col;		/* Number of columns (i.e. 160) */
 	ushort	vl_row;		/* Number of rows (i.e. 100) */
-
 	u_char	vl_bpix;		/* Bits per pixel, 0 = 1 */
 
 	void		*vd_base;	/* Start of framebuffer memory	*/

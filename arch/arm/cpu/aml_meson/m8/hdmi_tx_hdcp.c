@@ -75,7 +75,7 @@ int hdmi_hdcp_clear_ksv_ram(void)
     for(i = 0; i < TX_HDCP_KSV_SIZE; i++) {
         hdmi_hdcp_wr_reg(TX_HDCP_KSV_OFFSET + i, 0x00);
     }
-    printf("Clear HDMI KSV RAM\n");
+    printf("clr h-ram\n");
     return 0;
 }
 

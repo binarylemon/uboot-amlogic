@@ -22,6 +22,9 @@ COBJS-$(CONFIG_AML_RTC)+=aml_rtc_setting.o
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
+COBJS += hdmi_tx_hdcp.o
+COBJS-$(CONFIG_AML_HDMI_TX) += hdmi_tx_set.o enc_clk_config.o
+
 
 ifdef CONFIG_AML_SUSPEND
 COBJS += suspend.o

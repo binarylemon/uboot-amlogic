@@ -1,7 +1,6 @@
 /*
- * Amlogic M1 
- * frame buffer driver-----------HDMI_TX
- * Copyright (C) 2010 Amlogic, Inc.
+ * Amlogic Meson driver-----------HDMI_TX
+ * Copyright (C) 2013 Amlogic, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,81 +19,80 @@
 #include <asm/arch/io.h>
 #include <amlogic/aml_tv.h>
 
-#include "hdmi_info_global.h"
-#include "hdmi_tx_module.h"
-
-#define DEVICE_NAME "amhdmitx"
-#define HDMI_TX_COUNT 32
-#define HDMI_TX_POOL_NUM  6
-#define HDMI_TX_RESOURCE_NUM 4
-
-#ifdef DEBUG
-#define pr_dbg(fmt, args...) printk(KERN_DEBUG "amhdmitx: " fmt, ## args)
-#else
-#define pr_dbg(fmt, args...)
-#endif
-#define pr_error(fmt, args...) printk(KERN_ERR "amhdmitx: " fmt, ## args)
-
-
-static hdmitx_dev_t hdmitx_device;
-
-//static HDMI_TX_INFO_t hdmi_info;
-#define INIT_FLAG_VDACOFF        0x1
-#define INIT_FLAG_POWERDOWN      0x2
-
-#define INIT_FLAG_NOT_LOAD 0x80
-
-static unsigned char init_flag=0;
-static unsigned char init_powermode=0;
-
-
-
-//#undef DISABLE_AUDIO
-
+/*
+ * Init hdmi power
+ */
 void init_hdmi(void)
 {
-#if 0
-    printf("hdmi init\n");
-	 HDMITX_M1B_Init(&hdmitx_device);
-
-    	if(hdmitx_device.HWOp.Cntl){
-        if(init_flag&INIT_FLAG_VDACOFF){
-            hdmitx_device.HWOp.Cntl(&hdmitx_device, HDMITX_HWCMD_VDAC_OFF, 0);    
-        }
-        if(init_powermode&0x80){
-//            hdmitx_device.HWOp.Cntl(&hdmitx_device, HDMITX_HWCMD_LOWPOWER_SWITCH, init_powermode&0x1f);    
-        }
-    }
-#endif
-    printf("HDMI Init\n");
-    C_Entry();
+    extern void hdmi_tx_power_init(void);
+    hdmi_tx_power_init();
 }
 
-#define PRINT_TEMP_BUF_SIZE 512
-
-int set_disp_mode_auto(int mode)
-{
-#if 0
-    int ret=-1;
-   char  mode_name[][16]=
-   {
-   	"480i","480i","480p","576i","576i","576p","720p","1080i","1080p","invalid"	
-   };
-    HDMI_Video_Codes_t vic;
-    if(mode>=9)
-    {
-    	printf("invalid tvout mode \n");
-	return -1;
-    }
-	
-    vic = hdmitx_edid_get_VIC(&hdmitx_device,mode_name[mode]/* info->name*/, (hdmitx_device.disp_switch_config==DISP_SWITCH_FORCE)?1:0);
-    hdmitx_device.cur_VIC = HDMI_Unkown;
-    ret = hdmitx_set_display(&hdmitx_device, vic); //if vic is HDMI_Unkown, hdmitx_set_display will disable HDMI
-    if(ret>=0){
-        hdmitx_device.cur_VIC = vic;    
-    }
-    C_Entry();
+/*
+ * the parameters mode from tv setting should be convert to HDMI VIC
+ */
+static unsigned int tvmode_vmode_vic_map[][3] = {
+    {TVOUT_480I, VMODE_480I, HDMI_480i60},
+    {TVOUT_480P, VMODE_480P, HDMI_480p60},
+    {TVOUT_576I, VMODE_576I, HDMI_576i50},
+    {TVOUT_576P, VMODE_576P, HDMI_576p50},
+    {TVOUT_720P, VMODE_720P, HDMI_720p60},
+    {TVOUT_1080I, VMODE_1080I, HDMI_1080i60},
+    {TVOUT_1080P, VMODE_1080P, HDMI_1080p60},
+    {TVOUT_720P_50HZ, VMODE_720P_50HZ, HDMI_720p50},
+    {TVOUT_1080I_50HZ, VMODE_1080I_50HZ, HDMI_1080i50},
+    {TVOUT_1080P_50HZ, VMODE_1080P_50HZ, HDMI_1080p50},
+    {TVOUT_1080P_24HZ, VMODE_1080P_24HZ, HDMI_1080p24},
+#if CONFIG_AML_MESON_8
+    {TVOUT_4K2K_30HZ, VMODE_4K2K_30HZ, HDMI_4k2k_30},
+    {TVOUT_4K2K_25HZ, VMODE_4K2K_25HZ, HDMI_4k2k_25},
+    {TVOUT_4K2K_24HZ, VMODE_4K2K_24HZ, HDMI_4k2k_24},
+    {TVOUT_4K2K_SMPTE, VMODE_4K2K_SMPTE, HDMI_4k2k_smpte},
 #endif
+    {TVOUT_MAX, VMODE_MAX, HDMI_Unkown},
+};
+
+HDMI_Video_Codes_t tvmode_to_vic(int mode)
+{
+    HDMI_Video_Codes_t vic = HDMI_Unkown;
+    int i = 0;
+    while(tvmode_vmode_vic_map[i][0] != TVOUT_MAX) {
+        if(tvmode_vmode_vic_map[i][0] == mode) {
+            vic = tvmode_vmode_vic_map[i][2];
+            break;
+        }
+        i ++;
+    }
+    return vic;
+}
+
+vmode_t vic_to_vmode(HDMI_Video_Codes_t vic)
+{
+    vmode_t vmode = VMODE_INIT_NULL;
+    int i = 0;
+    while(tvmode_vmode_vic_map[i][2] != HDMI_Unkown) {
+        if(tvmode_vmode_vic_map[i][2] == vic) {
+            vmode = tvmode_vmode_vic_map[i][1];
+            break;
+        }
+        i ++;
+    }
+    return vmode;
+}
+
+/*
+ * set hdmi format
+ */
+int set_disp_mode(int mode)
+{
+    HDMI_Video_Codes_t vic;
+    if((mode == TVOUT_480CVBS) || (mode == TVOUT_576CVBS) || (mode >= TVOUT_MAX)) {
+        printf("Invalid hdmi mode %d\n", mode);
+        return 0;
+    }
+    vic = tvmode_to_vic(mode);
+    printf("mode = %d  vic = %d\n", mode, vic);
+    hdmi_tx_set(vic);
     return 1;
 }    
 

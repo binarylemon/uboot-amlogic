@@ -20,7 +20,12 @@ static void opt_cmd_help(void)
 {
 	printf("Help:\n");
 	printf("tv sub-system\n");
-	printf("open <mode>	-open the tv out, mode is 1080P/1080I/720P/576P/480P/576I/480I\n");
+#if CONFIG_AML_MESON_8
+	printf("open <mode>	-open the tv out, mode is 4K2K30HZ/4K2K25HZ/4K2K24HZ/4K2KSMPTE/1080P24HZ\n1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I\n");
+#endif
+#if CONFIG_AML_MESON_6
+	printf("open <mode>	-open the tv out, mode is 1080P24HZ/1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I\n");
+#endif
 	printf("close	-close the tv out\n");
 	printf("info	-get current mode info\n");
 	printf("tst <mode>	-test tv output, mode is 0-fix,1-colorbar,2-thinline,3-dotgrid\n");
@@ -28,12 +33,30 @@ static void opt_cmd_help(void)
 
 static int to_mode(char *mode_name)
 {
+#if CONFIG_AML_MESON_8
+	if((strcmp(mode_name, "4K2K30HZ")==0)||(strcmp(mode_name, "4k2k30hz")==0))
+		return TVOUT_4K2K_30HZ;
+	if((strcmp(mode_name, "4K2K25HZ")==0)||(strcmp(mode_name, "4k2k25hz")==0))
+		return TVOUT_4K2K_25HZ;
+	if((strcmp(mode_name, "4K2K24HZ")==0)||(strcmp(mode_name, "4k2k24hz")==0))
+		return TVOUT_4K2K_24HZ;
+	if((strcmp(mode_name, "4K2KSMPTE")==0)||(strcmp(mode_name, "4k2ksmpte")==0))
+		return TVOUT_4K2K_SMPTE;
+#endif
 	if((strcmp(mode_name, "1080P")==0)||(strcmp(mode_name, "1080p")==0))
 		return TVOUT_1080P;
 	if((strcmp(mode_name, "1080I")==0)||(strcmp(mode_name, "1080i")==0))
 		return TVOUT_1080I;
 	if((strcmp(mode_name, "720P")==0)||(strcmp(mode_name, "720p")==0))
 		return TVOUT_720P;
+	if((strcmp(mode_name, "1080P24HZ")==0)||(strcmp(mode_name, "1080p24hz")==0))
+		return TVOUT_1080P_24HZ;
+	if((strcmp(mode_name, "1080P50HZ")==0)||(strcmp(mode_name, "1080p50hz")==0))
+		return TVOUT_1080P_50HZ;
+	if((strcmp(mode_name, "1080I50HZ")==0)||(strcmp(mode_name, "1080i50hz")==0))
+		return TVOUT_1080I_50HZ;
+	if((strcmp(mode_name, "720P50HZ")==0)||(strcmp(mode_name, "720p50hz")==0))
+		return TVOUT_720P_50HZ;
 	if((strcmp(mode_name, "576P")==0)||(strcmp(mode_name, "576p")==0))
 		return TVOUT_576P;
 	if((strcmp(mode_name, "480P")==0)||(strcmp(mode_name, "480p")==0))
@@ -52,6 +75,16 @@ static char * to_modestr(int mode)
 
 	switch(mode)
 	{
+#if CONFIG_AML_MESON_8
+        CASE_RET(4K2K_30HZ);
+        CASE_RET(4K2K_25HZ);
+        CASE_RET(4K2K_24HZ);
+        CASE_RET(4K2K_SMPTE);
+#endif
+		CASE_RET(1080P_24HZ);
+		CASE_RET(1080P_50HZ);
+		CASE_RET(1080I_50HZ);
+		CASE_RET(720P_50HZ);
 		CASE_RET(1080P);
 		CASE_RET(1080I);
 		CASE_RET(720P);
@@ -68,7 +101,9 @@ static int tvout_open(int argc, char *argv[])
 {
 	int mode;
 	int ret;
+#if CONFIG_AML_HDMI_TX
 	extern void init_hdmi(void);
+#endif
 	extern void start_dsp(void);
 
 	if (argc < 2)
@@ -79,22 +114,28 @@ static int tvout_open(int argc, char *argv[])
 		goto usage;
 
     tv_oper.enable();
+#if CONFIG_AML_HDMI_TX
 	init_hdmi();
-	
+#endif	
 	ret = tv_out_open(mode);
 	if (ret!=0) {
 		printf("tv %s %s failed\n",argv[0], argv[1]);
 		return 1;
 	}
-
+#if CONFIG_AML_MESON_6
 	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I){
 		udelay(3*1000*1000);
 		start_dsp();
 	}
+#endif
 	return 0;
-
 usage:
-	puts("Usage: video dev open <mode>(1080P/1080I/720P/576P/480P/576I/480I)\n");
+#if CONFIG_AML_MESON_8
+	puts("Usage: video dev open <mode>(4K2K30HZ/4K2K25HZ/4K2K24HZ/4K2KSMPTE/1080P24HZ\n1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I)\n");
+#endif
+#if CONFIG_AML_MESON_6
+	puts("Usage: video dev open <mode>(1080P24HZ/1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I)\n");
+#endif
 	return 1;
 }
 

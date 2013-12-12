@@ -59,10 +59,17 @@ static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 		return 1;
 	}
 	printf("LCD screen clear!\n");
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	memset ((char *)gdev->frameAdrs, 0,
+		(gdev->fb_width*gdev->fb_height)*gdev->gdfBytesPP);
+
+	flush_cache(gdev->frameAdrs, ((gdev->fb_width*gdev->fb_height)*gdev->gdfBytesPP));
+#else
 	memset ((char *)gdev->frameAdrs, 0,
 		(gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP);
 
 	flush_cache(gdev->frameAdrs, ((gdev->winSizeX*gdev->winSizeY)*gdev->gdfBytesPP));
+#endif
 	reset_console();
 	return 0;	
 }

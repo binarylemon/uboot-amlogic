@@ -27,7 +27,22 @@ static void osd_layer_init(GraphicDevice gdev, int layer)
 {
 	printf("%s\n", __FUNCTION__);
 	osd_init_hw();
-    osd_setup(0,
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	osd_setup(0,
+                0,
+                gdev.fb_width,
+                gdev.fb_height,
+                gdev.fb_width,
+                gdev.fb_height * 2,
+                0,
+                0,
+                gdev.fb_width- 1,
+                gdev.fb_height- 1,
+                gdev.frameAdrs,
+                &default_color_format_array[gdev.gdfIndex],
+                layer);
+#else
+	osd_setup(0,
                 0,
                 gdev.winSizeX,
                 gdev.winSizeY,
@@ -35,11 +50,12 @@ static void osd_layer_init(GraphicDevice gdev, int layer)
                 gdev.winSizeY * 2,
                 0,
                 0,
-                gdev.winSizeX - 1,
-                gdev.winSizeY - 1,
+                gdev.winSizeX- 1,
+                gdev.winSizeY- 1,
                 gdev.frameAdrs,
                 &default_color_format_array[gdev.gdfIndex],
                 layer);
+#endif
 }
 
 /*-----------------------------------------------------------------------------
@@ -59,8 +75,16 @@ static void video_layer_init(GraphicDevice gdev)
 void *video_hw_init (void)
 {	
 	u32 fb_addr, display_width, display_height, display_bpp, color_format_index, fg, bg;
+	u32 fb_width, fb_height;
 	char *layer_str;
 	fb_addr = simple_strtoul (getenv ("fb_addr"), NULL, 16);
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	fb_width = simple_strtoul (getenv ("fb_width"), NULL, 10 );
+	fb_height = simple_strtoul (getenv ("fb_height"), NULL, 10);
+#else
+	fb_width = 0;
+	fb_height = 0;
+#endif
 	display_width = simple_strtoul (getenv ("display_width"), NULL, 10);
 	display_height = simple_strtoul (getenv ("display_height"), NULL, 10);
 	display_bpp = simple_strtoul (getenv ("display_bpp"), NULL, 10);
@@ -71,6 +95,8 @@ void *video_hw_init (void)
 	
 	/* fill in Graphic Device */
 	aml_gdev.frameAdrs = fb_addr;
+	aml_gdev.fb_width = fb_width;
+	aml_gdev.fb_height = fb_height;
 	aml_gdev.winSizeX = display_width;
 	aml_gdev.winSizeY = display_height;
 	aml_gdev.gdfBytesPP = display_bpp/8;
@@ -145,11 +171,28 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 	bmp_image_t *bmp=(bmp_image_t *)bmp_image;
 	uchar *bmap;
 	ushort padded_line;
-	unsigned long width, height; 
+	unsigned long width, height;
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	unsigned long pheight = aml_gdev.fb_height;
+	unsigned long pwidth = aml_gdev.fb_width;
+#else
 	unsigned long pwidth = info->vl_col;
+#endif
 	unsigned colors, bpix, bmp_bpix;
 	unsigned long compression;
-	int lcd_line_length = (info->vl_col * NBITS (info->vl_bpix)) / 8;
+	int lcd_line_length = (pwidth * NBITS (info->vl_bpix)) / 8;
+	char *layer_str = NULL;
+	int osd_index = -1;
+
+	layer_str = getenv ("display_layer");
+	if(strcmp(layer_str, "osd1") == 0)
+	{
+		osd_index = 0;
+	}
+	else if(strcmp(layer_str, "osd2") == 0)
+	{
+		osd_index = 1;
+	}
 
 	if (!((bmp->header.signature[0]=='B') &&
 		(bmp->header.signature[1]=='M'))) {
@@ -221,11 +264,16 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 		y = max(0, info->vl_row - height + y + 1);
 #endif /* CONFIG_SPLASH_SCREEN_ALIGN */
 
+#ifndef CONFIG_OSD_SCALE_ENABLE
 	if ((x + width)>pwidth)
 		width = pwidth - x;
 	if ((y + height)>info->vl_row)
 		height = info->vl_row - y;
+#endif
 
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	osd_enable_hw(0, osd_index);
+#endif
 	bmap = (uchar *)bmp + le32_to_cpu (bmp->header.data_offset);
 	fb   = (uchar *) (info->vd_base +
 		(y + height - 1) * lcd_line_length + x*(LCD_BPP/8));
@@ -304,8 +352,39 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 		return (-1);
 	};
 	flush_cache((unsigned long)info->vd_base, info->vl_col*info->vl_row*info->vl_bpix/8);
+
+#ifdef CONFIG_OSD_SCALE_ENABLE
+	if ((height == pheight) && (width == pwidth))
+	osd_enable_hw(1, osd_index);
+#endif
 	return (0);
 }
+
+#ifdef CONFIG_OSD_SCALE_ENABLE
+int video_scale_bitmap(void)
+{
+	printf("video_scale_bitmap src width is %d, height is %d, dst width is %d, dst height is %d\n",
+			aml_gdev.fb_width, aml_gdev.fb_height, aml_gdev.winSizeX, aml_gdev.winSizeY);
+	char *layer_str = NULL;
+	int osd_index = -1;
+	layer_str = getenv ("display_layer");
+	if(strcmp(layer_str, "osd1") == 0)
+	{
+		osd_index = 0;
+	}
+	else if(strcmp(layer_str, "osd2") == 0)
+	{
+		osd_index = 1;
+	}
+	osd_free_scale_mode_hw(osd_index, 1);
+	osd_set_free_scale_axis_hw(osd_index, 0,0,aml_gdev.fb_width-1,aml_gdev.fb_height-1);
+	osd_set_window_axis_hw(osd_index, 0,0,aml_gdev.winSizeX-1,aml_gdev.winSizeY-1);
+	osd_free_scale_enable_hw(osd_index, 0x10001);
+	mdelay(500);
+	osd_enable_hw(1, osd_index);
+	return (1);
+}
+#endif
 
 void reset_console(void)
 {

@@ -27,6 +27,8 @@ COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += edp_drv.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += mipi_dsi_util.o
 COBJS-$(CONFIG_AML_GATE_INIT) += gate_init.o
+COBJS += hdmi_tx_hdcp.o
+COBJS-$(CONFIG_AML_HDMI_TX) += hdmi_tx_set.o enc_clk_config.o
 
 ifdef CONFIG_AML_SUSPEND
 COBJS += suspend.o

@@ -4,7 +4,13 @@
 #define __typesafe_io
 #include <asm/arch/io.h>
 
-#include "tvregs.h"
+#include <amlogic/aml_tv.h>
+#if CONFIG_AML_MESON_8
+#include <asm/arch-m8/tvregs.h>
+#endif
+#if CONFIG_AML_MESON_6
+#include <asm/arch-m6/tvregs.h>
+#endif
 #include "tv_out.h"
 
 static int tvmode = -1;
@@ -169,7 +175,9 @@ static void enable_vsync_interrupt(void)
 
 int tv_out_open(int mode)
 {
-    extern void set_disp_mode_auto(int);
+#if CONFIG_AML_HDMI_TX
+    extern void set_disp_mode(int);
+#endif
     const  reg_t *s;
 
     if (TVOUT_VALID(mode))
@@ -182,25 +190,14 @@ int tv_out_open(int mode)
 	
 //	tvoutc_setclk(mode);
 //	enable_vsync_interrupt();
-
+#if CONFIG_AML_MESON_6
         WRITE_MPEG_REG(VPP_POSTBLEND_H_SIZE, tvinfoTab[mode].xres);
-
-	set_disp_mode_auto(mode);
-#ifdef CONFIG_AML_MESON_8
-    printf("config HPLL\n");
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x69c88000);
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL3, 0xca563823);
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL4, 0x00238100);
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL5, 0x00012286);
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL,  0x6001043d);
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL,  0x4001043d);
-    printf("waiting HPLL lock\n");
-    while(!(READ_MPEG_REG(HHI_VID_PLL_CNTL) & (1 << 31))) {
-        ;
-    }
-    WRITE_MPEG_REG(HHI_VID_PLL_CNTL2, 0x69c8ce00);
-    WRITE_MPEG_REG(HHI_HDMI_PHY_CNTL1, 2);
-    WRITE_MPEG_REG(HHI_HDMI_PHY_CNTL0, 0x08c38d0b);
+#endif
+#if CONFIG_AML_MESON_8
+        __raw_writel(tvinfoTab[mode].xres, P_VPP_POSTBLEND_H_SIZE);
+#endif
+#if CONFIG_AML_HDMI_TX
+	set_disp_mode(mode);
 #endif
         return 0;
     }

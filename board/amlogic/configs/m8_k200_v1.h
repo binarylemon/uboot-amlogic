@@ -43,7 +43,7 @@
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-//#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR24
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -75,6 +75,8 @@
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
+#define CONFIG_AML_HDMI_TX  1
+#define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -222,9 +224,17 @@
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"fb_width=1280\0"\
+	"fb_height=720\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -235,7 +245,7 @@
 	"bootstart=0\0" \
 	"bootsize=60000\0" \
 	"bootpath=u-boot.bin\0" \
-    "sdcburncfg=aml_sdc_burn.ini\0"\
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 	"upgrade_step=0\0" \
@@ -275,18 +285,133 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "imgread res logo ${loadaddr_logo};"\
-        "unpackimg ${loadaddr_logo}; "\
-        "cp ${bootup_offset} ${fb_addr} ${bootup_size};"\
-        "setenv bootargs ${bootargs} logo=osd1,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
+        "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
     \
 	"switch_bootmode="\
-		"echo switch_bootmode...;" \
-		"if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
-        "if test ${reboot_mode} = update; then run update; fi;"\
-        "if test ${reboot_mode} = usb_burning; then run usb_burning; fi;"\
-        "\0" \
+		"echo switch_bootmode...;"\
+	    "if test ${reboot_mode} = normal; then "\
+        	"run prepare;"\
+        "else if test ${reboot_mode} = charging; then "\
+        	"run prepare;"\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"run recovery;"\
+        "else if test ${reboot_mode} = update; then "\
+        	"run update;"\
+        "else if test ${reboot_mode} = usb_burning; then "\
+        	"run usb_burning;"\
+        "else " \
+        	"  "\
+        "fi;fi;fi;fi;fi\0" \
     \
+    "prepare="\
+		"run set_imode_display_size;run set_pmode_display_size;run set_4k2k_display_size;video open; video clear; video dev open ${hdmimode};"\
+		"imgread res logo ${loadaddr_logo}; "\
+        "unpackimg ${loadaddr_logo}; "\
+        "run load_ipmode_logo;run load_4k2k_logo;"\
+		"\0"\
+	\
+	"set_imode_display_size="\
+	    "if test ${hdmimode} = 480i;then "\
+			"setenv display_height 480;setenv display_width 720;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 576i;then "\
+			"setenv display_height 576;setenv display_width 720;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 1080i; then "\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 1080i50hz; then "\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+		"else "\
+			";"\
+		"fi;fi;fi;fi\0"\		
+    \
+	"set_pmode_display_size="\
+	    "if test ${hdmimode} = 480p;then "\
+			"setenv display_height 480;setenv display_width 720;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 576p;then "\
+			"setenv display_height 576;setenv display_width 720;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 720p;then "\
+			"setenv display_height 720;setenv display_width 1280;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 720p50hz; then "\
+			"setenv display_height 720;setenv display_width 1280;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 1080p; then "\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+		"else if test ${hdmimode} = 1080p50hz; then "\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+		"else "\
+			";"\
+		"fi;fi;fi;fi;fi;fi\0"\		
+    \
+	"set_4k2k_display_size="\
+		"if test ${hdmimode} = 4k2k24hz; then "\
+			"setenv display_height 2160;setenv display_width 3840;setenv fb_height 1080;setenv fb_width 1920;"\
+		"else if test ${hdmimode} = 4k2k25hz; then "\
+			"setenv display_height 2160;setenv display_width 3840;setenv fb_height 1080;setenv fb_width 1920;"\
+		"else if test ${hdmimode} = 4k2k30hz; then "\
+			"setenv display_height 2160;setenv display_width 3840;setenv fb_height 1080;setenv fb_width 1920;"\
+		"else if test ${hdmimode} = 4k2ksmpte; then "\
+			"setenv display_height 2160;setenv display_width 4096;setenv fb_height 1080;setenv fb_width 1920;"\
+		"else "\
+			";"\
+		"fi;fi;fi;fi\0"\		
+    \
+    "load_ipmode_logo="\
+	    "if test ${hdmimode} = 480i;then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 576i;then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 1080i; then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 1080i50hz; then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+	    "else if test ${hdmimode} = 480p;then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 576p;then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 720p;then "\
+			"bmp display ${bootup_720_offset};"\
+		"else if test ${hdmimode} = 720p50hz; then "\
+			"bmp display ${bootup_720_offset};"\
+		"else if test ${hdmimode} = 1080p; then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else if test ${hdmimode} = 1080p50hz; then "\
+			"bmp display ${bootup_720_offset};bmp scale;"\
+		"else "\
+			";"\
+		"fi;fi;fi;fi;fi;fi;fi;fi;fi;fi\0"\
+	\
+	"load_4k2k_logo="\
+		"if test ${hdmimode} = 4k2k24hz; then "\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
+		"else if test ${hdmimode} = 4k2k25hz; then "\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
+		"else if test ${hdmimode} = 4k2k30hz; then "\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
+		"else if test ${hdmimode} = 4k2ksmpte; then "\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
+		"else "\
+			";"\
+		"fi;fi;fi;fi\0"\
+	\
+	"set_loaded_tag="\
+		"if test ${hdmimode} = 480p;then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 576p;then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 720p;then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 720p50hz; then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 1080p; then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 1080p50hz; then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 4k2k30hz; then "\
+			"setenv if_loaded loaded;"\
+		"else if test ${hdmimode} = 4k2k24hz; then "\
+			"setenv if_loaded loaded;"\
+		"else "\
+			"setenv if_loaded ;"\
+		"fi;fi;fi;fi;fi;fi;fi;fi\0"\
+	\
 	"storeboot="\
         "echo Booting...; "\
         "run storeargs;"\

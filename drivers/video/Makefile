@@ -53,17 +53,22 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/osd_hw.o
 endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
-COBJS-y += tvout/hdmi_hdcp.o
-COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
-	tvout/tv_out.o \
-	tvout/hdmi_tx_meson.o \
-	tvout/hdmi_tx_reg.o \
-	tvout/hdmi_tx.o \
-	tvout/hdmi_tx_edid.o \
-	tvout/hdmi_tx_video.o \
-	tvout/enc_clk_config.o \
-	tvout/dsp.o \
-    $(patsubst %.c,%.o,$(wildcard tvout/hdmi_ucode/*.c))
+COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o tvout/dsp.o \
+	tvout/tv_out.o
+
+ifdef CONFIG_AML_HDMI_TX
+#ifdef CONFIG_AML_MESON_8
+COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx.o
+#endif
+#ifdef CONFIG_AML_MESON_6
+#COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx_meson.o \
+#	tvout/hdmi_tx_reg.o \
+#	tvout/hdmi_tx.o \
+#	tvout/hdmi_tx_edid.o \
+#	tvout/hdmi_tx_video.o \
+#	tvout/enc_clk_config.o
+#endif
+endif
 endif
 
 COBJS	:= $(COBJS-y)

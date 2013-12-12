@@ -78,7 +78,7 @@ static const  reg_t tvregs_720p[] = {
     {HHI_HDMI_AFC_CNTL,          0x8c0000c3},
     {ENCP_VIDEO_FILT_CTRL,       0x0052,},
     {VENC_DVI_SETTING,           0x2029,},
-    {ENCP_VIDEO_MODE,            0x0040,},
+    {ENCP_VIDEO_MODE,            0x4040,},
     {ENCP_VIDEO_MODE_ADV,        0x0019,},
     {ENCP_VIDEO_YFP1_HTIME,      648,   },
     {ENCP_VIDEO_YFP2_HTIME,      3207,  },
@@ -187,7 +187,7 @@ static const  reg_t tvregs_720p_50hz[] = {
 
 
     {VENC_VIDEO_PROG_MODE,       0x100, },
-    {ENCP_VIDEO_MODE,            0x0040,},  //Enable Hsync and equalization pulse switch in center
+    {ENCP_VIDEO_MODE,            0x4040,},  //Enable Hsync and equalization pulse switch in center
     {ENCP_VIDEO_MODE_ADV,        0x0019,},//bit6:swap PbPr; bit4:YPBPR gain as HDTV type;
                                                  //bit3:Data input from VFIFO;bit[2}0]:repreat pixel a time
 
@@ -199,6 +199,15 @@ static const  reg_t tvregs_720p_50hz[] = {
     {ENCP_VFIFO2VD_CTL,          0,     },
     {VENC_VDAC_SETTING,          0,     },
     {VPU_VIU_VENC_MUX_CTRL,      0x000a,},
+    {VENC_VDAC_FIFO_CTRL,        0x1000,},
+    {ENCP_DACSEL_0,              0x3102,},
+    {ENCP_DACSEL_1,              0x0054,},    
+    {VENC_VDAC_DACSEL0,          0x0001,},
+    {VENC_VDAC_DACSEL1,          0x0001,},
+    {VENC_VDAC_DACSEL2,          0x0001,},
+    {VENC_VDAC_DACSEL3,          0x0001,},
+    {VENC_VDAC_DACSEL4,          0x0001,},
+    {VENC_VDAC_DACSEL5,          0x0001,},
     {ENCP_VIDEO_EN,              1,     },
     {ENCI_VIDEO_EN,              0,     },
     {MREG_END_MARKER,            0      }
@@ -267,7 +276,7 @@ static const reg_t tvregs_480i[] = {
 };
 
 static const reg_t tvregs_480cvbs[] = {
-    {VENC_VDAC_SETTING,            0xff,  },
+     {VENC_VDAC_SETTING,            0xff,  },
 
     {HHI_VID_CLK_CNTL,           0x0,       },
     {HHI_VID_PLL_CNTL,           0x2001042d,},
@@ -282,8 +291,9 @@ static const reg_t tvregs_480cvbs[] = {
     {HHI_VID_CLK_CNTL,           0x88001,},
     {HHI_VID_CLK_CNTL,           0x80003,},
     {HHI_VIID_CLK_DIV,           0x00000101,},
-
-    {ENCI_CFILT_CTRL,              0x0810,},
+    
+    {ENCI_CFILT_CTRL,              0x12,},
+    {ENCI_CFILT_CTRL2,              0x12,},
     {VENC_DVI_SETTING,             0,     },
     {ENCI_VIDEO_MODE,              0,     },
     {ENCI_VIDEO_MODE_ADV,          0,     },
@@ -297,9 +307,10 @@ static const reg_t tvregs_480cvbs[] = {
     {ENCI_VIDEO_MODE_ADV,          0x26,  },
     {ENCI_VIDEO_SCH,               0x20,  },
     {ENCI_SYNC_MODE,               0x07,  },
-    {ENCI_YC_DELAY,                0x3f1, },
-    {ENCI_VFIFO2VD_PIXEL_START,    0xf3,  },
-    {ENCI_VFIFO2VD_PIXEL_END,      0x0693,},
+    {ENCI_MACV_N0,               0,     },
+    {ENCI_YC_DELAY,                0x353, },
+    {ENCI_VFIFO2VD_PIXEL_START,    0xe3,  },
+    {ENCI_VFIFO2VD_PIXEL_END,      0x0683,},
     {ENCI_VFIFO2VD_LINE_TOP_START, 0x12,  },
     {ENCI_VFIFO2VD_LINE_TOP_END,   0x102, },
     {ENCI_VFIFO2VD_LINE_BOT_START, 0x13,  },
@@ -309,9 +320,9 @@ static const reg_t tvregs_480cvbs[] = {
     {VENC_INTCTRL,                 0x2,   },
     {ENCI_VFIFO2VD_CTL,            0x4e01,},
     {VENC_VDAC_SETTING,            0,     },
-    {VENC_UPSAMPLE_CTRL0,          0x0000,},
-    {VENC_UPSAMPLE_CTRL1,          0x0000,},
-    {VENC_UPSAMPLE_CTRL2,          0x0000,},
+    {VENC_UPSAMPLE_CTRL0,          0x0061,},
+    {VENC_UPSAMPLE_CTRL1,          0x4061,},
+    {VENC_UPSAMPLE_CTRL2,          0x5061,},
     {VENC_VDAC_DACSEL0,            0x0000,},
     {VENC_VDAC_DACSEL1,            0x0000,},
     {VENC_VDAC_DACSEL2,            0x0000,},
@@ -346,7 +357,7 @@ static const reg_t tvregs_480p[] = {
     //{HHI_VID_CLK_DIV,            0x01000100,},
     {ENCP_VIDEO_FILT_CTRL,       0x2052,},
     {VENC_DVI_SETTING,           0x21,  },
-    {ENCP_VIDEO_MODE,            0,     },
+    {ENCP_VIDEO_MODE,            0x4000,},
     {ENCP_VIDEO_MODE_ADV,        9,     },
     {ENCP_VIDEO_YFP1_HTIME,      244,   },
     {ENCP_VIDEO_YFP2_HTIME,      1630,  },
@@ -473,10 +484,10 @@ static const reg_t tvregs_576cvbs[] = {
     {HHI_VID_CLK_CNTL,           0x80000,},
     {HHI_VID_CLK_CNTL,           0x88001,},
     {HHI_VID_CLK_CNTL,           0x80003,},
-    {HHI_VIID_CLK_DIV,           0x00000101,},  //vdac clock select
-    
-    
-    {ENCI_CFILT_CTRL,                 0x0810,    },
+    {HHI_VIID_CLK_DIV,           0x00000101,},
+
+    {ENCI_CFILT_CTRL,                 0x12,    },
+    {ENCI_CFILT_CTRL2,                 0x12,    },
     {VENC_DVI_SETTING,                0,         },
     {ENCI_VIDEO_MODE,                 0,         },
     {ENCI_VIDEO_MODE_ADV,             0,         },
@@ -490,9 +501,10 @@ static const reg_t tvregs_576cvbs[] = {
     {ENCI_VIDEO_MODE_ADV,             0x26,      },
     {ENCI_VIDEO_SCH,                  0x28,      },
     {ENCI_SYNC_MODE,                  0x07,      },
-    {ENCI_YC_DELAY,                   0x3f1,     },
-    {ENCI_VFIFO2VD_PIXEL_START,       0x010b     },
-    {ENCI_VFIFO2VD_PIXEL_END,         0x06ab     },
+    {ENCI_MACV_N0,               0,     },
+    {ENCI_YC_DELAY,                   0x353,     },
+    {ENCI_VFIFO2VD_PIXEL_START,       0x0f7     },
+    {ENCI_VFIFO2VD_PIXEL_END,         0x0697     },
     {ENCI_VFIFO2VD_LINE_TOP_START,    0x0016     },
     {ENCI_VFIFO2VD_LINE_TOP_END,      0x0136     },
     {ENCI_VFIFO2VD_LINE_BOT_START,    0x0017     },
@@ -502,9 +514,9 @@ static const reg_t tvregs_576cvbs[] = {
     {VENC_INTCTRL,                    0x2,       },
     {ENCI_VFIFO2VD_CTL,               0x4e01,    },
     {VENC_VDAC_SETTING,               0,         },
-    {VENC_UPSAMPLE_CTRL0,             0x0000,    },
-    {VENC_UPSAMPLE_CTRL1,             0x0000,    },
-    {VENC_UPSAMPLE_CTRL2,             0x1061,    },
+    {VENC_UPSAMPLE_CTRL0,             0x0061,    },
+    {VENC_UPSAMPLE_CTRL1,             0x4061,    },
+    {VENC_UPSAMPLE_CTRL2,             0x5061,    },
     {VENC_VDAC_DACSEL0,               0x0000,    },
     {VENC_VDAC_DACSEL1,               0x0000,    },
     {VENC_VDAC_DACSEL2,               0x0000,    },
@@ -517,6 +529,12 @@ static const reg_t tvregs_576cvbs[] = {
     {ENCI_DACSEL_1,                   0x11       },
     {ENCP_VIDEO_EN,                   0,         },
     {ENCI_VIDEO_EN,                   1,         },
+    {VENC_VDAC_SETTING,				  0x5		 },
+    {VENC_VDAC_DAC1_GAINCTRL,		  0x1b		 },
+    {ENCI_YC_DELAY,					  0x333		 },
+    {ENCI_VIDEO_SAT,				  0x5		 },
+    {VENC_VDAC_DAC1_FILT_CTRL0,		  0x1		 },
+    {VENC_VDAC_DAC1_FILT_CTRL1,		  0xfc48	 },
     {MREG_END_MARKER,                 0          }
 };
 
@@ -539,7 +557,7 @@ static const reg_t tvregs_576p[] = {
     {HHI_HDMI_AFC_CNTL,          0x8c0000c3,},
     {ENCP_VIDEO_FILT_CTRL,       0x52,      },
     {VENC_DVI_SETTING,           0x21,      },
-    {ENCP_VIDEO_MODE,            0,         },
+    {ENCP_VIDEO_MODE,            0x4000,    },
     {ENCP_VIDEO_MODE_ADV,        9,         },
     {ENCP_VIDEO_YFP1_HTIME,      235,       },
     {ENCP_VIDEO_YFP2_HTIME,      1674,      },
@@ -633,7 +651,7 @@ static const reg_t tvregs_1080i[] = {
     {ENCP_VIDEO_YFP2_HTIME,      4355,  },
     {VENC_VIDEO_PROG_MODE,       0x100, },
     {ENCP_VIDEO_OFLD_VOAV_OFST,  0x11   },
-    {ENCP_VIDEO_MODE,            0x1ffc,},
+    {ENCP_VIDEO_MODE,            0x5ffc,},
     {ENCP_VIDEO_MODE_ADV,        0x0019,},
     {ENCP_VIDEO_SYNC_MODE,       0x207, },
     {VENC_SYNC_ROUTE,            0,     },
@@ -719,7 +737,7 @@ static const reg_t tvregs_1080i_50hz[] = {
                                                         //bit[11:8]: Odd field VSO  offset end,
                                                         //bit[7:4]: Odd field VAVON offset begin,
                                                         //bit[3:0]: Odd field VAVON offset end,
-    {ENCP_VIDEO_MODE,            0x1ffc,},//Enable Hsync and equalization pulse switch in center
+    {ENCP_VIDEO_MODE,            0x5ffc,},//Enable Hsync and equalization pulse switch in center
     {ENCP_VIDEO_MODE_ADV,        0x0019,}, //bit6:swap PbPr; bit4:YPBPR gain as HDTV type;
                                                  //bit3:Data input from VFIFO;bit[2}0]:repreat pixel a time
     {ENCP_VIDEO_SYNC_MODE,       0x7, }, //bit[15:8] -- adjust the vsync vertical position
@@ -759,7 +777,7 @@ static const reg_t tvregs_1080p[] = {
 
     {ENCP_VIDEO_FILT_CTRL,       0x1052,},
     {VENC_DVI_SETTING,           0x0001,},
-    {ENCP_VIDEO_MODE,            0x0040,},
+    {ENCP_VIDEO_MODE,            0x4040,},
     {ENCP_VIDEO_MODE_ADV,        0x0018,},
     {ENCP_VIDEO_YFP1_HTIME,      140,   },
     {ENCP_VIDEO_YFP2_HTIME,      2060,  },
@@ -862,7 +880,7 @@ static const reg_t tvregs_1080p_50hz[] = {
     {ENCP_VIDEO_YFP1_HTIME,      271,   },
     {ENCP_VIDEO_YFP2_HTIME,      2190,  },
     {VENC_VIDEO_PROG_MODE,       0x100, },
-    {ENCP_VIDEO_MODE,            0x0040,},
+    {ENCP_VIDEO_MODE,            0x4040,},
     {ENCP_VIDEO_MODE_ADV,        0x0018,},
 
     {ENCP_VIDEO_SYNC_MODE,       0x7, }, //bit[15:8] -- adjust the vsync vertical position
@@ -890,6 +908,97 @@ static const reg_t tvregs_1080p_50hz[] = {
     {MREG_END_MARKER,            0      }
 };
 
+static const reg_t tvregs_1080p_24hz[] = {
+    {VENC_VDAC_SETTING,          0xff,  },
+    {HHI_VID_CLK_CNTL,           0x0,},
+    {HHI_VID_PLL_CNTL2,          0x814d3928},
+    {HHI_VID_PLL_CNTL3,          0x6b425012},
+    {HHI_VID_PLL_CNTL4,          0x110},
+    {HHI_VID_PLL_CNTL,           0x0001043e,},
+    {HHI_VID_DIVIDER_CNTL,       0x00010843,},
+    {HHI_VID_CLK_DIV,            0x100},
+    {HHI_VID_CLK_CNTL,           0x80000,},
+    {HHI_VID_CLK_CNTL,           0x88001,},
+    {HHI_VID_CLK_CNTL,           0x80003,},
+    {HHI_VIID_CLK_DIV,           0x00000101,},
+    {ENCP_VIDEO_FILT_CTRL,       0x1052,},
+
+    // bit 13    1          (delayed prog_vs)
+    // bit 5:4:  2          (pixel[0])
+    // bit 3:    1          invert vsync or not
+    // bit 2:    1          invert hsync or not
+    // bit1:     1          (select viu sync)
+    // bit0:     1          (progressive)
+    {VENC_DVI_SETTING,           0x000d,},
+    {ENCP_VIDEO_MAX_PXCNT,       2749,  },
+    {ENCP_VIDEO_MAX_LNCNT,       1124,  },
+    /* horizontal timing settings */
+    {ENCP_VIDEO_HSPULS_BEGIN,    44,  },//1980
+    {ENCP_VIDEO_HSPULS_END,      132,    },
+    {ENCP_VIDEO_HSPULS_SWITCH,   44,    },
+
+    //DE position in horizontal
+    {ENCP_VIDEO_HAVON_BEGIN,     271,   },
+    {ENCP_VIDEO_HAVON_END,       2190,  },
+
+    //ditital hsync positon in horizontal
+    {ENCP_VIDEO_HSO_BEGIN,       79 ,    },
+    {ENCP_VIDEO_HSO_END,         123,  },
+
+    /* vsync horizontal timing */
+    {ENCP_VIDEO_VSPULS_BEGIN,    220,   },
+    {ENCP_VIDEO_VSPULS_END,      2140,  },
+
+    /* vertical timing settings */
+    {ENCP_VIDEO_VSPULS_BLINE,    0,     },
+    {ENCP_VIDEO_VSPULS_ELINE,    4,     },//35
+    {ENCP_VIDEO_EQPULS_BLINE,    0,     },
+    {ENCP_VIDEO_EQPULS_ELINE,    4,     },//35
+    {ENCP_VIDEO_VAVON_BLINE,     41,    },
+    {ENCP_VIDEO_VAVON_ELINE,     1120,  },
+
+    //adjust the hsync & vsync start point and end point
+    {ENCP_VIDEO_VSO_BEGIN,       79,  },
+    {ENCP_VIDEO_VSO_END,         79,  },
+
+    //adjust the vsync start line and end line
+    {ENCP_VIDEO_VSO_BLINE,       0,     },
+    {ENCP_VIDEO_VSO_ELINE,       5,     },
+
+    {ENCP_VIDEO_YFP1_HTIME,      271,   },
+    {ENCP_VIDEO_YFP2_HTIME,      2190,  },
+    {VENC_VIDEO_PROG_MODE,       0x100, },
+    {ENCP_VIDEO_MODE,            0x4040,},
+    {ENCP_VIDEO_MODE_ADV,        0x0018,},
+
+    {ENCP_VIDEO_SYNC_MODE,       0x7, }, //bit[15:8] -- adjust the vsync vertical position
+
+    {ENCP_VIDEO_YC_DLY,          0,     },      //Y/Cb/Cr delay
+
+    {ENCP_VIDEO_RGB_CTRL, 2,},       // enable sync on B
+
+    {VENC_SYNC_ROUTE,            0,     },
+    {VENC_INTCTRL,               0x200, },
+    {ENCP_VFIFO2VD_CTL,               0,     },
+    {VENC_VDAC_FIFO_CTRL,        0x1000,},
+#if defined(CONFIG_MESON_POWER_PROFILE_LOW)
+    {VENC_VDAC_SETTING,          0x07,  },
+#else
+    {VENC_VDAC_SETTING,          0,     },
+#endif
+    {VPU_VIU_VENC_MUX_CTRL,      0x000a,},
+    {ENCP_DACSEL_0,              0x3102,},
+    {ENCP_DACSEL_1,              0x0054,},
+    {VENC_VDAC_DACSEL0,          0x0001,},
+    {VENC_VDAC_DACSEL1,          0x0001,},
+    {VENC_VDAC_DACSEL2,          0x0001,},
+    {VENC_VDAC_DACSEL3,          0x0001,},
+    {VENC_VDAC_DACSEL4,          0x0001,},
+    {VENC_VDAC_DACSEL5,          0x0001,},
+    {ENCI_VIDEO_EN,              0,     },
+    {ENCP_VIDEO_EN,              1,     },
+    {MREG_END_MARKER,            0      }
+};
 
 /* The sequence of register tables items must match the enum define in tvmode.h */
 static const reg_t *tvregsTab[] = {
@@ -905,6 +1014,7 @@ static const reg_t *tvregsTab[] = {
     tvregs_720p_50hz,
     tvregs_1080i_50hz,
     tvregs_1080p_50hz,
+    tvregs_1080p_24hz,
 };
 
 static const tvinfo_t tvinfoTab[] = {
@@ -919,7 +1029,8 @@ static const tvinfo_t tvinfoTab[] = {
     {.xres = 1920, .yres = 1080, .id = "1080p"},
     {.xres = 1280, .yres =  720, .id = "720p50hz"},
     {.xres = 1920, .yres = 1080, .id = "1080i50hz"},
-    {.xres = 1920, .yres = 1080, .id = "1080p50hz"}
+    {.xres = 1920, .yres = 1080, .id = "1080p50hz"},
+    {.xres = 1920, .yres = 1080, .id = "1080p24hz"},
 };
 
 static inline void setreg(const reg_t *r)

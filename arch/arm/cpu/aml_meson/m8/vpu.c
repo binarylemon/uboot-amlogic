@@ -19,7 +19,7 @@ typedef struct {
 static char * dt_addr;
 static int dts_ready = 0;
 
-#define CLK_LEVEL_DFT		4
+#define CLK_LEVEL_DFT		7
 #define CLK_LEVEL_MAX		8	//limit max clk to 364M
 static unsigned int vpu_clk_setting[][3] = {
 	//frequency		clk_mux		div
