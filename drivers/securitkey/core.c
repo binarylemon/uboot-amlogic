@@ -22,7 +22,7 @@
 #define KEYS_CLASS_NAME     "aml_keys"
 
 #define EFUSE_READ_ONLY
-static unsigned long efuse_status;
+//static unsigned long efuse_status;
 #define EFUSE_IS_OPEN           (0x01)
 
 //#define TEST_NAND_KEY_WR
@@ -41,7 +41,11 @@ static uint8_t version_dirty = 0;
 
 static aml_keys_schematic_t * key_schematic[256]={NULL};
 static aml_key_t * curkey=NULL;
-///static aml_keys_schematic_t *  cur_schematic;
+
+typedef int (*aes_algorithm_t)(void *dst,size_t * dst_len,const void *src,size_t src_len);
+static aes_algorithm_t aes_algorithm_encrypt=NULL;
+static aes_algorithm_t aes_algorithm_decrypt=NULL;
+
 int32_t aml_keys_register(int32_t version, aml_keys_schematic_t * schematic)
 {
     if (version < 1 || version > 255)
@@ -275,8 +279,12 @@ static int aml_key_hash(unsigned char *hash, const char *data, unsigned int len)
     return 0;
 }
 #else
+extern int hash_sha256(unsigned char *buf,int len,unsigned char *hash);
 static int aml_key_hash(unsigned char *hash, const char *data, unsigned int len)
 {
+	int ret;
+	ret = hash_sha256((unsigned char *)data,(int)len,hash);
+	return ret;
 }
 static uint16_t aml_key_checksum(char *data,int lenth)
 {
@@ -292,6 +300,7 @@ static uint16_t aml_key_checksum(char *data,int lenth)
 }	
 #endif
 
+#ifdef CRYPTO_DEPEND_ON_KERENL
 static struct
 {
     u8 *iv;
@@ -303,7 +312,6 @@ static struct
               "1234567890abcdef1234567890abcdef",
       .key_len = 32 };
 
-#ifdef CRYPTO_DEPEND_ON_KERENL
 static int aml_key_encrypt(void *dst, uint16_t * dst_len, const void *src,
                            uint16_t src_len)
 {
@@ -341,15 +349,14 @@ static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
     return ret;
 }
 #else
-extern int do_aes_internal(unsigned char bEncryptFlag,unsigned char * pIN, int nINLen, unsigned char *pOUT, int * pOUTLen);
+extern int aml_algorithm_aes_enc_dec(int encFlag,unsigned char *out,int *outlen,unsigned char *in,int inlen);
 
 static int aml_key_encrypt(void *dst, size_t * dst_len, const void *src,
                            size_t src_len)
 {
-	
 	int ret=0;
 	int keydatalen,buf_len;
-	char *data;
+	unsigned char *data;
 	unsigned char bEncryptFlag = 1;
 	size_t dstlen;
 	keydatalen = src_len + 4;
@@ -364,26 +371,25 @@ static int aml_key_encrypt(void *dst, size_t * dst_len, const void *src,
 	memset(data,0,buf_len);
 	memcpy(&data[0],&src_len,4);
 	memcpy(&data[4],src,src_len);
-	ret = do_aes_internal(bEncryptFlag,data, buf_len, dst,&dstlen);
+	//the aml aes is used from 2013.12.19
+	ret = aml_algorithm_aes_enc_dec(bEncryptFlag,(unsigned char *)dst,(int*)&dstlen,data,buf_len);
 	*dst_len = dstlen;
 	kfree(data);
 	return ret;
-	
 }
 static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
                            size_t src_len)
 {
-	
 	int ret=0;
 	size_t srclen = src_len;
 	size_t dstlen;
 	size_t keydatalen;
-	char *data;
+	unsigned char *data;
 	unsigned char bEncryptFlag = 0;
 	srclen = ((src_len+15)>>4)<<4;
 	if(src_len != ((src_len+15)>>4)<<4)
 	{
-		printf("hisun error!\n");
+		printf("data len is not 16 byte aligned error!\n");
 		return -ENOMEM; 
 	}
 	data = kzalloc(srclen, GFP_KERNEL);
@@ -393,14 +399,95 @@ static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
 	}
 	dstlen=srclen;
 	memset(data,0,srclen);
-	ret = do_aes_internal(bEncryptFlag,src, srclen, data,&dstlen);
+	//the aml aes is used from 2013.12.19
+	ret = aml_algorithm_aes_enc_dec(bEncryptFlag,data,(int*)&dstlen,(unsigned char *)src,srclen);
 	memcpy(&keydatalen,data,4);
 	memcpy(dst,&data[4],keydatalen);
 	*dst_len = keydatalen;
 	
 	kfree(data);
 	return ret;
-	
+}
+
+extern int aml_aes_encrypt(unsigned char *output,unsigned char *input,int size);
+extern int aml_aes_decrypt(unsigned char *output,unsigned char *input,int size);
+static int aml_keysafety_encrypt(void *dst, size_t * dst_len, const void *src,
+                           size_t src_len)
+{
+	int ret=0;
+	size_t srclen = src_len;
+	//size_t dstlen;
+	size_t keydatalen;
+	unsigned char *data;
+
+	keydatalen = src_len+4;
+	srclen = ((keydatalen+15)>>4)<<4;
+
+	data = kzalloc(srclen, GFP_KERNEL);
+	if(data == NULL){
+		printk("malloc mem fail,%s:%d\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	memset(data,0,srclen);
+	memcpy(&data[0],&src_len,4);
+	memcpy(&data[4],src,src_len);
+	ret = aml_aes_encrypt((unsigned char *)dst,data,srclen);
+	*dst_len = srclen;
+	kfree(data);
+	return ret;
+}
+static int aml_keysafety_decrypt(void *dst, size_t *dst_len, const void *src,
+                           size_t src_len)
+{
+	int ret=0;
+	size_t srclen = src_len;
+	size_t keydatalen;
+	unsigned char *data;
+
+	srclen = ((src_len+15)>>4)<<4;
+	if(src_len != ((src_len+15)>>4)<<4)
+	{
+		printk("data len is not 16 byte aligned error!\n");
+		return -ENOMEM; 
+	}
+	data = kzalloc(srclen, GFP_KERNEL);
+	if(data == NULL){
+		printk("malloc mem fail,%s:%d\n",__func__,__LINE__);
+		return -ENOMEM;
+	}
+	memset(data,0,srclen);
+	ret = aml_aes_decrypt(data,(unsigned char*)src,srclen);
+	memcpy(&keydatalen,data,4);
+	if(keydatalen <= srclen){
+		// this decrypt is ok
+		memcpy(dst,&data[4],keydatalen);
+		*dst_len = keydatalen;
+	}
+	else{
+		// this decrypt is err
+		memcpy(dst,&data[4],srclen);
+		*dst_len = srclen;
+	}
+	kfree(data);
+	return ret;
+}
+
+int register_aes_algorithm(int storage_version)
+{
+	int ret=-1;
+	if(storage_version == 1){
+		printk("%s:%d,old way\n",__func__,__LINE__);
+		aes_algorithm_encrypt = aml_key_encrypt;
+		aes_algorithm_decrypt = aml_key_decrypt;
+		ret = 0;
+	}
+	else if(storage_version == 2){
+		printk("%s:%d,new way\n",__func__,__LINE__);
+		aes_algorithm_encrypt = aml_keysafety_encrypt;
+		aes_algorithm_decrypt = aml_keysafety_decrypt;
+		ret = 0;
+	}
+	return ret;
 }
 #endif
 /**
@@ -416,10 +503,6 @@ static int aml_key_decrypt(void *dst, size_t *dst_len, const void *src,
 static int debug_mode = 1;//1:debug,0:normal
 static int postpone_write = 0; //1:postpone, 0:normal once write
 static int rewrite_nandkey=1;//1:disable,0:enable
-
-#ifndef CRYPTO_DEPEND_ON_KERENL
-//#define EINVAL    5
-#endif
 
 static ssize_t mode_show(struct device *dev, struct device_attribute *attr,
                          char *buf)
@@ -545,11 +628,43 @@ static int aml_key_read_hash(aml_key_t * key, char * hash)
     return 0;
 }
 #else
-static int aml_key_write_hash(aml_key_t * key, char * hash)
+static int aml_key_write_hash(aml_key_t * key, uint8_t * hash)
 {
+	struct aml_key_hash_s key_hash;
+	int slot= 0;
+	key_hash.size = key->valid_size;
+
+	memcpy(key_hash.hash, hash, sizeof(key_hash.hash));
+	if(key_schematic[keys_version]->hash.write){
+	    key_schematic[keys_version]->hash.write(key,slot,(char*) &key_hash);
+	}
+	return 0;
 }
-static int aml_key_read_hash(aml_key_t * key, char * hash)
+static int aml_key_read_hash(aml_key_t * key, uint8_t * hash)
 {
+    int i;
+    struct aml_key_hash_s key_hash;
+    int slot=0;
+
+	if(key_schematic[keys_version]->hash.read){
+		key_schematic[keys_version]->hash.read(key,slot,(char*) &key_hash);
+	}
+	if (key_hash.size != key->valid_size && key_hash.size != 0){
+		printk("%s:%d,key_hash.size != key->valid_size",__func__,__LINE__);
+		return -EINVAL;
+	}
+	if (key_hash.size == 0)
+	{
+		for (i = 0; i < 32; i++){
+			if (key_hash.hash[i]){
+				printk("key_hash.hash[i]!=0");
+				return -EIO;
+			}
+		}
+		return 1;
+    }
+	memcpy(hash, key_hash.hash, sizeof(key_hash.hash));
+	return 0;
 }
 #endif
 
@@ -565,6 +680,7 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
     size_t size;
     size_t out_size;
     char * data=NULL,* dec_data=NULL;
+
     i = CONFIG_MAX_STORAGE_KEYSIZE;
     i = ((i+15)>>4)<<4;
 
@@ -581,13 +697,20 @@ static ssize_t key_core_show(struct device *dev, struct device_attribute *attr,
     memset(data,0,i);
     memset(dec_data,0,i);
 
-    if(key->read(key, data))
+    if(key->read(key, (uint8_t *)data))
     {
         printk("can't get valid key,%s,%d\n",__func__,__LINE__);
         aml_key_show_error_return(-EINVAL, core_show_return);
     }
-    if (aml_key_decrypt(dec_data, &size,data, key->storage_size))
-        aml_key_show_error_return(-EINVAL, core_show_return);
+
+	if(aes_algorithm_decrypt){
+		if (aes_algorithm_decrypt(dec_data, &size,data, key->storage_size))
+			aml_key_show_error_return(-EINVAL, core_show_return);
+	}
+	else{
+		aml_key_show_error_return(-EINVAL, core_show_return);
+	}
+
 	readbuff_validlen = ((key->valid_size+1)>>1);
 	checksum = aml_key_checksum( dec_data,readbuff_validlen);
 	if(checksum != key->checksum){
@@ -654,7 +777,7 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     int i, j, err;
     char * data = NULL;
     char * enc_data = NULL;
-    char * temp = NULL;
+    //char * temp = NULL;
     size_t in_key_len=0;
     uint16_t checksum=0;
     size_t readbuff_validlen;
@@ -697,7 +820,7 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
         {
             switch (buf[j])
             {
-                case '0' ... '9':
+                case '0' ... '9': 
                     //data[i] |= (buf[j] - '0') << (j * 4);
                     data[i] |= (buf[j] - '0') << ((j?0:1) * 4);
                     in_key_len++;
@@ -758,8 +881,14 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     checksum = aml_key_checksum( data,readbuff_validlen);
     key->checksum = checksum;
 
-    if(aml_key_encrypt(enc_data, &key->storage_size, data, readbuff_validlen))
-        aml_key_store_error_return(-EINVAL, store_error_return);
+	if(aes_algorithm_encrypt){
+		if(aes_algorithm_encrypt(enc_data, &key->storage_size, data, readbuff_validlen))
+			aml_key_store_error_return(-EINVAL, store_error_return);
+	}
+	else{
+		aml_key_store_error_return(-EINVAL, store_error_return);
+	}
+
 #ifdef TEST_NAND_KEY_WR
 	printk("key:valid_size:%d,storage_size:%d,%s\n",key->valid_size,key->storage_size,__func__);
 #endif
@@ -778,7 +907,7 @@ static ssize_t aml_key_store(aml_key_t * key, const char *buf, size_t count)
     }
 
 #endif
-    key->write(key, enc_data);
+    key->write(key, (uint8_t *)enc_data);
     err = count;
 
 	if(!postpone_write){
@@ -1098,6 +1227,7 @@ static ssize_t key_list_show(struct device *dev, struct device_attribute *attr,
 static ssize_t key_list_store(struct device *dev, struct device_attribute *attr,
                              const char *buf, size_t count)
 {
+	return -1;
 }
 
 static ssize_t key_name_show(struct device *dev, struct device_attribute *attr,
@@ -1228,6 +1358,7 @@ static ssize_t key_name_store(struct device *dev, struct device_attribute *attr,
 static ssize_t key_write_show(struct device *dev, struct device_attribute *attr,
                             char *buf)
 {
+	return -1;
 }
 static ssize_t key_write_store(struct device *dev, struct device_attribute *attr,
                              const char *buf, size_t count)
@@ -1256,6 +1387,7 @@ static ssize_t key_read_show(struct device *dev, struct device_attribute *attr,
 static ssize_t key_read_store(struct device *dev, struct device_attribute *attr,
                              const char *buf, size_t count)
 {
+	return -1;
 }
 
 #ifdef CRYPTO_DEPEND_ON_KERENL
@@ -1663,7 +1795,7 @@ int uboot_storer_read(char *buf,int len)
 	}
 
 	if (key_schematic[keys_version]->read(key_schematic[keys_version]) < 0){
-		printk("%s:%d securitykey read storer error\n");
+		printk("%s:%d securitykey read storer error\n",__func__,__LINE__);
 		return ret;
 	}
 
@@ -1677,7 +1809,7 @@ int uboot_storer_write(char *buf,int len)
 		return ret;
 	}
 	if (key_schematic[keys_version]->flush(key_schematic[keys_version]) < 0){
-		printk("%s:%d securitykey write storer error\n");
+		printk("%s:%d securitykey write storer error\n",__func__,__LINE__);
         return -EINVAL;
 	}
 	return 0;

@@ -64,7 +64,14 @@ struct v3_key_storage_head{
 #define KEY_HEAD_MARK	"keyexist"
 struct v3_key_storage_head storage_head={
 	.mark=KEY_HEAD_MARK,
+#ifdef CONFIG_M8
+	.version = 2,   /* version 1: key was encrypted with aml_key_encrypt(aes), the aes is aml_aes algorithm
+					 * version 2: key is encrypted with aml_keysafety_encrypt(aes), the aes is polarssl algorithm
+					 * above two aes way is different, 
+					 */
+#else
 	.version = 1,
+#endif
 };
 
 #pragma pack()
@@ -364,24 +371,9 @@ static int32_t hash_write(aml_key_t * key,uint32_t id, char * buf)
 		}
 	}
 	if(key_storage == NULL){
-		for(i=0;i<Keys_V4_MAX_COUNT;i++){
-			if(storage_v4[i].name[0] == 0){
-				key_storage = &storage_v4[i];
-				break;
-			}
-		}
-		if(key_storage == NULL){
-			printk("key count too much,%s:%d\n",__func__,__LINE__);
-			return -EINVAL;
-		}
-
-		printk("hash write ok,%s:%d\n",__func__,__LINE__);
-		strcpy(key_storage->name,key->name);
-		memcpy(key_storage->hash, buf, 34);
-		return 0;
+		printk("don't have valid key name,%s:%d\n",__func__,__LINE__);
+		return -EINVAL;
 	}
-	printk("hash write ok,%s:%d\n",__func__,__LINE__);
-	strcpy(key_storage->name,key->name);
 	memcpy(key_storage->hash, buf, 34);
 	return 0;
 }
@@ -658,6 +650,10 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
         }
     }
 #endif
+	if(register_aes_algorithm(storage_head.version)<0){
+		printk("%s:%d, storage_head.version:%d register key encrypt algorithm fail\n",__func__,__LINE__,storage_head.version);
+		return -EINVAL;
+	}
     return 0;
 }
 static int32_t version3_inst(aml_keys_schematic_t * schematic, aml_install_key_t * key)
