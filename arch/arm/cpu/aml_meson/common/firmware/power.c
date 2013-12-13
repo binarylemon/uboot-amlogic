@@ -151,6 +151,7 @@ int rn5t618_set_dcdc_voltage(int dcdc, int voltage)
     serial_puts("\n");
 #endif
     hard_i2c_write8(DEVID, addr, idx_to);
+    __udelay(5 * 1000);
 }
 
 #define LDO_RTC1        10 
@@ -197,6 +198,7 @@ int rn5t618_set_ldo_voltage(int ldo, int voltage)
     serial_puts("\n");
 #endif
     hard_i2c_write8(DEVID, addr, idx_to);
+    __udelay(5 * 100);
 }
 
 void rn5t618_power_init()
@@ -206,18 +208,14 @@ void rn5t618_power_init()
     hard_i2c_read8(DEVID, 0x0b);                                // clear watch dog 
     rn5t618_set_bits(0xB3, 0x40, 0x40);
     rn5t618_set_bits(0xB8, 0x02, 0x1f);                         // set charge current to 300mA
-    __udelay(100*1000);
 #ifdef CONFIG_VCCK_VOLTAGE
     rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
-    __udelay(2000);
 #endif
 #ifdef CONFIG_VDDAO_VOLTAGE
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);          // set VDDAO voltage
-    __udelay(2000);
 #endif
 #ifdef CONFIG_DDR_VOLTAGE
     rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);            // set DDR voltage
-    __udelay(100 * 1000);                                       // delay a short time
 #endif
     val = hard_i2c_read8(DEVID, 0x30);
     val |= 0x01;
