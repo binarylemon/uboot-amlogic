@@ -51,7 +51,7 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 // lcd config 
 //*********************************************//
 //**** lcd typical timing, select by include header file ***//
-#include <amlogic/panel/mipi/B080XAN01.h>
+#include <amlogic/panel/B080XAN01.h>
 
 #define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 
@@ -105,11 +105,9 @@ static unsigned short gamma_table[256] = {
 
 //**** lcd interface control configs ***//
 static DSI_Config_t lcd_mipi_config = {
-        .dsi_clk_min = 250,
-        .dsi_clk_max = 280,
-        .dsi_clk_div = 2,
+        .dsi_clk_min = 500,
+        .dsi_clk_max = 600,
         .lane_num = 4,
-        .dpi_color_type = 4,
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -133,6 +131,9 @@ static TTL_Config_t lcd_ttl_config = {
 	.bit_swap = 0,	/** 0=normal, 1=swap */
 };
 
+static DPHY_Config_t lcd_dphy_config = {
+	.phy_ctrl = 0xaf40,
+};
 //**********************************************//
 
 //**********************************************//
@@ -164,6 +165,18 @@ static Lcd_Power_Config_t lcd_power_on_config[] = {
 		.delay = 14,
 	},
 	{//step 3
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_0, 
+		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.delay = 5,
+	},
+	{//step 4
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_0, 
+		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.delay = 70,
+	},
+	{//step 5
 		.type = LCD_POWER_TYPE_SIGNAL, 
 		.gpio = 0, 
 		.value = 0,
@@ -184,11 +197,17 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
 		.delay = 100,
 	},
-	{//step 3 
+	{//step 3
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_0, 
+		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.delay = 0,
+	},
+	{//step 4 
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
 		.value = LCD_POWER_GPIO_INPUT,
-		.delay = 20,
+		.delay = 100,
 	},
 };
 //*********************************************//
@@ -267,6 +286,7 @@ Lcd_Config_t lcd_config_dft = {
 		.lvds_config = &lcd_lvds_config,
 		.edp_config = &lcd_edp_config,
 		.ttl_config = &lcd_ttl_config,
+		.dphy_config = &lcd_dphy_config,
 	},
 };
 

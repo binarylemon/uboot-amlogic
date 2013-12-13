@@ -1005,9 +1005,50 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 	}
 }
 
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
+void set_pll_mipi(Lcd_Config_t *pConf)
+{
+        int pll_lock;
+        int wait_loop = 100;
+
+        DSI_Config_t *cfg = pConf->lcd_control.mipi_config;
+
+	// Configure VS/HS/DE polarity before mipi_dsi_host.pixclk starts,
+	WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4))   |
+                          (1  << 4)               |
+                          (1  << 5)               |
+                          (0  << 6));
+
+        unsigned pll_reg, div_reg, clk_reg, xd;
+        int vclk_sel;
+        int lcd_type, ss_level;
+
+        pll_reg = pConf->lcd_timing.pll_ctrl;
+        div_reg = pConf->lcd_timing.div_ctrl;
+        clk_reg = pConf->lcd_timing.clk_ctrl;
+        ss_level = (((clk_reg >> CLK_CTRL_SS) & 0xf) > 0 ? 1 : 0);
+        vclk_sel = (clk_reg >> CLK_CTRL_VCLK_SEL) & 0x1;
+        xd = (clk_reg >> CLK_CTRL_XD) & 0xf;
+
+        lcd_type = pConf->lcd_basic.lcd_type;
+
+        DBG_PRINT("ss_level=%u(%s), pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, lcd_ss_level_table[ss_level], pll_reg, div_reg, xd);
+        vclk_set_lcd(lcd_type, vclk_sel, pll_reg, div_reg, clk_reg);
+        set_lcd_spread_spectrum(ss_level);
+
+        //startup_mipi_dsi_host()
+        WRITE_CBUS_REG( HHI_DSI_LVDS_EDP_CNTL0, 0x0);                                          // Select DSI as the output for u_dsi_lvds_edp_top
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) | 0xf) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_SW_RESET, (READ_LCD_REG(MIPI_DSI_TOP_SW_RESET) & 0xfffffff0) );     // Release mipi_dsi_host's reset
+        WRITE_LCD_REG( MIPI_DSI_TOP_CLK_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CLK_CNTL) | 0x3) );            // Enable dwc mipi_dsi_host's clock
+
+}
+#endif
 static void set_venc_lcd(Lcd_Config_t *pConf)
 {
 	DBG_PRINT("%s\n",__FUNCTION__);
+	int lcd_type;
+	lcd_type = pConf->lcd_basic.lcd_type; 
 	
 	WRITE_LCD_REG(ENCL_VIDEO_EN, 0);
 
@@ -1826,8 +1867,22 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 
 static void lcd_control_config(Lcd_Config_t *pConf)
 {
+			DSI_Config_t *cfg = pDev->pConf->lcd_control.mipi_config;
 	switch (pConf->lcd_basic.lcd_type) {
 		case LCD_DIGITAL_MIPI:
+			cfg->trans_mode = 1;
+		  cfg->venc_fmt = TV_ENC_LCD768x1024p;
+		  cfg->lane_num=cfg->lane_num-1;
+		  if(pDev->pConf->lcd_basic.lcd_bits==6){
+											cfg->dpi_color_type  = 4;
+											cfg->venc_color_type = 2;
+		  }else{
+											cfg->dpi_color_type  = 5;
+											cfg->venc_color_type = 1;
+		  }
+		  cfg->dpi_chroma_subsamp = 0;
+		  DBG_PRINT("dpi_color_type= %d, dpi_chroma_subsamp=%d\n",  cfg->dpi_color_type, cfg->dpi_chroma_subsamp );
+		  DBG_PRINT("trans mode= %u\n",  cfg->trans_mode);
 			break;
 		case LCD_DIGITAL_EDP:
 			select_edp_link_config(pConf);
@@ -1927,8 +1982,8 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 static void print_lcd_clock(void)
 {
 	DBG_PRINT("vid2 pll clk = %d\n", clk_util_clk_msr(62));
-	DBG_PRINT("cts encl clk = %d\n", clk_util_clk_msr(9));
 	DBG_PRINT("lvds fifo clk = %d\n", clk_util_clk_msr(24));
+	DBG_PRINT("cts encl clk = %d\n", clk_util_clk_msr(9));
 }
 
 static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
@@ -2318,37 +2373,12 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		propdata = fdt_getprop(dt_addr, nodeoffset, "lane_num", NULL);
 		if(propdata == NULL){
 			printf("faild to get lane num\n");
-			cfg->lane_num = 3;
+			cfg->lane_num = 4;
 		} else {
-			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata)) - 1;
+			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata));
 		}
-		DBG_PRINT("lane num= %d\n",  cfg->lane_num+1);
+		DBG_PRINT("lane num= %d\n",  cfg->lane_num);
 
-		// cfg->venc_color_type = 2;
-		cfg->trans_mode = 1;
-		cfg->venc_fmt = TV_ENC_LCD768x1024p;
-		if(pDev->pConf->lcd_basic.lcd_bits==6){
-											cfg->dpi_color_type  = 4;
-											cfg->venc_color_type = 2;
-		}else{
-											cfg->dpi_color_type  = 5;
-											cfg->venc_color_type = 1;
-		}
-		cfg->dpi_chroma_subsamp = 0;
-/*
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dpi_color_type", NULL);
-		if(propdata == NULL){
-			printf("faild to get dpi color type\n");
-			cfg->dpi_color_type  = 4;
-			cfg->dpi_chroma_subsamp = 0;
-		} else {
-			cfg->dpi_color_type = (unsigned int)(be32_to_cpup((u32*)propdata));
-			cfg->dpi_chroma_subsamp = (unsigned int)(be32_to_cpup((((u32*)propdata)+1)));
-		}
-*/
-		DBG_PRINT("dpi_color_type= %d, dpi_chroma_subsamp=%d\n",  cfg->dpi_color_type, cfg->dpi_chroma_subsamp );
-
-		DBG_PRINT("trans mode= %u\n",  cfg->trans_mode);
 	}
 
 	return ret;

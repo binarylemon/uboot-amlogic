@@ -662,7 +662,7 @@ void config_video_para(tv_enc_lcd_type_t output_type,
         hbp   = (timing->hsync_bp*factor100 + factor100 - 1) / 10000;
         vsa   = timing->vsync_width;
         vbp   = timing->vsync_bp;
-        vfp   = timing->video_on_line - timing->vsync_width - timing->vsync_bp;
+        vfp   = basic->v_period  - timing->vsync_bp-basic->v_active;
         vact  = basic->v_active;
 
         DPRINT(" ============= VIDEO TIMING SETTING =============\n");
