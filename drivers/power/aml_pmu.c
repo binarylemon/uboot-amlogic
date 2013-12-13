@@ -6,8 +6,10 @@
 #include <aml_i2c.h>
 #include <amlogic/aml_lcd.h>
 #include <amlogic/aml_pmu.h>
+#include <amlogic/aml_pmu_common.h>
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+int aml_battery_calibrate(void);
 #include <amlogic/battery_parameter.h>
 #endif
 
@@ -361,6 +363,10 @@ int aml_pmu_power_off(void)
         aml_pmu_set_bits(0x004a, 0x00, 0x08);    
     }
     aml_pmu_write(0x0081, buf);
+    while (1) {
+        printf("power off error\n");
+        udelay(1000 * 1000);
+    }
 }
 
 int aml_pmu_get_charge_status(void)
@@ -398,16 +404,15 @@ int aml_pmu_set_usb_curr_limit(int curr)
         val |= 0x20;
         break;
     case 0:
+    case -1:
         val |= 0x30;
         break;
     default:
         printf("[AML_PMU]%s, invaldi current:%d", __func__, curr);
         return -1;
     }
-    //return aml_pmu_set_bits(0x002c, val, 0x30);
     ret = aml_pmu_set_bits(0x002c, val, 0x30);
     aml_pmu_read(0x002c, &val);
-    //CHG_IBUS_CTRL_LV, 0x002c
     printf("[AML_PMU]%s,CHG_IBUS_CTRL_LV:0x%x\n", __func__, val);
     return ret;
 }
@@ -549,6 +554,7 @@ int aml_pmu_set_gpio(int pin, int val)
         printf("ERROR, invalid input value, pin = %d, val= %d\n", pin, val);
         return -1;
     }
+    printf("%s, gpio:%d, value:%d\n", __func__, pin, val);
 #if 0
     ret = aml_pmu_read(0x00C3, &data);
     if (ret) {
@@ -844,15 +850,6 @@ void check_pmu_version(void)
     }
 }
 
-void aml_pmu_set_long_press(void)
-{
-    uint16_t val;
-    aml_pmu_read16(0x0090, &val);
-    val &= ~0x7f;
-    val |= 0x64;                                        // set power key long press to 10s
-    aml_pmu_write16(0x0090, val);
-}
-
 void dump_pmu_register(void)
 {
     uint8_t val[16];
@@ -883,11 +880,9 @@ int aml_pmu_init(void)
 #endif
     check_sar_channel();
     set_power_down_slot();                      // set power down sequence, for test
-    aml_pmu_set_long_press();
     aml_pmu_set_usb_curr_limit(500);
 
     aml_pmu_write(0x00f4, 0x00);                // according David Wang, for charge cannot stop
-    aml_pmu_set_bits(0x0029, 0x03, 0x07);       // target charge voltage = 4.2V
 
     aml_pmu_read(0x00e1, &chg_gat_bat_lv);
     aml_pmu_read(0x002c, &val);
@@ -995,6 +990,150 @@ int aml_pmu_init(void)
 
     dump_pmu_register();
     return 1;
+}
+
+static int aml1212_reads(int addr, unsigned char *buf, int count)
+{
+    return aml_pmu_reads(addr, count, buf);    
+}
+
+static int aml1212_writes(int addr, unsigned char *buf, int count)
+{
+    return aml_pmu_writes(addr, count, buf);    
+}
+
+static int aml_pmu_set_charging_current(int current)
+{
+    int val;
+
+    if (current > 2000 || current < 0) {
+        printf("%s, wrong value of charge current:%d\n", __func__, current);
+    }
+    if (current == 0) {
+        return aml_pmu_set_charger(0);
+    }
+    if (current > 100) {
+        current = current / 1000;    
+    } else {
+        current = (current * board_battery_para.pmu_battery_cap) / 100 + 100;    
+    }
+    if (current <= 2000) {
+        printf("%s, set charge current to 1500mA\n", __func__);
+        return aml_pmu_set_bits(0x002d, 0x00, 0x20);    
+    } else {
+        printf("%s, set charge current to 2000mA\n", __func__);
+        return aml_pmu_set_bits(0x002d, 0x20, 0x20);    
+    }
+}
+
+int aml_pmu_set_full_charge_voltage(int voltage)
+{
+    int val;
+    switch (voltage) {
+    case 4050000: val = 0x00; break;    
+    case 4100000: val = 0x01; break;    
+    case 4150000: val = 0x02; break;    
+    case 4200000: val = 0x03; break;    
+    case 4250000: val = 0x04; break;    
+    case 4300000: val = 0x05; break;    
+    case 4350000: val = 0x06; break;    
+    case 4400000: val = 0x07; break;    
+    default :
+         printf("%s, wrong charge target voltage:%d\n", __func__, voltage);    
+         return -1;
+    }
+    return aml_pmu_set_bits(0x0029, val, 0x07);
+}
+
+int aml_pmu_set_charge_end_rate(int rate)
+{
+    int val;
+    switch (rate) {
+    case 10: val = 0x00; break;
+    case 20: val = 0x08; break;
+    default:
+         printf("%s, wrong charge end rate:%d\n", __func__, rate);    
+         return -1;
+    }
+    return aml_pmu_set_bits(0x002d, val, 0x08);
+}
+
+int aml_pmu_set_trickle_time(int time)
+{
+    int val;
+    switch (time) {
+    case 30: val = 0x01; break;
+    case 50: val = 0x02; break;
+    case 80: val = 0x03; break;
+    default:
+         printf("%s, wrong trickle charge time:%d\n", __func__, time);    
+         return -1;
+    }
+    return aml_pmu_set_bits(0x002c, val, 0x03);
+}
+
+int aml_pmu_set_rapid_time(int time)
+{
+    int val;
+    switch (time) {
+    case 360: val = 0x40; break;
+    case 540: val = 0x80; break;
+    case 720: val = 0xc0; break;
+    default:
+         printf("%s, wrong trickle charge time:%d\n", __func__, time);    
+         return -1;
+    }
+    return aml_pmu_set_bits(0x002c, val, 0xc0);
+}
+
+int aml_pmu_set_long_press_time(int time)
+{
+    int val;
+
+    aml_pmu_read16(0x0090, &val);
+    val &= ~0x7f;
+    val |= ((time / 100) - 1);
+    return aml_pmu_write16(0x0090, val);
+}
+
+int aml_pmu_inti_para(struct battery_parameter *battery)
+{
+    if (battery) {
+        aml_pmu_set_full_charge_voltage(battery->pmu_init_chgvol);
+        aml_pmu_set_charge_end_rate    (battery->pmu_init_chgend_rate);
+        aml_pmu_set_trickle_time       (battery->pmu_init_chg_pretime);
+        aml_pmu_set_rapid_time         (battery->pmu_init_chg_csttime);
+        aml_pmu_set_charger            (battery->pmu_init_chg_enabled);
+        aml_pmu_set_long_press_time    (battery->pmu_pekoff_time);
+        return 0;
+    } else {
+        return -1;    
+    }    
+}
+
+struct aml_pmu_driver g_aml_pmu_driver = {
+    .pmu_init                    = aml_pmu_init, 
+    .pmu_get_battery_capacity    = aml_pmu_get_charging_percent,
+    .pmu_get_extern_power_status = aml_pmu_is_ac_online,
+    .pmu_set_gpio                = aml_pmu_set_gpio,
+    .pmu_get_gpio                = aml_pmu_get_gpio,
+    .pmu_reg_read                = aml_pmu_read,
+    .pmu_reg_write               = aml_pmu_write,
+    .pmu_reg_reads               = aml1212_reads,
+    .pmu_reg_writes              = aml1212_writes,
+    .pmu_set_bits                = aml_pmu_set_bits,
+    .pmu_set_usb_current_limit   = aml_pmu_set_usb_curr_limit,
+    .pmu_set_charge_current      = aml_pmu_set_charging_current,
+    .pmu_power_off               = aml_pmu_power_off,
+    .pmu_init_para               = aml_pmu_inti_para,
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+    .pmu_do_battery_calibrate    = aml_battery_calibrate,
+#endif
+};
+
+struct aml_pmu_driver* aml_pmu_get_driver(void)
+{
+    return &g_aml_pmu_driver;
 }
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST

@@ -92,6 +92,7 @@ int axp_gpio_set_value(int gpio, int value)
     /*
      * ignore preve io state, set gpio to what caller want
      */
+    printf("%s, gpio:%d, value:%d\n", __func__, gpio, value);
     if(value){
         switch (gpio) {
         case 0: return axp_update(AXP20_GPIO0_CFG, 0x01, 0x07);

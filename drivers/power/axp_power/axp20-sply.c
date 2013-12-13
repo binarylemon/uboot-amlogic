@@ -3,8 +3,11 @@
 #include "axp-sply.h"
 #include <asm/setup.h>
 
+#include <amlogic/aml_pmu_common.h>
+
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
 #include <amlogic/battery_parameter.h>
+int axp_battery_calibrate(void);
 #endif
 
 static int axp_debug = 0;
@@ -50,45 +53,27 @@ static inline int axp_ibat_to_mA(uint16_t reg)
 	return (reg) * 500 / 1000;
 }
 
-int axp_charger_is_ac_online(void)
+int axp202_charger_online(void)
 {
 	uint8_t val;
+
 	axp_read(AXP20_CHARGE_STATUS, &val);
-	if(val & ((1<<7) | (1<<5)))
-	{
+	if (val & ((1<<7) | (1<<5))) {
 		return 1;
-	}
-	else
-	{
+	} else {
 		return 0;
 	}
 }
 
+unsigned short status_reg;
 int axp_charger_get_charging_status(void)
 {
-	uint8_t val;
-	axp_read(POWER20_MODE_CHGSTATUS, &val);
-	if(val & (1<<6))
-	{
+	axp_reads(0x00, 2, &status_reg);
+	if (status_reg & (1 << 2)) {
 		return 1;
-	}
-	else
-	{
+	} else {
 		return 0;
 	}
-}
-
-static int axp_get_basecap()
-{
-	uint8_t val;
-
-	axp_read(POWER20_DATA_BUFFER4, &val);
-	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
-
-	if((val & 0x80) >> 7)
-		return (int) (0 - (val & 0x7F));
-	else
-		return (int) (val & 0x7F);
 }
 
 static void axp_set_basecap(int base_cap)
@@ -115,6 +100,7 @@ static int axp_get_ocv()
 
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+static int avg_voltage = 0, avg_current = 0;
 static int axp_calculate_ocv(int charging, int rdc)
 {
     struct axp_adc_res axp_adc;
@@ -129,6 +115,8 @@ static int axp_calculate_ocv(int charging, int rdc)
     } else {
         ocv = vbat + (ibat * rdc) / 1000;
     }
+    avg_voltage += vbat;
+    avg_current += ibat;
     return ocv;
 }
 #endif
@@ -138,7 +126,6 @@ static int axp_get_coulomb(void)
 	uint8_t  temp[8];
 	int64_t  rValue1,rValue2,rValue;
 	int Cur_CoulombCounter_tmp,m;
-
 
 	axp_reads(POWER20_BAT_CHGCOULOMB3,8, temp);
 	rValue1 = ((temp[0] << 24) + (temp[1] << 16) + (temp[2] << 8) + temp[3]);
@@ -159,179 +146,10 @@ static int axp_get_coulomb(void)
 	return Cur_CoulombCounter_tmp;	//unit mAh
 }
 
-
-
-//add OCV Measurement by wch
-#if defined(CONFIG_AXP_USE_OCV)
-#define AXP_CAP_REG 	0xB9
-#define AXP_CAP_NUM	 20
-static signed char get_ocv_batteryCap(int init_yes)
+int axp202_get_charging_percent(void)
 {
-	int battery_ocv, charging_status, is_ac_online;
-  	unsigned int    i, capTotal=0;
-  	unsigned char capValue, capTmp;
-  	static int axp_cap_lastValue=0, cnt=1;
-	static unsigned char cap_buffer[AXP_CAP_NUM], cap_index=0;
-
-  	//初始化求的第一次的电量值
-	if(init_yes)
-	{
-		if(init_yes==2)  
-			cnt = 1;
-		if(cnt)
-		{
-		 	memset(cap_buffer, 0, AXP_CAP_NUM);
-			axp_read( AXP_CAP_REG, &capValue);
-			capTmp = capValue;
-			while(1)
-			{
-				mdelay(5);
-				axp_read(AXP_CAP_REG, &capValue);
-//				printf("\n###capTmp=%d,capValue=%d\n",capTmp,capValue);
-				if(ABS(capTmp-capValue) > 5)
-					capTmp = capValue;
-				else
-				{
-					capValue = (capTmp+capValue) /2;
-					break;
-				}
-			}
-			memset(cap_buffer, capValue, AXP_CAP_NUM);
-			capTotal	= AXP_CAP_NUM*capValue;
-			capValue = capTotal /AXP_CAP_NUM;
-			if(!(capValue & (1<<7)))					//OCV Measurement normal work
-			{
-				capValue &= 0x7f;
-				if(capValue >= 100)  
-					capValue = 100;
-				axp_cap_lastValue = capValue;
-			}
-			else										//OCV Measurement not normal work
-			{ 
-				printf("OCV Measurement not normal work.\n");
-				cnt = 0;
-				cap_index = 0;
-				capTotal   = 0;	
-				return -1;
-			}
-			cnt = 0;
-			cap_index = 0;
-			capTotal   = 0;
-			printf("########################################:%d,%d\n",axp_cap_lastValue, capValue);
-		}	
-	}
-
-
-	//求电量平均值
-	axp_read( AXP_CAP_REG, &capValue);
-	capTmp = capValue;
-	while(1)
-	{
-		mdelay(100);
-		axp_read(AXP_CAP_REG, &capValue);
-//		printf("\n####capTmp=%d,capValue=%d\n",capTmp,capValue);
-		if(ABS(capTmp-capValue) > 5)
-			capTmp = capValue;
-		else
-		{
-			capValue = (capTmp+capValue) /2;
-			break;
-		}
-	}
-	
-	cap_buffer[cap_index] = capValue;
-	for(i=0; i<AXP_CAP_NUM; i++)
-		capTotal  += cap_buffer[i];
-	capValue = capTotal /AXP_CAP_NUM;
-	cap_index ++;
-	if(cap_index >= AXP_CAP_NUM)
-		cap_index = 0;
-
-
-	//状态
-	battery_ocv      = axp_get_ocv();
-	charging_status = axp_charger_get_charging_status();
-	is_ac_online      = axp_charger_is_ac_online();
-  	
-
-	//拔插电源处理
-	if(is_ac_online /*charger->ac_valid*/)				//AC online
-	{
-		printf("\nAC online, actual cap percent: %d%\n",capValue);
-		if(!(capValue & (1<<7)))						//OCV Measurement normal work
-		{
-			capValue &= 0x7f;
-			if(capValue >= 100)  
-				capValue = 100;
-				
-			if(capValue < axp_cap_lastValue)
-				capValue = axp_cap_lastValue;
-			else
-				axp_cap_lastValue = capValue;	
-
-		}
-		else											//OCV Measurement not normal work
-		{ 
-			printf("OCV Measurement not normal work.\n");
-			return -1;
-		}
-				
-	}
-	else												//AC not online
-	{
-		printf("\nAC not online, actual cap percent: %d%\n",capValue);
-		if(!(capValue & (1<<7)))						//OCV Measurement normal work
-		{
-			capValue &= 0x7f;
-			if(capValue >= 100)  
-				capValue = 100;
-				
-			if(capValue > axp_cap_lastValue)
-				capValue = axp_cap_lastValue;
-			else
-				axp_cap_lastValue = capValue;
-		}
-		else											//OCV Measurement not normal work
-		{ 
-			printf("OCV Measurement not normal work.\n");
-			return -1;
-		}
-	}
-
-
-	//判断
-	if((battery_ocv >= 4090) /*&& (capValue < 100)*/ && (charging_status == 0) && is_ac_online)
-	{
-		capValue = 100;
-		axp_cap_lastValue = capValue;
-	}
-
-	if((capValue >= 100) && (charging_status==1))
-	{
-		capValue = 99;
-		axp_cap_lastValue = capValue;
-	}		
-
-	printf("battery_ocv=%d,charging_status=%d,is_ac_online=%d\n",battery_ocv,charging_status,is_ac_online);	
-	printf("OCV Measurement normal work,percent: %d%\n\n",capValue);
-	
-	return capValue;
-	
-}
-#endif
-
-
-
-
-int axp_charger_get_charging_percent()
-{
-
-	int rdc = 0,Cur_CoulombCounter = 0,base_cap = 0,bat_cap = 0, rest_vol,
-		battery_ocv, charging_status, is_ac_online, icharging;
 	uint8_t val;
 	struct axp_adc_res axp_adc;
-
-#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
     extern int config_battery_rdc;
     extern struct battery_curve config_battery_curve[];
     int i;
@@ -339,6 +157,7 @@ int axp_charger_get_charging_percent()
     int ocv_diff, percent_diff, ocv_diff2;
     int charge_status = axp_charger_get_charging_status();
     int percent1, percent2;
+    int rest_vol;
     static int ocv_full  = 0;
     static int ocv_empty = 0;
     static int battery_rdc;
@@ -380,16 +199,24 @@ int axp_charger_get_charging_percent()
             }
         }
     }
+    avg_voltage = 0;
+    avg_current = 0;
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += axp_calculate_ocv(charge_status, battery_rdc);
         udelay(10000); 
     }
     ocv = ocv / 8;
-    printf("[AXP] ocv is %4d, ", ocv);
+    avg_voltage /= 8;
+    avg_current /= 8;
+    printf("charge status:%04x, voltage:%4d, current:%4d, ocv is %4d, ", 
+           status_reg,
+           avg_voltage, 
+           avg_current * (charge_status ? 1 : -1), 
+           ocv);
     if (ocv >= ocv_full) {
         return 100;    
     } else if (ocv <= ocv_empty) {
-        return 0;    
+        return 0;
     }
     for (i = 0; i < 15; i++) {                          // find which range this ocv is in
         if (ocv >= battery_curve[i].ocv &&
@@ -413,226 +240,245 @@ int axp_charger_get_charging_percent()
         rest_vol = 0;    
     }
     return rest_vol;
-#endif      /* CONFIG_UBOOT_BATTERY_PARAMETERS */
-
-	axp_read_adc(&axp_adc);
-	battery_ocv = axp_get_ocv();
-	charging_status = axp_charger_get_charging_status();
-	is_ac_online = axp_charger_is_ac_online();
-	icharging = ABS(axp_ibat_to_mA(axp_adc.ichar_res)-axp_ibat_to_mA(axp_adc.idischar_res));
-	
-	axp_read(POWER20_DATA_BUFFERB, &val);
-	DBG_PSY_MSG("base_cap = axp_read:%d\n",val);
-
-	DBG_PSY_MSG("icharging = %d\n", icharging);
-
-#ifndef 	CONFIG_AXP_USE_OCV
-	if((val & 0x80) >> 7)
-	{
-
-		Cur_CoulombCounter = axp_get_coulomb();
-
-		DBG_PSY_MSG("%s->%d: charger->rest_vol > 100\n",__FUNCTION__,__LINE__);
-		
-		base_cap = axp_get_basecap();
-		DBG_PSY_MSG("base_cap = axp_get_basecap(charger):%d\n",base_cap);
-		bat_cap = BATTERYCAP;
-		rest_vol = 100 * (base_cap * BATTERYCAP / 100 + Cur_CoulombCounter + BATTERYCAP/200) / BATTERYCAP;
-		DBG_PSY_MSG("(val & 0x80) >> 7 = 1,rest_vol = :%d\n",rest_vol);
-
-		if((battery_ocv >= 4090) && (rest_vol < 100) && (charging_status == 0) && is_ac_online)
-		{
-			DBG_PSY_MSG("((battery_ocv >= 4090) && (rest_vol < 100) && (charging_status == 0) && is_ac_online)\n");
-			base_cap = 100 - (rest_vol - base_cap);
-			axp_set_basecap(base_cap);
-			rest_vol = 100;
-		}
-
-		if((rest_vol > 99) && charging_status)
-		{
-			DBG_PSY_MSG("((rest_vol > 99) && charging_status)\n");
-			base_cap = 99 - (rest_vol - base_cap);
-			axp_set_basecap(base_cap);
-			rest_vol = 99;
-		}
-
-		if((rest_vol < 100) && (icharging < 280) && charging_status && (battery_ocv >= 4150))
-		{
-			DBG_PSY_MSG("((rest_vol < 100) && (icharging < 280) && charging_status && (battery_ocv >= 4150))\n");
-			rest_vol++;
-			base_cap++;
-			axp_set_basecap(base_cap);
-		}
-
-		if((rest_vol > 0) && (battery_ocv < 3550))
-		{
-			DBG_PSY_MSG("((rest_vol > 0) && (battery_ocv < 3550))\n");
-			base_cap = 0 - (rest_vol - base_cap);
-			axp_set_basecap(base_cap);
-			rest_vol = 0;
-		}
-
-		if((rest_vol < 1) && (battery_ocv > 3650))
-		{
-			DBG_PSY_MSG("((rest_vol < 1) && (battery_ocv > 3650))\n");
-			base_cap = 1 - (rest_vol - base_cap);
-			axp_set_basecap(base_cap);
-			rest_vol = 1;
-		}
-	}
-
-	else
-	{
-		axp_read(0xb9, &val);
-		rest_vol = val & 0x7f ;
-		DBG_PSY_MSG("(val & 0x80) >> 7 = 0,rest_vol = :%d\n",rest_vol);
-		if(rest_vol>=100) {
-			rest_vol = 100;
-		}
-	}
-
-#else  //define	CONFIG_AXP_USE_OCV				
-	rest_vol = get_ocv_batteryCap(1);
-#endif
-
-    if (rest_vol > 100) {						// fit to proper range
-    	rest_vol = 100;    
-	} else if (rest_vol < 0) {
-        rest_vol = 0;    
-	}
-
-    return rest_vol;
 }
 
 
-void axp_set_charging_current(int current)
+int axp_set_charging_current(int current)
 {
 	uint8_t reg_val = 0;
+
+    if (current > 1800 * 1000 || current < 0) {
+        printf("%s, wrong charge current seting:%d\n", __func__, current);
+        return -1;
+    }
+
+    if (current > 100) {
+        current = current / 1000;
+    } else {
+        current = (current * board_battery_para.pmu_battery_cap) / 100 + 100;    
+    }
+    if (current > 1600) {
+        current = 1600;    
+    }
 	axp_read(POWER20_CHARGE1, &reg_val);
-	if(current == 0)
-	{
+	if(current == 0) {
 		reg_val &= 0x7f;
 		axp_write(POWER20_CHARGE1, reg_val);
 		printf("%s: set charge current to %d Reg value %x!\n",__FUNCTION__, current, reg_val);		
-	}
-	else if((current<300)||(current>1800))
-	{
-		printf("%s: value(%dmA) is outside the allowable range of 300-1800mA!\n",
-			__FUNCTION__, current);
-	}
-	else
-	{
+	} else {
 		reg_val &= 0xf0;
 		reg_val |= ((current-300)/100);
 		axp_write(POWER20_CHARGE1, reg_val);
 		printf("%s: set charge current to %d Reg value %x!\n",__FUNCTION__, current, reg_val);		
 	}
+    return 0;
 }
 
 int axp_charger_set_usbcur_limit(int usbcur_limit)
 {
     uint8_t val;
 
+    if ((usbcur_limit < 0 || usbcur_limit > 900) && (usbcur_limit != -1)) {
+        printf("wrong current limit:%d\n", usbcur_limit); 
+    }
 	axp_read(AXP20_CHARGE_VBUS, &val);
-
     val &= ~0x03;
-	switch(usbcur_limit)
-	{
-		case 0:
-			val |= 0x3;
-			break;
-		case 100:
-			val |= 0x2;
-			break;
-		case 500:
-			val |= 0x1;
-			break;
-		case 900:
-			val |= 0x0;
-			break;
-		default:
-			printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n");
-			return -1;
-			break;
+	switch (usbcur_limit) {
+    case -1:
+	case  0:
+		val |= 0x3;             // Max
+		break;
+	case 100:
+		val |= 0x2;
+		break;
+	case 500:
+		val |= 0x1;
+		break;
+	case 900:
+		val |= 0x0;
+		break;
+	default:
+		printf("usbcur_limit=%d, not in 0,100,500,900. please check!\n");
+		return -1;
+		break;
 	}
 	axp_write(AXP20_CHARGE_VBUS, val);
-    	axp_read(AXP20_CHARGE_VBUS, &val);
+    axp_read(AXP20_CHARGE_VBUS, &val);
 	printf("[AXP_PMU]%s,AXP20_CHARGE_VBUS:0x%x\n", __func__, val);
 	
     return 0;
 }
 
+extern int axp_gpio_set_value(int gpio, int value);
+extern int axp_gpio_get_value(int gpio, int *value);
+extern int axp_read(int reg, uint8_t *val);
+extern int axp_reads(int reg, int len, uint8_t *val);
+extern int axp_write(int reg, uint8_t val);
+extern int axp_writes(int reg, int len, uint8_t *val);
+extern int axp_update(int reg, uint8_t val, uint8_t mask);
+extern void axp_power_off(void);
 
-//unit is mV
-int set_dcdc2(u32 val)
+int axp202_reads(int addr, unsigned char *buf, int count)
 {
-	char reg_val = 0;
-	if((val<700)||(val>2275))
-	{
-		printf("%s: value(%dmV) is outside the allowable range of 700-2275mV!\n",
-			__FUNCTION__, val);
-	}
-	reg_val = (val-700)/25;
-	;
-	if(axp_write(POWER20_DC2OUT_VOL, reg_val))
-	{
-		printf("axp_write(): Failed!\n");
-		return -1;
-	}
-	if(axp_read(POWER20_DC2OUT_VOL, &reg_val))
-	{
-		printf("axp_read(): Failed!\n");
-		return -1;
-	}
-	printf("POWER20_DC2OUT_VOL is set to 0x%02x\n", reg_val);
-	return 0;
+    return axp_reads(addr, count, buf);    
 }
 
-int set_dcdc3(u32 val)
+int axp202_writes(int addr, unsigned char *buf, int count)
 {
-	char reg_val = 0;
-	if((val<700)||(val>3500))
-	{
-		printf("%s: value(%dmV) is outside the allowable range of 700-2275mV!\n",
-			__FUNCTION__, val);
-	}
-	reg_val = (val-700)/25;
-	;
-	if(axp_write(POWER20_DC3OUT_VOL, reg_val))
-	{
-		printf("axp_write(): Failed!\n");
-		return -1;
-	}
-	if(axp_read(POWER20_DC3OUT_VOL, &reg_val))
-	{
-		printf("axp_read(): Failed!\n");
-		return -1;
-	}
-	printf("POWER20_DC3OUT_VOL is set to 0x%02x\n", reg_val);
-	return 0;
+    return axp_writes(addr, count, buf);    
 }
 
-
-
-static int do_set_axp_debug (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+int axp202_init(void)
 {
-	axp_debug = simple_strtol(argv[1], NULL, 10);
-	
-	printf("axp_debug: %d\n", axp_debug);
-	return 0;
+    // TODO: Need add code here
+
+    return 0;    
 }
 
+int axp202_set_full_charge_voltage(int voltage)
+{
+    int val;
 
-U_BOOT_CMD(
-	set_axp_debug,	2,	0,	do_set_axp_debug,
-	"set axp debug",
-	"/N\n"
-	"set axp debug <level>\n"
-	"0-7\n"
-);
+    switch (voltage) {
+    case 4100000: val = 0x00; break;
+    case 4150000: val = 0x20; break;
+    case 4200000: val = 0x40; break;
+    case 4360000: val = 0x60; break;
+    default :
+        printf("%s, wrong charge target voltage:%d\n", __func__, voltage);    
+        return -1;
+    }
+    return axp_update(0x33, val, 0x60);
+}
+
+int axp202_set_charge_end_current(int rate)
+{
+    int val;
+    switch(rate) {
+    case 10:    val = 0x00; break;
+    case 15:    val = 0x10; break;
+    default:
+        printf("%s, wrong charge end rate:%d\n", __func__, rate);    
+        return -1;
+    } 
+    return axp_update(0x33, val, 0x10);
+}
+
+int axp202_set_trickle_time(int time)
+{
+    int val;
+    switch (time) {
+    case 40: val = 0x00; break;
+    case 50: val = 0x40; break;
+    case 60: val = 0x80; break;
+    case 70: val = 0xc0; break;
+    default:
+        printf("%s, wrong trickle charge timeout:%d\n", __func__, time);    
+        return -1;
+    }
+    return axp_update(0x34, val, 0xc0);
+}
+
+int axp202_set_rapid_time(int time)
+{
+    int val;    
+    switch (time) {
+    case 360: val = 0x00; break;
+    case 480: val = 0x01; break;
+    case 600: val = 0x02; break;
+    case 720: val = 0x03; break;
+    default:
+        printf("%s, wrong rapid charge timeout:%d\n", __func__, time);    
+        return -1;
+    }
+    return axp_update(0x34, val, 0x03);
+}
+
+int axp202_set_charge_enable(int en)
+{
+    int val;    
+    switch (en) {
+    case 0: val = 0x00; break;
+    case 1: val = 0x80; break;
+    default:
+        printf("%s, wrong charge enable value:%d\n", __func__, en);    
+        return -1;
+    }
+    return axp_update(0x33, val, 0x80);
+}
+
+int axp202_set_long_press_time(int time)
+{
+    int val;    
+    switch (time) {
+    case  4000: val = 0x00; break;
+    case  6000: val = 0x01; break;
+    case  8000: val = 0x02; break;
+    case 10000: val = 0x03; break;
+    default:
+        printf("%s, wrong rapid charge timeout:%d\n", __func__, time);    
+        return -1;
+    }
+    return axp_update(0x9d, val, 0x03);
+}
+
+int axp202_set_adc_freq(int freq)
+{
+    int val;    
+    switch (freq) {
+    case  25: val = 0x00; break;
+    case  50: val = 0x40; break;
+    case 100: val = 0x80; break;
+    case 200: val = 0xc0; break;
+    default:
+        printf("%s, wrong rapid charge timeout:%d\n", __func__, freq);    
+        return -1;
+    }
+    return axp_update(0x84, val, 0xc0);
+}
+
+int axp202_inti_para(struct battery_parameter *battery)
+{
+    if (battery) {
+        axp202_set_full_charge_voltage(battery->pmu_init_chgvol);
+        axp202_set_charge_end_current (battery->pmu_init_chgend_rate);
+        axp202_set_trickle_time       (battery->pmu_init_chg_pretime);
+        axp202_set_rapid_time         (battery->pmu_init_chg_csttime);
+        axp202_set_charge_enable      (battery->pmu_init_chg_enabled);
+        axp202_set_long_press_time    (battery->pmu_pekoff_time);
+        axp202_set_adc_freq           (battery->pmu_init_adc_freqc);
+        return 0;
+    } else {
+        return -1;    
+    } 
+}
+
+struct aml_pmu_driver g_aml_pmu_driver = {
+    .pmu_init                    = axp202_init, 
+    .pmu_get_battery_capacity    = axp202_get_charging_percent,
+    .pmu_get_extern_power_status = axp202_charger_online,
+    .pmu_set_gpio                = axp_gpio_set_value,
+    .pmu_get_gpio                = axp_gpio_get_value,
+    .pmu_reg_read                = axp_read,
+    .pmu_reg_write               = axp_write,
+    .pmu_reg_reads               = axp202_reads,
+    .pmu_reg_writes              = axp202_writes,
+    .pmu_set_bits                = axp_update,
+    .pmu_set_usb_current_limit   = axp_charger_set_usbcur_limit,
+    .pmu_set_charge_current      = axp_set_charging_current,
+    .pmu_power_off               = axp_power_off,
+    .pmu_init_para               = axp202_inti_para,
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+    .pmu_do_battery_calibrate    = axp_battery_calibrate,
+#endif
+};
+
+struct aml_pmu_driver* aml_pmu_get_driver(void)
+{
+    return &g_aml_pmu_driver;
+}
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
-#warning >>>>>>>>>>>>>>> CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 ////////////////////////////////////////////////////////////////////////
 //     This code is add for battery curve calibrate                   //
 ////////////////////////////////////////////////////////////////////////
