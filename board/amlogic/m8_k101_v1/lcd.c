@@ -51,7 +51,7 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 // lcd config 
 //*********************************************//
 //**** lcd typical timing, select by include header file ***//
-#include <amlogic/panel/B080XAN01.h>
+#include <amlogic/panel/mipi/B080XAN01.h>
 
 #define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 
@@ -129,10 +129,6 @@ static EDP_Config_t lcd_edp_config = {
 static TTL_Config_t lcd_ttl_config = {
 	.rb_swap = 0,	/** 0=normal, 1=swap */
 	.bit_swap = 0,	/** 0=normal, 1=swap */
-};
-
-static DPHY_Config_t lcd_dphy_config = {
-	.phy_ctrl = 0xaf40,
 };
 //**********************************************//
 
@@ -286,7 +282,6 @@ Lcd_Config_t lcd_config_dft = {
 		.lvds_config = &lcd_lvds_config,
 		.edp_config = &lcd_edp_config,
 		.ttl_config = &lcd_ttl_config,
-		.dphy_config = &lcd_dphy_config,
 	},
 };
 
