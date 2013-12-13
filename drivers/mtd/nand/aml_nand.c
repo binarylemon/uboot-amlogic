@@ -6042,7 +6042,7 @@ static int aml_nand_scan_bbt(struct mtd_info *mtd)
 
 	if ((strncmp((char*)plat->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))){
 			
-		memset(&aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[0], 0, MAX_BAD_BLK_NUM);
+				memset(&aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[0], -1, (MAX_BAD_BLK_NUM*sizeof(int16_t)));
 
 		if (nand_boot_flag)
 			offset = (1024 * mtd->writesize / aml_chip->plane_num);
