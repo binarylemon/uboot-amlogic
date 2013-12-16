@@ -16,8 +16,90 @@
 #define errorP(fmt...) printf("Err imgread(L%d):", __LINE__),printf(fmt)
 #define wrnP(fmt...)   printf("wrn:"fmt)
 
-#define IMG_PRELOAD_SZ  (1U<<20) //Total read at first to read the image header
+#define IMG_PRELOAD_SZ  (1U<<20) //Total read 1M at first to read the image header
 #define RES_OLD_FMT_READ_SZ (8U<<20)
+
+#ifdef CONFIG_OF_LIBFDT
+#include <libfdt.h>
+#define DTB_PRELOAD_SZ  (4U<<10) //Total read 4k at first to read the image header
+
+static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    unsigned    kernel_size;
+    unsigned    ramdisk_size;
+    boot_img_hdr *hdr_addr = NULL;
+    int genFmt = 0;
+    unsigned actualBootImgSz = 0;
+    unsigned dtbSz = 0;
+    const char* const partName = argv[1];
+    unsigned char* loadaddr = 0;
+    int rc = 0;
+    const int PreloadSz = DTB_PRELOAD_SZ;
+    unsigned char* dtbLoadAddr = 0;
+    int DtbStartOffset = 0;
+    unsigned char* DtbDestAddr = (unsigned char*)CONFIG_DTB_LOAD_ADDR;
+
+    debugP("argc %d, argv:%s, %s, %s\n", argc, argv[0], argv[1], argv[2]);
+    if(2 < argc){
+        loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
+    }
+    else{
+        loadaddr = (unsigned char*)simple_strtoul(getenv("loadaddr"), NULL, 16);
+    }
+    hdr_addr = (boot_img_hdr*)loadaddr;
+
+    if(argc > 3){
+        DtbDestAddr = (unsigned char*)simple_strtoul(argv[3], NULL, 16);
+    }
+
+    rc = store_read_ops((unsigned char*)partName, loadaddr, 0, PreloadSz);
+    if(rc){
+        errorP("Fail to read 0x%xB from part[%s] at offset 0\n", PreloadSz, partName);
+        return __LINE__;
+    }
+
+    genFmt = genimg_get_format(hdr_addr);
+    if(IMAGE_FORMAT_ANDROID != genFmt) {
+        errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n", genFmt, IMAGE_FORMAT_ANDROID);
+        return __LINE__;
+    }
+
+    kernel_size     =(hdr_addr->kernel_size + (hdr_addr->page_size-1)+hdr_addr->page_size)&(~(hdr_addr->page_size -1));
+    ramdisk_size    =(hdr_addr->ramdisk_size + (hdr_addr->page_size-1))&(~(hdr_addr->page_size -1));
+    dtbSz           = hdr_addr->second_size;
+    DtbStartOffset = kernel_size + ramdisk_size;
+    actualBootImgSz = DtbStartOffset + dtbSz;
+    debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
+    debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
+    debugP("dtbSz 0x%x\n", dtbSz);
+    dtbLoadAddr =   loadaddr + DtbStartOffset;
+
+    if(actualBootImgSz > PreloadSz)
+    {
+        dtbLoadAddr = loadaddr + PreloadSz;
+
+        rc = store_read_ops((unsigned char*)partName, dtbLoadAddr, DtbStartOffset, dtbSz);
+        if(rc){
+            errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", dtbSz, partName, DtbStartOffset);
+            return __LINE__;
+        }
+    }
+
+    memcpy(DtbDestAddr, dtbLoadAddr, dtbSz);
+    if(fdt_check_header(DtbDestAddr)){
+        errorP("dtb head check failed\n");
+        return __LINE__;
+    }
+
+    return 0;
+}
+#else
+static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    errorP("unsupported as CONFIG_OF_LIBFDT undef\n");
+    return __LINE__;
+}
+#endif//#ifdef CONFIG_OF_LIBFDT
 
 
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -155,6 +237,7 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 }
 
 static cmd_tbl_t cmd_imgread_sub[] = {
+	U_BOOT_CMD_MKENT(dtb,    4, 0, do_image_read_dtb, "", ""),
 	U_BOOT_CMD_MKENT(kernel, 3, 0, do_image_read_kernel, "", ""),
 	U_BOOT_CMD_MKENT(res,    3, 0, do_image_read_res, "", ""),
 };
@@ -166,11 +249,6 @@ static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	/* Strip off leading 'bmp' command argument */
 	argc--;
 	argv++;
-
-    if(3 > argc){
-        cmd_usage(cmdtp);
-        return __LINE__;
-    }
 
 	c = find_cmd_tbl(argv[0], &cmd_imgread_sub[0], ARRAY_SIZE(cmd_imgread_sub));
 
@@ -184,16 +262,18 @@ static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 U_BOOT_CMD(
    imgread,         //command name
-   4,               //maxargs
+   5,               //maxargs
    0,               //repeatable
    do_image_read,   //command function
    "Read the image from internal flash with actual size",           //description
    "    argv: <imageType> <part_name> <loadaddr> \n"   //usage
    "    - <image_type> Current support is kernel/res(ource).\n"
    "imgread kernel  --- Read image in fomart IMAGE_FORMAT_ANDROID\n"
+   "imgread kernel  --- Load dtb from image boot.img or recovery.img\n"
    "imgread resouce --- Read image packed by 'Amlogic resource packer'\n"
    "    - e.g. \n"
    "        to read boot.img     from part boot     from flash: <imgread kernel boot loadaddr> \n"   //usage
+   "        to read dtb          from part boot     from flash: <imgread dtb boot loadaddr [destAddr]> \n"   //usage
    "        to read recovery.img from part recovery from flash: <imgread kernel recovery loadaddr> \n"   //usage
    "        to read logo.img     from part logo     from flash: <imgread res    logo loadaddr> \n"   //usage
 );
