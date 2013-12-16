@@ -450,7 +450,7 @@
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    696 //768  //792// (636)
+#define CFG_M8_DDR_CLK    792//696 //768  //792// (636)
 
 //On board DDR capactiy
 //#define CFG_M8_DDR3_1GB
