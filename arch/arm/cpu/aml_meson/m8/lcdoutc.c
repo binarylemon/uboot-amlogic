@@ -49,7 +49,7 @@
 #define DRV_TYPE "c8"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20131210"
+#define DRIVER_DATE		"20131216"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -96,7 +96,11 @@ static int amlogic_gpio_set(int gpio, int flag);
 static unsigned bl_level;
 
 static Lcd_Bl_Config_t bl_config = {
-	.level_default = BL_LEVEL_DEFAULT,
+	.level_default = BL_LEVEL_DFT,
+	.level_mid = BL_LEVEL_MID_DFT,
+	.level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT,
+	.level_min = BL_LEVEL_MIN_DFT,
+	.level_max = BL_LEVEL_MAX_DFT,
 };
 
 static DSI_Config_t lcd_mipi_config = {
@@ -581,7 +585,6 @@ static void set_tcon_lcd(Lcd_Config_t *pConf)
 	DBG_PRINT("%s.\n",__FUNCTION__);
 	Lcd_Timing_t *tcon_adr = &(pConf->lcd_timing);
 	unsigned hs_pol, vs_pol;
-	Lcd_Control_Config_t *p = &pConf->lcd_control;
 	int lcd_type;
 	lcd_type = pConf->lcd_basic.lcd_type; 
 	
@@ -2973,7 +2976,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_default_uboot_kernel", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_level_default_uboot_kernel\n");
-		bl_conf->level_default = BL_LEVEL_DEFAULT;
+		bl_conf->level_default = BL_LEVEL_DFT;
 	}
 	else {
 		bl_conf->level_default = (be32_to_cpup((u32*)propdata));
@@ -2982,8 +2985,8 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_middle_mapping", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_level_middle_mapping\n");
-		bl_conf->level_mid = BL_LEVEL_MID;
-		bl_conf->level_mid_mapping = BL_LEVEL_MID_MAPPED;
+		bl_conf->level_mid = BL_LEVEL_MID_DFT;
+		bl_conf->level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT;
 	}
 	else {
 		bl_conf->level_mid = (be32_to_cpup((u32*)propdata));
@@ -2993,8 +2996,8 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_max_min", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_level_max_min\n");
-		bl_conf->level_min = BL_LEVEL_MIN;
-		bl_conf->level_max = BL_LEVEL_MAX;
+		bl_conf->level_min = BL_LEVEL_MIN_DFT;
+		bl_conf->level_max = BL_LEVEL_MAX_DFT;
 	}
 	else {
 		bl_conf->level_max = (be32_to_cpup((u32*)propdata));
@@ -3295,14 +3298,14 @@ static void _lcd_test(unsigned num)
 
 struct panel_operations panel_oper =
 {
-	.enable	=	_lcd_enable,
-	.disable	=	_lcd_disable,
-	.bl_on	=	_enable_backlight,
-	.bl_off	=	_disable_backlight,
-	.set_bl_level	=	_set_backlight_level,
+	.enable       =	_lcd_enable,
+	.disable      =	_lcd_disable,
+	.bl_on        =	_enable_backlight,
+	.bl_off       =	_disable_backlight,
+	.set_bl_level =	_set_backlight_level,
 	.get_bl_level = _get_backlight_level,
-	.power_on = _lcd_power_on,
-	.power_off = _lcd_power_off,
-	.test = _lcd_test,
+	.power_on     = _lcd_power_on,
+	.power_off    = _lcd_power_off,
+	.test         = _lcd_test,
 };
 //****************************************

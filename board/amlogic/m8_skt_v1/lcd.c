@@ -24,7 +24,11 @@
 //**********************************************//
 // backlight control
 //*********************************************//
-#define BL_LEVEL_DEFAULT	128	/** default brightness level */
+#define BL_LEVEL_DEFAULT		128	/** default brightness level */
+#define BL_LEVEL_MID			128	/** brightness middle level*/
+#define BL_LEVEL_MID_MAPPING	102	/** brightness middle level mapping to a new level*/
+#define BL_LEVEL_MAX			255	/** brightness level max, must match the rootfs setting*/
+#define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
@@ -194,6 +198,10 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 //*********************************************//
 Lcd_Bl_Config_t bl_config_dft = {
 	.level_default = BL_LEVEL_DEFAULT,
+	.level_mid = BL_LEVEL_MID,
+	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
+	.level_min = BL_LEVEL_MIN,
+	.level_max = BL_LEVEL_MAX,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,
