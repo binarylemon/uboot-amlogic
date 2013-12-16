@@ -518,14 +518,10 @@ pub_init_ddr1:
 		writel(( 0x0 | (0x6 << 16)),P_DDR0_PCTL_DFIODTCFG1);
 
 		//CONFIG_M8_DDR0_DTAR_ADDR//0x8/0x10/0x18		
-		writel(((0x0 + CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28)),
-			P_DDR0_PUB_DTAR0);
-		writel(((0x08+ CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28)),
-			P_DDR0_PUB_DTAR1);
-		writel(((0x10+ CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28)),
-			P_DDR0_PUB_DTAR2);
-		writel(((0x18+ CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28)),
-			P_DDR0_PUB_DTAR3);
+		writel((0x0  + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR0);
+		writel((0x08 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR1);
+		writel((0x10 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR2);
+		writel((0x18 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR3);
 
 	}
 
@@ -561,14 +557,10 @@ pub_init_ddr1:
 		writel(( 0x0 | (0x6 << 16)),P_DDR1_PCTL_DFIODTCFG1);
 
 		//CONFIG_M8_DDR1_DTAR_ADDR/0x8/0x10/0x18		
-		writel(((0x0 + CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28)),
-			P_DDR1_PUB_DTAR0);
-		writel(((0x08+ CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28)),
-			P_DDR1_PUB_DTAR1);
-		writel(((0x10+ CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28)),
-			P_DDR1_PUB_DTAR2);
-		writel(((0x18+ CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28)),
-			P_DDR1_PUB_DTAR3);
+		writel((0x0  + timing_set->t_pub1_dtar), P_DDR1_PUB_DTAR0);
+		writel((0x08 + timing_set->t_pub1_dtar), P_DDR1_PUB_DTAR1);
+		writel((0x10 + timing_set->t_pub1_dtar), P_DDR1_PUB_DTAR2);
+		writel((0x18 + timing_set->t_pub1_dtar), P_DDR1_PUB_DTAR3);
 		
 	}
 
