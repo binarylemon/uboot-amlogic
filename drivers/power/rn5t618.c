@@ -418,6 +418,13 @@ int rn5t618_charger_online(void)
     }
 }
 
+int rn5t618_set_charge_enable(int enable)
+{
+    int bits = enable ? 0x03 : 0x00;
+
+    return rn5t618_set_bits(0x00B3, bits, 0x03);
+}
+
 int rn5t618_set_full_charge_voltage(int voltage)
 { 
     int bits;
@@ -427,7 +434,14 @@ int rn5t618_set_full_charge_voltage(int voltage)
         return -1;
     }    
     if (voltage == 4350000) {
+        /*
+         * If target charge voltage is 4.35v, should close charger first.
+         */
         bits = 0x40;    
+        rn5t618_set_charge_enable(0);
+        udelay(50 * 1000);
+        rn5t618_set_bits(0x00BB, bits, 0x70);
+        return 0;
     } else {
         bits = ((voltage - 4050000) / 50000) << 4;
     }    
@@ -468,13 +482,6 @@ int rn5t618_set_rapid_time(int minutes)
     }
     bits = (minutes - 120) / 60;
     return rn5t618_set_bits(0x00B9, bits, 0x03);
-}
-
-int rn5t618_set_charge_enable(int enable)
-{
-    int bits = enable ? 0x03 : 0x00;
-
-    return rn5t618_set_bits(0x00B3, bits, 0x03);
 }
 
 int rn5t618_set_long_press_time(int ms)
@@ -614,6 +621,9 @@ int rn5t618_init(void)
 
     rn5t618_set_bits(0x00B3, 0x00, 0x40);                       // enable rapid-charge to charge end
 
+    rn5t618_set_bits(0x00BC, 0x01, 0x03);                       // set DIE shut temp to 120 Celsius
+    rn5t618_set_bits(0x00BA, 0x00, 0x0c);                       // set VWEAK to 3.0V
+    rn5t618_set_bits(0x00BB, 0x00, 0x80);                       // set VWEAK to 3.0v
     udelay(100 * 1000);                                         // delay a short time
 
     dump_pmu_register();
