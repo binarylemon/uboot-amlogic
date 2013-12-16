@@ -25,6 +25,10 @@ help: help_customer
 	@echo config command: \"make m6_ref_v2_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M6_MBX_V1"
+	@echo config command: \"make m6_mbx_v1_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M6S_SKT_V1", relative to chip M6S
 	@echo config command: \"make m6s_skt_v1_config\"
 
