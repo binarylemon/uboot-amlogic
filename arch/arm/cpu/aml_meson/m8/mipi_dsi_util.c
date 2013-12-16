@@ -331,7 +331,7 @@ void set_mipi_dsi_host_to_video_mode(int lane_num,                              
         int pic_width, pic_height;
         int num_of_chunk;
         int pixel_per_chunk = 4;
-        int byte_per_chunk;
+        int byte_per_chunk = 0;
         int totol_bytes_per_chunk;
         int chunk_overhead;
         int vid_null_size = 0;
@@ -500,9 +500,9 @@ void set_mipi_dsi_host_to_video_mode(int lane_num,                              
         }
 
 }
-void mipi_dphy_init()
+void mipi_dphy_init(void)
 {
-
+	//
 }
 
 void startup_transfer_cmd(void)
@@ -620,7 +620,7 @@ void config_video_para(tv_enc_lcd_type_t output_type,
 {
         unsigned int hline, hfp, hsa, hbp, vsa, vbp, vfp, vact;
 
-        unsigned m, n, od, od_fb, frac, pre_div, xd, post_div;
+        unsigned m, n, od, od_fb, frac;
         unsigned lcd_clk;
         unsigned pclk;
         unsigned lanebyteclk;
@@ -1042,9 +1042,6 @@ void set_control_mipi(Lcd_Config_t *p)
         unsigned char       lane_num;
         unsigned char       chroma_subsamp;
 
-        unsigned int        data32;
-        unsigned int        is_rgb;
-        unsigned int        dith10_en, dith8_en, dith5_en;
         unsigned char       trans_mode;
 
 
@@ -1098,7 +1095,7 @@ void powerdown_mipi_analog(void)
     WRITE_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, 0x20<< 16);//DIF_TX_CTL1:31-16bit, DIF_TX_CTL0:15-0bit
 }
 
-void powerup_mipi_analog()
+void powerup_mipi_analog(void)
 {
 
     WRITE_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x8);//DIF_REF_CTL0
@@ -1144,9 +1141,6 @@ void set_tcon_mipi(Lcd_Config_t *p)
         mipi_dsi_dpi_color_type = pConf->mipi_config->dpi_color_type;
         mipi_dsi_venc_color_type= pConf->mipi_config->venc_color_type;
         lane_num                = pConf->mipi_config->lane_num;
-
-
-	Lcd_Timing_t *tcon_adr = &(p->lcd_timing);
 
 	DPRINT("%s.\n", __FUNCTION__);
 
@@ -1203,9 +1197,6 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
         unsigned char       lane_num;
         unsigned char       chroma_subsamp;
 
-        unsigned int        data32;
-        unsigned int        is_rgb;
-        unsigned int        dith10_en, dith8_en, dith5_en;
         unsigned char       trans_mode;
 
 

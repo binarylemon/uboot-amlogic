@@ -1011,11 +1011,6 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 #if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
 void set_pll_mipi(Lcd_Config_t *pConf)
 {
-        int pll_lock;
-        int wait_loop = 100;
-
-        DSI_Config_t *cfg = pConf->lcd_control.mipi_config;
-
 	// Configure VS/HS/DE polarity before mipi_dsi_host.pixclk starts,
 	WRITE_LCD_REG(MIPI_DSI_TOP_CNTL, (READ_LCD_REG(MIPI_DSI_TOP_CNTL) & ~(0x7<<4))   |
                           (1  << 4)               |
@@ -1047,6 +1042,7 @@ void set_pll_mipi(Lcd_Config_t *pConf)
 
 }
 #endif
+
 static void set_venc_lcd(Lcd_Config_t *pConf)
 {
 	DBG_PRINT("%s\n",__FUNCTION__);
@@ -1348,29 +1344,21 @@ static void init_dphy(Lcd_Config_t *pConf)
 	}
 }
 
-static unsigned error_abs(unsigned num1, unsigned num2)
-{
-	if (num1 >= num2)
-		return num1 - num2;
-	else
-		return num2 - num1;
-}
-
 static void generate_clk_parameter(Lcd_Config_t *pConf)
 {
 	unsigned pll_n = 0, pll_m = 0, pll_od = 0, pll_frac = 0, pll_level = 0;
 	unsigned edp_phy_div0 = 0, edp_phy_div1 = 0, vid_div_pre = 0;
 	unsigned crt_xd = 0;
 
-	unsigned m, n, od, od_fb, edp_div0, edp_div1, div_pre, div_post, xd;
+	unsigned m, n, od, od_fb=0, edp_div0, edp_div1, div_pre, div_post, xd;
 	unsigned od_sel, edp_div0_sel, edp_div1_sel, pre_div_sel;
 	unsigned div_pre_sel_max, crt_xd_max;
-	unsigned f_ref, pll_vco, fout_pll, edp_tx_phy_out, div_pre_out, div_post_out, final_freq, iflogic_vid_clk_in_max;
+	unsigned pll_vco, fout_pll, edp_tx_phy_out, div_pre_out, div_post_out, final_freq, iflogic_vid_clk_in_max;
 	unsigned min_error = MAX_ERROR;
 	unsigned error = MAX_ERROR;
 	unsigned clk_num = 0;
 	unsigned tmp;
-        unsigned int    dsi_clk_div, dsi_clk_max, dsi_clk_min;
+    unsigned int dsi_clk_div, dsi_clk_max=0, dsi_clk_min=0;
 	
 	unsigned fin = FIN_FREQ;
 	unsigned fout = pConf->lcd_timing.lcd_clk;
