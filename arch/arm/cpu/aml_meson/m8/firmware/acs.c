@@ -5,7 +5,8 @@
 //main acs struct
 struct acs_setting __acs_set={
 					.acs_magic		= "acs_",
-					.chip_type		= 0x22,
+					//chip id, m6:0x22 m8:0x24
+					.chip_type		= 0x24,
 					.version 		= 1,
 					.acs_set_length	= sizeof(__acs_set),
 
