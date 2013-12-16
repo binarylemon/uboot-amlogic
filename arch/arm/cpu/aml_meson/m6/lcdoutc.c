@@ -25,7 +25,7 @@
 #include <malloc.h>
 #include <asm/arch/io.h>
 #include <asm/arch/gpio.h>
-#include <asm/arch/pinmux.h>
+#include <asm/arch/pinmux.h>git 
 #include <asm/arch/vinfo.h>
 #include <asm/arch/lcdoutc.h>
 #include <asm/arch/lcd_reg.h>
@@ -44,7 +44,7 @@
 #define DRV_TYPE "c6"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20131210"
+#define DRIVER_DATE		"20131216"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -91,7 +91,11 @@ static int amlogic_gpio_set(int gpio, int flag);
 static unsigned bl_level;
 
 static Lcd_Bl_Config_t bl_config = {
-	.level_default = BL_LEVEL_DEFAULT,
+	.level_default = BL_LEVEL_DFT,
+	.level_mid = BL_LEVEL_MID_DFT,
+	.level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT,
+	.level_min = BL_LEVEL_MIN_DFT,
+	.level_max = BL_LEVEL_MAX_DFT,
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -342,20 +346,20 @@ static void set_lcd_backlight_level(unsigned level)
 	unsigned pwm_hi = 0, pwm_lo = 0;
 
 	DBG_PRINT("set_backlight_level: %u, last level: %u\n", level, bl_level);
-	level = (level > BL_LEVEL_MAX ? BL_LEVEL_MAX : (level < BL_LEVEL_MIN ? BL_LEVEL_MIN : level));
+	level = (level > pDev->bl_config->level_max ? pDev->bl_config->level_max : (level < pDev->bl_config->level_min ? pDev->bl_config->level_min : level));
 	bl_level = level;
 
-	if (level > BL_LEVEL_MID)
-		level = ((level - BL_LEVEL_MID) * (BL_LEVEL_MAX - BL_LEVEL_MAPPED_MID)) / (BL_LEVEL_MAX - BL_LEVEL_MID) + BL_LEVEL_MAPPED_MID;
+	if (level > pDev->bl_config->level_mid)
+		level = ((level - pDev->bl_config->level_mid) * (pDev->bl_config->level_max - pDev->bl_config->level_mid_mapping)) / (pDev->bl_config->level_max - pDev->bl_config->level_mid) + pDev->bl_config->level_mid_mapping;
 	else
-		level = ((level - BL_LEVEL_MIN) * (BL_LEVEL_MAPPED_MID - BL_LEVEL_MIN)) / (BL_LEVEL_MID - BL_LEVEL_MIN) + BL_LEVEL_MIN;
+		level = ((level - pDev->bl_config->level_min) * (pDev->bl_config->level_mid_mapping - pDev->bl_config->level_min)) / (pDev->bl_config->level_mid - pDev->bl_config->level_min) + pDev->bl_config->level_min;
 	
 	if (pDev->bl_config->method == BL_CTL_GPIO) {
-		level = pDev->bl_config->dim_min - ((level - BL_LEVEL_MIN) * (pDev->bl_config->dim_min - pDev->bl_config->dim_max)) / (BL_LEVEL_MAX - BL_LEVEL_MIN);
+		level = pDev->bl_config->dim_min - ((level - pDev->bl_config->level_min) * (pDev->bl_config->dim_min - pDev->bl_config->dim_max)) / (pDev->bl_config->level_max - pDev->bl_config->level_min);
 		WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
 	}
 	else {
-		level = (pDev->bl_config->pwm_max - pDev->bl_config->pwm_min) * (level - BL_LEVEL_MIN) / (BL_LEVEL_MAX - BL_LEVEL_MIN) + pDev->bl_config->pwm_min;
+		level = (pDev->bl_config->pwm_max - pDev->bl_config->pwm_min) * (level - pDev->bl_config->level_min) / (pDev->bl_config->level_max - pDev->bl_config->level_min) + pDev->bl_config->pwm_min;
 		if (pDev->bl_config->method == BL_CTL_PWM_POSITIVE) {
 			pwm_hi = level;
 			pwm_lo = pDev->bl_config->pwm_cnt - level;
@@ -1861,7 +1865,7 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	if (pmu_driver && pmu_driver->pmu_get_battery_capacity) {
 		battery_percent = pmu_driver->pmu_get_battery_capacity();
 		if (battery_percent <= BATTERY_LOW_THRESHOLD) {
-			set_lcd_backlight_level(BL_LEVEL_MIN + battery_percent + 10);
+			set_lcd_backlight_level(pDev->bl_config->level_min + battery_percent + 10);
 		} else {
 			set_lcd_backlight_level(pDev->bl_config->level_default);
 		}
@@ -2762,14 +2766,37 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		return ret;
 	}
 
-	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_default", NULL);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_default_uboot_kernel", NULL);
 	if(propdata == NULL){
-		printf("faild to get bl_level_default\n");
-		bl_conf->level_default = BL_LEVEL_DEFAULT;
+		printf("faild to get bl_level_default_uboot_kernel\n");
+		bl_conf->level_default = BL_LEVEL_DFT;
 	}
 	else {
-		bl_conf->level_default = be32_to_cpup((u32*)propdata);
+		bl_conf->level_default = (be32_to_cpup((u32*)propdata));
 	}
+	DBG_PRINT("bl level default uboot=%u\n", bl_conf->level_default);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_middle_mapping", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_level_middle_mapping\n");
+		bl_conf->level_mid = BL_LEVEL_MID_DFT;
+		bl_conf->level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT;
+	}
+	else {
+		bl_conf->level_mid = (be32_to_cpup((u32*)propdata));
+		bl_conf->level_mid_mapping = (be32_to_cpup((((u32*)propdata)+1)));
+	}
+	DBG_PRINT("bl level mid=%u, mid_mapping=%u\n", bl_conf->level_mid, bl_conf->level_mid_mapping);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_level_max_min", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_level_max_min\n");
+		bl_conf->level_min = BL_LEVEL_MIN_DFT;
+		bl_conf->level_max = BL_LEVEL_MAX_DFT;
+	}
+	else {
+		bl_conf->level_max = (be32_to_cpup((u32*)propdata));
+		bl_conf->level_min = (be32_to_cpup((((u32*)propdata)+1)));
+	}
+	DBG_PRINT("bl level max=%u, min=%u\n", bl_conf->level_max, bl_conf->level_min);
 	
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_ctrl_method", NULL);
 	if(propdata == NULL){
@@ -2777,9 +2804,9 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->method = BL_CTL_GPIO;
 	}
 	else {
-		bl_config.method = (be32_to_cpup((u32*)propdata) > 2) ? 2 : (unsigned char)(be32_to_cpup((u32*)propdata));
+		bl_conf->method = (be32_to_cpup((u32*)propdata) > 2) ? 2 : (unsigned char)(be32_to_cpup((u32*)propdata));
 	}
-	DBG_PRINT("bl control_method: %s(%u)\n", ((bl_config.method == 0) ? "GPIO" : ((bl_config.method == 1) ? "PWM_NEGATIVE" : "PWM_POSITIVE")), bl_config.method);
+	DBG_PRINT("bl control_method: %s(%u)\n", ((bl_conf->method == 0) ? "GPIO" : ((bl_conf->method == 1) ? "PWM_NEGATIVE" : "PWM_POSITIVE")), bl_conf->method);
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_port_gpio_used", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_pwm_port_gpio_used\n");

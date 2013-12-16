@@ -590,16 +590,16 @@ void set_mipi_edpi(unsigned int edpi_allowed_cmd_size,                  // allow
                 unsigned int color_code                              // color code
                 );
 
-extern void check_phy_st();                                                    // Check the status of the dphy: phylock and stopstateclklane
+extern void check_phy_st(void);                                                    // Check the status of the dphy: phylock and stopstateclklane
 
 extern void delay_us(int us);
 extern void config_video_para(tv_enc_lcd_type_t output_type,
                 unsigned int    color_code,                   // Configure video parameter such HFP/HSA/HBP/HACT...
                 Lcd_Config_t    *pConf);
 
-extern void wait_bta_ack();                                                    // wait ack from bta
-extern void wait_cmd_fifo_empty();                                             // wait generic fifo empty
-extern unsigned int wait_for_generic_read_response();                          // wait read response
+extern void wait_bta_ack(void);                                                    // wait ack from bta
+extern void wait_cmd_fifo_empty(void);                                             // wait generic fifo empty
+extern unsigned int wait_for_generic_read_response(void);                          // wait read response
 
 extern unsigned int generic_if_wr(unsigned int address, unsigned int data_in); // Generic Interface Write
 extern unsigned int generic_if_rd(unsigned int address);                       // Generic Interface Read
@@ -633,9 +633,9 @@ extern void DCS_long_write_packet(unsigned int data_type,                      /
 
 extern void check_mipi_dsi_color_config (unsigned int venc_color_type, unsigned int dpi_color_type);
 
-void startup_mipi_dsi_host();
+void startup_mipi_dsi_host(void);
 
-extern void auo_panel_init();
+extern void auo_panel_init(void);
 
 // DCS COMMAND LIST
 #define DCS_CMD_CODE_ENTER_IDLE_MODE      0x0

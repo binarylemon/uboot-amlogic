@@ -464,17 +464,21 @@ Lcd_Config_t lcd_config_dft;
 #define BL_PWM_C				2
 #define BL_PWM_D				3
 
-#define BL_LEVEL_MAX    		255
-#define BL_LEVEL_MIN    		10
-#define BL_LEVEL_OFF			1
+#define BL_LEVEL_MAX_DFT   			255
+#define BL_LEVEL_MIN_DFT   			10
+#define BL_LEVEL_OFF				1
 
-#define BL_LEVEL_MID    		128
-#define BL_LEVEL_MAPPED_MID		102
+#define BL_LEVEL_MID_DFT    		128
+#define BL_LEVEL_MID_MAPPED_DFT		102
 
-#define BL_LEVEL_DEFAULT		128
+#define BL_LEVEL_DFT				128
 
 typedef struct {
 	unsigned level_default;
+	unsigned level_mid;
+	unsigned level_mid_mapping;
+	unsigned level_min;
+	unsigned level_max;
 	unsigned char method;
 	int gpio;
 	unsigned dim_max;
