@@ -3009,11 +3009,14 @@ int lcd_probe(void)
 
 int lcd_remove(void)
 {
-	if (pDev->pConf) {
-		lcd_power_ctrl(OFF);
-		_disable_lcd_driver(pDev->pConf);
-	}
+	lcd_backlight_power_ctrl(OFF);
+	_disable_lcd_driver_pre(pDev->pConf);
+	lcd_power_ctrl(OFF);
+	_disable_lcd_driver(pDev->pConf);
+	
 	free(pDev);
+	pDev = NULL;
+	
 	return 0;
 }
 
@@ -3022,19 +3025,25 @@ int lcd_remove(void)
 //***************************************************//
 static void _enable_backlight(void)
 {
-	lcd_backlight_power_ctrl(ON);
+	if (pDev != NULL)
+		lcd_backlight_power_ctrl(ON);
 }
 static void _disable_backlight(void)
 {
-	lcd_backlight_power_ctrl(OFF);
+	if (pDev != NULL)
+		lcd_backlight_power_ctrl(OFF);
 }
 static void _set_backlight_level(unsigned level)
 {
-	set_lcd_backlight_level(level);
+	if (pDev != NULL)
+		set_lcd_backlight_level(level);
 }
 static unsigned _get_backlight_level(void)
 {
-	return get_lcd_backlight_level();
+	if (pDev != NULL)
+		return get_lcd_backlight_level();
+	else
+		return 0;
 }
 static void _lcd_enable(void)
 {
@@ -3042,64 +3051,68 @@ static void _lcd_enable(void)
 }
 static void _lcd_disable(void)
 {
-	lcd_backlight_power_ctrl(OFF);
-	lcd_remove();
+	if (pDev != NULL)
+		lcd_remove();
 }
 static void _lcd_power_on(void)
 {
-	lcd_power_ctrl(ON);
+	if (pDev != NULL)
+		lcd_power_ctrl(ON);
 }
 static void _lcd_power_off(void)
 {
-	lcd_power_ctrl(OFF);
+	if (pDev != NULL)
+		lcd_power_ctrl(OFF);
 }
 static void _lcd_test(unsigned num)
 {
 	unsigned venc_video_mode, venc_test_base;
 	
-	if (pDev->pConf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
-		venc_video_mode = ENCT_VIDEO_MODE_ADV;
-		venc_test_base = ENCT_TST_EN;
-	}
-	else {
-		venc_video_mode = ENCL_VIDEO_MODE_ADV;
-		venc_test_base = ENCL_TST_EN;
-	}
+	if (pDev != NULL) {
+		if (pDev->pConf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
+			venc_video_mode = ENCT_VIDEO_MODE_ADV;
+			venc_test_base = ENCT_TST_EN;
+		}
+		else {
+			venc_video_mode = ENCL_VIDEO_MODE_ADV;
+			venc_test_base = ENCL_TST_EN;
+		}
 	
-	switch (num) {
-		case 0:
-			WRITE_LCD_REG(venc_video_mode, 0x8);
-			printf("disable bist pattern\n");
-			printf("video dev test 1/2/3: show different test pattern\n");
-			break;
-		case 1:
-			WRITE_LCD_REG(venc_video_mode, 0);
-			WRITE_LCD_REG(venc_test_base+1, 1);
-			WRITE_LCD_REG(venc_test_base+5, pDev->pConf->lcd_basic.h_active / 8);
-			WRITE_LCD_REG(venc_test_base+6, pDev->pConf->lcd_basic.h_active / 8);
-			WRITE_LCD_REG(venc_test_base, 1);
-			printf("show test pattern 1\n");
-			printf("video dev test 0: disable test pattern\n");
-			break;
-		case 2:
-			WRITE_LCD_REG(venc_video_mode, 0);
-			WRITE_LCD_REG(venc_test_base+1, 2);
-			WRITE_LCD_REG(venc_test_base, 1);
-			printf("show test pattern 2\n");
-			printf("video dev test 0: disable test pattern\n");
-			break;
-		case 3:
-			WRITE_LCD_REG(venc_video_mode, 0);
-			WRITE_LCD_REG(venc_test_base+1, 3);
-			WRITE_LCD_REG(venc_test_base, 1);
-			printf("show test pattern 3\n");
-			printf("video dev test 0: disable test pattern\n");
-			break;
-		default:
-			printf("un-support pattern num\n");
-			printf("video dev test 1/2/3: show different test pattern\n");
-			printf("video dev test 0: disable test pattern\n");
-			break;
+		switch (num) {
+			case 0:
+				WRITE_LCD_REG(venc_video_mode, 0x8);
+				printf("disable bist pattern\n");
+				printf("video dev test 1/2/3: show different test pattern\n");
+				break;
+			case 1:
+				WRITE_LCD_REG(venc_video_mode, 0);
+				WRITE_LCD_REG(venc_test_base+1, 1);
+				WRITE_LCD_REG(venc_test_base+5, pDev->pConf->lcd_basic.h_active / 8);
+				WRITE_LCD_REG(venc_test_base+6, pDev->pConf->lcd_basic.h_active / 8);
+				WRITE_LCD_REG(venc_test_base, 1);
+				printf("show test pattern 1\n");
+				printf("video dev test 0: disable test pattern\n");
+				break;
+			case 2:
+				WRITE_LCD_REG(venc_video_mode, 0);
+				WRITE_LCD_REG(venc_test_base+1, 2);
+				WRITE_LCD_REG(venc_test_base, 1);
+				printf("show test pattern 2\n");
+				printf("video dev test 0: disable test pattern\n");
+				break;
+			case 3:
+				WRITE_LCD_REG(venc_video_mode, 0);
+				WRITE_LCD_REG(venc_test_base+1, 3);
+				WRITE_LCD_REG(venc_test_base, 1);
+				printf("show test pattern 3\n");
+				printf("video dev test 0: disable test pattern\n");
+				break;
+			default:
+				printf("un-support pattern num\n");
+				printf("video dev test 1/2/3: show different test pattern\n");
+				printf("video dev test 0: disable test pattern\n");
+				break;
+		}
 	}
 }
 
