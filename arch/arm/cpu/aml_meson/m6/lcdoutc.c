@@ -1859,23 +1859,27 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	lcd_tcon_config(pConf);
 	lcd_control_config(pConf);
 	
+	if (pDev->bl_config->level_default == pDev->bl_config->level_min) {
+		set_lcd_backlight_level(pDev->bl_config->level_min);
+	}
+	else {
 #ifdef CONFIG_PLATFORM_HAS_PMU
-	/* if battery percentage is very low, set backlight level as low as possible  */
-	pmu_driver = aml_pmu_get_driver();
-	if (pmu_driver && pmu_driver->pmu_get_battery_capacity) {
-		battery_percent = pmu_driver->pmu_get_battery_capacity();
-		if (battery_percent <= BATTERY_LOW_THRESHOLD) {
-			set_lcd_backlight_level(pDev->bl_config->level_min + battery_percent + 10);
+		/* if battery percentage is very low, set backlight level as low as possible  */
+		pmu_driver = aml_pmu_get_driver();
+		if (pmu_driver && pmu_driver->pmu_get_battery_capacity) {
+			battery_percent = pmu_driver->pmu_get_battery_capacity();
+			if (battery_percent <= BATTERY_LOW_THRESHOLD) {
+				set_lcd_backlight_level(pDev->bl_config->level_min + battery_percent + 10);
+			} else {
+				set_lcd_backlight_level(pDev->bl_config->level_default);
+			}
 		} else {
 			set_lcd_backlight_level(pDev->bl_config->level_default);
 		}
-	} else {
-		set_lcd_backlight_level(pDev->bl_config->level_default);
-	}
 #else
-	set_lcd_backlight_level(pDev->bl_config->level_default);
+		set_lcd_backlight_level(pDev->bl_config->level_default);
 #endif
-
+	}
 }
 
 static void print_lcd_clock(void)
