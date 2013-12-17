@@ -3010,7 +3010,6 @@ int lcd_probe(void)
 int lcd_remove(void)
 {
 	lcd_backlight_power_ctrl(OFF);
-	_disable_lcd_driver_pre(pDev->pConf);
 	lcd_power_ctrl(OFF);
 	_disable_lcd_driver(pDev->pConf);
 	
