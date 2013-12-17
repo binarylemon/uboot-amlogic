@@ -669,7 +669,7 @@ int optimus_storage_init(int toErase)
     }
 
     DWN_MSG("store_init\n");
-    ret = store_init(toErase ? 2 : 1);
+    ret = store_init(toErase ? (toErase + 2) : 1);
     if(!ret)
     {
         _disk_intialed_ok = 1;

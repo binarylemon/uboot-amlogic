@@ -364,21 +364,25 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     {
         if(is_bootloader_old())
         {
-            DWN_MSG("To erase OLD bootloader in Internal flash!\n");
+            DWN_MSG("To erase OLD bootloader !\n");
             ret = optimus_erase_bootloader(NULL);
             if(ret){
                 DWN_ERR("Fail to erase bootloader\n");
                 ret = __LINE__; goto _finish;
             }
 
-            DWN_MSG("Clear env upgrade_step to before reset\n");
-            ret = run_command("defenv;saveenv", 0);
+            ret = setenv("upgrade_step", "0");
             if(ret){
-                DWN_ERR("Fail to defenv;saveenv to flash, before reset\n");
+                DWN_ERR("Fail set upgrade_step to def value 0\n");
+                ret = __LINE__; goto _finish;
+            }
+            ret = run_command("saveenv", 0);
+            if(ret){
+                DWN_ERR("Fail to saveenv before reset\n");
                 ret = __LINE__; goto _finish;
             }
 
-            DWN_MSG("Reset to load NEW bootloader from external flash!\n");
+            DWN_MSG("Reset to load NEW uboot from ext-mmc!\n");
             optimus_reset();
             return __LINE__;//should never reach here!!
         }

@@ -436,16 +436,16 @@ int optimus_working (const char *cmd, char* buff)
     {
         ret = optimus_media_download_verify(argc, argv, buff);
     }
+    else if(!strcmp("save_setting", optCmd))
+    {
+        ret = optimus_set_burn_complete_flag();
+    }
     else if(!strcmp("burn_complete", optCmd))
     {
         unsigned choice = simple_strtoul(argv[1], NULL, 0);//0 is poweroff, 1 is reset system
 
-        ret = optimus_set_burn_complete_flag();
-        if(!ret)
-        {
-            close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
-            ret = optimus_burn_complete(choice);
-        }
+        close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
+        ret = optimus_burn_complete(choice);
     }
 	else if(strcmp(optCmd, "is_burn_completed") == 0)
 	{
