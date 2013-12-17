@@ -38,6 +38,7 @@
  */
 
 #include <common.h>
+#include <asm/arch/io.h>
 #if defined(CONFIG_CMD_NAND)
 extern void aml_nand_set_reg_default_hynix(void);
 #endif
@@ -48,6 +49,10 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #ifndef CONFIG_AML_MESON_8	
 	aml_nand_set_reg_default_hynix();
 #endif
+#endif
+
+#if defined(CONFIG_M6) || defined(CONFIG_M8)
+	writel(0,0xc8100000);	/*still use current boot device*/
 #endif
 
 	udelay (50000);				/* wait 50 ms */

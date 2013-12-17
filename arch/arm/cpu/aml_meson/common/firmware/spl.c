@@ -33,7 +33,11 @@ unsigned int ovFlag;
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-
+#ifdef CONFIG_M8
+	//enable watchdog for 5s
+	//if bootup failed, switch to next boot device
+	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+#endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
@@ -109,7 +113,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	#endif	//AML_M6_JTAG_SET_ARM
 
 	//Watchdog disable
-	writel(0,0xc1109900);
+	//writel(0,0xc1109900);
 	//asm volatile ("wfi");
 
 #endif //AML_M6_JTAG_ENABLE
@@ -253,6 +257,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	while(1);
 
 #endif//CONFIG_M6_TEST_CPU_SWITCH
+
+#ifdef CONFIG_M8
+	//if bootup failed, switch to next boot device
+	writel(0, P_WATCHDOG_TC); //disable watchdog
+#endif
 
 #ifdef CONFIG_MESON_TRUSTZONE		
     return ovFlag;

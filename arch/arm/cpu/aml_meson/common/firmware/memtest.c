@@ -186,6 +186,10 @@ STATIC_PREFIX
 datum * 
 memTestDevice(volatile datum * baseAddress, unsigned long nBytes)	
 {
+#ifdef CONFIG_M8
+    //Watchdog disable
+    writel(0, P_WATCHDOG_TC);
+#endif
     unsigned long offset;
     unsigned long nWords = nBytes / sizeof(datum);
 //	int i;
@@ -251,6 +255,11 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
     }
 #undef AML_DEBUG_ROM
     serial_putc('\n');
+
+#ifdef CONFIG_M8
+	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+#endif
+
     return (NULL);
 
 }   /* memTestDevice() */

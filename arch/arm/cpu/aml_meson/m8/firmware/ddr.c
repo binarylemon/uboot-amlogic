@@ -197,7 +197,7 @@ unsigned m6_ddr_init_test(int arg)
     //writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
     {
-        writel(0, P_WATCHDOG_RESET);
+        //writel(0, P_WATCHDOG_RESET);
         por_cfg=mem_test[i](arg&(1<<i),&__ddr_setting);     
         if(por_cfg){
             serial_puts("\nStage ");
