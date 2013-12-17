@@ -493,6 +493,9 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		else if(strcmp(dev_name, "code") == 0){
 			dev_name = NAND_CODE_NAME;
+		}
+		else if(strcmp(dev_name, "cache") == 0){
+			dev_name = NAND_CACHE_NAME;
 		}else if(strcmp(dev_name, "data") == 0){
 			dev_name = NAND_DATA_NAME;
 		}else{
@@ -555,6 +558,8 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		else if(strcmp(dev_name, "code") == 0){
 			dev_name = NAND_CODE_NAME;
+		}else if(strcmp(dev_name, "cache") == 0){
+			dev_name = NAND_CACHE_NAME;
 		}else if(strcmp(dev_name, "data") == 0){
 			dev_name = NAND_DATA_NAME;
 		}else{
@@ -638,6 +643,8 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		dev_name = argv[2];
 		if(strcmp(dev_name, "boot") == 0){
 			dev_name = NAND_BOOT_NAME;
+		}else if(strcmp(dev_name, "cache") == 0){
+			dev_name = NAND_CACHE_NAME;
 		}
 		else if(strcmp(dev_name, "code") == 0){
 			dev_name = NAND_CODE_NAME;

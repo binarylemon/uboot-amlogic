@@ -6,6 +6,43 @@
 
 struct amlnand_chip *aml_chip_secure = NULL;
 
+
+int aml_nand_update_secure(struct amlnand_chip * aml_chip, char *secure_ptr)
+{
+	int ret = 0;
+	char malloc_flag = 0;
+	char *secure_buf = NULL;
+	
+	if(secure_buf == NULL){
+		
+		secure_buf = kzalloc(CONFIG_SECURE_SIZE, GFP_KERNEL);
+		if(secure_buf == NULL)
+			return -ENOMEM;
+		memset(secure_buf,0,CONFIG_SECURE_SIZE);
+		ret = amlnand_read_info_by_name(aml_chip, &(aml_chip->nand_secure),secure_buf,SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
+		if (ret) 
+		{
+			aml_nand_msg("read key error,%s\n",__func__);
+			ret = -EFAULT;
+			goto exit;
+		}
+	}else{
+		secure_buf = secure_ptr;
+	}
+	
+	ret = amlnand_save_info_by_name(aml_chip, &(aml_chip->nand_secure), secure_buf, SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
+	if(ret < 0){
+		aml_nand_msg("aml_nand_update_secure : update secure failed");
+	}
+	
+exit:	
+	if(malloc_flag && (secure_buf)){
+		kfree(secure_buf);
+		secure_buf = NULL;
+	}
+	return 0;
+}
+
  int32_t nand_secure_read(struct amlnand_chip * aml_chip, char *buf,int len)
 {
 	//struct amlnand_chip * aml_chip = provider->priv;
@@ -81,14 +118,8 @@ int aml_secure_init(struct amlnand_chip *aml_chip)
 	ret = amlnand_info_init(aml_chip, &(aml_chip->nand_secure),secure_ptr,SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
 	if(ret < 0){
 		aml_nand_msg("invalid nand secure_ptr\n");
-	}
-	
-	if(aml_chip->nand_secure.arg_valid == 0){
-		memset(secure_ptr,0xa5,CONFIG_SECURE_SIZE);
-		ret = amlnand_save_info_by_name( aml_chip,&(aml_chip->nand_secure),secure_ptr, SECURE_INFO_HEAD_MAGIC,CONFIG_SECURE_SIZE);
-		if(ret < 0){
-			aml_nand_msg("nand save default secure_ptr failed");
-		}
+		ret = -1;
+		goto exit_error0;
 	}
 
 #if 0

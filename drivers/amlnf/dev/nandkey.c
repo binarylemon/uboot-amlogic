@@ -22,8 +22,42 @@
 
 static struct amlnand_chip *aml_chip_key = NULL;
 
-static int aml_nand_update_key(struct amlnand_chip * chip)
+ int aml_nand_update_key(struct amlnand_chip * aml_chip, char *key_ptr)
 {
+	int ret = 0;
+	int malloc_flag = 0;
+	char *key_buf = NULL;
+	
+	if(key_buf == NULL){
+		
+		key_buf = kzalloc(CONFIG_KEYSIZE, GFP_KERNEL);
+		malloc_flag = 1;
+		if(key_buf == NULL)
+			return -ENOMEM;
+		memset(key_buf,0,CONFIG_KEYSIZE);
+		ret = amlnand_read_info_by_name(aml_chip, &(aml_chip->nand_key),key_buf,KEY_INFO_HEAD_MAGIC, CONFIG_KEYSIZE);
+		if (ret) {
+			aml_nand_msg("read key error,%s\n",__func__);
+			ret = -EFAULT;
+			goto exit;
+		}
+	}else{
+		key_buf = key_ptr;
+	}
+	
+	aml_nand_msg("aml_chip->nand_key : arg_type%d valid %d,update_flag %d,valid_blk_addr %d,valid_page_addr %d",aml_chip->nand_key.arg_type,aml_chip->nand_key.arg_valid,\
+		aml_chip->nand_key.update_flag,aml_chip->nand_key.valid_blk_addr,aml_chip->nand_key.valid_page_addr);
+	
+	ret = amlnand_save_info_by_name( aml_chip,&(aml_chip->nand_key),key_buf, KEY_INFO_HEAD_MAGIC,CONFIG_KEYSIZE);
+	if(ret < 0){
+		aml_nand_msg("aml_nand_update_key : save key info failed");
+	}
+	
+exit:
+	if(malloc_flag &&(key_buf)){
+		kfree(key_buf);
+		key_buf = NULL;
+	}	
 	return 0;
 }
 
@@ -114,14 +148,6 @@ int aml_key_init(struct amlnand_chip *aml_chip)
 	ret = amlnand_info_init(aml_chip, &(aml_chip->nand_key),key_ptr,KEY_INFO_HEAD_MAGIC, CONFIG_KEYSIZE);
 	if(ret < 0){
 		aml_nand_msg("invalid nand key\n");
-	}
-	
-	if(aml_chip->nand_key.arg_valid == 0){
-		memset(key_ptr,0x0,CONFIG_KEYSIZE);
-		ret = amlnand_save_info_by_name( aml_chip,&(aml_chip->nand_key),key_ptr, KEY_INFO_HEAD_MAGIC,CONFIG_KEYSIZE);
-		if(ret < 0){
-			aml_nand_msg("nand save default key failed");
-		}
 	}
 	
 	aml_chip_key = aml_chip;

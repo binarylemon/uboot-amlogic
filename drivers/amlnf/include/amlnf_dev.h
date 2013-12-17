@@ -57,9 +57,12 @@
 
 /***nand device name***/
 #define 	NAND_BOOT_NAME		  			"nfboot"
+#define 	NAND_CACHE_NAME		  		"nfcache"
 #define 	NAND_CODE_NAME	      	  			"nfcode"
 #define 	NAND_DATA_NAME		  			"nfdata"
 #define 	NAND_RESERVED_NAME  			"nfrevd"
+
+#define	PHY_DEV_NUM		3			
 
 /***nand BOOT flags***/
 #define NAND_BOOT_NORMAL			0

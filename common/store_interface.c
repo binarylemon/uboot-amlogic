@@ -164,6 +164,11 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg("nand cmd %s failed ",cmd);
 					return -1;
 				}
+				ret = run_command("amlnf  deverase cache 0",0);
+				if(ret != 0){
+					store_msg("nand cmd %s failed ",cmd);
+					return -1;
+				}
 				return ret;
 			}
 			else if(POR_SPI_BOOT()){
@@ -178,6 +183,11 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					}
 
 					ret = run_command("amlnf  deverase code 0",0);
+					if(ret != 0){
+						store_msg("nand cmd %s failed ",cmd);
+						return -1;
+					}
+					ret = run_command("amlnf  deverase cache 0",0);
 					if(ret != 0){
 						store_msg("nand cmd %s failed ",cmd);
 						return -1;
@@ -446,12 +456,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	}
 	else if (strcmp(cmd, "scrub") == 0){	
 		off = (ulong)simple_strtoul(argv[2], NULL, 16);
-		if(off == 0){
-			sprintf(str, "amlnf  erase %d", off);
-		}else{
-			off = 0x0;
-			sprintf(str, "amlnf  scrub %d", off);
-		}
+		sprintf(str, "amlnf  scrub %d", off);
 		if((POR_NAND_BOOT()) ){	
 			ret = run_command(str, 0);
 			if(ret != 0){
@@ -462,6 +467,16 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			if(device_boot_flag == SPI_NAND_FLAG){
 				store_dbg("spi+nand , %s %d ",__func__,__LINE__);
 				ret = run_command(str, 0);
+				if(ret != 0){
+					store_msg("nand cmd %s failed",cmd);
+					return -1;
+				}
+				ret = run_command("sf probe 2", 0);
+				if(ret != 0){
+					store_msg("nand cmd %s failed",cmd);
+					return -1;
+				}
+				ret = run_command("sf erase 0 100000", 0);
 				if(ret != 0){
 					store_msg("nand cmd %s failed",cmd);
 					return -1;

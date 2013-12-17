@@ -3,6 +3,43 @@
 
 struct amlnand_chip *aml_chip_env = NULL;
 
+int aml_nand_update_ubootenv(struct amlnand_chip * aml_chip, char *env_ptr)
+{
+	int ret = 0;
+	char malloc_flag = 0;
+	char *env_buf = NULL;
+	
+	if(env_buf == NULL){
+		
+		env_buf = kzalloc(CONFIG_ENV_SIZE, GFP_KERNEL);
+		malloc_flag = 1;
+		if(env_buf == NULL)
+			return -ENOMEM;
+		memset(env_buf,0,CONFIG_ENV_SIZE);
+		ret = amlnand_read_info_by_name(aml_chip, &(aml_chip->uboot_env),env_buf,ENV_INFO_HEAD_MAGIC, CONFIG_ENV_SIZE);
+		if (ret) 
+		{
+			aml_nand_msg("read ubootenv error,%s\n",__func__);
+			ret = -EFAULT;
+			goto exit;
+		}
+	}else{
+		env_buf = env_ptr;
+	}
+	
+	ret = amlnand_save_info_by_name(aml_chip, &(aml_chip->uboot_env),env_buf,ENV_INFO_HEAD_MAGIC, CONFIG_ENV_SIZE);
+	if(ret < 0){
+		aml_nand_msg("aml_nand_update_secure : update secure failed");
+	}
+	
+exit:	
+	if(malloc_flag &&(env_buf)){
+		kfree(env_buf);
+		env_buf = NULL;
+	}
+	return 0;
+}
+
 int amlnf_env_save(unsigned char *buf,int len)
 {
 	unsigned char *env_buf = NULL;

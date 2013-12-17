@@ -36,6 +36,9 @@
 #define     MMC_RESERVED_NAME               "reserved"
 #define     MMC_RESERVED_SIZE               (64*SZ_1M)
 
+#define     MMC_CACHE_NAME                  "cache"
+// #define     MMC_CACHE_SIZE                  (512*SZ_1M) // this is not used and should be get from spl
+
 #define     MMC_ENV_NAME                    "env"
 #define     MMC_ENV_SIZE                    (8*SZ_1M)
 

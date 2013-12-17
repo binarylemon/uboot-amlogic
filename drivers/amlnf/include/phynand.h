@@ -10,7 +10,14 @@
 #include <mach/pinmux_queue.h>
 #endif
 //#define CONFIG_OF
-#define DRV_PHY_VERSION	   	 "2.01.001"
+
+#define NAND_COMPATIBLE_REGION     1
+#define NAND_RESERVED_REGION	       1
+#define NAND_ADDNEW_REGION	       1
+#define NAND_BUG_FIX_REGION	       1
+
+#define DRV_PHY_VERSION	   ((NAND_COMPATIBLE_REGION << 24)+(NAND_RESERVED_REGION << 16) \
+							+(NAND_ADDNEW_REGION << 8)+(NAND_BUG_FIX_REGION))	
 
 #ifdef CONFIG_NAND_AML_M8
 #define NAND_MFR_USER          0x100 
@@ -610,8 +617,9 @@ struct dev_para{
 };
 
 struct nand_config{
+	unsigned int crc;
 	struct dev_para dev_para[MAX_DEVICE_NUM];	
-	unsigned char driver_version[10];
+	unsigned int driver_version;
 	unsigned char dev_num;
 	unsigned short fbbt_blk_addr;
 };
@@ -621,6 +629,7 @@ struct nand_bbt {
 };
 
 struct shipped_bbt {
+	unsigned int crc;
 	unsigned short	shipped_bbt[MAX_CHIP_NUM][MAX_BAD_BLK_NUM];
 };
 
@@ -648,10 +657,12 @@ struct _nand_arg_info{
 	unsigned short	free_blk_addr;
 	unsigned char  	arg_valid;	
 	unsigned short	 timestamp;
+	unsigned char update_flag;  // flag indicate that: if read ecc error of any page of this block, should move data to another block
 };
 typedef struct _nand_arg_info nand_arg_info;
 
 struct block_status{
+	unsigned int crc;
 	unsigned short blk_status[MAX_CHIP_NUM][MAX_BLK_NUM];
 };
 

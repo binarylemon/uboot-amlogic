@@ -5,7 +5,7 @@ LIB	:= $(obj)libamlnf_phy.o
 
 
 $(obj)/libamlnf_phy.o:
-	@cp ./libamlnf_phy_131112.z ../../../build/drivers/amlnf/phy/libamlnf_phy.o
+	@cp ./libamlnf_phy_131217.z ../../../build/drivers/amlnf/phy/libamlnf_phy.o
 
 #########################################################################
 

@@ -15,6 +15,7 @@ bool is_partition_checked = false;
 struct partitions emmc_partition_table[]={
     PARTITION_ELEMENT(MMC_BOOT_NAME, MMC_BOOT_DEVICE_SIZE, STORE_CODE),
     PARTITION_ELEMENT(MMC_RESERVED_NAME, MMC_RESERVED_SIZE, 0),
+    PARTITION_ELEMENT(MMC_CACHE_NAME, 0, 0),                    // the size and flag should be get from spl
     // PARTITION_ELEMENT(MMC_KEY_NAME, MMC_KEY_SIZE, 0),
     // PARTITION_ELEMENT(MMC_SECURE_NAME, MMC_SECURE_SIZE, 0),
     PARTITION_ELEMENT(MMC_ENV_NAME, MMC_ENV_SIZE, 0),
@@ -41,17 +42,52 @@ void show_mmc_patition (struct partitions *part, int part_num)
 	}
 }
 
-struct partitions* find_mmc_partition_by_name (char *name)
+static struct partitions* find_partition_by_name (struct partitions *part_tbl, int part_num, char *name)
 {
     int i;
 
-	for (i=0; i < mmc_config_of->part_num ; i++) {
-	    if (!strcmp(mmc_config_of->partitions[i].name , name))
-            return &(mmc_config_of->partitions[i]);
+	for (i=0; i < part_num; i++) {
+        if (!part_tbl[i].name || (part_tbl[i].name[0] == '\0'))
+            break;
+
+	    if (!strncmp(part_tbl[i].name, name, MAX_MMC_PART_NAME_LEN)) {
+            return &(part_tbl[i]);
+        }
 	}
 
-    printf("Can not find partition name \"%s\"\n", name);
     return NULL;
+}
+
+struct partitions* find_mmc_partition_by_name (char *name)
+{
+    struct partitions *p=NULL;
+
+    p = find_partition_by_name(mmc_config_of->partitions, mmc_config_of->part_num, name);
+    if (!p) 
+        printf("Can not find partition name \"%s\"\n", name);
+
+    return p;
+}
+
+// set partition info according to what get from the spl
+int set_partition_info (struct partitions *src_tbl, int src_part_num, 
+        struct partitions *dst_tbl, int dst_part_num, char *name)
+{
+    struct partitions *src=NULL;
+    struct partitions *dst=NULL;
+
+    src = find_partition_by_name(src_tbl, src_part_num, name);
+    if (!src)
+        return -1; // error
+        
+    dst = find_partition_by_name(dst_tbl, dst_part_num, name);
+    if (!src)
+        return -1; // error
+
+    dst->size = src->size;
+    dst->mask_flags = src->mask_flags;
+
+    return 0; // OK
 }
 
 int mmc_get_partition_table (struct mmc *mmc)
@@ -69,7 +105,12 @@ int mmc_get_partition_table (struct mmc *mmc)
 	memset(mmc_config_of,0x0,(sizeof(struct mmc_config)));
 	part_ptr = mmc_config_of->partitions;
 
-	for(i=0; i < (sizeof(emmc_partition_table)/sizeof(emmc_partition_table[0])) ; i++){
+    set_partition_info(part_table, MAX_MMC_PART_NUM, 
+            emmc_partition_table, ARRAY_SIZE(emmc_partition_table), MMC_ENV_NAME);
+    set_partition_info(part_table, MAX_MMC_PART_NUM, 
+            emmc_partition_table, ARRAY_SIZE(emmc_partition_table), MMC_CACHE_NAME);
+
+	for (i=0; i < ARRAY_SIZE(emmc_partition_table); i++) {
         if((!strncmp(emmc_partition_table[i].name, MMC_BOOT_NAME, MAX_MMC_PART_NAME_LEN)) // eMMC boot partition
                 && (!POR_EMMC_BOOT())) { // not eMMC boot, skip
             printf("Not emmc boot, POR_BOOT_VALUE=%d\n", POR_BOOT_VALUE);
@@ -130,7 +171,12 @@ int mmc_get_partition_table (struct mmc *mmc)
     part_num_left = MAX_MMC_PART_NUM - part_num;
 	for(i=0; i < part_num_left ; i++){
         if (!strncmp(part_table[i].name, MMC_ENV_NAME, MAX_MMC_PART_NAME_LEN)) { // skip env partition
-            printf("[%s] skip env partition.\n", __FUNCTION__);
+            printf("[%s] skip %s partition.\n", __FUNCTION__, MMC_ENV_NAME);
+            continue;
+        }
+
+        if (!strncmp(part_table[i].name, MMC_CACHE_NAME, MAX_MMC_PART_NAME_LEN)) { // get the info of cache partition
+            printf("[%s] skip %s partition.\n", __FUNCTION__, MMC_CACHE_NAME);
             continue;
         }
 

@@ -16,7 +16,8 @@
 #define 	SZ_1M 					0x100000
 
 #define 	STORE_CODE 				1
-#define 	STORE_DATA				(1<<1)
+#define	STORE_CACHE				(1<<1)
+#define 	STORE_DATA				(1<<2)
 
 #define SPI_BOOT_FLAG 			0
 #define NAND_BOOT_FLAG 		1
