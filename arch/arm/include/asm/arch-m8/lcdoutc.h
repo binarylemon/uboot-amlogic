@@ -380,6 +380,8 @@ typedef struct DSI_Config_s{
         unsigned int    dsi_clk_div;
         unsigned int    dsi_clk_max;
         unsigned int    dsi_clk_min;
+        unsigned int    numerator;
+        unsigned int    denominator;
         unsigned int    dsi_cur_clk;
         unsigned int    pol_vs_hs_de;
         unsigned int    venc_color_type;
@@ -389,7 +391,13 @@ typedef struct DSI_Config_s{
         unsigned char   lane_num;
         unsigned char   refresh_rate;
         unsigned char   trans_mode;
-
+				unsigned int    hline;
+				unsigned int    hsa; 
+				unsigned int    hbp; 
+				unsigned int    vsa; 
+				unsigned int    vbp; 
+				unsigned int    vfp; 
+				unsigned int    vact;
         unsigned char   trans_type;    //such ad hs or lp
         unsigned char   ack_type;      //if need bta ack check
         unsigned char   tear_switch;

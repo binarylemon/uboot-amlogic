@@ -1605,10 +1605,9 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 			div_pre_sel_max = DIV_PRE_SEL_MAX;
 			div_post = 1;
 			crt_xd_max = 16;
-			dsi_clk_min = fout*8-40*1000;
-			dsi_clk_max = fout*8+40*1000;
-			dsi_clk_div = 2; //2//4//8
-			pConf->lcd_control.mipi_config->dsi_clk_div=dsi_clk_div;
+      dsi_clk_min =pConf->lcd_control.mipi_config->dsi_clk_min; 
+			dsi_clk_max =pConf->lcd_control.mipi_config->dsi_clk_max; 
+			dsi_clk_div = pConf->lcd_control.mipi_config->dsi_clk_div;
 			iflogic_vid_clk_in_max = MIPI_MAX_VID_CLK_IN;
 			break;
 		case LCD_DIGITAL_LVDS:
@@ -1652,7 +1651,7 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
 								fout_pll = div_pre_out * div_pre;
 								//DBG_PRINT("pre_div_sel=%d, div_pre=%d, fout_pll=%d\n", pre_div_sel, div_pre, fout_pll);
 
-								if ((fout_pll <= dsi_clk_div*dsi_clk_max) && (fout_pll >= dsi_clk_div*dsi_clk_min)){
+								if ((fout_pll <= dsi_clk_div*dsi_clk_max*1000) && (fout_pll >= dsi_clk_div*dsi_clk_min*1000)){
 									for (od_sel = OD_SEL_MAX; od_sel > 0; od_sel--) {
 										od = od_table[od_sel - 1];
 										pll_vco = fout_pll * od;
@@ -2546,9 +2545,30 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata));
 		}
 		DBG_PRINT("lane num= %d\n",  cfg->lane_num);
-
+		cfg->dsi_clk_div = 1;
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_clk_min_max", NULL);
+		if(propdata == NULL){
+				printf("faild to get dsi_clk_min_max\n");
+				cfg->dsi_clk_min = 900;
+				cfg->dsi_clk_max = 1000;
+		} 
+		else {
+			  cfg->dsi_clk_min = (unsigned short)(be32_to_cpup((u32*)propdata));
+				cfg->dsi_clk_max = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		}
+	 DBG_PRINT("dsi_clk_min_max_div= %d %d %d \n", cfg->dsi_clk_min,cfg->dsi_clk_max,cfg->dsi_clk_div);
+	 propdata = fdt_getprop(dt_addr, nodeoffset, "pclk_div_lanebyteclk", NULL);
+	 if(propdata == NULL){
+			 printf("faild to get pclk_div_lanebyteclk\n");
+			 cfg->numerator = 0;
+	 } 
+	 else {
+			 cfg->numerator= (unsigned short)(be32_to_cpup((u32*)propdata));
+	 }
+	 cfg->denominator = 10;
+	 DPRINT("cfg->denominator=%d, cfg->numerator=%d",cfg->denominator, cfg->numerator);
 	}
-
+/////////////////////////////////
 	return ret;
 }
 

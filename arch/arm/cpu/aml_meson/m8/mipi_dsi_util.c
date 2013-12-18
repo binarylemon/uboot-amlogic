@@ -39,13 +39,15 @@ void init_mipi_dsi_phy(Lcd_Config_t *p)
 
         DPRINT("MIPI_DSI_CHAN_CTRL=%x\n", LCD_DSI_ADDR(MIPI_DSI_CHAN_CTRL));
         switch (div){
-                case 4:
-                        div = 2;
-                        break;
-                case 8:
-                        div = 3;
+                case 1:
+                        div = 0;
                         break;
                 case 2:
+                        div = 2;
+                        break;
+                case 4:
+                				div = 3;
+                				break;
                 default:
                         div = 0;
                         break;
@@ -460,7 +462,7 @@ void set_mipi_dsi_host_to_video_mode(int lane_num,                              
 
         // 4     Configure the video relative parameters according to the output type
         //         include horizontal timing and vertical line
-        config_video_para(output_type, color_code, p);
+        config_video_para(p);
 
         // -----------------------------------------------------
         // Finish Configuration
@@ -614,73 +616,66 @@ inline void delay_us (int us)
 // -----------------------------------------------------------------------------
 //                     Function: config_video_para
 // -----------------------------------------------------------------------------
-void config_video_para(tv_enc_lcd_type_t output_type,
-                unsigned int      color_code,
-                Lcd_Config_t *pConf)
+void config_video_para(Lcd_Config_t *pConf)
 {
-        unsigned int hline, hfp, hsa, hbp, vsa, vbp, vfp, vact;
-
-        unsigned m, n, od, od_fb, frac;
+        unsigned pre_div, xd, post_div;
         unsigned lcd_clk;
         unsigned pclk;
         unsigned lanebyteclk;
         unsigned int div;
-        unsigned int factor100;
         DSI_Config_t    *cfg= pConf->lcd_control.mipi_config;
-        Lcd_Timing_t    *timing = &pConf->lcd_timing;
+        Lcd_Timing_t    *t = &pConf->lcd_timing;
         Lcd_Basic_t     *basic = &pConf->lcd_basic;
 
-        div = cfg->dsi_clk_div;
+        if (0 == cfg->numerator){
+                div = cfg->dsi_clk_div;
+                post_div = 1;
 
-        frac = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_FRAC) & 0xfff;
-        od_fb = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_LEVEL) & 0x3;
-        m = ((pConf->lcd_timing.pll_ctrl) >> PLL_CTRL_M) & 0x1ff;
-        n = ((pConf->lcd_timing.pll_ctrl) >> PLL_CTRL_N) & 0x1f;
-        od = ((pConf->lcd_timing.pll_ctrl) >> PLL_CTRL_OD) & 0x3;
-        od = exp2_tbl[od];
+                pre_div = ((t->div_ctrl) >> DIV_CTRL_DIV_PRE) & 0x7;
+                pre_div = div_pre_table[pre_div];
+                xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
 
-        if (od_fb > 1)
-                od_fb = 1;
-        else
-                od_fb = 0;
+                lcd_clk = t->lcd_clk * pre_div * post_div * xd;
 
-        lcd_clk = (frac * (od_fb + 1) * FIN_FREQ) / 4096;
-        lcd_clk = ((m * (od_fb + 1) * FIN_FREQ + lcd_clk) / (n * od)) * 1000;
-        lanebyteclk = lcd_clk/div;
-        lanebyteclk = lanebyteclk / 4;
-        lanebyteclk = lanebyteclk/1000;
-        DPRINT("pll out clk=%d, lanebyteclk/1000=%d\n", lcd_clk, lanebyteclk);
+                lanebyteclk = lcd_clk/div;
+                lanebyteclk = lanebyteclk / 8;
+                lanebyteclk = lanebyteclk/1000;
+                DPRINT("pll out clk=%d Hz, lanebyteclk/1000=%d kHz\n", lcd_clk, lanebyteclk);
 
-        pclk = pConf->lcd_timing.lcd_clk/1000;
-        DPRINT("pclk/1000=%d\n", pclk);
-        factor100 = lanebyteclk * 10000 / pclk;
-        DPRINT("factor*100=%d", factor100);
+                pclk = pConf->lcd_timing.lcd_clk/1000;
+                DPRINT("pixel clk=%d kHz\n", pclk);
+                cfg->denominator = lanebyteclk/1000;
+                cfg->numerator = pclk/1000;
+                DPRINT("d=%d, n=%d, d/n=%d\n",
+                cfg->denominator, cfg->numerator, cfg->denominator/cfg->numerator);
+        }
 
-        hline = (basic->h_period*factor100 + factor100 - 1) / 10000;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
-        hfp   = ((timing->video_on_pixel+3 - timing->hsync_width - timing->hsync_bp)*factor100 + factor100 - 1) / 10000;
-        hsa   = (timing->hsync_width*factor100 + factor100 - 1) / 10000;
-        hbp   = (timing->hsync_bp*factor100 + factor100 - 1) / 10000;
-        vsa   = timing->vsync_width;
-        vbp   = timing->vsync_bp;
-        vfp   = basic->v_period  - timing->vsync_bp-basic->v_active;
-        vact  = basic->v_active;
+        cfg->hline =(basic->h_period*cfg->denominator + cfg->numerator - 1) / cfg->numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
+        cfg->hsa   = (t->hsync_width*cfg->denominator + cfg->numerator - 1) / cfg->numerator;
+        cfg->hbp   = (t->hsync_bp * cfg->denominator + cfg->numerator - 1) / cfg->numerator;
+
+        cfg->vsa   = t->vsync_width;
+        cfg->vbp   = t->vsync_bp;
+        cfg->vfp   = t->video_on_line - t->vsync_width - t->vsync_bp;
+        cfg->vact  = basic->v_active;
 
         DPRINT(" ============= VIDEO TIMING SETTING =============\n");
-        DPRINT(" HLINE        = %d\n", hline);
-        DPRINT(" HSA          = %d\n", hsa);
-        DPRINT(" HBP          = %d\n", hbp);
-        DPRINT(" HFP          = %d\n", hfp);
-        DPRINT(" VBP          = %d\n", vbp);
-        DPRINT(" VFP          = %d\n", vfp);
-        DPRINT(" VACT         = %d\n", vact);
+        DPRINT(" HLINE        = %d\n", cfg->hline);
+        DPRINT(" HSA          = %d\n", cfg->hsa);
+        DPRINT(" HBP          = %d\n", cfg->hbp);
+       // DPRINT(" HFP          = %d\n", hfp);
+        DPRINT(" VBP          = %d\n", cfg->vbp);
+        DPRINT(" VFP          = %d\n", cfg->vfp);
+        DPRINT(" VACT         = %d\n", cfg->vact);
         DPRINT(" ================================================\n");
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    hline);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      hsa);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      hbp);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     vsa);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     vbp);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     vfp);
-        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, vact);
+
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    cfg->hline);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      cfg->hsa);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      cfg->hbp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     cfg->vsa);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     cfg->vbp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     cfg->vfp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, cfg->vact);
 }
 
 // ----------------------------------------------------------------------------

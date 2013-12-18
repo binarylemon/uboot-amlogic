@@ -593,9 +593,8 @@ void set_mipi_edpi(unsigned int edpi_allowed_cmd_size,                  // allow
 extern void check_phy_st(void);                                                    // Check the status of the dphy: phylock and stopstateclklane
 
 extern void delay_us(int us);
-extern void config_video_para(tv_enc_lcd_type_t output_type,
-                unsigned int    color_code,                   // Configure video parameter such HFP/HSA/HBP/HACT...
-                Lcd_Config_t    *pConf);
+extern void config_video_para(Lcd_Config_t    *pConf); // Configure video parameter such HFP/HSA/HBP/HACT...
+                
 
 extern void wait_bta_ack(void);                                                    // wait ack from bta
 extern void wait_cmd_fifo_empty(void);                                             // wait generic fifo empty
