@@ -261,6 +261,8 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_M8
 	//if bootup failed, switch to next boot device
 	writel(0, P_WATCHDOG_TC); //disable watchdog
+	//temp added
+	writel(0,0xc8100000);
 #endif
 
 #ifdef CONFIG_MESON_TRUSTZONE		
