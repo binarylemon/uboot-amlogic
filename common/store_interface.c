@@ -476,7 +476,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
 				}
-				ret = run_command("sf erase 0 100000", 0);
+				ret = run_command("sf erase 0 200000", 0);
 				if(ret != 0){
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
