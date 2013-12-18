@@ -363,14 +363,25 @@
 	"batlow_warning="\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
-		"bmp display ${batterylow_offset}; msleep 1000\0"
+		"bmp display ${batterylow_offset}; msleep 1000\0"\
+    "ota_update=run prepare;"\
+        "if mmcinfo; then "\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; "\
+		"fi;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+
 
 
 
 #define CONFIG_BOOTCOMMAND  \
     "imgread kernel boot ${loadaddr}; "\
     "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
-    "bootm"
+    "bootm;"\
+    "run ota_update"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
