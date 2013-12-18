@@ -118,15 +118,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif //AML_M6_JTAG_ENABLE
 
-#if defined(WA_AML8726_M3_REF_V10) || defined(SHUTTLE_M3_MID_V1)
-	//PWREN GPIOAO_2, PWRHLD GPIOAO_6 pull up
-	//@WA-AML8726-M3_REF_V1.0.pdf -- WA_AML8726_M3_REF_V10
-	//@Q07CL_DSN_RB_0922A.pdf -- SHUTTLE_M3_MID_V1
-	//@AppNote-M3-CorePinMux.xlsx
-	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<6)));
-	setbits_le32(P_AO_GPIO_O_EN_N,((1<<18)|(1<<22)));
-#endif
-
 	//Note: Following msg is used to calculate romcode boot time
 	//         Please DO NOT remove it!
     serial_puts("\nTE : ");
@@ -158,9 +149,9 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 	//TEMP add 
 	unsigned int nPLL = readl(P_HHI_SYS_PLL_CNTL);
-	unsigned int nDDRCLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+	unsigned int nA9CLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
 	serial_puts("\nCPU clock is ");
-	serial_put_dec(nDDRCLK);
+	serial_put_dec(nA9CLK);
 	serial_puts("MHz\n");
 
 
@@ -174,8 +165,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_puts(" us\n");
 
 	//asm volatile ("wfi");
-	
-    nTEBegin = TIMERE_GET();
+	    
     // load uboot
 #ifdef CONFIG_ENABLE_WATCHDOG
 	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
@@ -183,7 +173,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
 	}
 #else
-    	load_uboot(__TEXT_BASE,__TEXT_SIZE);
+    load_uboot(__TEXT_BASE,__TEXT_SIZE);
 #endif
 
 #if defined(CONFIG_AML_V2_USBTOOL)
@@ -194,9 +184,9 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     }
 #endif//#if defined(CONFIG_AML_V2_USBTOOL)
 
-    serial_puts("\nLoad UBOOT total use : ");
-    serial_put_dec(get_utimer(nTEBegin));
-    serial_puts(" us\n");
+    serial_puts("\nTE : ");
+	serial_put_dec(TIMERE_GET());
+	serial_puts("\n");
 
 	//asm volatile ("wfi");
 	// load secureOS
@@ -223,40 +213,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #else
 	*((volatile unsigned int*)0x1fa00000) = 0;
 #endif
-
-#if 0
-    //wait serial_puts end.
-    for(i = 0; i < 10; i++)
-		  __udelay(1000);
-#else
-	serial_wait_tx_empty();
-#endif
-
-#ifdef CONFIG_M6_TEST_CPU_SWITCH
-
-
-	extern int get_cup_id(void);
-	__udelay(10000);
-	serial_puts("\n*************************************\n");
-	__udelay(10000);
-	serial_puts("CPU switch : CPU #");
-	__udelay(10000);
-	serial_put_hex(get_cpu_id(),4);
-	__udelay(10000);
-	serial_puts(" is sleeping\n");
-	__udelay(10000);
-	serial_puts("*************************************\n\n");
-	__udelay(10000);
-
-
-	writel(__TEXT_BASE,0xd901ff84);
-	writel(1|1<<1,0xd901ff80);
-	asm volatile ("": : :"memory");
-	asm  volatile("dsb");
-	asm volatile ("sev");
-	while(1);
-
-#endif//CONFIG_M6_TEST_CPU_SWITCH
 
 #ifdef CONFIG_M8
 	//if bootup failed, switch to next boot device

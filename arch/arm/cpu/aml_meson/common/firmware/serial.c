@@ -23,6 +23,8 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    |UART_CNTL_MASK_RST_TX
 	    |UART_CNTL_MASK_RST_RX
 	    |UART_CNTL_MASK_CLR_ERR
+	    |UART_CNTL_MASK_TX_EN
+	    |UART_CNTL_MASK_RX_EN
 	,P_UART_CONTROL(UART_PORT_CONS));
     serial_set_pin_port(UART_PORT_CONS);
     clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),
@@ -88,6 +90,8 @@ void serial_puts(const char *s)
     while (*s) {
         serial_putc(*s++);
     }
+
+	serial_wait_tx_empty();
 }
 SPL_STATIC_FUNC
 void serial_put_hex(unsigned int data,unsigned bitlen)

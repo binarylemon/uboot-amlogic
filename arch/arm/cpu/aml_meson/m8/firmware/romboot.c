@@ -114,12 +114,6 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 
     unsigned * mem;    
     
-    serial_puts("amlogic log : TPL size is ");
-    serial_put_dec(size);
-    serial_puts("Bytes\n");
-
-    unsigned int nTEBegin = TIMERE_GET();
-    
     //switch(POR_1ST_SPI)
     switch(POR_GET_1ST_CFG(por_cfg))
     {
@@ -154,10 +148,6 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
            return 1;
     }
 
-    serial_puts("\nLoad image done and time use : ");
-    serial_put_dec(get_utimer(nTEBegin));
-    serial_puts(" us\n");
-
 #if defined(CONFIG_M8_SECU_BOOT)
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
@@ -165,8 +155,6 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 		while(1);
 	}	
 #endif //CONFIG_M8_SECU_BOOT
-
-    nTEBegin = TIMERE_GET();
 
 #if defined (CONFIG_VLSI_EMULATOR)
     serial_puts("Load uncompressed image for PxP!\n");
@@ -176,15 +164,12 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;    
     if(rc==0){
-        serial_puts("ucl decompress\n");
+        serial_puts("ucl decompress...");
         rc=uclDecompress((char*)target,&len,(char*)temp_addr);
-        serial_puts(rc?"decompress false\n":"decompress true\n");
+        serial_puts(rc?"fail\n":"pass\n");
     }
 #endif    
-#endif    
-    serial_puts("\nImage ucl-decompress done and time use : ");
-    serial_put_dec(get_utimer(nTEBegin));
-    serial_puts(" us\n");
+#endif        
 #endif //#if defined (CONFIG_VLSI_EMULATOR)
 
 #ifndef CONFIG_IMPROVE_UCL_DEC
@@ -229,9 +214,9 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;
     if(!rc){
-	    serial_puts("ucl decompress\n");
+	    serial_puts("ucl decompress...");
 	    rc=uclDecompress((char*)target,&len,(char*)temp_addr);
-        serial_puts(rc?"decompress false\n":"decompress true\n");
+        serial_puts(rc?"fail\n":"pass\n");
     }
 #endif    
 #endif
