@@ -65,9 +65,12 @@
 #define	PHY_DEV_NUM		3			
 
 /***nand BOOT flags***/
-#define NAND_BOOT_NORMAL			0
-#define NAND_BOOT_UPGRATE			1
-#define NAND_BOOT_ERASE				2
+#define NAND_BOOT_NORMAL					0
+#define NAND_BOOT_UPGRATE					1
+#define NAND_BOOT_ERASE_PROTECT_CACHE         2
+#define NAND_BOOT_ERASE_WITH_CACHE   		3
+#define NAND_BOOT_SCRUB_DATA	        			4
+#define NAND_BOOT_SCRUB_ALL				5
 
 /****nand debug flag info******/
 #define NAND_WRITE_VERIFY			1
