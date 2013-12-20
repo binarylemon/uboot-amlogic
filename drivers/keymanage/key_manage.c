@@ -189,6 +189,7 @@ static int key_efuse_init(char *buf,unsigned int len)
 		}
 		else{
 			printf("%s written done.\n", info.title);
+			return 0;
 		}
 	}
 #else
