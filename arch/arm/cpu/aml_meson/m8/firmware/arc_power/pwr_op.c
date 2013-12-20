@@ -319,7 +319,7 @@ int pmu_get_battery_voltage(void)
     result = (val[0] << 4) | (val[1] & 0x0f);
     result = (result * 5000) / 4096;                        // resolution: 1.221mV
 
-    return result;
+    return result | (val[0] << 24 | val[1] << 16);
 }
 
 #ifdef CONFIG_RESET_TO_SYSTEM
@@ -380,7 +380,7 @@ void rn5t618_power_on_at_24M()                                          // need 
 {
     printf_arc("enter 24MHz. reason:");
 
-    serial_put_hex(exit_reason, 8);
+    serial_put_hex(exit_reason, 32);
     wait_uart_empty();
     printf_arc("\n");
 
@@ -497,6 +497,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     int ret = 0;
     int gpio_sel0;
     int gpio_mask;
+    int low_bat_cnt = 0;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
@@ -542,9 +543,14 @@ unsigned int rn5t618_detect_key(unsigned int flags)
                  * we need to break suspend loop to resume system, then system will shut down
                  */
                 battery_voltage = pmu_get_battery_voltage();
-                if (battery_voltage < 3480) {
-                    exit_reason = 2;
-                    break;
+                if (((battery_voltage & 0xffff) < 3480) && (battery_voltage & 0xffff)) {
+                    low_bat_cnt++;
+                    if (low_bat_cnt >= 3) {
+                        exit_reason = (battery_voltage & 0xffff0000) | 2;
+                        break;
+                    }
+                } else {
+                    low_bat_cnt = 0;
                 }
                 if ((readl(0xc8100088) & (1<<8))) {        // power key
                     exit_reason = 3;
