@@ -139,8 +139,8 @@ void close_usb_phy_clock(int cfg)
 
     dwc_otg_pullup(0);//disconnect
     __udelay(20);
-    /*dwc_otg_power_off_phy();*///Don't call this as it may cause pull-down failed
-    run_command("sleep 1", 0);
+    /*dwc_otg_power_off_phy();*///Don't call this as it may cause pull-down failed!!!!
+    run_command("sleep 1", 0);//sleep sometime to improve pc compatibility!!
 
     return;
 }

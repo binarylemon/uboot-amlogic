@@ -296,7 +296,7 @@ static int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 
     DWN_MSG("======sdc burn SUCCESS.\n");
     optimus_led_show_burning_success();
-    optimus_burn_complete(rebootAfterBurn ? 1 : 2);//set complete flag and poweroff if burn successful
+    optimus_burn_complete(rebootAfterBurn ? rebootAfterBurn : OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY);//set complete flag and poweroff if burn successful
     return 0;
 }
 
@@ -383,7 +383,7 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
             }
 
             DWN_MSG("Reset to load NEW uboot from ext-mmc!\n");
-            optimus_reset();
+            optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE);
             return __LINE__;//should never reach here!!
         }
     }

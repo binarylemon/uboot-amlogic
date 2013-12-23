@@ -176,13 +176,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
 #endif
 
-#if defined(CONFIG_AML_V2_USBTOOL)
-    //tell uboot it loaded from internal device or external device
-    if( 1 == romboot_info->boot_id )//see loaduboot.c, only boot from sdcard when "boot_id == 1"
-    {
-        writel(MESON_SDC_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);
-    }
-#endif//#if defined(CONFIG_AML_V2_USBTOOL)
 
     serial_puts("\nTE : ");
 	serial_put_dec(TIMERE_GET());

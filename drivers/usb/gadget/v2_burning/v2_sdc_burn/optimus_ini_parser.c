@@ -98,7 +98,7 @@ int print_sdc_burn_para(const ConfigPara_t* pCfgPara)
         printf("[%s]\n", SET_CUSTOM_PARA);
         printf("erase_bootloader = %d\n", pCustom->eraseBootloader);
         printf("erase_flash      = %d\n", pCustom->eraseFlash);
-        printf("reboot           = %d\n", pCustom->rebootAfterBurn);
+        printf("reboot           = 0x%x\n", pCustom->rebootAfterBurn);
         printf("\n");
     }
 

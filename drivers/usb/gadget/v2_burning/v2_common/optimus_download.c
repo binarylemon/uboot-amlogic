@@ -1032,18 +1032,20 @@ int optimus_set_burn_complete_flag(void)
     return rc;
 }
 
-void optimus_reset(void)
+void optimus_reset(const int cfgFlag)
 {
     unsigned i = 0x100;
 
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
-    reboot_mode = AMLOGIC_NORMAL_BOOT;
-    //reboot_mode_clear();
-    //writel(MESON_USB_BURNER_REBOOT, &reboot_mode);//for test to reburn
-    printf("Burn Reboot...\n");//Add printf to delay to save env
 
+    //set reboot mode
+    reboot_mode = (OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE == cfgFlag) ? AMLOGIC_UPDATE_REBOOT : AMLOGIC_NORMAL_BOOT;
+
+#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
     //if not clear, uboot command reset will fail -> blocked
     *((volatile unsigned long *)0xc8100000) = 0;
+#endif//#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
+    printf("Burn Reboot...\n");//Add printf to delay to save env
     while(--i);
 
     /*disable_interrupts();*/
@@ -1071,7 +1073,7 @@ void optimus_poweroff(void)
     DWN_MSG("stop here as poweroff and powerkey not supported in platform!\n");
     DWN_MSG("You can <Ctrl-c> to reboot\n");
     while(!ctrlc())continue;
-    optimus_reset();
+    optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL);
 #else
     printf("To poweroff\n");
     run_command("poweroff", 0);
@@ -1087,7 +1089,7 @@ int optimus_burn_complete(const int choice)
     static unsigned _isBurnComplete = 0;
     int rc = 0;
 
-    if(0xfu == choice)
+    if(OPTIMUS_BURN_COMPLETE__QUERY == choice)
     {
         return _isBurnComplete;
     }
@@ -1096,14 +1098,14 @@ int optimus_burn_complete(const int choice)
 
     switch(choice)
     {
-        case 2://wait power key to power off, for sdc_burn
+        case OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY://wait power key to power off, for sdc_burn
             {
 #if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
                 DWN_MSG("stop here as poweroff and powerkey not supported in platform!\n");
                 DWN_MSG("You can <Ctrl-c> to reboot\n");
 
                 while(!ctrlc())continue;
-                optimus_reset();
+                optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL);
 #endif// #if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN
                 DWN_MSG("PLS short-press power key to shut down\n");
                 do
@@ -1111,13 +1113,14 @@ int optimus_burn_complete(const int choice)
                     rc = run_command("getkey", 0);
                 }while(rc);
             }
-        case 0:
+        case OPTIMUS_BURN_COMPLETE__POWEROFF_DIRECT:
             optimus_poweroff();
             break;
 
-        case 1:
+        case OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE:
+        case OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL:
             {
-                optimus_reset();
+                optimus_reset(choice);
             }
             break;
 

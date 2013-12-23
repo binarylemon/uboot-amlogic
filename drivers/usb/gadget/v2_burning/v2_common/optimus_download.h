@@ -139,7 +139,7 @@ int do_fat_get_file_format(const char* imgFilePath, unsigned char* pbuf, const u
 
 //common internal function
 int optimus_erase_bootloader(char* info);
-void optimus_reset(void);
+void optimus_reset(const int cfgFlag);
 int optimus_storage_init(int toErase);//init dest burning staorge
 int optimus_storage_exit(void);
 void optimus_poweroff(void);
@@ -155,6 +155,11 @@ int optimus_set_burn_complete_flag(void);//set 'upgrade_step 1' after burnning s
 int optimus_work_mode_get(void);
 int optimus_work_mode_set(int workmode);
 
+#define OPTIMUS_BURN_COMPLETE__POWEROFF_DIRECT              (0X0)
+#define OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL                (0x1)
+#define OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY      (0x2)
+#define OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE                (0xeb)
+#define OPTIMUS_BURN_COMPLETE__QUERY                        (0xfu)
 
 #endif//ifndef __OPTIMUS_DOWNLOAD_H__
 

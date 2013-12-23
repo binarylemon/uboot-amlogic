@@ -414,7 +414,7 @@ int optimus_working (const char *cmd, char* buff)
 	else if(strcmp(optCmd, "reset") == 0)
 	{
         close_usb_phy_clock(0);
-		optimus_reset();
+		optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL);
 	}
 	else if(strcmp(optCmd, "poweroff") == 0)
 	{
@@ -459,7 +459,6 @@ int optimus_working (const char *cmd, char* buff)
 	else
 	{
         int flag = 0;
-		//sprintf(buff, "failed:unknown cmd-%s", cmd);
 		ret = run_command(cmd, flag);
         DWN_MSG("ret = %d\n", ret);
         ret = ret < 0 ? ret : 0;
@@ -467,16 +466,14 @@ int optimus_working (const char *cmd, char* buff)
 
     if(ret)
     {
-        /*sprintf(buff, "failed:%d", ret);*/
         memcpy(buff, "failed:", strlen("failed:"));//use memcpy but not strcpy to not overwrite storage/key info
     }
     else
     {
-        /*strcpy(buff, "success");*/
         memcpy(buff, "success", strlen("success"));//use memcpy but not strcpy to not overwrite storage/key info
     }
 
-	printf("info:%s\n",buff);
+	printf("info[%s]\n",buff);
 	return ret;
 }
 
