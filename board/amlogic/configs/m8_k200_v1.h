@@ -146,7 +146,7 @@
 
 #define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
 #define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
-#define CONFIG_RTC_0V9                  1100        // RTC_0V9 voltage when boot, option
+#define CONFIG_RTC_0V9                   900        // RTC_0V9 voltage when boot, option
 #define CONFIG_VDD_LDO                  2700        // VDD_LDO voltage when boot, option
 #define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
 #define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option

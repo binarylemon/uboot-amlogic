@@ -118,12 +118,12 @@
  */
 #define CONFIG_POWER_SPL                            // init power for all domians, must have
 #define CONFIG_VCCK_VOLTAGE             1050        // CPU core voltage when boot, must have
-#define CONFIG_VDDAO_VOLTAGE            1100        // VDDAO voltage when boot, must have
+#define CONFIG_VDDAO_VOLTAGE            1150        // VDDAO voltage when boot, must have
 #define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
 
 #define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
 #define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
-#define CONFIG_RTC_0V9                  1100        // RTC_0V9 voltage when boot, option
+#define CONFIG_RTC_0V9                   900        // RTC_0V9 voltage when boot, option
 #define CONFIG_VDD_LDO                  2700        // VDD_LDO voltage when boot, option
 #define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
 #define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
@@ -451,17 +451,17 @@
 #define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
 
 //For M8 DDR clock gating disable
-//#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
+#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
 
 //For M8 DDR low power feature disable
-//#define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
+#define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
 
 //For M8 DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
-//#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
+#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    792//696 //768  //792// (636)
+#define CFG_M8_DDR_CLK    696 //768  //792// (636)
 
 //On board DDR capactiy
 //#define CFG_M8_DDR3_1GB
