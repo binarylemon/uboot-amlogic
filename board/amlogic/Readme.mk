@@ -1,4 +1,8 @@
+ifeq ($(SRCTREE)/customer, $(wildcard $(SRCTREE)/customer))
 help: help_customer
+else
+help:
+endif
 
 	@echo =======================================================================
 	@echo The mark in board is "Mesonboard_AML8726-M_V1.1"
