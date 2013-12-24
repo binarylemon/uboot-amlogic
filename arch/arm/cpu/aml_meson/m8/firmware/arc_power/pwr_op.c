@@ -322,13 +322,13 @@ int pmu_get_battery_voltage(void)
     return result | (val[0] << 24 | val[1] << 16);
 }
 
-#ifdef CONFIG_RESET_TO_SYSTEM
+#ifdef CONFIG_ENABLE_PMU_WATCHDOG
 void pmu_feed_watchdog(unsigned int flags)
 {
     i2c_pmu_read_b(0x0b);
     i2c_pmu_write_b(0x0013, 0x00);
 }
-#endif /* CONFIG_RESET_TO_SYSTEM */
+#endif /* CONFIG_ENABLE_PMU_WATCHDOG */
 
 /*
  * use globle virable to fast i2c speed
@@ -373,12 +373,23 @@ void rn5t618_power_off_at_24M()
 
     dcdc1_ctrl &= ~(0x01);                                              // close DCDC1, vcck
     i2c_pmu_write_b(0x002c, dcdc1_ctrl);
+
+#ifdef CONFIG_ENABLE_PMU_WATCHDOG
+    i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
+    i2c_pmu_write_b(0x000b, 0x0c);                      // time out to 1s
+#endif
     printf_arc("enter 32K\n");
 }
 
 void rn5t618_power_on_at_24M()                                          // need match power sequence of  power_off_at_24M
 {
     printf_arc("enter 24MHz. reason:");
+
+#ifdef CONFIG_ENABLE_PMU_WATCHDOG
+    pmu_feed_watchdog(0);
+    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
+    i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
+#endif
 
     serial_put_hex(exit_reason, 32);
     wait_uart_empty();
@@ -443,13 +454,6 @@ void rn5t618_power_off_at_32K_1()
 
     reg_ldo_rtc &= ~(0x10);
     i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // close ext DCDC 3.3v
-
-#ifdef CONFIG_RESET_TO_SYSTEM
-    i2c_pmu_write_b(0x000b, 0x00);                      // disable watchdog 
-    i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
-    i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
-    i2c_pmu_write_b(0x000b, 0x0c);                      // time out to 1s
-#endif
 }
 
 void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_off_at_32K_1
@@ -458,14 +462,6 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
 
     reg_ldo_rtc |= 0x10;
     i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // open ext DCDC 3.3v
-
-#ifdef CONFIG_RESET_TO_SYSTEM
-    pmu_feed_watchdog(0);
-    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
-    i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
-    i2c_pmu_write_b(0x000b, 0x0d);                      // set timeout to 8s 
-    i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog 
-#endif
 
     reg_ldo |= (LDO5_BIT);
     i2c_pmu_write_b(0x0044, reg_ldo);                   // open LDO5, AVDD1.8
@@ -533,7 +529,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
         delay_cnt++;
 
-    #ifdef CONFIG_RESET_TO_SYSTEM
+    #ifdef CONFIG_ENABLE_PMU_WATCHDOG
         pmu_feed_watchdog(flags);
     #endif
         if (delay_cnt >= 3000) {

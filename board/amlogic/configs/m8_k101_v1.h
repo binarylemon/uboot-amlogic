@@ -112,6 +112,8 @@
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 
+#define CONFIG_ENABLE_PMU_WATCHDOG
+
 /*
  * under some cases default voltage of PMU output is 
  * not suitable for application, so you should take care
