@@ -133,10 +133,27 @@ static char *soc_chip[]={
 	{"efuse soc chip m3"},
 	{"efuse soc chip m6"},
 	{"efuse soc chip m6tv"},
+	{"efuse soc chip m6lite"},
 	{"efuse soc chip m8"},
 	{"efuse soc chip unknow"},
 };
 #endif
+
+struct efuse_chip_info_t{
+	unsigned int Id1;
+	unsigned int Id2;
+	efuse_socchip_type_e type;
+};
+static const struct efuse_chip_info_t efuse_chip_info[]={
+	{.Id1=0x000027ed, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M8},   //M8 second version
+	{.Id1=0x000025e2, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M8},   //M8 first version
+	{.Id1=0xe2000003, .Id2=0x00000bbb, .type=EFUSE_SOC_CHIP_M6}, //M6 Rev-B
+	{.Id1=0x00000d67, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M6}, //M6 Rev-D
+	{.Id1=0x00001435, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M6TV}, //M6TV
+	{.Id1=0x000005cb, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M6TVLITE}, //M6TVC,M6TVLITE(M6C)
+};
+#define EFUSE_CHIP_INFO_NUM		sizeof(efuse_chip_info)/sizeof(efuse_chip_info[0])
+
 
 efuse_socchip_type_e efuse_get_socchip_type(void)
 {
@@ -147,20 +164,16 @@ efuse_socchip_type_e efuse_get_socchip_type(void)
 	if(cpu_is_before_m6()){
 		type = EFUSE_SOC_CHIP_M3;
 	}
-	else if(0xe2000003 == *pID1 && 0x00000bbb == *pID2){
-		//M6 Rev-B
-		type = EFUSE_SOC_CHIP_M6;
-	}
-	else if(0x00000d67 == *pID1 && 0xe3a01000 == *pID2){
-		//M6 Rev-D
-		type = EFUSE_SOC_CHIP_M6;
-	}
-	else if(0x00001435 == *pID1 && 0x0e3a01000 == *pID2)
-	{	//M6TV
-		type = EFUSE_SOC_CHIP_M6TV;
-	}
-	else if(0x000025e2 == *pID1 && 0xe3a01000 == *pID2){
-		type = EFUSE_SOC_CHIP_M8;
+	else{
+		int i;
+		struct efuse_chip_info_t *pinfo=(struct efuse_chip_info_t*)&efuse_chip_info[0];
+		for(i=0;i<EFUSE_CHIP_INFO_NUM;i++){
+			if(pinfo->Id1 == *pID1 && pinfo->Id2 == *pID2){
+				type = pinfo->type;
+				break;
+			}
+			pinfo++;
+		}
 	}
 	//printf("%s \n",soc_chip[type]);
 	return type;
@@ -185,6 +198,7 @@ static int efuse_checkversion(char *buf)
 					}
 					break;
 				case EFUSE_SOC_CHIP_M6TV:
+				case EFUSE_SOC_CHIP_M6TVLITE:
 					if(ver != 2){
 						ver = -1;
 					}
@@ -311,6 +325,7 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 			break;
 		case EFUSE_SOC_CHIP_M6:
 		case EFUSE_SOC_CHIP_M6TV:
+		case EFUSE_SOC_CHIP_M6TVLITE:
 			versionPOS = V2_EFUSE_VERSION_OFFSET; //3;
 			break;
 		case EFUSE_SOC_CHIP_M8:
@@ -577,6 +592,7 @@ void efuse_set_versioninfo(efuseinfo_item_t *info)
 			break;
 		case EFUSE_SOC_CHIP_M6:
 		case EFUSE_SOC_CHIP_M6TV:
+		case EFUSE_SOC_CHIP_M6TVLITE:
 			info->offset = V2_EFUSE_VERSION_OFFSET; //3;		
 			info->data_len = V2_EFUSE_VERSION_DATA_LEN; //1;		
 			info->enc_len = V2_EFUSE_VERSION_ENC_LEN; //1;
@@ -708,6 +724,7 @@ unsigned efuse_readcustomerid(void)
 			break;
 		case EFUSE_SOC_CHIP_M6:
 		case EFUSE_SOC_CHIP_M6TV:
+		case EFUSE_SOC_CHIP_M6TVLITE:
 			ppos = 4;
 			efuse_read(buf, 4, &ppos);
 			int i;
@@ -828,7 +845,8 @@ int efuse_aml_init_plus(void)
 	if(soc_type == EFUSE_SOC_CHIP_M3){
 		return nRet;
 	}
-	else if((soc_type == EFUSE_SOC_CHIP_M6)||(soc_type == EFUSE_SOC_CHIP_M6TV)){
+	else if((soc_type == EFUSE_SOC_CHIP_M6)||(soc_type == EFUSE_SOC_CHIP_M6TV)
+			||(soc_type == EFUSE_SOC_CHIP_M6TVLITE)){
 		int i=0;
 		char szBuffer[EFUSE_BYTES];
 		memset(szBuffer,0,sizeof(szBuffer));
