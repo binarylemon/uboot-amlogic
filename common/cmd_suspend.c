@@ -24,7 +24,7 @@ static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
     /*
      * set suspend charger current according battery parameter
      */
-#ifdef CONFIG_PLATFORM_HAS_PMU
+#if defined(CONFIG_PLATFORM_HAS_PMU) && defined(CONFIG_UBOOT_BATTERY_PARAMETERS)
     struct aml_pmu_driver    *driver;
     struct battery_parameter *para;
     driver = aml_pmu_get_driver();

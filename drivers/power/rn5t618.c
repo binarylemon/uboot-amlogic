@@ -11,8 +11,11 @@
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
 #include <amlogic/aml_lcd.h>
 #include <amlogic/battery_parameter.h>
+#endif
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 int rn5t618_battery_calibrate(void);
 #endif
+
 #define ABS(x)          ((x) >0 ? (x) : -(x) )
 #define MAX_BUF         100
 #define RN5T618_ADDR    0x32
@@ -386,6 +389,7 @@ int rn5t618_get_charging_percent()
 
 int rn5t618_set_charging_current(int current)
 {
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
     int val;
 
     if (current > 1800 * 1000 || current < 0) {
@@ -405,6 +409,9 @@ int rn5t618_set_charging_current(int current)
         printf("%s, %dmA\n", __func__, current);
     }
     return rn5t618_set_bits(0x00B8, val, 0x1f);
+#else
+    return 0;
+#endif
 }
 
 int rn5t618_charger_online(void)
