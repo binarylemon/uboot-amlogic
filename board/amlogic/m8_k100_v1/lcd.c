@@ -42,9 +42,9 @@
 #define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
 #define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
 
-#define	BL_PWM_FREQ			1000	/** backlight control pwm frequency(unit: Hz) */
+#define	BL_PWM_FREQ			300000	/** backlight control pwm frequency(unit: Hz) */
 #define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
-#define BL_PWM_MIN         	20		/** brightness diminig duty_min(unit: %, positive logic) */
+#define BL_PWM_MIN         	25		/** brightness diminig duty_min(unit: %, positive logic) */
 
 //**** backlight PWM pinmux setting ***//
 const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x1000000},};

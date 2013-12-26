@@ -24,31 +24,47 @@
 //**********************************************//
 // backlight control
 //*********************************************//
-#define BL_LEVEL_DEFAULT		128	/** default brightness level */
+#define BL_LEVEL_DEFAULT		10	/** default brightness level */
 #define BL_LEVEL_MID			128	/** brightness middle level*/
 #define BL_LEVEL_MID_MAPPING	102	/** brightness middle level mapping to a new level*/
 #define BL_LEVEL_MAX			255	/** brightness level max, must match the rootfs setting*/
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
-#define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
-#define BL_GPIO				GPIODV_28	/** backlight control gpio port */
+#define BL_CTL				BL_CTL_PWM_COMBO	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE, BL_CTL_PWM_COMBO) */
 
 //**** define backlight GPIO control ***//
+#define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 #define	BL_DIM_MAX			0x0	/** brightness diming level_max, negative logic */
 #define	BL_DIM_MIN			0xf	/** brightness diming level_min, negative logic */
 
 //**** define backlight PWM control ***//
-#define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-#define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
+#define BL_PWM_PORT			BL_PWM_D	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
+#define BL_PWM_USE_GPIO		0			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
 
-#define	BL_PWM_FREQ			1000	/** backlight control pwm frequency(unit: Hz) */
+#define	BL_PWM_FREQ			10000	/** backlight control pwm frequency(unit: Hz) */
 #define BL_PWM_MAX         	90		/** brightness diminig duty_max(unit: %, positive logic) */
-#define BL_PWM_MIN         	20		/** brightness diminig duty_min(unit: %, positive logic) */
+#define BL_PWM_MIN         	5		/** brightness diminig duty_min(unit: %, positive logic) */
+
+//**** define backlight PWM_COMBO control ***//
+#define BL_PWM_COMBO_LEVEL_SWITCH		220
+
+#define BL_PWM_COMBO_HIGH_PORT			BL_PWM_C
+#define BL_PWM_COMBO_HIGH_METHOD		BL_CTL_PWM_NEGATIVE
+#define BL_PWM_COMBO_HIGH_FREQ			300000
+#define BL_PWM_COMBO_HIGH_DUTY_MAX		96
+#define BL_PWM_COMBO_HIGH_DUTY_MIN		89
+
+#define BL_PWM_COMBO_LOW_PORT			BL_PWM_D
+#define BL_PWM_COMBO_LOW_METHOD			BL_CTL_PWM_POSITIVE
+#define BL_PWM_COMBO_LOW_FREQ			10000
+#define BL_PWM_COMBO_LOW_DUTY_MAX		100
+#define BL_PWM_COMBO_LOW_DUTY_MIN		10
+
 
 //**** backlight PWM pinmux setting ***//
-const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x1000000},};
-const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
+const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x5000000},};
+const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48},{7, 0x18000200},};
 //*********************************************//
 
 //**********************************************//

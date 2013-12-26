@@ -316,19 +316,24 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
 			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
-		else {
-			if (pDev->bl_config->pwm_port == BL_PWM_A) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));
+		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
+			switch (pDev->bl_config->pwm_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+					break;
+				default:
+					break;
 			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_B) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));
-			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_C) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
-			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_D) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
-			}
+			
 			for (i=0; i<pDev->bl_config->pinmux_clr_num; i++) {
 				clear_mio_mux(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
 			}
@@ -339,27 +344,109 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 			if (pDev->bl_config->pwm_gpio_used)
 				amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
+		else if (pDev->bl_config->method == BL_CTL_PWM_COMBO) {
+			switch (pDev->bl_config->combo_high_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+					break;
+				default:
+					break;
+			}
+			switch (pDev->bl_config->combo_low_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, (READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+					break;
+				default:
+					break;
+			}
+			for (i=0; i<pDev->bl_config->pinmux_clr_num; i++) {
+				clear_mio_mux(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
+			}
+			for (i=0; i<pDev->bl_config->pinmux_set_num; i++) {
+				set_mio_mux(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
+			}
+		}
+		else {
+			printf("Wrong backlight control method\n");
+			return;
+		}
 	}
 	else {
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
 			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
 		}
-		else {
+		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
 			if (pDev->bl_config->pwm_gpio_used) {
 				if (pDev->bl_config->gpio)
 					amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
 			}
-			if (pDev->bl_config->pwm_port == BL_PWM_A) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 15) | (1<<0)));
+			switch (pDev->bl_config->pwm_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 15) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 23) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+					break;
+				default:
+					break;
 			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_B) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 23) | (1<<1)));
+		}
+		else if (pDev->bl_config->method == BL_CTL_PWM_COMBO) {
+			switch (pDev->bl_config->combo_high_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 15) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 23) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+					break;
+				default:
+					break;
 			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_C) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
-			}
-			else if (pDev->bl_config->pwm_port == BL_PWM_D) {
-				WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+			switch (pDev->bl_config->combo_low_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 15) | (1<<0)));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_AB, READ_LCD_CBUS_REG(PWM_MISC_REG_AB) & ~((1 << 23) | (1<<1)));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+					break;
+				default:
+					break;
 			}
 		}
 	}
@@ -373,7 +460,8 @@ static void set_lcd_backlight_level(unsigned level)
 	DBG_PRINT("set_backlight_level: %u, last level: %u\n", level, bl_level);
 	level = (level > pDev->bl_config->level_max ? pDev->bl_config->level_max : (level < pDev->bl_config->level_min ? pDev->bl_config->level_min : level));
 	bl_level = level;
-
+	
+	//mapping
 	if (level > pDev->bl_config->level_mid)
 		level = ((level - pDev->bl_config->level_mid) * (pDev->bl_config->level_max - pDev->bl_config->level_mid_mapping)) / (pDev->bl_config->level_max - pDev->bl_config->level_mid) + pDev->bl_config->level_mid_mapping;
 	else
@@ -383,7 +471,7 @@ static void set_lcd_backlight_level(unsigned level)
 		level = pDev->bl_config->dim_min - ((level - pDev->bl_config->level_min) * (pDev->bl_config->dim_min - pDev->bl_config->dim_max)) / (pDev->bl_config->level_max - pDev->bl_config->level_min);
 		WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
 	}
-	else {
+	else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
 		level = (pDev->bl_config->pwm_max - pDev->bl_config->pwm_min) * (level - pDev->bl_config->level_min) / (pDev->bl_config->level_max - pDev->bl_config->level_min) + pDev->bl_config->pwm_min;
 		if (pDev->bl_config->method == BL_CTL_PWM_POSITIVE) {
 			pwm_hi = level;
@@ -393,18 +481,132 @@ static void set_lcd_backlight_level(unsigned level)
 			pwm_hi = pDev->bl_config->pwm_cnt - level;
 			pwm_lo = level;
 		}
-
-		if (pDev->bl_config->pwm_port == BL_PWM_A) {
-			WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+		
+		switch (pDev->bl_config->pwm_port) {
+			case BL_PWM_A:
+				WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_B:
+				WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_C:
+				WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_D:
+				WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+				break;
+			default:
+				break;
 		}
-		else if (pDev->bl_config->pwm_port == BL_PWM_B) {
-			WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+	}
+	else if (pDev->bl_config->method == BL_CTL_PWM_COMBO) {
+		if (level >= pDev->bl_config->combo_level_switch) {
+			//pre_set combo_low duty max
+			if (pDev->bl_config->combo_low_method == BL_CTL_PWM_NEGATIVE) {
+				pwm_hi = pDev->bl_config->combo_low_cnt - pDev->bl_config->combo_low_duty_max;
+				pwm_lo = pDev->bl_config->combo_low_duty_max;
+			}
+			else {
+				pwm_hi = pDev->bl_config->combo_low_duty_max;
+				pwm_lo = pDev->bl_config->combo_low_cnt - pDev->bl_config->combo_low_duty_max;
+			}
+			switch (pDev->bl_config->combo_low_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+					break;
+				default:
+					break;
+			}
+			
+			//set combo_high duty
+			level = (pDev->bl_config->combo_high_duty_max - pDev->bl_config->combo_high_duty_min) * (level - pDev->bl_config->combo_level_switch) / (pDev->bl_config->level_max - pDev->bl_config->combo_level_switch) + pDev->bl_config->combo_high_duty_min;
+			if (pDev->bl_config->combo_high_method == BL_CTL_PWM_NEGATIVE) {
+				pwm_hi = pDev->bl_config->combo_high_cnt - level;
+				pwm_lo = level;
+			}
+			else {
+				pwm_hi = level;
+				pwm_lo = pDev->bl_config->combo_high_cnt - level;
+			}
+			switch (pDev->bl_config->combo_high_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+					break;
+				default:
+					break;
+			}
 		}
-		else if (pDev->bl_config->pwm_port == BL_PWM_C) {
-			WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
-		}
-		else if (pDev->bl_config->pwm_port == BL_PWM_D) {
-			WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+		else {
+			//pre_set combo_high duty min
+			if (pDev->bl_config->combo_high_method == BL_CTL_PWM_NEGATIVE) {
+				pwm_hi = pDev->bl_config->combo_high_cnt - pDev->bl_config->combo_high_duty_min;
+				pwm_lo = pDev->bl_config->combo_high_duty_min;
+			}
+			else {
+				pwm_hi = pDev->bl_config->combo_high_duty_min;;
+				pwm_lo = pDev->bl_config->combo_high_cnt - pDev->bl_config->combo_high_duty_min;
+			}
+			switch (pDev->bl_config->combo_high_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+					break;
+				default:
+					break;
+			}
+			
+			//set combo_low duty
+			level = (pDev->bl_config->combo_low_duty_max - pDev->bl_config->combo_low_duty_min) * (level - pDev->bl_config->level_min) / (pDev->bl_config->combo_level_switch - pDev->bl_config->level_min) + pDev->bl_config->combo_low_duty_min;
+			if (pDev->bl_config->combo_low_method == BL_CTL_PWM_NEGATIVE) {
+				pwm_hi = pDev->bl_config->combo_low_cnt - level;
+				pwm_lo = level;
+			}
+			else {
+				pwm_hi = level;
+				pwm_lo = pDev->bl_config->combo_low_cnt - level;
+			}
+			switch (pDev->bl_config->combo_low_port) {
+				case BL_PWM_A:
+					WRITE_LCD_CBUS_REG(PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_B:
+					WRITE_LCD_CBUS_REG(PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_C:
+					WRITE_LCD_CBUS_REG(PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_D:
+					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+					break;
+				default:
+					break;
+			}
 		}
 	}
 }
@@ -842,7 +1044,7 @@ static void vclk_set_lcd(int lcd_type, int vclk_sel, unsigned long pll_reg, unsi
 		case LCD_DIGITAL_EDP:
 			WRITE_LCD_CBUS_REG_BITS(HHI_VID2_PLL_CNTL5, 4, 23, 3);	//pll_out mux to edp phy
 			WRITE_LCD_CBUS_REG_BITS(HHI_DSI_LVDS_EDP_CNTL1, 1, 4, 1);
-			WRITE_LCD_CBUS_REG(HHI_EDP_TX_PHY_CNTL0, (HHI_EDP_TX_PHY_CNTL0, (0xf << 0) | (1 << 4)));	//enable edp phy channel & serializer clk, and release reset
+			WRITE_LCD_CBUS_REG(HHI_EDP_TX_PHY_CNTL0, ((0xf << 0) | (1 << 4)));	//enable edp phy channel & serializer clk, and release reset
 			WRITE_LCD_CBUS_REG(HHI_EDP_TX_PHY_CNTL0, ((READ_LCD_CBUS_REG(HHI_EDP_TX_PHY_CNTL0) & ~(0x7f << 20)) | ((edp_div0_sel << 20) | (edp_div1_sel << 24))));	//set edptx_clk_div0, div1
 			WRITE_LCD_CBUS_REG_BITS(HHI_EDP_TX_PHY_CNTL0, 1, 5, 1);	//enable divider N, for vid_pll2_in
 			
@@ -2952,12 +3154,13 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	int ret=0;
 	int nodeoffset;
 	char * propdata;
-	unsigned int bl_para[2];
+	unsigned int bl_para[3];
 	int i;
 	struct fdt_property *prop;
 	char *p;
 	const char * str;
-	unsigned pwm_freq, pwm_cnt, pwm_pre_div;
+	unsigned pwm_freq, pwm_cnt, pwm_pre_div, tmp;
+	int len;
 	
 	nodeoffset = fdt_path_offset(dt_addr, "/backlight");
 	if(nodeoffset < 0) {
@@ -3000,23 +3203,28 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_ctrl_method", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_ctrl_method\n");
-		bl_conf->method = BL_CTL_GPIO;
+		bl_conf->method = BL_CTL_PWM_NEGATIVE;
 	}
 	else {
-		bl_conf->method = (be32_to_cpup((u32*)propdata) > 2) ? 2 : (unsigned char)(be32_to_cpup((u32*)propdata));
+		bl_conf->method = (be32_to_cpup((u32*)propdata) > BL_CTL_MAX) ? (BL_CTL_MAX-1) : (unsigned char)(be32_to_cpup((u32*)propdata));
 	}
-	DBG_PRINT("bl control_method: %s(%u)\n", ((bl_conf->method == 0) ? "GPIO" : ((bl_conf->method == 1) ? "PWM_NEGATIVE" : "PWM_POSITIVE")), bl_conf->method);
+	DBG_PRINT("bl control_method: %s(%u)\n", bl_ctrl_method_table[bl_conf->method], bl_conf->method);
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_port_gpio_used", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_pwm_port_gpio_used\n");
-		bl_conf->pwm_port = BL_PWM_D;
+		str = "PWM_C";
+		bl_conf->pwm_port = BL_PWM_C;
 		bl_conf->pwm_gpio_used = 0;
 	}
 	else {
 		prop = container_of(propdata, struct fdt_property, data);
 		p = prop->data;
 		str = p;
-		if (strcmp(str, "PWM_C") == 0)
+		if (strcmp(str, "PWM_A") == 0)
+			bl_conf->pwm_port = BL_PWM_A;
+		else if (strcmp(str, "PWM_B") == 0)
+			bl_conf->pwm_port = BL_PWM_B;
+		else if (strcmp(str, "PWM_C") == 0)
 			bl_conf->pwm_port = BL_PWM_C;
 		else if (strcmp(str, "PWM_D") == 0)
 			bl_conf->pwm_port = BL_PWM_D;
@@ -3030,7 +3238,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	DBG_PRINT("bl pwm_port: %s(%u)\n", propdata, bl_conf->pwm_port);
 	DBG_PRINT("bl pwm gpio_used: %u\n", bl_conf->pwm_gpio_used);
-	if ((bl_conf->method == BL_CTL_GPIO) || (bl_conf->pwm_gpio_used == 1)) {
+	if ((bl_conf->method == BL_CTL_GPIO) || ((bl_conf->pwm_gpio_used == 1) && ((bl_conf->method == BL_CTL_PWM_NEGATIVE) || (bl_conf->method == BL_CTL_PWM_POSITIVE)))) {
 		propdata = fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port", NULL);
 		if (propdata == NULL) {
 			printf("faild to get bl_gpio_port\n");
@@ -3054,7 +3262,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	DBG_PRINT("bl dim max = 0x%x, min = 0x%x\n", bl_conf->dim_max, bl_conf->dim_min);
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_freq", NULL);
 	if(propdata == NULL){
-		pwm_freq = 1000;
+		pwm_freq = 300000;
 		printf("faild to get bl_pwm_freq, default set to %uHz\n", pwm_freq);
 	}
 	else {
@@ -3084,14 +3292,147 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	bl_conf->pwm_min = (bl_conf->pwm_cnt * bl_para[1] / 100);
 	DBG_PRINT("bl pwm_duty max = %u\%, min = %u\%\n", bl_para[0], bl_para[1]);
 	
-	//get backlight pinmux for pwm
-	int len;
-	nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
-	if(nodeoffset < 0) {
-		printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
-		return ret;
+	//pwm combo
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_low_level_switch", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_pwm_combo_high_low_level_switch\n");
+		tmp = bl_conf->level_mid;
 	}
+	else {
+		tmp = be32_to_cpup((u32*)propdata);
+	}
+	if (tmp > bl_conf->level_mid)
+		tmp = ((tmp - bl_conf->level_mid) * (bl_conf->level_max - bl_conf->level_mid_mapping)) / (bl_conf->level_max - bl_conf->level_mid) + bl_conf->level_mid_mapping;
+	else
+		tmp = ((tmp - bl_conf->level_min) * (bl_conf->level_mid_mapping - bl_conf->level_min)) / (bl_conf->level_mid - bl_conf->level_min) + bl_conf->level_min;
+	bl_conf->combo_level_switch = tmp;
+	DBG_PRINT("bl pwm_combo level switch =%u\n", bl_conf->combo_level_switch);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_port_method", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_pwm_combo_high_port_method\n");
+		str = "PWM_C";
+		bl_conf->combo_high_port = BL_PWM_C;
+		bl_conf->combo_high_method = BL_CTL_PWM_NEGATIVE;
+	}
+	else {
+		prop = container_of(propdata, struct fdt_property, data);
+		p = prop->data;
+		str = p;
+		if (strcmp(str, "PWM_A") == 0)
+			bl_conf->combo_high_port = BL_PWM_A;
+		else if (strcmp(str, "PWM_B") == 0)
+			bl_conf->combo_high_port = BL_PWM_B;
+		else if (strcmp(str, "PWM_C") == 0)
+			bl_conf->combo_high_port = BL_PWM_C;
+		else if (strcmp(str, "PWM_D") == 0)
+			bl_conf->combo_high_port = BL_PWM_D;
+		
+		p += strlen(p) + 1;
+		str = p;
+		if (strncmp(str, "1", 1) == 0)
+			bl_conf->combo_high_method = BL_CTL_PWM_NEGATIVE;
+		else
+			bl_conf->combo_high_method = BL_CTL_PWM_POSITIVE;
+	}
+	DBG_PRINT("bl pwm_combo high port: %s(%u)\n", str, bl_conf->combo_high_port);
+	DBG_PRINT("bl pwm_combo high method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_high_method], bl_conf->combo_high_method);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_low_port_method", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_pwm_combo_low_port_method\n");
+		str = "PWM_D";
+		bl_conf->combo_low_port = BL_PWM_D;
+		bl_conf->combo_high_method = BL_CTL_PWM_POSITIVE;
+	}
+	else {
+		prop = container_of(propdata, struct fdt_property, data);
+		p = prop->data;
+		str = p;
+		if (strcmp(str, "PWM_A") == 0)
+			bl_conf->combo_low_port = BL_PWM_A;
+		else if (strcmp(str, "PWM_B") == 0)
+			bl_conf->combo_low_port = BL_PWM_B;
+		else if (strcmp(str, "PWM_C") == 0)
+			bl_conf->combo_low_port = BL_PWM_C;
+		else if (strcmp(str, "PWM_D") == 0)
+			bl_conf->combo_low_port = BL_PWM_D;
+		
+		p += strlen(p) + 1;
+		str = p;
+		if (strncmp(str, "1", 1) == 0)
+			bl_conf->combo_low_method = BL_CTL_PWM_NEGATIVE;
+		else
+			bl_conf->combo_low_method = BL_CTL_PWM_POSITIVE;
+	}
+	DBG_PRINT("bl pwm_combo low port: %s(%u)\n", str, bl_conf->combo_low_port);
+	DBG_PRINT("bl pwm_combo low method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_low_method], bl_conf->combo_low_method);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_freq_duty_max_min", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_pwm_combo_high_freq_duty_max_min\n");
+		bl_para[0] = 300000;	//freq=300k
+		bl_para[1] = 100;
+		bl_para[2] = 50;
+	}
+	else {
+		bl_para[0] = be32_to_cpup((u32*)propdata);
+		bl_para[1] = be32_to_cpup((((u32*)propdata)+1));
+		bl_para[2] = be32_to_cpup((((u32*)propdata)+2));
+	}
+	pwm_freq = ((bl_para[0] >= (FIN_FREQ * 500)) ? (FIN_FREQ * 500) : bl_para[0]);
+	for (i=0; i<0x7f; i++) {
+		pwm_pre_div = i;
+		pwm_cnt = FIN_FREQ * 1000 / (pwm_freq * (pwm_pre_div + 1)) - 2;
+		if (pwm_cnt <= 0xffff)
+			break;
+	}			
+	bl_conf->combo_high_cnt = pwm_cnt;
+	bl_conf->combo_high_pre_div = pwm_pre_div;
+	bl_conf->combo_high_duty_max = (bl_conf->combo_high_cnt * bl_para[1] / 100);
+	bl_conf->combo_high_duty_min = (bl_conf->combo_high_cnt * bl_para[2] / 100);
+	DBG_PRINT("bl pwm_combo high freq=%uHz, duty_max=%u\%, duty_min=%u\%\n", pwm_freq, bl_para[1], bl_para[2]);
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_low_freq_duty_max_min", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_pwm_combo_low_freq_duty_max_min\n");
+		bl_para[0] = 1000;	//freq=1k
+		bl_para[1] = 100;
+		bl_para[2] = 50;
+	}
+	else {
+		bl_para[0] = be32_to_cpup((u32*)propdata);
+		bl_para[1] = be32_to_cpup((((u32*)propdata)+1));
+		bl_para[2] = be32_to_cpup((((u32*)propdata)+2));
+	}
+	pwm_freq = ((bl_para[0] >= (FIN_FREQ * 500)) ? (FIN_FREQ * 500) : bl_para[0]);
+	for (i=0; i<0x7f; i++) {
+		pwm_pre_div = i;
+		pwm_cnt = FIN_FREQ * 1000 / (pwm_freq * (pwm_pre_div + 1)) - 2;
+		if (pwm_cnt <= 0xffff)
+			break;
+	}
+	bl_conf->combo_low_cnt = pwm_cnt;
+	bl_conf->combo_low_pre_div = pwm_pre_div;
+	bl_conf->combo_low_duty_max = (bl_conf->combo_low_cnt * bl_para[1] / 100);
+	bl_conf->combo_low_duty_min = (bl_conf->combo_low_cnt * bl_para[2] / 100);
+	DBG_PRINT("bl pwm_combo low freq=%uHz, duty_max=%u\%, duty_min=%u\%\n", pwm_freq, bl_para[1], bl_para[2]);
 	
+	//get backlight pinmux for pwm
+	if (bl_conf->method == BL_CTL_PWM_COMBO) {
+		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight_combo");
+		if(nodeoffset < 0) {
+			printf("backlight init: not find /pinmux/lcd_backlight_combo node %s.\n",fdt_strerror(nodeoffset));
+			bl_conf->pinmux_set_num = 0;
+			bl_conf->pinmux_clr_num = 0;
+			return ret;
+		}
+	}
+	else {
+		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
+		if(nodeoffset < 0) {
+			printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
+			bl_conf->pinmux_set_num = 0;
+			bl_conf->pinmux_clr_num = 0;
+			return ret;
+		}
+	}
 	propdata = fdt_getprop(dt_addr, nodeoffset, "amlogic,setmask", &len);
 	if(propdata == NULL){
 		printf("faild to get amlogic,setmask\n");

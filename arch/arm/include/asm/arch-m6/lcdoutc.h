@@ -456,14 +456,6 @@ Lcd_Config_t lcd_config_dft;
 //****************************************//
 // backlight control
 //****************************************//
-#define BL_CTL_GPIO				0
-#define BL_CTL_PWM_NEGATIVE		1
-#define BL_CTL_PWM_POSITIVE		2
-#define BL_PWM_A				0
-#define BL_PWM_B				1
-#define BL_PWM_C				2
-#define BL_PWM_D				3
-
 #define BL_LEVEL_MAX_DFT   			255
 #define BL_LEVEL_MIN_DFT   			10
 #define BL_LEVEL_OFF				1
@@ -472,6 +464,30 @@ Lcd_Config_t lcd_config_dft;
 #define BL_LEVEL_MID_MAPPED_DFT		102
 
 #define BL_LEVEL_DFT				128
+
+typedef enum {
+	BL_CTL_GPIO = 0,
+	BL_CTL_PWM_NEGATIVE,
+	BL_CTL_PWM_POSITIVE,
+	BL_CTL_PWM_COMBO,
+	BL_CTL_MAX,
+} BL_Ctrl_Method_t;
+
+static const char* bl_ctrl_method_table[]={
+	"gpio",
+	"pwm_negative",
+	"pwm_positive",
+	"pwm_combo",
+	"null"
+};
+
+typedef enum {
+	BL_PWM_A = 0,
+	BL_PWM_B,
+	BL_PWM_C,
+	BL_PWM_D,
+	BL_PWM_MAX,
+} BL_PWM_t;
 
 typedef struct {
 	unsigned level_default;
@@ -483,12 +499,27 @@ typedef struct {
 	int gpio;
 	unsigned dim_max;
 	unsigned dim_min;
-	unsigned short pwm_port;
+	unsigned char pwm_port;
 	unsigned char pwm_gpio_used;
 	unsigned pwm_cnt;
 	unsigned pwm_pre_div;
 	unsigned pwm_max;
 	unsigned pwm_min;
+	
+	unsigned combo_level_switch;
+	unsigned char combo_high_port;
+	unsigned char combo_high_method;
+	unsigned char combo_low_port;
+	unsigned char combo_low_method;
+	unsigned combo_high_cnt;
+	unsigned combo_high_pre_div;
+	unsigned combo_high_duty_max;
+	unsigned combo_high_duty_min;
+	unsigned combo_low_cnt;
+	unsigned combo_low_pre_div;
+	unsigned combo_low_duty_max;
+	unsigned combo_low_duty_min;
+	
 	unsigned pinmux_set_num;
 	unsigned pinmux_set[5][2];
 	unsigned pinmux_clr_num;
