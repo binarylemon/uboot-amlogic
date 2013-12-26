@@ -156,6 +156,8 @@
 #define CONFIG_DTB_LOAD_ADDR    0x0f000000
 #endif
 
+#define CONFIG_SECURE_UBOOT_SIZE     0x100000
+
 #define CONFIG_SYS_MALLOC_LEN   (12<<20)
 
 #define CONFIG_SYS_MAXARGS      16

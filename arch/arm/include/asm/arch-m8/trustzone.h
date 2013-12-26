@@ -1,0 +1,84 @@
+
+/*
+ *  Copyright (C) 2002 ARM Ltd.
+ *  All Rights Reserved
+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/*
+ * Trustzone API
+ *
+ * Copyright (C) 2012 Amlogic, Inc.
+ *
+ * Author: Platform-SH@amlogic.com
+ *
+ */
+
+#ifndef __MESON6_TRUSTZONE_H
+#define __MESON6_TRUSTZONE_H
+
+#include <asm/arch/io.h>
+
+/* SMC Identifiers for non-secure world functions */
+#define CALL_TRUSTZONE_API                      0x1
+#define CALL_TRUSTZONE_MON                      0x4
+#define CALL_TRUSTZONE_HAL_API                  0x5
+
+/* Secure Monitor mode APIs */
+#define TRUSTZONE_MON_TYPE_MASK                 0xF00
+#define TRUSTZONE_MON_FUNC_MASK                 0x0FF
+#define TRUSTZONE_MON_L2X0                      0x100
+#define TRUSTZONE_MON_L2X0_CTRL_INDEX           0x101
+#define TRUSTZONE_MON_L2X0_AUXCTRL_INDEX        0x102
+#define TRUSTZONE_MON_L2X0_PREFETCH_INDEX       0x103
+
+#define TRUSTZONE_MON_CORE                      0x200
+#define TRUSTZONE_MON_CORE_RD_CTRL_INDEX        0x201
+#define TRUSTZONE_MON_CORE_WR_CTRL_INDEX        0x202
+#define TRUSTZONE_MON_CORE_RD_STATUS0_INDEX     0x203
+#define TRUSTZONE_MON_CORE_WR_STATUS0_INDEX     0x204
+#define TRUSTZONE_MON_CORE_RD_STATUS1_INDEX     0x205
+#define TRUSTZONE_MON_CORE_WR_STATUS1_INDEX     0x206
+#define TRUSTZONE_MON_CORE_BOOTADDR_INDEX       0x207
+#define TRUSTZONE_MON_CORE_DDR_INDEX            0x208
+
+#define TRUSTZONE_MON_SUSPNED_FIRMWARE          0x300
+#define TRUSTZONE_MON_SAVE_CPU_GIC              0x400
+
+#define TRUSTZONE_MON_RTC                       0x500
+#define TRUSTZONE_MON_RTC_RD_REG_INDEX          0x501
+#define TRUSTZONE_MON_RTC_WR_REG_INDEX          0x502
+
+#define TRUSTZONE_HAL_API_EFUSE                 0x100
+#define TRUSTZONE_HAL_API_STORAGE               0x200
+#define TRUSTZONE_HAL_API_MEMCONFIG             0x300
+
+
+#ifdef CONFIG_MESON_STORAGE_BURN
+struct storage_hal_api_arg{
+	unsigned int cmd;
+	unsigned int namelen;
+	unsigned int name_phy_addr;
+	unsigned int datalen;
+	unsigned int data_phy_addr;	
+	unsigned int retval_phy_addr;
+};
+
+#define STORAGE_HAL_API_INIT            0
+#define STORAGE_HAL_API_WRITE           1
+#define STORAGE_HAL_API_QUERY           2
+#ifdef CONFIG_MESON_STORAGE_DEBUG
+#define STORAGE_HAL_API_READ            3
+#endif
+
+#endif
+
+uint32_t meson_trustzone_rtc_read_reg32(uint32_t addr);
+uint32_t meson_trustzone_rtc_write_reg32(uint32_t addr, uint32_t value);
+uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+
+#endif

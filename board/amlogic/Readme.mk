@@ -57,6 +57,10 @@ endif
 	@echo config command: \"make m8_k200_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M8_K200_V1 with TEE"
+	@echo config command: \"make m8_k200_v1_tee_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M8_K100_V1"
 	@echo config command: \"make m8_k100_v1_config\"
 

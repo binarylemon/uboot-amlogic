@@ -6,6 +6,10 @@
 #include "secure.c"
 #endif//#if defined(CONFIG_M8_SECU_BOOT)
 
+#ifdef CONFIG_MESON_TRUSTZONE
+#include <secureloader.c>
+#endif
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
@@ -102,6 +106,13 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
     unsigned temp_addr;
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif
+
 #if CONFIG_UCL
 #if defined (CONFIG_VLSI_EMULATOR)
     temp_addr=target;
@@ -160,6 +171,14 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     serial_puts("Load uncompressed image for PxP!\n");
 #else	
 
+#ifdef CONFIG_MESON_TRUSTZONE
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_SIZE_POSITION_IN_SRAM);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);
+#endif
+
 #if CONFIG_UCL    
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;    
@@ -189,6 +208,13 @@ STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
 STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
     unsigned temp_addr;
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif
+
 #if CONFIG_UCL
     temp_addr=target+0x800000;
 #else
@@ -208,6 +234,15 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 #if defined (CONFIG_VLSI_EMULATOR)
     serial_puts("Load uncompressed image from SD 1 for PxP!\n");
 #else
+
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_SIZE_POSITION_IN_SRAM);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);
+#endif
 
 
 #if CONFIG_UCL
