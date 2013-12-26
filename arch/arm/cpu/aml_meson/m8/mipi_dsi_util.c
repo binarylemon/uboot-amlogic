@@ -1105,7 +1105,7 @@ void powerup_mipi_analog(void)
 
 void init_phy_mipi(Lcd_Config_t *pConf)
 {
-    powerup_mipi_analog();
+    //hycui powerup_mipi_analog();
     DPRINT("%s, %d\n", __func__, __LINE__);
     mdelay( 10 );
     // Power up MIPI_DSI/DPHY, startup must be ahead of init
@@ -1231,6 +1231,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
 
                 return ;
         }
+powerup_mipi_analog();
 
         Lcd_Control_Config_t *pConf = &p->lcd_control;
         trans_mode  = pConf->mipi_config->trans_mode;
@@ -1249,7 +1250,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
                         DCS_EXIT_SLEEP_MODE,                     // DCS Command Type
                         req_ack);                                // If need wait ack
 
-        mdelay(10);
+        mdelay(120);
 
         DPRINT("send display on\n");
         DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0,                       // DSI Data Type
@@ -1257,7 +1258,7 @@ void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status)
                         DCS_SET_DISPLAY_ON,                      // DCS Command Type
                         req_ack);                                // If need wait ack
         DPRINT("DCS_SET_DISPLAY_ON Test Passed\n");
-        mdelay(10);
+        mdelay(80);
 
         trans_mode = TRANS_VIDEO_MODE;
         set_mipi_dsi_host_to_video_mode(lane_num,                        // Lane number
