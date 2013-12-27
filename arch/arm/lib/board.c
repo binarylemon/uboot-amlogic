@@ -533,10 +533,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	//end 2013.07.16
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-	spl_boot_end = *((volatile unsigned int*)0x13a00000);
 	lib_board_init_r_start = get_utimer(0);
 
-	printf("\nfrom sys start to board_init_r time(us):%d\n",(lib_board_init_r_start-spl_boot_end));
+	printf("\ntime: from powerup to board_init_r time(us):%d\n",(lib_board_init_r_start));
 #endif
 
 	gd = id;
@@ -633,8 +632,8 @@ unsigned int before_nand_init =  get_utimer(0);
 #endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int after_nand_init =  get_utimer(0);
-printf("\n nand init %d us \n", after_nand_init - before_nand_init);
+	unsigned int after_nand_init =  get_utimer(0);
+	printf("\ntime: from powerup to nand init finished %d us \n", after_nand_init);
 #endif
 
 
@@ -784,8 +783,8 @@ unsigned int before_lcd_init =  get_utimer(0);
 #endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int after_lcd_init =  get_utimer(0);
-printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
+	unsigned int after_lcd_init =  get_utimer(0);
+	printf("\ntime: from powerup to lcd init finished %d us \n", after_lcd_init );
 #endif
 
 #ifdef CONFIG_POST
@@ -828,7 +827,7 @@ printf("%\n lcd init %d us \n", after_lcd_init - before_lcd_init);
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	main_loop_start = get_utimer(0);
-	printf("\n from board_init_r to start main_loop time(us):%d\n\n",main_loop_start-lib_board_init_r_start);
+	printf("\ntime: from powerup to start main_loop time(us):%d\n\n",main_loop_start);
 #endif
 
 	/* main_loop() can return to retry autoboot, if so just run it again. */

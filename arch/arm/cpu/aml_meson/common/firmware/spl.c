@@ -200,11 +200,9 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 	unsigned int spl_boot_end = TIMERE_GET();
-	*((volatile unsigned int*)0x13a00000) = spl_boot_end;
-	serial_puts("\nspl boot time(us):");
-	//serial_put_dword((spl_boot_end-spl_boot_start));
-#else
-	*((volatile unsigned int*)0x1fa00000) = 0;
+	serial_puts("\ntime: spl boot time(us):");
+	serial_put_dec(spl_boot_end);
+	//serial_put_dword((spl_boot_end));
 #endif
 
 #ifdef CONFIG_M8
