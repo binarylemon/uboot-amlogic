@@ -14,8 +14,28 @@
 
 #define HAS_AO_MODULE
 #define CONFIG_AML_I2C	//add by Elvis Yu
+#define CONFIG_PLATFORM_HAS_PMU
 #define CONFIG_AW_AXP20
-#define BATTERYCAP				5000							//battery capability
+#ifdef CONFIG_AW_AXP20
+#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
+#define CONFIG_UBOOT_BATTERY_PARAMETERS 
+/*
+ * under some cases default voltage of PMU output is 
+ * not suitable for application, so you should take care
+ * of the following macros which defined initial voltage
+ * of each power domain when in SPL stage of uboot.
+ */
+#define CONFIG_POWER_SPL                            // init power for all domians, must have
+#define CONFIG_CONST_PWM_FOR_DCDC                   // DCDC2 ~ 3 work for PWM mode
+#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT   // disable LDO3 uv protect
+#define CONFIG_VDDAO_VOLTAGE            1200        // VDDAO voltage when boot, DCDC3
+#define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, DCDC2
+#define CONFIG_VDDIO_AO                 3000        // VDDIO_AO voltage, ldo2
+#define CONFIG_AVDD2V5                  2500        // AVDD2.5V voltage, ldo3
+#define CONFIG_AVDD3V3                  3300        // AVDD3.3V voltage, ldo4
+
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1 
+#endif /* CONFIG_AW_AXP20 */
 
 //Enable storage devices
 //#ifndef CONFIG_JERRY_NAND_TEST

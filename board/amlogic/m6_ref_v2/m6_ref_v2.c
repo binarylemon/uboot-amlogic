@@ -18,8 +18,8 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
-#ifdef CONFIG_AML_PMU
-#include <amlogic/aml_pmu.h>
+#ifdef CONFIG_PLATFORM_HAS_PMU
+#include <amlogic/aml_pmu_common.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -300,6 +300,15 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     }
 };
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+static void board_pmu_init(void)
+{
+    struct aml_pmu_driver *driver = aml_pmu_get_driver();
+    if (driver && driver->pmu_init) {
+        driver->pmu_init();
+    }
+}
+#endif
 
 static void board_i2c_init(void)
 {		
@@ -316,7 +325,10 @@ static void board_i2c_init(void)
 	/*M6 board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10000);
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    board_pmu_init();
+#endif
 }
 #endif /*CONFIG_AML_I2C*/
 
@@ -434,10 +446,23 @@ static void gpio_set_vbus_power(char is_power_on)
 }
 static int usb_charging_detect_call_back(char bc_mode)
 {
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    struct aml_pmu_driver    *driver = aml_pmu_get_driver();
+    struct battery_parameter *battery;
+#endif
 	switch(bc_mode){
 		case BC_MODE_DCP:
 		case BC_MODE_CDP:
 			//Pull up chargging current > 500mA
+        #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * Policy:
+             * for charger and PC + charger, don't limit usb current
+             */
+            if (driver && driver->pmu_set_usb_current_limit) {
+                driver->pmu_set_usb_current_limit(-1);                  // -1 means do not limit usb current
+            }
+        #endif
 			break;
 
 		case BC_MODE_UNKNOWN:
@@ -445,6 +470,25 @@ static int usb_charging_detect_call_back(char bc_mode)
 		default:
 			//Limit chargging current <= 500mA
 			//Or detet dec-charger
+        #ifdef CONFIG_PLATFORM_HAS_PMU 
+            /* 
+             * for PC: 
+             * If pmu_usbcur_limit is 1 in dts, then set usb current by  
+             * value pmu_usbcur set in dts. If pmu_usbcur_limit is 0, then don't  
+             * limit  usb current. If not find battery parameters, set usb current 
+             * to 500mA as default 
+             */ 
+            battery = get_battery_para(); 
+            if (driver && battery && driver->pmu_set_usb_current_limit) { 
+                if (battery->pmu_usbcur_limit) { 
+                    driver->pmu_set_usb_current_limit(battery->pmu_usbcur); 
+                } else { 
+                    driver->pmu_set_usb_current_limit(-1); 
+                } 
+            } else { 
+                driver->pmu_set_usb_current_limit(500); 
+            } 
+        #endif 
 			break;
 	}
 	return 0;
@@ -489,10 +533,6 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AML_PMU
-    aml_pmu_init();                     // PMU must be initialized 
-#endif  /* CONFIG_AML_PMU */
-
 	return 0;
 }
 #endif
@@ -527,47 +567,6 @@ inline int get_key(void)
 #endif		
 }
 
-inline int is_ac_online(void)
-{
-#ifdef CONFIG_AW_AXP20
-	return axp_charger_is_ac_online();
-#endif
-#ifdef CONFIG_AML_PMU
-    return aml_pmu_is_ac_online();
-#endif
-}
-
-//Power off
-void power_off(void)
-{
-#ifdef CONFIG_AW_AXP20
-	axp_power_off();
-#endif
-#ifdef CONFIG_AML_PMU
-    aml_pmu_power_off();
-#endif
-}
-
-inline int get_charging_percent(void)
-{
-#ifdef CONFIG_AW_AXP20
-	return axp_charger_get_charging_percent();
-#endif
-#ifdef CONFIG_AML_PMU
-    return aml_pmu_get_charging_percent();
-#endif
-}
-
-inline int set_charging_current(int current)
-{
-#ifdef CONFIG_AW_AXP20
-	return axp_set_charging_current(current);
-#endif
-#ifdef CONFIG_AML_PMU
-    return amp_pmu_set_charging_current(current);
-#endif
-}
-
 
 #ifdef CONFIG_AML_TINY_USBTOOL
 int usb_get_update_result(void)
@@ -589,15 +588,4 @@ int usb_get_update_result(void)
 }
 #endif
 
-inline int check_all_regulators(void)
-{
-#ifdef CONFIG_AW_AXP20
-	printf("Check all regulator\n");
-	return check_axp_regulator_for_m6_board();
-#endif
-#ifdef CONFIG_AML_PMU
-    // AML PMU need todo 
-    return 0;
-#endif
-}
 

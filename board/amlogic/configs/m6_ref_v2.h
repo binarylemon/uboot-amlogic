@@ -34,24 +34,26 @@
 //#define CONFIG_CMD_I2C    1
 //#define CONFIG_SYS_I2C_SPEED 400000
 
+#define CONFIG_PLATFORM_HAS_PMU
 #define CONFIG_AW_AXP20
 #ifdef CONFIG_AW_AXP20
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 #define CONFIG_UBOOT_BATTERY_PARAMETERS 
-#define CHECK_ALL_REGULATORS
-#define CONFIG_CONST_PWM_FOR_DCDC
-#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
-#define CONFIG_DCDC2_VOLTAGE	1500
-#define CONFIG_DCDC3_VOLTAGE	1100
-#define CONFIG_LDO2_VOLTAGE	3000
-#define CONFIG_LDO3_VOLTAGE	2500
-#define CONFIG_LDO4_VOLTAGE	3300
+/*
+ * under some cases default voltage of PMU output is 
+ * not suitable for application, so you should take care
+ * of the following macros which defined initial voltage
+ * of each power domain when in SPL stage of uboot.
+ */
+#define CONFIG_POWER_SPL                            // init power for all domians, must have
+#define CONFIG_CONST_PWM_FOR_DCDC                   // DCDC2 ~ 3 work for PWM mode
+#define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT   // disable LDO3 uv protect
+#define CONFIG_VDDAO_VOLTAGE            1200        // VDDAO voltage when boot, DCDC3
+#define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, DCDC2
+#define CONFIG_VDDIO_AO                 3000        // VDDIO_AO voltage, ldo2
+#define CONFIG_AVDD2V5                  2500        // AVDD2.5V voltage, ldo3
+#define CONFIG_AVDD3V3                  3300        // AVDD3.3V voltage, ldo4
 
-#define BATTERYCAP				7700							//battery capability
-
-#define CONFIG_POWER_SPL
-#define CONFIG_VDDAO_VOLTAGE            1200
-#define CONFIG_DDR_VOLTAGE              1500
 #define CONFIG_DCDC_PFM_PMW_SWITCH      1 
 #endif /* CONFIG_AW_AXP20 */
 

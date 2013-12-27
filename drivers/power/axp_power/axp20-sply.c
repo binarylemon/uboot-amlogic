@@ -158,6 +158,7 @@ int axp202_get_charging_percent(void)
     int charge_status = axp_charger_get_charging_status();
     int percent1, percent2;
     int rest_vol;
+    int avg_voltage, avg_current;
     static int ocv_full  = 0;
     static int ocv_empty = 0;
     static int battery_rdc;

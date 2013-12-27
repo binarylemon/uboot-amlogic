@@ -18,9 +18,38 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+#include <amlogic/aml_pmu_common.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+#include <amlogic/battery_parameter.h>
+/*
+ * add board battery parameters, this is a backup option if uboot process 
+ * battery parameters failed, each board shoud use your own battery parameters
+ */
+int config_battery_rdc = 87;
+struct battery_curve config_battery_curve[] = { 
+    {3132,      0,      0},  
+    {3273,      0,      0},  
+    {3414,      0,      0},  
+    {3555,      0,      0},  
+    {3625,      1,      3},  
+    {3660,      2,      8},  
+    {3696,      3,     16}, 
+    {3731,     10,     24}, 
+    {3766,     15,     38}, 
+    {3801,     26,     48}, 
+    {3836,     42,     56},
+    {3872,     52,     63},
+    {3942,     66,     74},
+    {4012,     79,     85},
+    {4083,     90,     94},
+    {4153,    100,    100}
+};
+#endif
 
 #if defined(CONFIG_CMD_NET)
 
@@ -271,6 +300,15 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     }
 };
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+static void board_pmu_init(void)
+{
+    struct aml_pmu_driver *driver = aml_pmu_get_driver();
+    if (driver && driver->pmu_init) {
+        driver->pmu_init();
+    }
+}
+#endif
 
 static void board_i2c_init(void)
 {		
@@ -287,7 +325,10 @@ static void board_i2c_init(void)
 	/*M6 ref board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10000);
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    board_pmu_init();
+#endif
 }
 #endif /*CONFIG_AML_I2C*/
 
@@ -407,6 +448,56 @@ static void gpio_set_vbus_power(char is_power_on)
 	}
 }
 #endif
+static int usb_charging_detect_call_back(char bc_mode)
+{
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    struct aml_pmu_driver    *driver = aml_pmu_get_driver();
+    struct battery_parameter *battery;
+#endif
+	switch(bc_mode){
+		case BC_MODE_DCP:
+		case BC_MODE_CDP:
+			//Pull up chargging current > 500mA
+        #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * Policy:
+             * for charger and PC + charger, don't limit usb current
+             */
+            if (driver && driver->pmu_set_usb_current_limit) {
+                driver->pmu_set_usb_current_limit(-1);                  // -1 means do not limit usb current
+            }
+        #endif
+			break;
+
+		case BC_MODE_UNKNOWN:
+		case BC_MODE_SDP:
+		default:
+			//Limit chargging current <= 500mA
+			//Or detet dec-charger
+        #ifdef CONFIG_PLATFORM_HAS_PMU 
+            /* 
+             * for PC: 
+             * If pmu_usbcur_limit is 1 in dts, then set usb current by  
+             * value pmu_usbcur set in dts. If pmu_usbcur_limit is 0, then don't  
+             * limit  usb current. If not find battery parameters, set usb current 
+             * to 500mA as default 
+             */ 
+            battery = get_battery_para(); 
+            if (driver && battery && driver->pmu_set_usb_current_limit) { 
+                if (battery->pmu_usbcur_limit) { 
+                    driver->pmu_set_usb_current_limit(battery->pmu_usbcur); 
+                } else { 
+                    driver->pmu_set_usb_current_limit(-1); 
+                } 
+            } else { 
+                driver->pmu_set_usb_current_limit(500); 
+            } 
+        #endif 
+			break;
+	}
+	return 0;
+}
+
 
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
@@ -419,7 +510,7 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 	CONFIG_M6_USBPORT_BASE,
 	USB_ID_MODE_SW_HOST,
 	NULL,//gpio_set_vbus_power, //set_vbus_power
-	NULL,
+	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
@@ -446,13 +537,6 @@ int board_late_init(void)
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-#ifdef CONFIG_AW_AXP20
-extern int set_dcdc2(u32 val);
-extern int set_dcdc3(u32 val);
-set_dcdc2(1500);	//set DC-DC2 to 1500mV
-set_dcdc3(1100);	//set DC-DC3 to 1100mV
-#endif
-
 	return 0;
 }
 #endif
@@ -468,28 +552,4 @@ inline void key_init(void)
 inline int get_key(void)
 {
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
-}
-
-extern int axp_charger_is_ac_online(void);
-inline int is_ac_online(void)
-{
-	return axp_charger_is_ac_online();
-}
-
-extern void axp_power_off(void);
-//Power off
-void power_off(void)
-{
-	axp_power_off();
-}
-
-extern int axp_charger_get_charging_percent(void);
-inline int get_charging_percent(void)
-{
-	return axp_charger_get_charging_percent();
-}
-
-inline int set_charging_current(int current)
-{
-	return axp_set_charging_current(current);
 }
