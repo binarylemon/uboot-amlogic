@@ -15,52 +15,32 @@
  *
  */
 
-#include <asm/arch/io.h>
 #include <common.h>
+#include <asm/arch-m8/reg_addr.h>
+#include <asm/arch-m8/io.h>
+#include <asm/io.h>
 #include "hdmi_tx_reg.h"
 
-// if the following bits are 0, then access HDMI IP Port will cause system hungup
-#define GATE_NUM    2
-
-static struct Hdmi_Gate_s{
-    unsigned short cbus_addr;
-    unsigned char gate_bit;
-}hdmi_gate[GATE_NUM] =   {   {HHI_HDMI_CLK_CNTL, 8},
-                            {HHI_GCLK_MPEG2   , 4},
-                            };
-
-// In order to prevent system hangup, add check_cts_hdmi_sys_clk_status() to check 
-static void check_cts_hdmi_sys_clk_status(void)
+static unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 {
-    int i;
+    __raw_writel(addr, P_HDMI_ADDR_PORT);
+    __raw_writel(addr, P_HDMI_ADDR_PORT);
 
-    for(i = 0; i < GATE_NUM; i++){
-        if(!(READ_CBUS_REG(hdmi_gate[i].cbus_addr) & (1<<hdmi_gate[i].gate_bit))){
-//            printf("HDMI Gate Clock is off, turn on now\n");
-            WRITE_CBUS_REG_BITS(hdmi_gate[i].cbus_addr, 1, hdmi_gate[i].gate_bit, 1);
-        }
-    }
+    return __raw_readl(P_HDMI_DATA_PORT);
 }
 
-unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
+static void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 {
-    unsigned long data;
-    check_cts_hdmi_sys_clk_status();
-    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-
-    data = READ_APB_REG(HDMI_DATA_PORT);
-
-    return (data);
+    __raw_writel(addr, P_HDMI_ADDR_PORT);
+    __raw_writel(addr, P_HDMI_ADDR_PORT);
+    __raw_writel(data, P_HDMI_DATA_PORT);
 }
 
-void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
+static void set_reg32_bits_op(uint32_t _reg, const uint32_t _val, const uint32_t _start, const uint32_t _len)
 {
-    check_cts_hdmi_sys_clk_status();
-    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-    WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-
-    WRITE_APB_REG(HDMI_DATA_PORT, data);
+    unsigned int tmp;
+    tmp = (__raw_readl(_reg) & ~(((1L<<(_len))-1)<<(_start))) | ((unsigned int)(_val) << (_start));
+    __raw_writel(tmp, _reg);
 }
 
 #define TX_HDCP_KSV_OFFSET          0x540
@@ -72,6 +52,10 @@ extern int hdmi_hdcp_clear_ksv_ram(void);
 int hdmi_hdcp_clear_ksv_ram(void)
 {
     int i;
+
+    __raw_writel(0x100, P_HHI_HDMI_CLK_CNTL);       // enable hdmi system clock
+    __raw_writel(0xffff00ff, P_HHI_MEM_PD_REG0);    // power hdmi ram register
+
     for(i = 0; i < TX_HDCP_KSV_SIZE; i++) {
         hdmi_hdcp_wr_reg(TX_HDCP_KSV_OFFSET + i, 0x00);
     }
