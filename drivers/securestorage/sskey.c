@@ -29,6 +29,23 @@ struct sstorekey_device_op_s{
 static struct sstorekey_device_op_s sstorekey_device_op;
 static int sstorekey_device_status=0;//0: prohibit, 1:permit
 
+#ifdef CONFIG_M8
+static int auto_find_device(void)
+{
+	int R_BOOT_DEVICE_FLAG_m8 = READ_CBUS_REG(ASSIST_POR_CONFIG);
+	int R_BOOT_DEVICE_FLAG = ((((R_BOOT_DEVICE_FLAG_m8>>9)&1)<<2) | ((R_BOOT_DEVICE_FLAG_m8>>6)&3));
+	int POR_NAND_BOOT = (((R_BOOT_DEVICE_FLAG & 7) == 7) || ((R_BOOT_DEVICE_FLAG & 7) == 6));
+	int POR_SPI_BOOT = (((R_BOOT_DEVICE_FLAG & 7) == 5) || ((R_BOOT_DEVICE_FLAG & 7) == 4));
+	int POR_EMMC_BOOT = (((R_BOOT_DEVICE_FLAG & 7) == 3) || ((R_BOOT_DEVICE_FLAG & 7) == 2) 
+						|| ((R_BOOT_DEVICE_FLAG & 7) == 1));
+	int POR_CARD_BOOT = ((R_BOOT_DEVICE_FLAG & 7) == 0);
+	int dev=0;
+	if(POR_NAND_BOOT)	dev=SECURE_STORAGE_NAND_TYPE;
+	if(POR_SPI_BOOT)	dev=SECURE_STORAGE_SPI_TYPE;
+	if(POR_EMMC_BOOT)	dev=SECURE_STORAGE_EMMC_TYPE;
+	return dev;
+}
+#else
 static int auto_find_device(void)
 {
 //#define R_BOOT_DEVICE_FLAG READ_CBUS_REG(ASSIST_POR_CONFIG)
@@ -47,6 +64,7 @@ static int auto_find_device(void)
 	if(POR_EMMC_BOOT)	dev=SECURE_STORAGE_EMMC_TYPE;
 	return dev;
 }
+#endif
 
 #define SMC_ENOMEM          7
 #define SMC_EOPNOTSUPP      6
