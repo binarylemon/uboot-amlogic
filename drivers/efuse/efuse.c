@@ -158,8 +158,15 @@ static const struct efuse_chip_info_t efuse_chip_info[]={
 efuse_socchip_type_e efuse_get_socchip_type(void)
 {
 	efuse_socchip_type_e type;
+#ifndef CONFIG_MESON_TRUSTZONE
 	unsigned int *pID1 =(unsigned int *)0xd9040004;
 	unsigned int *pID2 =(unsigned int *)0xd904002c;
+#else
+	unsigned int ID1 = meson_trustzone_read_socrev1();
+	unsigned int ID2 = meson_trustzone_read_socrev2();
+	unsigned int *pID1 = &ID1;
+	unsigned int *pID2 = &ID2;
+#endif
 	type = EFUSE_SOC_CHIP_UNKNOW;
 	if(cpu_is_before_m6()){
 		type = EFUSE_SOC_CHIP_M3;
