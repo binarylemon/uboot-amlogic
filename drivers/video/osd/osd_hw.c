@@ -412,9 +412,9 @@ void osd_set_scan_mode(int index)
 	int tvmode = -1;
 
 	osd_hw.scan_mode = SCAN_MODE_PROGRESSIVE;
-
+#ifdef CONFIG_OSD_SCALE_ENABLE
 	tvmode = tv_out_cur_mode();
-
+#endif
 	switch (tvmode) {
 		case VMODE_480I:
 		case VMODE_480CVBS:
@@ -908,7 +908,9 @@ void osd_set_scale_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1)
 void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1)
 {
     int tvmode = -1;
+#ifdef CONFIG_OSD_SCALE_ENABLE
     tvmode = tv_out_cur_mode();
+#endif
     switch (tvmode) {
 	        case VMODE_480I:
 	        case VMODE_480CVBS:
@@ -931,7 +933,9 @@ void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1)
 void osd_set_window_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1)
 {
     int tvmode = -1;
+#ifdef CONFIG_OSD_SCALE_ENABLE
     tvmode = tv_out_cur_mode();
+#endif
 	switch (tvmode) {
 		case VMODE_480I:
 		case VMODE_480CVBS:
