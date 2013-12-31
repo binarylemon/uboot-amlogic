@@ -569,6 +569,33 @@ uint8_t mov_hex(uint8_t input)
     return tmp;
 }
 
+int rn5t618_check_fault(void)
+{
+    uint8_t val;
+    int i = 0;;
+    char *fault_reason[] = {
+        "PWRONPOFF",                        // bit 0
+        "abnormal temperature",             // bit 1
+        "low power condition in VINDET",    // bit 2
+        "IODETPOFF",                        // bit 3
+        "CPUPOFF",                          // bit 4
+        "watchdog power off",               // bit 5
+        "overcurrent of DCDC1-3",           // bit 6
+        "N_OEPOF"                           // bit 7
+    };
+
+    printf("PMU fault status:\n");
+    rn5t618_read(0x000A, &val);
+    while (val) {
+        if (val & 0x01) {
+            printf("-- %s\n", fault_reason[i]);    
+        }
+        i++;
+        val >>= 1;
+    }
+    return 0;
+}
+
 int rn5t618_init(void)
 {
     uint8_t buf[10];
@@ -584,6 +611,7 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x0012, 0x00, 0x40);                       // disable watchdog
     rn5t618_set_bits(0x000f, 0x01, 0x01);                       // re-power-on system after reset
 #endif
+    rn5t618_check_fault();
     rn5t618_write(0x04, 0xA5);
     rn5t618_read(0x009A, buf);
     printf("reg[0x9A] = 0x%02x\n", buf[0]);

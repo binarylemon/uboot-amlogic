@@ -99,15 +99,15 @@ void hard_i2c_write8(unsigned char SlaveAddr, unsigned char RegAddr, unsigned ch
 
 unsigned short hard_i2c_read8_16(unsigned char SlaveAddr, unsigned char RegAddr)
 {
-    unsigned char *pr = (unsigned char*)&RegAddr;
     unsigned short data;
+    unsigned int ctrl;
 
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
     (*I2C_TOKEN_LIST_REG0) = (I2C_STOP << 28)             |
                              (I2C_DATA_LAST << 24)        |  // Read Data
-                             (I2C_SLAVE_ADDR_READ << 20)  |
+                             (I2C_DATA << 20)  |
                              (I2C_SLAVE_ADDR_READ << 16)  |
                              (I2C_START << 12)            |
                              (I2C_DATA << 8)              |  // Read RegAddr
@@ -115,14 +115,22 @@ unsigned short hard_i2c_read8_16(unsigned char SlaveAddr, unsigned char RegAddr)
                              (I2C_START << 0);
 
     // Fill the write data registers
-    (*I2C_TOKEN_WDATA_REG0) = *pr;
+    (*I2C_TOKEN_WDATA_REG0) = (RegAddr << 0);
     // Start and Wait
-    (*I2C_CONTROL_REG) &= ~(1 << 0);   // Clear the start bit
-    (*I2C_CONTROL_REG) |= (1 << 0);   // Set the start bit
-    while( (*I2C_CONTROL_REG) & (1 << 2) ) {}
+    (*I2C_CONTROL_REG) &= ~(1 << 0);    // Clear the start bit
+    (*I2C_CONTROL_REG) |= (1 << 0);     // Set the start bit
+    while (1) {
+        ctrl = (*I2C_CONTROL_REG);
+        if (ctrl & (1 << 3)) {          // error case
+            return 0;    
+        }
+        if (!(ctrl & (1 << 2))) {       // controller becomes idle
+            break;    
+        }
+    }
 
-    data = *I2C_TOKEN_RDATA_REG0 & 0xffff;
-    return data;
+    data = *I2C_TOKEN_RDATA_REG0;
+    return data & 0xffff;
 }
 
 void i2c_pmu_write(unsigned char reg, unsigned char val)
@@ -314,8 +322,8 @@ int pmu_get_battery_voltage(void)
     int result;
 
     result = i2c_pmu_read_w(0x006A);
-    val[1] = result & 0xff;
-    val[0] = (result >> 8) & 0xff;
+    val[0] = result & 0xff;
+    val[1] = (result >> 8) & 0xff;
     result = (val[0] << 4) | (val[1] & 0x0f);
     result = (result * 5000) / 4096;                        // resolution: 1.221mV
 
@@ -325,8 +333,7 @@ int pmu_get_battery_voltage(void)
 #ifdef CONFIG_ENABLE_PMU_WATCHDOG
 void pmu_feed_watchdog(unsigned int flags)
 {
-    i2c_pmu_read_b(0x0b);
-    i2c_pmu_write_b(0x0013, 0x00);
+    i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
 }
 #endif /* CONFIG_ENABLE_PMU_WATCHDOG */
 
@@ -375,8 +382,9 @@ void rn5t618_power_off_at_24M()
     i2c_pmu_write_b(0x002c, dcdc1_ctrl);
 
 #ifdef CONFIG_ENABLE_PMU_WATCHDOG
-    i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
     i2c_pmu_write_b(0x000b, 0x0c);                      // time out to 1s
+    i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
+    i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
 #endif
     printf_arc("enter 32K\n");
 }
@@ -386,9 +394,9 @@ void rn5t618_power_on_at_24M()                                          // need 
     printf_arc("enter 24MHz. reason:");
 
 #ifdef CONFIG_ENABLE_PMU_WATCHDOG
-    pmu_feed_watchdog(0);
-    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
     i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
+    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
+    i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
 #endif
 
     serial_put_hex(exit_reason, 32);
