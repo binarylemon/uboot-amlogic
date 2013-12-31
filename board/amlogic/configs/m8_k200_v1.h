@@ -316,9 +316,9 @@
 		"else if test ${hdmimode} = 576i;then "\
 			"setenv display_height 576;setenv display_width 720;setenv fb_height 720;setenv fb_width 1280;"\
 		"else if test ${hdmimode} = 1080i; then "\
-			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 1080;setenv fb_width 1920;"\
 		"else if test ${hdmimode} = 1080i50hz; then "\
-			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1920;"\
 		"else "\
 			";"\
 		"fi;fi;fi;fi\0"\		
@@ -333,9 +333,9 @@
 		"else if test ${hdmimode} = 720p50hz; then "\
 			"setenv display_height 720;setenv display_width 1280;setenv fb_height 720;setenv fb_width 1280;"\
 		"else if test ${hdmimode} = 1080p; then "\
-			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 1080;setenv fb_width 1920;"\
 		"else if test ${hdmimode} = 1080p50hz; then "\
-			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1280;"\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 1080;setenv fb_width 1920;"\
 		"else "\
 			";"\
 		"fi;fi;fi;fi;fi;fi\0"\		
@@ -359,9 +359,9 @@
 		"else if test ${hdmimode} = 576i;then "\
 			"bmp display ${bootup_720_offset};bmp scale;"\
 		"else if test ${hdmimode} = 1080i; then "\
-			"bmp display ${bootup_720_offset};bmp scale;"\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
 		"else if test ${hdmimode} = 1080i50hz; then "\
-			"bmp display ${bootup_720_offset};bmp scale;"\
+			"bmp display ${bootup_1080_offset};bmp scale;"\
 	    "else if test ${hdmimode} = 480p;then "\
 			"bmp display ${bootup_720_offset};bmp scale;"\
 		"else if test ${hdmimode} = 576p;then "\
@@ -371,9 +371,9 @@
 		"else if test ${hdmimode} = 720p50hz; then "\
 			"bmp display ${bootup_720_offset};"\
 		"else if test ${hdmimode} = 1080p; then "\
-			"bmp display ${bootup_720_offset};bmp scale;"\
+			"bmp display ${bootup_1080_offset};"\
 		"else if test ${hdmimode} = 1080p50hz; then "\
-			"bmp display ${bootup_720_offset};bmp scale;"\
+			"bmp display ${bootup_1080_offset};"\
 		"else "\
 			";"\
 		"fi;fi;fi;fi;fi;fi;fi;fi;fi;fi\0"\

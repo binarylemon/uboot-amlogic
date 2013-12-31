@@ -47,6 +47,10 @@ ifdef CONFIG_M3_WA_REF_V1
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
 	osd/m3_osd_hw.o
+else ifdef CONFIG_AML_MESON_8
+COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
+	osd/canvas.o \
+	osd/m8_osd_hw.o
 else
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
