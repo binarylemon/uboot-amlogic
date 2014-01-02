@@ -47,7 +47,11 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M6TV_REF_V1"
 	@echo config command: \"make m6tv_ref_v1_config\"
-	
+
+	@echo =======================================================================
+	@echo The mark in board is "M6TVD_SKT_V1"
+	@echo config command: \"make m6tvd_skt_v1_config\"
+
 	@echo =======================================================================
 	@echo The mark in board is "M8_SKT_V1"
 	@echo config command: \"make m8_skt_v1_config\"
@@ -63,7 +67,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8_K101_V1"
 	@echo config command: \"make m8_k101_v1_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M8_k102_V1"
 	@echo config command: \"make m8_k102_v1_config\"

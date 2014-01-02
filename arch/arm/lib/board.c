@@ -664,7 +664,7 @@ unsigned int before_nand_init =  get_utimer(0);
 	set_storage_device_flag();
 #endif
 //#ifdef MX_REVD
-#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
+#if defined(CONFIG_M6) || defined(CONFIG_M6TV) || defined(CONFIG_M6TVD)
  		//if not clear, uboot command reset will fail -> blocked
  		*((volatile unsigned long *)0xc8100000) = 0;
 #endif 
