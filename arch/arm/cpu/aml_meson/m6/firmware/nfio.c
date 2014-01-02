@@ -256,6 +256,13 @@ STATIC_PREFIX short nfio_page_read(unsigned src, unsigned mem, unsigned char *oo
 	read_page = src;
 #ifdef MX_REVD
 	if((new_nand_type) && (new_nand_type < 10)){		//for new nand
+	if(new_nand_type ==6) {
+		if((src%pages_in_block) >1)
+			read_page = (src%pages_in_block)*2 -1+(src/pages_in_block)*pages_in_block;
+		else
+			read_page = src;
+	}
+	else
 		read_page = pagelist_hynix256[src%pages_in_block] \
 			+ (src/pages_in_block)*pages_in_block;
 	}

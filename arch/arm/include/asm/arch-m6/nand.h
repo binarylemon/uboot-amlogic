@@ -526,6 +526,7 @@ struct aml_nand_bch_desc{
 #define	HYNIX_20NM_8GB 		3		//
 #define	HYNIX_20NM_4GB 		4		//
 #define	HYNIX_20NM_LGA_8GB 		5		//
+#define	HYNIX_1YNM_8GB 		6
 //for Toshiba
 #define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
 #define	TOSHIBA_A19NM 			21	

@@ -69,6 +69,24 @@ unsigned char pagelist_hynix256[128] = {
 	0xDE, 0xDF, 0xE2, 0xE3, 0xE6, 0xE7, 0xEA, 0xEB,
 	0xEE, 0xEF, 0xF2, 0xF3, 0xF6, 0xF7, 0xFA, 0xFB,
 };
+unsigned char pagelist_1ynm_hynix256[128] = {
+	0x00, 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d,
+	0x0f, 0x11, 0x13, 0x15, 0x17, 0x19, 0x1b, 0x1d,
+	0x1f, 0x21, 0x23, 0x25, 0x27, 0x29, 0x2b, 0x2d,
+	0x2f, 0x31, 0x33, 0x35, 0x37, 0x39, 0x3b, 0x3d,
+	0x3f, 0x41, 0x43, 0x45, 0x47, 0x49, 0x4b, 0x4d,	
+	0x4f, 0x51, 0x53, 0x55, 0x57, 0x59, 0x5b, 0x5d,
+	0x5f, 0x61, 0x63, 0x65, 0x67, 0x69, 0x6b, 0x6d,
+	0x6f, 0x71, 0x73, 0x75, 0x77, 0x79, 0x7b, 0x7d,
+	0x7f, 0x81, 0x83, 0x85, 0x87, 0x89, 0x8b, 0x8d,
+	0x8f, 0x91, 0x93, 0x95, 0x97, 0x99, 0x9b, 0x9d,
+	0x9f, 0xa1, 0xA3, 0xA5, 0xA7, 0xA9, 0xAb, 0xAd,
+	0xAf, 0xb1, 0xB3, 0xB5, 0xB7, 0xB9, 0xBb, 0xBd,
+	0xBf, 0xc1, 0xC3, 0xC5, 0xC7, 0xC9, 0xCb, 0xCd,
+	0xCf, 0xd1, 0xD3, 0xD5, 0xD7, 0xD9, 0xDb, 0xDd,
+	0xDf, 0xe1, 0xE3, 0xE5, 0xE7, 0xE9, 0xEb, 0xEd,
+	0xEf, 0xf1, 0xF3, 0xF5, 0xF7, 0xF9, 0xFb, 0xFd,
+};
 #endif
 static unsigned mx_nand_check_chiprevd(void)
 {
@@ -475,7 +493,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip, unsigned char *buf,
 				NFC_SEND_CMD_SEED(aml_chip->page_addr);
 	}
 	if(!bch_mode)
-		NFC_SEND_CMD_M2N_RAW(aml_chip->ran_mode, len);
+		NFC_SEND_CMD_M2N_RAW(0, len);
 	else
 		NFC_SEND_CMD_M2N(aml_chip->ran_mode, ((bch_mode == NAND_ECC_BCH_SHORT)?NAND_ECC_BCH60_1K:bch_mode), ((bch_mode == NAND_ECC_BCH_SHORT)?1:0), dma_unit_size, count);
 
@@ -723,6 +741,9 @@ static int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *
 #ifdef MX_REVD
 			if(en_slc){ 
 				read_page = page%M3_BOOT_PAGES_PER_COPY;
+			if(aml_chip->new_nand_info.type == HYNIX_1YNM_8GB)
+				read_page = pagelist_1ynm_hynix256[read_page+1] + (page/M3_BOOT_PAGES_PER_COPY)*M3_BOOT_PAGES_PER_COPY;
+			else
 				read_page = pagelist_hynix256[read_page+1] + (page/M3_BOOT_PAGES_PER_COPY)*M3_BOOT_PAGES_PER_COPY;
 			}
 #endif
@@ -827,6 +848,8 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 #ifdef MX_REVD
 	int magic = NAND_PAGELIST_MAGIC;
 	int page_list[6] = {0x01, 0x02, 0x03, 0x06, 0x07, 0x0A};
+	unsigned priv_slc_page,next_msb_page;
+	unsigned char *fill_buf =NULL;
 #endif	
 	
 
@@ -848,14 +871,27 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 #endif
 
 #ifdef MX_REVD
+	if(aml_chip->new_nand_info.type == HYNIX_1YNM_8GB) {
+		page_list[1] = 0X03;page_list[2] = 0X05;page_list[3] = 0X07;
+		page_list[4] = 0X09;page_list[5] = 0X0B;
+	}
 	new_nand_type = aml_chip->new_nand_info.type;
 	en_slc = ((aml_chip->new_nand_info.type < 10)&&(aml_chip->new_nand_info.type))? 1:0;
+	if(new_nand_type == HYNIX_1YNM_8GB) {
+		fill_buf = kzalloc(mtd->writesize, GFP_KERNEL);
+		if (fill_buf == NULL) {
+			printk("malloc fill buf fail \n");
+			return -ENOMEM;	
+		}
+		memset(fill_buf, 0xff, mtd->writesize);
+	}
 #endif
 
 	if(en_slc){
 		if (page >= (M3_BOOT_PAGES_PER_COPY/2 - 1))
 			return 0;
 #ifdef MX_REVD			
+			if(aml_chip->new_nand_info.slc_program_info.enter_enslc_mode)
 			aml_chip->new_nand_info.slc_program_info.enter_enslc_mode(mtd);
 #endif			
 	}
@@ -881,7 +917,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 			//add for new nand
 			memcpy(chip->buffers->databuf + sizeof(int) + sizeof(int), (unsigned char *)(&new_nand_type), sizeof(int));
 #ifdef MX_REVD
-			if(en_slc && (mtd->writesize<16384)){
+			if(en_slc ){
 				memcpy(chip->buffers->databuf + 5*sizeof(int), (unsigned char *)(&magic), sizeof(int));
 				memcpy(chip->buffers->databuf + 6*sizeof(int), (unsigned char *)(&page_list[0]), 6*sizeof(int));
 			}
@@ -939,6 +975,9 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 		}
 #ifdef MX_REVD
 		if(en_slc){	
+			if(aml_chip->new_nand_info.type == HYNIX_1YNM_8GB)
+			write_page = pagelist_1ynm_hynix256[page+1] + i*M3_BOOT_PAGES_PER_COPY;	
+			else
 			write_page = pagelist_hynix256[page+1] + i*M3_BOOT_PAGES_PER_COPY;
 		}
 		else{
@@ -947,8 +986,19 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 #else
 		write_page++;
 #endif
-		//printk("%s, write_page:0x%x\n", __func__, write_page);
-
+		if(new_nand_type == HYNIX_1YNM_8GB) {
+			if((page+1)>1)
+				priv_slc_page = pagelist_1ynm_hynix256[page] + i*M3_BOOT_PAGES_PER_COPY;
+			else
+				priv_slc_page = page + i*M3_BOOT_PAGES_PER_COPY;
+			while((priv_slc_page+1)<write_page) {
+				chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, (++priv_slc_page));
+				chip->ecc.write_page_raw(mtd, chip, fill_buf);
+				chip->waitfunc(mtd, chip);
+				printk("%s, fill page:0x%x\n", __func__, priv_slc_page);
+			}
+		}
+		printk("%s, write_page:0x%x\n", __func__, write_page);	
 		chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, write_page);
 
 		if (unlikely(raw))
@@ -966,7 +1016,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 			if (status & NAND_STATUS_FAIL){
                 		printk("uboot wr page=0x%x, status =  0x%x\n", page,status);
 #ifdef MX_REVD                		
-                		if(en_slc)
+                		if(en_slc&&aml_chip->new_nand_info.slc_program_info.exit_enslc_mode)
                 			aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
  #endif               		
 				return -EIO;
@@ -977,7 +1027,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 		}
 	}
 #ifdef MX_REVD	
-	if(en_slc)
+	if(en_slc&&aml_chip->new_nand_info.slc_program_info.exit_enslc_mode)
 		aml_chip->new_nand_info.slc_program_info.exit_enslc_mode(mtd);
 #endif
 	return 0;
