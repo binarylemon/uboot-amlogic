@@ -46,6 +46,9 @@ int amlnf_env_save(unsigned char *buf,int len)
 	int ret=0, i=0;
 	aml_nand_msg("uboot env amlnf_env_save : ####");
 
+	if(aml_chip_env == NULL){
+		return 0;
+	}
 	if(len > CONFIG_ENV_SIZE)
 	{
 		aml_nand_msg("uboot env data len too much,%s",__func__);
@@ -84,6 +87,10 @@ int amlnf_env_read(unsigned char *buf,int len)
 	int ret=0, i=0;
 	
 	aml_nand_msg("uboot env amlnf_env_read : ####");
+
+	if(aml_chip_env == NULL){
+		return 0;
+	}
 
 	if(len > CONFIG_ENV_SIZE) 
 	{

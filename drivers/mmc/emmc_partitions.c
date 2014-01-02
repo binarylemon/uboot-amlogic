@@ -13,7 +13,7 @@ bool is_partition_checked = false;
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 struct partitions emmc_partition_table[]={
-    PARTITION_ELEMENT(MMC_BOOT_NAME, MMC_BOOT_DEVICE_SIZE, STORE_CODE),
+    PARTITION_ELEMENT(MMC_BOOT_NAME, MMC_BOOT_DEVICE_SIZE, 0),
     PARTITION_ELEMENT(MMC_RESERVED_NAME, MMC_RESERVED_SIZE, 0),
     PARTITION_ELEMENT(MMC_CACHE_NAME, 0, 0),                    // the size and flag should be get from spl
     // PARTITION_ELEMENT(MMC_KEY_NAME, MMC_KEY_SIZE, 0),
@@ -25,8 +25,8 @@ void show_mmc_patition (struct partitions *part, int part_num)
 {
     int i, cnt_stuff;
 
-    printf("        name                        offset              size\n");
-    printf("=================================================================\n");
+    printf("        name                        offset              size              flag\n");
+    printf("===================================================================================\n");
 	for (i=0; i < part_num ; i++) {
         printf("%4d: %s", i, part[i].name);
         cnt_stuff = sizeof(part[i].name) - strlen(part[i].name);
@@ -36,7 +36,7 @@ void show_mmc_patition (struct partitions *part, int part_num)
         while (cnt_stuff--) {
             printf(" ");
         }
-		printf("%18llx%18llx\n", part[i].offset, part[i].size);
+		printf("%18llx%18llx %18d\n", part[i].offset, part[i].size,part[i].mask_flags);
 		// printf("mmc_device->offset : %llx",mmc_config_of->partitions[i].offset);
 		// printf("mmc_device->size : %llx",mmc_config_of->partitions[i].size);
 	}
@@ -119,6 +119,7 @@ int mmc_get_partition_table (struct mmc *mmc)
 
 		strncpy(part_ptr[part_num].name, emmc_partition_table[i].name, MAX_MMC_PART_NAME_LEN);
 		part_ptr[part_num].size = emmc_partition_table[i].size;
+		part_ptr[part_num].mask_flags= emmc_partition_table[i].mask_flags;
         if (part_num == 0) { // first partition
             part_ptr[part_num].offset = 0;
         } else {
@@ -182,6 +183,7 @@ int mmc_get_partition_table (struct mmc *mmc)
 
 		strncpy(part_ptr[part_num].name, part_table[i].name, MAX_MMC_PART_NAME_LEN);
 		part_ptr[part_num].size = part_table[i].size;
+		part_ptr[part_num].mask_flags= part_table[i].mask_flags;
         part_ptr[part_num].offset = part_ptr[part_num-1].offset
             + part_ptr[part_num-1].size + PARTITION_RESERVED;
 
@@ -391,6 +393,7 @@ int mmc_partition_verify (struct mmc_config * mmc_cfg, struct mmc_partitions_fmt
         for (i = 0; i < pt_fmt->part_num; i++) {
             if ((pp1[i].size != pp2[i].size)
                     || (pp1[i].offset != pp2[i].offset)
+                    ||(pp1[i].mask_flags!= pp2[i].mask_flags)
                     || (strncmp(pp1[i].name, pp2[i].name, sizeof(pp1[i].name)) != 0x00)) {
                 printf("%s: partition[%d] is different \n", __FUNCTION__, i);
                 ret = -1;
@@ -429,7 +432,7 @@ int mmc_device_init (struct mmc *mmc)
     if (ret == 0) { // ok
         ret = mmc_partition_verify(mmc_config_of, pt_fmt);
         if (ret == 0) { // ok
-            printf("Partition table verified OK!\n");
+            printf("Partition table verified OK !\n");
         } else {
             printf("Partition table verified ERROR!\n"
                     "Following is the partition table stored in eMMC/TSD: \n");

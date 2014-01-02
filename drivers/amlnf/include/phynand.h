@@ -14,7 +14,7 @@
 #define NAND_COMPATIBLE_REGION     1
 #define NAND_RESERVED_REGION	       1
 #define NAND_ADDNEW_REGION	       1
-#define NAND_BUG_FIX_REGION	       1
+#define NAND_BUG_FIX_REGION	       2
 
 #define DRV_PHY_VERSION	   ((NAND_COMPATIBLE_REGION << 24)+(NAND_RESERVED_REGION << 16) \
 							+(NAND_ADDNEW_REGION << 8)+(NAND_BUG_FIX_REGION))	
@@ -357,13 +357,14 @@ typedef union nand_core_clk {
 #define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
 //for hynix 20nm OTP
 #define 	HYNIX_OTP_COPY							8
-#define 	HYNIX_OTP_LEN							256
+#define 	HYNIX_OTP_LEN							528
 
 //for Hynix
 #define	HYNIX_26NM_4GB 							1		//H27UCG8T2M
 #define	HYNIX_26NM_8GB 							2		//H27UBG8T2BTR
 #define	HYNIX_20NM_4GB 							3		//
 #define	HYNIX_20NM_8GB 							4		//
+#define	HYNIX_1YNM_8GB 							6
 //for Toshiba
 #define	TOSHIBA_2XNM 							20		//TC58NVG5D2HTA00
 #define	TOSHIBA_A19NM 							21																//TC58NVG6D2GTA00
