@@ -238,6 +238,9 @@ int get_charging_state()
 
 void rn5t618_shut_down()
 {
+#ifdef CONFIG_RESET_TO_SYSTEM
+    rn5t618_set_bits(0x0007, 0x00, 0x01);                   // clear flag
+#endif
     rn5t618_set_gpio(0, 1);
     rn5t618_set_gpio(1, 1);
     udelay__(100 * 1000);
@@ -333,7 +336,7 @@ int pmu_get_battery_voltage(void)
     return result | (val[0] << 24 | val[1] << 16);
 }
 
-#ifdef CONFIG_ENABLE_PMU_WATCHDOG
+#if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
 void pmu_feed_watchdog(unsigned int flags)
 {
     i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
@@ -384,7 +387,7 @@ void rn5t618_power_off_at_24M()
     dcdc1_ctrl &= ~(0x01);                                              // close DCDC1, vcck
     i2c_pmu_write_b(0x002c, dcdc1_ctrl);
 
-#ifdef CONFIG_ENABLE_PMU_WATCHDOG
+#if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
     i2c_pmu_write_b(0x000b, 0x0c);                      // time out to 1s
     i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
     i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
@@ -396,7 +399,7 @@ void rn5t618_power_on_at_24M()                                          // need 
 {
     printf_arc("enter 24MHz. reason:");
 
-#ifdef CONFIG_ENABLE_PMU_WATCHDOG
+#if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
     i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
     i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
     i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
@@ -540,7 +543,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
         delay_cnt++;
 
-    #ifdef CONFIG_ENABLE_PMU_WATCHDOG
+    #if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
         pmu_feed_watchdog(flags);
     #endif
         if (delay_cnt >= 3000) {

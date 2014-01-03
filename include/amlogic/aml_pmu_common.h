@@ -6,6 +6,11 @@
 
 #define POWER_INIT_MODE_NORMAL              0
 #define POWER_INIT_MODE_USB_BURNING         1
+#ifdef CONFIG_RESET_TO_SYSTEM
+#define RESET_FLAG_GET              0
+#define RESET_FLAG_SET              1
+#define RESET_FLAG_CLR              2
+#endif
 
 struct aml_pmu_driver {
     int  (*pmu_init)(void);                                                     // initialize PMU board
@@ -22,7 +27,12 @@ struct aml_pmu_driver {
     int  (*pmu_set_charge_current)(int curr);                                   // set charge current
     int  (*pmu_init_para)(struct battery_parameter *battery);                   // init pmu by battery parameter
     void (*pmu_power_off)(void);                                                // power off system
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
     void (*pmu_do_battery_calibrate)(void);                                     // calibrate battery curve
+#endif
+#ifdef CONFIG_RESET_TO_SYSTEM
+    int  (*pmu_reset_flag_operation)(int op);
+#endif
 };
 
 extern struct aml_pmu_driver* aml_pmu_get_driver(void);
