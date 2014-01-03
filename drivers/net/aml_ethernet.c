@@ -142,13 +142,12 @@ static unsigned int phy_reg_rd(int phyad, unsigned int reg)
 
 static inline void _dcache_flush_range_for_net(unsigned startAddr, unsigned endAddr)
 {
-	dcache_clean_range(startAddr, endAddr - startAddr + 1);
+	dcache_flush_range(startAddr, endAddr - startAddr + 1);
 	return;
 }
 
 static inline void _dcache_inv_range_for_net(unsigned startAddr, unsigned endAddr)
 {
-	dcache_flush_range(startAddr, endAddr - startAddr + 1);
 	dcache_invalid_range(startAddr, endAddr - startAddr + 1);
 	return;
 }
@@ -562,14 +561,6 @@ static int aml_eth_send(struct eth_device *net_current, volatile void *packet, i
 	}
 	g_current_tx = (struct _tx_desc*)pTx->tdes3;
 	memcpy((unsigned char*)pTx->tdes2, (unsigned char*)packet, length);
-	_dcache_flush_range_for_net((unsigned)packet, (unsigned)(packet + 1500));
-	_dcache_inv_range_for_net((unsigned)packet, (unsigned)(packet + 1500)); //this is the uboot's problem
-	//change for add to 60 bytes..
-	//by zhouzhi
-	if (length < 60) {
-		memset((unsigned char*)(pTx->tdes2 + length), 0, 60 - length);
-		length = 60;
-	}
 	//pTx->tdes1 &= DescEndOfRing;
 	_dcache_flush_range_for_net((unsigned long)pTx->tdes2, (unsigned long)pTx->tdes2 + length - 1);
 	pTx->tdes1 = ((length << TDES1_TBS1_P) & TDES1_TBS1_MASK) | TDES1_FS | TDES1_LS | TDES1_TCH | TDES1_IC;
@@ -794,7 +785,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 			g_bi_enetaddr[2], g_bi_enetaddr[3], g_bi_enetaddr[4], g_bi_enetaddr[5]);
 #endif
 	/* start the dma para, but don't start the receive dma */
-	writel(ETH_DMA_6_Operation_Mode_EFC | ETH_DMA_6_Operation_Mode_TTC_16 | ETH_DMA_6_Operation_Mode_RSF | ETH_DMA_6_Operation_Mode_DT, ETH_DMA_6_Operation_Mode);
+	writel(ETH_DMA_6_Operation_Mode_EFC | ETH_DMA_6_Operation_Mode_TTC_16 | ETH_DMA_6_Operation_Mode_RSF | ETH_DMA_6_Operation_Mode_TSF | ETH_DMA_6_Operation_Mode_DT, ETH_DMA_6_Operation_Mode);
 	// | ETH_DMA_6_Operation_Mode_RTC_32 | ETH_DMA_6_Operation_Mode_FUF
 
 	netdev_chk();
