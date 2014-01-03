@@ -477,6 +477,12 @@
 #ifdef CONFIG_MESON_TRUSTZONE
 #define SECURE_OS_COMPRESS_ADDR                  0x0E000000
 #define SECURE_OS_DECOMPRESS_ADDR                0x3C100000
+#ifdef CONFIG_ACS
+#define SECURE_OS_ACS_SRAM_ADDR                  0xD9000200
+#define SECURE_OS_ACS_DRAM_ADDR                  0x0F000000
+#define SECURE_OS_ACS_LEN                        0x00000400
+#endif
+
 #define CONFIG_JOIN_UBOOT_SECUREOS 1
 
 #define SECURE_OS_OFFSET_POSITION_IN_SRAM        (32-4)

@@ -45,8 +45,8 @@
 #define TRUSTZONE_MON_CORE_WR_STATUS1_INDEX     0x206
 #define TRUSTZONE_MON_CORE_BOOTADDR_INDEX       0x207
 #define TRUSTZONE_MON_CORE_DDR_INDEX            0x208
-#define TRUSTZONE_MON_CORE_RD_SOC_REV1				0x209
-#define TRUSTZONE_MON_CORE_RD_SOC_REV2				0x20A
+#define TRUSTZONE_MON_CORE_RD_SOC_REV1          0x209
+#define TRUSTZONE_MON_CORE_RD_SOC_REV2          0x20A
 
 #define TRUSTZONE_MON_SUSPNED_FIRMWARE          0x300
 #define TRUSTZONE_MON_SAVE_CPU_GIC              0x400
@@ -55,9 +55,12 @@
 #define TRUSTZONE_MON_RTC_RD_REG_INDEX          0x501
 #define TRUSTZONE_MON_RTC_WR_REG_INDEX          0x502
 
+/* Secure HAL APIs */
+#define TRUSTZONE_HAL_TYPE_MASK                 0xF00
 #define TRUSTZONE_HAL_API_EFUSE                 0x100
 #define TRUSTZONE_HAL_API_STORAGE               0x200
 #define TRUSTZONE_HAL_API_MEMCONFIG             0x300
+#define TRUSTZONE_HAL_API_SRAM                  0x400
 
 
 #ifdef CONFIG_MESON_STORAGE_BURN
@@ -79,8 +82,19 @@ struct storage_hal_api_arg{
 
 #endif
 
+#define SRAM_HAL_API_CAS 0x401
+struct sram_hal_api_arg {
+	unsigned int cmd;
+	unsigned int req_len;
+	unsigned int res_len;
+	unsigned int req_phy_addr;
+	unsigned int res_phy_addr;
+	unsigned int ret_phy_addr;
+};
+
 uint32_t meson_trustzone_rtc_read_reg32(uint32_t addr);
 uint32_t meson_trustzone_rtc_write_reg32(uint32_t addr, uint32_t value);
 uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+uint32_t meson_trustzone_acs_addr(uint32_t addr);
 
 #endif
