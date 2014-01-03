@@ -3,6 +3,7 @@
 #include <asm/arch/io.h>
 #include <asm/arch/reg_addr.h>
 #include <asm/arch/uart.h>
+#include <amlogic/aml_pmu_common.h>
 
 extern void hard_i2c_init(void);
 extern unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr);
@@ -148,7 +149,7 @@ static void axp20_ldo_voltage(int ldo, int voltage)
     hard_i2c_write8(DEVID, addr, idx_cur);
 }
 
-static void axp20_power_init(void)
+static void axp20_power_init(int init_mode)
 {
     hard_i2c_write8(DEVID, 0x80, 0xe4);
 #ifdef CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
@@ -262,7 +263,7 @@ void aml_pmu_set_voltage(int dcdc, int voltage)
     }
 }
 
-static void aml1212_power_init(void)
+static void aml1212_power_init(int init_mode)
 {
 #ifdef CONFIG_VDDAO_VOLTAGE
     aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_VOLTAGE);
@@ -363,13 +364,29 @@ int rn5t618_set_ldo_voltage(int ldo, int voltage)
     __udelay(5 * 100);
 }
 
-void rn5t618_power_init()
+void rn5t618_power_init(int init_mode)
 {
     unsigned char val;
 
     hard_i2c_read8(DEVID, 0x0b);                                // clear watch dog 
     rn5t618_set_bits(0xB3, 0x40, 0x40);
     rn5t618_set_bits(0xB8, 0x02, 0x1f);                         // set charge current to 300mA
+
+    if (init_mode == POWER_INIT_MODE_NORMAL) {
+    #ifdef CONFIG_VCCK_VOLTAGE
+        rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);       // set cpu voltage
+    #endif
+    #ifdef CONFIG_VDDAO_VOLTAGE
+        rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);      // set VDDAO voltage
+    #endif
+    } else if (init_mode == POWER_INIT_MODE_USB_BURNING) {
+        /*
+         * if under usb burning mode, keep VCCK and VDDEE
+         * as low as possible for power saving and stable issue
+         */
+        rn5t618_set_dcdc_voltage(1, 900);                       // set cpu voltage
+        rn5t618_set_dcdc_voltage(2, 950);                       // set VDDAO voltage
+    }
 #ifdef CONFIG_DDR_VOLTAGE
     rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);            // set DDR voltage
 #endif
@@ -400,13 +417,13 @@ void rn5t618_power_init()
 }
 #endif
 
-void power_init(void)
+void power_init(int init_mode)
 {
     hard_i2c_init();
     
     __udelay(1000);
 #ifdef CONFIG_AW_AXP20
-    axp20_power_init();
+    axp20_power_init(init_mode);
 #elif defined CONFIG_PMU_ACT8942
     if(CONFIG_VDDAO_VOLTAGE <= 1200)
         hard_i2c_write8(DEVID, 0x21, (CONFIG_VDDAO_VOLTAGE - 600) / 25);
@@ -415,9 +432,9 @@ void power_init(void)
     else
         hard_i2c_write8(DEVID, 0x21, ((CONFIG_VDDAO_VOLTAGE - 2400) / 100) + 0x30);
 #elif defined CONFIG_AML_PMU
-    aml1212_power_init(); 
+    aml1212_power_init(init_mode); 
 #elif defined CONFIG_RN5T618
-    rn5t618_power_init();
+    rn5t618_power_init(init_mode);
 #endif
     __udelay(1000);
 }

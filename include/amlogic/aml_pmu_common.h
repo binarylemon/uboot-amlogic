@@ -4,6 +4,9 @@
 
 #include <amlogic/battery_parameter.h>
 
+#define POWER_INIT_MODE_NORMAL              0
+#define POWER_INIT_MODE_USB_BURNING         1
+
 struct aml_pmu_driver {
     int  (*pmu_init)(void);                                                     // initialize PMU board
     int  (*pmu_get_battery_capacity)(void);                                     // return battery percent
@@ -23,5 +26,6 @@ struct aml_pmu_driver {
 };
 
 extern struct aml_pmu_driver* aml_pmu_get_driver(void);
+extern void power_init(int init_mode);
 
 #endif  /* __AML_PMU_COMMOM_H__ */

@@ -23,7 +23,7 @@
 #include <asm/arch/reboot.h>
 
 #ifdef CONFIG_POWER_SPL
-extern void power_init(); 
+#include <amlogic/aml_pmu_common.h>
 #endif
 
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -134,7 +134,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts("\n");	
 
 #ifdef CONFIG_POWER_SPL
-    power_init();
+    power_init(POWER_INIT_MODE_NORMAL);
 #endif
 
 #if !defined(CONFIG_VLSI_EMULATOR)
