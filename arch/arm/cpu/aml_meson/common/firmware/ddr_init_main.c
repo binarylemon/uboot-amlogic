@@ -28,9 +28,11 @@ extern void power_init();
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-	//disable watch dog
-	writel(0, P_WATCHDOG_TC);
-
+#ifdef CONFIG_M8
+	//enable watchdog for 10s
+	//if bootup failed, switch to next boot device
+	writel(((1<<22) | 900000), P_WATCHDOG_TC); //10s
+#endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1

@@ -309,6 +309,10 @@ int set_low_power_for_usb_burn(int arg, char* buff)
 {
     int ret = 0;
 
+    if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()){
+        return 0;//just return ok as usb producing mode not
+    }
+
 #if 0//disable video device
     //axp to low power off LCD, no-charging
     MYDBG("To close LCD\n");

@@ -484,6 +484,10 @@ int optimus_burn_package_in_sdmmc(const char* sdc_cfg_file)
 {
     int rcode = 0;
 
+#ifdef CONFIG_M8
+	writel(0, P_WATCHDOG_TC);//disable watch dog
+#endif//#ifdef CONFIG_M8
+
     DWN_MSG("mmcinfo\n");
     rcode = run_command("mmcinfo", 0);
     if(rcode){

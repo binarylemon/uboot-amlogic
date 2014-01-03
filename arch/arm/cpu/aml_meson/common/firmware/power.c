@@ -370,12 +370,6 @@ void rn5t618_power_init()
     hard_i2c_read8(DEVID, 0x0b);                                // clear watch dog 
     rn5t618_set_bits(0xB3, 0x40, 0x40);
     rn5t618_set_bits(0xB8, 0x02, 0x1f);                         // set charge current to 300mA
-#ifdef CONFIG_VCCK_VOLTAGE
-    rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
-#endif
-#ifdef CONFIG_VDDAO_VOLTAGE
-    rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);          // set VDDAO voltage
-#endif
 #ifdef CONFIG_DDR_VOLTAGE
     rn5t618_set_dcdc_voltage(3, CONFIG_DDR_VOLTAGE);            // set DDR voltage
 #endif

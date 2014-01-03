@@ -435,6 +435,31 @@ int rn5t618_set_charge_enable(int enable)
     return rn5t618_set_bits(0x00B3, bits, 0x03);
 }
 
+int find_idx(int start, int target, int step, int size)
+{
+    int i = 0; 
+    do { 
+        if (start >= target) {
+            break;    
+        }    
+        start += step;
+        i++; 
+    } while (i < size);
+    return i;
+}
+
+int rn5t618_set_dcdc_voltage(int dcdc, int voltage)
+{
+    int addr;
+    int idx_to, idx_cur;
+    addr = 0x35 + dcdc;
+    idx_to  = find_idx(6000, voltage * 10, 125, 256);            // step is 12.5mV
+    rn5t618_read(addr, &idx_cur);
+	printf("voltage set from 0x%02x to 0x%02x, addr:0x%02x\n", idx_cur, idx_to, addr);
+    rn5t618_write(addr, idx_to);
+    udelay(5 * 1000);
+}
+
 int rn5t618_set_full_charge_voltage(int voltage)
 { 
     int bits;
@@ -603,6 +628,12 @@ int rn5t618_init(void)
 {
     uint8_t buf[10];
 
+#if defined (CONFIG_VCCK_VOLTAGE) && defined(CONFIG_POWER_SPL)
+    rn5t618_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
+#endif
+#if defined (CONFIG_VDDAO_VOLTAGE) && defined(CONFIG_POWER_SPL)
+    rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);          // set VDDAO voltage
+#endif
 #ifdef CONFIG_ENABLE_PMU_WATCHDOG
 #if 0
     rn5t618_read(0x0c, buf);

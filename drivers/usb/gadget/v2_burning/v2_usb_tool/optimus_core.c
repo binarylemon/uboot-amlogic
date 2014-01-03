@@ -20,6 +20,10 @@ int v2_usbburning(unsigned timeout)
         return __LINE__;
     }
 
+#ifdef CONFIG_M8
+	writel(0, P_WATCHDOG_TC);//disable watch dog
+#endif//#ifdef CONFIG_M8
+
 	while(1)
 	{
 		//watchdog_clear();		//Elvis Fool
