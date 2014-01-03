@@ -32,9 +32,6 @@
 #define i2c_pmu_read_w(reg)             (unsigned short)i2c_pmu_read_12(reg, 2)
 static unsigned char vbus_status;
 
-static int gpio_sel0;
-static int gpio_mask;
-
 void printf_arc(const char *str)
 {
     f_serial_puts(str);
@@ -158,14 +155,6 @@ void init_I2C()
 {
 	unsigned v,speed,reg;
 	struct aml_i2c_reg_ctrl* ctrl;
-
-		//save gpio intr setting
-	gpio_sel0 = readl(0xc8100084);
-	gpio_mask = readl(0xc8100080);
-
-	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
-	writel(readl(0xc8100080) | (1<<8),0xc8100080);
-	writel(1<<8,0xc810008c); //clear intr
 
 	f_serial_puts("i2c init\n");
 
@@ -513,8 +502,8 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     int prev_status;
     int battery_voltage;
     int ret = 0;
-//    int gpio_sel0;
-//    int gpio_mask;
+    int gpio_sel0;
+    int gpio_mask;
     int low_bat_cnt = 0;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -526,7 +515,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
     writel(readl(P_AO_RTI_PULL_UP_REG)|(1 << 3)|(1<<19),P_AO_RTI_PULL_UP_REG);
-/*
+
 	//save gpio intr setting
 	gpio_sel0 = readl(0xc8100084);
 	gpio_mask = readl(0xc8100080);
@@ -534,7 +523,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
 	writel(readl(0xc8100080) | (1<<8),0xc8100080);
 	writel(1<<8,0xc810008c); //clear intr
-*/
+
 	prev_status = get_charging_state();
     do {
         /*
