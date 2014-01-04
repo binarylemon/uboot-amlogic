@@ -134,15 +134,18 @@
 
 #define CONFIG_AUTO_COMPLETE	1
 
-#define CONFIG_SPI_BOOT 1
-//#define CONFIG_MMC_BOOT
-#ifndef CONFIG_JERRY_NAND_TEST
-	#define CONFIG_NAND_BOOT 1
-#endif
+//#define CONFIG_SPI_BOOT
+//#define CONFIG_MMC_BOOT 1
+#define CONFIG_EMMC_BOOT 1
+
+//#ifndef CONFIG_JERRY_NAND_TEST
+//	#define CONFIG_NAND_BOOT 1
+//#endif
 
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif 
+#define CONFIG_ENV_OVERWRITE
 
 #define CONFIG_ENV_SIZE         (64*1024)
 
@@ -168,8 +171,15 @@
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+	// #define CONFIG_SYS_MMC_ENV_DEV        0
+	#define CONFIG_SYS_MMC_ENV_DEV        1
+	#define CONFIG_ENV_OFFSET       0x1000000
+#elif defined CONFIG_EMMC_BOOT
+	#define CONFIG_ENV_IS_IN_EMMC
+	#define CONFIG_CMD_SAVEENV
+	#define CONFIG_ENV_DEVICE_ID 1    
+	#define CONFIG_ENV_OFFSET       0x200000
+
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
@@ -267,6 +277,13 @@
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
+/* Pass open firmware flat tree*/
+#define CONFIG_OF_LIBFDT	1
+//#define CONFIG_DT_PRELOAD	1
+#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
+#define CONFIG_ANDROID_IMG	1
+
+//#define CONFIG_CMD_MATH         1
 
 //m6 security boot
 //#define CONFIG_M6_SECU_BOOT	1

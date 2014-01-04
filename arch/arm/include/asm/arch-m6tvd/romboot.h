@@ -35,7 +35,8 @@
 
 #define POR_ROM_BOOT_ENABLE (1<<5)
 #define POR_JTAG_ENABLE     (1<<6)
-#define POR_GET_1ST_CFG(a)  (a&7)
+#define POR_GET_1ST_CFG(a)  ((((a>>9)&1)<<2)|((a>>6)&3))  //por[9],por[7,6]
+
 #define POR_1ST_NAND          7
 #define POR_1ST_NAND_RB       6
 #define POR_1ST_SPI           5

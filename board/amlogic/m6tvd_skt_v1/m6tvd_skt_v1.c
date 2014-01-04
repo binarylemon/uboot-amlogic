@@ -9,12 +9,16 @@
 #include <asm/arch/io.h>
 #endif /*(CONFIG_CMD_NET)*/
 
+#include <version.h>
+#include <timestamp.h>
+
 #if defined(CONFIG_AML_I2C)
 #include <aml_i2c.h>
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
-
-
+#include <asm/arch/gpio.h>
+#include <asm/arch/reboot.h>
+#define reboot_mode *((volatile unsigned long*)0xc8100004)
 DECLARE_GLOBAL_DATA_PTR;
 
 
@@ -143,35 +147,133 @@ u32 get_board_rev(void)
 static int  sdio_init(unsigned port)
 {	
     //todo add card detect 	
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+//	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  //todo add card detect 	
+                  setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+                  break;
+            case SDIO_PORT_C:    	
+                  //enable pull up
+                  clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
+                  break;
+            case SDIO_PORT_XC_A:
+                  break;
+            case SDIO_PORT_XC_B:
+                  break;
+            case SDIO_PORT_XC_C:
+                  break;
+            default:
+                  break;
+      }
 
     return cpu_sdio_init(port);
 }
 static int  sdio_detect(unsigned port)
 {
 	int ret;
-	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
-	ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
-	printf( " %s return %d\n",__func__,ret);
+      switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
+                  ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
+                  printf( " %s return %d\n",__func__,ret);
+                  break;
+            case SDIO_PORT_C:    	
+                  break;
+            case SDIO_PORT_XC_A:
+                  break;
+            case SDIO_PORT_XC_B:
+                  break;
+            case SDIO_PORT_XC_C:
+                  break;
+            default:
+                  break;
+      }
+
 	return 0;
 }
 static void sdio_pwr_prepare(unsigned port)
 {
+	switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  break;
+            case SDIO_PORT_C:    	
+                  break;
+            case SDIO_PORT_XC_A:
+                  break;
+            case SDIO_PORT_XC_B:
+                  break;
+            case SDIO_PORT_XC_C:
+                  break;
+            default:
+                  break;
+      }
+
+      cpu_sdio_pwr_prepare(port);
     /// @todo NOT FINISH
 	///do nothing here
 }
 static void sdio_pwr_on(unsigned port)
 {
-	clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+                  clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+                  break;
+            case SDIO_PORT_C:    	
+                  break;
+            case SDIO_PORT_XC_A:
+                  break;
+            case SDIO_PORT_XC_B:
+                  break;
+            case SDIO_PORT_XC_C:
+                  break;
+            default:
+                  break;
+      }
+      return;
+
     /// @todo NOT FINISH
 }
 static void sdio_pwr_off(unsigned port)
 {
-	setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
-	clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+	switch(port)
+      {
+            case SDIO_PORT_A:
+                  break;
+            case SDIO_PORT_B:
+                  setbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
+                  clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
+                  break;
+            case SDIO_PORT_C:
+                  break;
+            case SDIO_PORT_XC_A:
+                  break;
+            case SDIO_PORT_XC_B:
+                  break;
+            case SDIO_PORT_XC_C:
+                  break;
+            default:
+                  break;
+      }
+      return;
+
 	/// @todo NOT FINISH
 }
+
+#define CONFIG_EMMC     1
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
@@ -185,6 +287,21 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
 	sdio_register(mmc,aml_priv);
+//	 #ifdef CONFIG_TSD
+//	     if(mmc->block_dev.dev > 0)//tsd
+//	           mmc->block_dev.if_type = IF_TYPE_SD;
+//	 #else
+//	     if(mmc->block_dev.dev > 0)//emmc
+//	           mmc->block_dev.if_type = IF_TYPE_MMC;
+//	#endif
+
+
+	mmc->block_dev.if_type = IF_TYPE_SD;
+	if(port == SDIO_PORT_C){
+		mmc->block_dev.if_type = IF_TYPE_MMC;
+	}
+
+
 #if 0    
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
@@ -213,7 +330,7 @@ int board_mmc_init(bd_t	*bis)
 {
 //board_mmc_register(SDIO_PORT_A);
 	board_mmc_register(SDIO_PORT_B);
-//	board_mmc_register(SDIO_PORT_C);
+	board_mmc_register(SDIO_PORT_C);
 //	board_mmc_register(SDIO_PORT_B1);
 	return 0;
 }
