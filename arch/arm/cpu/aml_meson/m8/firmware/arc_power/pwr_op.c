@@ -244,6 +244,8 @@ void rn5t618_shut_down()
     rn5t618_set_gpio(0, 1);
     rn5t618_set_gpio(1, 1);
     udelay__(100 * 1000);
+    rn5t618_set_bits(0x00EF, 0x00, 0x10);                     // disable coulomb counter
+    rn5t618_set_bits(0x00E0, 0x00, 0x01);                     // disable fuel gauge 
     rn5t618_set_bits(0x000f, 0x00, 0x01);
     rn5t618_set_bits(0x000E, 0x01, 0x01);
     while (1);

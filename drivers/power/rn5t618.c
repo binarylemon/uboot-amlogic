@@ -240,6 +240,8 @@ void rn5t618_power_off()
     rn5t618_set_gpio(0, 1);
     rn5t618_set_gpio(1, 1);
     udelay(100 * 1000);
+    rn5t618_set_bits(0x00EF, 0x00, 0x10);                     // disable coulomb counter
+    rn5t618_set_bits(0x00E0, 0x00, 0x01);                     // disable fuel gauge 
     DBG("%s, send power off command\n", __func__);
     rn5t618_set_bits(0x000f, 0x00, 0x01);                     // do not re-power-on system 
     rn5t618_set_bits(0x000E, 0x01, 0x01);                     // software power off PMU
