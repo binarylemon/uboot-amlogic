@@ -113,7 +113,7 @@
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 
 #define CONFIG_ENABLE_PMU_WATCHDOG
-#define CONFIG_RESET_TO_SYSTEM
+//#define CONFIG_RESET_TO_SYSTEM
 
 /*
  * under some cases default voltage of PMU output is 
