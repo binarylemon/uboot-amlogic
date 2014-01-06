@@ -57,7 +57,7 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/osd_hw.o
 endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
-<<<<<<< HEAD
+COBJS-$(CONFIG_AML_LCD_EXTERN_TC101) += lcd/lcd_extern/tc101.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o tvout/dsp.o \
 	tvout/tv_out.o
 
@@ -74,21 +74,6 @@ COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx.o
 #	tvout/enc_clk_config.o
 #endif
 endif
-=======
-COBJS-$(CONFIG_AML_LCD_EXTERN_TC101) += lcd/lcd_extern/tc101.o
-
-COBJS-y += tvout/hdmi_hdcp.o
-COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o \
-	tvout/tv_out.o \
-	tvout/hdmi_tx_meson.o \
-	tvout/hdmi_tx_reg.o \
-	tvout/hdmi_tx.o \
-	tvout/hdmi_tx_edid.o \
-	tvout/hdmi_tx_video.o \
-	tvout/enc_clk_config.o \
-	tvout/dsp.o \
-    $(patsubst %.c,%.o,$(wildcard tvout/hdmi_ucode/*.c))
->>>>>>> f49a2d1... PD #85473: add lcd external driver tc101 for minilvds
 endif
 
 COBJS	:= $(COBJS-y)
