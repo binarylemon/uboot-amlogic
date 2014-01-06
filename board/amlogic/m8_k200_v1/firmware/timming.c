@@ -135,7 +135,7 @@ static struct ddr_set __ddr_setting={
 	.t_pub0_dtar	= ((0x0 + CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28)),
 	.t_pub1_dtar	= ((0x0 + CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28)),
 
-	.t_ddr_apd_ctrl = ( 0 << 0 ) | // 32 disable lowpower for auto reboot issue //[B7..B0]: DMC active latency.  latency to enter LOW POWER state after the the DMC is not actived.
+	.t_ddr_apd_ctrl = ( 32 << 0 ) | //[B7..B0]: DMC active latency.  latency to enter LOW POWER state after the the DMC is not actived.
 					  ( 6  << 8 ) | //[B15..B8]: Low Power enter latency.when the logic check the PCTL send LP_REQ and ACKed by PUB. after this regsiter bits cycles, we'll gated the PCTL clock and PUB clock if the pub and pctl auto clock gating enabled.
 					  ( 0  << 16), 	//[B17,B16]: DDR mode to genreated the refresh ack signal and prcharge signal to DMC for dmc refresh control.
 					  			    // 2'b00: DDR3  2'b01.  LPDDR2/3. 2'b10, 2'b11: no refresh ack and precharge signals generated. 
