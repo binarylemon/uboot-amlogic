@@ -290,8 +290,9 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	int i;
 
 	if( status == ON ) {
-		WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
+			WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
+			mdelay(20);
 			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
 		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
@@ -318,7 +319,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 			for (i=0; i<pDev->bl_config->pinmux_set_num; i++) {
 				set_mio_mux(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
 			}
-			
+			mdelay(20);
 			if (pDev->bl_config->pwm_gpio_used)
 				amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
