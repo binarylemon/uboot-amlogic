@@ -371,8 +371,7 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-//#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDR1_ONLY)
-#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
+#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDR1_ONLY)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
 //For DDR PUB training not check the VT done flag
@@ -392,8 +391,8 @@
 #define CFG_M8_DDR_CLK    792 //696 //768  //792// (636)
 
 //On board DDR capactiy
-//#define CFG_M8_DDR3_1GB
-#define CFG_M8_DDR3_2GB
+#define CFG_M8_DDR3_1GB
+//#define CFG_M8_DDR3_2GB
 //#define CFG_M8_DDR3_4GB
 //above setting will affect following:
 //board/amlogic/m8_k200_v1/firmware/timming.c
@@ -476,7 +475,7 @@
 
 #ifdef CONFIG_MESON_TRUSTZONE
 #define SECURE_OS_COMPRESS_ADDR                  0x0E000000
-#define SECURE_OS_DECOMPRESS_ADDR                0x3C100000
+#define SECURE_OS_DECOMPRESS_ADDR                0x06200000
 #ifdef CONFIG_ACS
 #define SECURE_OS_ACS_SRAM_ADDR                  0xD9000200
 #define SECURE_OS_ACS_DRAM_ADDR                  0x0F000000
