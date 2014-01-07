@@ -202,8 +202,8 @@ U_BOOT_CMD(
 	"set_usbcur_limit <current>\n"
 	"unit is mA\n"
 );
- 
-#ifdef CONFIG_PLATFORM_HAS_PMU
+
+#if defined(CONFIG_PLATFORM_HAS_PMU) && defined(CONFIG_UBOOT_BATTERY_PARAMETER_TEST)
 static int do_battery_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     struct aml_pmu_driver *pmu_driver;
