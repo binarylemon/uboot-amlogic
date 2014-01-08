@@ -47,7 +47,7 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
         printf("reboot flag = %d\n", reboot_flag);
         if (reboot_flag) {
             printf("abnormal reboot, direct boot to Kernel now\n");
-            run_command(getenv ("bootcmd"), 0); 
+            run_command("run prepare; bmp display ${poweron_offset}; run bootcmd;", 0); 
         }
     }
 #endif
