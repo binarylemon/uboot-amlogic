@@ -26,7 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /*************************************************
   * Amlogic Ethernet controller operation
-  * 
+  *
   * Note: The LAN chip LAN8720 need to be reset
   *
   *************************************************/
@@ -58,21 +58,76 @@ static void setup_net_chip(void)
 	/* setup ethernet interrupt */
 	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK, 1 << 8);
 	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT, 1 << 8);
-	
+
 	/* hardware reset ethernet phy */
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 	udelay(2000);
 	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 }
+static void setup_internal_phy(void)
+{
+		printf("setup_internal_phy\n");
+#if 0
+		WRITE_CBUS_REG(0x1076, 0x00000113);
+		WRITE_CBUS_REG(0x2032, 0x00000000);
+		WRITE_CBUS_REG(0x2042, 0x4700b002);
+		WRITE_CBUS_REG(0x2046, 0x89637989);
+		WRITE_CBUS_REG(0x1102, 0x00000800);
+		WRITE_CBUS_REG(0x103d, 0x10d396e1);
+		//WRITE_CBUS_REG(0x103e, 0x45040828);
+		//WRITE_CBUS_REG(0x103e, 0x45000828);
+		WRITE_CBUS_REG(0x103c, 0x12848480);
+		WRITE_CBUS_REG(0x103f, 0x3dea4000);
+		WRITE_CBUS_REG(0x1040, 0x00000004);
+		WRITE_CBUS_REG(0x1041, 0x0);
+		WRITE_CBUS_REG(0x1042, 0x2a855008);
+		WRITE_CBUS_REG(0x103e, 0x45040828);
+		WRITE_CBUS_REG(0x103e, 0x45000828);
+#elif 0
+	WRITE_CBUS_REG(0x1076, 0x193);
+	WRITE_CBUS_REG(0x2032, 0x00000000);
+	WRITE_CBUS_REG(0x2042, 0x4100b000);
+	WRITE_CBUS_REG(0x2046, 0x89637989);
+	WRITE_CBUS_REG(0x1102, 0x800);
+	WRITE_CBUS_REG(0x103d, 0x10d396e1);
+	WRITE_CBUS_REG(0x103e, 0x45000828);
+	WRITE_CBUS_REG(0x103c, 0x128484bf);
+	WRITE_CBUS_REG(0x103f, 0x7bdea4000);
+	WRITE_CBUS_REG(0x1040, 0xf);
+	WRITE_CBUS_REG(0x1041, 0x0);
+	WRITE_CBUS_REG(0x1042, 0x2a855008);
+	WRITE_CBUS_REG(0x103e, 0x45040828);
+	WRITE_CBUS_REG(0x103e, 0x45000828);
+#else
+	WRITE_CBUS_REG(0x1076, 0x00008d00);
+	WRITE_CBUS_REG(0x2032, 0x00000000);
+	WRITE_CBUS_REG(0x2042, 0x47803442);
+	WRITE_CBUS_REG(0x2046, 0x89637989);
+	WRITE_CBUS_REG(0x1102, 0x00000800);
+	WRITE_CBUS_REG(0x103d, 0x10d396e1);
+	//WRITE_CBUS_REG(0x103e, 0x45040828);
+	//WRITE_CBUS_REG(0x103e, 0x45000828);
+	WRITE_CBUS_REG(0x103c, 0x12848485);
+	WRITE_CBUS_REG(0x103f, 0x61ea4000);
+	WRITE_CBUS_REG(0x1040, 0x00000001);
+	WRITE_CBUS_REG(0x1041, 0x3000);
+	WRITE_CBUS_REG(0x1042, 0x55055009);
+	WRITE_CBUS_REG(0x103e, 0x4504187d);
+	WRITE_CBUS_REG(0x103e, 0x4500187d);
+	WRITE_CBUS_REG(0x2042, 0x47802442);
+	WRITE_CBUS_REG(0x2042, 0x47803442);
 
+
+#endif
+}
 int board_eth_init(bd_t *bis)
-{   	
+{
     printf("board_eth_init\n");
     setup_net_chip();
 
     udelay(1000);
-		
+
 	extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);
 
@@ -82,7 +137,7 @@ int board_eth_init(bd_t *bis)
 
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-/*following key value are test with board 
+/*following key value are test with board
   [M6_SKT_V_1.0 20120112]
   ref doc:
   1. M6_SKT_V1.pdf
@@ -93,7 +148,7 @@ static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	if(argc > 2)
 		goto usage;
-	
+
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
@@ -111,21 +166,21 @@ static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
-		
+
 		printf("SARADC CH-4 Get key : %d [%d]\n", nKeyVal,(100*nKeyVal)/1024);
 		nCnt++;
 	}
 	saradc_disable();
 
 	return 0;
-	
+
 usage:
 	return cmd_usage(cmdtp);
 }
 
 U_BOOT_CMD(
 	adc,	2,	1,	do_adc,
-	"M6 ADC test",		
+	"M6 ADC test",
 	"[times] -  read `times' adc key through channel-4, default to read 10 times\n"
 	"		10bit ADC. key value: min=0; max=1024\n"
 	"		SKT BOARD #20: Key1=13 Key2=149 key3=274 key4=393 key5=514\n"
@@ -328,6 +383,10 @@ void m6tvref_set_pinmux(int power_on)
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
+
+#ifdef CONFIG_INTERNAL_PHY
+	setup_internal_phy();
+#endif
 	printf("switch_boot_mode\n");
     	u32 reboot_mode_current = reboot_mode;
 	char *suspend = getenv("suspend");
@@ -336,22 +395,22 @@ int switch_boot_mode(void)
 	  setenv("suspend","off");
 	  saveenv();
 	  printf("enter suspend = %s\n",suspend);
-	  run_command("suspend",0);	
-	}	
-    printf("reboot_mode_current=%x\n",reboot_mode_current);   
+	  run_command("suspend",0);
+	}
+    printf("reboot_mode_current=%x\n",reboot_mode_current);
     switch(reboot_mode_current)
 	{
 	case AMLOGIC_LOCK_REBOOT:
 	{
 	   printf("AML suspend boot....\n");
 	   run_command("suspend",0);
-	}    
+	}
 	case AMLOGIC_UPDATE_REBOOT:
-	case AMLOGIC_FACTORY_RESET_REBOOT:	
+	case AMLOGIC_FACTORY_RESET_REBOOT:
 	{
 	    run_command("run recoveryinand",0);
     	    extern int aml_autoscript(void);
-            aml_autoscript();  
+            aml_autoscript();
 	}
 	}
     return 0;
@@ -370,18 +429,18 @@ u32 get_board_rev(void)
 #include <mmc.h>
 #include <asm/arch/sdio.h>
 static int  sdio_init(unsigned port)
-{	
-    //todo add card detect 	
+{
+    //todo add card detect
 //	setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
 switch(port)
       {
             case SDIO_PORT_A:
                   break;
             case SDIO_PORT_B:
-                  //todo add card detect 	
+                  //todo add card detect
                   setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
                   break;
-            case SDIO_PORT_C:    	
+            case SDIO_PORT_C:
                   //enable pull up
                   clrbits_le32(P_PAD_PULL_UP_REG3, 0xf|(3<<10));
                   break;
@@ -410,7 +469,7 @@ static int  sdio_detect(unsigned port)
                   ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
                   printf( " %s return %d\n",__func__,ret);
                   break;
-            case SDIO_PORT_C:    	
+            case SDIO_PORT_C:
                   break;
             case SDIO_PORT_XC_A:
                   break;
@@ -432,7 +491,7 @@ static void sdio_pwr_prepare(unsigned port)
                   break;
             case SDIO_PORT_B:
                   break;
-            case SDIO_PORT_C:    	
+            case SDIO_PORT_C:
                   break;
             case SDIO_PORT_XC_A:
                   break;
@@ -458,7 +517,7 @@ static void sdio_pwr_on(unsigned port)
                   clrbits_le32(P_PREG_PAD_GPIO5_O,(1<<31)); //CARD_8
                   clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
                   break;
-            case SDIO_PORT_C:    	
+            case SDIO_PORT_C:
                   break;
             case SDIO_PORT_XC_A:
                   break;
@@ -504,7 +563,7 @@ static void sdio_pwr_off(unsigned port)
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
-    
+
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
@@ -530,7 +589,7 @@ static void board_mmc_register(unsigned port)
 	}
 
 
-#if 0    
+#if 0
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
 	aml_priv->removed_flag = 1;
@@ -552,7 +611,7 @@ static void board_mmc_register(unsigned port)
 	mmc->f_min = 200000;
 	mmc->f_max = 50000000;
 	mmc_register(mmc);
-#endif	
+#endif
 }
 int board_mmc_init(bd_t	*bis)
 {
@@ -564,7 +623,7 @@ int board_mmc_init(bd_t	*bis)
 }
 #endif
 
-#ifdef CONFIG_AML_I2C 
+#ifdef CONFIG_AML_I2C
 /*I2C module is board depend*/
 static void board_i2c_set_pinmux(void){
 	/*@M6_SKT_V1.pdf*/
@@ -577,7 +636,7 @@ static void board_i2c_set_pinmux(void){
     /*********************************************/
     /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
     /* GPIOX27  | [PIM_MUX5:31]     | [PIM_MUX5:29]   |     */
-    /*********************************************/	
+    /*********************************************/
 	//Wr(PAD_PULL_UP_REG4,Rd(PAD_PULL_UP_REG4) | (1 << 27)| (1 << 28) );
 
 	//disable all other pins which share with I2C_SDA_B & I2C_SCK_B
@@ -585,9 +644,9 @@ static void board_i2c_set_pinmux(void){
     //enable I2C MASTER B pins
 	setbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,
 	(MESON_I2C_MASTER_B_GPIOX_27_BIT|MESON_I2C_MASTER_B_GPIOX_28_BIT));
-	
+
     udelay(10000);
-	
+
 };
 struct aml_i2c_platform g_aml_i2c_plat = {
     .wait_count         = 1000000,
@@ -643,7 +702,7 @@ unsigned short i2c_ALC5631Q_read(unsigned char reg)
             .flags = I2C_M_RD,
             .len = 2,
             .buf = &val,
-        },		
+        },
     };
 
     if ( aml_i2c_xfer(msgs, 2)< 0) {
@@ -676,14 +735,14 @@ void board_M6_SKT_V1_i2c_test(void)
 	for(nIdx = 0;nIdx <= nMaxID;nIdx+=2)
 		printf("Reg addr=0x%02x Val=0x%04x\n",
 		nIdx,i2c_ALC5631Q_read(nIdx));
-	
+
 	printf("[M6_SKT_V1.0]-[I2C-B]-[ALC5631Q] dump end.\n\n");
 	*/
-		
+
 }
 
 static void board_i2c_init(void)
-{		
+{
 	//set I2C pinmux with PCB board layout
 	/*@M6_SKT_V1.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
@@ -693,12 +752,12 @@ static void board_i2c_init(void)
 	//note: it must be call before any I2C operation
 	aml_i2c_init();
 
-	//must call aml_i2c_init(); before any I2C operation	
+	//must call aml_i2c_init(); before any I2C operation
 	/*M6 socket board*/
-	board_M6_SKT_V1_i2c_test();	
-	//udelay(10000);	
+	board_M6_SKT_V1_i2c_test();
+	//udelay(10000);
 
-	udelay(10000);		
+	udelay(10000);
 }
 
 //for sys_test only, not check yet
@@ -788,7 +847,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     }
-    
+
 };
 
 struct aml_nand_device aml_nand_mid_device = {
@@ -811,12 +870,12 @@ static void gpio_set_vbus_power(char is_power_on)
 	    //GPIOA_26 -- VCCX2_EN
 		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
-	
+
 		//@WA-AML8726-M3_REF_V1.0.pdf
 		//GPIOD_9 -- USB_PWR_CTL
 		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
 		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
-		
+
 		udelay(100000);
 	}
 	else
@@ -825,7 +884,7 @@ static void gpio_set_vbus_power(char is_power_on)
 		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
 
 		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
+		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);
 	}
 }
 static int usb_charging_detect_call_back(char bc_mode)
@@ -880,47 +939,16 @@ void board_ir_init()
 
 }
 #endif
-
-static void setup_internal_phy(void) //setup_internal_phy
-{
-    printf("setup_internal_phy\n");
-
-    WRITE_CBUS_REG(0x1076, 0x00008d00);
-    WRITE_CBUS_REG(0x2032, 0x00000000);
-    WRITE_CBUS_REG(0x2042, 0x47803442);
-    WRITE_CBUS_REG(0x2046, 0x89637989);
-    WRITE_CBUS_REG(0x1102, 0x00000800);
-    WRITE_CBUS_REG(0x103d, 0x10d396e1);
-    //WRITE_CBUS_REG(0x103e, 0x45040828);
-    //WRITE_CBUS_REG(0x103e, 0x45000828);
-    WRITE_CBUS_REG(0x103c, 0x12848485);
-    WRITE_CBUS_REG(0x103f, 0x61ea4000);
-    WRITE_CBUS_REG(0x1040, 0x00000001);
-    WRITE_CBUS_REG(0x1041, 0x3000);
-    WRITE_CBUS_REG(0x1042, 0x55055009);
-    WRITE_CBUS_REG(0x103e, 0x4504187d);
-    WRITE_CBUS_REG(0x103e, 0x4500187d);
-    WRITE_CBUS_REG(0x2042, 0x47802442);
-    WRITE_CBUS_REG(0x2042, 0x47803442);
-
-}
-
-
-
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-#if CONFIG_JERRY_NAND_TEST //temp test	
+#if CONFIG_JERRY_NAND_TEST //temp test
     nand_init();
-    
-#endif 
 
-   
-	   setup_internal_phy();
+#endif
 
-
-#ifdef CONFIG_AML_I2C  
+#ifdef CONFIG_AML_I2C
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 #ifdef CONFIG_IR_REMOTE
@@ -937,7 +965,7 @@ int board_init(void)
 	extern int get_cup_id(void);
 	printf("\n*************************************\n");
 	printf("CPU switch : CPU #%d is running\n",get_cpu_id());
-	printf("*************************************\n\n");	
+	printf("*************************************\n\n");
 #endif //CONFIG_M6_TEST_CPU_SWITCH
 	return 0;
 }

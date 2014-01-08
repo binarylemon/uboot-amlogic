@@ -19,6 +19,8 @@
 #define CONFIG_AML_AUTOSCRIPT
 #define AML_AUTOSCRIPT  "aml_autoscript"
 
+#define CONFIG_INTERNAL_PHY
+
 //Enable storage devices
 //#define CONFIG_CMD_NAND  1	//waiting for nand support
 #define CONFIG_CMD_SF    1
