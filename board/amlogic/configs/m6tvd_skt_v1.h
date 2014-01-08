@@ -11,6 +11,7 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+#define CONFIG_SWITCH_BOOT_MODE
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 //#define CONFIG_AML_I2C      1
@@ -43,6 +44,8 @@
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
+
+	#define CONFIG_INTERNAL_PHY
 	
 	//#define CONFIG_NET_RGMII
 //	#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
