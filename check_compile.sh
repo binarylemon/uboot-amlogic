@@ -4,8 +4,12 @@
 #
 
 #how to use
-#./check_m6.sh (all)
-#compile all configs or basic configs
+
+#./check_compile.sh
+#Check basic configs
+
+#./check_compile.sh all
+#Check all configs
 
 declare -i RESULT=0
 declare DETAIL
@@ -20,6 +24,7 @@ then
     m6s_skt_v1
     m6tv_skt_v1
     m6tv_ref_v1
+    m6tvd_skt_v1
     m6_ramos_v1
     m6_ainol_v1
     m6_ainol_e3
@@ -54,6 +59,7 @@ then
     m8_k200_v1
     m8_k100_v1
     m8_k101_v1
+    m8_k102_v1
     m8_k01
     m8_k03_M101_v1
     m8_k03_M102_v1
@@ -61,7 +67,10 @@ then
     m8_k03_M902_v1
     m8_k04_m3x13_v1
     m8_k05_hp
+    m8_k06_Nabi2C_v1
     m8_k06_NabiJR_v1
+    m8_k08_v1
+    m8_k09_v1
     m8_k12_MA975M8_v1
     )
 else
@@ -73,10 +82,12 @@ else
     m6s_skt_v1
     m6tv_skt_v1
     m6tv_ref_v1
+    m6tvd_skt_v1
     m8_skt_v1
     m8_k200_v1
     m8_k100_v1
     m8_k101_v1
+    m8_k102_v1
   )
 fi
 
