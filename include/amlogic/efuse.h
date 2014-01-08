@@ -27,7 +27,7 @@ typedef int(*pfn_byPos)(unsigned pos, efuseinfo_item_t *info);
 
 char *efuse_dump(void);
 unsigned efuse_readcustomerid(void);
-void efuse_set_versioninfo(efuseinfo_item_t *info);
+int efuse_set_versioninfo(efuseinfo_item_t *info);
 
 int efuse_getinfo(char *title, efuseinfo_item_t *info);
 int efuse_read_usr(char *buf, size_t count, loff_t *ppos);

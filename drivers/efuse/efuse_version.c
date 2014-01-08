@@ -394,7 +394,7 @@ static efuseinfo_item_t efuseinfo_v4[] =
 #endif
 
 //m8 efuse layout
-static efuseinfo_item_t efuseinfo_m8_v20[] = 
+static efuseinfo_item_t efuseinfo_m8_serialNum_v1[] = 
 {
 	{
 		.title = "licence",
@@ -461,6 +461,65 @@ static efuseinfo_item_t efuseinfo_m8_v20[] =
 	},
 };
 
+//M6TVD layout
+static efuseinfo_item_t efuseinfo_m6tvd_serialNum_v1[] = 
+{
+	{
+		.title = "licence",
+		.offset = 0,
+		.enc_len = 4,
+		.data_len = 4,
+		.we=0,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac",    //for the main network interface
+		.offset = 436,
+		.enc_len = 6,
+		.data_len = 6,
+		.we=1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac_bt",  //for the second network interface or bt
+		.offset = 442,
+		.enc_len = 6,
+		.data_len = 6,
+		.we=1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "mac_wifi", //for the second network interface or bt
+		.offset = 448,
+		.enc_len = 6,
+		.data_len = 6,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "usid",
+		.offset = 454,
+		.enc_len = 48,
+		.data_len = 48,
+		.we = 1,
+		.bch_en = 0,
+		.bch_reverse = 0,
+	},
+	{
+		.title = "version",
+		.offset = M6TVD_EFUSE_VERSION_OFFSET, //509
+		.enc_len = M6TVD_EFUSE_VERSION_ENC_LEN, //1
+		.data_len = M6TVD_EFUSE_VERSION_DATA_LEN,//1
+		.we = 1,
+		.bch_en = M6TVD_EFUSE_VERSION_BCH_EN, //0
+		.bch_reverse = M6TVD_EFUSE_VERSION_BCH_REVERSE, //0
+	},
+};
+
 efuseinfo_t efuseinfo[] = 
 {
 	{
@@ -486,9 +545,14 @@ efuseinfo_t efuseinfo[] =
 	},
 #endif
 	{
-		.efuseinfo_version = efuseinfo_m8_v20,
-		.size = sizeof(efuseinfo_m8_v20)/sizeof(efuseinfo_item_t),
-		.version = 20,
+		.efuseinfo_version = efuseinfo_m8_serialNum_v1,
+		.size = sizeof(efuseinfo_m8_serialNum_v1)/sizeof(efuseinfo_item_t),
+		.version = M8_EFUSE_VERSION_SERIALNUM_V1,
+	},
+	{
+		.efuseinfo_version = efuseinfo_m6tvd_serialNum_v1,
+		.size = sizeof(efuseinfo_m6tvd_serialNum_v1)/sizeof(efuseinfo_item_t),
+		.version = M6TVD_EFUSE_VERSION_SERIALNUM_V1,
 	},
 };
 
