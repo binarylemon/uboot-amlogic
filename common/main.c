@@ -233,22 +233,52 @@ static __inline__ int abortboot(int bootdelay)
 #endif
 
 #if defined CONFIG_ZERO_BOOTDELAY_CHECK
-	/*
-	 * Check if key already pressed
-	 * Don't check if bootdelay < 0
-	 */
-	if (bootdelay >= 0) {
-		if (tstc()) {	/* we got a key press	*/
-			cKey = getc();  /* consume input	*/
-			puts ("\b\b\b 0");
-			if(13 == cKey) //only "enter" key can triger abort
-			abort = 1;	/* don't auto boot	*/
-		}
-	}
+    /*
+     * Check if key already pressed
+     * Don't check if bootdelay < 0
+     */
+    if (bootdelay >= 0) {
+#ifdef CONFIG_CRLC_TO_STOP_ATOBOOT
+        //int key = getc();
+        if (tstc()) {
+            switch (getc()) {
+            case 0x03:      /* ^C - Ctrl+C */
+                abort = 1;
+                break;
+            case 0x0d:      /* Enter */
+                abort = 1;
+                break;
+            case 0x20:      /* Space */
+                abort = 1;
+                break;
+            default:
+                break;
+            }
+        }
+    //    printf("CONFIG_CRLC_TO_STOP_ATOBOOT test ctrl c / enter / space tab\n");
+#else
+        if (tstc()) {   /* we got a key press   */
+            (void) getc();  /* consume input    */
+            puts ("\b\b\b 0");
+            abort = 1;  /* don't auto boot  */
+        }
+#endif
+    }
 #endif
 
-	while ((bootdelay > 0) && (!abort)) {
-		int i;
+    char *s_ms = getenv ("enablemsdelay");
+    int delay_ms = s_ms ? (int)simple_strtol(s_ms, NULL, 10) : 0;
+    //printf("\n ----- delay ms : %d \n",delay_ms);
+
+    if (abort == 1) {
+         //Disable Watchdog
+        writel(0, 0xc1109900);
+    }
+    unsigned int sect = get_timer(0);// 1---> 20ms
+   // printf("get_timer0 = %d \n",t1);
+
+    while ((bootdelay > 0) && (!abort)) {
+        int i;
 
 		--bootdelay;
 		/* delay 100 * 10ms */

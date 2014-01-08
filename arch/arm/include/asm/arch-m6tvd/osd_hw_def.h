@@ -90,6 +90,14 @@ typedef  struct{
 	u16	h_enable;
 	u16	v_enable;
 }osd_scale_t;
+
+#if defined (CONFIG_M6TVD) || defined(CONFIG_M6TV)
+typedef  struct{
+	u16	hfs_enable;
+	u16	vfs_enable;
+}osd_freescale_t;
+#endif
+
 typedef  struct{
 	osd_scale_t  origin_scale;
 	u16  enable;
@@ -101,6 +109,37 @@ typedef  struct{
 }osd_3d_mode_t; 
 typedef  pandata_t  dispdata_t;
 
+#if defined (CONFIG_M6TVD) || defined(CONFIG_M6TV)
+typedef  struct {
+	pandata_t 		pandata[HW_OSD_COUNT];
+	dispdata_t		dispdata[HW_OSD_COUNT];
+	pandata_t 		scaledata[HW_OSD_COUNT];
+	pandata_t 		free_scale_data[HW_OSD_COUNT];
+	pandata_t		free_dst_data[HW_OSD_COUNT];
+	u32  			gbl_alpha[HW_OSD_COUNT];
+	u32  			color_key[HW_OSD_COUNT];
+	u32				color_key_enable[HW_OSD_COUNT];
+	u32				enable[HW_OSD_COUNT];
+	u32				reg_status_save;
+	//bridge_item_t 		fiq_handle_item;
+	osd_scale_t		scale[HW_OSD_COUNT];
+	osd_freescale_t	free_scale[HW_OSD_COUNT];
+	u32				free_scale_enable[HW_OSD_COUNT];
+	u32				free_scale_width[HW_OSD_COUNT];
+	u32				free_scale_height[HW_OSD_COUNT];
+	fb_geometry_t		fb_gem[HW_OSD_COUNT];
+	const color_bit_define_t *color_info[HW_OSD_COUNT];
+	u32				scan_mode;
+	u32				osd_order;
+	osd_3d_mode_t	mode_3d[HW_OSD_COUNT];
+	u32			updated[HW_OSD_COUNT];
+	hw_list_t	 	reg[HW_OSD_COUNT][HW_REG_INDEX_MAX];
+	u32 			block_windows[HW_OSD_COUNT][HW_OSD_BLOCK_REG_COUNT];
+	u32 			block_mode[HW_OSD_COUNT];
+	u32			free_scale_mode[HW_OSD_COUNT];
+	u32			osd_reverse[HW_OSD_COUNT];
+}hw_para_t;
+#else 
 typedef  struct {
 	pandata_t 		pandata[HW_OSD_COUNT];
 	dispdata_t		dispdata[HW_OSD_COUNT];
@@ -125,7 +164,7 @@ typedef  struct {
 	u32 			block_mode[HW_OSD_COUNT];
 	pandata_t 		free_scale_data[HW_OSD_COUNT];
 }hw_para_t;
-
+#endif
 
 /************************************************************************
 **

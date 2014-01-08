@@ -150,6 +150,8 @@ typedef struct {
     unsigned int lvds_swing_ctl;
     unsigned int lvds_vcm_ctl;
     unsigned int lvds_ref_ctl;
+    unsigned int lvds_phy_ctl0;
+    unsigned int lvds_fifo_wr_mode;
 } Lvds_Phy_Control_t;
 
 typedef struct {
@@ -256,6 +258,18 @@ typedef struct {
 } Lcd_Effect_t;
 
 typedef struct {
+    u16 clock_enable_delay;
+    u16 clock_disable_delay;
+    u16 pwm_enable_delay;
+    u16 pwm_disable_delay;
+    u16 panel_power_on_delay;
+    u16 panel_power_off_delay;
+    u16 backlight_power_on_delay;
+    u16 backlight_power_off_delay;
+} Lcd_Sequence_t;
+
+
+typedef struct {
 	Lvds_Config_t *lvds_config;
 	Mlvds_Config_t *mlvds_config;
 	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
@@ -282,10 +296,47 @@ typedef struct {
     Lcd_Basic_t lcd_basic;
     Lcd_Timing_t lcd_timing;
     Lcd_Effect_t lcd_effect;
-	Lvds_Mlvds_Config_t lvds_mlvds_config;
-	Lcd_Power_Ctrl_t lcd_power_ctrl;
+    Lcd_Sequence_t lcd_sequence;
+    Lvds_Mlvds_Config_t lvds_mlvds_config;
+    Lcd_Power_Ctrl_t lcd_power_ctrl;
 } Lcd_Config_t;
 
 Lcd_Config_t lcd_config;
+
+
+typedef struct{
+	u16 h_active;
+	u16 v_active;
+	u16 h_period;
+	u16 v_period;
+	u16 video_on_pixel;
+	u16 video_on_line;
+	u16 lcd_bits;
+	u16 lvds_repack_ctl;
+	u16 pn_swap;
+	u16 dual_port;
+	u16 port_reverse;
+	u32 lvds_prem_ctl;
+	u32 lvds_swing_ctl;
+	u32 lvds_vcm_ctl;
+	u32 lvds_ref_ctl;
+	u32 pll_ctrl;
+	u32 div_ctrl;
+	u32 sth1_hs_val;
+	u32 sth1_he_val;
+	u32 stv1_hs_val;
+	u32 stv1_he_val;
+	u32 stv1_vs_val;
+	u32 stv1_ve_val;
+	u16 clock_enable_delay;
+	u16 clock_disable_delay;
+	u16 pwm_enable_delay;
+	u16 pwm_disable_delay;
+	u16 panel_power_on_delay;
+	u16 panel_power_off_delay;
+	u16 backlight_power_on_delay;
+	u16 backlight_power_off_delay;
+}Ext_Lcd_Config_t;
+
 
 #endif /* LCDOUTC_H */

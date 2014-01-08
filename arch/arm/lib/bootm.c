@@ -251,9 +251,9 @@ static int bootm_linux_fdt(int machid, bootm_headers_t *images)
 	kernel_entry = (void (*)(int, int, void *))images->ep;
 
 	rd_len = images->rd_end - images->rd_start;
-
+#if defined(CONFIG_ANDROID_IMG) & defined(CONFIG_OF_LIBFDT)
 	get_relocate_addr(of_flat_tree,images->rd_end - images->rd_start,images->ft_len);
-
+#endif
 	ret = boot_ramdisk_high(lmb, images->rd_start, rd_len,
 				initrd_start, initrd_end);
 	if (ret)

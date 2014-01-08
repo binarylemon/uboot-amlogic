@@ -63,6 +63,13 @@ unsigned long  get_gpio_val(gpio_bank_t bank, int bit);
 #define GPIOP_bank_bit0_7(bit)     (PREG_PAD_GPIO1)
 #define GPIOP_bit_bit0_7(bit)      (bit+23)
 
+#define GPIOZ_bank_bit0_19(bit)     (PREG_PAD_GPIO5)
+#define GPIOZ_bit_bit0_19(bit)      (bit)
+
+#define GPIOZ_bank_bit0_19(bit)     (PREG_PAD_GPIO5)
+#define GPIOZ_bit_bit0_19(bit)      (bit)
+
+
 /**
  * enable gpio edge interrupt
  *

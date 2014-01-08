@@ -233,6 +233,9 @@ COBJS-$(CONFIG_VIDEO_AML) += cmd_video.o
 COBJS-$(CONFIG_AML_FONT) += devfont.o
 COBJS-$(CONFIG_AML_AUTOSCRIPT) += aml_autoscript.o
 COBJS-$(CONFIG_AML_AXI_RATIO)+=cmd_clockchange.o
+COBJS-$(CONFIG_AML_JPEG_LOGO) += cmd_jpeg.o
+COBJS-$(CONFIG_AML_JPEG_LOGO) += jdecEngine.o
+
 COBJS	:= $(sort $(COBJS-y))
 XCOBJS	:= $(sort $(XCOBJS-y))
 SRCS	:= $(COBJS:.o=.c) $(XCOBJS:.o=.c)

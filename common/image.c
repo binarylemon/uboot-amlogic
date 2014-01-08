@@ -1073,12 +1073,21 @@ int boot_ramdisk_high (struct lmb *lmb, ulong rd_data, ulong rd_len,
 			*initrd_end = rd_data + rd_len;
 			lmb_reserve(lmb, rd_data, rd_len);
 		} else {
+
+#if defined(CONFIG_ANDROID_IMG) & defined(CONFIG_OF_LIBFDT)
 			if (initrd_high)
 				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, relocate_addr);
 //				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, initrd_high);
 			else
 				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, relocate_addr);
 //				*initrd_start = (ulong)lmb_alloc (lmb, rd_len, 0x1000);
+#else
+			if (initrd_high)
+				*initrd_start = (ulong)lmb_alloc_base (lmb, rd_len, 0x1000, initrd_high);
+			else
+				*initrd_start = (ulong)lmb_alloc (lmb, rd_len, 0x1000);
+
+#endif
 			if (*initrd_start == 0) {
 				puts ("ramdisk - allocation error\n");
 				goto error;
@@ -1262,11 +1271,15 @@ int boot_relocate_fdt (struct lmb *lmb, ulong bootmap_base,
 	/* position on a 4K boundary before the alloc_current */
 	/* Pad the FDT by a specified amount */
 	of_len = *of_size + CONFIG_SYS_FDT_PAD;
-
+	
+#if defined(CONFIG_ANDROID_IMG) & defined(CONFIG_OF_LIBFDT)	
 	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000, relocate_addr);
 //	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000,
 //			(CONFIG_SYS_BOOTMAPSZ + bootmap_base));
-
+#else
+	of_start = (void *)(unsigned long)lmb_alloc_base(lmb, of_len, 0x1000,
+			(CONFIG_SYS_BOOTMAPSZ + bootmap_base));
+#endif
 	if (of_start == 0) {
 		puts("device tree - allocation error\n");
 		goto error;
@@ -1404,11 +1417,13 @@ int boot_get_fdt (int flag, int argc, char * const argv[], bootm_headers_t *imag
 		debug ("## Checking for 'FDT'/'FDT Image' at %08lx\n",
 				fdt_addr);
 
+#if defined(CONFIG_ANDROID_IMG) & defined(CONFIG_OF_LIBFDT)
 #if defined(CONFIG_AML_MESON_FIT)
 		puts("Get ramdisk...\n");
 		printf("images.rd_start=0x%x\n",rd_addr);
 		if(ramdisk_addr != ~0)
 			rd_addr = ramdisk_addr;
+#endif
 #endif
 		/* copy from dataflash if needed */
 		fdt_addr = genimg_get_image (fdt_addr);

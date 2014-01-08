@@ -37,6 +37,7 @@
 #define USB_PHY_PORT_C	    (0x100000)
 #define USB_PHY_PORT_D	    (0x140000)
 #define USB_PHY_PORT_MSK	(0x1f0000)
+#define USB_PHY_PORT_MAX	4
 
 #define PREI_USB_PHY_REG_A     0x2200
 #define PREI_USB_PHY_REG_B     0x2208
