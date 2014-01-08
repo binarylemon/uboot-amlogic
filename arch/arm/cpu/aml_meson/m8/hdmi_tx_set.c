@@ -337,98 +337,6 @@ static void hdmi_tx_clk(HDMI_Video_Codes_t vic)
     set_vmode_clk(vic_to_vmode(vic));
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-//                             Delete later
-#if 0
-unsigned char   field_n = 0;
-static void hdmi_tx_enc_tmp(HDMI_Video_Codes_t vic)
-{
-    unsigned int total_pixels_venc = (TOTAL_PIXELS  / (1+PIXEL_REPEAT_HDMI)) * (1+PIXEL_REPEAT_VENC);
-    unsigned int active_pixels_venc= (ACTIVE_PIXELS / (1+PIXEL_REPEAT_HDMI)) * (1+PIXEL_REPEAT_VENC);
-    unsigned int front_porch_venc  = (FRONT_PORCH   / (1+PIXEL_REPEAT_HDMI)) * (1+PIXEL_REPEAT_VENC);
-    unsigned int hsync_pixels_venc = (HSYNC_PIXELS  / (1+PIXEL_REPEAT_HDMI)) * (1+PIXEL_REPEAT_VENC);
-
-    unsigned int de_h_begin, de_h_end;
-    unsigned int de_v_begin_even, de_v_end_even, de_v_begin_odd, de_v_end_odd;
-    unsigned int hs_begin, hs_end;
-    unsigned int vs_adjust;
-    unsigned int vs_bline_evn, vs_eline_evn, vs_bline_odd, vs_eline_odd;
-    unsigned int vso_begin_evn, vso_begin_odd;
-
-    de_h_begin = modulo(aml_read_reg32_op(P_ENCP_VIDEO_HAVON_BEGIN) + VFIFO2VD_TO_HDMI_LATENCY,  total_pixels_venc);
-    de_h_end   = modulo(de_h_begin + active_pixels_venc,                        total_pixels_venc);
-    aml_write_reg32_op(P_ENCP_DE_H_BEGIN, de_h_begin);
-    aml_write_reg32_op(P_ENCP_DE_H_END,   de_h_end);
-    // Program DE timing for even field
-    de_v_begin_even = aml_read_reg32_op(P_ENCP_VIDEO_VAVON_BLINE);
-    de_v_end_even   = modulo(de_v_begin_even + ACTIVE_LINES, TOTAL_LINES);
-    aml_write_reg32_op(P_ENCP_DE_V_BEGIN_EVEN,de_v_begin_even);
-    aml_write_reg32_op(P_ENCP_DE_V_END_EVEN,  de_v_end_even);
-    // Program DE timing for odd field if needed
-    if (INTERLACE_MODE) {
-        // Calculate de_v_begin_odd according to enc480p_timing.v:
-        //wire[10:0]	cfg_ofld_vavon_bline	= {{7{ofld_vavon_ofst1 [3]}},ofld_vavon_ofst1 [3:0]} + cfg_video_vavon_bline	+ ofld_line;
-        de_v_begin_odd  = to_signed((aml_read_reg32_op(P_ENCP_VIDEO_OFLD_VOAV_OFST) & 0xf0)>>4) + de_v_begin_even + (TOTAL_LINES-1)/2;
-        de_v_end_odd    = modulo(de_v_begin_odd + ACTIVE_LINES, TOTAL_LINES);
-        aml_write_reg32_op(P_ENCP_DE_V_BEGIN_ODD, de_v_begin_odd);
-        aml_write_reg32_op(P_ENCP_DE_V_END_ODD,   de_v_end_odd);
-    }
-
-    // Program Hsync timing
-    if (de_h_end + front_porch_venc >= total_pixels_venc) {
-        hs_begin    = de_h_end + front_porch_venc - total_pixels_venc;
-        vs_adjust   = 1;
-    } else {
-        hs_begin    = de_h_end + front_porch_venc;
-        vs_adjust   = 0;
-    }
-    hs_end  = modulo(hs_begin + hsync_pixels_venc,   total_pixels_venc);
-    aml_write_reg32_op(P_ENCP_DVI_HSO_BEGIN,  hs_begin);
-    aml_write_reg32_op(P_ENCP_DVI_HSO_END,    hs_end);
-    
-    // Program Vsync timing for even field
-    if (de_v_begin_even >= SOF_LINES + VSYNC_LINES + (1-vs_adjust)) {
-        vs_bline_evn = de_v_begin_even - SOF_LINES - VSYNC_LINES - (1-vs_adjust);
-    } else {
-        vs_bline_evn = TOTAL_LINES + de_v_begin_even - SOF_LINES - VSYNC_LINES - (1-vs_adjust);
-    }
-    vs_eline_evn = modulo(vs_bline_evn + VSYNC_LINES, TOTAL_LINES);
-    aml_write_reg32_op(P_ENCP_DVI_VSO_BLINE_EVN, vs_bline_evn);
-    aml_write_reg32_op(P_ENCP_DVI_VSO_ELINE_EVN, vs_eline_evn);
-    vso_begin_evn = hs_begin;
-    aml_write_reg32_op(P_ENCP_DVI_VSO_BEGIN_EVN, vso_begin_evn);
-    aml_write_reg32_op(P_ENCP_DVI_VSO_END_EVN,   vso_begin_evn);
-    // Program Vsync timing for odd field if needed
-    if (INTERLACE_MODE) {
-        vs_bline_odd = de_v_begin_odd-1 - SOF_LINES - VSYNC_LINES;
-        vs_eline_odd = de_v_begin_odd-1 - SOF_LINES;
-        vso_begin_odd   = modulo(hs_begin + (total_pixels_venc>>1), total_pixels_venc);
-        aml_write_reg32_op(P_ENCP_DVI_VSO_BLINE_ODD, vs_bline_odd);
-        aml_write_reg32_op(P_ENCP_DVI_VSO_ELINE_ODD, vs_eline_odd);
-        aml_write_reg32_op(P_ENCP_DVI_VSO_BEGIN_ODD, vso_begin_odd);
-        aml_write_reg32_op(P_ENCP_DVI_VSO_END_ODD,   vso_begin_odd);
-    }
-    aml_write_reg32_op(P_VPU_HDMI_SETTING, (0                                 << 0) | // [    0] src_sel_enci
-                         (0                                 << 1) | // [    1] src_sel_encp
-                         (HSYNC_POLARITY                    << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
-                         (VSYNC_POLARITY                    << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
-                         (0                                 << 4) | // [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
-                         (((1==0)?1:0)  << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
-                                                                    //                          0=output CrYCb(BRG);
-                                                                    //                          1=output YCbCr(RGB);
-                                                                    //                          2=output YCrCb(RBG);
-                                                                    //                          3=output CbCrY(GBR);
-                                                                    //                          4=output CbYCr(GRB);
-                                                                    //                          5=output CrCbY(BGR);
-                                                                    //                          6,7=Rsrv.
-                         (0                                 << 8) | // [11: 8] wr_rate. 0=A write every clk1; 1=A write every 2 clk1; ...; 15=A write every 16 clk1.
-                         (0                                 <<12)   // [15:12] rd_rate. 0=A read every clk2; 1=A read every 2 clk2; ...; 15=A read every 16 clk2.
-    );
-    aml_set_reg32_bits_op(P_VPU_HDMI_SETTING, 1, 1, 1);  // [    1] src_sel_encp: Enable ENCP output to HDMI
-    aml_write_reg32_op(P_ENCP_VIDEO_EN, 1); // Enable VENC
-}
-#endif
-
 static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
 {
     unsigned long VFIFO2VD_TO_HDMI_LATENCY = 1; // Annie 01Sep2011: Change value from 2 to 1, due to video encoder path delay change.
@@ -591,8 +499,8 @@ static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
     // Annie 01Sep2011: Register VENC_DVI_SETTING and VENC_DVI_SETTING_MORE are no long valid, use VPU_HDMI_SETTING instead.
     aml_write_reg32_op(P_VPU_HDMI_SETTING, (0                                 << 0) | // [    0] src_sel_enci
                          (0                                 << 1) | // [    1] src_sel_encp
-                         (HSYNC_POLARITY                                 << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
-                         (VSYNC_POLARITY                                 << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
+                         (0                                 << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
+                         (0                                 << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
                          (0                                 << 4) | // [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
                          (((1==0)?1:0)  << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
                                                                     //                          0=output CrYCb(BRG);
