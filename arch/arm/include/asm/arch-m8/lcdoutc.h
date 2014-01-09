@@ -316,6 +316,7 @@ typedef struct {
 	u16 de_hstart;
 	u16 de_vstart;
 	u16 de_valid;
+	u32 vsync_h_phase; //[31]sign [15:0]value
 	u32 h_offset;
 	u32 v_offset;
 
@@ -402,7 +403,12 @@ typedef struct DSI_Config_s{
         unsigned char   ack_type;      //if need bta ack check
         unsigned char   tear_switch;
 
-        unsigned char   is_rgb;        //whether dpi color type is rgb
+        unsigned char   is_rgb;        //whether dpi color type is rgb 
+        unsigned int    mipi_init_flag;
+        unsigned char   mipi_init[20];
+        unsigned int 		sleep_out_delay;
+        unsigned int 		display_on_delay;
+        unsigned short * power_on_cmd;
 }DSI_Config_t;
 
 typedef struct {

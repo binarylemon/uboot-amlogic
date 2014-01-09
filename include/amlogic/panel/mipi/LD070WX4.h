@@ -21,9 +21,15 @@
 #define HS_WIDTH			8	/** hsync_width */
 #define HS_BACK_PORCH		48	/** hsync_backporch(include hsync_width) */
 #define HS_POL				0	/** hsync_polarity(0 for negative, 1 for positive) */
-#define VS_WIDTH			1	/** vsync_width */
-#define VS_BACK_PORCH		3	/** vsync_backporch(include vsync_width) */
+#define VS_WIDTH			2	/** vsync_width */
+#define VS_BACK_PORCH		23	/** vsync_backporch(include vsync_width) */
 #define VS_POL				0	/** vsync_polarity(0 for negative, 1 for positive) */
+#define VSYNC_H_ADJUST_SIGN 1  /** 0=positive,1=negative */
+#define VSYNC_H_ADJUST  4  /** vertical_hbegin_adjust */
+
 //************************************************
+
+/** special power on command, 2 data is a pair(reg, value), ending flag is 0xff,the last value which behide 0xFF is delay time after power_on_cmd*/
+static unsigned short dsi_power_on_cmd[] = {0x01,0x0,0xFF,0x20,0xAE,0x0B,0xEE,0xEA,0xEF,0x5F,0xF2,0x68,0xEE,0x0,0xEF,0x0,0xFF,0xFF};
 
 #endif

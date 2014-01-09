@@ -128,6 +128,11 @@ static DSI_Config_t lcd_mipi_config = {
         .dsi_clk_min = 500,
         .dsi_clk_max = 600,
         .lane_num = 4,
+        .trans_mode=1,
+        .sleep_out_delay=100,
+        .display_on_delay=100,
+        .mipi_init_flag=0,
+        .power_on_cmd=&dsi_power_on_cmd[0],
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -207,18 +212,18 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 		.gpio = 0, 
 		.value = 0,
 		.delay = 20,
+	},	
+	{//step 3
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_0, 
+		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.delay = 0,
 	},
 	{//step 2
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
 		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
 		.delay = 100,
-	},
-	{//step 3
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
-		.delay = 0,
 	},
 	{//step 4 
 		.type = LCD_POWER_TYPE_PMU, 
@@ -284,8 +289,8 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		
-        .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
+		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST << 0),
+    .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 	},
@@ -319,6 +324,8 @@ void lcd_default_config_init(Lcd_Config_t *pConf)
 		pConf->lcd_effect.GammaTableG[i] =  (gamma_table[i] << 2);
 		pConf->lcd_effect.GammaTableB[i] =  (gamma_table[i] << 2);
 	}
+	
+	//
 	
 	pConf->lcd_power_ctrl.power_on_uboot.type = lcd_power_on_uboot.type;
 	pConf->lcd_power_ctrl.power_on_uboot.gpio = lcd_power_on_uboot.gpio;

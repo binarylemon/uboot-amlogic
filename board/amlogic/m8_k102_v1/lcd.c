@@ -94,6 +94,8 @@ static unsigned short gamma_table[256] = {
         224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
 
+
+
 //**** default settings, don't modify them unless there is display problem ***//
 #define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
@@ -112,6 +114,11 @@ static DSI_Config_t lcd_mipi_config = {
         .dsi_clk_min = 500,
         .dsi_clk_max = 600,
         .lane_num = 4,
+        .trans_mode=1,
+        .sleep_out_delay=100,
+        .display_on_delay=100,
+        .mipi_init_flag=0,
+        .power_on_cmd=&dsi_power_on_cmd[0],
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -285,8 +292,8 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		
-        .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
+		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST <<0),
+    .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 	},

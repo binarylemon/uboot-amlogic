@@ -1898,7 +1898,7 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 {
 	unsigned short hstart, hend, vstart, vend;
 	unsigned short h_delay = 0;
-	unsigned short h_offset = 0, v_offset = 0;
+	unsigned short h_offset = 0, v_offset = 0, vsync_h_phase=0;
 	
 	switch (pConf->lcd_basic.lcd_type) {
 		case LCD_DIGITAL_MIPI:
@@ -1936,13 +1936,19 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 	pConf->lcd_timing.sth1_vs_addr = 0;
 	pConf->lcd_timing.sth1_ve_addr = pConf->lcd_basic.v_period - 1;
 	
+	vsync_h_phase = (pConf->lcd_timing.vsync_h_phase & 0xffff);
+	if ((pConf->lcd_timing.vsync_h_phase >> 31) & 1) //negative
+		vsync_h_phase = (hstart + pConf->lcd_basic.h_period - vsync_h_phase) % pConf->lcd_basic.h_period;
+	else	//positive
+		vsync_h_phase = (hstart + pConf->lcd_basic.h_period + vsync_h_phase) % pConf->lcd_basic.h_period;
+	pConf->lcd_timing.stv1_hs_addr = vsync_h_phase;
+	pConf->lcd_timing.stv1_he_addr = vsync_h_phase;
+	
 	vstart = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
 	vend = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp + pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
 	pConf->lcd_timing.stv1_vs_addr = vstart;
 	pConf->lcd_timing.stv1_ve_addr = vend;
-	pConf->lcd_timing.stv1_hs_addr = hstart;
-	pConf->lcd_timing.stv1_he_addr = hstart;
-	
+		
 	pConf->lcd_timing.de_hstart = pConf->lcd_timing.de_hstart;
 	pConf->lcd_timing.de_vstart = pConf->lcd_timing.de_vstart;
 	
@@ -2033,8 +2039,6 @@ static void lcd_control_config(Lcd_Config_t *pConf)
 			DSI_Config_t *cfg = pDev->pConf->lcd_control.mipi_config;
 	switch (pConf->lcd_basic.lcd_type) {
 		case LCD_DIGITAL_MIPI:
-			cfg->trans_mode = 1;
-		  cfg->venc_fmt = TV_ENC_LCD768x1024p;
 		  cfg->lane_num=cfg->lane_num-1;
 		  if(pDev->pConf->lcd_basic.lcd_bits==6){
 											cfg->dpi_color_type  = 4;
@@ -2043,10 +2047,14 @@ static void lcd_control_config(Lcd_Config_t *pConf)
 											cfg->dpi_color_type  = 5;
 											cfg->venc_color_type = 1;
 		  }
-		  cfg->dpi_chroma_subsamp = 0;
-		  DBG_PRINT("dpi_color_type= %d, dpi_chroma_subsamp=%d\n",  cfg->dpi_color_type, cfg->dpi_chroma_subsamp );
-		  DBG_PRINT("trans mode= %u\n",  cfg->trans_mode);
-			break;
+		 if((pConf->lcd_basic.h_period !=240)&&(pConf->lcd_basic.h_period !=768)&&(pConf->lcd_basic.h_period !=1920)&&(pConf->lcd_basic.h_period !=2560))
+       cfg->venc_fmt=TV_ENC_LCD1280x720;
+   	 else
+       cfg->venc_fmt=TV_ENC_LCD768x1024p;
+     cfg->dsi_clk_div = 1;
+		 cfg->dpi_chroma_subsamp = 0;
+		 DBG_PRINT("dpi_color_type= %d, dpi_chroma_subsamp=%d\n",  cfg->dpi_color_type, cfg->dpi_chroma_subsamp );
+		 break;
 		case LCD_DIGITAL_EDP:
 			select_edp_link_config(pConf);
 			if (pConf->lcd_control.edp_config->link_adaptive == 1) {
@@ -2164,9 +2172,9 @@ static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
 		case LCD_DIGITAL_MIPI:
 			set_pll_lcd(pConf);
 			init_dphy(pConf); //analog
-			set_control_mipi(pConf); //2step
 			set_venc_lcd(pConf);
 			set_tcon_lcd(pConf);
+			set_control_mipi(pConf); //2step
 			break;
 		case LCD_DIGITAL_LVDS:
 			set_pll_lcd(pConf);
@@ -2534,21 +2542,33 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		pConf->lcd_timing.pol_cntl_addr = (pConf->lcd_timing.pol_cntl_addr & ~((1 << LCD_HS_POL) | (1 << LCD_VS_POL))) | ((be32_to_cpup((u32*)propdata) << LCD_HS_POL) | (be32_to_cpup((((u32*)propdata)+1)) << LCD_VS_POL));
 	}
 	DBG_PRINT("pol hsync = %u, vsync = %u\n", (pConf->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1, (pConf->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1);
+	
+	propdata = fdt_getprop(dt_addr, nodeoffset, "vsync_horizontal_phase", NULL);
+		if(propdata == NULL){
+		printf("faild to get vsync_horizontal_phase\n");
+		pConf->lcd_timing.vsync_h_phase =0;
+	}
+	else {
+		pConf->lcd_timing.vsync_h_phase = ((((be32_to_cpup((((u32*)propdata)+1)))&0xffff) << 0) | (((be32_to_cpup((u32*)propdata)) & 0x1) << 31));
+	}
+	DBG_PRINT("vsync_h_phase = %u, phase = %u\n", (pConf->lcd_timing.vsync_h_phase&0xffff),(pConf->lcd_timing.vsync_h_phase>>31));
 
+
+//////////////////////////////////
 	if (LCD_DIGITAL_MIPI == pDev->pConf->lcd_basic.lcd_type) {
 		DSI_Config_t *cfg = pDev->pConf->lcd_control.mipi_config;
-		propdata = fdt_getprop(dt_addr, nodeoffset, "lane_num", NULL);
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_lane_num", NULL);
 		if(propdata == NULL){
-			printf("faild to get lane num\n");
+			printf("faild to get dsi_lane_num\n");
 			cfg->lane_num = 4;
 		} else {
 			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata));
 		}
-		DBG_PRINT("lane num= %d\n",  cfg->lane_num);
-		cfg->dsi_clk_div = 1;
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_clk_min_max", NULL);
+		DBG_PRINT("dsi_lane_num= %d\n",  cfg->lane_num);
+
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_bit_rate_min_max", NULL);
 		if(propdata == NULL){
-				printf("faild to get dsi_clk_min_max\n");
+				printf("faild to get dsi_bit_rate_min_max\n");
 				cfg->dsi_clk_min = 900;
 				cfg->dsi_clk_max = 1000;
 		} 
@@ -2556,10 +2576,10 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 			  cfg->dsi_clk_min = (unsigned short)(be32_to_cpup((u32*)propdata));
 				cfg->dsi_clk_max = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 		}
-	 DBG_PRINT("dsi_clk_min_max_div= %d %d %d \n", cfg->dsi_clk_min,cfg->dsi_clk_max,cfg->dsi_clk_div);
-	 propdata = fdt_getprop(dt_addr, nodeoffset, "pclk_div_lanebyteclk", NULL);
+	 DBG_PRINT("dsi_bit_rate_min_max_div= %d %d\n", cfg->dsi_clk_min,cfg->dsi_clk_max);
+	 propdata = fdt_getprop(dt_addr, nodeoffset, "pclk_lanebyteclk_factor", NULL);
 	 if(propdata == NULL){
-			 printf("faild to get pclk_div_lanebyteclk\n");
+			 printf("faild to get pclk_lanebyteclk_factor\n");
 			 cfg->numerator = 0;
 	 } 
 	 else {
@@ -2567,7 +2587,46 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 	 }
 	 cfg->denominator = 10;
 	 DPRINT("cfg->denominator=%d, cfg->numerator=%d",cfg->denominator, cfg->numerator);
+	 
+	 
+	 	propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_transfer_mode", NULL);
+	 if(propdata == NULL){
+			 printf("faild to get dsi_transfer_mode\n");
+			 cfg->trans_mode = 1;
+	 } 
+	 else {
+			 cfg->trans_mode= (unsigned short)(be32_to_cpup((u32*)propdata));
+	 }
+	 DPRINT("cfg->trans_mode=%d\n",cfg->trans_mode);
+
+	 propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_power_on_cmd", NULL);
+	 if(propdata == NULL){
+			 printf("faild to get dsi_power_on_cmd\n");
+			 cfg->mipi_init_flag = 0;
+	 } 
+	 else {
+			 cfg->mipi_init_flag = 1;
+			 int i;
+			 for(i=0; i<20; i=i+2) {
+			 		cfg->mipi_init[i] =(unsigned short)(be32_to_cpup((((u32*)propdata)+i)));
+			 		cfg->mipi_init[i+1] =(unsigned short)(be32_to_cpup((((u32*)propdata)+i+1)));
+			 		if((0xff==cfg->mipi_init[i])&&(0xff==cfg->mipi_init[i+1]))
+			 			break;
+			}
+	 }
+	  propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_sleep_out_display_on_delay", NULL);
+	 if(propdata == NULL){
+			 printf("faild to get dsi_sleep_out_display_on_delay\n");
+			  cfg->sleep_out_delay  =100; 
+        cfg->display_on_delay  =100;
+	 } 
+	 else {
+				cfg->sleep_out_delay =(unsigned short)(be32_to_cpup((u32*)propdata));
+        cfg->display_on_delay  =(unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+	 }
+	 
 	}
+
 /////////////////////////////////
 	return ret;
 }

@@ -25,6 +25,11 @@
 #define VS_WIDTH			6	/** vsync_width */
 #define VS_BACK_PORCH		26	/** vsync_backporch(include vsync_width) */
 #define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
+#define VSYNC_H_ADJUST_SIGN 0  /** 0=positive,1=negative */
+#define VSYNC_H_ADJUST  0  /** vertical_hbegin_adjust */
 //************************************************
+
+/** special power on command, 2 data is a pair(reg, value), ending flag is 0xFF,0xFF,the last value which behide 0xFF is delay time after power_on_cmd*/
+static unsigned short dsi_power_on_cmd[] = {0xFF,0xFF};
 
 #endif

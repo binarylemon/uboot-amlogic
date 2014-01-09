@@ -308,7 +308,7 @@ typedef struct {
 	u16 de_valid;
 	u32 h_offset;
 	u32 v_offset;
-
+  u32 vsync_h_phase; //[31]sign [15:0]value
     u16 sth1_hs_addr;
     u16 sth1_he_addr;
     u16 sth1_vs_addr;

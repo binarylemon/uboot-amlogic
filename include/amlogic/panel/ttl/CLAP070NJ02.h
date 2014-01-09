@@ -25,6 +25,8 @@
 #define VS_WIDTH			3	/** vsync_width */
 #define VS_BACK_PORCH		23	/** vsync_backporch(include vsync_width) */
 #define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
+#define VSYNC_H_ADJUST_SIGN 0  /** 0=positive,1=negative */
+#define VSYNC_H_ADJUST  0  /** vertical_hbegin_adjust */
 //************************************************
 
 #endif
