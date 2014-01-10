@@ -49,10 +49,10 @@
 	#define CONFIG_CMD_RARP 1
 
 	#define CONFIG_INTERNAL_PHY
-	
+
 	//#define CONFIG_NET_RGMII
 //	#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
-	
+
 	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
 	#define CONFIG_HOSTNAME        arm_m6tv
 	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
@@ -89,7 +89,7 @@
 #define CONFIG_CMD_USB 1
 
 
-#define CONFIG_MEMSIZE	512	/*unit is MB*/ 
+#define CONFIG_MEMSIZE	512	/*unit is MB*/
 #if(CONFIG_MEMSIZE == 512)
 	#define BOARD_INFO_ENV  " mem=512M"
 	#define UBOOTPATH		"u-boot-512M-UartB.bin"
@@ -99,7 +99,7 @@
 #endif
 
 #define CONFIG_UCL 1
-#define CONFIG_SELF_COMPRESS 
+#define CONFIG_SELF_COMPRESS
 #define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
 //#define CONFIG_UBI_SUPPORT
 #ifdef	CONFIG_UBI_SUPPORT
@@ -107,7 +107,7 @@
 	#define CONFIG_CMD_UBIFS
 	#define CONFIG_RBTREE
 	#define MTDIDS_DEFAULT		"nand1=nandflash1\0"
-	#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"						
+	#define MTDPARTS_DEFAULT	"mtdparts=nandflash1:256m@168m(system)\0"
 #endif
 
 /* Environment information */
@@ -163,7 +163,10 @@
 
 //#ifdef CONFIG_NAND_BOOT
 //#define CONFIG_AMLROM_NANDBOOT 1
-//#endif 
+//#endif
+
+#define CONFIG_PARTITIONS_STORE
+
 #define CONFIG_ENV_OVERWRITE
 
 #define CONFIG_ENV_SIZE         (0x2000)
@@ -171,8 +174,8 @@
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
-	#define CONFIG_CMD_SAVEENV	
-	
+	#define CONFIG_CMD_SAVEENV
+
 	//for CONFIG_SPI_FLASH_SPANSION 64KB sector size
 	//#ifdef CONFIG_SPI_FLASH_SPANSION
 	 #define CONFIG_ENV_SECT_SIZE		0x1000
@@ -184,7 +187,7 @@
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
 #elif defined CONFIG_MMC_BOOT
@@ -196,7 +199,7 @@
 #elif defined CONFIG_EMMC_BOOT
 	#define CONFIG_ENV_IS_IN_EMMC
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_DEVICE_ID 1    
+	#define CONFIG_ENV_DEVICE_ID 1
 	#define CONFIG_ENV_OFFSET       0x200000
 
 #else
@@ -229,11 +232,11 @@
 	#define CONFIG_SYS_CONSOLE_IS_IN_ENV  /* Otherwise it catches logbuffer as output */
 	#define CONFIG_LOGBUFFER
 	#define CONFIG_CMD_DIAG
-	
+
 	#define SYSTEST_INFO_L1 1
 	#define SYSTEST_INFO_L2 2
 	#define SYSTEST_INFO_L3 3
-	
+
 	#define CONFIG_POST_BSPEC1 {    \
 		"L2CACHE test", \
 		"l2cache", \
@@ -244,7 +247,7 @@
 		NULL,		\
 		CONFIG_SYS_POST_BSPEC1 	\
 		}
-		
+
 	#define CONFIG_POST_BSPEC2 {  \
 		"BIST test", \
 		"bist", \
@@ -254,7 +257,7 @@
 		NULL, \
 		NULL, \
 		CONFIG_SYS_POST_BSPEC1  \
-		}	
+		}
 #endif   /*end ifdef CONFIG_POST*/
 
 //----------------------------------------------------------------------
@@ -303,8 +306,8 @@
 	#error "Please define DDR3 memory capacity in file m6tv_skt_v1.h\n"
 #endif
 
-#define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_START    0x80000000  /* memtest works on */
+#define CONFIG_SYS_MEMTEST_END      0x07000000  /* 0 ... 120 MB in DRAM */
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 

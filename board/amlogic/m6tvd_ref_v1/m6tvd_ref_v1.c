@@ -2,6 +2,8 @@
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
 #include <malloc.h>
+#include <mmc.h>
+
 
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
@@ -187,6 +189,29 @@ U_BOOT_CMD(
 );
 
 #endif //CONFIG_SARADC
+
+
+
+extern  int mmc_device_partitions (struct mmc *mmc);
+static int partition_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    int ret = 0;
+
+    struct mmc *mmc_ver; //struct mmc *mmc
+    mmc_ver = find_mmc_device(1);
+    if (mmc_ver) {
+        ret = mmc_device_partitions(mmc_ver); // init eMMC/tSD
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+	debug_mmcinfo,	2,	1,	partition_set,
+	" M6TVD debug mmc info & check partition ",
+	" if check erro, then write partition to emmc reveser partition \n"
+	" usage: partition \n"
+);
 
 #if defined(CONFIG_AML_SUSPEND)
 typedef struct {

@@ -1241,6 +1241,11 @@ block_dev_desc_t *mmc_get_dev(int dev)
 #define SD_CARD_DEV     0
 #define EMMC_INAND_DEV  1
 
+#if defined (CONFIG_PARTITIONS_STORE)
+extern  int mmc_device_partitions (struct mmc *mmc);
+static int is_init_partition_flag = 0;
+#endif
+
 int mmc_init(struct mmc *mmc)
 {
 	int err;
@@ -1293,10 +1298,10 @@ int mmc_init(struct mmc *mmc)
                         "mmc->block_dev.if_type=%d\n",
                         __FUNCTION__, mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type);
             return UNUSABLE_ERR;
-		}	    
+		}
 	}
-	
-	err = mmc_startup(mmc);	
+
+	err = mmc_startup(mmc);
 	printf("[%s] %s:%d, if_type=%d, initialized %s!\n", __FUNCTION__,
             mmc->name, mmc->block_dev.dev, mmc->block_dev.if_type, (err==0)? "OK": "ERROR");
 	if(err){
@@ -1306,6 +1311,13 @@ int mmc_init(struct mmc *mmc)
     }
 
     if (aml_is_emmc_tsd(mmc)) { // eMMC OR TSD
+#if defined (CONFIG_PARTITIONS_STORE)
+       if (0 == is_init_partition_flag) {
+            mmc_device_partitions(mmc);
+            is_init_partition_flag = 1;
+            printf("eMMC/TSD partition table have been checked OK!\n");
+        }
+#endif
 #ifdef CONFIG_STORE_COMPATIBLE
 	    if (!is_partition_checked) {
 			

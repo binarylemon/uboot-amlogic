@@ -658,7 +658,16 @@ unsigned int before_nand_init =  get_utimer(0);
         }
     }
 #endif
-    
+
+
+#if defined (CONFIG_PARTITIONS_STORE)
+        mmc = find_mmc_device(1);
+        if (mmc) {
+            mmc_init(mmc); // init eMMC/tSD
+        }
+#endif
+
+
 #ifdef CONFIG_HAS_DATAFLASH
 	AT91F_DataflashInit();
 	dataflash_print_info();

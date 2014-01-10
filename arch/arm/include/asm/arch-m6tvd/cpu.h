@@ -103,6 +103,7 @@
  */
 #define CONFIG_CMD_EXT2		/* EXT2 Support			*/
 #define CONFIG_CMD_FAT		/* FAT support			*/
+#define CONFIG_FAT_WRITE	/* FAT write support	*/
 
 
 #define CONFIG_AML_ROMBOOT    1
@@ -128,7 +129,7 @@
 #define CONFIG_CMD_KGDB			1
 ////#define CONFIG_SERIAL_TAG       1*/
 
-#define CONFIG_AML_RTC 
+//#define CONFIG_AML_RTC 
 //#define CONFIG_RTC_DAY_TEST 1  // test RTC run 2 days
 
 #define CONFIG_LZMA  1
