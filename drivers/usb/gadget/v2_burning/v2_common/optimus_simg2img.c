@@ -33,6 +33,10 @@ static struct
     int      pktHeadLen;
     u32      reservetoAlign64;
 
+    //If long chunk data sz > write back size(e.g. 64M), write it at next write back time, This can't reduce copy and use less buffer
+    u32      notWrBackSz4LongChunk;
+    u32      nextFlashAddr4LastLongChunk; //flash start Addr not write back chunk data , in sector
+
     //back up infomation for verify
     u32      chunkInfoBackAddr;//file header and chunk info back address
     u32      backChunkNum;      //chunk number backed
@@ -88,79 +92,138 @@ int optimus_simg_parser_init(const u8* source)
 	return OPT_DOWN_OK;
 }
 
-//return flash offset in sector
+//return value: flash address offset in sector in this time dispose
 //call this method to parse sparse format data and write it to media
-u32 optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedDataLen, const u32 flashAddrInSec) 
+//@flashAddrInSec: flash write address of first chunk
+//@simgPktHead   : buffered sparse image 
+//@pktLen        : buffered sparse data len
+//@unParsedDataLen: data length need write at next write back time
+//      Take care the size to align 64K for flash and and addres to align sector!!!!
+int optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedDataLen, const u32 flashAddrInSec) 
 {
-    chunk_header_t* pChunk = (chunk_header_t*)((char*)simgPktHead + _spPacketStates.pktHeadLen);//packet header size is 0 except it's file header
+    const unsigned notWrBackSz4LongChunk = _spPacketStates.notWrBackSz4LongChunk;
     unsigned unParsedBufLen = pktLen - _spPacketStates.pktHeadLen;
     u32 flashAddrStart = flashAddrInSec;
+    chunk_header_t* pChunk = (chunk_header_t*)(simgPktHead + _spPacketStates.pktHeadLen);
     chunk_header_t* backChunkHead = (chunk_header_t*)(_spPacketStates.chunkInfoBackAddr + FILE_HEAD_SIZE) + _spPacketStates.backChunkNum;
 
-    spmsg("headLen=0x%x, leftNum=%d, backNum %d\n", _spPacketStates.pktHeadLen, _spPacketStates.leftChunkNum, _spPacketStates.backChunkNum);
-    for(;_spPacketStates.leftChunkNum; _spPacketStates.leftChunkNum--)
+    if(notWrBackSz4LongChunk && !_spPacketStates.pktHeadLen/*0 if head*/)
+    {
+        //const chunk_header_t* pLastLongChunk = backChunkHead - 1;////
+        //const unsigned leftLongChunk_dataLen = pLastLongChunk->total_sz;
+        const unsigned leftLongChunk_flashAddr = _spPacketStates.nextFlashAddr4LastLongChunk;
+        unsigned writeLen = 0;
+        unsigned thisWriteLen = 0;
+
+        thisWriteLen = notWrBackSz4LongChunk >= pktLen ? pktLen : notWrBackSz4LongChunk;
+        if(notWrBackSz4LongChunk > thisWriteLen){
+            //Align write size to 64K for flash write until last flash write
+            //At least make sure align to sector as flashAddress in sector here!!!
+            thisWriteLen >>= OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS; thisWriteLen <<= OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS;
+            spmsg("pktLen(0x%08x) < long chunk leftLen 0x08%x\n", pktLen, notWrBackSz4LongChunk);
+        }
+        spmsg("notWrBackSz4LongChunk 0x%08x, thisWriteLen 0x%08x, flashAddr 0x%08xSec\n", notWrBackSz4LongChunk, thisWriteLen, leftLongChunk_flashAddr);
+
+        writeLen = optimus_cb_simg_write_media(leftLongChunk_flashAddr, thisWriteLen, simgPktHead);
+        if(thisWriteLen != writeLen){
+            sperr("Want to write left chunk sz 0x%x, but only 0x%x\n", thisWriteLen, writeLen);
+            return -__LINE__;
+        }
+
+        unParsedBufLen -= thisWriteLen;
+        _spPacketStates.notWrBackSz4LongChunk -= thisWriteLen;
+
+        if(notWrBackSz4LongChunk >= pktLen)//packet data ended
+        {
+            _spPacketStates.nextFlashAddr4LastLongChunk += thisWriteLen>>9;//address needed next write time
+            *unParsedDataLen = unParsedBufLen;
+            return 0;//the long chunk not disposed all yet!
+        }
+
+        pChunk = (chunk_header_t*)(simgPktHead + notWrBackSz4LongChunk + _spPacketStates.pktHeadLen);
+    }
+
+
+    spdbg("headLen=0x%x, leftNum=%d, backNum %d\n", _spPacketStates.pktHeadLen, _spPacketStates.leftChunkNum, _spPacketStates.backChunkNum);
+    for(;_spPacketStates.leftChunkNum && !_spPacketStates.notWrBackSz4LongChunk; _spPacketStates.leftChunkNum--)
     {   
         //chunk data for ext4, but maybe empty in sparse, that is why called sparse format
         const unsigned chunkDataLen = pChunk->chunk_sz * _spPacketStates.sparseBlkSz;
+        unsigned thisWriteLen = 0;
 
-        if (pChunk->total_sz > unParsedBufLen       //left data not enough for this chunk (chunk header + chunk data)
-                || CHUNK_HEAD_SIZE > unParsedBufLen)//total size not enough for CHUNK_HEAD_SIZE yet!!
-        {
-            spmsg("not enough yet, left sz 0x%x < chunk sz 0x%x, leftChunk num %d\n", unParsedBufLen, pChunk->total_sz, _spPacketStates.leftChunkNum);
-            spmsg("left data sz 0x%x, head sz = 0x%x\n", unParsedBufLen, CHUNK_HEAD_SIZE);
+        if (CHUNK_HEAD_SIZE > unParsedBufLen) {//total size not enough for CHUNK_HEAD_SIZE yet!!
+            spmsg("unParsedBufLen 0x%x < head sz 0x%x\n", unParsedBufLen, CHUNK_HEAD_SIZE);
             break;
         }
-
+        
         switch(pChunk->chunk_type)
         {
         case CHUNK_TYPE_RAW:
             {
-                unsigned writeLen = 0;
+                unsigned wantWrLen = chunkDataLen;
 
                 if (CHUNK_HEAD_SIZE + chunkDataLen != pChunk->total_sz){
-                    sperr("sparse: bad chunk size!\n");
-                    return 0;
+                    sperr("sparse: bad chunk size: head 0x%x + data 0x%x != total 0x%x\n", 
+                            CHUNK_HEAD_SIZE, chunkDataLen, pChunk->total_sz);
+                    return -__LINE__;
                 }
 
-                writeLen = optimus_cb_simg_write_media(flashAddrStart, chunkDataLen, (char*)pChunk + CHUNK_HEAD_SIZE);
-                if(writeLen != chunkDataLen){
-                    sperr("Fail to write to flash, want to write %dB, but %dB\n", chunkDataLen, writeLen);
-                    return 0;
+                if (pChunk->total_sz > unParsedBufLen)//left data not enough for this chunk (chunk header + chunk data)
+                {
+                    const unsigned unParseChunkDataLen = unParsedBufLen - CHUNK_HEAD_SIZE;
+
+                    wantWrLen = (unParseChunkDataLen >> OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS) << OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS;
+                    _spPacketStates.notWrBackSz4LongChunk = chunkDataLen - wantWrLen;
+                    _spPacketStates.nextFlashAddr4LastLongChunk = flashAddrStart + (wantWrLen>>9);
+                    spmsg("Not enough one chunk: unParseChunkDataLen 0x%x ,chunk data len 0x%x, wantWrLen 0x%x, left 0x%08x\n", 
+                            unParseChunkDataLen, chunkDataLen, wantWrLen, _spPacketStates.notWrBackSz4LongChunk);
+                }
+
+                if(wantWrLen)
+                {
+                    thisWriteLen = optimus_cb_simg_write_media(flashAddrStart, wantWrLen, (char*)pChunk + CHUNK_HEAD_SIZE);
+                    if(thisWriteLen != wantWrLen){
+                        sperr("Fail to write to flash, want to write %dB, but %dB\n", wantWrLen, thisWriteLen);
+                        return -__LINE__;
+                    }
                 }
             }
             break;
 
         case CHUNK_TYPE_DONT_CARE:
             {
-                spmsg("don't care chunk\n");
+                spdbg("don't care chunk\n");
                 if(CHUNK_HEAD_SIZE != pChunk->total_sz){
                     sperr("bogus DONT CARE chunk\n");
-                    return 0;
+                    return -__LINE__;
                 }
+
             }
             break;
 
+        case CHUNK_TYPE_FILL:
+            sperr("CHUNK_TYPE_FILL unsupported yet!\n");
+            return -__LINE__;
+        case CHUNK_TYPE_CRC32:
+            sperr("CHUNK_TYPE_CRC32 unsupported yet!\n");
+            return -__LINE__;
         default:
-            sperr("unknown chunk ID 0x%x\n", pChunk->chunk_type);
-            return 0;
+            sperr("unknown chunk ID 0x%x at %p\n", pChunk->chunk_type, pChunk);
+            return -__LINE__;
         }
-
-        flashAddrStart                  += chunkDataLen>>9;
-        unParsedBufLen                  -= pChunk->total_sz;
         
-        //back up verify chunk info
-        memcpy(backChunkHead, pChunk, CHUNK_HEAD_SIZE);
-        spmsg("index %d ,tp 0x%x\n", _spPacketStates.backChunkNum, backChunkHead->chunk_type);
+        /////update for next chunk
+        unParsedBufLen                  -= CHUNK_HEAD_SIZE + thisWriteLen;
+        flashAddrStart                  += chunkDataLen>>9;
+        memcpy(backChunkHead, pChunk, CHUNK_HEAD_SIZE);//back up verify chunk info
+        spdbg("index %d ,tp 0x%x\n", _spPacketStates.backChunkNum, backChunkHead->chunk_type);
         ++_spPacketStates.backChunkNum;
         ++backChunkHead;               
 
-        //update for next chunk!!
         pChunk                           =  (chunk_header_t*)((unsigned)pChunk + pChunk->total_sz);
     }
 
     spmsg("leftChunkNum %d, bak num %d\n", _spPacketStates.leftChunkNum, _spPacketStates.backChunkNum);
-    //Cal addsum before buffer changed!
-    /*_spPacketStates.parsedPacketCrc += add_sum(simgPktHead, _spPacketStates.chunksBufLen - unParsedBufLen);*/
 
     _spPacketStates.pktHeadLen      = 0;//>0 only when first time
 
@@ -222,7 +285,7 @@ int optimus_sparse_get_chunk_data(u8** head, u32* headSz, u32* dataSz, u64* data
 
         case CHUNK_TYPE_DONT_CARE:
             {
-                spmsg("don't care chunk\n");
+                spdbg("don't care chunk\n");
                 if(CHUNK_HEAD_SIZE != pChunk->total_sz){
                     sperr("bogus DONT CARE chunk\n");
                     return OPT_DOWN_FAIL;
@@ -246,7 +309,7 @@ int optimus_sparse_get_chunk_data(u8** head, u32* headSz, u32* dataSz, u64* data
         if(*dataSz)break;
     }
 
-    spmsg("left %d, total %d\n", _spPacketStates.leftChunkNum, _spPacketStates.backChunkNum);
+    spdbg("left %d, total %d\n", _spPacketStates.leftChunkNum, _spPacketStates.backChunkNum);
     return OPT_DOWN_OK;
 }
 

@@ -217,25 +217,26 @@ u32 optimus_cb_simg_write_media(const unsigned destAddrInSec, const unsigned dat
     //FIXME:why dirty value if not convert to u64
     ret = store_write_ops(partName, (u8*)data, (((u64)destAddrInSec)<<9), (u64)dataSzInBy);
     if(ret){
-        DWN_ERR("Fail to write to media\n");
+        DWN_ERR("Fail to write to media, ret = %d\n", ret);
         return 0;
     }
 
     return dataSzInBy;
 }
 
+//return value: the data size disposed
 static u32 optimus_download_sparse_image(struct ImgBurnInfo* pDownInfo, u32 dataSz, const u8* data)
 {
     u32 unParsedDataLen = 0;
-    u32 writeSzInSec = 0;
+    int flashOffset = 0;
     const u64 addrOffset = pDownInfo->nextMediaOffset;
 
-    writeSzInSec = optimus_simg_to_media((char*)data, dataSz, &unParsedDataLen, ((u32)(addrOffset>>9)));
-    if(!writeSzInSec){
-        DWN_ERR("Fail in parse simg. src 0x%p, size 0x%x\n", data, dataSz);
+    flashOffset = optimus_simg_to_media((char*)data, dataSz, &unParsedDataLen, ((u32)(addrOffset>>9)));
+    if(flashOffset < 0){
+        DWN_ERR("Fail in parse simg. src 0x%p, size 0x%x, unParsedDataLen 0x%x, ret %d\n", data, dataSz, unParsedDataLen, flashOffset);
         return 0;
     }
-    pDownInfo->nextMediaOffset += ((u64)writeSzInSec)<<9;
+    pDownInfo->nextMediaOffset += ((u64)flashOffset)<<9;
 
     return dataSz - unParsedDataLen;
 }
@@ -355,15 +356,13 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
     const int MediaType = pDownInfo->storageMediaType;
 
     addrOrOffsetInBy += pDownInfo->partBaseOffset;
-    DWN_DBG("Data=0x%p, addrOrOffsetInBy=0x[%x, %x], dataSzInBy=0x%x\n", data, 
-            (u32)(addrOrOffsetInBy>>32), (u32)addrOrOffsetInBy, dataSz);
+    DWN_DBG("[0x]Data %p, addrOrOffsetInBy %llx, dataSzInBy %x\n", data, addrOrOffsetInBy, dataSz);
 
     if(OPTIMUS_IMG_STA_BURN_ING != pDownInfo->imgBurnSta) {
         sprintf(errInfo, "Error burn sta %d\n", pDownInfo->imgBurnSta);
         DWN_ERR(errInfo);
         return 0;
     }
-
 
     switch(MediaType)
     {
@@ -513,7 +512,7 @@ static u32 optimus_func_download_image(struct ImgBurnInfo* pDownInfo, u32 dataSz
     int ret = 0;
     u64 nextMediaOffset = pDownInfo->nextMediaOffset;
    
-    DWN_DBG("data=0x%p, datasz=0x%x, nextMediaOffset=%x\n", data, dataSz, (u32)nextMediaOffset);
+    DWN_DBG("data=0x%p, sz=0x%x, offset=%llx\n", data, dataSz, nextMediaOffset);
 
     ret = optimus_storage_open(pDownInfo, data, dataSz);
     if(OPT_DOWN_OK != ret){
@@ -866,7 +865,8 @@ int optimus_media_download_verify(const int argc, char * const argv[], char *inf
     /*DWN_MSG("%s %s\n", verifyType, sha1Result);*/
     ret = strcmp(sha1Result, srcSum);
     if(ret) {
-        DWN_ERR("Verify Failed with %s, origin sum \"%s\" != gen sum \"%s\"\n", verifyType, srcSum, sha1Result);
+        sprintf(info, "failed:Verify Failed with %s, origin sum \"%s\" != gen sum \"%s\"\n", verifyType, srcSum, sha1Result);
+        DWN_ERR(info);
         return __LINE__;
     }
 
@@ -1032,6 +1032,25 @@ int optimus_set_burn_complete_flag(void)
     return rc;
 }
 
+static int _optimus_set_reboot_mode(const int cfgFlag)
+{
+    switch(cfgFlag)
+    {
+    case OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE:
+            reboot_mode = AMLOGIC_UPDATE_REBOOT;  
+            break;
+
+    case OPTIMUS_BURN_COMPLETE__REBOOT_SDC_BURN:
+            reboot_mode = MESON_SDC_BURNER_REBOOT;  
+            break;
+
+    case OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL:
+    default:
+            reboot_mode = AMLOGIC_NORMAL_BOOT;  
+            break;
+    }
+}
+
 void optimus_reset(const int cfgFlag)
 {
     unsigned i = 0x100;
@@ -1039,7 +1058,7 @@ void optimus_reset(const int cfgFlag)
     writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
 
     //set reboot mode
-    reboot_mode = (OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE == cfgFlag) ? AMLOGIC_UPDATE_REBOOT : AMLOGIC_NORMAL_BOOT;
+    _optimus_set_reboot_mode(cfgFlag);
 
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV)
     //if not clear, uboot command reset will fail -> blocked
@@ -1133,3 +1152,11 @@ int optimus_burn_complete(const int choice)
     return rc;
 }
 
+#if ROM_BOOT_SKIP_BOOT_ENABLED
+int optimus_enable_romboot_skip_boot(void)
+{
+	//enable romboot skip_boot function to jump to usb boot
+	writel(readl(SKIP_BOOT_REG_BACK_ADDR), 0xc8100000); //disable watchdog
+    DWN_MSG("Skip boot flag[%x]\n", readl(0xc8100000));
+}
+#endif// #if ROM_BOOT_SKIP_BOOT_ENABLED

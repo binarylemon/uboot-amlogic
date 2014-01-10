@@ -364,6 +364,9 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     {
         if(is_bootloader_old())
         {
+#if ROM_BOOT_SKIP_BOOT_ENABLED
+            optimus_enable_romboot_skip_boot();
+#else
             DWN_MSG("To erase OLD bootloader !\n");
             ret = optimus_erase_bootloader(NULL);
             if(ret){
@@ -371,6 +374,8 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
                 ret = __LINE__; goto _finish;
             }
 
+            //As env also depended on flash init, don't use it if skip_boot supported
+#if 0//Check reboot_mode == meson_sdc_burner_reboot instead of env 'upgrade_step'
             ret = setenv("upgrade_step", "0");
             if(ret){
                 DWN_ERR("Fail set upgrade_step to def value 0\n");
@@ -381,9 +386,21 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
                 DWN_ERR("Fail to saveenv before reset\n");
                 ret = __LINE__; goto _finish;
             }
+#endif//#if 0
+#endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
+
+#if defined(CONFIG_VIDEO_AMLLCD)
+            //axp to low power off LCD, no-charging
+            DWN_MSG("To close LCD\n");
+            ret = run_command("video dev disable", 0);
+            if(ret){
+                printf("Fail to close back light\n");
+                /*return __LINE__;*/
+            }
+#endif// #if defined(CONFIG_VIDEO_AMLLCD)
 
             DWN_MSG("Reset to load NEW uboot from ext-mmc!\n");
-            optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE);
+            optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_SDC_BURN);
             return __LINE__;//should never reach here!!
         }
     }

@@ -63,15 +63,19 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 
 #define DDR_MEM_ADDR_START  CONFIG_SYS_SDRAM_BASE
 
+//  |<---Back 2M---->|<------------USB transfer Buf 64 ----------->|<--Backed sparse format info for verify-->|
+//      Back buf                          Transfer buf
 //TODO: move memory mapping to comman shared header file
 //FIXME:Make sure [0x818<<20, 0x839<<20] not used by others
 #define OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW   (DDR_MEM_ADDR_START + (2U<<20))//Don't access First 1M address 
-#define OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ    (0X40U<<20) //back up address for sparse image
+#define OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ    (0X2<<20) //back up address for sparse image, 2M
 
-#define OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR      (OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW + OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ)//this buffer can't be 0x800u<<20 as sparse move data to the left
-#define OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ   OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ
+//this buffer can't be 0x800u<<20 as sparse move data to the left
+#define OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR      (OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW + OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ)
+#define OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ   (0X40<<20)//64M
 #define OPTIMUS_DOWNLOAD_SPARSE_INFO_FOR_VERIFY (OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR + OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ)//for Back up sparse chunk headers 
 #define OPTIMUS_DOWNLOAD_SLOT_SZ                (64<<10)    //64K
+#define OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS     (16)    //64K
 #define OPTIMUS_DOWNLOAD_SLOT_NUM               (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/OPTIMUS_DOWNLOAD_SLOT_SZ)
 
 #define OPTIMUS_VFAT_IMG_WRITE_BACK_SZ          (OPTIMUS_DOWNLOAD_SLOT_SZ*2)
@@ -80,7 +84,7 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_BOOTLOADER_MAX_SZ               (2U<<20)//max size is 2M ??
 
 #define OPTIMUS_SHA1SUM_BUFFER_ADDR             OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR
-#define OPTIMUS_SHA1SUM_BUFFER_LEN              (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/4) //4M 
+#define OPTIMUS_SHA1SUM_BUFFER_LEN              (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/8) //16M each time
 
 #define OPTIMUS_KEY_DECRYPT_BUF                 OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW//buffer for decrypt the key
 #define OPTIMUS_KEY_DECRYPT_BUF_SZ              OPTIMUS_DOWNLOAD_SLOT_SZ              
@@ -106,7 +110,7 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 int optimus_simg_probe(const u8* source, const u32 length);
 int optimus_simg_parser_init(const u8* source);
 u32 optimus_cb_simg_write_media(const unsigned destAddrInSec, const unsigned dataSzInBy, const char* data);
-u32 optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedDataLen, const u32 flashAddrInSec);
+int optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedDataLen, const u32 flashAddrInSec);
 int optimus_sparse_get_chunk_data(u8** head, u32* headSz, u32* dataSz, u64* dataOffset);
 int optimus_sparse_back_info_probe(void);
 
@@ -158,8 +162,16 @@ int optimus_work_mode_set(int workmode);
 #define OPTIMUS_BURN_COMPLETE__POWEROFF_DIRECT              (0X0)
 #define OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL                (0x1)
 #define OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY      (0x2)
+#define OPTIMUS_BURN_COMPLETE__REBOOT_SDC_BURN              (0xdc)
 #define OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE                (0xeb)
 #define OPTIMUS_BURN_COMPLETE__QUERY                        (0xfu)
+
+#ifdef CONFIG_M8
+#define ROM_BOOT_SKIP_BOOT_ENABLED      1//skip boot function is supported by romboot
+#else
+#define ROM_BOOT_SKIP_BOOT_ENABLED      0
+#endif// #ifdef CONFIG_M8
+int optimus_enable_romboot_skip_boot(void);
 
 #endif//ifndef __OPTIMUS_DOWNLOAD_H__
 

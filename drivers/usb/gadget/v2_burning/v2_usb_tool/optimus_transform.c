@@ -310,10 +310,10 @@ int set_low_power_for_usb_burn(int arg, char* buff)
     int ret = 0;
 
     if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()){
-        return 0;//just return ok as usb producing mode not
+        return 0;//just return ok as usb producing mode as LCD not initialized yet!
     }
 
-#if 0//disable video device
+#if defined(CONFIG_VIDEO_AMLLCD)
     //axp to low power off LCD, no-charging
     MYDBG("To close LCD\n");
     ret = run_command("video dev disable", 0);
@@ -322,7 +322,7 @@ int set_low_power_for_usb_burn(int arg, char* buff)
         printf("Fail to close back light\n");
         /*return __LINE__;*/
     }
-#endif//
+#endif// #if defined(CONFIG_VIDEO_AMLLCD)
 
 #if USB_BURN_POWER_CONTROL
     //limit vbus curretn to 500mA, i.e, if hub is 4A, 8 devices at most, arg3 to not set_env as it's not inited yet!!
@@ -343,12 +343,15 @@ int optimus_erase_bootloader(char* info)
 {
     int ret = 0;
 
+#if ROM_BOOT_SKIP_BOOT_ENABLED
+    optimus_enable_romboot_skip_boot();
+#else
     if(optimus_storage_init(0)){
         DWN_ERR("Fail in storage_init\n");
         return __LINE__;
     }
-
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
+#endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
 
     return ret;
 }

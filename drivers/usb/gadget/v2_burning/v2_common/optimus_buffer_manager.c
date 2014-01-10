@@ -242,18 +242,22 @@ int optimus_buf_manager_report_transfer_complete(const u32 transferSz, char* err
             u8* dest = (u8*)BufBase - leftSz;
 
             if(totalTransferSz >= _bufManager.tplcmdTotalSz) {
-                DWN_ERR("Exception:packet end but data left, totalTransferSz 0x%llx, cmd sz 0x%llx!\n", 
-                        totalTransferSz, _bufManager.tplcmdTotalSz);
+                DWN_ERR("Exception:packet end but data left 0x%x, totalTransferSz 0x%llx, cmd sz 0x%llx!\n", 
+                        leftSz, totalTransferSz, _bufManager.tplcmdTotalSz);
                 return OPT_DOWN_FAIL;
             }
 
-            if((unsigned)src < OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW){
-                DWN_ERR("Exception, left data sz > 0x%x B, no enough data to copy!\n", leftSz);
+            if(leftSz > OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ){
+                DWN_ERR("Exception, left data sz 0x%x > back buf sz 0x%x!\n", leftSz, OPTIMUS_SPARSE_IMG_LEFT_DATA_MAX_SZ);
+                return OPT_DOWN_FAIL;
+            }
+            if(leftSz & 0x03){
+                DWN_ERR("Exception, copy size not align to 4! May will copy fail!\n");
                 return OPT_DOWN_FAIL;
             }
 
+            DWN_DBG("MV:left size 0x%08x, src %p, dest %p\n", leftSz, src, dest);
             memcpy(dest, src, leftSz);
-            DWN_DBG("MV:left size 0x%xB, src %p, leftBuf %p\n", leftSz, src, dest);
         }
 
         //update _bufManager.leftDataSz and _bufManager.nextWriteBackSlot

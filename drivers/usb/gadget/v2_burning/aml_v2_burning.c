@@ -21,10 +21,14 @@ int aml_check_is_ready_for_sdc_produce(void)
     const char* cmd = NULL;
     int ret = 0;
 
-    if(!is_the_flash_first_burned())//check if upgrade_step == 0
+    //Check 'upgrade_step' when raw flash in factory
+    if(!is_the_flash_first_burned())//'upgrade_step == 0' means flash not burned yet!
     {
-        DWN_MSG("Boot from external mmc but upgrade_step not matched\n");
-        return 0;//not ready
+        //'MESON_SDC_BURNER_REBOOT == reboot_mode'  means sdcard upgrade mode
+        if(MESON_SDC_BURNER_REBOOT != reboot_mode){
+            DWN_MSG("reboot_mode=0x%x\n", reboot_mode);
+            return 0;//not ready
+        }
     }
 
     cmd = "mmcinfo 0";

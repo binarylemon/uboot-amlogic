@@ -144,5 +144,6 @@ extern DataFormat  __magic_word;
 
 #define ERROR_NAND_BLANK_PAGE 25
 
+#define SKIP_BOOT_REG_BACK_ADDR     (ROM_BOOT_INFO + 0X78)
 
 #endif /* __M6TV_ROMBOOT_H__ */

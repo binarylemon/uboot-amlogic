@@ -815,7 +815,8 @@ int bulk_transfer_reply(const pcd_struct_t* _pcd)
     {
         _mediaErr = optimus_buf_manager_report_transfer_complete(_pcd->bulk_xfer_len, replyBuf);
         if(_mediaErr){
-            DWN_ERR("media error %d at seq %d\n", _mediaErr, sequenceNo);
+            sprintf(replyBuf, "media error %d at seq %d\n", _mediaErr, sequenceNo);
+            DWN_ERR(replyBuf);
             ret = __LINE__;
         }
     }
