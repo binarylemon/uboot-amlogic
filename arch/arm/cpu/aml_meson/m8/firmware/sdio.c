@@ -156,10 +156,11 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
    unsigned SD_boot_type;
    int error;
    unsigned cmd_clk_divide;
-   unsigned arg;
+   unsigned arg, bus_width;
    cmd_clk_divide=__plls.sdio_cmd_clk_divide;
    SD_boot_type=sdio_get_port(por_sel);
    unsigned card_type=(romboot_info->ext>>4)&0xf;
+   unsigned switch_status[16];
 
 //register.h: #define SDIO_AHB_CBUS_CTRL 0x2318
 //#define SDIO_AHB_CBUS_CTRL          (volatile unsigned long *)0xc1108c60   
@@ -177,9 +178,156 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
                       (NO_DELAY_DATA << response_latch_at_negedge_bit) |
                       ((cmd_clk_divide-1)  << cmd_clk_divide_bit));
 
-    //--------------------------------------------------------------------------------
-    // send CMD17 -- READ_BLOCK
    WRITE_CBUS_REG(SDIO_MULT_CONFIG,SD_boot_type);
+   __udelay(200);
+   
+   bus_width = 0;
+    if((SD_boot_type != 2) || (card_type != CARD_TYPE_EMMC)){
+	    serial_puts("check SD_boot_type:0x");
+        serial_put_dec(SD_boot_type);
+        serial_puts("\t card_type:0x");
+        serial_put_dec(card_type);
+        serial_puts("\n");
+        goto DATA_READ;        
+    }
+    
+#if 0    
+    //send cmd6 to switch Highspeed
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        memset((unsigned char *)&switch_status, 0, 64);
+        invalidate_dcache_range((unsigned char *)&switch_status, (unsigned char *)&switch_status+64);
+#endif  
+    
+    WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned char *)&switch_status);
+    
+    WRITE_CBUS_REG(SDIO_EXTENSION,(64*8 + (16 - 1)) << 16);    
+    
+    if(card_type == CARD_TYPE_EMMC){
+        arg = ((0x3 << 24) |(185 << 16) |(1 << 8));  //emmc
+    }
+    else{
+        arg = (1 << 31) | 0xffffff;
+    	arg &= ~(0xf << (0 * 4));
+    	arg |= 1 << (0 * 4);
+    }
+	
+	//serial_puts("***CMD6 switch highspeed here\n");
+	error=sdio_send_cmd((0 << check_busy_on_dat0_bit) | // RESPONSE is R1
+	      (0 << repeat_package_times_bit) | // packet number
+	      (1 << use_int_window_bit) | // will disable interrupt
+          (0 << response_crc7_from_8_bit) | // RESPONSE CRC7 is normal
+          (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
+          (1 << response_have_data_bit) | // RESPONSE has data receive
+          (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
+          ((0x40+6) << cmd_command_bit)  
+			,arg
+			,TIMEOUT_DATA
+			,ERROR_MMC_SWITCH_BUS);
+			
+	if(error){
+	    serial_puts("###CMD6 switch Highspeed failed error:0x");
+        serial_put_dec(error);
+        serial_puts("\n");
+        goto DATA_READ;
+	}	
+    __udelay(200); 
+#endif
+
+    //switch width bus 4bit here
+    if(card_type == CARD_TYPE_EMMC){
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+        memset((unsigned char *)&switch_status, 0, 64);
+        invalidate_dcache_range((unsigned char *)&switch_status, (unsigned char *)&switch_status+64);
+#endif  
+        
+        WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned char *)&switch_status);        
+        WRITE_CBUS_REG(SDIO_EXTENSION,(64*8 + (16 - 1)) << 16);    
+        
+        arg = ((0x3 << 24) |(183 << 16) |(1 << 8));  
+    	
+    	//serial_puts("***CMD6 switch width here\n");
+        //send cmd6 to switch Highspeed
+    	error=sdio_send_cmd((0 << check_busy_on_dat0_bit) | // RESPONSE is R1
+    	      (0 << repeat_package_times_bit) | // packet number
+    	      (1 << use_int_window_bit) | // will disable interrupt
+              (0 << response_crc7_from_8_bit) | // RESPONSE CRC7 is normal
+              (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
+              (1 << response_have_data_bit) | // RESPONSE has data receive
+              (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
+              ((0x40+6) << cmd_command_bit)  
+    			,arg
+    			,TIMEOUT_DATA
+    			,ERROR_MMC_SWITCH_BUS);
+    			
+    	if(error){
+    	    serial_puts("###CMD6 switch Highspeed failed error:0x");
+            serial_put_dec(error);
+            serial_puts("\n");
+            goto DATA_READ;
+    	}	
+        __udelay(1000); 
+            
+    }
+    else{                    
+        //send APP55 cmd 	
+
+        WRITE_CBUS_REG(SDIO_EXTENSION, 0); 
+    	arg = (0x1234)<<16;
+    	    
+        //serial_puts("***CMD55 app cmd here\n");    
+    	error=sdio_send_cmd((0 << check_busy_on_dat0_bit) | // RESPONSE is R1
+    	      (0 << repeat_package_times_bit) | // packet number
+              (0 << response_crc7_from_8_bit) | // RESPONSE CRC7 is normal
+              (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
+              (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
+              ((0x40+55) << cmd_command_bit)  
+    			,arg
+    			,TIMEOUT_DATA
+    			,ERROR_MMC_SWITCH_BUS);
+    	
+    	 //send ACMD6 to switch width 			
+        WRITE_CBUS_REG(SDIO_EXTENSION, 0);             
+    
+    	arg = 2;
+    	
+        //serial_puts("***ACMD6 to switch width here\n");
+    
+    	error=sdio_send_cmd((0 << check_busy_on_dat0_bit) | // RESPONSE is R1
+    	      (0 << repeat_package_times_bit) | // packet number
+              (0 << response_crc7_from_8_bit) | // RESPONSE CRC7 is normal
+              (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
+              (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
+              ((0x40+6) << cmd_command_bit)  
+    			,arg
+    			,TIMEOUT_DATA
+    			,ERROR_MMC_SWITCH_BUS);
+    			
+    	if(error){
+    	    serial_puts("***ACMD6 switch width failed error:0x");
+            serial_put_dec(error);
+            serial_puts("\n");
+            goto DATA_READ;
+    	}
+    }		
+	
+	
+    setbits_le32(P_SDIO_IRQ_CONFIG,1<<soft_reset_bit);
+	writel(((1<<8) | (1<<9)),P_SDIO_STATUS_IRQ);    
+    WRITE_CBUS_REG(SDIO_CONFIG,(2 << sdio_write_CRC_ok_status_bit) |
+                      (2 << sdio_write_Nwr_bit) |
+                      (3 << m_endian_bit) |
+                      (39 << cmd_argument_bits_bit) |
+                      (0 << cmd_out_at_posedge_bit) |
+                      (1 << bus_width_bit) |                                          
+                      (0 << cmd_disable_CRC_bit) |
+                      (NO_DELAY_DATA << response_latch_at_negedge_bit) |
+                      ((3)   << cmd_clk_divide_bit));	
+                      
+    WRITE_CBUS_REG(SDIO_MULT_CONFIG,SD_boot_type);
+    bus_width = 1;	
+   __udelay(1000);                   	
+        
+DATA_READ:   
    size=(size+511)&(~(511));
    for(addr=READ_SIZE,read_size=0;read_size<size;addr+=CONFIG_SDIO_BUFFER_SIZE)
    {
@@ -191,8 +339,11 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
 #endif  
 
       WRITE_CBUS_REG(SDIO_M_ADDR,read_size+target);
-
-      WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)) << 16);
+      if(bus_width == 0)
+        WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)) << 16);
+      else
+        WRITE_CBUS_REG(SDIO_EXTENSION,((1 << (9 + 3)) + (16 - 1)*4) << 16);
+        
       if((card_type==CARD_TYPE_SDHC)||(card_type==CARD_TYPE_EMMC))
             arg=addr>>9;
       else
@@ -204,8 +355,13 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
            (1 << response_have_data_bit) | // RESPONSE has data receive
            (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
            ((0x40+18) << cmd_command_bit),arg,TIMEOUT_SHORT,ERROR_READ_BLOCK);
-        if(error)
+           
+    	if(error){
+    	    serial_puts("CMD18 switch width failed error:0x");
+            serial_put_dec(error);
+            serial_puts("\n");
             return error;
+    	}
 //--------------------------------------------------------------------------------
 // send CMD12 -- STOP_TRANSMISSION
       error=sdio_send_cmd((1 << check_busy_on_dat0_bit) | // RESPONSE is R1b
@@ -213,8 +369,12 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
           (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
           (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
           ((0x40+12) << cmd_command_bit),0,TIMEOUT_DATA,ERROR_STOP_TRANSMISSION);
-        if(error)
+        if(error){
+            serial_puts("CMD12 switch width failed error:0x");
+            serial_put_dec(error);
+            serial_puts("\n");
             return error;
+        }
 
         read_size+=cur_size;
     }

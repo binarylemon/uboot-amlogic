@@ -378,12 +378,15 @@ static int sd_inand_staff_init(struct mmc *mmc)
     sdio->sdio_pwr_prepare(sdio->sdio_port);
 	sd_debug("power off");
 	sdio->sdio_pwr_off(sdio->sdio_port);
-    base=get_timer(0);
+	
+	if(sdio->sdio_port == SDIO_PORT_B){  //only power ctrl for external tf card
+        base=get_timer(0);
 #if defined(CONFIG_VLSI_EMULATOR)
-	while(get_timer(base)<1);
+	    while(get_timer(base)<1);
 #else
-    while(get_timer(base)<200);
+        while(get_timer(base)<200);
 #endif 
+    }
     sd_debug("pre power on");
     sdio->sdio_pwr_on(sdio->sdio_port);
     sdio->sdio_init(sdio->sdio_port);
@@ -396,12 +399,15 @@ static int sd_inand_staff_init(struct mmc *mmc)
     }
     	
     sd_debug("post power on");
-    base=get_timer(0);
+    if(sdio->sdio_port == SDIO_PORT_B){   //only power ctrl for external tf card
+        base=get_timer(0);
 #if defined(CONFIG_VLSI_EMULATOR)
-	while(get_timer(base)<1);
+	    while(get_timer(base)<1);
 #else
-    while(get_timer(base)<200);
+        while(get_timer(base)<200);
 #endif 
+    }
+    
     aml_sd_cfg_swth(mmc);
     if(!sdio->inited_flag)
         sdio->inited_flag = 1;

@@ -710,6 +710,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	//default CE0 is enable
 	setbits_le32(P_PERIPHS_PIN_MUX_2, ((0x38f<<18) | (1<<17)));
 
+#if 0
 		// NAND uses crystal, 24 or 25 MHz 0xc110425c
 	writel((4<<9) | (1<<8) | 0, P_HHI_NAND_CLK_CNTL);
 		
@@ -725,7 +726,23 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	    	|(0<<14) 	// apb_mode set to DMA mode
 	   	|(1<<31)	// disable NAND bus gated clock.
 	    	, P_NAND_CFG);
-
+#else
+	// NAND pll setting to 160MHz
+	writel((((0<<9) | (1<<8) | 3)), P_HHI_NAND_CLK_CNTL);
+	
+	//set nand hw controller config here
+	// Crystal 24 or 25Mhz, clock cycle 40 ns.
+	// Nand cycle = 200ns, timing at 3rd clock.
+	// Change to dma mode
+	writel((4<<0)  	// bus cycle = 31.25 ns.
+		|(5<<5)  	// bus time = 4
+	    	|(0<<10) 	// async mode
+	    	|(0<<12) 	// disable cmd_start
+	    	|(0<<13) 	// disable cmd_auto
+	    	|(0<<14) 	// apb_mode set to DMA mode
+	   	|(1<<31)	// disable NAND bus gated clock.
+	    	, P_NAND_CFG);	
+#endif	
 	// reset
 	ret = nfio_reset( no_rb );
 	if (ret) {
