@@ -635,7 +635,6 @@ void rn5t618_power_on_at_24M()                                          // need 
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);
 #endif
 #endif
-	rn5t618_set_gpio(0, 0);                                     // need to open this in LCD driver?
 	rn5t618_set_gpio(1, 0);                                     // close vccx2
 #if 0
     if (!vbus_status) {
@@ -738,10 +737,12 @@ unsigned int rn5t618_detect_key(unsigned int flags)
          * suspend loop and resume system.
          */
 	    power_status = get_charging_state();
+        if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
+            ret = 1;
+            exit_reason = 8;
+            break;
+        }
         if (power_status ^ prev_status) {
-            if (flags == 0x87654321) {      // suspend from uboot
-                ret = 1;
-            }
             exit_reason = 1;
             break;
         }
