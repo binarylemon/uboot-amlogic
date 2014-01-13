@@ -498,7 +498,7 @@ void store_restore_plls(int flag)
 	//SYS,MPLL
 	writel(readl(P_HHI_MPLL_CNTL6)|(1<<26), P_HHI_MPLL_CNTL6);
 	//VID,HDMI
-	writel(readl(P_HHI_VID_PLL_CNTL5)|(1<<16), HHI_VID_PLL_CNTL5);
+	writel(readl(P_HHI_VID_PLL_CNTL5)|(1<<16), P_HHI_VID_PLL_CNTL5);
 	//DDR
 //	writel(readl(0xc8000410)|(1<<12),0xc8000410);
 
