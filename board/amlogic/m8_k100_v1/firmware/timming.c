@@ -14,7 +14,7 @@
 
 static int init_pctl_ddr3(struct ddr_set * timing_set);
 
-#if (CFG_M8_DDR_CLK >= 408) && (CFG_M8_DDR_CLK < 750)
+#if (CFG_M8_DDR_CLK >= 384) && (CFG_M8_DDR_CLK < 750)
 	#define CFG_M8_PLL_OD 2
 	#define CFG_M8_PLL_N  1
 	#define CFG_M8_PLL_M  (((CFG_M8_DDR_CLK/6)*6)/12)
@@ -26,7 +26,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#error "Over PLL range! Please check CFG_M8_DDR_CLK with file m8_skt_v1.h! \n"
 #endif
 
-#if (CFG_M8_DDR_CLK >= 408 ) && (CFG_M8_DDR_CLK <533)
+#if (CFG_M8_DDR_CLK >= 384 ) && (CFG_M8_DDR_CLK <533)
 	#define DDR3_7_7_7
 #elif  (CFG_M8_DDR_CLK >= 533 ) && (CFG_M8_DDR_CLK <667)
 	#define DDR3_9_9_9 
@@ -36,6 +36,49 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 
 /////////////////////////////////////////////////////////////////////////////////
 //Following setting for board XXXXXXX with DDR K4B4G1646B(SANSUNG)
+#ifdef DDR3_7_7_7
+	//DTPR0
+	#define CFG_M8_DDR_RTP (6)
+	#define CFG_M8_DDR_WTR (6)
+	#define CFG_M8_DDR_RP  (7)
+	#define CFG_M8_DDR_RCD (7)
+	#define CFG_M8_DDR_RAS (20)
+	#define CFG_M8_DDR_RRD (6)
+	#define CFG_M8_DDR_RC  (27)
+
+	//DTPR1
+	#define CFG_M8_DDR_MRD (4)
+	#define CFG_M8_DDR_MOD (12)
+	#define CFG_M8_DDR_FAW (27)
+	#define CFG_M8_DDR_RFC (139)
+	#define CFG_M8_DDR_WLMRD (40)
+	#define CFG_M8_DDR_WLO (6)
+
+	//DTPR2
+	#define CFG_M8_DDR_XS   (512)
+	#define CFG_M8_DDR_XP   (5)
+	#define CFG_M8_DDR_CKE  (4)
+	#define CFG_M8_DDR_DLLK (512)
+	#define CFG_M8_DDR_RTODT (0)
+	#define CFG_M8_DDR_RTW   (4)
+
+	#define CFG_M8_DDR_REFI  (78)
+	#define CFG_M8_DDR_REFI_MDDR3  (4)
+
+	#define CFG_M8_DDR_CL    (7)
+	#define CFG_M8_DDR_WR    (12)
+	#define CFG_M8_DDR_CWL   (8)
+	#define CFG_M8_DDR_AL    (0)
+	#define CFG_M8_DDR_EXSR  (512)
+	#define CFG_M8_DDR_DQS   (4)
+	#define CFG_M8_DDR_CKSRE (8)
+	#define CFG_M8_DDR_CKSRX (8)
+	#define CFG_M8_DDR_ZQCS  (64)
+	#define CFG_M8_DDR_ZQCL  (512)
+	#define CFG_M8_DDR_XPDLL (20)
+	#define CFG_M8_DDR_ZQCSI (1000)
+#endif
+
 #ifdef DDR3_9_9_9
 	//DTPR0
 	#define CFG_M8_DDR_RTP (6)
