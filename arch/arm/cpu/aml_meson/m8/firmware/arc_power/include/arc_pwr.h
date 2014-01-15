@@ -19,6 +19,14 @@ struct arc_pwr_op
 	unsigned int (*detect_key)(unsigned int);
 };
 
+/*You can add param here for more */
+struct ARC_PARAM
+{
+	unsigned int serial_disable; //0 enable output, 1 disable output
+};
+
+extern struct ARC_PARAM *arc_param;
+
 extern void ddr_self_refresh(void);
 extern void ddr_resume(void);
 
