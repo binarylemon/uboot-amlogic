@@ -318,7 +318,7 @@
 		"else if test ${hdmimode} = 1080i; then "\
 			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 1080;setenv fb_width 1920;"\
 		"else if test ${hdmimode} = 1080i50hz; then "\
-			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 720;setenv fb_width 1920;"\
+			"setenv display_height 1080;setenv display_width 1920;setenv fb_height 1080;setenv fb_width 1920;"\
 		"else "\
 			";"\
 		"fi;fi;fi;fi\0"\		
