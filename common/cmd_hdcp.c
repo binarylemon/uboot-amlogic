@@ -46,93 +46,6 @@ static unsigned char hdcp_keys_prefetch[HDCP_KEY_SIZE] = { 0x00 };
 
 static unsigned char hdcp_keys_reformat[HDCP_IP_KEY_SIZE] = { 0x00 };
 
-// dump RAW data from the DEVICE prefetch
-static int do_hdcp_dumprawdata(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
-{
-    int i;
-
-    printf("dump hdcp raw data\n");
-    for(i = 0; i < HDCP_KEY_SIZE; i++) {
-        printf("%02x ", hdcp_keys_prefetch[i]);
-        if(((i+1) & 0xf) == 0)
-            printf("\n");
-    }
-    printf("\n");
-
-    return 1;
-}
-
-// dump RAM data from the IP
-static int do_hdcp_dumpipdata(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
-{
-    int i, j;
-
-    printf("dump ip ram data\n");
-    hdmi_hdcp_wr_reg(0x27, 0);
-    for(i = 0, j = 0; i < HDCP_IP_KEY_SIZE - 3; i++) { // ignore 3 zeroes in reserved KSV
-        printf("%02x ", (unsigned int)hdmi_hdcp_rd_reg(TX_HDCP_DKEY_OFFSET + j));
-        j = ((i % 7) == 6) ? j + 2: j + 1;
-        if(((i+1) & 0xf) == 0)
-            printf("\n");
-    }
-    hdmi_hdcp_wr_reg(0x27, 1);
-    printf("\n");
-    return 1;
-}
-
-// compare the RAW data with the IP data
-static int do_hdcp_compare(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
-{
-    int i, j;
-    int idx_raw = 0;
-    int idx_ram = 0;
-    int val_raw = 0;
-    int val_ram = 0;
-    int err_cnt = 0;
-
-    printf("comparing the prefetch data with IP data\n");
-    hdmi_hdcp_wr_reg(0x27, 0);
-    for(i = 0, j = 0; i < HDCP_IP_KEY_SIZE - 3; i++) {
-        idx_raw = (i < 280 ? i + 8 : i - 280);
-        idx_ram = TX_HDCP_DKEY_OFFSET + j;
-        val_ram = hdmi_hdcp_rd_reg(idx_ram);
-        val_raw = hdcp_keys_prefetch[idx_raw];
-        j = ((i % 7) == 6) ? j + 2: j + 1;
-        if(val_ram != val_raw) {
-            printf("%03x %02x  --  %03x %02x\n", idx_raw, val_raw, j, val_ram);
-            err_cnt ++;
-        }
-    }
-    hdmi_hdcp_wr_reg(0x27, 1);
-
-    printf("Error No: %d\n", err_cnt);
-    return 1;
-}
-
-/* verify ksv, 20 ones and 20 zeroes*/
-static int hdcp_ksv_valid(unsigned char * dat)
-{
-    int i, j, one_num = 0;
-    for(i = 0; i < 5; i++){
-        for(j=0;j<8;j++) {
-            if((dat[i]>>j)&0x1) {
-                one_num++;
-            }
-        }
-    }
-    return (one_num == 20);
-}
-
-static int do_hdcp_check(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
-{
-    int ret = hdcp_ksv_valid(hdcp_keys_prefetch);
-    if(ret == 1)
-        printf("AKSV valid\n");
-    else
-        printf("AKSV invalid\n");
-    return ret;
-}
-
 // copy the fetched data into HDMI IP
 static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
 {
@@ -151,16 +64,6 @@ static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
         ram_addr = TX_HDCP_DKEY_OFFSET+j;
         hdmi_hdcp_wr_reg(ram_addr, value);
         j = ((i % 7) == 6) ? j + 2: j + 1;
-    }
-
-    if(hdcp_ksv_valid(dat)) {
-        printf("hdcp init done\n");
-    }
-    else {
-        if(pre_clear == 0)
-            printf("AKSV invalid, hdcp init failed\n");
-        else
-            printf("pre-clear hdmi ram\n");
     }
 
     return 1;
@@ -206,10 +109,6 @@ static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 
 static cmd_tbl_t cmd_hdcp_sub[] = {
 	U_BOOT_CMD_MKENT(prefetch, 2, 1, do_hdcp_prefetch, "", ""),
-	U_BOOT_CMD_MKENT(dumprawdata, 0, 1, do_hdcp_dumprawdata, "", ""),
-	U_BOOT_CMD_MKENT(dumpipdata, 0, 1, do_hdcp_dumpipdata, "", ""),
-	U_BOOT_CMD_MKENT(check, 0, 1, do_hdcp_check, "", ""),
-	U_BOOT_CMD_MKENT(compare, 0, 1, do_hdcp_compare, "", ""),
 };
 
 static int do_hdcp(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
@@ -234,9 +133,5 @@ U_BOOT_CMD(
 	hdcp, 3, 0, do_hdcp,
 	"HDCP sub-system",
     "prefetch [device] - prefetch hdcp keys from nand, efuse or others\n"
-    "hdcp dumprawdata - dump the prefetch data\n"
-    "hdcp dumpipdata - dump the ip ram data\n"
-    "hdcp check - check KSV valid\n"
-    "hdcp compare - compare RAW data with IP data"
 );
 

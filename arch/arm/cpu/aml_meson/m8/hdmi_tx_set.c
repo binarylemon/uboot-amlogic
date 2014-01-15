@@ -284,8 +284,9 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
 
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1F, 0xFF);              // Enable AVI packet generation
 
-    tmp_add_data = 0xa; // time_divider[7:0] for DDC I2C bus clock
+    tmp_add_data = 0x18 - 1; // time_divider[7:0] for DDC I2C bus clock
     hdmi_wr_reg(TX_HDCP_CONFIG3, tmp_add_data);
+    hdmi_wr_reg(TX_HDCP_CONFIG0, 0x3<<3);
     
     tmp_add_data  = 0;
     tmp_add_data |= 1   << 7; // [7] cp_desired 

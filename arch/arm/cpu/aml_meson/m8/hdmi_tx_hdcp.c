@@ -21,7 +21,7 @@
 #include <asm/io.h>
 #include "hdmi_tx_reg.h"
 
-static unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
+unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 {
     __raw_writel(addr, P_HDMI_ADDR_PORT);
     __raw_writel(addr, P_HDMI_ADDR_PORT);
@@ -29,7 +29,7 @@ static unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
     return __raw_readl(P_HDMI_DATA_PORT);
 }
 
-static void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
+void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 {
     __raw_writel(addr, P_HDMI_ADDR_PORT);
     __raw_writel(addr, P_HDMI_ADDR_PORT);
