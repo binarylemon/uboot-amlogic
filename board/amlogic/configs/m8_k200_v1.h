@@ -285,7 +285,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
+        "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;"\
