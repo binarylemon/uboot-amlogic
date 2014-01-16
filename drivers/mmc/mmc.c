@@ -1289,6 +1289,12 @@ int mmc_init(struct mmc *mmc)
                 // emmc_key_read();
                 // emmc_key_write();
 			#endif
+			#ifdef CONFIG_SECURE_MMC			
+				err = mmc_storage_probe(mmc);
+				if(err){
+					printf("%s:%d,mmc storage  fail\n",__func__,__LINE__);
+				}
+			#endif
 #ifdef CONFIG_STORE_COMPATIBLE
             }
             else

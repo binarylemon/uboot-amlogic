@@ -13,7 +13,7 @@
 
 #ifdef SECUREOS_INTERFACE
 #ifdef CONFIG_M8
-#define SECUREOS_KEY_DEFAULT_ADDR	0x3c0e0000
+#define SECUREOS_KEY_DEFAULT_ADDR	0x061e0000
 #define SECUREOS_KEY_DEFAULT_SIZE	(128*1024)
 #else
 #define SECUREOS_KEY_DEFAULT_ADDR	0xa00e0000
@@ -132,7 +132,7 @@ int securestore_key_init( char *seed,int len)
 	else if(device == SECURE_STORAGE_EMMC_TYPE){
 		sstorekey_device_op.read = secure_storage_emmc_read;
 		sstorekey_device_op.write = secure_storage_emmc_write;
-		printf("secure storage found nor\n");
+		printf("secure storage found emmc\n");
 	}
 #if 0
 	addr = SECUREOS_KEY_DEFAULT_ADDR;

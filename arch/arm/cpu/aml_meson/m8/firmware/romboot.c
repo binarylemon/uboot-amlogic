@@ -149,6 +149,10 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
         case POR_1ST_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<2);
+#ifdef CONFIG_MESON_TRUSTZONE
+	 serial_puts("BootFrom SDIO C get storage: \n");
+	 sdio_secure_storage_get();
+#endif
         	break;
         case POR_1ST_SDIO_B:
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<2);break;

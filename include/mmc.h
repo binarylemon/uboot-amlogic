@@ -333,6 +333,10 @@ struct mmc {
 	u64 capacity;
 	u64 boot_size;
 	block_dev_desc_t block_dev;
+#ifdef CONFIG_SECURE_MMC
+	uint storage_protect;
+	struct mmc_storage_info_t *mmc_storage_info;
+#endif
 #ifdef CONFIG_MMC_DEVICE
 	mmc_device *device;
 #endif
