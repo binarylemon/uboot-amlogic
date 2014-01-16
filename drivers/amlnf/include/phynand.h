@@ -14,7 +14,7 @@
 #define NAND_COMPATIBLE_REGION     1
 #define NAND_RESERVED_REGION	       1
 #define NAND_ADDNEW_REGION	       1
-#define NAND_BUG_FIX_REGION	       2
+#define NAND_BUG_FIX_REGION	       3
 
 #define DRV_PHY_VERSION	   ((NAND_COMPATIBLE_REGION << 24)+(NAND_RESERVED_REGION << 16) \
 							+(NAND_ADDNEW_REGION << 8)+(NAND_BUG_FIX_REGION))	
@@ -107,7 +107,12 @@ typedef union nand_core_clk {
 
 #define 	BYTES_OF_USER_PER_PAGE                    16
 
+#ifdef NAND_ADJUST_PART_TABLE
+#define      ADJUST_SIZE_NFTL                                       10
+#define	ADJUST_BLOCK_NUM				6
+#else
 #define      ADJUST_SIZE_NFTL                                       8
+#endif
 
 #define 	SHIPPED_BBT_HEAD_MAGIC			"fbbt"
 #define 	BBT_HEAD_MAGIC						"nbbt"
@@ -631,6 +636,7 @@ struct nand_bbt {
 
 struct shipped_bbt {
 	unsigned int crc;
+	unsigned int chipnum;
 	unsigned short	shipped_bbt[MAX_CHIP_NUM][MAX_BAD_BLK_NUM];
 };
 

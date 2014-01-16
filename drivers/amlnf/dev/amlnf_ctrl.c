@@ -595,6 +595,7 @@ void amlnf_disprotect(uchar * name)
 		return 0;
 	}
 #endif
+
 #ifdef CONFIG_SECURE_NAND
 	if (strcmp(name, "secure") == 0){
 		aml_chip->protect |= (1 << 2);		//force secure storage can be erased 

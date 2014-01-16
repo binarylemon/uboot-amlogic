@@ -68,9 +68,9 @@
 #define NAND_BOOT_NORMAL					0
 #define NAND_BOOT_UPGRATE					1
 #define NAND_BOOT_ERASE_PROTECT_CACHE         2
-#define NAND_BOOT_ERASE_WITH_CACHE   		3
-#define NAND_BOOT_SCRUB_DATA	        			4
-#define NAND_BOOT_SCRUB_ALL				5
+#define NAND_BOOT_ERASE_ALL   				3
+#define NAND_BOOT_SCRUB_ALL				4
+
 
 /****nand debug flag info******/
 #define NAND_WRITE_VERIFY			1
@@ -116,6 +116,7 @@ struct _nftl_cfg{
     uint16 nftl_support_wear_leveling;
     uint16 nftl_need_erase;
     uint16 nftl_part_reserved_block_ratio;
+	uint16 nftl_part_adjust_block_num;
     uint16 nftl_min_free_block_num;
     uint16 nftl_gc_threshold_free_block_num;
     uint16 nftl_min_free_block;

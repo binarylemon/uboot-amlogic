@@ -10,6 +10,9 @@
 #include <linux/err.h>
 #include<partition_table.h>
 
+#define NAND_INIT_FAILED 20
+
+int info_disprotect = 0;
 static inline int isstring(char *p)
 {
 	char *endptr = p;
@@ -502,6 +505,10 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			printf("command:	%s\n", str);
 			ret = run_command(str, 0);
 			if(ret != 0){
+				if(ret == -NAND_INIT_FAILED){
+					sprintf(str, "amlnf  init  %d ",4);	
+					ret = run_command(str, 0);
+				}
 				store_msg("nand cmd %s failed ",cmd);
 				return -1;
 			}
@@ -537,6 +544,10 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				sprintf(str, "amlnf  init  %d ",init_flag);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
+				if(ret == -NAND_INIT_FAILED){
+					sprintf(str, "amlnf  init  %d ",4);	
+					ret = run_command(str, 0);
+				}
 			}
 			if(device_boot_flag == SPI_EMMC_FLAG){
 				store_dbg("spi+mmc , %s %d ",__func__,__LINE__);
@@ -619,6 +630,26 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			store_dbg("CARD BOOT , %s %d ",__func__,__LINE__);
 			return 0;
 		}
+	}
+	else if(strcmp(cmd, "disprotect") == 0){
+		area = argv[2];
+		if(strcmp(area, "key") == 0){
+			store_msg("disprotect key");
+			info_disprotect |= DISPROTECT_KEY;
+		}
+		if(strcmp(area, "secure") == 0){	
+			store_msg("disprotect secure");
+			info_disprotect |= DISPROTECT_SECURE;
+		}
+		if(strcmp(area, "fbbt") == 0){	
+			store_msg("disprotect fbbt");
+			info_disprotect |= DISPROTECT_FBBT;
+		}
+		if(strcmp(area, "hynix") == 0){	
+			store_msg("disprotect hynix");
+			info_disprotect |= DISPROTECT_HYNIX;
+		}
+		return 0;
 	}
 	else if(strcmp(cmd, "exit") == 0){
 		

@@ -48,7 +48,10 @@ extern int  device_boot_flag;
 #define ACS_SET_LEN 			 128
 
 extern struct partitions * part_table;
+extern int info_disprotect;
 
-
-
+#define DISPROTECT_KEY    		1
+#define DISPROTECT_SECURE		1<<1
+#define DISPROTECT_FBBT		1<<2
+#define DISPROTECT_HYNIX		1<<3
 #endif

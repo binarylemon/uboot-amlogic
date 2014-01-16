@@ -214,7 +214,7 @@ DATA_FLUSH:
 		aml_nand_msg("nftl flush cache failed");
 		ret = -1;
 	}
-	
+
     return ret;
 }
 
