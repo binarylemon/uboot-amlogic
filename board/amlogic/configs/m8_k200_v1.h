@@ -496,7 +496,7 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDR1_ONLY)
+#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
 //For DDR PUB training not check the VT done flag
@@ -527,10 +527,10 @@
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
 #if   defined(CFG_M8_DDR3_1GB)
-	//4Gb(X16) x 2pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (3)
+	//2Gb(X16) x 4pcs
+	#define CONFIG_M8_DDR3_ROW_SIZE (2)
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (15)
+	#define CONFIG_M8_DDR_ROW_BITS  (14)
 #elif defined(CFG_M8_DDR3_2GB)
 	//4Gb(X16) x 4pcs
 	#define CONFIG_M8_DDR3_ROW_SIZE (3)
