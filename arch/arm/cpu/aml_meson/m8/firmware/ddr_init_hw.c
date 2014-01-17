@@ -71,16 +71,18 @@ int ddr_init_hw(struct ddr_set * timing_set)
     //asm volatile("wfi");
 
     init_dmc(timing_set);
-    
+
 #ifdef DDR_SCRAMBE_ENABLE
 	ddr_key = readl(P_RAND64_ADDR0);
-	dmc_sec_ctrl_value = 0x80000000 | (1<<0);
-	writel(dmc_sec_ctrl_value, DMC_SEC_CTRL);
-	while( readl(DMC_SEC_CTRL) & 0x80000000 ) {}
 	writel(ddr_key &0x0000ffff, DMC_SEC_KEY0);
 	writel((ddr_key >>16)&0x0000ffff, DMC_SEC_KEY1);
 
+	dmc_sec_ctrl_value = 0x80000000 | (1<<0);
+	writel(dmc_sec_ctrl_value, DMC_SEC_CTRL);
+	while( readl(DMC_SEC_CTRL) & 0x80000000 ) {}
+
 #ifdef CONFIG_M8_DUMP_DDR_INFO
+	serial_put_dword(ddr_key);
 	dmc_sec_ctrl_value = readl(DMC_SEC_CTRL);
 	if(dmc_sec_ctrl_value & (1<<0)){
 		serial_puts("ddr scramb EN\n");
