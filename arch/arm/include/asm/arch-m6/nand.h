@@ -503,6 +503,7 @@ struct aml_nand_bch_desc{
 
 #define	READ_RETRY_REG_NUM   	8
 #define	READ_RETRY_CNT   		30
+#define	HYNIX_RETRY_CNT		20
 
 
 #define	ENHANCE_SLC_REG_NUM   	5

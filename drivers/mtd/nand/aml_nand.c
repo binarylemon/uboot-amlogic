@@ -642,6 +642,8 @@ int8_t aml_nand_get_20nm_OTP_value(struct aml_nand_chip *aml_chip, unsigned char
 		for(j=0;j<aml_chip->new_nand_info.read_rety_info.retry_cnt;j++){
 			for(k=0;k<aml_chip->new_nand_info.read_rety_info.reg_cnt;k++){
 				aml_chip->new_nand_info.read_rety_info.reg_offset_value[chipnr][j][k] = (char)tmp_buf[0];
+	//	printk("%s, Retry%dst, REG(0x%x): 	value:0x%2x\n", __func__, j, aml_chip->new_nand_info.read_rety_info.reg_addr[k], aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][k]);
+	//						printk("\n");			
 				tmp_buf++;
 			}
 		}
@@ -806,7 +808,7 @@ uint8_t aml_nand_get_reg_value_formOTP_hynix(struct aml_nand_chip *aml_chip, int
 		}
 	}
 #else
-if((aml_chip->new_nand_info.type == HYNIX_20NM_4GB)&&(aml_chip->new_nand_info.type == HYNIX_20NM_8GB))
+if((aml_chip->new_nand_info.type == HYNIX_20NM_4GB)||(aml_chip->new_nand_info.type == HYNIX_20NM_8GB))
 	check_flag  = aml_nand_get_20nm_OTP_value(aml_chip,one_copy_buf,chipnr);
 else if(aml_chip->new_nand_info.type == HYNIX_1YNM_8GB)
 	check_flag  = aml_nand_get_1ynm_OTP_value(aml_chip,one_copy_buf,chipnr);
@@ -815,7 +817,7 @@ else if(aml_chip->new_nand_info.type == HYNIX_1YNM_8GB)
 	aml_chip->aml_nand_command(aml_chip, NAND_CMD_RESET, -1, -1, chipnr);
 
 	aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
-	if((aml_chip->new_nand_info.type == HYNIX_20NM_4GB)&&(aml_chip->new_nand_info.type == HYNIX_20NM_8GB)) {
+	if((aml_chip->new_nand_info.type == HYNIX_20NM_4GB)||(aml_chip->new_nand_info.type == HYNIX_20NM_8GB)) {
 
 	aml_chip->aml_nand_command(aml_chip, 0x38, -1, -1, chipnr);				//end read otp mode
 
@@ -1126,13 +1128,15 @@ void aml_nand_get_read_default_value_hynix(struct mtd_info *mtd)
 				}
 
 		  if((aml_chip->new_nand_info.type == HYNIX_20NM_8GB) || (aml_chip->new_nand_info.type == HYNIX_20NM_4GB)|| (aml_chip->new_nand_info.type == HYNIX_1YNM_8GB)){
-					memcpy(&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], (unsigned char *)(aml_oob_ops.datbuf+MAX_CHIP_NUM*READ_RETRY_REG_NUM), MAX_CHIP_NUM*READ_RETRY_CNT*READ_RETRY_REG_NUM);
+					//memcpy(&aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], (unsigned char *)(aml_oob_ops.datbuf+MAX_CHIP_NUM*READ_RETRY_REG_NUM), MAX_CHIP_NUM*READ_RETRY_CNT*READ_RETRY_REG_NUM);
 			for(i=0; i<aml_chip->chip_num; i++){
 						if(aml_chip->valid_chip[i]){
-							for(j=0;j<aml_chip->new_nand_info.read_rety_info.retry_cnt;j++)
+							for(j=0;j<aml_chip->new_nand_info.read_rety_info.retry_cnt;j++) {
+								memcpy(&aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][0], (unsigned char *)(aml_oob_ops.datbuf+MAX_CHIP_NUM*READ_RETRY_REG_NUM+j*READ_RETRY_REG_NUM+i*HYNIX_RETRY_CNT*READ_RETRY_REG_NUM), READ_RETRY_REG_NUM);
 								for(k=0;k<aml_chip->new_nand_info.read_rety_info.reg_cnt;k++)
-									printk("%s, Retry%dst, REG(0x%x): 	value:0x%2x, for chip[%d]\n", __func__, j, aml_chip->new_nand_info.read_rety_info.reg_addr[k], aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][k], i);
-							printk("\n");
+								//	printk("%s, Retry%dst, REG(0x%x): 	value:0x%2x, for chip[%d]\n", __func__, j, aml_chip->new_nand_info.read_rety_info.reg_addr[k], aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][k], i);
+						//	printk("\n");
+						}
 						}
 					}
 				}
@@ -1243,9 +1247,15 @@ void aml_nand_save_read_default_value_hynix(struct mtd_info *mtd)
 		memset((unsigned char *)aml_oob_ops.datbuf, 0x0, mtd->writesize);
 		memcpy((unsigned char *)aml_oob_ops.datbuf, &aml_chip->new_nand_info.read_rety_info.reg_default_value[0][0], MAX_CHIP_NUM*READ_RETRY_REG_NUM);
 
-		memcpy((unsigned char *)(aml_oob_ops.datbuf + MAX_CHIP_NUM*READ_RETRY_REG_NUM), &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], MAX_CHIP_NUM*READ_RETRY_CNT*READ_RETRY_REG_NUM);
+		//memcpy((unsigned char *)(aml_oob_ops.datbuf + MAX_CHIP_NUM*READ_RETRY_REG_NUM), &aml_chip->new_nand_info.read_rety_info.reg_offset_value[0][0][0], MAX_CHIP_NUM*READ_RETRY_CNT*READ_RETRY_REG_NUM);
 		//memcpy((unsigned char *)aml_oob_ops.datbuf, &aml_chip->new_nand_info.slc_program_info.reg_default_value[0][0], MAX_CHIP_NUM*ENHANCE_SLC_REG_NUM);
-
+			for(i=0; i<aml_chip->chip_num; i++){
+						if(aml_chip->valid_chip[i]){
+							for(j=0;j<HYNIX_RETRY_CNT;j++) {
+								memcpy((unsigned char *)(aml_oob_ops.datbuf + MAX_CHIP_NUM*READ_RETRY_REG_NUM+j*READ_RETRY_REG_NUM+i*READ_RETRY_REG_NUM*HYNIX_RETRY_CNT), &aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][0], READ_RETRY_REG_NUM);	
+						}
+					    }
+					}
 		for(i=0;i<RETRY_NAND_COPY_NUM;i++){
 			if(aml_chip->new_nand_info.type != HYNIX_1YNM_8GB )
 			error = mtd->write_oob(mtd, addr + page_list[i]*mtd->writesize, &aml_oob_ops);
@@ -3362,7 +3372,7 @@ dma_retry_plane1:
 								}
 						}
 						else if(aml_chip->new_nand_info.type){
-								if(readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)){
+								if(readretry_failed_cnt > (retry_cnt-2)){
 									printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 													__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 
@@ -3805,7 +3815,7 @@ dma_retry_plane1:
 								}
 						}
 						else if(aml_chip->new_nand_info.type){
-								if(readretry_failed_cnt > (aml_chip->new_nand_info.read_rety_info.retry_cnt-2)){
+								if(readretry_failed_cnt > (retry_cnt-2)){
 									printk("%s line:%d uncorrected ecc_cnt_cur:%d, and limit:%d and at page:%d, blk:%d chip[%d], readretry_failed_cnt:%d\n",
 													__func__, __LINE__, aml_chip->ecc_cnt_cur, aml_chip->ecc_cnt_limit, page_addr, (page_addr >> pages_per_blk_shift), i, readretry_failed_cnt);
 
