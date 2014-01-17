@@ -120,7 +120,7 @@ int optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedData
             //Align write size to 64K for flash write until last flash write
             //At least make sure align to sector as flashAddress in sector here!!!
             thisWriteLen >>= OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS; thisWriteLen <<= OPTIMUS_DOWNLOAD_SLOT_SZ_SHIFT_BITS;
-            spmsg("pktLen(0x%08x) < long chunk leftLen 0x08%x\n", pktLen, notWrBackSz4LongChunk);
+            spmsg("pktLen(0x%08x) < long chunk leftLen 0x%x08\n", pktLen, notWrBackSz4LongChunk);
         }
         spmsg("notWrBackSz4LongChunk 0x%08x, thisWriteLen 0x%08x, flashAddr 0x%08xSec\n", notWrBackSz4LongChunk, thisWriteLen, leftLongChunk_flashAddr);
 

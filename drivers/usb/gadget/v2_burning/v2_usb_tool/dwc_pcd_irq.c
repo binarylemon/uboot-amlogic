@@ -1213,8 +1213,8 @@ int dwc_common_irq(void)
 		ERR("Session Request Success Status Change\n");
 	}
 	if(gotgint.b.sesenddet){
-		ERR("Session End Detected\n");
-		/*ret = 11;  //break to romboot*/
+		ERR("Session End Detected, Line Disconected\n");
+        cb_4_dis_connect_intr();
 	}
 	
 	dwc_write_reg32(DWC_REG_GOTGINT,gotgint.d32); // clear intr
@@ -1263,7 +1263,7 @@ int dwc_pcd_irq(void)
 	    dwc_otg_pcd_handle_out_ep_intr( );
 	}
 
-#if 1
+#if 0
     if(gintr_status.b.otgintr)
     {
         gotgint_data_t gotgint;
@@ -1272,9 +1272,10 @@ int dwc_pcd_irq(void)
         if(gotgint.b.sesenddet)
         {
             printf("dis-connect-intr\n");
+            cb_4_dis_connect_intr();
         }
     }
-#endif//#if 1
+#endif//#if 0
 
     dwc_write_reg32(DWC_REG_GINTSTS,gintr_status.d32);
     flush_cpu_cache();

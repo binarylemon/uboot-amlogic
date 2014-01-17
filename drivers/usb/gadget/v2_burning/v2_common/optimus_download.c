@@ -616,8 +616,8 @@ static int _parse_img_download_info(struct ImgBurnInfo* pDownInfo, const char* p
                 DWN_ERR("Fail to get size for part %s\n", partName);
                 return __LINE__;
             }
-            DWN_DBG("partCap is 0x%llx Sec\n", partCap);
             partCap <<= 9;//trans sector to byte
+            DWN_MSG("partCap 0x%llxB\n", partCap);
             if(imgSz > partCap) {
                 DWN_ERR("imgSz 0x%llx out of cap 0x%llx\n", imgSz, partCap);
                 return __LINE__;
@@ -655,6 +655,7 @@ static int _disk_intialed_ok = 0;
 int optimus_storage_init(int toErase)
 {
     int ret = 0;
+    char* cmd = NULL;
 
     if(_disk_intialed_ok){//To assert only actual disk intialed once
         DWN_MSG("Disk inited again.\n");
@@ -667,8 +668,45 @@ int optimus_storage_init(int toErase)
         store_exit();
     }
 
-    DWN_MSG("store_init\n");
-    ret = store_init(toErase ? (toErase + 2) : 1);
+    switch(toErase)
+    {
+        case 0://NO erase
+            ret = store_init(1);
+            break;
+
+        case 3://erase all(with key)
+            {
+                cmd = "store disprotect key";
+                DWN_MSG("run cmd [%s]\n", cmd);
+                ret = run_command(cmd, 0);
+                if(ret){
+                    DWN_ERR("Fail when run cmd[%s], ret %d\n", cmd, ret);
+                    break;
+                }
+            }
+        case 1://normal erase, store init 3
+            ret = store_init(3);
+            break;
+
+        case 4://force erase all
+            {
+                cmd = "store disprotect key; store disprotect fbbt; store disprotect hynix";
+                DWN_MSG("run cmd [%s]\n", cmd);
+                ret = run_command(cmd, 0);
+                if(ret){
+                    DWN_ERR("Fail when run cmd[%s], ret %d\n", cmd, ret);
+                    break;
+                }
+            }
+        case 2:
+            ret = store_init(4);
+            break;
+
+        default:
+            DWN_ERR("Unsupported erase flag %d\n", toErase); ret = -__LINE__;
+            break;
+    }
+
     if(!ret)
     {
         _disk_intialed_ok = 1;
@@ -1107,14 +1145,7 @@ int optimus_burn_complete(const int choice)
 {
     static unsigned _isBurnComplete = 0;
     int rc = 0;
-
-    if(OPTIMUS_BURN_COMPLETE__QUERY == choice)
-    {
-        return _isBurnComplete;
-    }
-
-    _isBurnComplete = 1;
-
+    
     switch(choice)
     {
         case OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY://wait power key to power off, for sdc_burn
@@ -1135,6 +1166,12 @@ int optimus_burn_complete(const int choice)
         case OPTIMUS_BURN_COMPLETE__POWEROFF_DIRECT:
             optimus_poweroff();
             break;
+
+        case OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT:
+            _isBurnComplete = 0xefe;
+            break;
+        case OPTIMUS_BURN_COMPLETE__QUERY:
+            return (0xefe == _isBurnComplete);
 
         case OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE:
         case OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL:

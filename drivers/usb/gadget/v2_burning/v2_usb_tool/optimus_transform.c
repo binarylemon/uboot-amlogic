@@ -358,8 +358,9 @@ int optimus_erase_bootloader(char* info)
 
 int cb_4_dis_connect_intr(void)
 {
-    if(optimus_burn_complete(0xfu))
+    if(optimus_burn_complete(OPTIMUS_BURN_COMPLETE__QUERY))
     {
+        DWN_MSG("User Want poweroff after disconnect\n");
         optimus_poweroff();
     }
 
@@ -451,14 +452,11 @@ int optimus_working (const char *cmd, char* buff)
     {
         unsigned choice = simple_strtoul(argv[1], NULL, 0);//0 is poweroff, 1 is reset system
 
-        close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
+        if(OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT != choice) {//disconnect except OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT
+            close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
+        }
         ret = optimus_burn_complete(choice);
     }
-	else if(strcmp(optCmd, "is_burn_completed") == 0)
-	{
-        ret = !optimus_burn_complete(0xfu);//ret>0 if burn_completed
-        sprintf(buff, "%s Burn completed\n", !ret ? "success DO" : "failed,NOT");
-	}
 	else if(strncmp(cmd,"sha1sum",(sizeof("sha1sum")-1)) == 0)
 	{
 		ret = optimus_sha1sum(argc, argv, buff);		

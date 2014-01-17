@@ -105,7 +105,6 @@ s64 storage_get_partition_size_in_byte(const char* partName)
         return 0;
     }
     size <<= 9;//trans sector to byte
-    DWN_MSG("part size 0x%llx\nB", size);
 #endif
 
     return size;

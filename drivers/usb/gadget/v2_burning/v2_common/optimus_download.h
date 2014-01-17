@@ -162,9 +162,10 @@ int optimus_work_mode_set(int workmode);
 #define OPTIMUS_BURN_COMPLETE__POWEROFF_DIRECT              (0X0)
 #define OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL                (0x1)
 #define OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY      (0x2)
+#define OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT    (0x3)
 #define OPTIMUS_BURN_COMPLETE__REBOOT_SDC_BURN              (0xdc)
 #define OPTIMUS_BURN_COMPLETE__REBOOT_UPDATE                (0xeb)
-#define OPTIMUS_BURN_COMPLETE__QUERY                        (0xfu)
+#define OPTIMUS_BURN_COMPLETE__QUERY                        (0xe1)
 
 #ifdef CONFIG_M8
 #define ROM_BOOT_SKIP_BOOT_ENABLED      1//skip boot function is supported by romboot
