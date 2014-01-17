@@ -163,9 +163,12 @@ void init_I2C()
 	gpio_sel0 = readl(0xc8100084);
 	gpio_mask = readl(0xc8100080);
 
-	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
-	writel(readl(0xc8100080) | (1<<8),0xc8100080);
-	writel(1<<8,0xc810008c); //clear intr
+	if(!(readl(0xc8100080) & (1<<8)))//kernel enable gpio interrupt already?
+	{
+		writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
+		writel(readl(0xc8100080) | (1<<8),0xc8100080);
+		writel(1<<8,0xc810008c); //clear intr
+	}
 
 	f_serial_puts("i2c init\n");
 
