@@ -9,10 +9,6 @@
 #include <asm/arch/romboot.h>
 #include <asm/arch/uart.h>
 #include <asm/arch/reg_addr.h>
-#ifdef CONFIG_ENABLE_WATCHDOG
-	#define PLL_TIMES 4
-	int pll_times=0;
-#endif
 unsigned long    clk_util_clk_msr(unsigned long   clk_mux);
 
 static void wait_pll(unsigned clk,unsigned dest)
@@ -54,7 +50,10 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 #endif
 
 	serial_init(52|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);	//clk81 switch to 24M, init serial to print info
+
 	__udelay(100);
+
+	int pll_times=0;
 
 	do{
 		//BANDGAP reset for SYS_PLL,VIID_PLL,MPLL lock fail
@@ -71,23 +70,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		Wr(HHI_SYS_PLL_CNTL3,M6_SYS_PLL_CNTL_3);
 		Wr(HHI_SYS_PLL_CNTL4,M6_SYS_PLL_CNTL_4);
 		Wr(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
-		//M6_PLL_WAIT_FOR_LOCK(HHI_SYS_PLL_CNTL);
-
-		__udelay(500); //wait 100us for PLL lock
-#ifdef CONFIG_ENABLE_WATCHDOG
-		pll_times++;
-		if(pll_times > 1){
-			serial_puts("\npll_times1:");
-			serial_put_dword(pll_times);
-			if(pll_times>PLL_TIMES){
-				serial_puts(__FILE__);
-				serial_puts(__FUNCTION__);
-				serial_put_dword(__LINE__);
-				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
-			}
-		}
-#endif
-	}while((Rd(HHI_SYS_PLL_CNTL)&0x80000000)==0);
+		M6_PLL_LOCK_CHECK(pll_times,1);
+	}while(M6_PLL_IS_NOT_LOCK(HHI_SYS_PLL_CNTL));
 
 	//A9 clock setting
 	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl & (~(1<<7))));
@@ -95,36 +79,42 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	//enable A9 clock
 	Wr(HHI_A9_CLK_CNTL,(plls->sys_clk_cntl | (1<<7)));
 
+	pll_times=0;
+
 	//VIID PLL
-	M6_PLL_RESET(HHI_VIID_PLL_CNTL);
-	Wr(HHI_VIID_PLL_CNTL2, M6_VIID_PLL_CNTL_2 );
-	Wr(HHI_VIID_PLL_CNTL3, M6_VIID_PLL_CNTL_3 );
-	Wr(HHI_VIID_PLL_CNTL4, M6_VIID_PLL_CNTL_4 );
-	//Wr(HHI_VIID_PLL_CNTL,  0x20242 ); //change PLL from 1.584GHz to 1.512GHz
-	Wr(HHI_VIID_PLL_CNTL,  0x2023F ); //change PLL from 1.584GHz to 1.512GHz
-	M6_PLL_WAIT_FOR_LOCK(HHI_VIID_PLL_CNTL);
+	do{		
+		M6_PLL_RESET(HHI_VIID_PLL_CNTL);
+		Wr(HHI_VIID_PLL_CNTL2, M6_VIID_PLL_CNTL_2 );
+		Wr(HHI_VIID_PLL_CNTL3, M6_VIID_PLL_CNTL_3 );
+		Wr(HHI_VIID_PLL_CNTL4, M6_VIID_PLL_CNTL_4 );
+		//Wr(HHI_VIID_PLL_CNTL,  0x20242 ); //change PLL from 1.584GHz to 1.512GHz
+		Wr(HHI_VIID_PLL_CNTL,  0x2023F ); //change PLL from 1.584GHz to 1.512GHz
+		M6_PLL_LOCK_CHECK(pll_times,2);
+	}while(M6_PLL_IS_NOT_LOCK(HHI_VIID_PLL_CNTL));
+	
+	pll_times=0;
 
 	//FIXED PLL/Multi-phase PLL, fixed to 2GHz
-	M6_PLL_RESET(HHI_MPLL_CNTL);
-	Wr(HHI_MPLL_CNTL2, M6_MPLL_CNTL_2 );
-	Wr(HHI_MPLL_CNTL3, M6_MPLL_CNTL_3 );
-	Wr(HHI_MPLL_CNTL4, M6_MPLL_CNTL_4 );
-	Wr(HHI_MPLL_CNTL5, M6_MPLL_CNTL_5 );
-	Wr(HHI_MPLL_CNTL6, M6_MPLL_CNTL_6 );
-	Wr(HHI_MPLL_CNTL7, M6_MPLL_CNTL_7 );
-	Wr(HHI_MPLL_CNTL8, M6_MPLL_CNTL_8 );
-	Wr(HHI_MPLL_CNTL9, M6_MPLL_CNTL_9 );
-	Wr(HHI_MPLL_CNTL10,M6_MPLL_CNTL_10);
-	Wr(HHI_MPLL_CNTL, 0x67d );
-	M6_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL);
-
+	do{
+		M6_PLL_RESET(HHI_MPLL_CNTL);
+		Wr(HHI_MPLL_CNTL2, M6_MPLL_CNTL_2 );
+		Wr(HHI_MPLL_CNTL3, M6_MPLL_CNTL_3 );
+		Wr(HHI_MPLL_CNTL4, M6_MPLL_CNTL_4 );
+		Wr(HHI_MPLL_CNTL5, M6_MPLL_CNTL_5 );
+		Wr(HHI_MPLL_CNTL6, M6_MPLL_CNTL_6 );
+		Wr(HHI_MPLL_CNTL7, M6_MPLL_CNTL_7 );
+		Wr(HHI_MPLL_CNTL8, M6_MPLL_CNTL_8 );
+		Wr(HHI_MPLL_CNTL9, M6_MPLL_CNTL_9 );
+		Wr(HHI_MPLL_CNTL10,M6_MPLL_CNTL_10);
+		Wr(HHI_MPLL_CNTL, 0x67d );		
+		M6_PLL_LOCK_CHECK(pll_times,3);
+	}while(M6_PLL_IS_NOT_LOCK(HHI_MPLL_CNTL));
+	
 	//clk81=fclk_div5 /2=400/2=200M
 	Wr(HHI_MPEG_CLK_CNTL, plls->mpeg_clk_cntl );
 	serial_init(plls->uart);	//clk81 switch to MPLL, init serial to print info
 	
-#ifdef CONFIG_ENABLE_WATCHDOG
-		pll_times=0;
-#endif
+	pll_times=0;
 
 	//VID PLL
 	do{
@@ -142,24 +132,9 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		Wr(HHI_VID_PLL_CNTL3, M6_VID_PLL_CNTL_3 );
 		Wr(HHI_VID_PLL_CNTL4, M6_VID_PLL_CNTL_4 );
 		//Wr(HHI_VID_PLL_CNTL,  0xb0442 ); //change PLL from 1.584GHz to 1.512GHz
-		Wr(HHI_VID_PLL_CNTL,  0xb043F ); //change PLL from 1.584GHz to 1.512GHz
-		//M6_PLL_WAIT_FOR_LOCK(HHI_VID_PLL_CNTL);
-
-		__udelay(500); //wait 100us for PLL lock
-#ifdef CONFIG_ENABLE_WATCHDOG
-		pll_times++;
-		if(pll_times > 1){
-			serial_puts("\npll_times2:");
-			serial_put_dword(pll_times);
-			if(pll_times>PLL_TIMES){
-				serial_puts(__FILE__);
-				serial_puts(__FUNCTION__);
-				serial_put_dword(__LINE__);
-				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
-			}
-		}
-#endif
-	}while((Rd(HHI_VID_PLL_CNTL)&0x80000000)==0);
+		Wr(HHI_VID_PLL_CNTL,  0xb043F ); //change PLL from 1.584GHz to 1.512GHz		
+		M6_PLL_LOCK_CHECK(pll_times,4);
+	}while(M6_PLL_IS_NOT_LOCK(HHI_VID_PLL_CNTL));
 
  	__udelay(100);
 

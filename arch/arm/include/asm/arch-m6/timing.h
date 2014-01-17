@@ -78,12 +78,44 @@ struct pll_clk_settings{
 #define M6_PLL_RESET(pll) \
 	Wr(pll,Rd(pll) | (1<<29));
 
+//M6 check with PLL lock bit
+//M6's PLL all use bit31 as lock bit
+#define M6_PLL_IS_NOT_LOCK(pll) ((Rd(pll)&(1<<31))== 0)
+
+
+#define MAX_PLL_TRY_TIMES (4)
+
+//M6 pll init retry check, it will do watch reset 
+//after try MAX_PLL_TRY_TIMES times
+#define M6_PLL_LOCK_CHECK(counter,type) \
+	    __udelay(500); \
+		counter++; \
+		if(counter > 1){ \
+			serial_puts("PLL_times "); \
+			serial_put_dec(type); \
+			serial_puts(" : "); \
+			serial_put_dec(counter); \
+			if(counter>MAX_PLL_TRY_TIMES){ \
+				serial_puts("\n"); \
+				serial_puts(__FILE__);serial_puts("-"); \
+				serial_puts(__FUNCTION__);serial_puts("-"); \
+				serial_put_dec(__LINE__); \
+				serial_puts("\nReboot with watch dog...\n"); \
+				writel((1<<22) | (3<<24)|100, P_WATCHDOG_TC); while(1);\
+			} \
+		}
+
+
+
 //wait for pll lock
 //must wait first (100us+) then polling lock bit to check
+//not used any more, PLL check need watch dog protect@2014.01.15
+#if 0
 #define M6_PLL_WAIT_FOR_LOCK(pll) \
 	do{\
 		__udelay(1000);\
 	}while((Rd(pll)&0x80000000)==0);
+#endif
 
 //M6 PLL control value 
 #define M6_PLL_CNTL_CST2 (0x814d3928)

@@ -40,22 +40,25 @@ void set_ddr_clock(struct ddr_set * timing_reg)
     APB_Wr(PCTL_DLLCR_ADDR, APB_Rd(PCTL_DLLCR_ADDR)|(7<<2));
 #endif
 	*/
+	int pll_times=0;
 
-	M6_PLL_RESET(HHI_DDR_PLL_CNTL);
-	Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
-	Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
-	Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
+	do{
+		M6_PLL_RESET(HHI_DDR_PLL_CNTL);
+		Wr(HHI_DDR_PLL_CNTL2,M6_DDR_PLL_CNTL_2);
+		Wr(HHI_DDR_PLL_CNTL3,M6_DDR_PLL_CNTL_3);
+		Wr(HHI_DDR_PLL_CNTL4,M6_DDR_PLL_CNTL_4);
 #ifdef CONFIG_CMD_DDR_TEST
-	if((Rd(PREG_STICKY_REG0) & 0xffff) == 0x2012){
-        zqcr = (Rd(PREG_STICKY_REG0) >> 16);
-		Wr(HHI_DDR_PLL_CNTL, Rd(PREG_STICKY_REG1));
-		Wr(PREG_STICKY_REG0, 0);
-        Wr(PREG_STICKY_REG1, 0);
-	}
-	else
+		if((Rd(PREG_STICKY_REG0) & 0xffff) == 0x2012){
+	        zqcr = (Rd(PREG_STICKY_REG0) >> 16);
+			Wr(HHI_DDR_PLL_CNTL, Rd(PREG_STICKY_REG1));
+			Wr(PREG_STICKY_REG0, 0);
+	        Wr(PREG_STICKY_REG1, 0);
+		}
+		else
 #endif
-	Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
-	M6_PLL_WAIT_FOR_LOCK(HHI_DDR_PLL_CNTL);
+		Wr(HHI_DDR_PLL_CNTL, timing_reg->ddr_pll_cntl); //board/xxx/firmware/timming.c
+		M6_PLL_LOCK_CHECK(pll_times,5);
+	}while(M6_PLL_IS_NOT_LOCK(HHI_DDR_PLL_CNTL));
 
 
 	/*
