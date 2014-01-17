@@ -309,6 +309,15 @@
 	#error "Please set DDR3 capacity first in file m8_skt_v1.h\n"
 #endif
 
+/*if board need use ddr scramble function, please enable DDR_SCRAMBE_ENABLE
+ * the function do testing below :
+ * 1  performance test:   if enable the function, performance don't have obvious differenc
+ * 2  ICE connect testing: ICE can connect board in uboot and kernel, when exception is occured, ICE can connect board in uboot and kernel also
+ * 3  suspend test: if enable the function, suspend/resume is ok
+ * 4  ddr scramble key is random
+**/
+//#define DDR_SCRAMBE_ENABLE  1
+
 #define CONFIG_M8_DUMP_DDR_INFO 1
 
 #define CONFIG_ENABLE_WRITE_LEVELING 1

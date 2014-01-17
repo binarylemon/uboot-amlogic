@@ -75,6 +75,7 @@ pwr_restart:
 	str r1,[r0,#36]  /*DMC_SEC_PORT9_RANGE0*/
 	str r1,[r0,#40]  /*DMC_SEC_PORT10_RANGE0*/
 	str r1,[r0,#44]  /*DMC_SEC_PORT11_RANGE0*/
+
 	ldr r1,=0x80000000
 	ldr r0,=0xda002144
 	str r1,[r0] /*DMC_SEC_CTRL*/
@@ -120,6 +121,33 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 		ldr r0,=0xc8006204
 		str r1,[r0]
 
+	//ddr scrable function
+	ldr r10,=0x10300
+	ldr r1,[r10,#4]   /*sram 0x10304 addr*/
+	ldr r9,=0xda002148
+	str r1,[r9,#0]     /*DMC_SEC_KEY0*/
+	ldr r1,[r10,#8]   /*sram 0x10308 addr*/
+	str r1,[r9,#4]    /*DMC_SEC_KEY1*/
+	
+	ldr r1,[r10,#0]   /*sram 0x10300 addr*/
+	ldr r10,=0x80000000
+	orr r1,r1,r10
+	
+	ldr r0,=0xda002144
+	str r1,[r0] /*DMC_SEC_CTRL*/
+
+__wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
+	ldr r2, [r0]
+	and r2, r2, r10
+	cmp r2, #0
+	bne __wait_dmc_sec_ctrl
+    // ddr scramble end
+    dsb
+    NOP
+    DMB
+    ISB
+    
+    
 
 	//send debug status to ARC
 	LDR  r0, =0xc8100004

@@ -127,6 +127,10 @@ extern void platform_reset_handler(void);
 #define P_DDR0_CLK_CTRL    0xc8000800
 #define P_DDR1_CLK_CTRL    0xc8002800
 
+#define DMC_SEC_CTRL                0xda002144
+#define DMC_SEC_KEY0                0xda002148
+#define DMC_SEC_KEY1                0xda00214c
+
 #define CONFIG_M8_DDR1_ONLY  (1)
 
 #define CFG_M8_GET_DDR0_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | \
@@ -152,6 +156,7 @@ void run_arc_program()
 	unsigned address1 = 0xffffffff;
 	unsigned* pbuffer;
 	unsigned* pbuffer1;
+	unsigned dmc_sec_ctrl_addr,dmc_sec_key0_addr,dmc_sec_key1_addr;
 	vaddr1 = 0xd9010000; //store ddr trainning original data
 	vaddr2 = 0xd9000000;
 
@@ -236,7 +241,15 @@ void run_arc_program()
 			pbuffer1++;
 		}
 	}
-	
+
+	//save DMC_SEC_CTRL,DMC_SEC_KEY0,DMC_SEC_KEY1
+	dmc_sec_ctrl_addr = 0xd9010300;
+	dmc_sec_key0_addr = 0xd9010304;
+	dmc_sec_key1_addr = 0xd9010308;
+	*(unsigned int*)dmc_sec_ctrl_addr = readl(DMC_SEC_CTRL);
+	*(unsigned int*)dmc_sec_key0_addr = readl(DMC_SEC_KEY0);
+	*(unsigned int*)dmc_sec_key1_addr = readl(DMC_SEC_KEY1);
+
 	clean_dcache_v7_l1();
 
 	//**********************//
