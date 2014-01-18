@@ -33,8 +33,10 @@ void init_hdmi(void)
  */
 static unsigned int tvmode_vmode_vic_map[][3] = {
     {TVOUT_480I, VMODE_480I, HDMI_480i60},
+    {TVOUT_480CVBS, VMODE_480I, HDMI_480i60},
     {TVOUT_480P, VMODE_480P, HDMI_480p60},
     {TVOUT_576I, VMODE_576I, HDMI_576i50},
+    {TVOUT_576CVBS, VMODE_576I, HDMI_576i50},
     {TVOUT_576P, VMODE_576P, HDMI_576p50},
     {TVOUT_720P, VMODE_720P, HDMI_720p60},
     {TVOUT_1080I, VMODE_1080I, HDMI_1080i60},
@@ -86,7 +88,7 @@ vmode_t vic_to_vmode(HDMI_Video_Codes_t vic)
 int set_disp_mode(int mode)
 {
     HDMI_Video_Codes_t vic;
-    if((mode == TVOUT_480CVBS) || (mode == TVOUT_576CVBS) || (mode >= TVOUT_MAX)) {
+    if(mode >= TVOUT_MAX) {
         printf("Invalid hdmi mode %d\n", mode);
         return 0;
     }

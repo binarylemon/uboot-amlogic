@@ -65,7 +65,11 @@ static int to_mode(char *mode_name)
 		return TVOUT_576I;
 	if((strcmp(mode_name, "480I")==0)||(strcmp(mode_name, "480i")==0))
 		return TVOUT_480I;
-
+	if((strcmp(mode_name, "576CVBS")==0)||(strcmp(mode_name, "576cvbs")==0))
+		return TVOUT_576CVBS;
+	if((strcmp(mode_name, "480CVBS")==0)||(strcmp(mode_name, "480cvbs")==0))
+		return TVOUT_480CVBS;
+    
 	return TVOUT_MAX;
 }
 
