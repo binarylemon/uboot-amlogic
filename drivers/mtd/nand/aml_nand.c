@@ -1133,7 +1133,7 @@ void aml_nand_get_read_default_value_hynix(struct mtd_info *mtd)
 						if(aml_chip->valid_chip[i]){
 							for(j=0;j<aml_chip->new_nand_info.read_rety_info.retry_cnt;j++) {
 								memcpy(&aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][0], (unsigned char *)(aml_oob_ops.datbuf+MAX_CHIP_NUM*READ_RETRY_REG_NUM+j*READ_RETRY_REG_NUM+i*HYNIX_RETRY_CNT*READ_RETRY_REG_NUM), READ_RETRY_REG_NUM);
-								for(k=0;k<aml_chip->new_nand_info.read_rety_info.reg_cnt;k++)
+								//for(k=0;k<aml_chip->new_nand_info.read_rety_info.reg_cnt;k++)
 								//	printk("%s, Retry%dst, REG(0x%x): 	value:0x%2x, for chip[%d]\n", __func__, j, aml_chip->new_nand_info.read_rety_info.reg_addr[k], aml_chip->new_nand_info.read_rety_info.reg_offset_value[i][j][k], i);
 						//	printk("\n");
 						}
