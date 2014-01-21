@@ -10,7 +10,8 @@
 //#define	AML_NAND_DBG
 #define 	NEW_NAND_SUPPORT
 
-//#define NAND_ADJUST_PART_TABLE 
+#define 	NAND_ADJUST_PART_TABLE 
+
 #define	AML_NAND_DBG_M8
 #define AML_NAND_NEW_OOB
 
@@ -24,9 +25,10 @@
 
 #ifdef NAND_ADJUST_PART_TABLE
 #define PART_RESERVED_BLOCK_RATIO                 10
-#define	ADJUST_BLOCK_NUM							6
+#define	ADJUST_BLOCK_NUM			       4
 #else
 #define PART_RESERVED_BLOCK_RATIO                 8
+#define	ADJUST_BLOCK_NUM			 	0
 #endif
 #define MIN_FREE_BLOCK_NUM                        6
 #define GC_THRESHOLD_FREE_BLOCK_NUM               4

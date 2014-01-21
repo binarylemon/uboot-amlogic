@@ -107,12 +107,8 @@ typedef union nand_core_clk {
 
 #define 	BYTES_OF_USER_PER_PAGE                    16
 
-#ifdef NAND_ADJUST_PART_TABLE
-#define      ADJUST_SIZE_NFTL                                       10
-#define	ADJUST_BLOCK_NUM				6
-#else
+#define      ADJUST_PART_SIZE                                       10
 #define      ADJUST_SIZE_NFTL                                       8
-#endif
 
 #define 	SHIPPED_BBT_HEAD_MAGIC			"fbbt"
 #define 	BBT_HEAD_MAGIC						"nbbt"

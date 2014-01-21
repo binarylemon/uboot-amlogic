@@ -8,6 +8,23 @@
 
 int boot_device_flag =0;
 
+
+int is_phydev_off_adjust(void)
+{
+	int ret = 0;
+	#ifdef NAND_ADJUST_PART_TABLE
+		ret = 1;
+	#endif
+	return  ret ;
+}
+int get_adjust_block_num(void)
+{
+	int ret = 0;
+	#ifdef NAND_ADJUST_PART_TABLE
+		ret = ADJUST_BLOCK_NUM;
+	#endif
+	return	ret ;
+}
 int amlnf_get_logicdev(struct amlnf_logicdev_t *amlnf_logicdev)
 {
 #ifndef AML_NAND_UBOOT	
@@ -797,6 +814,8 @@ static int amlnf_init(struct platform_device *pdev)
 		aml_nand_msg("nandphy_init failed and ret=0x%x", ret);
 		if(ret == -NAND_FAILED){
 			ret = -1; // controller failed
+		}else if(ret == -NAND_SHIPPED_BADBLOCK_FAILED){
+			ret = NAND_SHIPPED_BADBLOCK_FAILED;
 		}else{
 			ret = 1;
 		}

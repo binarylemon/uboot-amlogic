@@ -407,5 +407,6 @@ extern void pinmux_select_chip(unsigned ce_enable, unsigned rb_enable, unsigned 
 extern int amlnf_phy_init(unsigned char flag);
 extern int amlnf_logic_init(unsigned flag);
 extern int amlnf_dev_init(unsigned flag);
-
+extern  int is_phydev_off_adjust(void); 
+extern  int get_adjust_block_num(void);
 #endif

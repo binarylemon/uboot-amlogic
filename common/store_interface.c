@@ -505,10 +505,11 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			printf("command:	%s\n", str);
 			ret = run_command(str, 0);
 			if(ret != 0){
-				if(ret == -NAND_INIT_FAILED){
+				if(ret == NAND_INIT_FAILED){
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
+				if(ret)
 				store_msg("nand cmd %s failed ",cmd);
 				return -1;
 			}
@@ -534,6 +535,9 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 						return -2;
 					}
 					return 0;
+				}else if(ret == NAND_INIT_FAILED){
+					sprintf(str, "amlnf  init  %d ",4); 
+					ret = run_command(str, 0);
 				}
 				device_boot_flag = SPI_NAND_FLAG;		
 				return 0;
@@ -544,7 +548,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				sprintf(str, "amlnf  init  %d ",init_flag);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
-				if(ret == -NAND_INIT_FAILED){
+				if(ret == NAND_INIT_FAILED){
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
