@@ -254,6 +254,8 @@
 	"store=0\0"\
 	"preboot="\
 		"echo preboot...;" \
+		"run prepare;"\
+		"run storeargs;"\
         "if itest ${upgrade_step} == 3; then run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
@@ -290,7 +292,6 @@
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;"\
-		"run prepare;"\
 	    "if test ${reboot_mode} = normal; then "\
         "else if test ${reboot_mode} = charging; then "\
 		"else if test ${reboot_mode} = factory_reset; then "\
@@ -312,14 +313,12 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
-        "run storeargs;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
 	"recovery="\
-        "echo enter recovery;"\
-        "run storeargs;"\
+        "echo enter recovery;"\  
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
