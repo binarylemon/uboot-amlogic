@@ -290,10 +290,9 @@
     \
 	"switch_bootmode="\
 		"echo switch_bootmode...;"\
+		"run prepare;"\
 	    "if test ${reboot_mode} = normal; then "\
-        	"run prepare;"\
         "else if test ${reboot_mode} = charging; then "\
-        	"run prepare;"\
 		"else if test ${reboot_mode} = factory_reset; then "\
 			"run recovery;"\
         "else if test ${reboot_mode} = update; then "\
