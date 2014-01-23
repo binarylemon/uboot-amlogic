@@ -666,6 +666,7 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x002C, 0x10, 0x30);                       // DCDC1 set to PWM mode
     rn5t618_set_bits(0x002E, 0x10, 0x30);                       // DCDC2 set to PWM mode
     rn5t618_set_bits(0x0030, 0x10, 0x30);                       // DCDC3 set to PWM mode
+    rn5t618_set_bits(0x002F, 0x40, 0xc0);                       // DCDC2 frequent set to 2.2MHz
     rn5t618_set_gpio(3, 0);                                     // open GPIO 2, DCDC 3.3
     rn5t618_set_gpio(1, 0);                                     // close GPIO 1, boost 5V 
     rn5t618_set_bits(0x00EF, 0x10, 0x10);                       // enable coulomb counter
