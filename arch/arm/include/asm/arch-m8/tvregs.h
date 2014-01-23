@@ -345,6 +345,7 @@ static const reg_t tvregs_480cvbs[] = {
     {P_ENCI_VIDEO_SAT,               0x7        },
     {P_VENC_VDAC_DAC0_FILT_CTRL0,    0x1        },
     {P_VENC_VDAC_DAC0_FILT_CTRL1,    0xfc48     },
+    {P_ENCI_MACV_N0,                 0x0        },
     {MREG_END_MARKER,              0      }
 };
 
@@ -548,6 +549,7 @@ static const reg_t tvregs_576cvbs[] = {
     {P_ENCI_VIDEO_SAT,                  0x7        },
     {P_VENC_VDAC_DAC0_FILT_CTRL0,       0x1        },
     {P_VENC_VDAC_DAC0_FILT_CTRL1,       0xfc48     },
+    {P_ENCI_MACV_N0,                    0x0        },
     {MREG_END_MARKER,                 0          }
 };
 
