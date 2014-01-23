@@ -509,9 +509,11 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
-				if(ret)
-				store_msg("nand cmd %s failed ",cmd);
+				if(ret){
+					store_msg("nand cmd %s failed,ret=%d ",cmd,ret);
 				return -1;
+				}
+				return 0;
 			}
 			return ret;
 		}else if(POR_SPI_BOOT()){
