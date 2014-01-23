@@ -584,25 +584,29 @@ void amlnf_disprotect(uchar * name)
 {
 	struct amlnand_chip *aml_chip = aml_nand_chip;
 
-	if(strcmp(name, "fbbt") == 0){
-		aml_chip->protect |= 1; 	//force nand fbbt can be erased 
-		return 0 ;
-	}
-	
 #ifdef CONFIG_SECURITYKEY
-	if (strcmp(name, "key") == 0){
-		aml_chip->protect  |= (1 << 1);		//force nand key can be erased 
-		return 0;
+	if(strcmp(name, "key") == 0){
+		aml_nand_msg("disprotect key");
+		info_disprotect |= DISPROTECT_KEY;
 	}
 #endif
 
 #ifdef CONFIG_SECURE_NAND
-	if (strcmp(name, "secure") == 0){
-		aml_chip->protect |= (1 << 2);		//force secure storage can be erased 
-		return 0;
+	if(strcmp(name, "secure") == 0){	
+		aml_nand_msg("disprotect secure");
+		info_disprotect |= DISPROTECT_SECURE;
+	}
+#endif
+
+	if(strcmp(name, "fbbt") == 0){	
+		aml_nand_msg("disprotect fbbt");
+		info_disprotect |= DISPROTECT_FBBT;
+	}
+	if(strcmp(name, "hynix") == 0){ 
+		aml_nand_msg("disprotect hynix");
+		info_disprotect |= DISPROTECT_HYNIX;
 	}
 
-#endif
 	return ;
 }
 
