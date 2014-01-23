@@ -1,8 +1,8 @@
-#ifndef __CONFIG_M8_K101_V1_H__
-#define __CONFIG_M8_K101_V1_H__
+#ifndef __CONFIG_m8_k101_512M_H__
+#define __CONFIG_m8_k101_512M_H__
 
 #define CONFIG_AML_MESON_8      1
-#define CONFIG_MACH_MESON8_K101_V1  // generate M8 K101 machid number
+#define CONFIG_MACH_MESON8_K101_V2  // generate M8 K102 machid number
 
 #define CONFIG_SECURITYKEY
 
@@ -196,7 +196,7 @@
 	"loadaddr_misc=0x13000000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
-	"bootm_size=0x40000000\0" \
+	"bootm_size=0x20000000\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
@@ -469,17 +469,23 @@
 #define CFG_M8_DDR_CLK    516 //768  //792// (636)
 
 //On board DDR capactiy
-#define CFG_M8_DDR3_1GB
+#define CFG_M8_DDR3_512MB
+//#define CFG_M8_DDR3_1GB
 //#define CFG_M8_DDR3_2GB
 //#define CFG_M8_DDR3_4GB
 //above setting will affect following:
-//board/amlogic/m8_k101_v1/firmware/timming.c
+//board/amlogic/m8_k101_512M/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
 //DDR row/col size
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
-#if   defined(CFG_M8_DDR3_1GB)
+#if   defined(CFG_M8_DDR3_512MB)
+	//4Gb(X16) x 2pcs
+	#define CONFIG_M8_DDR3_ROW_SIZE (3)
+	#define CONFIG_M8_DDR3_COL_SIZE (2)
+	#define CONFIG_M8_DDR_ROW_BITS  (15)
+#elif defined(CFG_M8_DDR3_1GB)
 	//4Gb(X16) x 2pcs
 	#define CONFIG_M8_DDR3_ROW_SIZE (3)
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
@@ -495,7 +501,7 @@
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
 	#define CONFIG_M8_DDR_ROW_BITS  (16)
 #elif !defined(CFG_M8_DDR3_1GB) && !defined(CFG_M8_DDR3_2GB) && !defined(CFG_M8_DDR3_4GB)
-	#error "Please set DDR3 capacity first in file m8_k101_v1.h\n"
+	#error "Please set DDR3 capacity first in file m8_k101_512M.h\n"
 #endif
 
 #define CONFIG_M8_DUMP_DDR_INFO 1
@@ -503,14 +509,17 @@
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
 #define PHYS_MEMORY_START        (0x00000000) // ???
-#if defined(CFG_M8_DDR3_1GB)
+
+#if defined(CFG_M8_DDR3_512MB)
+	#define PHYS_MEMORY_SIZE     (0x20000000) // 1GB
+#elif defined(CFG_M8_DDR3_1GB)
 	#define PHYS_MEMORY_SIZE     (0x40000000) // 1GB
 #elif defined(CFG_M8_DDR3_2GB)
 	#define PHYS_MEMORY_SIZE     (0x80000000) // 2GB
 #elif defined(CFG_M8_DDR3_4GB)
 	#define PHYS_MEMORY_SIZE     (0x100000000) // 4GB ??
 #else
-	#error "Please define DDR3 memory capacity in file m8_k101_v1.h\n"
+	#error "Please define DDR3 memory capacity in file m8_k101_512M.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
@@ -547,4 +556,4 @@
 */
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
 
-#endif //__CONFIG_M8_K101_V1_H__
+#endif //__CONFIG_m8_k101_512M_H__

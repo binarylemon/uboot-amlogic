@@ -1,8 +1,8 @@
-#ifndef __CONFIG_M8_K101_V2_H__
-#define __CONFIG_M8_K101_V2_H__
+#ifndef __CONFIG_m8_k100_2G_H__
+#define __CONFIG_m8_k100_2G_H__
 
 #define CONFIG_AML_MESON_8      1
-#define CONFIG_MACH_MESON8_K101_V2  // generate M8 K102 machid number
+#define CONFIG_MACH_MESON8_K100_V1  // generate M8 K100 machid number
 
 #define CONFIG_SECURITYKEY
 
@@ -38,8 +38,6 @@
 #else
 #define CONFIG_TPL_BOOT_ID_ADDR       		(&reboot_mode)//pass boot_id, spl->uboot
 #endif// #ifdef CONFIG_ACS
-#else
-//#define CONFIG_AML_TINY_USBTOOL
 #endif//#ifdef CONFIG_NEXT_NAND
 
 #define  CONFIG_AML_GATE_INIT	1
@@ -112,9 +110,6 @@
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 
-#define CONFIG_ENABLE_PMU_WATCHDOG
-//#define CONFIG_RESET_TO_SYSTEM
-
 /*
  * under some cases default voltage of PMU output is 
  * not suitable for application, so you should take care
@@ -129,7 +124,7 @@
 #define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
 #define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
 #define CONFIG_RTC_0V9                   900        // RTC_0V9 voltage when boot, option
-#define CONFIG_VDD_LDO                  2800        // VDD_LDO voltage when boot, option
+#define CONFIG_VDD_LDO                  2700        // VDD_LDO voltage when boot, option
 #define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
 #define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
 #define CONFIG_AVDD1V8                  1800        // AVDD1.8V voltage when boot, option
@@ -196,17 +191,17 @@
 	"loadaddr_misc=0x13000000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
-	"bootm_size=0x20000000\0" \
+	"bootm_size=0x80000000\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
 	"upgrade_step=0\0" \
-	"initrd_high=30000000\0" \
+	"initrd_high=60000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
-    "preloaddtb=imgread dtb boot ${loadaddr}\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=panel\0" \
-	"display_width=768\0" \
-	"display_height=1024\0" \
+	"display_width=2048\0" \
+	"display_height=1536\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
@@ -247,10 +242,10 @@
 		"fi; fi; fi; fi; fi; fi\0" \
 		\
 	"prepare="\
-		"video open; video clear; video dev bl_on; " \
+		"video clear; video open; video clear; video dev bl_on; " \
 		"imgread res logo ${loadaddr_misc}; "\
         "unpackimg ${loadaddr_misc}; "\
-		"\0"\
+        "\0"\
 	"update="\
 		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
 		"echo update...; "\
@@ -449,47 +444,41 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDR1_ONLY)
+#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
 //For DDR PUB training not check the VT done flag
 #define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
 
 //For M8 DDR clock gating disable
-#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
+//#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
 
 //For M8 DDR low power feature disable
 #define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
 
 //For M8 DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
-#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
+//#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    516 //768  //792// (636)
+#define CFG_M8_DDR_CLK    792//696 //768  //792// (636)
 
 //On board DDR capactiy
-#define CFG_M8_DDR3_512MB
 //#define CFG_M8_DDR3_1GB
-//#define CFG_M8_DDR3_2GB
+#define CFG_M8_DDR3_2GB
 //#define CFG_M8_DDR3_4GB
 //above setting will affect following:
-//board/amlogic/m8_k101_v2/firmware/timming.c
+//board/amlogic/m8_k100_2G/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
 //DDR row/col size
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
-#if   defined(CFG_M8_DDR3_512MB)
-	//4Gb(X16) x 2pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (3)
+#if   defined(CFG_M8_DDR3_1GB)
+	//2Gb(X16) x 4pcs
+	#define CONFIG_M8_DDR3_ROW_SIZE (2)
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (15)
-#elif defined(CFG_M8_DDR3_1GB)
-	//4Gb(X16) x 2pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (3)
-	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (15)
+	#define CONFIG_M8_DDR_ROW_BITS  (14)
 #elif defined(CFG_M8_DDR3_2GB)
 	//4Gb(X16) x 4pcs
 	#define CONFIG_M8_DDR3_ROW_SIZE (3)
@@ -501,7 +490,7 @@
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
 	#define CONFIG_M8_DDR_ROW_BITS  (16)
 #elif !defined(CFG_M8_DDR3_1GB) && !defined(CFG_M8_DDR3_2GB) && !defined(CFG_M8_DDR3_4GB)
-	#error "Please set DDR3 capacity first in file m8_k101_v2.h\n"
+	#error "Please set DDR3 capacity first in file m8_k100_2G.h\n"
 #endif
 
 #define CONFIG_M8_DUMP_DDR_INFO 1
@@ -509,17 +498,14 @@
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
 #define PHYS_MEMORY_START        (0x00000000) // ???
-
-#if defined(CFG_M8_DDR3_512MB)
-	#define PHYS_MEMORY_SIZE     (0x20000000) // 1GB
-#elif defined(CFG_M8_DDR3_1GB)
+#if defined(CFG_M8_DDR3_1GB)
 	#define PHYS_MEMORY_SIZE     (0x40000000) // 1GB
 #elif defined(CFG_M8_DDR3_2GB)
 	#define PHYS_MEMORY_SIZE     (0x80000000) // 2GB
 #elif defined(CFG_M8_DDR3_4GB)
 	#define PHYS_MEMORY_SIZE     (0x100000000) // 4GB ??
 #else
-	#error "Please define DDR3 memory capacity in file m8_k101_v2.h\n"
+	#error "Please define DDR3 memory capacity in file m8_k100_2G.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
@@ -556,4 +542,4 @@
 */
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
 
-#endif //__CONFIG_M8_K101_V2_H__
+#endif //__CONFIG_m8_k100_2G_H__
