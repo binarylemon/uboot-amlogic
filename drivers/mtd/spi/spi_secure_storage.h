@@ -5,9 +5,7 @@
 #define SPI_SECURE_STORAGE_UBOOT
 //#define SPI_SECURE_STORAGE_KERNEL
 
-#ifdef SPI_SECURE_STORAGE_KERNEL
 #define SPI_MIN_ROOM_SIZE 0x200000
-#endif
 
 //#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
 struct aml_spivalid_node_t{

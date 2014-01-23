@@ -20,7 +20,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+/* secure storage support both spi and emmc */
 #define CONFIG_SECURE_MMC
+#define CONFIG_SPI_NOR_SECURE_STORAGE
 
 //#define CONFIG_SECURESTORAGEKEY
 #ifdef CONFIG_SECURESTORAGEKEY
