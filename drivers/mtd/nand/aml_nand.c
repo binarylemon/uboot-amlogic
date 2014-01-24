@@ -5808,7 +5808,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct env_oobinfo_t *env_oobinfo;
 	struct env_free_node_t *env_free_node, *env_tmp_node=NULL, *env_prev_node =NULL;
-	int error = 0, start_blk, total_blk, env_blk, i, j, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift,ret =0;
+	int error = 0,env_page_num=0, start_blk, total_blk, env_blk, i, j, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift,ret =0;
 	loff_t offset;
 	unsigned char *data_buf;
 	struct mtd_oob_ops aml_oob_ops;
@@ -5827,6 +5827,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	if (aml_chip->aml_nandenv_info->env_valid_node == NULL)
 		return -ENOMEM;
 	aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = -1;
+	env_page_num = CONFIG_ENV_SIZE /mtd->writesize;
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
 	max_env_blk = (NAND_MINI_PART_SIZE >> phys_erase_shift);
@@ -5985,13 +5986,20 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 				continue;
 			}
 
-			if (!memcmp(env_oobinfo->name, ENV_NAND_MAGIC, 4))
+			if (!memcmp(env_oobinfo->name, ENV_NAND_MAGIC, 4)){
 				aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = i;
+			}
 			else
 				break;
 		}
 	}
 	if ((mtd->writesize < CONFIG_ENV_SIZE) && (aml_chip->aml_nandenv_info->env_valid == 1)) {
+		i = aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr;
+		if(((i+1)%env_page_num)!=0){
+			aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = (i-(env_page_num- (i+1)%env_page_num));
+			ret = -1;
+			printk("aml_nand_env_init :  last env incomplete\n");
+		}
 		i = (CONFIG_ENV_SIZE + mtd->writesize - 1) / mtd->writesize;
 		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr -= (i - 1);
 	}
