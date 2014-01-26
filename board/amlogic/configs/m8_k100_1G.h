@@ -454,14 +454,14 @@
 //#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
 
 //For M8 DDR low power feature disable
-#define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
+//#define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
 
 //For M8 DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
 //#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    792//696 //768  //792// (636)
+#define CFG_M8_DDR_CLK    696//696 //768  //792// (636)
 
 //On board DDR capactiy
 #define CFG_M8_DDR3_1GB
