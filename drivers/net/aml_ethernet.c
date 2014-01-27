@@ -63,6 +63,7 @@ static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_ATHEROS_8032		0x004dd023
 #define PHY_ATHEROS_8035		0x004dd072
 #define PHY_IC_IP101ALF         0x02430c54
+#define PHY_MICREL_8091         0x221560
 
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
@@ -248,6 +249,14 @@ static void netdev_chk(void)
 				rint2 = phy_reg_rd(id,5);
 				full = (rint2 & (0x1<<7))? 1:0;
 				break;
+			case PHY_MICREL_8091:
+				rint2 = phy_reg_rd(id,1);
+				gS->linked = rint2&(1<<2);
+				rint2 = phy_reg_rd(id,0);
+				speed = (rint2 & (0x1<<13))? 1:0;
+				rint2 = phy_reg_rd(id,5);
+				full = (rint2 & (0x1<<8))? 1:0;
+				break;
 			case PHY_SMSC_8700:
 			case PHY_SMSC_8720:
 			default:
@@ -329,11 +338,16 @@ static void set_phy_mode(void)
 		case PHY_ATHEROS_8032:
 		case PHY_ATHEROS_8035:
 			break;
+		case PHY_MICREL_8091:
+        		val = phy_reg_rd(phyad, 0x16);
+			phy_reg_wr(phyad, 0x16, (val & ~(0x8020)));
+			break;
 		case PHY_SMSC_8700:
 		case PHY_SMSC_8720:
-		default:
 			val = PHY_SPMD_MIIMODE_RMII | (PHY_MODE_BUS_ALL_AE << PHY_SPMD_MODE_P) | (phyad << PHY_SPMD_PHYAD_P);
 			phy_reg_wr(phyad, PHY_SPMD, val);
+			break;
+		default:
 			break;
 	}
 }
@@ -377,9 +391,10 @@ static int eth_reset(struct _gStruct* emac_config)
 			continue;
 		}
 		/* set phy work mode */
+		/*
 		val = PHY_SPMD_MIIMODE_RMII | (PHY_MODE_BUS_ALL_AE << PHY_SPMD_MODE_P) | (phyad << PHY_SPMD_PHYAD_P);
 		phy_reg_wr(phyad, PHY_SPMD, val);
-
+		*/
 		/* get phy_Identifier */
 		val = phy_reg_rd(phyad, 2);
 		g_phy_Identifier = val << 16;
@@ -390,7 +405,7 @@ static int eth_reset(struct _gStruct* emac_config)
 		if(g_phy_Identifier == PHY_IC_IP101ALF){
 			if(get_cpuid() == 0x16)
 				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120); // phy ip101 need clock phase normal
-			if(get_cpuid() == 0x16)
+			if(get_cpuid() == 0x19)
 				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0xf00); // phy ip101 need clock phase normal
 		}
 		/* Software Reset PHY */
@@ -413,9 +428,7 @@ static int eth_reset(struct _gStruct* emac_config)
 		return -1;
 	}
 
-	val = PHY_SPMD_MIIMODE_RMII | (PHY_MODE_BUS_ALL_AE << PHY_SPMD_MODE_P) | (phyad << PHY_SPMD_PHYAD_P);
-	phy_reg_wr(phyad, PHY_SPMD, val);
-
+	set_phy_mode();
 	val = PHY_CR_AN | PHY_CR_RSTAN;
 	phy_reg_wr(phyad, PHY_CR, val);
 	if(g_speed_enforce==1)
