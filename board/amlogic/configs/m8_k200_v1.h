@@ -253,23 +253,22 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"preboot="\
-		"echo preboot...;" \
-		"run prepare;"\
-		"run storeargs;"\
-        "if itest ${upgrade_step} == 3; then run update; fi; "\
+        "echo preboot...;" \
+        "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run prepare;"\
+        "run storeargs;"\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run update_key; " \
         "run switch_bootmode\0" \
     \
     "update_key="\
-        "echo update by key...; " \
         "saradc open 0; " \
         "if saradc get_in_range 0 0x50; then " \
             "msleep 400; " \
-            "if saradc get_in_range 0 0x50; then run update; fi;" \
+            "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
         "fi\0" \
     \
    	"update="\
