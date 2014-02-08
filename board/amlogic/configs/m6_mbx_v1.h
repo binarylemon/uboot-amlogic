@@ -24,6 +24,9 @@
 #define CONFIG_AML_NAND_KEY
 #define CONFIG_AML_EMMC_KEY	1
 #endif
+/* Pass open firmware flat tree */
+#define CONFIG_OF_LIBFDT    1
+#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 
 //#define CONFIG_SWITCH_BOOT_MODE 1
 #define CONFIG_HDCP_PREFETCH 1
