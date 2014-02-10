@@ -541,8 +541,8 @@ int rn5t618_inti_para(struct battery_parameter *battery)
     if (battery) {
         rn5t618_set_full_charge_voltage(battery->pmu_init_chgvol);
         rn5t618_set_charge_end_current (150000);
+        rn5t618_set_charging_current   (battery->pmu_init_chgcur);
         rn5t618_set_trickle_time       (battery->pmu_init_chg_pretime);
-        rn5t618_set_rapid_time         (battery->pmu_init_chg_csttime);
         rn5t618_set_rapid_time         (battery->pmu_init_chg_csttime);
         rn5t618_set_charge_enable      (battery->pmu_init_chg_enabled);
         rn5t618_set_long_press_time    (battery->pmu_pekoff_time);
