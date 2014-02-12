@@ -154,7 +154,7 @@ static void cpu_off()
 void restart_arm()
 {
 
-	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+//	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 // l2 sram sleep
 	writel(readl(P_AO_RTI_PWR_A9_CNTL1) & (~(0x1 << 0)),P_AO_RTI_PWR_A9_CNTL1);
 
@@ -215,7 +215,7 @@ void enter_power_down()
 {
 	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
-	unsigned char vcin_state = 0;
+	unsigned int vcin_state = 0;
 
     int voltage   = 0;
     int axp_ocv = 0;
@@ -304,7 +304,7 @@ void enter_power_down()
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
 
-    if (uboot_cmd_flag == 0x87654321 && vcin_state) {
+    if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
         /*
          * power off system before ARM is restarted
          */
@@ -318,6 +318,7 @@ void enter_power_down()
         }while(1);
     }
 
+	writel(vcin_state,P_AO_RTI_STATUS_REG2);
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();

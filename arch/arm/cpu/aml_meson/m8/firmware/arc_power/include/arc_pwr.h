@@ -1,6 +1,14 @@
 #ifndef _ARC_PWR_H_
 #define _ARC_PWR_H_
 
+/*Wake up source flag which be writen to AO_STATUS_REG2*/
+
+#define FLAG_WAKEUP_PWRKEY      0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag. 
+#define FLAG_WAKEUP_ALARM       0x12345678
+#define FLAG_WAKEUP_WIFI        0x12340001
+#define FLAG_WAKEUP_BT          0x12340002
+#define FLAG_WAKEUP_PWROFF      0x12340003
+
 struct arc_pwr_op
 {
 	void (*power_off_at_24M)(void);
