@@ -57,8 +57,10 @@ then
     m6_gadmei_g11t80
     m8_skt_v1
     m8_k200_v1
-    m8_k100_v1
-    m8_k101_v1
+    m8_k100_1G
+    m8_k100_2G
+    m8_k101_1G
+    m8_k101_512M
     m8_k102_v1
     m8_k01
     m8_k03_M101_v1
@@ -85,8 +87,10 @@ else
     m6tvd_skt_v1
     m8_skt_v1
     m8_k200_v1
-    m8_k100_v1
-    m8_k101_v1
+    m8_k100_1G
+    m8_k100_2G
+    m8_k101_1G
+    m8_k101_512M
     m8_k102_v1
   )
 fi
