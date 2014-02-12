@@ -33,6 +33,7 @@ struct aml_pmu_driver {
 #ifdef CONFIG_RESET_TO_SYSTEM
     int  (*pmu_reset_flag_operation)(int op);
 #endif
+    void (*pmu_dump_register)(void);
 };
 
 extern struct aml_pmu_driver* aml_pmu_get_driver(void);

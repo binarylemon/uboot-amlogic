@@ -304,34 +304,33 @@ void enter_power_down()
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
 
+    if (uboot_cmd_flag == 0x87654321 && vcin_state) {
+        /*
+         * power off system before ARM is restarted
+         */
+        f_serial_puts("no extern power shutdown\n");
+	    wait_uart_empty();
+        p_arc_pwr_op->shut_down();
+        do{
+            udelay__(2000 * 100);
+            f_serial_puts("wait shutdown...\n");
+            wait_uart_empty();
+        }while(1);
+    }
+
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
 
-	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
-	{
-		if(vcin_state)//plug out ACIN
-		{
-			f_serial_puts("no extern power shutdown\n");
-			p_arc_pwr_op->shut_down();
-			do{
-				udelay__(2000);
-				f_serial_puts("wait shutdown...\n");
-				wait_uart_empty();
-			}while(1);
-		}
-		else
-		{
-			writel(0,P_AO_RTI_STATUS_REG2);
-			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
-			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-			writel(10,0xc1109904);
-			writel(1<<22|3<<24,0xc1109900);
-
-		    do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
-		}
-	}
-
+    if (uboot_cmd_flag == 0x8765432) {
+        writel(0,P_AO_RTI_STATUS_REG2);
+        writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+        clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+        writel(10,0xc1109904);
+        writel(1<<22|3<<24,0xc1109900);
+        
+        do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+    }
 }
 
 

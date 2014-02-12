@@ -228,15 +228,22 @@ static int do_pmu_reg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     struct aml_pmu_driver *pmu_driver;
     int rw = 0, i;
-    unsigned char addr, val;
+    int addr;
+    unsigned char val;
 
-    if (argc < 2 || argc > 4) {
+    if (argc < 1 || argc > 4) {
         return cmd_usage(cmdtp);
     }
+    pmu_driver = aml_pmu_get_driver();
     if (!strcmp(argv[1], "r")) {
         rw = 0;    
     } else if (!strcmp(argv[1], "w")) {
         rw = 1;    
+    } else if (!strcmp(argv[1], "d")) {
+        if (pmu_driver && pmu_driver->pmu_dump_register) {
+            pmu_driver->pmu_dump_register();
+            return 0;
+        }    
     } else {
         return cmd_usage(cmdtp);
     }
@@ -245,16 +252,15 @@ static int do_pmu_reg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         val = simple_strtoul(argv[3], NULL, 16); 
     }
 
-    pmu_driver = aml_pmu_get_driver();
     if (pmu_driver && pmu_driver->pmu_reg_read && rw == 0) {
         if (pmu_driver->pmu_reg_read(addr, &val)) {
-            printf("read addr 0x%02x failed\n", addr);
+            printf("read addr 0x%03x failed\n", addr);
             return -1;
         }
         printf("REG[0x%02x] = 0x%02x\n", addr, val);
     } else if (pmu_driver && pmu_driver->pmu_reg_write && rw == 1) {
         if (pmu_driver->pmu_reg_write(addr, val)) {
-            printf("write addr 0x%02x failed\n", addr);
+            printf("write addr 0x%03x failed\n", addr);
             return -1;
         }
         printf("REG[0x%02x] set to 0x%02x\n", addr, val);
