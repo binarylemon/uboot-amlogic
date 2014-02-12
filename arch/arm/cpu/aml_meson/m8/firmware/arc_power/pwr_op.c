@@ -378,6 +378,7 @@ void init_I2C()
 //	delay_ms(1);
 	udelay__(1000);
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
     v = i2c_pmu_read_b(0x0000);                 // read version
     if (v == 0x00 || v == 0xff)
 	{
@@ -389,6 +390,7 @@ void init_I2C()
 		serial_put_hex(v, 8);
 		f_serial_puts("Success.\n");
 	}
+#endif
 }
 
 #ifdef CONFIG_RN5T618
