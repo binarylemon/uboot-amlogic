@@ -14,7 +14,7 @@
 
 static int init_pctl_ddr3(struct ddr_set * timing_set);
 
-#if (CFG_M8_DDR_CLK >= 384) && (CFG_M8_DDR_CLK < 750)
+#if (CFG_M8_DDR_CLK >= 408) && (CFG_M8_DDR_CLK < 750)
 	#define CFG_M8_PLL_OD 2
 	#define CFG_M8_PLL_N  1
 	#define CFG_M8_PLL_M  (((CFG_M8_DDR_CLK/6)*6)/12)
@@ -26,7 +26,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#error "Over PLL range! Please check CFG_M8_DDR_CLK with file m8_skt_v1.h! \n"
 #endif
 
-#if (CFG_M8_DDR_CLK >= 384 ) && (CFG_M8_DDR_CLK <533)
+#if (CFG_M8_DDR_CLK >= 408 ) && (CFG_M8_DDR_CLK <533)
 	#define DDR3_7_7_7
 #elif  (CFG_M8_DDR_CLK >= 533 ) && (CFG_M8_DDR_CLK <667)
 	#define DDR3_9_9_9 

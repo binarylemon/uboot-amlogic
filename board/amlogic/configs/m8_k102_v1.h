@@ -115,6 +115,7 @@
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 
+#define CONFIG_ENABLE_PMU_WATCHDOG
 /*
  * under some cases default voltage of PMU output is 
  * not suitable for application, so you should take care
@@ -203,7 +204,7 @@
 	"upgrade_step=0\0" \
 	"initrd_high=30000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
-    "preloaddtb=imgread kernel boot ${loadaddr};dtbload ${loadaddr}\0" \
+    "preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=panel\0" \
 	"display_width=768\0" \
 	"display_height=1024\0" \
