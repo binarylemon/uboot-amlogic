@@ -237,15 +237,21 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			int dev;
 			u32 n=0;
 			bool is_part = false;//is argv[2] partition name 
+			bool protect_cache = false;
             int blk_shift;
-			u64 cnt=0, blk =0;
+			u64 cnt=0, blk =0,start_blk =0;
             struct partitions *part_info;
 
 			if(isstring(argv[2])){
 				if (!strcmp(argv[2], "whole")) {
 					name = "logo";
 					dev = find_dev_num_by_partition_name (name);
-				} else{
+				}else if(!strcmp(argv[2], "non_cache")){
+					name = "logo";
+					dev = find_dev_num_by_partition_name (name);
+					protect_cache = true;
+				} 
+				else{
 					name = argv[2];						
 					dev = find_dev_num_by_partition_name (name);
 					is_part = true;
@@ -305,7 +311,13 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                     }
                     if (n == 0) { // not error
                         // (2) erase all the area after reserve-partition
-                        u64 start_blk = (part_info->offset + part_info->size + PARTITION_RESERVED) >> blk_shift;
+                        if(protect_cache){
+			    part_info = find_mmc_partition_by_name(MMC_CACHE_NAME);
+			    if(part_info == NULL){
+                       	        return 1;
+                 	             }
+			}
+		     start_blk = (part_info->offset + part_info->size + PARTITION_RESERVED) >> blk_shift;
                         u64 erase_cnt = (mmc->capacity >> blk_shift) - 1 - start_blk;
                         n = mmc->block_dev.block_erase(dev, start_blk, erase_cnt);
                         // printf("(2) erase blk: %#llx --> %#llx %s\n", start_blk, start_blk+erase_cnt, (n == 0) ? "OK" : "ERROR");
@@ -366,7 +378,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             return 0 ;
         }
 
-        #ifdef CONFIG_SECURITYKEY
+ #ifdef CONFIG_SECURITYKEY
         if(strcmp(argv[1], "key")==0){
             struct mmc* mmc;
             char *name = "logo";
@@ -377,9 +389,12 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 return 1;
             }
             mmc->key_protect = 0;
+#ifdef CONFIG_STORE_COMPATIBLE
+	   info_disprotect |= DISPROTECT_KEY;  //disprotect
+#endif
             return 0;
         }
-        #endif
+#endif
         return cmd_usage(cmdtp);
 
 	default: /* at least 5 args */

@@ -161,7 +161,11 @@ static int emmc_key_kernel_rw(struct memory_card *emmccard,struct emmckey_valid_
 	blk_count = emmckey_valid_node->phy_size>>blk_shift;
 	pos = 0;
 	blk_cnt = 0;
+#ifdef CONFIG_STORE_COMPATIBLE
+	info_disprotect |= DISPROTECT_KEY; //disprotect
+#else
 	emmccard->key_protect = 0;
+#endif
 	while(blk_count){
 		if(blk_count > emmccard->host->max_blk_count){
 			brq->card_data.blk_nums = emmccard->host->max_blk_count;
@@ -198,7 +202,12 @@ error:
 	if(brq){
 		kfree(brq);
 	}
-	emmccard->key_protect = 1;
+#ifdef CONFIG_STORE_COMPATIBLE
+	info_disprotect &= ~DISPROTECT_KEY;  //protect
+#else
+	emmccard->key_protect = 1;	
+#endif
+	
 	return brq->card_data.error;
 }
 #endif
@@ -214,7 +223,11 @@ static int emmc_key_uboot_rw(struct mmc *emmccard,struct emmckey_valid_node_t *e
 	cnt = emmckey_valid_node->phy_size;
 	dev = emmccard->block_dev.dev;
 	mmc_init(emmccard);
-	emmccard->key_protect = 0;
+#ifdef CONFIG_STORE_COMPATIBLE
+		info_disprotect |= DISPROTECT_KEY; //disprotect
+#else
+		emmccard->key_protect = 0;
+#endif
 	if(direct){
 		blk >>= uint_to_shift(emmccard->write_bl_len);
 		cnt >>= uint_to_shift(emmccard->write_bl_len);
@@ -225,7 +238,12 @@ static int emmc_key_uboot_rw(struct mmc *emmccard,struct emmckey_valid_node_t *e
 		cnt >>= uint_to_shift(emmccard->read_bl_len);
 		n = emmccard->block_dev.block_read(dev, blk, cnt, buf);
 	}
-	emmccard->key_protect = 1;
+#ifdef CONFIG_STORE_COMPATIBLE
+		info_disprotect &= ~DISPROTECT_KEY;  //protect
+#else
+		emmccard->key_protect = 1;	
+#endif
+
 	return (cnt == n)? 0: -1; // 0--OK, -1--error
 }
 #endif
@@ -570,7 +588,13 @@ int emmc_key_init( void *keypara)
 		lba_start = card->capacity - (size >> card_data->block_bits); 
 		lba_end = card->capacity;
 		emmckey_info->key_init = 1;
-		card->key_protect = 1;
+		//card->key_protect = 1;
+		//info_disprotect &= ~DISPROTECT_KEY;  //protect
+#ifdef CONFIG_STORE_COMPATIBLE
+	info_disprotect &= ~DISPROTECT_KEY;  //protect
+#else
+	card->key_protect = 1;
+#endif
 		//printk("%s:%d,card->capacity:%d,\n",__func__,__LINE__,card->capacity);
 		printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);
 	#endif
@@ -585,7 +609,14 @@ int emmc_key_init( void *keypara)
 	lba_start = addr >> uint_to_shift(card->write_bl_len);
 	lba_end = (addr + size) >> uint_to_shift(card->write_bl_len);
 	emmckey_info->key_init = 1;
-	card->key_protect = 1;
+	//card->key_protect = 1;
+	//info_disprotect &= ~DISPROTECT_KEY;  //protect
+#ifdef CONFIG_STORE_COMPATIBLE
+		info_disprotect &= ~DISPROTECT_KEY;  //protect
+#else
+		card->key_protect = 1;	
+#endif
+
 	printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);
 #endif
 	if(!emmckey_info->key_init){

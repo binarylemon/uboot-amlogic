@@ -11,6 +11,12 @@
 #include<partition_table.h>
 
 #define NAND_INIT_FAILED 20
+#define STORE_BOOT_NORMAL					0
+#define STORE_BOOT_UPGRATE					1
+#define STORE_BOOT_ERASE_PROTECT_CACHE       	          2
+#define STORE_BOOT_ERASE_ALL   				          3
+#define STORE_BOOT_SCRUB_ALL				          4
+
 
 int info_disprotect = 0;
 static inline int isstring(char *p)
@@ -505,7 +511,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			printf("command:	%s\n", str);
 			ret = run_command(str, 0);
 			if(ret != 0){
-				if(ret == NAND_INIT_FAILED){
+				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
@@ -524,6 +530,9 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg(" cmd %s failed \n",cmd);
 					return -1;
 				}
+				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
+					ret = run_command("sf erase 0 100000",0);
+				}
 				sprintf(str, "amlnf  init  %d ",init_flag);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
@@ -536,8 +545,15 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 						store_msg("mmc cmd %s failed \n",cmd);
 						return -2;
 					}
+					if(init_flag == STORE_BOOT_ERASE_PROTECT_CACHE){ // OTA upgrade protect cache
+						store_msg("mmc erase non_cache \n");
+						ret = run_command("mmc erase non_cache", 0);
+					}else if(init_flag == STORE_BOOT_ERASE_ALL){ // erase all except  reserved area
+						store_msg("mmc erase 1 \n");
+						ret = run_command("mmc erase 1", 0);
+					}
 					return 0;
-				}else if(ret == NAND_INIT_FAILED){
+				}else if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
 					sprintf(str, "amlnf  init  %d ",4); 
 					ret = run_command(str, 0);
 				}
@@ -550,17 +566,30 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				sprintf(str, "amlnf  init  %d ",init_flag);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
-				if(ret == NAND_INIT_FAILED){
+				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
+				}
+				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
+					ret = run_command("sf probe 2", 0);
+					ret = run_command("sf erase 0 100000",0);
 				}
 			}
 			if(device_boot_flag == SPI_EMMC_FLAG){
 				store_dbg("spi+mmc , %s %d ",__func__,__LINE__);
 				ret = run_command("mmcinfo 1", 0);
 
-                if (init_flag = 2) // need erase whole emmc/tsd
-                    ret = run_command("mmc erase whole", 0);
+	             	 	if(init_flag == STORE_BOOT_ERASE_PROTECT_CACHE){ // OTA upgrade protect cache
+					store_msg("mmc erase non_cache \n");
+					ret = run_command("mmc erase non_cache", 0);
+				}else if(init_flag == STORE_BOOT_ERASE_ALL){ // erase all except  reserved area
+					store_msg("mmc erase 1 \n");
+					ret = run_command("mmc erase 1", 0);
+				}
+				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
+					ret = run_command("sf probe 2", 0);
+					ret = run_command("sf erase 0 100000",0);
+				}
 			}
 			
 			if(ret != 0){
@@ -577,6 +606,12 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				store_msg("mmc cmd %s failed \n",cmd);
 				return -1;
 			}
+			if(init_flag == STORE_BOOT_ERASE_PROTECT_CACHE){ // OTA upgrade protect cache
+				ret = run_command("mmc erase non_cache", 0);
+			}else if(init_flag == STORE_BOOT_ERASE_ALL){ // erase all except  reserved area
+				ret = run_command("mmc erase 1", 0);
+			}
+			
 			return ret;
 		}else{
 			store_dbg("CARD BOOT, %s %d",__func__,__LINE__);
