@@ -26,13 +26,47 @@
 #include <amlogic/aml_pmu_common.h>
 #endif
 
-unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
+#if CONFIG_UCL
+extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
+#endif// #if CONFIG_UCL
+
+#define BIN_RUN_INFO_MAGIC_PARA      (0X3412CDABU)
+#define BIN_RUN_INFO_VERSION    (0x0100)
+#define BIN_RUN_TYPE_RUN_ADDRESS    0
+#define BIN_RUN_TYPE_RUN_IN_ADDR    (0)
+#define BIN_RUN_TYPE_UCL_DECOMPRESS (0xc0de)
+
+//As sram area will not cleared before poweroff, the result maigc must not be equal to para magic and clear before run
+#define BIN_RUN_INFO_MAGIC_RESULT      (0X7856EFABU)
+
+#pragma pack(push, 4)
+typedef struct _BinRunInfoHead_s{
+    unsigned            magic;      //should be DDR_BIN_PARA_MAGIC
+    unsigned            version;    //current version is 0x0100
+    unsigned            runType;    //
+    int                 retVal;     //0 is OK, other is failed
+}BinRunInfoHead_t;
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+typedef struct _RunBinInfo_s{
+    BinRunInfoHead_t        binRunHead;
+    unsigned                runAddr;
+}RunBinInfo_t;
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+typedef struct _UclDecompressInfo{
+    BinRunInfoHead_t    binRunHead;
+    unsigned            srcDataAddr;//
+    unsigned            srcDataLen;
+    unsigned            decompressedAddr;
+    unsigned            decompressedLen;
+}UclDecompressInfo_t;
+#pragma pack(pop)
+
+static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-#ifdef CONFIG_M8
-	//enable watchdog for 10s
-	//if bootup failed, switch to next boot device
-	writel(((1<<22) | 900000), P_WATCHDOG_TC); //10s
-#endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
@@ -172,12 +206,73 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
-#if defined(CONFIG_AML_V2_USBTOOL)
-    //tell TPL it loaded from USB otg
-    writel(MESON_USB_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);
+#if defined(CONFIG_AML_V2_USBTOOL) && 0
+    writel(MESON_USB_BURNER_REBOOT, CONFIG_TPL_BOOT_ID_ADDR);//tell TPL it loaded from USB otg
 #endif//#if defined(CONFIG_AML_V2_USBTOOL)
    
     serial_puts("\nEnd ddr main\n");
 
     return 0;
 }
+
+unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
+{
+    BinRunInfoHead_t*       binRunInfoHead      = (BinRunInfoHead_t*)(RAM_START + 64 * 1024);//D9010000
+    int ret = 0;
+    const unsigned paraMagic = binRunInfoHead->magic;
+
+#ifdef CONFIG_M8
+	//enable watchdog, then when bootup failed, switch to next boot device
+	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+#endif// #ifdef CONFIG_M8
+    binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
+    serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
+    serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
+
+    if(BIN_RUN_INFO_MAGIC_PARA != paraMagic)//default to run ddr_init.bin, Attention that sram area will not clear if not poweroff!
+    {
+        ret = _ddr_init_main(__TEXT_BASE, __TEXT_SIZE);
+        binRunInfoHead->retVal = ret;
+        return ret;
+    }
+
+    if(BIN_RUN_INFO_VERSION != binRunInfoHead->version){
+        serial_puts("run info version "), serial_put_hex(binRunInfoHead->version, 16), serial_puts("error\n");
+    }
+
+    switch(binRunInfoHead->runType)
+    {
+        case BIN_RUN_TYPE_UCL_DECOMPRESS:
+            {
+                UclDecompressInfo_t*    uclDecompressInfo   = (UclDecompressInfo_t*)binRunInfoHead;
+
+                serial_puts("\n\nDecompress compressed TPL START ====>\n");
+                uclDecompressInfo->decompressedAddr = CONFIG_SYS_TEXT_BASE;
+                serial_puts("srcAdrr "), serial_put_hex(uclDecompressInfo->srcDataAddr, 32), serial_puts(",");
+                ret = uclDecompress(uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen, uclDecompressInfo->srcDataAddr);
+                if(ret){
+                    serial_puts("uclDecompress failed\n");
+                }
+                else
+                {
+                    serial_puts("uclDecompress OK\n");
+                    serial_puts("decompressed to addr ["), serial_put_hex(uclDecompressInfo->decompressedAddr, 32), 
+                        serial_puts("] in sz ["), serial_put_hex(uclDecompressInfo->decompressedLen, 32), serial_puts("]\n");
+                    ret = check_sum((char*)uclDecompressInfo->decompressedAddr, 0, 0);
+                    if(ret){
+                        serial_puts("check magic error\n");
+                    }
+                }
+                serial_puts("<=====Decompress compressed TPL END\n");
+            }
+            break;
+            
+        default:
+            serial_puts("Error run type "), serial_put_hex(binRunInfoHead->runType, 32), serial_puts("\n");
+            ret = __LINE__;
+    }
+	
+    binRunInfoHead->retVal  = ret;
+    return ret;
+}
+

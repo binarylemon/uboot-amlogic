@@ -1052,12 +1052,21 @@ int is_the_flash_first_burned(void)
 int optimus_set_burn_complete_flag(void)
 {
     int rc = 0;
+    const char* upgrade_step = "1";
 
-    //Add env_relocate 'after disk_intial' if failed to saveenv, I may set some envs for boot
-    /*env_relocate();*/
+    upgrade_step = check_uboot_loaded_for_burn(0) ? "2" : "1";
+    if(check_uboot_loaded_for_burn(0))
+    {
+        upgrade_step = "2";
+        rc = run_command("defenv", 0);//use new env directly if uboot is new !!!
+        if(rc){
+            DWN_ERR("Fail in defenv!, rc=%d\n", rc);
+            return __LINE__;
+        }
+    }
 
-    DWN_MSG("Set upgrade_step to 1\n");
-    rc = setenv("upgrade_step", "1");
+    DWN_MSG("Set upgrade_step to %s\n", upgrade_step);
+    rc = setenv("upgrade_step", upgrade_step);
     if(rc){
         DWN_ERR("Fail to set upgraded_step to 1\n");
     }

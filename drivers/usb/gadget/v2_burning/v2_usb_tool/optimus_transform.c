@@ -360,6 +360,7 @@ int cb_4_dis_connect_intr(void)
 {
     if(optimus_burn_complete(OPTIMUS_BURN_COMPLETE__QUERY))
     {
+        close_usb_phy_clock(0);//disconnect to avoid k200 platfrom which can't relally poweroff
         DWN_MSG("User Want poweroff after disconnect\n");
         optimus_poweroff();
     }

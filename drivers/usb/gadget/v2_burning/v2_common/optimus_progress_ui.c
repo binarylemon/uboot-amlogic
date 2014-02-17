@@ -25,10 +25,6 @@ const char* env_video_prepare_for_upgrade = "echo video prepare for upgrade; "\
 
 const char* env_ui_report_burning = "bmp display ${upgrade_upgrading_offset}";
 
-const char* env_ui_report_burn_failed = "bmp display ${upgrade_fail_offset}";
-const char* env_ui_report_burn_error = "bmp display ${upgrade_error_offset}";
-const char* env_ui_report_burn_success = "bmp display ${upgrade_success_offset}";
-
 //if env upgrade_logo_offset exist, use bmp resources existed in memory
 int video_res_prepare_for_upgrade(HIMAGE hImg)
 {
@@ -108,9 +104,21 @@ int show_logo_to_report_burning(void)
     return 0;
 }
 
-static int _show_burn_logo(const char* bmpCmd) //Display logo to report burning result is failed
+static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report burning result is failed
 {
     int ret = 0;
+    char bmpCmd[64] = "bmp display %s";
+    char* bmpAddrEnv = getenv((char*)bmpOffsetName);
+
+    if(!bmpAddrEnv){
+        ret = run_command("unpackimg ${loadaddr_misc}", 0);//need re-unpack after 'defenv'
+        if(ret){
+            DWN_ERR("Fail in re-unpack res img\n");
+            return __LINE__;
+        }
+        bmpAddrEnv = getenv((char*)bmpOffsetName);
+    }
+    sprintf(bmpCmd, "bmp display %s", bmpAddrEnv);
 
     ret = run_command(bmpCmd, 0);
     if(ret){
@@ -125,7 +133,7 @@ int show_logo_to_report_burn_success(void)
 {
     int ret = 0;
 
-    ret = run_command(env_ui_report_burn_success, 0);
+    ret = _show_burn_logo("upgrade_success_offset");
     if(ret){
         DWN_ERR("Fail in display logo upgrade_success_offset\n");
         return __LINE__;
@@ -139,7 +147,7 @@ static int show_logo_report_burn_ui_error(void)
 {
     int ret = 0;
 
-    ret = run_command(env_ui_report_burn_error, 0);
+    ret = _show_burn_logo("upgrade_error_offset");
     if(ret){
         DWN_ERR("Fail in display logo upgrade_error\n");
         return __LINE__;
@@ -462,12 +470,12 @@ int optimus_progress_ui_report_upgrade_stat(__hdle hUiProgress, const int isSucc
     if(isSuccess)
     {
         optimus_progress_ui_direct_update_progress(hUiProgress, 100);
-        _show_burn_logo(env_ui_report_burn_success);
+        _show_burn_logo("upgrade_success_offset");
         lcd_printf("Burning Success^^\nPLS SHORT-PRESS the power key to shut down\n");
         return 0;
     }
 
-    _show_burn_logo(env_ui_report_burn_failed);
+    _show_burn_logo("upgrade_fail_offset");
     lcd_printf("[Failed] at ");
     //Followings failure
     if(UPGRADE_STEPS_AFTER_IMAGE_OPEN_OK == curPercent)

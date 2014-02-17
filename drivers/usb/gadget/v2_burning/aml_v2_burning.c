@@ -58,7 +58,12 @@ int aml_check_is_ready_for_sdc_produce(void)
 //is the uboot loaded from usb otg
 int is_tpl_loaded_from_usb(void)
 {
+#if 0
     return (MESON_USB_BURNER_REBOOT == readl(CONFIG_TPL_BOOT_ID_ADDR));
+#else
+    DWN_DBG("C_ROM_BOOT_DEBUG->boot_id %d\n", C_ROM_BOOT_DEBUG->boot_id);
+    return (2 == C_ROM_BOOT_DEBUG->boot_id);
+#endif//
 }
 
 //is the uboot loaded from sdcard mmc 0
