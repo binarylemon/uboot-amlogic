@@ -23,6 +23,16 @@ int __aml_sec_boot_check_efuse(unsigned char *pSRC)
 int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	__attribute__((weak, alias("__aml_sec_boot_check_efuse")));
 
+#ifdef CONFIG_MESON_TRUSTZONE
+ssize_t __meson_trustzone_efuse_writepattern(const char *buf, size_t count)
+{
+	printf("run weak function\n");
+	return -1;
+}
+ssize_t meson_trustzone_efuse_writepattern(const char *buf, size_t count)
+	__attribute__((weak, alias("__meson_trustzone_efuse_writepattern")));
+#endif
+
 
 int cmd_efuse(int argc, char * const argv[], char *buf)
 {
@@ -178,6 +188,12 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 	{
 		s = argv[2];
 		unsigned int nAddr = simple_strtoul(s, &end, 16);
+	#ifdef CONFIG_MESON_TRUSTZONE
+		if(meson_trustzone_efuse_writepattern(nAddr, EFUSE_BYTES)){
+			printf("aml log : efuse pattern write fail!\n");
+			return -1;
+		}
+	#else
 		int nChkVal,nChkAddr;
 		nChkVal = nChkAddr = 0;
 		efuse_read(&nChkVal,sizeof(nChkVal),(loff_t*)&nChkAddr);
@@ -195,6 +211,7 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		{	unsigned int pos = 0;
 			efuse_write(nAddr, EFUSE_BYTES, (loff_t*)&pos);
 		}
+	#endif
 	}
 	// efuse info
 	else if(action==EFUSE_INFO){	

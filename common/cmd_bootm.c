@@ -736,8 +736,13 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	AML_LOG_TE("cmd_bootm");
 
 #ifdef CONFIG_M6_SECU_BOOT
+#ifdef CONFIG_MESON_TRUSTZONE
+	extern int meson_trustzone_boot_check(unsigned char *addr);
+	ret = meson_trustzone_boot_check((unsigned char*)load_addr);
+#else
 	extern int aml_decrypt_kernel_image(void* kernel_image_address);
 	ret = aml_decrypt_kernel_image((void*)load_addr);
+#endif
 	if(ret != 0)
 	{
 		printf("Error! Illegal kernel image, please check!\n");

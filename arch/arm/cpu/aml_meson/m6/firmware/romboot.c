@@ -59,6 +59,7 @@ static void __x_udelay(unsigned long usec)
 	} while(usec);
 }
 
+#if 0
 static void __x_efuse_read_dword( unsigned long addr, unsigned long *data )
 {
     unsigned long auto_rd_is_enabled = 0;
@@ -128,7 +129,124 @@ static void aml_mx_efuse_load(const unsigned char *pEFUSE)
 		 CNTL1_AUTO_RD_ENABLE_BIT, CNTL1_AUTO_RD_ENABLE_SIZE );
 
 }
+#endif
 
+#if 1
+#include "secure.c"
+static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
+{
+	int index = check_m6_chip_version();
+	if(index < 0){
+		serial_puts("\nErr! Wrong MX chip!\n");
+		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
+		while(1);
+	}
+	t_func_v3 fp_05 = (t_func_v3)m6_g_action[index][5];
+	unsigned int info=0;
+	fp_05((int)&info,0,4);
+	if(!(info &(1<<7))){
+		return ;
+	}
+
+	writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
+	#define AML_RSA_STAGE_1_1 (0x31315352)   //RS11
+	#define AML_RSA_STAGE_2_2 (0x32325352)   //RS22
+
+	unsigned int *pID = (unsigned int *)(AHB_SRAM_BASE+(32<<10)-8);
+	switch(*pID)
+	{
+	case AML_RSA_STAGE_1_1:
+	case AML_RSA_STAGE_2_2:break;
+	default:
+		{
+			//serial_puts("\nError! SPL is corrupt!\n");
+			serial_puts("\nErr! SPL is corrupt!\n");
+			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
+			while(1);
+		}break;
+	}
+
+	unsigned int *pRSAAuthID = (unsigned int *)(AHB_SRAM_BASE+32*1024-16);
+	#define AML_M6_AMLA_ID	  (0x414C4D41)	 //AMLA
+	int nBlkOffset = 32*1024 - (sizeof(struct_aml_chk_blk)+256*2+32);
+	if( AML_M6_AMLA_ID == *pRSAAuthID)
+		nBlkOffset -= 128;
+	
+	//struct_aml_chk_blk *pBlk = (struct_aml_chk_blk *)(AHB_SRAM_BASE+ *pSPLSize - sizeof(struct_aml_chk_blk) - 2*256);
+	struct_aml_chk_blk *pBlk = (struct_aml_chk_blk *)(AHB_SRAM_BASE+ nBlkOffset);
+
+	if((AMLOGIC_CHKBLK_ID == pBlk->unAMLID) && (AMLOGIC_CHKBLK_VER >= pBlk->nVer) &&
+		sizeof(*pBlk) == pBlk->nSize2)
+	{
+		aml_intx n,e;
+		unsigned char szEFUSE[128];
+		fp_05((int)&szEFUSE[0],8,128);
+
+		memset_aml(&n,0,sizeof(n));
+		memset_aml(&e,0,sizeof(e));
+
+		memcpy_aml(n.dp,szEFUSE,128);
+		n.used = 32;
+
+		e.dp[0] = 0x010001;
+		e.used = 1;				
+#if defined(CONFIG_M6_SECU_BOOT_2RSA)
+		//get_2RSA(int index,aml_intx *n,aml_intx *e, unsigned char *key,int len);
+		unsigned char *pRSAPUK1 = (unsigned char *)pBlk + sizeof(struct_aml_chk_blk)+256;
+		//unsigned char szRSAPUK1[256];
+		if(get_2RSA(index,&n,&e,pRSAPUK1,256)){
+			serial_puts("\nError! RSA 1st key is corrupt!\n");
+			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
+			while(1);
+		}
+#endif //#if defined(CONFIG_M6_SECU_BOOT_2RSA)
+		unsigned char *pAESkey = (unsigned char *)pBlk + sizeof(struct_aml_chk_blk);
+
+		unsigned char szAESkey[256];
+		int szAESkey_len=0;
+		memset_aml(szAESkey,0,sizeof(szAESkey));
+		
+		m6_rsa_dec_pub(index,&n,&e,pAESkey,256,szAESkey,&szAESkey_len);
+		
+		unsigned char szCHK_temp[128];
+		int szCHK_len=0;
+		m6_rsa_dec_pub(index,&n,&e,pBlk->szCHK,128,szCHK_temp,&szCHK_len);
+		
+		memcpy_aml(pBlk->szCHK,szCHK_temp,124);
+		
+		//int m6_aes_decrypt(unsigned char *ct,int ctlen,unsigned char *key,int keylen);
+		m6_aes_decrypt(index,pSRC,pBlk->secure.nAESLength,szAESkey,sizeof(szAESkey));
+		unsigned char szHashKey[32];
+		memset_aml(szHashKey,0,sizeof(szHashKey));
+
+		szHashKey[0] = 0;
+		sha2_sum_2( szHashKey,(unsigned char *)(AHB_SRAM_BASE+pBlk->secure.hashInfo.nOffset1),pBlk->secure.hashInfo.nSize1);
+
+		szHashKey[0] = 1;		
+		sha2_sum_2( szHashKey,(unsigned char *)(AHB_SRAM_BASE+pBlk->secure.hashInfo.nOffset2), pBlk->secure.hashInfo.nSize2) ;
+
+		szHashKey[0] = 2;	
+		sha2_sum_2( szHashKey,(unsigned char *)pSRC,pBlk->secure.nHashDataLen);
+
+		if(memcmp_aml(szHashKey,pBlk->secure.szHashKey,sizeof(szHashKey)))
+		{
+			//serial_puts("\nError! UBoot is corrupt!\n");
+			serial_puts("\nErr! UBoot is corrupt!\n");
+			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
+			while(1);			
+		}
+
+	}
+	else
+	{	
+		//serial_puts("\nError! UBoot is corrupt!\n");
+		serial_puts("\nErr! UBoot is corrupt!\n");
+		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
+		while(1);	
+	}
+
+}
+#else
 static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 {	
 #define AMLOGIC_CHKBLK_ID  (0x434C4D41) //414D4C43 AMLC
@@ -384,6 +502,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		AML_WATCH_DOG_START();
 	}
 }
+#endif
 
 static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 {

@@ -8,8 +8,10 @@
 #include <sdpinmux.c>
 #include <memtest.c>
 #include <pll.c>
+#ifdef CONFIG_POWER_SPL
 #include <hardi2c_lite.c>
 #include <power.c>
+#endif
 #include <ddr.c>
 #include <mtddevices.c>
 #include <sdio.c>

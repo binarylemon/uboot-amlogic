@@ -188,6 +188,24 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 	return ret;
 }
 
+ssize_t meson_trustzone_efuse_writepattern(const char *buf, size_t count)
+{ 	
+	struct efuse_hal_api_arg arg;
+	unsigned int retcnt;
+	
+	if (count != EFUSE_BYTES)
+		return 0;	/* Past EOF */
+
+	arg.cmd=EFUSE_HAL_API_WRITE_PATTERN;
+	arg.offset = 0;
+	arg.size=count;
+	arg.buffer_phy=(unsigned int)buf;
+	arg.retcnt_phy=&retcnt;
+	int ret;
+	ret = meson_trustzone_efuse(&arg);
+	return ret;
+}
+
 #endif
 
 
