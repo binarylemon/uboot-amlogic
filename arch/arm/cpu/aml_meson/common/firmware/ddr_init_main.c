@@ -27,7 +27,9 @@
 #endif
 
 #if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
+#endif
 #endif// #if CONFIG_UCL
 
 #define BIN_RUN_INFO_MAGIC_PARA      (0X3412CDABU)
@@ -249,8 +251,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
                 serial_puts("\n\nDecompress compressed TPL START ====>\n");
                 uclDecompressInfo->decompressedAddr = CONFIG_SYS_TEXT_BASE;
                 serial_puts("srcAdrr "), serial_put_hex(uclDecompressInfo->srcDataAddr, 32), serial_puts(",");
-                ret = uclDecompress(uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen, uclDecompressInfo->srcDataAddr);
-                if(ret){
+#ifndef CONFIG_IMPROVE_UCL_DEC
+				ret = uclDecompress(uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen, uclDecompressInfo->srcDataAddr);
+#endif
+				if(ret){
                     serial_puts("uclDecompress failed\n");
                 }
                 else
