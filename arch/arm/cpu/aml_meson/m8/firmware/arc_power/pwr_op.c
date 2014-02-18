@@ -565,8 +565,8 @@ void rn5t618_power_off_at_24M()
     //  rn5t618_set_gpio(1, 1);                                         // close boost
     }
 #endif
-	rn5t618_set_gpio(1, 1);                                             // close vccx2
-    rn5t618_set_gpio(0, 1);                                             // close vccx3
+	//rn5t618_set_gpio(1, 1);                                             // close vccx2
+	rn5t618_set_gpio(0, 1);                                             // close vccx3
     udelay__(500);
 
 #if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
@@ -792,7 +792,13 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         	break;
         }
 #endif
-
+        if (flags != 0x87654321)
+		if( (readl(P_PREG_PAD_GPIO0_I) >> 21)& 0x1){
+			exit_reason = 8;
+            ret = 0x12341234;
+            writel(0x12341234,0xc8100008);
+			break;
+		}
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
             exit_reason = 7;
 		    break;

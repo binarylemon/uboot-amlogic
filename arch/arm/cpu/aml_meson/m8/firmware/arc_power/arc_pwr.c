@@ -221,6 +221,13 @@ void enter_power_down()
     int axp_ocv = 0;
 
 	// First, we disable all memory accesses.
+	    if(readl(P_PAD_PULL_UP_EN_REG4)&(0x1<<21))
+		{
+			f_serial_puts("P_PAD_PULL_UP_EN_REG4 is high set it to low\n");
+			writel(readl(P_PAD_PULL_UP_EN_REG4)&(~(0x1<<21)),P_PAD_PULL_UP_EN_REG4);
+		}
+		else
+			f_serial_puts("PULL_UP_EN_REG4 low\n");
 
 	f_serial_puts("step 1\n");
 
@@ -262,6 +269,10 @@ void enter_power_down()
 
 #if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
+    if(vcin_state == 0x12341234)//wifi
+		writel(0x12341234,P_AO_RTI_STATUS_REG2);
+	else
+	    writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
 #else
 	for(i=0;i<10;i++)
 	{
