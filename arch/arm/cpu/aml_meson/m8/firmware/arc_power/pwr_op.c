@@ -1205,11 +1205,13 @@ unsigned int aml1216_detect_key(unsigned int flags)
             break;
         }
 
+#ifdef CONFIG_BT_WAKEUP
         if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<16)){
 			exit_reason = 8;
             ret = FLAG_WAKEUP_BT;
 			break;
 		}
+#endif
 
     } while (!(readl(0xc8100088) & (1<<8)));            // power key
 
