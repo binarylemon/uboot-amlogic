@@ -230,7 +230,7 @@
 	"display_height=1080\0" \
 	"display_bpp=24\0" \
 	"display_color_format_index=24\0" \
-	"display_layer=osd1\0" \
+	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
