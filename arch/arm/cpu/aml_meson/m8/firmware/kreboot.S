@@ -161,11 +161,7 @@ end_ch_store:
 //    ldr r0,[r1]
 
 	adr r1,reset_addr
-	   ldr r0,[r1]
-
-	ldr r3, [r0]
-	ldr r2, =0xc8100008
-	str r3, [r2]
+	ldr r0,[r1]
 
 //dbg_loop__:
 //	b dbg_loop__
