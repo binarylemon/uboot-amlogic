@@ -49,6 +49,8 @@
 #define TRUSTZONE_MON_CORE_RD_SOC_REV2          0x20A
 
 #define TRUSTZONE_MON_SUSPNED_FIRMWARE          0x300
+#define TRUSTZONE_MON_SUSPNED_FIRMWARE_INIT     0x301
+
 #define TRUSTZONE_MON_SAVE_CPU_GIC              0x400
 
 #define TRUSTZONE_MON_RTC                       0x500
