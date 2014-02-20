@@ -261,14 +261,43 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     // AVI frame
     //hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x00, 0x46);              // PB0: Checksum
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x01, 0x5e);              // PB1 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+    switch(vic) {
+    case HDMI_640x480p60:
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_1440x480p60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x58);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    }
+    switch(vic) {
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x03);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, vic);               // PB4: [7]    Rsrv
     if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, 0);             // if mode is 4k, then set vic = 0 and set to VSDB
     }
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv
-                                                                        //      [3:0]  PixelRepeat
+    switch(vic) {
+    case HDMI_480i60:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 1); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1C, 0x82);              // HB0: packet type=0x82
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1D, 0x02);              // HB1: packet version =0x02
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1E, 0x0D);              // HB2: payload bytes=13
