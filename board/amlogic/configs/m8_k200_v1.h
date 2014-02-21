@@ -225,6 +225,7 @@
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -312,12 +313,15 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
+        "if unifykey get usid; then  "\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
 	"recovery="\
-        "echo enter recovery;"\  
+        "echo enter recovery;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
@@ -463,6 +467,7 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
@@ -481,6 +486,7 @@
 #define CONFIG_AML_SUSPEND 1
 
 #define CONFIG_CMD_LOGO
+
 
 /*
 * CPU switch test for uboot

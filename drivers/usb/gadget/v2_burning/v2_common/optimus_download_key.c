@@ -16,7 +16,7 @@
  * =====================================================================================
  */
 #include "../v2_burning_i.h"
-#include "unify_key.h"
+#include <amlogic/unify_key.h>
 
 #ifndef CMD_BUFF_SIZE
 #define CMD_BUFF_SIZE (512)

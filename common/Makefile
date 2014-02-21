@@ -89,6 +89,7 @@ COBJS-$(CONFIG_CMD_SECURESTORE) += cmd_securestore.o
 COBJS-$(CONFIG_CMD_RANDOM) +=  cmd_randomb.o
 COBJS-$(CONFIG_HDCP_PREFETCH) += cmd_hdcp.o
 COBJS-$(CONFIG_GET_AML_KEY) += cmd_get_key.o
+COBJS-$(CONFIG_UNIFY_KEY_MANAGE) += cmd_unifykey.o
 #COBJS-$(CONFIG_SECURITYKEY) += cmd_tmp.o
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
 COBJS-$(CONFIG_CMD_AUTOSCRIPT) += cmd_autoscript.o
