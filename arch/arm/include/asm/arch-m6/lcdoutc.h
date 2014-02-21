@@ -260,6 +260,7 @@ static const char* lcd_type_table_match[]={
 	"invalid",
 };
 
+#define SS_LEVEL_MAX	7
 static const char *lcd_ss_level_table[]={
 	"0",
 	"0.5%",

@@ -111,7 +111,7 @@ static unsigned short gamma_table[256] = {
 };
 
 //**** default settings, don't modify them unless there is display problem ***//
-#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
+#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=1.5%, 4=2%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
 #define PLL_CTRL				0x100042b	/** only valid when CLK_AUTO_GENERATION=0 */
 #define DIV_CTRL				0x18833		/** only valid when CLK_AUTO_GENERATION=0 */

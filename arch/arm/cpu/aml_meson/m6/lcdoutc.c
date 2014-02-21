@@ -47,7 +47,7 @@
 #define DRV_TYPE "c6"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20131230"
+#define DRIVER_DATE		"20140106"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -290,8 +290,9 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	int i;
 
 	if( status == ON ) {
-		WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
+			WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
+			mdelay(20);
 			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
 		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
@@ -318,7 +319,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 			for (i=0; i<pDev->bl_config->pinmux_set_num; i++) {
 				set_mio_mux(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
 			}
-			
+			mdelay(20);
 			if (pDev->bl_config->pwm_gpio_used)
 				amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
@@ -2073,7 +2074,9 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	struct aml_pmu_driver *pmu_driver;
 	int battery_percent;
 #endif
+	unsigned char ss_level = (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf;
 	
+	lcd_control_config(pConf);
 	if (pConf->lcd_timing.clk_ctrl & (1 << CLK_CTRL_AUTO)) {
 		printf("Auto generate clock parameters.\n");
 		generate_clk_parameter(pConf);
@@ -2083,9 +2086,10 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 		printf("Custome clock parameters.\n");
 		printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 	}
+	ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
+	pConf->lcd_timing.clk_ctrl = ((pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (ss_level << CLK_CTRL_SS));
 	lcd_sync_duration(pConf);
 	lcd_tcon_config(pConf);
-	lcd_control_config(pConf);
 	
 	if (pDev->bl_config->level_default == pDev->bl_config->level_min) {
 		set_lcd_backlight_level(pDev->bl_config->level_min);
