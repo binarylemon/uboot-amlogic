@@ -530,9 +530,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     int power_status;
     int prev_status;
     int battery_voltage;
-    int ret = 0;
-//    int gpio_sel0;
-//    int gpio_mask;
+    int ret = FLAG_WAKEUP_PWRKEY;
     int low_bat_cnt = 0;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -556,13 +554,13 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	prev_status = get_charging_state();
     do {
         /*
-         * when extern power status has changed, we need break 
+         * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
 	    power_status = get_charging_state();
         if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
-            ret = 1;
-            exit_reason = 8;
+            ret = FLAG_WAKEUP_PWROFF;
+            exit_reason = -1;
             break;
         }
         if (power_status ^ prev_status) {
@@ -598,9 +596,9 @@ unsigned int rn5t618_detect_key(unsigned int flags)
                 charge_timeout = i2c_pmu_read_b(0x00c5);
                 if (charge_timeout & 0x20) {
                     exit_reason = 4;
-                    break;    
+                    break;
                 } else {
-                    charge_timeout = 0;    
+                    charge_timeout = 0;
                 }
                 if ((readl(0xc8100088) & (1<<8))) {        // power key
                     exit_reason = 5;
@@ -619,10 +617,19 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
             exit_reason = 7;
-		    break;
+			ret = FLAG_WAKEUP_ALARM;
+            break;
         }
 
-    } while (!(readl(0xc8100088) & (1<<8))/* && (readl(P_AO_GPIO_I)&(1<<3))*/);            // power key
+#ifdef CONFIG_BT_WAKEUP
+        if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<16)){
+			exit_reason = 8;
+            ret = FLAG_WAKEUP_BT;
+			break;
+		}
+#endif
+
+    } while (!(readl(0xc8100088) & (1<<8)));            // power key
 
 	writel(1<<8,0xc810008c);
 	writel(gpio_sel0, 0xc8100084);
@@ -635,6 +642,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     return ret;
 }
 #endif
+
 
 void arc_pwr_register(struct arc_pwr_op *pwr_op)
 {

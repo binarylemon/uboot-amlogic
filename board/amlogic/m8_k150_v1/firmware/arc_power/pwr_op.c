@@ -613,7 +613,7 @@ unsigned int aml1216_detect_key(unsigned int flags)
     int power_status;
     int prev_status;
     int battery_voltage;
-    int ret = 0;
+    int ret = FLAG_WAKEUP_PWRKEY;
     int low_bat_cnt = 0;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -629,13 +629,13 @@ unsigned int aml1216_detect_key(unsigned int flags)
     prev_status = aml1216_get_charge_status();
     do {
         /*
-         * when extern power status has changed, we need break 
+         * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
         power_status = aml1216_get_charge_status();
         if (power_status ^ prev_status) {
             if (flags == 0x87654321) {      // suspend from uboot
-                ret = 1;
+                ret = FLAG_WAKEUP_PWROFF;
             }
             exit_reason = 1;
             break;
@@ -678,10 +678,19 @@ unsigned int aml1216_detect_key(unsigned int flags)
 
         if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
             exit_reason = 7;
+			ret = FLAG_WAKEUP_ALARM;
             break;
         }
 
-    } while (!(readl(0xc8100088) & (1<<8))/* && (readl(P_AO_GPIO_I)&(1<<3))*/);            // power key
+#ifdef CONFIG_BT_WAKEUP
+        if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<16)){
+			exit_reason = 8;
+            ret = FLAG_WAKEUP_BT;
+			break;
+		}
+#endif
+
+    } while (!(readl(0xc8100088) & (1<<8)));            // power key
 
     writel(1<<8,0xc810008c);
     writel(gpio_sel0, 0xc8100084);
