@@ -31,6 +31,7 @@
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
+#define BL_POWER_ON_DELAY	100	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
@@ -94,8 +95,6 @@ static unsigned short gamma_table[256] = {
         224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
 
-
-
 //**** default settings, don't modify them unless there is display problem ***//
 #define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=1.5%, 4=2%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
@@ -118,7 +117,6 @@ static DSI_Config_t lcd_mipi_config = {
         .sleep_out_delay=100,
         .display_on_delay=100,
         .mipi_init_flag=0,
-        .power_on_cmd=&dsi_power_on_cmd[0],
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -246,6 +244,7 @@ Lcd_Bl_Config_t bl_config_dft = {
 	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
 	.level_min = BL_LEVEL_MIN,
 	.level_max = BL_LEVEL_MAX,
+	.power_on_delay = BL_POWER_ON_DELAY,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,

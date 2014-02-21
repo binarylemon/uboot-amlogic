@@ -31,6 +31,7 @@
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
+#define BL_POWER_ON_DELAY	200	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
@@ -202,6 +203,7 @@ Lcd_Bl_Config_t bl_config_dft = {
 	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
 	.level_min = BL_LEVEL_MIN,
 	.level_max = BL_LEVEL_MAX,
+	.power_on_delay = BL_POWER_ON_DELAY,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,
@@ -248,7 +250,7 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		
+		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST <<0),
         .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),

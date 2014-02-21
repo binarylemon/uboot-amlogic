@@ -31,6 +31,7 @@
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
+#define BL_POWER_ON_DELAY	100	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
@@ -202,6 +203,7 @@ Lcd_Bl_Config_t bl_config_dft = {
 	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
 	.level_min = BL_LEVEL_MIN,
 	.level_max = BL_LEVEL_MAX,
+	.power_on_delay = BL_POWER_ON_DELAY,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,

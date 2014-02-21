@@ -496,6 +496,7 @@ typedef struct {
 	unsigned level_mid_mapping;
 	unsigned level_min;
 	unsigned level_max;
+	unsigned short power_on_delay;
 	unsigned char method;
 	int gpio;
 	unsigned dim_max;

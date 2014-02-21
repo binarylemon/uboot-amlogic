@@ -290,6 +290,8 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	int i;
 
 	if( status == ON ) {
+		mdelay(pDev->bl_config->power_on_delay);
+		
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
 			WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 			mdelay(20);
@@ -3035,6 +3037,15 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	DBG_PRINT("bl level max=%u, min=%u\n", bl_conf->level_max, bl_conf->level_min);
 	
+	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_power_on_delay", NULL);
+	if(propdata == NULL){
+		printf("faild to get bl_power_on_delay\n");
+		bl_conf->power_on_delay = 100;
+	}
+	else {
+		bl_conf->power_on_delay = (unsigned short)(be32_to_cpup((u32*)propdata));
+	}
+	DBG_PRINT("bl power_on_delay: %ums\n", bl_conf->power_on_delay);
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_ctrl_method", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_ctrl_method\n");
@@ -3044,6 +3055,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->method = (be32_to_cpup((u32*)propdata) > BL_CTL_MAX) ? (BL_CTL_MAX-1) : (unsigned char)(be32_to_cpup((u32*)propdata));
 	}
 	DBG_PRINT("bl control_method: %s(%u)\n", bl_ctrl_method_table[bl_conf->method], bl_conf->method);
+	
 	propdata = fdt_getprop(dt_addr, nodeoffset, "bl_pwm_port_gpio_used", NULL);
 	if(propdata == NULL){
 		printf("faild to get bl_pwm_port_gpio_used\n");
