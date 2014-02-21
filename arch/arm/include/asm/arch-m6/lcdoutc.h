@@ -410,15 +410,10 @@ typedef struct {
 } MLVDS_Config_t;
 
 typedef struct {
-	unsigned phy_ctrl;
-} PHY_Config_t;
-
-typedef struct {
 	LVDS_Config_t *lvds_config;
 	TTL_Config_t *ttl_config;
 	MLVDS_Config_t *mlvds_config;
 	MLVDS_Tcon_Config_t *mlvds_tcon_config;	//Point to TCON0~7
-	PHY_Config_t *phy_config;
 } Lcd_Control_Config_t;
 
 typedef enum {

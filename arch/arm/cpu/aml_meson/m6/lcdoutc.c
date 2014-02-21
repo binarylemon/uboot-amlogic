@@ -47,7 +47,7 @@
 #define DRV_TYPE "c6"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20140106"
+#define DRIVER_DATE		"20140212"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -113,10 +113,6 @@ static TTL_Config_t lcd_ttl_config = {
 	.bit_swap = 0,
 };
 
-static PHY_Config_t lcd_phy_config = {
-	.phy_ctrl = 0xaf40,
-};
-
 static Lcd_Config_t lcd_config = {
 	.lcd_timing = {
 		.lcd_clk = 40000000,
@@ -145,7 +141,6 @@ static Lcd_Config_t lcd_config = {
 	.lcd_control = {
 		.lvds_config = &lcd_lvds_config,
 		.ttl_config = &lcd_ttl_config,
-		.phy_config = &lcd_phy_config,
 	},
 	.lcd_power_ctrl = {
 		.power_on_step = 0,
@@ -2015,7 +2010,7 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 			h_delay = 0;
 			break;
 	}
-	
+#if 0
 	h_offset = (pConf->lcd_timing.h_offset & 0xffff);
 	v_offset = (pConf->lcd_timing.v_offset & 0xffff);
 	if ((pConf->lcd_timing.h_offset >> 31) & 1)
@@ -2048,7 +2043,41 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 	pConf->lcd_timing.oeh_he_addr = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_active) % pConf->lcd_basic.h_period;
 	pConf->lcd_timing.oeh_vs_addr = pConf->lcd_timing.de_vstart;
 	pConf->lcd_timing.oeh_ve_addr = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_active - 1) % pConf->lcd_basic.v_period;
-	
+#else
+    pConf->lcd_timing.video_on_pixel = pConf->lcd_basic.h_period - pConf->lcd_basic.h_active -h_delay;
+    pConf->lcd_timing.video_on_line = pConf->lcd_basic.v_period - pConf->lcd_basic.v_active;
+
+    h_offset = (pConf->lcd_timing.h_offset & 0xffff);
+    v_offset = (pConf->lcd_timing.v_offset & 0xffff);
+    if ((pConf->lcd_timing.h_offset >> 31) & 1)
+        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active + pConf->lcd_basic.h_period - h_offset) % pConf->lcd_basic.h_period;
+    else
+        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active + h_offset) % pConf->lcd_basic.h_period;
+    if ((pConf->lcd_timing.v_offset >> 31) & 1)
+        pConf->lcd_timing.de_vstart = (pConf->lcd_basic.v_period - pConf->lcd_basic.v_active + pConf->lcd_basic.v_period - v_offset) % pConf->lcd_basic.v_period;
+    else
+        pConf->lcd_timing.de_vstart = (pConf->lcd_basic.v_period - pConf->lcd_basic.v_active + v_offset) % pConf->lcd_basic.v_period;
+
+    hstart = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
+    hend = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp + pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;	
+    pConf->lcd_timing.sth1_hs_addr = hstart;
+    pConf->lcd_timing.sth1_he_addr = hend;
+    pConf->lcd_timing.sth1_vs_addr = 0;
+    pConf->lcd_timing.sth1_ve_addr = pConf->lcd_basic.v_period - 1;
+
+    pConf->lcd_timing.stv1_hs_addr = hstart;
+    pConf->lcd_timing.stv1_he_addr = hstart;
+    vstart = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
+    vend = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp + pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
+    pConf->lcd_timing.stv1_vs_addr = vstart;
+    pConf->lcd_timing.stv1_ve_addr = vend;
+
+    pConf->lcd_timing.oeh_hs_addr = pConf->lcd_timing.de_hstart;
+    pConf->lcd_timing.oeh_he_addr = (pConf->lcd_timing.de_hstart + pConf->lcd_basic.h_active) % pConf->lcd_basic.h_period;
+    pConf->lcd_timing.oeh_vs_addr = pConf->lcd_timing.de_vstart;
+    pConf->lcd_timing.oeh_ve_addr = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_active - 1) % pConf->lcd_basic.v_period;
+#endif
+
 	DBG_PRINT("sth1_hs_addr=%d, sth1_he_addr=%d, sth1_vs_addr=%d, sth1_ve_addr=%d\n", pConf->lcd_timing.sth1_hs_addr, pConf->lcd_timing.sth1_he_addr, pConf->lcd_timing.sth1_vs_addr, pConf->lcd_timing.sth1_ve_addr);
 	DBG_PRINT("stv1_hs_addr=%d, stv1_he_addr=%d, stv1_vs_addr=%d, stv1_ve_addr=%d\n", pConf->lcd_timing.stv1_hs_addr, pConf->lcd_timing.stv1_he_addr, pConf->lcd_timing.stv1_vs_addr, pConf->lcd_timing.stv1_ve_addr);
 	DBG_PRINT("oeh_hs_addr=%d, oeh_he_addr=%d, oeh_vs_addr=%d, oeh_ve_addr=%d\n", pConf->lcd_timing.oeh_hs_addr, pConf->lcd_timing.oeh_he_addr, pConf->lcd_timing.oeh_vs_addr, pConf->lcd_timing.oeh_ve_addr);
@@ -2522,8 +2551,8 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 	else {
 		pConf->lcd_timing.h_offset = ((be32_to_cpup((u32*)propdata) << 31) | ((be32_to_cpup((((u32*)propdata)+1)) & 0xffff) << 0));
 		pConf->lcd_timing.v_offset = ((be32_to_cpup((((u32*)propdata)+2)) << 31) | ((be32_to_cpup((((u32*)propdata)+3)) & 0xffff) << 0));
-		DBG_PRINT("h_offset = %s%u, ", (((pConf->lcd_timing.h_offset >> 31) & 1) ? "+" : "-"), (pConf->lcd_timing.h_offset & 0xffff));
-		DBG_PRINT("v_offset = %s%u\n", (((pConf->lcd_timing.v_offset >> 31) & 1) ? "+" : "-"), (pConf->lcd_timing.v_offset & 0xffff));
+		DBG_PRINT("h_offset = %s%u, ", (((pConf->lcd_timing.h_offset >> 31) & 1) ? "-" : ""), (pConf->lcd_timing.h_offset & 0xffff));
+		DBG_PRINT("v_offset = %s%u\n", (((pConf->lcd_timing.v_offset >> 31) & 1) ? "-" : ""), (pConf->lcd_timing.v_offset & 0xffff));
 	}	
 	propdata = fdt_getprop(dt_addr, nodeoffset, "dither_user_ctrl", NULL);
 	if(propdata == NULL){
@@ -2646,14 +2675,6 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 			printf("pll_ctrl = 0x%x, div_ctrl = 0x%x, clk_ctrl=0x%x\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, (pConf->lcd_timing.clk_ctrl & 0xffff));
 		}
 	}
-	// propdata = fdt_getprop(dt_addr, nodeoffset, "phy_ctrl", NULL);
-	// if(propdata == NULL){
-		// DBG_PRINT("don't find to match phy_ctrl, use default setting.\n");
-	// }
-	// else {
-		// pConf->lcd_control.dphy_config->phy_ctrl = be32_to_cpup((u32*)propdata);
-		// DBG_PRINT("phy_ctrl = 0x%x\n", pConf->lcd_control.dphy_config->phy_ctrl);
-	// }
 	propdata = fdt_getprop(dt_addr, nodeoffset, "lvds_vswing", NULL);
 	if(propdata == NULL){
 		DBG_PRINT("don't find to match lvds_vswing, use default setting.\n");
@@ -2693,15 +2714,15 @@ static inline int _get_lcd_default_config(Lcd_Config_t *pConf)
 		pConf->lcd_effect.rgb_coeff_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 		DBG_PRINT("rgb_base = 0x%x, rgb_coeff = 0x%x\n", pConf->lcd_effect.rgb_base_addr, pConf->lcd_effect.rgb_coeff_addr);
 	}	
-	propdata = fdt_getprop(dt_addr, nodeoffset, "video_on_pixel_line", NULL);
-	if(propdata == NULL){
-		DBG_PRINT("don't find to match video_on_pixel_line, use default setting.\n");
-	}
-	else {
-		pConf->lcd_timing.video_on_pixel = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_timing.video_on_line = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		DBG_PRINT("video_on_pixel = %u, video_on_line = %u\n", pConf->lcd_timing.video_on_pixel, pConf->lcd_timing.video_on_line);
-	}
+	// propdata = fdt_getprop(dt_addr, nodeoffset, "video_on_pixel_line", NULL);
+	// if(propdata == NULL){
+		// DBG_PRINT("don't find to match video_on_pixel_line, use default setting.\n");
+	// }
+	// else {
+		// pConf->lcd_timing.video_on_pixel = (unsigned short)(be32_to_cpup((u32*)propdata));
+		// pConf->lcd_timing.video_on_line = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		// DBG_PRINT("video_on_pixel = %u, video_on_line = %u\n", pConf->lcd_timing.video_on_pixel, pConf->lcd_timing.video_on_line);
+	// }
 
 	return ret;
 }

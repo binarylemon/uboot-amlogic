@@ -433,15 +433,10 @@ typedef struct {
 } TTL_Config_t;
 
 typedef struct {
-	unsigned phy_ctrl;
-} DPHY_Config_t;
-
-typedef struct {
 	DSI_Config_t *mipi_config;
 	LVDS_Config_t *lvds_config;
 	EDP_Config_t *edp_config;
 	TTL_Config_t *ttl_config;
-	DPHY_Config_t *phy_config;
 } Lcd_Control_Config_t;
 
 typedef enum {
