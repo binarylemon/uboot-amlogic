@@ -87,7 +87,7 @@ struct partitions partitions_emmc[]={
             .size = 64*1024*1024,
         },
         {
-            .name = "userdata",
+            .name = "data",
             .offset = 1200*1024*1024,
             .size = 1336*1024*1024,
         },
