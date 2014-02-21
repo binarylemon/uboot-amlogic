@@ -270,14 +270,13 @@ static const char* lcd_type_table_match[]={
 	"invalid",
 };
 
+#define SS_LEVEL_MAX	5
 static const char *lcd_ss_level_table[]={
 	"0",
 	"0.5%",
 	"1%",
+	"1.5%",
 	"2%",
-	"3%",
-	"4%",
-	"5%",
 };
 
 #define PANEL_MODEL_DEFAULT	"Panel_Default"

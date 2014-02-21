@@ -47,7 +47,7 @@
 #define DRV_TYPE "c6"
 
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20131230"
+#define DRIVER_DATE		"20140106"
 #define DRIVER_VER		"u"
 
 #define VPP_OUT_SATURATE            (1 << 0)
@@ -2074,7 +2074,9 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	struct aml_pmu_driver *pmu_driver;
 	int battery_percent;
 #endif
+	unsigned char ss_level = (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf;
 	
+	lcd_control_config(pConf);
 	if (pConf->lcd_timing.clk_ctrl & (1 << CLK_CTRL_AUTO)) {
 		printf("Auto generate clock parameters.\n");
 		generate_clk_parameter(pConf);
@@ -2084,9 +2086,10 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 		printf("Custome clock parameters.\n");
 		printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 	}
+	ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
+	pConf->lcd_timing.clk_ctrl = ((pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (ss_level << CLK_CTRL_SS));
 	lcd_sync_duration(pConf);
 	lcd_tcon_config(pConf);
-	lcd_control_config(pConf);
 	
 	if (pDev->bl_config->level_default == pDev->bl_config->level_min) {
 		set_lcd_backlight_level(pDev->bl_config->level_min);
