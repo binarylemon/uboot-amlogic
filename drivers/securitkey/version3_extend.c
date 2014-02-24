@@ -9,7 +9,10 @@
 #include <linux/types.h>
 #include "aml_keys.h"
 #include <amlogic/securitykey.h>
+
+#include <asm/arch/meson_cpu.h>
 #define key_schem_print(a...)   //printk(a)
+
 
 #define PATH_MAX	512
 static char secure_device[PATH_MAX];
@@ -64,7 +67,7 @@ struct v3_key_storage_head{
 #define KEY_HEAD_MARK	"keyexist"
 struct v3_key_storage_head storage_head={
 	.mark=KEY_HEAD_MARK,
-#ifdef CONFIG_M8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 	.version = 2,   /* version 1: key was encrypted with aml_key_encrypt(aes), the aes is aml_aes algorithm
 					 * version 2: key is encrypted with aml_keysafety_encrypt(aes), the aes is polarssl algorithm
 					 * above two aes way is different, 
