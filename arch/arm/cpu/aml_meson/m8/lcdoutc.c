@@ -1931,15 +1931,15 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 	pConf->lcd_timing.oeh_vs_addr = pConf->lcd_timing.de_vstart;
 	pConf->lcd_timing.oeh_ve_addr = (pConf->lcd_timing.de_vstart + pConf->lcd_basic.v_active - 1) % pConf->lcd_basic.v_period;
 #else
-    pConf->lcd_timing.video_on_pixel = pConf->lcd_basic.h_period - pConf->lcd_basic.h_active -h_delay;
+    pConf->lcd_timing.video_on_pixel = pConf->lcd_basic.h_period - pConf->lcd_basic.h_active - 1 -h_delay;
     pConf->lcd_timing.video_on_line = pConf->lcd_basic.v_period - pConf->lcd_basic.v_active;
 
     h_offset = (pConf->lcd_timing.h_offset & 0xffff);
     v_offset = (pConf->lcd_timing.v_offset & 0xffff);
     if ((pConf->lcd_timing.h_offset >> 31) & 1)
-        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active + pConf->lcd_basic.h_period - h_offset) % pConf->lcd_basic.h_period;
+        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active - 1 + pConf->lcd_basic.h_period - h_offset) % pConf->lcd_basic.h_period;
     else
-        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active + h_offset) % pConf->lcd_basic.h_period;
+        pConf->lcd_timing.de_hstart = (pConf->lcd_basic.h_period - pConf->lcd_basic.h_active - 1 + h_offset) % pConf->lcd_basic.h_period;
     if ((pConf->lcd_timing.v_offset >> 31) & 1)
         pConf->lcd_timing.de_vstart = (pConf->lcd_basic.v_period - pConf->lcd_basic.v_active + pConf->lcd_basic.v_period - v_offset) % pConf->lcd_basic.v_period;
     else
