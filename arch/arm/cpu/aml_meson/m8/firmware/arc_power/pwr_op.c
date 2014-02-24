@@ -388,7 +388,7 @@ void rn5t618_power_off_at_24M()
     //  rn5t618_set_gpio(1, 1);                                         // close boost
     }
 #endif
-	rn5t618_set_gpio(1, 1);                                             // close vccx2
+	//rn5t618_set_gpio(1, 1);                                             // close vccx2
     rn5t618_set_gpio(0, 1);                                             // close vccx3
     udelay__(500);
 
@@ -524,6 +524,7 @@ void rn5t618_power_on_at_32K_2()        // need match power sequence of power_of
     // TODO: add code here
 }
 
+
 unsigned int rn5t618_detect_key(unsigned int flags)
 {
     int delay_cnt   = 0;
@@ -627,6 +628,14 @@ unsigned int rn5t618_detect_key(unsigned int flags)
             ret = FLAG_WAKEUP_BT;
 			break;
 		}
+#endif
+#ifdef CONFIG_WIFI_WAKEUP
+			if (flags != 0x87654321)
+			if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<21)){
+				exit_reason = 9;
+				ret = FLAG_WAKEUP_WIFI;
+				break;
+			}
 #endif
 
     } while (!(readl(0xc8100088) & (1<<8)));            // power key
