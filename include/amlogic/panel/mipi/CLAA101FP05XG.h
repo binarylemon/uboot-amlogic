@@ -20,16 +20,15 @@
 #define	LCD_CLK				154128000	/** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
 #define CLK_POL				1			/** clk_polarity(only valid for TTL) */
 #define HS_WIDTH			32	/** hsync_width */
-#define HS_BACK_PORCH		80	/** hsync_backporch(include hsync_width) */
+#define HS_BACK_PORCH		112	/** hsync_backporch(include hsync_width) */
 #define HS_POL				0	/** hsync_polarity(0=negative, 1=positive) */
 #define VS_WIDTH			6	/** vsync_width */
 #define VS_BACK_PORCH		26	/** vsync_backporch(include vsync_width) */
 #define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
 #define VSYNC_H_ADJUST_SIGN 0  /** 0=positive,1=negative */
-#define VSYNC_H_ADJUST  0  /** vertical_hbegin_adjust */
+#define VSYNC_H_ADJUST      0  /** adj_sign(0=positive, 1=negative), adj_value. default is 0 */
 //************************************************
-
-/** special power on command, 2 data is a pair(reg, value), ending flag is 0xFF,0xFF,the last value which behide 0xFF is delay time after power_on_cmd*/
+/** special power on command, 2 data is a pair(reg, value). if the first valu is 0xff, second value is delay time(unit: ms). ending flag is 0xff,0xff. */
 static unsigned short dsi_power_on_cmd[] = {0xFF,0xFF};
 
 #endif

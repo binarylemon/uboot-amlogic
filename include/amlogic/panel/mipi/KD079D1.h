@@ -4,7 +4,7 @@
 //*****************************************
 // Define LCD Typical Timing Parameters
 //*****************************************
-#define MODEL_NAME			"B080XAN01"	/** lcd model name */
+#define MODEL_NAME			"KD079D1"	/** lcd model name */
 #define ACITVE_AREA_WIDTH	119	/** lcd active_area or display_area horizontal size(unit in mm, you can find it on the home page of lcd spec) */
 #define ACITVE_AREA_HEIGHT	159	/** lcd active_area or display_area vertical size(unit in mm, you can find it on the home page of lcd spec) */
 #define LCD_TYPE			LCD_DIGITAL_MIPI   /** lcd interface(LCD_DIGITAL_MIPI, LCD_DIGITAL_LVDS, LCD_DIGITAL_EDP, LCD_DIGITAL_TTL) */
