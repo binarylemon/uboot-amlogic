@@ -499,6 +499,8 @@ void aml1216_power_off_at_24M()
 {
     otg_status = i2c_pmu_read_b(0x0019);
     i2c_pmu_write_b(0x0019, 0x10);                                      // cut usb output
+    power_off_vcc50();
+    udelay__(100);
     aml1216_set_gpio(1, 1);                                             // close vccx3
     aml1216_set_gpio(2, 1);                                             // close vccx2
     udelay__(500);
@@ -551,6 +553,7 @@ void aml1216_power_on_at_24M()
 
     aml1216_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
     udelay__(1 * 1000);
+    power_on_vcc50();
     i2c_pmu_write_b(0x0019, otg_status);
 }
 

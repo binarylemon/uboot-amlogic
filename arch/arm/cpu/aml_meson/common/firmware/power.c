@@ -674,9 +674,46 @@ int aml1216_set_ldo_voltage(int ldo, int voltage)
     __udelay(5 * 100);
 }
 
+void aml1216_check_vbat(int init)
+{
+    unsigned char val1, val2, val3;
+
+    if (init) {
+        val1 = hard_i2c_read168(DEVID, 0x0087);
+        val2 = hard_i2c_read168(DEVID, 0x0088);
+        val3 = hard_i2c_read168(DEVID, 0x0089);
+        serial_puts("-- fault status: ");
+        serial_put_hex(val1, 8);
+        serial_put_hex(val2, 8);
+        serial_put_hex(val3, 8);
+        serial_puts("\n");
+        __udelay(10 * 1000);
+        hard_i2c_write168(DEVID, 0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
+        hard_i2c_write168(DEVID, 0x009C, 0x10);
+        hard_i2c_write168(DEVID, 0x009D, 0x04);//close force charge and discharge sample mask
+        hard_i2c_write168(DEVID, 0x009E, 0x08);//enable VBAT measure result average 4 samples
+        hard_i2c_write168(DEVID, 0x009F, 0x20);//enable IBAT measure result average 4 samples
+        hard_i2c_write168(DEVID, 0x009A, 0x20);
+        hard_i2c_write168(DEVID, 0x00B8, 0x00);
+        hard_i2c_write168(DEVID, 0x00A9, 0x8f);
+
+        hard_i2c_write168(DEVID, 0x00A0, 0x01);//select auto-sampling timebase is 2ms
+        hard_i2c_write168(DEVID, 0x00A1, 0x15);//set the IBAT measure threshold and enable auto IBAT +VBAT_in_active sample
+        hard_i2c_write168(DEVID, 0x00C9, 0x06);// open DCIN_OK and USB_OK IRQ
+    }
+    __udelay(80000);
+    val1 = hard_i2c_read168(DEVID, 0x00af);
+    val2 = hard_i2c_read168(DEVID, 0x00b0);
+    serial_puts("-- vbat: 0x");
+    serial_put_hex(val2, 8);
+    serial_put_hex(val1, 8);
+    serial_puts("\n");
+}
+
 void aml1216_power_init(int init_mode)
 {
-      if (init_mode == POWER_INIT_MODE_NORMAL) {
+    aml1216_check_vbat(1);
+    if (init_mode == POWER_INIT_MODE_NORMAL) {
 #ifdef CONFIG_VCCK_VOLTAGE
         aml1216_set_dcdc_voltage(1, CONFIG_VCCK_VOLTAGE);           // set cpu voltage
         __udelay(2000);
@@ -726,14 +763,15 @@ void aml1216_power_init(int init_mode)
         aml1216_set_ldo_voltage(6, CONFIG_VCC_CAM);
         hard_i2c_write168(DEVID, 0x83, 0x01);                           // open LDO6
 #endif
-       } else if (init_mode == POWER_INIT_MODE_USB_BURNING) {
-          /*
-            * if under usb burning mode, keep VCCK and VDDEE
-            * as low as possible for power saving and stable issue
-            */
+    } else if (init_mode == POWER_INIT_MODE_USB_BURNING) {
+        /*
+         * if under usb burning mode, keep VCCK and VDDEE
+         * as low as possible for power saving and stable issue
+         */
         aml1216_set_dcdc_voltage(1, 900);                       // set cpu voltage                      
         aml1216_set_vddEE_voltage(950);                        // set VDDEE voltage
-       }
+    }
+    aml1216_check_vbat(0);
 }
 #endif
 void power_init(int init_mode)

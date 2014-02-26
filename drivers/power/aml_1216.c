@@ -557,8 +557,8 @@ int aml1216_set_charging_current(int current)
     } else {                                    // input is charge ratio
         current = (current * board_battery_para.pmu_battery_cap) / 100 + 100; 
     } 
-    if (current > 1050) {                       // limit current to 1050mA 
-        current = 1050;    
+    if (current < 750) {                        // for charge current stable issue@4.7uH
+        current = 750;    
     }
     aml1216_read(0x012b, &cur_val);
     idx_to = (current-300) / 150;
@@ -854,7 +854,7 @@ void check_boot_up_source(void)
     aml1216_read(0x8A, &val1);
     aml1216_read(0xE0, &val2);
     
-    val_total = val1 | (val1  << 8 ) ;
+    val_total = val1 | (val2  << 8 ) ;
     
     printf("Cause of the power up:\n");
 
@@ -982,7 +982,6 @@ int aml1216_set_recharge_voltage(void)
 
 int aml1216_init(void)
 {
-
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1216_check_fault();
@@ -1013,6 +1012,10 @@ int aml1216_init(void)
 
     aml1216_set_gpio(2, 0);                     // open VCCX2
     aml1216_set_gpio(3, 1);                     // close ldo 1.2v
+    udelay(1000 * 100);
+    printf("%s, open boost\n", __func__);
+    aml1216_write16(0x0082, 0x0001);            // software boost up
+    udelay(1000);
     dump_pmu_register();
 
     return 0;
