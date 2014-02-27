@@ -78,9 +78,10 @@ bool emmckey_is_protected (struct mmc *mmc)
 
 bool emmckey_is_access_range_legal (struct mmc *mmc, ulong start, lbaint_t blkcnt)
 {
+#ifdef CONFIG_SECURITYKEY
 	struct aml_emmckey_info_t *emmckey_info;
 	emmckey_info = mmc->aml_emmckey_info;
-
+#endif
 	if(aml_is_emmc_tsd(mmc)){
 		
 #ifdef CONFIG_STORE_COMPATIBLE
