@@ -175,6 +175,14 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 	{
 		s = argv[2];
 		unsigned int nAddr = simple_strtoul(s, &end, 16);
+		int nChkVal,nChkAddr;
+		nChkVal = nChkAddr = 0;
+		efuse_read(&nChkVal,sizeof(nChkVal),(loff_t*)&nChkAddr);
+		if(((nChkVal >> 7) & 1) && ((nChkVal >> 6) & 1))
+		{
+			printf("aml log : boot key can not write twice!\n");
+			return -1;
+		}		
 		if(aml_sec_boot_check_efuse(nAddr))
 			printf("aml log : efuse pattern check fail!\n");
 		else

@@ -205,23 +205,6 @@ int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	unsigned char sz2[] = {
 	0x01,0x37,0x4B,};
 
-	int nStep = 0;	
-	
-	switch(* (unsigned int *)0xd9040004)
-	{
-	case 0x25e2: break;
-	case 0x27ed: nStep = 1 ; break;
-	default: return -1;break;
-	}
-	
-	t_func_v3 fp_02 = (t_func_v3)g_action[nStep][2];
-
-	unsigned int nState  = 0;
-	fp_02(&nState,0,4);
-
-	if(((nState >> 7) & 1) && ((nState >> 6) & 1))
-		return -1;
-
 	return aml_m8_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2));
 }
 #endif //
