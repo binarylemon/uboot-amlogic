@@ -302,8 +302,14 @@ LIBS := $(addprefix $(obj),$(sort $(LIBS)))
 
 ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
 LIBBOARD = customer/board/$(BOARD)/lib$(BOARD).o
+ifdef CONFIG_AML_CRYPTO_UBOOT
+BOOT_KEY_PATH = ./customer/board/$(BOARD)
+endif
 else
 LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).o
+ifdef CONFIG_AML_CRYPTO_UBOOT
+BOOT_KEY_PATH = ./board/$(BOARDDIR)
+endif
 endif
 
 LIBBOARD := $(addprefix $(obj),$(LIBBOARD))
@@ -456,6 +462,9 @@ ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 ifeq ($(CONFIG_M8_SECU_BOOT),y)
 	@./tools/secu_boot/encrypto3 $@
+ifdef CONFIG_AML_CRYPTO_UBOOT	
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.rsa $@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
+endif
 endif #END CONFIG_M8_SECU_BOOT
 else		
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
@@ -465,6 +474,15 @@ ifdef CONFIG_M6_SECU_AUTH_KEY
 else
 	@./tools/secu_boot/encrypto2 $@
 endif
+
+ifdef CONFIG_AML_CRYPTO_UBOOT
+ifeq ($(CONFIG_M6TVD),y)
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.rsa $@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
+else
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.rsa $@.aml
+endif
+endif
+
 endif
 endif
 

@@ -333,14 +333,8 @@ save
 //M6 Auth-key build to uboot
 //#define CONFIG_M6_SECU_AUTH_KEY 1
 
-
-//enable CONFIG_M6_SECU_BOOT_2K must enable CONFIG_M6_SECU_BOOT first
-#if defined(CONFIG_M6_SECU_BOOT_2K)
-	#if !defined(CONFIG_M6_SECU_BOOT)
-		#define CONFIG_M6_SECU_BOOT 1
-	#endif //!defined(CONFIG_M6_SECU_BOOT)
-#endif //defined(CONFIG_M6_SECU_BOOT_2K)
-
+//To build the encrypted uboot with key: aml-rsa-key.rsa
+//#define CONFIG_AML_CRYPTO_UBOOT 1
 
 //M6 L1 cache enable for uboot decompress speed up
 //#define CONFIG_AML_SPL_L1_CACHE_ON	1

@@ -288,6 +288,9 @@
 //m6 security boot
 //#define CONFIG_M6_SECU_BOOT	1
 
+//To build the encrypted uboot with key: aml-rsa-key.rsa and aml-aes-key.aes
+//#define CONFIG_AML_CRYPTO_UBOOT 1
+
 //M6TV L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
 
