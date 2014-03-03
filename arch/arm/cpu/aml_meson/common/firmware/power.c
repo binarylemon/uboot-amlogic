@@ -11,6 +11,8 @@ extern void hard_i2c_write8(unsigned char SlaveAddr, unsigned char RegAddr, unsi
 extern unsigned char hard_i2c_read168(unsigned char SlaveAddr, unsigned short RegAddr);
 extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, unsigned char Data); 
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 #ifndef CONFIG_VDDAO_VOLTAGE
 #define CONFIG_VDDAO_VOLTAGE 1200
 #endif
@@ -605,59 +607,156 @@ int aml1216_set_dcdc_voltage(int dcdc, int voltage)
     return 0;
 }
 
+static int ldo2_voltage[] = {
+    3330, 3290, 3240, 3190,  3140, 3090, 3040, 2990, 
+    2940, 2890, 2840, 2790,  2740, 2690, 2640, 2600, 
+    2560, 2510, 2460, 2410,  2360, 2310, 2260, 2210, 
+    2160, 2110, 2060, 2010,  1960, 1910, 1860, 1820, 
+    2200, 2160, 2110, 2060,  2010, 1960, 1910, 1860, 
+    1810, 1760, 1710, 1660,  1610, 1560, 1510, 1460, 
+    1420, 1380, 1330, 1280,  1230, 1180, 1130, 1080,
+    1030,  980,  930,  880,   830,  780,  730,  680
+};
+
+static int ldo3_voltage[] = {
+    3640, 3600, 3550, 3500,  3450, 3400, 3350, 3300, 
+    3250, 3200, 3150, 3100,  3050, 3000, 2950, 2900, 
+    2800, 2760, 2710, 2660,  2610, 2560, 2510, 2460, 
+    2410, 2360, 2310, 2260,  2210, 2160, 2110, 2070, 
+    2250, 2220, 2170, 2120,  2070, 2020, 1970, 1920, 
+    1870, 1820, 1770, 1720,  1670, 1620, 1570, 1530, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720, 680
+};
+
+static int ldo4_voltage[] = {
+    3640, 3600, 3550, 3500,  3450, 3400, 3350, 3300,
+    3250, 3200, 3150, 3100,  3050, 3000, 2950, 2900, 
+    2800, 2760, 2710, 2660,  2610, 2560, 2510, 2460, 
+    2410, 2360, 2310, 2260,  2210, 2160, 2110, 2070, 
+    2250, 2220, 2170, 2120,  2070, 2020, 1970, 1920, 
+    1870, 1820, 1770, 1720,  1670, 1620, 1570, 1530, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+static int ldo5_voltage[] = {
+    3320, 3270, 3220, 3170,  3120, 3070, 3020, 2970, 
+    2920, 2870, 2820, 2770,  2720, 2670, 2620, 2570, 
+    2530, 2500, 2450, 2400,  2350, 2300, 2250, 2200, 
+    2150, 2100, 2050, 2000,  1950, 1900, 1850, 1810, 
+    2200, 2140, 2090, 2040,  1990, 1940, 1890, 1840, 
+    1790, 1740, 1690, 1640,  1590, 1540, 1490, 1440, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+static int ldo6_voltage[] = {
+    3410, 3380, 3330, 3280,  3230, 3180, 3130, 3080, 
+    3030, 2980, 2940, 2900,  2860, 2820, 2780, 2700, 
+    2600, 2550, 2490, 2450,  2410, 2370, 2330, 2290, 
+    2250, 2210, 2170, 2130,  2090, 2050, 2010, 1950, 
+    2010, 1970, 1930, 1890,  1850, 1810, 1770, 1730, 
+    1690, 1650, 1610, 1570,  1530, 1500, 1460, 1420, 
+    1260, 1220, 1180, 1140,  1100, 1060, 1020,  980, 
+     940,  900,  860,  820,   780,  740,  700,  660
+};
+
+static int ldo7_voltage[] = {
+    3930, 3870, 3820, 3770,  3720, 3660, 3610, 3570, 
+    3620, 3570, 3520, 3470,  3420, 3370, 3320, 3270, 
+    3010, 2960, 2910, 2860,  2810, 2760, 2710, 2660, 
+    2610, 2560, 2510, 2460,  2410, 2360, 2310, 2260, 
+    2300, 2250, 2200, 2150,  2100, 2050, 2000, 1950, 
+    1990, 1940, 1890, 1840,  1790, 1740, 1690, 1640, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+struct ldo_attr {
+    int ldo;
+    int addr;
+    int mask;
+    int size;
+    int *voltage_table;
+};
+
+static struct ldo_attr aml1216_ldo_attr[] = {
+    {
+        .ldo  = 2,
+        .addr = 0x62,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo2_voltage,
+    }, 
+    {
+        .ldo  = 3,
+        .addr = 0x65,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo3_voltage,
+    }, 
+    {
+        .ldo  = 4,
+        .addr = 0x68,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo4_voltage,
+    }, 
+    {
+        .ldo  = 5,
+        .addr = 0x6b,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo5_voltage,
+    }, 
+    {
+        .ldo  = 6,
+        .addr = 0x6e,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo6_voltage,
+    }, 
+    {
+        .ldo  = 7,
+        .addr = 0x71,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo7_voltage,
+    }, 
+};
+
 int aml1216_set_ldo_voltage(int ldo, int voltage)
 {
-    int addr;
-    int idx_to, idx_cur;
-    int start = 720;
-    int step = 40;
-    int size = 46;
-    int tmp1;
+    int idx_cur, idx_to, i, j;
+    struct ldo_attr *attr = aml1216_ldo_attr;
 
-    if ( ldo >= 2)
-    {
-        addr  = 0x62 + (ldo-2)*3;
+    for (i = 0; i < ARRAY_SIZE(aml1216_ldo_attr); i++) {
+        if (attr[i].ldo == ldo) {
+            break;
+        } 
     }
-	else
-	{
-		serial_puts("wrong LDO value\n");
-	    return -1;
-	}
-    switch (ldo) {
-         case 2:
-             size = 63;
-             break;
-         case 5:
-             start = 720;
-             step  = 40;
-             break;
-         case 3:
-         case 4:
-         case 6:
-         case 7:
-             start = 740;
-             step  = 50;
-             break;
-         case 8:
-             start = 810;
-             step  = 60;
-             size  = 63;
-             break;
-         default:
-             serial_puts("wrong LDO value\n");
-             serial_put_hex(ldo, 8);
-             return -1;
-             break;
-    }
-    idx_to = find_idx(start, voltage, step, size);
-    tmp1 = 0x3f - idx_to;
-
-    if ( ldo == 8)
-    {
-        tmp1 = (idx_to-1) ^ 0x29;
+    if (i >= ARRAY_SIZE(aml1216_ldo_attr)) {
+        serial_puts("Wrong LDO value:");
+        serial_put_hex(ldo, 8);
+        serial_puts("\n");
+        return -1;
     }
 
-    idx_cur = hard_i2c_read168(DEVID, addr);
+    for (j = 0; j < attr[i].size - 1; j++) {
+        if (attr[i].voltage_table[j] >= voltage && attr[i].voltage_table[j + 1] <= voltage) {
+            break;    
+        }
+    }
+    if (j >= attr[i].size - 1) {
+        serial_puts("Wrong voltage value:");
+        serial_put_hex(voltage, 32);
+        serial_puts("\n");
+        return -1;
+    }
+
+    idx_to = j;
+    idx_cur = hard_i2c_read168(DEVID, attr[i].addr);
     
 #if 1                      // for debug
     serial_puts("\nLDO ");
@@ -665,12 +764,12 @@ int aml1216_set_ldo_voltage(int ldo, int voltage)
 	serial_puts(" voltage: set from 0x");
 	serial_put_hex(idx_cur, 8);
     serial_puts(" to 0x");
-	serial_put_hex(tmp1, 8);
+	serial_put_hex(idx_to, 8);
     serial_puts(", addr:0x");
-	serial_put_hex(addr, 8);
+	serial_put_hex(attr[i].addr, 8);
     serial_puts("\n");
 #endif
-    aml1216_set_bits(addr, (uint8_t)tmp1, 0x3f);
+    aml1216_set_bits(attr[i].addr, (uint8_t)idx_to, attr[i].mask);
     __udelay(5 * 100);
 }
 

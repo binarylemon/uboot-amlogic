@@ -402,16 +402,17 @@ void aml1216_power_off()
 int aml1216_set_usb_current_limit(int limit)
 {
     int val;
-    if ((limit < 0 || limit > 2000) && (limit != -1)) {
+
+    if ((limit < 100 || limit > 1600) && (limit != -1)) {
        DBG("%s, wrong usb current limit:%d\n", __func__, limit); 
        return -1;
     }
     if (limit == -1) {                                       // -1 means not limit, so set limit to max
-        limit = 2000;    
+        limit = 1600;    
     }
-    val = (limit-500)/ 100;
-    
-    DBG("%s, set usb current limit to %d\n", __func__, limit);
+    val = (limit - 100) / 100;
+    val ^= 0x04;                                            // bit 2 is reverse bit 
+    DBG("%s, set usb current limit to %d, val:%x\n", __func__, limit, val);
     return aml1216_set_bits(0x002D, val, 0x0f);
 }
 
@@ -1004,10 +1005,10 @@ int aml1216_init(void)
     /*
      * open charger
      */
-    aml1216_set_bits(0x002a, 0x00, 0x02);       // open usb charger patch
+    aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x0c);
-    aml1216_write(0x012a, 0xcf);
+    aml1216_write(0x012a, 0x0f);                // David Li
     aml1216_write(0x012c, 0x20);
 
     aml1216_set_gpio(2, 0);                     // open VCCX2
