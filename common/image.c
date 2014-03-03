@@ -54,6 +54,7 @@
 #if defined(CONFIG_FIT)
 #include <u-boot/md5.h>
 #include <sha1.h>
+#include <sha256.h>
 
 static int fit_check_ramdisk (const void *fit, int os_noffset,
 		uint8_t arch, int verify);
@@ -70,6 +71,7 @@ static const image_header_t* image_get_ramdisk (ulong rd_addr, uint8_t arch,
 #else
 #include "mkimage.h"
 #include <u-boot/md5.h>
+#include <sha256.h>
 #include <time.h>
 #include <image.h>
 #endif /* !USE_HOSTCC*/
@@ -2501,6 +2503,10 @@ static int calculate_hash (const void *data, int data_len, const char *algo,
 		sha1_csum_wd ((unsigned char *) data, data_len,
 				(unsigned char *) value, CHUNKSZ_SHA1);
 		*value_len = 20;
+	} else if (strcmp(algo, "sha256") == 0) {
+		sha256_csum_wd((unsigned char *)data, data_len,
+			       (unsigned char *)value, CHUNKSZ_SHA256);
+		*value_len = SHA256_SUM_LEN;
 	} else if (strcmp (algo, "md5") == 0 ) {
 		md5_wd ((unsigned char *)data, data_len, value, CHUNKSZ_MD5);
 		*value_len = 16;

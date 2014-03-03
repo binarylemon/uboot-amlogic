@@ -75,6 +75,7 @@ EXT_OBJ_FILES-y += common/image.o
 EXT_OBJ_FILES-y += lib/crc32.o
 EXT_OBJ_FILES-y += lib/md5.o
 EXT_OBJ_FILES-y += lib/sha1.o
+EXT_OBJ_FILES-y += lib/sha256.o
 
 # Source files located in the tools directory
 OBJ_FILES-$(CONFIG_LCD_LOGO) += bmp_logo.o
@@ -192,6 +193,7 @@ $(obj)mkimage$(SFX):	$(obj)crc32.o \
 			$(obj)mkimage.o \
 			$(obj)os_support.o \
 			$(obj)sha1.o \
+			$(obj)sha256.o \
 			$(LIBFDT_OBJS)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
