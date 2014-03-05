@@ -34,6 +34,17 @@ STANDALONE_LOAD_ADDR = 0xc100000
 endif
 endif
 
+ifeq ($(SOC),m6)
+STANDALONE_LOAD_ADDR = 0x83000000
+else
+ifeq ($(SOC),m8)
+STANDALONE_LOAD_ADDR = 0x13000000
+else
+STANDALONE_LOAD_ADDR = 0x13000000
+endif
+endif
+
+
 PLATFORM_CPPFLAGS += -DCONFIG_ARM -D__ARM__
 
 # Explicitly specifiy 32-bit ARM ISA since toolchain default can be -mthumb:
