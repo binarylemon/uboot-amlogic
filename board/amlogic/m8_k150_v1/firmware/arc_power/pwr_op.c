@@ -437,29 +437,9 @@ int aml1216_get_battery_voltage()
 int aml1216_get_charge_status(void)
 {
     unsigned short val = 0;
-    int vbus_vol = 0, dcin_vol = 0;
-    /*
-     * tmp work around for charge status register can't update
-     */
-    i2c_pmu_write_b(0x00AA, 0xc1);
-    i2c_pmu_write_b(0x009A, 0x28);
-    __udelay(100);
-    val = i2c_pmu_read_w(0x00B1);
-    if (val & 0x1000) {
-        dcin_vol = 0;    
-    } else {
-        dcin_vol = (val * 12800) / 4096;
-    }
-    i2c_pmu_write_b(0x00AA, 0xc2);
-    i2c_pmu_write_b(0x009A, 0x28);
-    __udelay(100);
-    val = i2c_pmu_read_w(0x00B1);
-    if (val & 0x1000) {
-        vbus_vol = 0;    
-    } else {
-        vbus_vol = (val * 6400) / 4096;
-    }
-    if (vbus_vol >= 4500 || dcin_vol >= 4500) {
+
+    val = i2c_pmu_read_b(0x0172);
+    if (val & 0x18) {                // DCIN & VBUS are OK
         return 1;    
     } else {
         return 0;

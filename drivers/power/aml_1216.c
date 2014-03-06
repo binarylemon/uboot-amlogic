@@ -19,8 +19,6 @@ int aml1216_battery_calibrate(void);
 #define MAX_BUF         100
 #define AML1216_ADDR     0x35
 
-#define POWER_OK_THRESHOLD      4500                            // 4500mv
-
 #define DBG(format, args...) printf("[AML1216]"format,##args)
 static int aml1216_curr_dir = 0;
 static int aml1216_battery_test = 0;
@@ -220,39 +218,15 @@ int aml1216_get_vbus_voltage(void)
 
 int aml1216_get_charge_status(int print)
 {
-#if 0
-    uint8_t  val[4] = {};
-    uint32_t tmp;
-
-    aml1216_reads(0x00E0, val, 4);
-    tmp = (val[0] <<  0) | 
-          (val[1] <<  8) |
-          (val[2] << 16) |
-          (val[3] << 24);
-    if (print) {
-        printf("charge status:%08x", tmp);    
-    } 
-    if (!(val[1] & 0x02)) {                                 // CHG_GAT_BAT_LV is low, battery is discharging
-        return 2;    
-    } else if ((val[0] & 0x04) && (val[1] & 0x02)) {        // CHG_GAT_BAT_LV & CHG_CHGING are both 1, charging
-        return 1;                                           // charging    
-    } else {
-        return 3;                                           // not charging
-    }
-    return 0;
-#else
-    int vdcin, vbus;
-
+    uint8_t val;
     /*
      * work around for charge status register can't update problem
      */
-    vdcin = aml1216_get_dcin_voltage();
-    vbus  = aml1216_get_vbus_voltage();
+    aml1216_read(0x0172, &val);
     if (print) {
-        printf("vbus:%4d, vdcin:%4d", vbus, vdcin);     
+        printf("--charge status:0x%02x", val);     
     }
-    if (vdcin >= POWER_OK_THRESHOLD || 
-        vbus  >= POWER_OK_THRESHOLD) {
+    if (val & 0x18) {
         if (charger_sign_bit) {
             /*
              * DCIN & VBUS is ok, charge sign bit si negative, battery is charging now
@@ -264,7 +238,6 @@ int aml1216_get_charge_status(int print)
     } else {
         return 2;                                           // discharging 
     }
-#endif
 }
 
 static int aml1216_get_coulomber(void)
@@ -659,30 +632,14 @@ void aml1216_set_pfm(int dcdc, int en)
 
 int aml1216_charger_online(void)
 {
-#if 0
-    int val;
-    aml1216_read(0x00E0, &val);
-    if (val & 0x18) {
-        return 1;    
-    } else {
-        return 0;    
-    }
-#else
-  //uint8_t  val[6] = {};
+    uint8_t val;
 
-  //aml1216_reads(0x00CF, val, 6);
-  //if ((val[1] & 0x02) || !(val[1] & 0x04)) {
-  //    return 1;    
-  //} else {
-  //    return 0;    
-  //}
-    if (aml1216_get_dcin_voltage() >= POWER_OK_THRESHOLD || 
-        aml1216_get_vbus_voltage() >= POWER_OK_THRESHOLD) {
+    aml1216_read(0x0172, &val);
+    if (val & 0x18) {                           // DCIN & VBUS are OK
         return 1;    
     } else {
         return 0;    
     }
-#endif
 }
 
 int find_idx(int start, int target, int step, int size)
@@ -1002,9 +959,12 @@ int aml1216_init(void)
     aml1216_write(0x00A1, 0x15);//set the IBAT measure threshold and enable auto IBAT +VBAT_in_active sample
     aml1216_write(0x00C9, 0x06);// open DCIN_OK and USB_OK IRQ
 
+    aml1216_write16(0x0082, 0x0100);            // open ldo6 
     /*
      * open charger
      */
+    aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
+    aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
     aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x0c);
@@ -1063,15 +1023,64 @@ static struct aml_pmu_driver g_aml_pmu_driver = {
 struct aml_pmu_driver* aml_pmu_get_driver(void)
 {
     uint8_t val;
-/*
-    aml1216_read(0x00, &val);
-    if (val != 0x81) {
-        printf("%s, id %x is not aml1216, fail\n", __func__, val);
+
+    if (aml1216_read(0x00, &val)) {
+        printf("%s, pmu check fail\n", __func__, val);
         return NULL;
     }
-*/
+
     return &g_aml_pmu_driver;
 }
+
+static int do_pmu_reg16(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    int rw = 0, i;
+    int addr;
+    unsigned short val;
+
+    if (argc < 1 || argc > 4) {
+        return cmd_usage(cmdtp);
+    }
+    if (!strcmp(argv[1], "r")) {
+        rw = 0;    
+    } else if (!strcmp(argv[1], "w")) {
+        rw = 1;    
+    } else {
+        return cmd_usage(cmdtp);
+    }
+    addr = simple_strtoul(argv[2], NULL, 16); 
+    if (rw == 1) {
+        val = simple_strtoul(argv[3], NULL, 16); 
+    }
+
+    if (rw == 0) {
+        if (aml1216_read16(addr, &val)) {
+            printf("read addr 0x%03x failed\n", addr);
+            return -1;
+        }
+        printf("REG[0x%03x] = 0x%04x\n", addr, val);
+    } else if (rw == 1) {
+        if (aml1216_write16(addr, val)) {
+            printf("write addr 0x%03x failed\n", addr);
+            return -1;
+        }
+        printf("REG[0x%03x] set to 0x%04x\n", addr, val);
+    } else {
+        printf("ERROR!!\n");    
+    }
+    return 0;
+}
+
+U_BOOT_CMD(
+	pmu_reg16,	4,	0,	do_pmu_reg16,
+	"pmu_reg16 read/write command for 16bit register of AML PMU",
+	"/N\n"
+	"pmu_reg16 [r/w] [addr] [value]\n"
+    "example:\n"
+	"pmu_reg16 r 0x00           ---- read register 0x00 of PMU\n"
+	"pmu_reg16 w 0x00 0x0055    ---- write register 0x00 to 0x55\n"
+	"\n"
+);
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 ////////////////////////////////////////////////////////////////////////
