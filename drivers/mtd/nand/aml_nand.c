@@ -2036,7 +2036,104 @@ static void aml_platform_adjust_timing(struct aml_nand_chip *aml_chip)
 	printk("time_mode=%d, bus_cycle=%d, adjust=%d, start_cycle=%d, end_cycle=%d,system=%d.%dns\n",
 		time_mode, bus_cycle, adjust, start_cycle, end_cycle, sys_time/10, sys_time%10);
 }
+static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_addr,int cnt)
+{
+	 int mini_part_blk_num, start_blk ,i,j;
+	struct mtd_info *mtd = &aml_chip->mtd;
+	struct erase_info erase_info_test;
+	int error = 0;
+	struct mtd_oob_ops aml_oob_ops;
+	int *data_buf ;
+	int phys_erase_shift = fls(mtd->erasesize) - 1;
+	int pages_per_blk = mtd->erasesize / mtd->writesize;
+	int total_blk = (int)(mtd->size >> phys_erase_shift);
+	int test_flag = 0;
+	  printk("enter repair bbt and total block =%d \n",total_blk);
+	 data_buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	 if(!data_buf) {
+	 	printk("malloc test buf fail\n");
+		return -ENOMEM;
+	 }
+	  for(i = 0;i < cnt; i++) {
+	if(!((bad_blk_addr[i] > 0)&&(bad_blk_addr[i] < total_blk)))
+	 	continue;
+	  printk("enter test %d block \n",bad_blk_addr[i]);
+	start_blk = bad_blk_addr[i]<<phys_erase_shift;
+	memset((unsigned char *)data_buf,bad_blk_addr[i],mtd->writesize);
+	test_flag = 0;
+		aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_GOOD;
+		memset(&erase_info_test, 0, sizeof(struct erase_info));
+		erase_info_test.mtd = mtd;
+		erase_info_test.addr = start_blk ;
+		erase_info_test.len = mtd->erasesize;
 
+		error = mtd->erase(mtd, &erase_info_test);
+		if(error) {
+			printk("BBT REPAIR:erase %d fail \n",start_blk);
+			aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
+			continue;
+		}
+		printk("test %d block erase OK\n",bad_blk_addr[i]);
+		for(j=0;j<pages_per_blk;j++) {
+		aml_oob_ops.mode = MTD_OOB_AUTO;
+		aml_oob_ops.len = mtd->writesize;
+		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+		aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+		aml_oob_ops.datbuf = data_buf;
+		aml_oob_ops.oobbuf = NULL;
+		error = mtd->write_oob(mtd, start_blk+j*mtd->writesize, &aml_oob_ops);
+		if (error) {
+			printk("blk check good but write failed: %llx, %d\n", (uint64_t)start_blk, error);
+			aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
+			test_flag = 1;
+			break;
+		}
+	    }
+		printk("test %d block write OK\n",bad_blk_addr[i]);
+		if(!test_flag) {
+		  for(j=0;j<pages_per_blk;j++) {
+			aml_oob_ops.mode = MTD_OOB_AUTO;
+			aml_oob_ops.len = mtd->writesize;
+			aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
+			aml_oob_ops.ooboffs = mtd->ecclayout->oobfree[0].offset;
+			aml_oob_ops.datbuf = data_buf;
+			aml_oob_ops.oobbuf = NULL;
+			error = mtd->read_oob(mtd, start_blk+j*mtd->writesize, &aml_oob_ops);
+				if (error) {
+					printk("ecc failed: %llx, %d\n", (uint64_t)start_blk, error);
+					aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
+					test_flag = 1;
+					break;
+				}
+		    }
+		  printk("test %d block read OK\n",bad_blk_addr[i]);
+		}
+		if(!test_flag) {
+		memset(&erase_info_test, 0, sizeof(struct erase_info));
+		erase_info_test.mtd = mtd;
+		erase_info_test.addr = start_blk ;
+		erase_info_test.len = mtd->erasesize;
+		error = mtd->erase(mtd, &erase_info_test);
+			if(error) {
+				printk("BBT REPAIR:erase %d fail \n",start_blk);
+				aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
+				continue;
+			}
+		 printk("test %d block  end\n",bad_blk_addr[i]);	
+			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
+				if (aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] == bad_blk_addr[i]) {
+					aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[j] = 0;
+					printk("update %d bbt info for %d block in the ram\n",j,bad_blk_addr[i]);
+					break;
+				}
+			}
+		}
+	  }
+	 if(data_buf)
+		kfree(data_buf);
+	printk("###bbt write into nand flash\n");
+	return aml_nand_update_env(mtd);
+}
 static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 {
 	int mini_part_blk_num, start_blk = 0;
@@ -2048,9 +2145,11 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	int nr, i, error = 0, part_save_in_env = 1, file_system_part = 0, phys_erase_shift;
 	u8 part_num = 0;
 	loff_t offset;
+	int bad_block_cnt =0;
     loff_t adjust_offset = 0,key_block;
 	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE )) ? mtd->erasesize : (NAND_MINI_PART_SIZE ));
 	//uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
+	unsigned int bad_blk_addr[128];
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
 	parts = plat->platform_nand_data.chip.partitions;
@@ -2117,6 +2216,8 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 		for (i=0; i<nr; i++) {
 
 			temp_parts = parts + i;
+			bad_block_cnt =0;
+			memset((unsigned char *)bad_blk_addr,0xff,128*sizeof(int));
 			if ((temp_parts->size >= mtd->erasesize) || (i == (nr - 1)))
 				mini_part_size = temp_parts->size;
 			temp_parts->offset = adjust_offset;
@@ -2134,15 +2235,50 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 						adjust_offset += mtd->erasesize;
 						continue;
 					}
+					else if(error){
+							if(bad_block_cnt < 128)
+							bad_blk_addr[bad_block_cnt] = offset>> phys_erase_shift;
+							printk("%s:%d find %d bad addr =%d\n",__func__,__LINE__,bad_block_cnt,bad_blk_addr[bad_block_cnt]);
+							bad_block_cnt++;
+						}
 					start_blk++;
 				} while (start_blk < (mini_part_size >> phys_erase_shift));
+				if(mini_part_size > NAND_SYS_PART_SIZE) {
+						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >128)) {
+							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
+						}
+				}
 			}
 			else {
 				file_system_part = 1;
 			}
 
-			if ((i == (nr - 1)) && (part_save_in_env == 0))
+			if ((i == (nr - 1)) && (part_save_in_env == 0)) {
+				start_blk = 0;
+				bad_block_cnt =0;
+				memset((unsigned char *)bad_blk_addr,0xff,128*sizeof(int));
+				do {
+					offset = adjust_offset + start_blk * mtd->erasesize;
+					error = mtd->block_isbad(mtd, offset);
+					if (error == FACTORY_BAD_BLOCK_ERROR) {
+						adjust_offset += mtd->erasesize;
+						continue;
+					}
+					else if(error){
+							if(bad_block_cnt < 128)
+							bad_blk_addr[bad_block_cnt] = offset>> phys_erase_shift;
+							printk("%s:%d find %d bad addr =%d\n",bad_block_cnt,bad_blk_addr[bad_block_cnt]);
+							bad_block_cnt++;
+						}
+					start_blk++;
+				} while (start_blk < (mini_part_size >> phys_erase_shift));
+					if(mini_part_size > NAND_SYS_PART_SIZE) {
+						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >128)) {
+							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
+						}
+					}	
 				temp_parts->size = NAND_SYS_PART_SIZE;
+			}
 			else if (mini_part_size != MTDPART_SIZ_FULL)
 				temp_parts->size = mini_part_size + (adjust_offset - temp_parts->offset);
 			adjust_offset += mini_part_size;
