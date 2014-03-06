@@ -304,7 +304,7 @@ void enter_power_down()
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
 
-    if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
+    if (uboot_cmd_flag == 0x87654321) {
         /*
          * power off system before ARM is restarted
          */
