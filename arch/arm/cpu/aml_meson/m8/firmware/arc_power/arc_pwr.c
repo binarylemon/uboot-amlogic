@@ -323,7 +323,7 @@ void enter_power_down()
 	wait_uart_empty();
 	restart_arm();
 
-    if (uboot_cmd_flag == 0x8765432) {
+    if (uboot_cmd_flag == 0x87654321) {
         writel(0,P_AO_RTI_STATUS_REG2);
         writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
         clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
