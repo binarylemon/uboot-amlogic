@@ -207,7 +207,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x8500000\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"sleep_threshold=20\0" \
 	"batlow_threshold=3\0" \
