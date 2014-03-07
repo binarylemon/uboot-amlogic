@@ -173,15 +173,17 @@ uint32_t meson_trustzone_sram_write_reg32(uint32_t addr, uint32_t value)
     return r0;
 }
 
+#ifdef CONFIG_AML_SUSPEND
 /**
  * @brief meson_trustzone_suspend
  *
  * @suspend cmd smc entry
  */
+#define TRUSTZONE_MON_SUSPNED_FIRMWARE          0x300
+#define TRUSTZONE_MON_SUSPNED_FIRMWARE_INIT     0x301
+
 uint32_t meson_trustzone_suspend()
 {
-#define TRUSTZONE_MON_SUSPNED_FIRMWARE			0x300
-
     register uint32_t r0 asm("r0") = 0x4;
     register uint32_t r1 asm("r1") = TRUSTZONE_MON_SUSPNED_FIRMWARE;
 
@@ -198,7 +200,24 @@ uint32_t meson_trustzone_suspend()
     return r0;
 }
 
+uint32_t meson_trustzone_suspend_init(void)
+{
+	register uint32_t r0 asm("r0") = 0x4;
+	register uint32_t r1 asm("r1") = TRUSTZONE_MON_SUSPNED_FIRMWARE_INIT;
 
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1));
+	} while (0);
+
+	return r0;
+}
+#endif
 
 #ifdef CONFIG_EFUSE
 int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)

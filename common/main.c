@@ -390,6 +390,9 @@ void main_loop (void)
 #ifndef CONFIG_MESON_TRUSTZONE
 extern void init_suspend_firmware(void);
 	init_suspend_firmware();
+#else
+/*If you need run OV secure-os, you just need del it.*/
+	meson_trustzone_suspend_init();
 #endif
 #endif
 
