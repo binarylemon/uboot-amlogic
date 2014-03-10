@@ -54,4 +54,5 @@ int key_unify_read(char *keyname,unsigned char *keydata,unsigned int datalen,uns
 */
 int key_unify_query(char *keyname,unsigned int *keystate,unsigned int *keypermit);
 
+char* key_unify_query_key_format(char *keyname);
 

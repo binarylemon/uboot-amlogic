@@ -184,7 +184,10 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 			return -1;
 		}		
 		if(aml_sec_boot_check_efuse(nAddr))
+        {
 			printf("aml log : efuse pattern check fail!\n");
+            return -1;
+        }
 		else
 		{	unsigned int pos = 0;
 			efuse_write(nAddr, EFUSE_BYTES, (loff_t*)&pos);

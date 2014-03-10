@@ -745,7 +745,14 @@ int is_optimus_to_burn_ready(void)
 
 int is_optimus_burn_complete(void)
 {
-    return (OPTIMUS_IMG_STA_BURN_COMPLETE == OptimusImgBurnInfo.imgBurnSta);
+    int is_burn_completed = 0;
+
+    is_burn_completed = (OPTIMUS_IMG_STA_BURN_COMPLETE == OptimusImgBurnInfo.imgBurnSta);
+    if(!is_optimus_burn_complete){
+        DWN_MSG("imgSzDisposed 0x%llx != imgPktSz 0x%llx\n", OptimusImgBurnInfo.imgSzDisposed, OptimusImgBurnInfo.imgPktSz);
+    }
+
+    return is_optimus_burn_complete;
 }
 
 u32 optimus_download_img_data(const u8* data, const u32 size, char* errInfo)
@@ -767,7 +774,6 @@ static int optimus_sha1sum_verify_partition(const char* partName, const u64 veri
     }
 
     if(!is_optimus_burn_complete()){
-        DWN_ERR("burn not compelet, pktSz 0x%x, rx sz 0x%x\n", (u32)OptimusImgBurnInfo.imgPktSz, (u32)OptimusImgBurnInfo.imgSzDisposed);
         return OPT_DOWN_FAIL;
     }
 
