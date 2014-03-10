@@ -471,7 +471,12 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+//M6 secure firmware
+//#define CONFIG_AML_SECURE 1
 
+/* Pass open firmware flat tree*/
+#define CONFIG_OF_LIBFDT	1
+#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 
 /*-----------------------------------------------------------------------
  * power down
