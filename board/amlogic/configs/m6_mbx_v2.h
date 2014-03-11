@@ -187,7 +187,7 @@
 	"preboot=run detect_storage;get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; run factoryreset_wipe_data; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
 	"mbr_write=if test ${upgrade_step} != 2; then mmcinfo 1; mmc read 1 82000000 0 1; mw.l 820001fc 0 1; mmc write 1 82000000 0 1;fi;\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi; if itest ${upgrade_step} == 0; then defenv; save; run update; fi; if itest ${upgrade_step} == 3; then defenv; save; run update; fi;\0" \
-	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;if usb start; then if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi; run recovery\0" \
 	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
 	"irremote_update=if irkey 0x41beb14e 500000 ;then run update; fi\0" \
 	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then tiny_usbtool 20000; fi; fi\0" \
@@ -196,9 +196,9 @@
 	"mmcargs=run cvbscheck; mmcinfo 1; mmc read 1 0x83000000 ${mmc_logo_offset} ${mmc_lk_size};unpackimg 0x83000000; cp ${bootup_offset} 0x85100000 ${bootup_size}; setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x85100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
 	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
-	"nand_recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"nand_recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"mmcboot=echo Booting from mmc ...;run mmcargs;mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_boot_offset} ${mmc_lk_size};hdcp prefetch emmc; bootm; run recovery\0" \
-	"mmc_recovery=echo enter recovery;run mmcargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_lk_size}; bootm\0" \
+	"mmc_recovery=echo enter recovery;run mmcargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_lk_size}; bootm\0" \
 	"detect_storage=echo detect_storage ;nand exist; setenv no_nand $?; if test ${no_nand} = 0; then setenv storage nand ; echo setenv storage nand; else if test ${no_nand} = 1; then setenv storage mmc ;echo setenv storage mmc; run mbr_write;fi;fi\0" \
 	"recovery=saveenv; if test ${storage} = nand; then run nand_recovery; else if test ${storage} = mmc; then run mmc_recovery;fi;fi\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
@@ -245,14 +245,14 @@
 	"vdacswitchmode=cvbs\0" \
 	"preboot=get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; if test ${reboot_mode} = usb_burning; then tiny_usbtool 20000; fi; run nand_key_burning; run upgrade_check; run updatekey_or_not; run switch_bootmode\0" \
 	"upgrade_check=if itest ${upgrade_step} == 1; then defenv_without reboot_mode;setenv upgrade_step 2; save; fi; if itest ${upgrade_step} == 0; then defenv; save; run update; fi; if itest ${upgrade_step} == 3; then defenv; save; run update; fi;\0" \
-	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;if usb start; then if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi;run recovery\0" \
+	"update=if mmcinfo; then if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;fi; run recovery\0" \
 	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
 	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then tiny_usbtool 20000; fi; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
 	"nandargs=run cvbscheck; nand read logo 0x83000000 0 300000;unpackimg 0x83000000; cp ${bootup_offset} 0x85100000 ${bootup_size}; setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x85100000,${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig} quiet lpj=lpj=11935744\0"\
 	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
 	"nandboot=echo Booting from nand ...;run nandargs;nand read boot ${loadaddr} 0 600000;hdcp prefetch nand;bootm;run recovery\0" \
-	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi;if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
+	"recovery=echo enter recovery;run nandargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; nand read recovery ${loadaddr} 0 600000; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
 	"usbnet_devaddr=00:15:18:01:81:31" \
 	"usbnet_hostddr=00:15:18:01:a1:3b" \
