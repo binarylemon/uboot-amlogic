@@ -121,6 +121,8 @@ void init_dmc(struct ddr_set * ddr_setting)
     writel(0xffff, P_DMC_SEC_PORT5_RANGE0);
     writel(0xffff, P_DMC_SEC_PORT6_RANGE0);
     writel(0xffff, P_DMC_SEC_PORT7_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT8_RANGE0);
+    writel(0xffff, P_DMC_SEC_PORT9_RANGE0);
     writel(0x80000000, P_DMC_SEC_CTRL);
 	while( readl(P_DMC_SEC_CTRL) & 0x80000000 ) {}
 
