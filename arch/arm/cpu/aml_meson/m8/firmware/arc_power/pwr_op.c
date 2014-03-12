@@ -262,9 +262,13 @@ inline void power_on_ddr15()
 
 int get_charging_state()
 {
+#ifdef CONFIG_ALWAYS_POWER_ON
+    return 1;
+#else
     unsigned char status;
     status = i2c_pmu_read_b(0x00bd);
     return (status & 0xc0) ? 1 : 0;
+#endif
 }
 
 void rn5t618_shut_down()

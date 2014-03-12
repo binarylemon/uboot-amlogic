@@ -134,6 +134,7 @@
 #ifdef CONFIG_RN5T618
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
+#define CONFIG_ALWAYS_POWER_ON                      // if platform without battery, must have
 
 /*
  * under some cases default voltage of PMU output is 
