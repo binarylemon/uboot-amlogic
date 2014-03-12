@@ -583,6 +583,9 @@ void aml1216_power_on_at_32K_2()
 
 void aml1216_shut_down()
 {
+    i2c_pmu_write_b(0x0019, 0x10);                              // cut usb output 
+    i2c_pmu_write_w(0x0084, 0x0001);                            // close boost
+    udelay__(10 * 1000);
     aml1216_set_gpio(1, 1);
     aml1216_set_gpio(2, 1);
     aml1216_set_gpio(3, 1);
