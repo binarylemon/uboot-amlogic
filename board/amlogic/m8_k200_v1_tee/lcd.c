@@ -31,6 +31,7 @@
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
+#define BL_POWER_ON_DELAY	100	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
@@ -42,9 +43,9 @@
 #define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
 #define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
 
-#define	BL_PWM_FREQ			1000	/** backlight control pwm frequency(unit: Hz) */
+#define	BL_PWM_FREQ			300000	/** backlight control pwm frequency(unit: Hz) */
 #define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
-#define BL_PWM_MIN         	20		/** brightness diminig duty_min(unit: %, positive logic) */
+#define BL_PWM_MIN         	25		/** brightness diminig duty_min(unit: %, positive logic) */
 
 //**** backlight PWM pinmux setting ***//
 const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x1000000},};
@@ -202,6 +203,7 @@ Lcd_Bl_Config_t bl_config_dft = {
 	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
 	.level_min = BL_LEVEL_MIN,
 	.level_max = BL_LEVEL_MAX,
+	.power_on_delay = BL_POWER_ON_DELAY,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,

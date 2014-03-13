@@ -46,7 +46,7 @@
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-//#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR24
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -78,6 +78,8 @@
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
+#define CONFIG_AML_HDMI_TX  1
+#define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -135,6 +137,7 @@
 #ifdef CONFIG_RN5T618
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
+#define CONFIG_ALWAYS_POWER_ON                      // if platform without battery, must have
 
 /*
  * under some cases default voltage of PMU output is 
@@ -224,10 +227,20 @@
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
+	"outputmode=1080p\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
+	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
+	"display_layer=osd2\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"fb_width=1280\0"\
+	"fb_height=720\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -238,28 +251,29 @@
 	"bootstart=0\0" \
 	"bootsize=60000\0" \
 	"bootpath=u-boot.bin\0" \
-    "sdcburncfg=aml_sdc_burn.ini\0"\
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
 	"preboot="\
-		"echo preboot...;" \
-        "if itest ${upgrade_step} == 3; then run update; fi; "\
+        "echo preboot...;" \
+        "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run prepare;"\
+        "run storeargs;"\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run update_key; " \
         "run switch_bootmode\0" \
     \
     "update_key="\
-        "echo update by key...; " \
         "saradc open 0; " \
         "if saradc get_in_range 0 0x50; then " \
             "msleep 400; " \
-            "if saradc get_in_range 0 0x50; then run update; fi;" \
+            "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
         "fi\0" \
     \
    	"update="\
@@ -278,28 +292,40 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "imgread res logo ${loadaddr_logo};"\
-        "unpackimg ${loadaddr_logo}; "\
-        "cp ${bootup_offset} ${fb_addr} ${bootup_size};"\
-        "setenv bootargs ${bootargs} logo=osd1,${fb_addr},${hdmimode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot}\0"\
+        "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
-		"echo switch_bootmode...;" \
-		"if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
-        "if test ${reboot_mode} = update; then run update; fi;"\
-        "if test ${reboot_mode} = usb_burning; then run usb_burning; fi;"\
-        "\0" \
+		"echo switch_bootmode...;"\
+	    "if test ${reboot_mode} = normal; then "\
+        "else if test ${reboot_mode} = charging; then "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"run recovery;"\
+        "else if test ${reboot_mode} = update; then "\
+        	"run update;"\
+        "else if test ${reboot_mode} = usb_burning; then "\
+        	"run usb_burning;"\
+        "else " \
+        	"  "\
+        "fi;fi;fi;fi;fi\0" \
     \
+    "prepare="\
+        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
+        "imgread res logo ${loadaddr_logo}; "\
+        "unpackimg ${loadaddr_logo}; "\
+        "logo source ${outputmode}; bmp display ${bootup_offset}; bmp scale;"\
+        "\0"\
+	\
 	"storeboot="\
         "echo Booting...; "\
-        "run storeargs;"\
+        "if unifykey get usid; then  "\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
 	"recovery="\
         "echo enter recovery;"\
-        "run storeargs;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
@@ -374,7 +400,7 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDR1_ONLY)
+#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
 #define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
 //For DDR PUB training not check the VT done flag
@@ -405,10 +431,10 @@
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
 #if   defined(CFG_M8_DDR3_1GB)
-	//4Gb(X16) x 2pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (3)
+	//2Gb(X16) x 4pcs
+	#define CONFIG_M8_DDR3_ROW_SIZE (2)
 	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (15)
+	#define CONFIG_M8_DDR_ROW_BITS  (14)
 #elif defined(CFG_M8_DDR3_2GB)
 	//4Gb(X16) x 4pcs
 	#define CONFIG_M8_DDR3_ROW_SIZE (3)
@@ -445,6 +471,7 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
@@ -462,6 +489,7 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+#define CONFIG_CMD_LOGO
 
 
 /*
