@@ -637,7 +637,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 		}
 #endif
 #ifdef CONFIG_WIFI_WAKEUP
-			if (flags != 0x87654321)
+			if ((flags != 0x87654321) &&(readl(P_AO_GPIO_O_EN_N)&(0x1<<22)))
 			if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<21)){
 				exit_reason = 9;
 				ret = FLAG_WAKEUP_WIFI;
