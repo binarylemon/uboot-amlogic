@@ -791,24 +791,13 @@ void aml1216_power_init(int init_mode)
         __udelay(2000);
 #endif
 
-#ifdef CONFIG_VCC1V8
-        aml1216_set_ldo_voltage(2, CONFIG_VCC1V8);
+#ifdef CONFIG_IOREF_1V8
+        aml1216_set_ldo_voltage(2, CONFIG_IOREF_1V8);
         __udelay(2000);
 #endif
 
-#ifdef CONFIG_VCC1V8
-        aml1216_set_ldo_voltage(3, CONFIG_VCC1V8);
-        __udelay(2000);
-
-#endif
-
-#ifdef CONFIG_VDDIO_AO28
-        aml1216_set_ldo_voltage(7, CONFIG_VDDIO_AO28);
-        __udelay(2000);
-#endif
-
-#ifdef CONFIG_VCC2V8
-        aml1216_set_ldo_voltage(5, CONFIG_VCC2V8);
+#ifdef CONFIG_VDDIO_AO18 
+        aml1216_set_ldo_voltage(3, CONFIG_VDDIO_AO18);
         __udelay(2000);
 #endif
 
@@ -817,9 +806,19 @@ void aml1216_power_init(int init_mode)
         __udelay(2000);
 #endif
 
+#ifdef CONFIG_VCC2V8
+        aml1216_set_ldo_voltage(5, CONFIG_VCC2V8);
+        __udelay(2000);
+#endif
+
 #ifdef CONFIG_VCC_CAM
         aml1216_set_ldo_voltage(6, CONFIG_VCC_CAM);
         hard_i2c_write168(DEVID, 0x83, 0x01);                           // open LDO6
+#endif
+
+#ifdef CONFIG_VDDIO_AO28
+        aml1216_set_ldo_voltage(7, CONFIG_VDDIO_AO28);
+        __udelay(2000);
 #endif
     } else if (init_mode == POWER_INIT_MODE_USB_BURNING) {
         /*
