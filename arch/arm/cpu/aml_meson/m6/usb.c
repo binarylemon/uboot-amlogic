@@ -102,10 +102,14 @@ void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 {
 	unsigned long delay = 1000;
 	int port_idx;
-	unsigned int port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
+	unsigned int port;
 	usb_peri_reg_t *peri_a,*peri_b,*peri;
 	usb_ctrl_data_t control;
 
+	if(!usb_cfg)
+	    return;
+
+	port = usb_cfg->base_addr & USB_PHY_PORT_MSK;
 	peri_a = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_A);
 	peri_b = (usb_peri_reg_t*)CBUS_REG_ADDR(PREI_USB_PHY_REG_B);
 

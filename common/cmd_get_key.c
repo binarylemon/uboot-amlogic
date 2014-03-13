@@ -17,6 +17,8 @@
 #include <asm/arch/io.h>
 #include <amlogic/efuse.h>
 
+#define SET_DEFAULT_SERIALNO_IF_NOT_GET     1
+
 #if defined(CONFIG_SECURITYKEY)
 extern ssize_t uboot_get_keylist(char *listkey);
 extern ssize_t uboot_key_read(char *keyname, char *keydata);
@@ -100,11 +102,15 @@ static char asc_to_hex(char para)
     return para;
 }
 
+/**
+  *     read_secukey
+  *     command in *argv[], and read datas saved in buf
+  *     return: 0->success, 1->have not writen, -1->failed
+  **/
 static int read_secukey(int argc, const char *argv[], char *buf)
 {
-    int i, j, ret = 0, flag = 0, error = -1;
-    int secukey_len = 0;
-    char *secukey_cmd, *secukey_name, *secukey_data;
+    int i = 0, j = 0, ret = 0, error = -1;
+    char *secukey_cmd = NULL, *secukey_name = NULL;
     char namebuf[AML_KEY_NAMELEN], databuf[4096], listkey[1024];
 
     /* at least two arguments please */
@@ -115,20 +121,22 @@ static int read_secukey(int argc, const char *argv[], char *buf)
     memset(databuf, 0, sizeof(databuf));
     memset(listkey, 0, sizeof(listkey));
 
-    secukey_cmd = argv[1];
+    secukey_cmd = (char *)argv[1];
     if(inited_secukey_flag) {
         if(argc > 2 && argc < 5) {
             if(!strncmp(secukey_cmd, "read", strlen("read"))) {
                 if(argc > 3)
                     goto err;
-                secukey_name = argv[2];
-                memset(buf, 0, KEY_BYTES);
+                ret = uboot_get_keylist(listkey);
+                printf("all key names list are(ret=%d):\n%s", ret, listkey);
+                secukey_name = (char *)argv[2];
                 strncpy(namebuf, secukey_name, strlen(secukey_name));
                 error = uboot_key_read(namebuf, databuf);
-                for(i=0; i<KEY_BYTES*2; i++)
-                    if(databuf[i]) printf("%c:", databuf[i]);
-                printf("\n");
                 if(error >= 0) {    //read success
+                    memset(buf, 0, KEY_BYTES);
+                    for(i=0; i<KEY_BYTES*2; i++)
+                        if(databuf[i]) printf("%c:", databuf[i]);
+                    printf("\n");
                     for(i=0,j=0; i<KEY_BYTES*2; i++,j++) {
                         buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[++i])));
                     }
@@ -138,28 +146,21 @@ static int read_secukey(int argc, const char *argv[], char *buf)
                     printf("\nread ok!!\n");
                     return 0;
                 }
-                else {                  //read error or have not been writen
-                    ret = uboot_get_keylist(listkey);
-                    printf("all key names list are:\n%s", listkey);
-                    if(ret >= 0 && strlen(namebuf) < AML_KEY_NAMELEN) {
-                        for(i=0,flag=0; i<strlen(listkey); i++) {
-                            if(!strncmp(&listkey[i], namebuf, strlen(namebuf))) {
-                                flag = 1;
-                                break;
-                            }
-                        }
-                        if(!flag) {
-                            printf("not find key name: %s, it doesn't be writen before!!\n", namebuf);
-                            return 1; //key has been not writen
-                        }
-                        else {
-                            printf("find key name: %s, read error!!\n", namebuf);
-                            goto err;
-                        }
+                else {                      // read error or have not been writen
+                    if(!strncmp(namebuf, "mac_bt", 6) || !strncmp(namebuf, "mac_wifi", 8))
+                        ;
+                    else if(!strncmp(namebuf, "mac", 3)) {
+                        memset(namebuf, 0, sizeof(namebuf));
+                        sprintf(namebuf, "%s", "mac\n");
+                    }
+
+                    if(strstr(listkey, namebuf)) {
+                        printf("find key name: %s, but read error!!\n", namebuf);
+                        goto err;       // read error 
                     }
                     else {
-                        printf("read error!!\n");
-                        goto err;
+                        printf("not find key name: %s, and it doesn't be writen before!!\n", namebuf);
+                        return 1;       // has been not writen
                     }
                 }
             }
@@ -356,7 +357,7 @@ static int do_get_mac(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[]
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             ret = read_efuse(Argc, eArgv, buff);
@@ -549,7 +550,7 @@ static int do_get_mac_bt(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             ret = read_efuse(Argc, eArgv, buff);
@@ -742,7 +743,7 @@ static int do_get_mac_wifi(cmd_tbl_t * cmdtp, int flag, int argc, char * const a
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             ret = read_efuse(Argc, eArgv, buff);
@@ -798,7 +799,8 @@ static int do_get_mac_wifi(cmd_tbl_t * cmdtp, int flag, int argc, char * const a
   * key is usid
   * device is flash(nand or emmc)/efuse
   * result:if key exists in device,then set " androidboot.serialno=xxxxxx" to bootargs
-  * use command getprop ro.boot.serialno to display in android
+  * use command getprop ro.boot.serialno or ro.serialno to display in android
+  * if not get any usid,so set default value to ro.boot.serialno
   */
 static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
@@ -808,6 +810,7 @@ static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
     char *sArgv[3] = {"secukey", "read", "usid"};
     char *eArgv[3] = {"efuse", "read", "usid"};
     char *key_str = " androidboot.serialno=";
+    char *default_usid = "1234567890";
     
     memset(buff, 0, sizeof(buff));
     memset(device, 0, sizeof(device));
@@ -857,7 +860,22 @@ static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
         }
         else if(ret == 1) {
             printf("%s has been not writen in %s\n", key_name, device);
+#if defined(SET_DEFAULT_SERIALNO_IF_NOT_GET)
+            printf("now set default usid value(%s)\n", default_usid);
+            strcpy(bootargs_str, getenv("bootargs"));
+            if(strstr(bootargs_str, key_str) == NULL) {
+                strcat(bootargs_str, key_str);
+                strcat(bootargs_str, default_usid);
+                setenv("bootargs", bootargs_str);
+                printf("bootargs=%s\n", bootargs_str);
+            }
+            else {
+                printf("androidboot.serialno is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+            }
+            ret = SUCCESS;
+#else
             ret = HAVE_NOT_WRITEN;
+#endif
         }
         else {
             printf("read %s failed from %s\n", key_name, device);
@@ -892,7 +910,22 @@ static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
             }
             else {
                 printf("%s has been not writen in %s\n", key_name, device);
+#if defined(SET_DEFAULT_SERIALNO_IF_NOT_GET)
+                printf("now set default usid value(%s)\n", default_usid);
+                strcpy(bootargs_str, getenv("bootargs"));
+                if(strstr(bootargs_str, key_str) == NULL) {
+                    strcat(bootargs_str, key_str);
+                    strcat(bootargs_str, default_usid);
+                    setenv("bootargs", bootargs_str);
+                    printf("bootargs=%s\n", bootargs_str);
+                }
+                else {
+                    printf("androidboot.serialno is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+                }
+                ret = SUCCESS;
+#else
                 ret = HAVE_NOT_WRITEN;
+#endif
             }
         }
         else {
@@ -935,7 +968,7 @@ static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             ret = read_efuse(Argc, eArgv, buff);
@@ -963,13 +996,192 @@ static int do_get_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
                 }
                 else {
                     printf("%s has been not writen in %s\n", key_name, device);
+#if defined(SET_DEFAULT_SERIALNO_IF_NOT_GET)
+                    printf("now set default usid value(%s)\n", default_usid);
+                    strcpy(bootargs_str, getenv("bootargs"));
+                    if(strstr(bootargs_str, key_str) == NULL) {
+                        strcat(bootargs_str, key_str);
+                        strcat(bootargs_str, default_usid);
+                        setenv("bootargs", bootargs_str);
+                        printf("bootargs=%s\n", bootargs_str);
+                    }
+                    else {
+                        printf("androidboot.serialno is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+                    }
+                    ret = SUCCESS;
+#else
                     ret = HAVE_NOT_WRITEN;
+#endif
                 }
             }
             else {
                 printf("read %s failed from %s\n", key_name, device);
                 ret = FAILED;
             }
+        }
+        else {
+            printf("read %s failed from %s\n", key_name, device);
+            ret = FAILED;
+        } 
+    }
+
+    /* device not mach */
+    else {
+        printf("No \"%s\" device!!\n", device);
+        cmd_usage(cmdtp);
+    }
+    
+    return ret;
+}
+
+/* --do_get_serialno
+  * get serialno key from nand/emmc
+  * key is serialno
+  * device is nand/emmc
+  * result:if key exists in device,then set " androidboot.serialno2=xxxxxx" to bootargs
+  * use command getprop ro.boot.serialno2 or getprop ro.serialno2 to display in android
+  */
+static int do_get_serialno(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+    int i = 0, simbol = 0, ret = -1, Argc = 3;
+    char buff[KEY_BYTES], key_data[KEY_BYTES];
+    char device[AML_DEVICE_NAMELEN], key_name[AML_KEY_NAMELEN], bootargs_str[1024];
+    char *sArgv[3] = {"secukey", "read", "serialno"};
+    char *eArgv[3] = {"efuse", "read", "serialno"};
+    char *key_str = " androidboot.serialno2=";
+    char *default_serialno = "0123456789";
+
+    memset(buff, 0, sizeof(buff));
+    memset(device, 0, sizeof(device));
+    memset(key_name, 0, sizeof(key_name));
+    memset(key_data, 0, sizeof(key_data));
+    memset(bootargs_str, 0, sizeof(bootargs_str));
+    
+    if(argc != 2 || strncmp(argv[0], sArgv[2], strlen(sArgv[2]))) {
+        printf("arg cmd not mach\n");
+        return FAILED;
+    }
+    
+    strncpy(key_name, argv[0], strlen(argv[0])); 
+    strncpy(device, argv[1], strlen(argv[1]));
+
+    printf("type:%s,start to read %s...\n", device, key_name);
+    
+    /* read from flash(nand/emmc) */
+    if(!strncmp(device, "flash", strlen("flash"))) {
+        ret = ensure_init_secukey(device);
+        if (ret == 0) {
+            printf("init %s success\n", device);
+        }
+        else if(ret == 1) {
+            printf("%s already inited\n", device);
+        }
+        else {
+            printf("init %s failed\n", device);
+            return FAILED;
+        }
+        
+        ret = read_secukey(Argc, sArgv, buff);
+        if(!ret) {                                      
+            memcpy(key_data, buff, strlen(buff));
+            printf("read %s success,%s=%s\n", key_name, key_name, key_data);
+            strcpy(bootargs_str, getenv("bootargs"));
+            if(strstr(bootargs_str, key_str) == NULL) {
+                strcat(bootargs_str, key_str);
+                strcat(bootargs_str, key_data);
+                setenv("bootargs", bootargs_str);
+                printf("bootargs=%s\n", bootargs_str);
+            }
+            else {
+                printf("androidboot.serialno is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+            }
+            ret = SUCCESS;
+        }
+        else if(ret == 1) {
+            printf("%s has been not writen in %s\n", key_name, device);
+#if defined(SET_DEFAULT_SERIALNO_IF_NOT_GET)
+            printf("now set default serialno value(%s)\n", default_serialno);
+            strcpy(bootargs_str, getenv("bootargs"));
+            if(strstr(bootargs_str, key_str) == NULL) {
+                strcat(bootargs_str, key_str);
+                strcat(bootargs_str, default_serialno);
+                setenv("bootargs", bootargs_str);
+                printf("bootargs=%s\n", bootargs_str);
+            }
+            else {
+                printf("androidboot.serialno2 is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+            }
+            ret = SUCCESS;
+#else
+            ret = HAVE_NOT_WRITEN;
+#endif
+        }
+        else {
+            printf("read %s failed from %s\n", key_name, device);
+            ret = FAILED;
+        }
+    }
+
+    /* read from efuse */
+    else if(!strncmp(device, "efuse", 5)) {
+        printf("not support uuid key in efuse layout at present!!\n");
+        ret = FAILED;
+    }
+    
+    /* read from flash(nand/emmc) first. if not read any datas,then read from efuse */
+    else if(!strncmp(device, "auto", 4)) {
+        memset(device, 0, sizeof(device));
+        strncpy(device, "flash", strlen("flash"));
+        printf("read %s from %s first\n", key_name, device);
+        ret = ensure_init_secukey(device);
+        if (ret == 0) {
+            printf("init %s success\n", device);
+        }
+        else if(ret == 1) {
+            printf("%s already inited\n", device);
+        }
+        else {
+            printf("init %s failed\n", device);
+            return FAILED;
+        }
+        
+        ret = read_secukey(Argc, sArgv, buff);
+        if(!ret) {                                      
+            memcpy(key_data, buff, strlen(buff));
+            printf("read %s success,%s=%s\n", key_name, key_name, key_data);
+            strcpy(bootargs_str, getenv("bootargs"));
+            if(strstr(bootargs_str, key_str) == NULL) {
+                strcat(bootargs_str, key_str);
+                strcat(bootargs_str, key_data);
+                setenv("bootargs", bootargs_str);
+                printf("bootargs=%s\n", bootargs_str);
+            }
+            else {
+                printf("androidboot.serialno is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+            }
+            ret = SUCCESS;
+        }
+        else if(ret == 1) { //it doesn't read any datas,then read from efuse
+            printf("%s has been not writen in %s\n", key_name, device);
+#if defined(SET_DEFAULT_SERIALNO_IF_NOT_GET)
+            printf("now set default serialno value(%s)\n", default_serialno);
+            strcpy(bootargs_str, getenv("bootargs"));
+            if(strstr(bootargs_str, key_str) == NULL) {
+                strcat(bootargs_str, key_str);
+                strcat(bootargs_str, default_serialno);
+                setenv("bootargs", bootargs_str);
+                printf("bootargs=%s\n", bootargs_str);
+            }
+            else {
+                printf("androidboot.serialno2 is exist in bootargs,%s\n", strstr(bootargs_str, key_str));
+            }
+            ret = SUCCESS;
+#else
+            strncpy(device, "efuse", strlen("efuse"));
+            printf("start to read %s from %s...\n", key_name, device);
+            printf("not support boardid key in efuse layout at present!!\n");
+            ret = FAILED;
+#endif
         }
         else {
             printf("read %s failed from %s\n", key_name, device);
@@ -1166,7 +1378,7 @@ static int do_get_hdcp(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             ret = read_efuse(Argc, eArgv, buff);
@@ -1325,7 +1537,7 @@ static int do_get_boardid(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             printf("not support boardid key in efuse layout at present!!\n");
@@ -1458,7 +1670,7 @@ static int do_get_boardinfo(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             printf("not support boardinfo key in efuse layout at present!!\n");
@@ -1591,7 +1803,7 @@ static int do_get_uuid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
             ret = SUCCESS;
         }
         else if(ret == 1) { //it doesn't read any datas,then read from efuse
-            printf("don't read %s datas from %s,", key_name, device);
+            printf("%s has been not writen in %s\n", key_name, device);
             strncpy(device, "efuse", strlen("efuse"));
             printf("start to read %s from %s...\n", key_name, device);
             printf("not support boardid key in efuse layout at present!!\n");
@@ -1618,6 +1830,7 @@ static cmd_tbl_t cmd_getkey_sub[] = {
     U_BOOT_CMD_MKENT(mac_bt, 2, 0, do_get_mac_bt, "", ""),
     U_BOOT_CMD_MKENT(mac_wifi, 2, 0, do_get_mac_wifi, "", ""),
     U_BOOT_CMD_MKENT(usid, 2, 0, do_get_usid, "", ""),
+    U_BOOT_CMD_MKENT(serialno, 2, 0, do_get_serialno, "", ""),
     U_BOOT_CMD_MKENT(hdcp, 2, 0, do_get_hdcp, "", ""),
     U_BOOT_CMD_MKENT(boardid, 2, 0, do_get_boardid, "", ""),
     U_BOOT_CMD_MKENT(boardinfo, 2, 0, do_get_boardinfo, "", ""),
@@ -1646,7 +1859,7 @@ U_BOOT_CMD(
     get_key, 3, 0, do_get_key,
     "get_key sub-system",
     "[key] [device] - get key from device\n"
-    "--[key]: mac,mac_bt,mac_wifi,usid,hdcp,boardid,boardinfo,uuid\n"
+    "--[key]: mac,mac_bt,mac_wifi,usid,hdcp,boardid,boardinfo,uuid,serialno\n"
     "--[device]: flash,efuse\n"
     "This command will get key from flash(nand or emmc) or efuse,and then set it to bootargs\n"
     "Notice:\n"

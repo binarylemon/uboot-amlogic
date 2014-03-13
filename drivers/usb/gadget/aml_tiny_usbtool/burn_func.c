@@ -1,52 +1,63 @@
 #include <common.h>
 #include "usb_pcd.h"
-
-
-#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 #include <common.h>
+
+#include <nand.h>
+#include <div64.h>
+#include <jffs2/jffs2.h>
+#include <asm/arch/nand.h>
+#include <linux/types.h>
+#include <linux/err.h>
 #include <linux/ctype.h>
-#include <linux/mtd/mtd.h>
 #include <command.h>
 #include <watchdog.h>
 #include <malloc.h>
+#include <linux/mtd/mtd.h>
 #include <asm/byteorder.h>
-#include <jffs2/jffs2.h>
-#include <nand.h>
-#include <asm/arch/nand.h>
-#include <linux/types.h>
-#include <div64.h>
-#include <linux/err.h>
-char namebuf[20];
-char databuf[4096];
-//char listkey[1024];
-int secukey_inited=0;
-extern int uboot_key_initial(char *device);
-extern ssize_t uboot_get_keylist(char *keyname);
-extern ssize_t uboot_key_read(char *keyname, char *keydata);
-extern ssize_t uboot_key_write(char *keyname, char *keydata);
-int ensure_secukey_init(void);
-int cmd_secukey(int argc, char * const argv[], char *buf);
-#endif
+#include <amlogic/efuse.h>
 
-#define SECUKEY_BYTES     512
-//test efuse read
-#define EFUSE_READ_TEST_ENABLE
 
-//hdcp verify enable
-#define WRITE_HDCP_VERIFY_ENABLE
+#define SECUKEY_BYTES       512
+#define AML_KEY_NAMELEN 16
+#define HDCP_KEY_LEN        288
 
-//efuse version
+#ifdef WRITE_TO_EFUSE_ENABLE
+#define WRITE_EFUSE         0
+#define READ_EFUSE           1
 #define EFUSE_VERSION_MESON3        "01:02:03"
 #define EFUSE_VERSION_MESON6        "02"
-
-//extern 
-#ifdef WRITE_TO_EFUSE_ENABLE
+#define EFUSE_READ_TEST_ENABLE      1
 #ifdef CONFIG_AML_MESON3
 extern int do_efuse_usb(int argc, char * const argv[], char *buf);
 #elif defined(CONFIG_AML_MESON6)
 extern int cmd_efuse(int argc, char * const argv[], char *buf);
 #endif
 #endif
+
+
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
+static int secukey_inited=0;
+extern int uboot_key_initial(char *device);
+extern ssize_t uboot_get_keylist(char *keyname);
+extern ssize_t uboot_key_read(char *keyname, char *keydata);
+extern ssize_t uboot_key_write(char *keyname, char *keydata);
+int ensure_secukey_init(void);
+int cmd_secukey(int argc, char *argv[], char *buf);
+#endif
+
+
+#if defined(CONFIG_SECURE_STORAGE_BURNED)
+#include <amlogic/secure_storage.h>
+static int securestore_inited = 0;
+extern int securestore_key_init( char *seed,int len);
+extern int securestore_key_query(char *keyname, unsigned int *query_return);
+extern int securestore_key_read(char *keyname,char *keybuf,unsigned int keylen,unsigned int *reallen);
+extern int securestore_key_write(char *keyname, char *keybuf,unsigned int keylen,int keytype);
+extern int securestore_key_uninit();
+int ensure_securestore_key_init(char *seed, int seed_len);
+int cmd_securestore(int argc, char *argv[], char *buf);
+#endif
+
 
 /* hdcp key verify code */
 #define DWORD unsigned int  //4 bytes
@@ -239,7 +250,88 @@ typedef struct
     unsigned char sha[20];
 }hdcp_llc_file;
 
+
 #if defined(WRITE_TO_EFUSE_ENABLE)
+static int _cmd_efuse(int argc, char * const argv[], char *buf)
+{
+    int i, action = -1;
+    efuseinfo_item_t info;
+    char *title;
+    char *s;
+    char *end;
+
+    if(!strncmp(argv[1], "read", 4))
+        action = READ_EFUSE;
+    else if(!strncmp(argv[1], "write", 5))
+        action = WRITE_EFUSE;
+    else {
+        printf("%s arg error\n", argv[1]);
+        return -1;
+    }
+
+    //efuse read
+    if(action == READ_EFUSE) {
+        title = argv[2];
+        if(efuse_getinfo(title, &info) < 0)		
+            return -1;
+		
+        memset(buf, 0, EFUSE_BYTES);
+        efuse_read_usr(buf, info.data_len, (loff_t *)&info.offset);	
+        printf("info.data_len=%d\n", info.data_len);
+        printf("%s is:\n", title);
+        for(i=0; i<(info.data_len); i++)
+            printf("%02x:", buf[i]);
+        printf("\n");
+    }
+	
+    //efuse write
+    else if(action == WRITE_EFUSE) {		
+        if(argc < 4) {
+            printf("arg count error\n");
+            return -1;
+        }
+        title = argv[2];
+        if(efuse_getinfo(title, &info) < 0)
+            return -1;		
+        if(!(info.we)) {
+            printf("%s write unsupport now. \n", title);
+            return -1;
+        }
+		
+        memset(buf, 0, info.data_len);	
+        s = argv[3];
+
+        //for usb burn key to efuse
+        if(!strncmp(title, "usid", strlen("usid")))	        //burn usid data(format:"xxxx...", it's string) 
+            memcpy(buf, s, strlen(s));
+        else if(!strncmp(title, "hdcp", strlen("hdcp"))) //burn hdcp data(format:xx xx, it's data)
+            memcpy(buf, s, HDCP_KEY_LEN);
+        else {                          //burn version, mac, mac_bt, mac_wifi, customerid(format:"xx:xx:xx...", it's string)
+            for(i=0; i<info.data_len; i++) {						
+                buf[i] = s ? simple_strtoul(s, &end, 16) : 0;
+                if(s)
+                    s = (*end) ? end+1 : end;
+            }
+            if(*s) {
+                printf("error: The wriiten data length is too large.\n");
+                return -1;
+            }
+        }
+
+        if(efuse_write_usr(buf, info.data_len, (loff_t*)&info.offset) < 0) {
+            printf("error: efuse write fail.\n");
+            return -1;
+        }
+        else
+            printf("%s written done.\n", info.title);					
+    }
+    else {
+        printf("arg error\n");
+        return -1;	
+    }
+
+    return 0;
+}
 static int run_efuse_cmd(int argc, char *argv[], char *buff)
 {
    int ret = -1;
@@ -247,12 +339,12 @@ static int run_efuse_cmd(int argc, char *argv[], char *buff)
 #ifdef CONFIG_AML_MESON3
    ret = do_efuse_usb(argc, argv, buff);
 #elif defined(CONFIG_AML_MESON6)
-   ret = cmd_efuse(argc, argv, buff);
+   //ret = cmd_efuse(argc, argv, buff);
+   ret = _cmd_efuse(argc, argv, buff);
 #endif
 
    return ret;
 }
-#endif    /* WRITE_TO_EFUSE_ENABLE */
 
 #if defined(EFUSE_READ_TEST_ENABLE)
 static int test_efuse_read(int argc, char *argv[], char *cmpBuff)
@@ -341,7 +433,7 @@ run:
          }
          if(!hdcp_flag) {
             printf("test efuse read hdcp success\n");
-            printf("read hdcp=");
+            printf("read hdcp is:\n");
             for(i=0; i<hdcp_key_len; i++)
                printf("%02x:", reBuff[i]);
             printf("\n");
@@ -361,6 +453,8 @@ run:
    return ret;
 }
 #endif    /* EFUSE_READ_TEST_ENABLE */
+#endif    /* WRITE_TO_EFUSE_ENABLE  */
+
 
 int burn_board(const char *dev, void *mem_addr, u64 offset, u64 size)
 {
@@ -439,8 +533,7 @@ int usb_run_command (const char *cmd, char* buff)
 	u32 crc_value, crc_verify = 0;
 	int argc;
 	char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
-	unsigned long upgrade_step;
-	printf("cmd: %s\n", cmd);
+	printf("\n\n---Tool cmd: %s\n", cmd);
 	
 	memset(buff, 0, CMD_BUFF_SIZE);
 	if(strncmp(cmd,"get update result",(sizeof("get update result")-1)) == 0){
@@ -529,20 +622,49 @@ int usb_run_command (const char *cmd, char* buff)
   *	"secukey_efuse/secukey_nand write hdcp:" (hdcp key datas form 0x82000000 address)
   *	"secukey_nand read boardid"
   *	"secukey_nand write boardid:"    (boardid key datas form 0x82000000 address)
+  *	"secukey_nand read serialno"
+  *	"secukey_nand write serialno:"    (serialno key datas form 0x82000000 address)
+  *
+  *    // for key to securestorage
+  *	"efuse write random"   (random datas form 0x82000000 address)
+  *	"efuse read widevinekeybox"
+  *	"efuse write widevinekeybox"     (widevinekeybox datas form 0x82000000 address)
+  *	"efuse read PlayReadykeybox"
+  *	"efuse write PlayReadykeybox"   (PlayReadykeybox datas form 0x82000000 address)
+  *	"efuse read MobiDRMPrivate"
+  *	"efuse write MobiDRMPrivate"     (MobiDRMPrivate datas form 0x82000000 address)
+  *	"efuse read MobiDRMPublic"
+  *	"efuse write MobiDRMPublic"       (MobiDRMPublic datas form 0x82000000 address)
+  *
   **/
       else if(!strncmp(cmd, "efuse", strlen("efuse")) ||
             !strncmp(cmd, "read hdcp", strlen("read hdcp")) ||!strncmp(cmd, "write hdcp:", strlen("write hdcp:")) ||
             !strncmp(cmd, "secukey_efuse", strlen("secukey_efuse")) ||!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
-            int i = 0, ret = -1, error = -1;
-            int flag = 0, usid_flag = 0, hdcp_flag = 0, writeHdcp_flag = 1;
-            int hdcp_key_len = 288, boardid_key_len = 0;
+            int i = 0, ret = -1, key_device_index = -1, boardid_key_len = 0, serialno_key_len = 0, random_len = 0;
+            int widevinekeybox_len = 0, PlayReadykeybox_len = 0, MobiDRMPrivate_len = 0, MobiDRMPublic_len = 0;
+            char widevinekeybox_verify_data_receive[20], widevinekeybox_verify_data_calculate[20];
+            char PlayReadykeybox_verify_data_receive[20], PlayReadykeybox_verify_data_calculate[20];
+            char MobiDRMPrivate_verify_data_receive[20], MobiDRMPrivate_verify_data_calculate[20];
+            char MobiDRMPublic_verify_data_receive[20], MobiDRMPublic_verify_data_calculate[20];
             char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
-            char *hdcp = NULL, *boardid = NULL;
-            char *Argv1[3] = {"efuse", "read", "hdcp"}, *Argv2[4] = {"efuse", "write", "hdcp", ""};
-            char *Argv3[3] = {"flash", "read", "hdcp"}, *Argv4[4] = {"flash", "write", "hdcp", ""};
-            char *Argv5[4] = {"flash", "write", "boardid", ""};
+            char *hdcp = NULL, *boardid = NULL, *serialno = NULL, *random = NULL;
+            char *widevinekeybox = NULL, *PlayReadykeybox = NULL, *MobiDRMPrivate = NULL, *MobiDRMPublic = NULL;
+
+            enum {
+                RANDOM_MAX_LEN = 32,
+                WIDEVINEKEYBOX_MAX_LEN  = 128,
+                PLAYREADYKEYBOX_MAX_LEN  = 16*1024, // max:16k
+                MOBIDRMPRIVATE_MAX_LEN = 1200,
+                MOBIDRMPUBLIC_MAX_LEN = 300,
+            };
 
             /* Extract arguments */
+            if(!strncmp(cmd, "read hdcp", 9) || !strncmp(cmd, "write hdcp:", 11)) {
+                char cmd_hdcp[50] = {0};
+                strncpy(cmd_hdcp, cmd, strlen(cmd));
+                sprintf(cmd, "%s %s", "efuse", cmd_hdcp);  // add parameter for hdcp command
+                printf("Actual cmd:%s\n", cmd);
+            }
             if ((argc = parse_line (cmd, argv)) == 0) {
                return -1;	/* no command at all */
             }
@@ -550,14 +672,21 @@ int usb_run_command (const char *cmd, char* buff)
             memset(key_data, 0, sizeof(key_data));
             memset(hdcp_verify_data_receive, 0, sizeof(hdcp_verify_data_receive));
             memset(hdcp_verify_data_calculate, 0, sizeof(hdcp_verify_data_calculate));
+            memset(widevinekeybox_verify_data_receive, 0, sizeof(widevinekeybox_verify_data_receive));
+            memset(widevinekeybox_verify_data_calculate, 0, sizeof(widevinekeybox_verify_data_calculate));
+            memset(PlayReadykeybox_verify_data_receive, 0, sizeof(PlayReadykeybox_verify_data_receive));
+            memset(PlayReadykeybox_verify_data_calculate, 0, sizeof(PlayReadykeybox_verify_data_calculate));
+            memset(MobiDRMPrivate_verify_data_receive, 0, sizeof(MobiDRMPrivate_verify_data_receive));
+            memset(MobiDRMPrivate_verify_data_calculate, 0, sizeof(MobiDRMPrivate_verify_data_calculate));
+            memset(MobiDRMPublic_verify_data_receive, 0, sizeof(MobiDRMPublic_verify_data_receive));
+            memset(MobiDRMPublic_verify_data_calculate, 0, sizeof(MobiDRMPublic_verify_data_calculate));
+
 
 /* Burn key to efuse */
 /* ---Command process */
 #ifdef  WRITE_TO_EFUSE_ENABLE
-            if(strncmp(argv[0], "efuse", strlen("efuse")) && 
-               strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) &&  //cmd:read hdcp/write hdcp:
-               strncmp(argv[0], "secukey_efuse", strlen("secukey_efuse"))) {
-               sprintf(buff, "%s", "failed:(code compiled to efuse,but cmd not mach with pc send)");
+            if(strncmp(argv[0], "efuse", strlen("efuse")) && strncmp(argv[0], "secukey_efuse", strlen("secukey_efuse"))) {
+               sprintf(buff, "%s", "failed:(code compiled burn to efuse,but cmd not mach with pc send)");
                printf("%s\n", buff);
                return -1;
             }
@@ -582,19 +711,11 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(argv[2], "wifi_mac", strlen("wifi_mac")))
                strncpy(argv[2], "mac_wifi", strlen("mac_wifi"));
 
-            if(!strncmp(argv[0], "read", strlen("read")) && !strncmp(argv[1], "hdcp", strlen("hdcp"))) {
-               argv[0] = Argv1[0];
-               argv[1] = Argv1[1];
-               argv[2] = Argv1[2];
-               argc = 3;
-            }
-
-            if(!strncmp(argv[0], "write", strlen("write")) && !strncmp(argv[1], "hdcp:", strlen("hdcp:")) ||
-                !strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
 #define HDCP_DATA_ADDR	(volatile unsigned long *)(0x82000000)	//get hdcp data from address:0x82000000 
-               hdcp = HDCP_DATA_ADDR;
-               printf("receive %d hdcp key datas from address:0x82000000:\n", hdcp_key_len);
-               for(i=0; i<hdcp_key_len; i++) {                                            //read 288 hdcp datas
+               hdcp = (char *)HDCP_DATA_ADDR;
+               printf("receive %d hdcp key datas from address:0x82000000:\n", HDCP_KEY_LEN);
+               for(i=0; i<HDCP_KEY_LEN; i++) {                                            //read 288 hdcp datas
                   key_data[i] = *hdcp++;
                   printf("%.2x:", key_data[i]);
                }
@@ -605,33 +726,26 @@ int usb_run_command (const char *cmd, char* buff)
                }
                printf("\n");
 
-#ifdef  WRITE_HDCP_VERIFY_ENABLE
-               printf("start to verify %d hdcp key datas...\n", hdcp_key_len);
-               SHA1_Perform(key_data, hdcp_key_len, hdcp_verify_data_calculate);
+               printf("start to verify %d hdcp key datas...\n", HDCP_KEY_LEN);
+               SHA1_Perform(key_data, HDCP_KEY_LEN, hdcp_verify_data_calculate);
                printf("verify & get 20 hdcp verify datas:\n");
                for(i=0; i<20; i++)
-			   printf("%.2x:", hdcp_verify_data_calculate[i]);
+                    printf("%.2x:", hdcp_verify_data_calculate[i]);
                printf("\n");
 
-               for(i=0; i<20; i++) {
-			   if(hdcp_verify_data_receive[i] != hdcp_verify_data_calculate[i]) {
-			      writeHdcp_flag = 0;
-			      break;
-			   }
-               }
-#endif
-               if(writeHdcp_flag)	{		                                                   //hdcp can write
-                  memcpy(Argv2[3], key_data, hdcp_key_len);		         //copy hdcp datas
-                  argv[0] = Argv2[0];
-                  argv[1] = Argv2[1];
-                  argv[2] = Argv2[2];
-                  argv[3] = Argv2[3];
-                  argc = 4;
+               ret = memcmp(hdcp_verify_data_receive, hdcp_verify_data_calculate, 20);
+               if(ret == 0) {
+                    printf("hdcp datas verify success\n");
+                    argv[0] = "efuse";
+                    argv[1] = "write";
+                    argv[2] = "hdcp";
+                    argv[3] = key_data;
+                    argc = 4;
                }
                else {
-                  sprintf(buff, "%s", "failed:(hdcp data verify not mach)");
-                  printf("%s\n",buff);
-                  return -1;
+                    sprintf(buff, "%s", "failed:(hdcp datas verify failed)");
+                    printf("%s\n", buff);
+                    return -1;
                }
             }
 #endif   /* WRITE_TO_EFUSE_ENABLE */
@@ -640,17 +754,15 @@ int usb_run_command (const char *cmd, char* buff)
 /* Burn key to nand/emmc */
 /* ---Command process */
 #if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
-            if(strncmp(argv[0], "efuse", strlen("efuse")) && 
-               strncmp(argv[0], "read", strlen("read")) && strncmp(argv[0], "write", strlen("write")) && 
-               strncmp(argv[0], "secukey_nand", strlen("secukey_nand"))) {
-               sprintf(buff, "failed:(code compiled to %s,but cmd not mach with pc send)", Argv3[0]);
+            if(strncmp(argv[0], "efuse", strlen("efuse")) && strncmp(argv[0], "secukey_nand", strlen("secukey_nand"))) {
+               sprintf(buff, "%s", "failed:(code compiled burn to flash,but cmd not mach with pc send)");
                printf("%s\n", buff);
                return -1;
             }
 
-            printf("burn key to %s. convert command...\n", Argv3[0]);
+            printf("burn key to flash. convert command...\n");
             if(!strncmp(argv[0], "efuse", strlen("efuse"))||!strncmp(argv[0], "secukey_nand", strlen("secukey_nand")))
-               argv[0] = Argv3[0];
+               argv[0] = "flash";
 
             if(!strncmp(argv[2], "bt_mac", strlen("bt_mac")))
                strncpy(argv[2], "mac_bt", strlen("mac_bt"));
@@ -658,19 +770,11 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(argv[2], "wifi_mac", strlen("wifi_mac")))
                strncpy(argv[2], "mac_wifi", strlen("mac_wifi"));
 
-            if(!strncmp(argv[0], "read", strlen("read")) && !strncmp(argv[1], "hdcp", strlen("hdcp"))) {
-               argv[0] = Argv3[0];
-               argv[1] = Argv3[1];
-               argv[2] = Argv3[2];
-               argc = 3;
-            }
-
-            if(!strncmp(argv[0], "write", strlen("write")) && !strncmp(argv[1], "hdcp:", strlen("hdcp:")) ||
-                !strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp:", strlen("hdcp:"))) {
 #define HDCP_DATA_ADDR	(volatile unsigned long *)(0x82000000)
-               hdcp = HDCP_DATA_ADDR;
-               printf("receive %d hdcp key datas from address:0x82000000:\n", hdcp_key_len);
-               for(i=0; i<hdcp_key_len; i++) {
+               hdcp = (char *)HDCP_DATA_ADDR;
+               printf("receive %d hdcp key datas from address:0x82000000:\n", HDCP_KEY_LEN);
+               for(i=0; i<HDCP_KEY_LEN; i++) {
                   key_data[i] = *hdcp++;
                   printf("%.2x:", key_data[i]);
                }
@@ -681,76 +785,394 @@ int usb_run_command (const char *cmd, char* buff)
                }
                printf("\n");
 
-#ifdef  WRITE_HDCP_VERIFY_ENABLE
-               printf("start to verify %d hdcp key datas...\n", hdcp_key_len);
-               SHA1_Perform(key_data, hdcp_key_len, hdcp_verify_data_calculate);
+               printf("start to verify %d hdcp key datas...\n", HDCP_KEY_LEN);
+               SHA1_Perform(key_data, HDCP_KEY_LEN, hdcp_verify_data_calculate);
                printf("verify & get 20 hdcp verify datas:\n");
                for(i=0; i<20; i++)
-			   printf("%.2x:", hdcp_verify_data_calculate[i]);
+                    printf("%.2x:", hdcp_verify_data_calculate[i]);
                printf("\n");
 
-               for(i=0; i<20; i++) {
-			   if(hdcp_verify_data_receive[i] != hdcp_verify_data_calculate[i]) {
-			      writeHdcp_flag = 0;
-			      break;
-			   }
-               }
-#endif
-               if(writeHdcp_flag)	{
-                  memcpy(Argv4[3], key_data, hdcp_key_len);
-                  argv[0] = Argv4[0];
-                  argv[1] = Argv4[1];
-                  argv[2] = Argv4[2];
-                  argv[3] = Argv4[3];
-                  argc = 4;
+               ret = memcmp(hdcp_verify_data_receive, hdcp_verify_data_calculate, 20);
+               if(ret == 0) {
+                    printf("hdcp datas verify success\n");
+                    argv[0] = "flash";
+                    argv[1] = "write";
+                    argv[2] = "hdcp";
+                    argv[3] = key_data;
+                    argc = 4;
                }
                else {
-                  sprintf(buff, "%s", "failed:(hdcp data verify not mach)");
-                  printf("%s\n",buff);
-                  return -1;
+                    sprintf(buff, "%s", "failed:(hdcp datas verify failed)");
+                    printf("%s\n", buff);
+                    return -1;
                }
             }
 
             if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid:", strlen("boardid:"))) {
 #define BOARDID_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get boardid data from address:0x82000000
                char length[4] = {0};
-               boardid = BOARDID_DATA_ADDR;
+               boardid = (char *)BOARDID_DATA_ADDR;
                for(i=0; i<4; i++) {
                   length[i] = *boardid++;
                   //printf("length[%d]=0x%02x\n", i, length[i]);
                }
                boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                printf("boardid_key_len=%d(maximum length limit is %d)\n", boardid_key_len, SECUKEY_BYTES);
-                  for(i=0; i<boardid_key_len; i++) {
-                     key_data[i] = *boardid++;
-                  }
-                  printf("receive %d boardid key datas from address:0x82000000:\n%s\n", boardid_key_len, key_data);
-                  memcpy(Argv5[3], key_data, SECUKEY_BYTES);                  //copy boardid datas
-                  argv[0] = Argv5[0];
-                  argv[1] = Argv5[1];
-                  argv[2] = Argv5[2];
-                  argv[3] = Argv5[3];
-                  argc = 4;
+               memcpy(key_data, boardid, boardid_key_len);
+               printf("receive %d boardid key datas from address:0x82000000:\n%s\n", boardid_key_len, key_data);
+               argv[0] = "flash";
+               argv[1] = "write";
+               argv[2] = "boardid";
+               argv[3] = key_data;
+               argc = 4;
+            }
+
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "serialno:", strlen("serialno:"))) {
+#define SERIALNO_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get serialno data from address:0x82000000
+               char length[4] = {0};
+               serialno = (char *)SERIALNO_DATA_ADDR;
+               for(i=0; i<4; i++) {
+                  length[i] = *serialno++;
+                  //printf("length[%d]=0x%02x\n", i, length[i]);
+               }
+               serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               printf("serialno_key_len=%d(maximum length limit is %d)\n", serialno_key_len, SECUKEY_BYTES);
+               memcpy(key_data, serialno, serialno_key_len);
+               printf("receive %d serialno key datas from address:0x82000000:\n%s\n", serialno_key_len, key_data);
+               argv[0] = "flash";
+               argv[1] = "write";
+               argv[2] = "serialno";
+               argv[3] = key_data;
+               argc = 4;
             }
 #endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
 
+
+/* Burn key to securestorage */
+/* ---Command process */
+#if defined(CONFIG_SECURE_STORAGE_BURNED)
+            if(!strncmp(argv[2], "random", strlen("random")) || !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox")) || 
+                !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox")) || !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate")) ||
+                !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
+                argv[0] = "securestorage";
+                printf("burn key to %s. convert command...\n", argv[0]);
+
+                if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "random", strlen("random"))) {
+#define RANDOM_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get random data from address:0x82000000
+                    random = (char *)RANDOM_DATA_ADDR;
+                    char length[4] = {0}, random_data[RANDOM_MAX_LEN] = {0};
+                    for(i=0; i<4; i++) {
+                        length[i] = *random++;
+                        //printf("length[%d]=0x%02x\n", i, length[i]);
+                    }
+                    random_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    if(random_len > RANDOM_MAX_LEN || random_len <= 0) {
+                        sprintf(buff, "random_len=%d(maximum length limit is %d)", random_len, RANDOM_MAX_LEN);
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+                    printf("receive %d random datas from address:0x82000000:\n", random_len);
+                    memcpy((char *)random_data, (char *)random, random_len);
+                    for(i=0; i<random_len; i++) {
+                        printf("%02x:", random_data[i]);
+                    }
+                    printf("\n");
+
+                    argv[3] = random_data;
+                    argc = 4;
+                }
+
+                if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox"))) {
+#define WIDEVINE_KEYBOX_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get widevinekeybox data from address:0x82000000
+                    widevinekeybox = (char *)WIDEVINE_KEYBOX_DATA_ADDR;
+                    char length[4] = {0}, widevinekeybox_data[WIDEVINEKEYBOX_MAX_LEN] = {0};
+                    for(i=0; i<4; i++) {
+                        length[i] = *widevinekeybox++;
+                        //printf("length[%d]=0x%02x\n", i, length[i]);
+                    }
+                    widevinekeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    if(widevinekeybox_len > WIDEVINEKEYBOX_MAX_LEN || widevinekeybox_len <= 0) {
+                        sprintf(buff, "widevinekeybox_len=%d(maximum length limit is %d)", widevinekeybox_len, WIDEVINEKEYBOX_MAX_LEN);
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+
+                    printf("receive %d widevinekeybox datas from address:0x82000000:\n", widevinekeybox_len);
+                    memcpy((char *)widevinekeybox_data, (char *)widevinekeybox, widevinekeybox_len);
+#ifdef KEYBOX_PRINT
+                    for(i=0; i<widevinekeybox_len; i++) {
+                        printf("%02x:", widevinekeybox_data[i]);
+                    }
+#else
+                    printf("receive %d widevinekeybox datas ok !!!", widevinekeybox_len);
+#endif
+
+                    printf("\nreceive 20 widevinekeybox verify datas:\n");
+                    memcpy((char *)widevinekeybox_verify_data_receive, (char *)(widevinekeybox+widevinekeybox_len), 20);
+                    for(i=0; i<20; i++) {
+                        printf("%02x:", widevinekeybox_verify_data_receive[i]);
+                    }
+                    printf("\n");
+
+                    printf("start to verify %d widevinekeybox datas...\n", widevinekeybox_len);
+                    SHA1_Perform(widevinekeybox_data, widevinekeybox_len, widevinekeybox_verify_data_calculate);
+                    printf("verify & get 20 widevinekeybox verify datas:\n");
+                    for(i=0; i<20; i++)
+                        printf("%02x:", widevinekeybox_verify_data_calculate[i]);
+                    printf("\n");
+
+                    ret = memcmp(widevinekeybox_verify_data_receive, widevinekeybox_verify_data_calculate, 20);
+                    if(ret == 0) {
+                        printf("widevinekeybox datas verify success\n");
+                        argv[3] = widevinekeybox_data;
+                        argc = 4;
+                    }
+                    else {
+                        sprintf(buff, "%s", "failed:(widevinekeybox datas verify failed)");
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+                }
+
+               if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox"))) {
+#define PLAYREADY_KEYBOX_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get PlayReadykeybox data from address:0x82000000
+                    PlayReadykeybox = (char *)PLAYREADY_KEYBOX_DATA_ADDR;
+                    char length[4] = {0}, PlayReadykeybox_data[PLAYREADYKEYBOX_MAX_LEN] = {0};
+                    for(i=0; i<4; i++) {
+                        length[i] = *PlayReadykeybox++;
+                        //printf("length[%d]=0x%02x\n", i, length[i]);
+                    }
+                    PlayReadykeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    if(PlayReadykeybox_len > PLAYREADYKEYBOX_MAX_LEN || PlayReadykeybox_len <= 0) {
+                        sprintf(buff, "PlayReadykeybox_len=%d(maximum length limit is %d)", PlayReadykeybox_len, PLAYREADYKEYBOX_MAX_LEN);
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+
+                    printf("receive %d PlayReadykeybox datas from address:0x82000000:\n", PlayReadykeybox_len);
+                    memcpy((char *)PlayReadykeybox_data, (char *)PlayReadykeybox, PlayReadykeybox_len);
+#ifdef KEYBOX_PRINT
+                    for(i=0; i<PlayReadykeybox_len; i++) {
+                        printf("%02x:", PlayReadykeybox_data[i]);
+                    }
+#else
+                    printf("receive %d PlayReadykeybox datas ok !!!", PlayReadykeybox_len);
+#endif
+
+                    printf("\nreceive 20 PlayReadykeybox verify datas:\n");
+                    memcpy((char *)PlayReadykeybox_verify_data_receive, (char *)(PlayReadykeybox+PlayReadykeybox_len), 20);
+                    for(i=0; i<20; i++) {
+                        printf("%02x:", PlayReadykeybox_verify_data_receive[i]);
+                    }
+                    printf("\n");
+
+                    printf("start to verify %d PlayReadykeybox datas...\n", PlayReadykeybox_len);
+                    SHA1_Perform(PlayReadykeybox_data, PlayReadykeybox_len, PlayReadykeybox_verify_data_calculate);
+                    printf("verify & get 20 PlayReadykeybox verify datas:\n");
+                    for(i=0; i<20; i++)
+                        printf("%02x:", PlayReadykeybox_verify_data_calculate[i]);
+                    printf("\n");
+
+                    ret = memcmp(PlayReadykeybox_verify_data_receive, PlayReadykeybox_verify_data_calculate, 20);
+                    if(ret == 0) {
+                        printf("PlayReadykeybox datas verify success\n");
+                        argv[3] = PlayReadykeybox_data;
+                        argc = 4;
+                    }
+                    else {
+                        sprintf(buff, "%s", "failed:(PlayReadykeybox datas verify failed)");
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+                }
+
+               if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate"))) {
+#define MOBIDRMPRIVATE_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MobiDRMPrivate data from address:0x82000000
+                    MobiDRMPrivate = (char *)MOBIDRMPRIVATE_DATA_ADDR;
+                    char length[4] = {0}, MobiDRMPrivate_data[MOBIDRMPRIVATE_MAX_LEN] = {0};
+                    for(i=0; i<4; i++) {
+                        length[i] = *MobiDRMPrivate++;
+                        //printf("length[%d]=0x%02x\n", i, length[i]);
+                    }
+                    MobiDRMPrivate_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    if(MobiDRMPrivate_len > MOBIDRMPRIVATE_MAX_LEN || MobiDRMPrivate_len <= 0) {
+                        sprintf(buff, "MobiDRMPrivate_len=%d(maximum length limit is %d)", MobiDRMPrivate_len, MOBIDRMPRIVATE_MAX_LEN);
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+
+                    printf("receive %d MobiDRMPrivate datas from address:0x82000000:\n", MobiDRMPrivate_len);
+                    memcpy((char *)MobiDRMPrivate_data, (char *)MobiDRMPrivate, MobiDRMPrivate_len);
+#ifdef KEYBOX_PRINT
+                    for(i=0; i<MobiDRMPrivate_len; i++) {
+                        printf("%02x:", MobiDRMPrivate_data[i]);
+                    }
+#else
+                    printf("receive %d MobiDRMPrivate datas ok !!!", MobiDRMPrivate_len);
+#endif
+
+                    printf("\nreceive 20 MobiDRMPrivate verify datas:\n");
+                    memcpy((char *)MobiDRMPrivate_verify_data_receive, (char *)(MobiDRMPrivate+MobiDRMPrivate_len), 20);
+                    for(i=0; i<20; i++) {
+                        printf("%02x:", MobiDRMPrivate_verify_data_receive[i]);
+                    }
+                    printf("\n");
+
+                    printf("start to verify %d MobiDRMPrivate datas...\n", MobiDRMPrivate_len);
+                    SHA1_Perform(MobiDRMPrivate_data, MobiDRMPrivate_len, MobiDRMPrivate_verify_data_calculate);
+                    printf("verify & get 20 MobiDRMPrivate verify datas:\n");
+                    for(i=0; i<20; i++)
+                        printf("%02x:", MobiDRMPrivate_verify_data_calculate[i]);
+                    printf("\n");
+
+                    ret = memcmp(MobiDRMPrivate_verify_data_receive, MobiDRMPrivate_verify_data_calculate, 20);
+                    if(ret == 0) {
+                        printf("MobiDRMPrivate datas verify success\n");
+                        argv[3] = MobiDRMPrivate_data;
+                        argc = 4;
+                    }
+                    else {
+                        sprintf(buff, "%s", "failed:(MobiDRMPrivate datas verify failed)");
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+                }
+
+               if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
+#define MOBIDRMPUBLIC_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MobiDRMPublic data from address:0x82000000
+                    MobiDRMPublic = (char *)MOBIDRMPUBLIC_DATA_ADDR;
+                    char length[4] = {0}, MobiDRMPublic_data[MOBIDRMPUBLIC_MAX_LEN] = {0};
+                    for(i=0; i<4; i++) {
+                        length[i] = *MobiDRMPublic++;
+                        //printf("length[%d]=0x%02x\n", i, length[i]);
+                    }
+                    MobiDRMPublic_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    if(MobiDRMPublic_len > MOBIDRMPUBLIC_MAX_LEN || MobiDRMPublic_len <= 0) {
+                        sprintf(buff, "MobiDRMPublic_len=%d(maximum length limit is %d)", MobiDRMPublic_len, MOBIDRMPUBLIC_MAX_LEN);
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+
+                    printf("receive %d MobiDRMPublic datas from address:0x82000000:\n", MobiDRMPublic_len);
+                    memcpy((char *)MobiDRMPublic_data, (char *)MobiDRMPublic, MobiDRMPublic_len);
+#ifdef KEYBOX_PRINT
+                    for(i=0; i<MobiDRMPublic_len; i++) {
+                        printf("%02x:", MobiDRMPublic_data[i]);
+                    }
+#else
+                    printf("receive %d MobiDRMPublic datas ok !!!", MobiDRMPublic_len);
+#endif
+
+                    printf("\nreceive 20 MobiDRMPublic verify datas:\n");
+                    memcpy((char *)MobiDRMPublic_verify_data_receive, (char *)(MobiDRMPublic+MobiDRMPublic_len), 20);
+                    for(i=0; i<20; i++) {
+                        printf("%02x:", MobiDRMPublic_verify_data_receive[i]);
+                    }
+                    printf("\n");
+
+                    printf("start to verify %d MobiDRMPublic datas...\n", MobiDRMPublic_len);
+                    SHA1_Perform(MobiDRMPublic_data, MobiDRMPublic_len, MobiDRMPublic_verify_data_calculate);
+                    printf("verify & get 20 MobiDRMPublic verify datas:\n");
+                    for(i=0; i<20; i++)
+                        printf("%02x:", MobiDRMPublic_verify_data_calculate[i]);
+                    printf("\n");
+
+                    ret = memcmp(MobiDRMPublic_verify_data_receive, MobiDRMPublic_verify_data_calculate, 20);
+                    if(ret == 0) {
+                        printf("MobiDRMPublic datas verify success\n");
+                        argv[3] = MobiDRMPublic_data;
+                        argc = 4;
+                    }
+                    else {
+                        sprintf(buff, "%s", "failed:(MobiDRMPublic datas verify failed)");
+                        printf("%s\n", buff);
+                        return -1;
+                    }
+                }
+            }
+#endif   /* CONFIG_SECURE_STORAGE_BURNED */
 
             //printf argv[0]--argv[argc-1]
             if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
                for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
                hdcp = argv[3];
                printf("argv[3]=");
-               for(i=0; i<hdcp_key_len; i++) printf("%02x:", *hdcp ++);
+               for(i=0; i<HDCP_KEY_LEN; i++) printf("%02x:", *hdcp ++);
                printf("\n");
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "random", strlen("random"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               random = argv[3];
+               printf("argv[3]=");
+               for(i=0; i<random_len; i++) printf("%02x:", *random ++);
+               printf("\n");
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               printf("argv[3]=");
+#ifdef KEYBOX_PRINT
+               widevinekeybox = argv[3];
+               for(i=0; i<widevinekeybox_len; i++) printf("%02x:", *widevinekeybox ++);
+               printf("\n");
+#else
+               printf("......\n");
+#endif
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               printf("argv[3]=");
+#ifdef KEYBOX_PRINT
+               PlayReadykeybox = argv[3];
+               for(i=0; i<PlayReadykeybox_len; i++) printf("%02x:", *PlayReadykeybox ++);
+               printf("\n");
+#else
+               printf("......\n");
+#endif
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               printf("argv[3]=");
+#ifdef KEYBOX_PRINT
+               MobiDRMPrivate = argv[3];
+               for(i=0; i<MobiDRMPrivate_len; i++) printf("%02x:", *MobiDRMPrivate ++);
+               printf("\n");
+#else
+               printf("......\n");
+#endif
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
+               for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
+               printf("argv[3]=");
+#ifdef KEYBOX_PRINT
+               MobiDRMPublic = argv[3];
+               for(i=0; i<MobiDRMPublic_len; i++) printf("%02x:", *MobiDRMPublic ++);
+               printf("\n");
+#else
+               printf("......\n");
+#endif
             }
             else
                for(i=0; i<argc; i++)  printf("argv[%d]=%s\n", i,argv[i]);
+
+            if(!strncmp(argv[2], "version", strlen("version")) ||!strncmp(argv[2], "mac", strlen("mac")) ||!strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||
+                !strncmp(argv[2], "mac_wifi", strlen("mac_wifi")) ||!strncmp(argv[2], "usid", strlen("usid")) ||!strncmp(argv[2], "hdcp", strlen("hdcp")) ||
+                !strncmp(argv[2], "boardid", strlen("boardid")) || !strncmp(argv[2], "serialno", strlen("serialno")))
+                key_device_index = 1;   // flash -> efuse or nand or emmc
+            else if(!strncmp(argv[2], "random", strlen("random")) ||!strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox")) || 
+                !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox")) ||!strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate")) ||
+                !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic")))
+                key_device_index = 2;   // securestorage
+            else
+                key_device_index = -1; // none command
+
+
 
 /* Burn key to efuse */
 /* ---The actual function to read & write operation */
 #ifdef  WRITE_TO_EFUSE_ENABLE
             /* read/write version */
             if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "version", strlen("version"))) {
+               int flag = 0;
                ret = run_efuse_cmd(argc, argv, buff);
 #ifdef CONFIG_AML_MESON3
                if(!ret) {
@@ -878,6 +1300,7 @@ int usb_run_command (const char *cmd, char* buff)
 
             /* read/write usid */
             else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               int usid_flag = 0;
                ret = run_efuse_cmd(argc, argv, buff);
                if(!ret) {
                   for(i=0; i<strlen(buff); i++) {
@@ -932,17 +1355,18 @@ int usb_run_command (const char *cmd, char* buff)
 
             /* read/write hdcp */
             else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
+               int hdcp_flag = 0;
                ret = run_efuse_cmd(argc, argv, buff);
                if(!ret) {
-                  for(i=0; i<hdcp_key_len; i++) {
+                  for(i=0; i<HDCP_KEY_LEN; i++) {
                      if(buff[i] != 0x00) {
                         hdcp_flag = 1;
                         break;
                      }
                   }
                   if(hdcp_flag) {
-                     printf("hdcp_key_data=");
-                     for(i=0; i<hdcp_key_len; i++)
+                     printf("hdcp_key_data is:\n");
+                     for(i=0; i<HDCP_KEY_LEN; i++)
                         printf("%.2x:", buff[i]);
                      printf("\n");
                      sprintf(buff, "%s", "success:(hdcp has been writen)");
@@ -986,12 +1410,14 @@ int usb_run_command (const char *cmd, char* buff)
                }
             }
 
+#if !defined(CONFIG_SECURE_STORAGE_BURNED)
             /* no command mach */
             else {
                sprintf(buff, "%s", "failed:(No command mached)");
                printf("%s\n", buff);
                return -1;
             }
+#endif
 #endif   /* WRITE_TO_EFUSE_ENABLE */
 
 
@@ -1017,21 +1443,18 @@ int usb_run_command (const char *cmd, char* buff)
                }
             }
 
-            /* read/write mac/mac_bt/mac_wifi */
+            /* read/write mac/mac_bt/mac_wifi/usid*/
             else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
-               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")) ||
+               !strncmp(argv[2], "usid", strlen("usid")))) {
                ret = cmd_secukey(argc, argv, buff);
                if(!ret) {
-                  strncpy(namebuf, argv[2], strlen(argv[2]));
-                  memset(databuf, 0, sizeof(databuf));
-                  error = uboot_key_read(namebuf, databuf);
-                  if(error >= 0) {
-                     printf("%s_key_data=%s\n", argv[2], buff);
-                     sprintf(key_data, "%s", buff);
+                    printf("%s_key_data=%s\n", argv[2], buff);
+                     memcpy(key_data, buff, strlen(buff));
                      sprintf(buff, "success:(%s)", key_data);
-                  }
-                  else
-                     sprintf(buff, "failed:(%s has been not writen)", argv[2]);
+                }
+                else if(ret == 1) {
+                    sprintf(buff, "failed:(%s has been not writen)", argv[2]);
                }
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
@@ -1040,40 +1463,8 @@ int usb_run_command (const char *cmd, char* buff)
                }
             }
             else if(!strncmp(argv[1], "write", strlen("write")) && (!strncmp(argv[2], "mac", strlen("mac")) ||
-               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")))) {
-               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
-               ret = cmd_secukey(argc, argv, buff);
-               if(!ret)
-                  sprintf(buff, "success:(%s)", argv[3]);
-               else {
-                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
-                  printf("%s\n", buff);
-                  return -1;
-               }
-            }
-
-            /* read/write usid */
-            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "usid", strlen("usid"))) {
-               ret = cmd_secukey(argc, argv, buff);
-               if(!ret) {
-                  strncpy(namebuf, "usid", strlen("usid"));
-                  memset(databuf, 0, sizeof(databuf));
-                  error = uboot_key_read(namebuf, databuf);
-                  if(error >= 0) {
-                     printf("usid_key_data=%s\n", buff);
-                     memcpy(key_data, buff, strlen(buff));
-                     sprintf(buff, "success:(%s)", key_data);
-                  }
-                  else
-                     sprintf(buff, "%s", "failed:(usid has been not writen)");
-               }
-               else {
-                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
-                  printf("%s\n", buff);
-                  return -1;
-               }
-            }
-            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "usid", strlen("usid"))) {
+               !strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||!strncmp(argv[2], "mac_wifi", strlen("mac_wifi")) ||
+               !strncmp(argv[2], "usid", strlen("usid")))) {
                for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
                ret = cmd_secukey(argc, argv, buff);
                if(!ret)
@@ -1089,30 +1480,26 @@ int usb_run_command (const char *cmd, char* buff)
             else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
                ret = cmd_secukey(argc, argv, buff);
                if(!ret) {
-                  strncpy(namebuf, "hdcp", strlen("hdcp"));
-                  memset(databuf, 0, sizeof(databuf));
-                  error = uboot_key_read(namebuf, databuf);
-                  if(error >= 0) {
-                     printf("hdcp_key_data=");
-                     for(i=0; i<hdcp_key_len; i++)
+                    printf("hdcp_key_data is:\n");
+                    for(i=0; i<HDCP_KEY_LEN; i++)
                         printf("%.2x:", buff[i]);
-                     printf("\n");
-                     sprintf(buff, "%s", "success:(hdcp has been writen)");
-                  }
-                  else
+                    printf("\n");
+                    sprintf(buff, "%s", "success:(hdcp has been writen)");
+                }
+                else if(ret == 1) {
                      sprintf(buff, "%s", "failed:(hdcp has been not writen)");
-               }
-               else {
+                }
+                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
                   printf("%s\n", buff);
                   return -1;
                }
             }
             else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "hdcp", strlen("hdcp"))) {
-               for(i=0; i<4; i++) buff[i] = (char)((hdcp_key_len >> (i*8)) & 0xff);
+               for(i=0; i<4; i++) buff[i] = (char)((HDCP_KEY_LEN >> (i*8)) & 0xff);
                ret = cmd_secukey(argc, argv, buff);
                if(!ret)
-                  sprintf(buff, "success:(%s write hdcp success)", argv[0]);
+                  sprintf(buff, "success:(%s %s %s success)", argv[0], argv[1], argv[2]);
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
                   printf("%s\n", buff);
@@ -1120,20 +1507,81 @@ int usb_run_command (const char *cmd, char* buff)
                }
             }
 
-            /* read/write boardid */
-            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
+            /* read/write boardid/serialno */
+            else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "boardid", strlen("boardid")) ||
+                !strncmp(argv[2], "serialno", strlen("serialno")))) {
                ret = cmd_secukey(argc, argv, buff);
                if(!ret) {
-                  strncpy(namebuf, "boardid", strlen("boardid"));
-                  memset(databuf, 0, sizeof(databuf));
-                  error = uboot_key_read(namebuf, databuf);
-                  if(error >= 0) {
-                     printf("boardid_key_data=%s\n", buff);
-                     memcpy(key_data, buff, strlen(buff));
-                     sprintf(buff, "%s", "success:(boardid has been writen)");
-                  }
-                  else
-                     sprintf(buff, "%s", "failed:(boardid has been not writen)");
+                    printf("%s_key_data=%s\n", argv[2], buff);
+                    memcpy(key_data, buff, strlen(buff));
+                    sprintf(buff, "success:(%s has been writen)", argv[2]);
+                }
+                else if(ret == 1) {
+                     sprintf(buff, "failed:(%s has been not writen)", argv[2]);
+                }
+                else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && (!strncmp(argv[2], "boardid", strlen("boardid")) ||
+                !strncmp(argv[2], "serialno", strlen("serialno")))) {
+               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
+               ret = cmd_secukey(argc, argv, buff);
+               if(!ret)
+                  sprintf(buff, "success:(%s %s %s success)", argv[0], argv[1], argv[2]);
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+ 
+#if !defined(CONFIG_SECURE_STORAGE_BURNED)
+            /* no command mach */
+            else {
+               sprintf(buff, "%s", "failed:(No command mached)");
+               printf("%s\n", buff);
+               return -1;
+            }
+#endif
+#endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
+
+
+
+/* Burn key to securestorage */
+/* ---The actual function to read & write operation */
+#if defined(CONFIG_SECURE_STORAGE_BURNED)
+            if(key_device_index == 1) {
+                printf("%s\n",buff);
+                return 0;
+            }
+
+            /* init securestore device and write random at same time */
+            if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "random", strlen("random"))) {
+               ret = ensure_securestore_key_init(key_data, random_len);
+               if (ret == 0) {                                            //init securestorage and write random success
+                  sprintf(buff, "success:(init %s and write random success)", argv[0]);
+               }
+               else if(ret == 1) {
+                  sprintf(buff, "success:(%s already inited and writed random)", argv[0]);
+               }
+               else {                                                       //init securestorage or write random failed!!
+                  sprintf(buff, "failed:(init %s or write random failed)", argv[0]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write widevinekeybox */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox"))) {
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "%s", "success:(widevinekeybox has been writen)");
+               }
+               else if(ret == 1) {
+                  sprintf(buff, "%s", "okay:(widevinekeybox has been not writen)");
                }
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
@@ -1141,11 +1589,96 @@ int usb_run_command (const char *cmd, char* buff)
                   return -1;
                }
             }
-            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid", strlen("boardid"))) {
-               for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
-               ret = cmd_secukey(argc, argv, buff);
-               if(!ret)
-                  sprintf(buff, "success:(%s write boardid success)", argv[0]);
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((widevinekeybox_len >> (i*8)) & 0xff);
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "success:(%s write widevinekeybox success)", argv[0]);
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write PlayReadykeybox */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox"))) {
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "%s", "success:(PlayReadykeybox has been writen)");
+               }
+               else if(ret == 1) {
+                  sprintf(buff, "%s", "okay:(PlayReadykeybox has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((PlayReadykeybox_len >> (i*8)) & 0xff);
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "success:(%s write PlayReadykeybox success)", argv[0]);
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write MobiDRMPrivate */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate"))) {
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "%s", "success:(MobiDRMPrivate has been writen)");
+               }
+               else if(ret == 1) {
+                  sprintf(buff, "%s", "okay:(MobiDRMPrivate has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((MobiDRMPrivate_len >> (i*8)) & 0xff);
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "success:(%s write MobiDRMPrivate success)", argv[0]);
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+
+            /* read/write MobiDRMPublic */
+            else if(!strncmp(argv[1], "read", strlen("read")) && !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "%s", "success:(MobiDRMPublic has been writen)");
+               }
+               else if(ret == 1) {
+                  sprintf(buff, "%s", "okay:(MobiDRMPublic has been not writen)");
+               }
+               else {
+                  sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
+                  printf("%s\n", buff);
+                  return -1;
+               }
+            }
+            else if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
+               for(i=0; i<4; i++) buff[i] = (char)((MobiDRMPublic_len >> (i*8)) & 0xff);
+               ret = cmd_securestore(argc, argv, buff);
+               if(!ret) {
+                  sprintf(buff, "success:(%s write MobiDRMPublic success)", argv[0]);
+               }
                else {
                   sprintf(buff, "failed:(%s %s %s failed)", argv[0], argv[1], argv[2]);
                   printf("%s\n", buff);
@@ -1159,23 +1692,30 @@ int usb_run_command (const char *cmd, char* buff)
                printf("%s\n", buff);
                return -1;
             }
-#endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
-      }
-	else
-	{
-		if(run_command(cmd, flag))
-		{
-			strcpy(buff, "fail");
-			return -1;
-		}
-		else
-		{
-			strcpy(buff, "okay");
-		}
-	}
 
-	printf("%s\n",buff);
-	return 0;
+            // set "reboot_mode=charging",because it has been set "reboot_mode=usb_burning" when recovery shutdown
+            if(!strncmp(getenv("reboot_mode"), "usb_burning", strlen("usb_burning"))) {
+                printf("reboot_mode=usb_burning, now set reboot_mode=charging.\n");
+                setenv("reboot_mode", "charging");  
+                saveenv();
+                if(!strncmp(getenv("reboot_mode"), "charging", strlen("charging")))
+                    printf("set env reboot_mode=charging ok\n");
+                else
+                    printf("set env reboot_mode=charging fail,now reboot_mode is:%s\n", getenv("reboot_mode"));
+            }
+#endif   /* CONFIG_SECURE_STORAGE_BURNED */
+      }
+      else {
+            if(run_command(cmd, flag)){
+                strcpy(buff, "fail");
+                return -1;
+            }
+            else{
+                strcpy(buff, "okay");
+            }
+      }
+      printf("%s\n",buff);
+      return 0;
 }
 
 
@@ -1183,15 +1723,14 @@ int usb_run_command (const char *cmd, char* buff)
 #if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 int ensure_secukey_init(void)
 {
-	int error;
-	char *cmd;
+	int error = -1;
 
 	if (secukey_inited){
-		printk("flash device already inited!!\n");
-		return 1;
+            printf("flash device already inited!!\n");
+            return 1;
 	}
 	
-	printk("should be inited first!\n");
+	printf("should be inited first!\n");
 
 	error = uboot_key_initial("auto");
        if(error >= 0) {
@@ -1205,98 +1744,234 @@ int ensure_secukey_init(void)
 	return -1;
 }
 
-char i_to_asc(char para)
+static char hex_to_asc(char para)
 {
-	if(para>=0 && para<=9)
-		para = para+'0';
-	else if(para>=0xa && para<=0xf)
-		para = para+'a'-0xa;
+    if(para >= 0 && para <= 9)
+        para = para + '0';
+    else if(para >= 0xa && para <= 0xf)
+        para = para + 'a' - 0xa;
 		
-		return para;
+    return para;
 }
 
-char asc_to_i(char para)
+static char asc_to_hex(char para)
 {
-	if(para>='0' && para<='9')
-		para = para-'0';
-	else if(para>='a' && para<='f')
-		para = para-'a'+0xa;
-	else if(para>='A' && para<='F')
-		para = para-'A'+0xa;
+    if(para >= '0' && para <= '9')
+        para = para - '0';
+    else if(para >= 'a' && para <= 'f')
+        para = para - 'a' + 0xa;
+    else if(para >= 'A' && para <= 'F')
+        para = para - 'A' + 0xa;
 		
-		return para;
+    return para;
 }
 
-int cmd_secukey(int argc, char * const argv[], char *buf)
+/**
+  *     cmd_secukey
+  *     read: command in *argv[], and read datas saved in buf
+  *     return: 0->success, 1->have not writen, -1->failed
+  *
+  *     write: command in *argv[], and datas length in buf
+  *     return: 0->success, -1->failed
+  **/
+int cmd_secukey(int argc, char *argv[], char *buf)
 {
-	int i,j, ret = 0,error;
-	char *cmd;
-	char *name;
-	char *data;
-	/* at least two arguments please */
-	if (argc < 2)
-		goto usage;
-	cmd = argv[1];
-	
-	memset(databuf, 0, sizeof(databuf));
-	if (secukey_inited){
-		if (argc > 2&&argc<5){
-			if(!strcmp(cmd,"read")){
-				if (argc>3)
-					goto usage;
-				name=argv[2];
-				memset(buf, 0, CMD_BUFF_SIZE);
-				strcpy(namebuf,name);
-				error=uboot_key_read(namebuf, databuf);
-                for(i=0; i<CMD_BUFF_SIZE*2; i++)
-                    printf(":%c", databuf[i]);
-                printf("\n");
-				if(error>=0){
-					for (i=0,j=0; i<CMD_BUFF_SIZE*2; i++,j++){
-							buf[j]= (((asc_to_i(databuf[i]))<<4) | (asc_to_i(databuf[++i])));
-					}
-					printf("%s is: ", namebuf);
-					for(i=0; i<CMD_BUFF_SIZE; i++)
-						printf(":%02x", buf[i]);
-					printf("\n");
-					return 0;
-				}
-				else{
-					printk("read error!!\n");
-					return -1;
-				}
-			}
-			if(!strcmp(cmd,"write")){
-				if (argc!=4)
-					goto usage;
-				name=argv[2];
-				data=argv[3];
-				strcpy(namebuf,name);
-				int secukey_len = (int)((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|(buf[0]));
-				printf("secukey_len=%d\n", secukey_len);
-				for (i=0,j=0; i<secukey_len; i++,j++){
-						databuf[j]= i_to_asc((data[i]>>4) & 0x0f);
-						databuf[++j]= i_to_asc((data[i]) & 0x0f);
-						printk("%02x:%02x:", databuf[j-1], databuf[j]);
-				}
-				printk("right here!!!\n");
-				//memcpy(buf,databuf,SECUKEY_BYTES*2);
-				error=uboot_key_write(namebuf, databuf);
-				if(error>=0){
-					printk("write key ok!!\n");
-					return 0;
-				}
-				else{
-					printk("write error!!\n");
-					return -1;
-				}	
-			}
-		}
-	}
-	else
-		goto usage ;
+    int i = 0, j = 0, ret = 0, error = -1, secukey_len = 0;
+    char *secukey_cmd = NULL, *secukey_name = NULL, *secukey_data = NULL;
+    char namebuf[AML_KEY_NAMELEN], databuf[4096], listkey[1024];
+
+    /* at least two arguments please */
+    if(argc < 2)
+        goto err;
+
+    memset(namebuf, 0, sizeof(namebuf));
+    memset(databuf, 0, sizeof(databuf));
+    memset(listkey, 0, sizeof(listkey));
+
+    secukey_cmd = (char *)argv[1];
+    if(secukey_inited) {
+        if(argc > 2 && argc < 5) {
+            if(!strncmp(secukey_cmd, "read", strlen("read"))) {
+                if(argc > 3)
+                    goto err;
+                ret = uboot_get_keylist(listkey);
+                printf("all key names list are(ret=%d):\n%s", ret, listkey);
+                secukey_name = (char *)argv[2];
+                strncpy(namebuf, secukey_name, strlen(secukey_name));
+                error = uboot_key_read(namebuf, databuf);
+                if(error >= 0) {    //read success
+                    memset(buf, 0, SECUKEY_BYTES);
+                    for(i=0; i<SECUKEY_BYTES*2; i++)
+                        if(databuf[i]) printf("%c:", databuf[i]);
+                    printf("\n");
+                    for(i=0,j=0; i<SECUKEY_BYTES*2; i++,j++) {
+                        buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[++i])));
+                    }
+                    printf("%s is: ", namebuf);
+                    for(i=0; i<SECUKEY_BYTES; i++)
+                        if(buf[i])  printf("%02x:", buf[i]);
+                    printf("\nread ok!!\n");
+                    return 0;
+                }
+                else {                      // read error or have not been writen
+                    if(!strncmp(namebuf, "mac_bt", 6) || !strncmp(namebuf, "mac_wifi", 8))
+                        ;
+                    else if(!strncmp(namebuf, "mac", 3)) {
+                        memset(namebuf, 0, sizeof(namebuf));
+                        sprintf(namebuf, "%s", "mac\n");
+                    }
+
+                    if(strstr(listkey, namebuf)) {
+                        printf("find key name: %s, but read error!!\n", namebuf);
+                        goto err;       // read error 
+                    }
+                    else {
+                        printf("not find key name: %s, and it doesn't be writen before!!\n", namebuf);
+                        return 1;       // has been not writen
+                    }
+                }
+            }
+            else if(!strncmp(secukey_cmd, "write", strlen("write"))) {
+                if(argc != 4)
+                    goto err;
+                secukey_name = (char *)argv[2];
+                secukey_data = (char *)argv[3];
+                strncpy(namebuf, secukey_name, strlen(secukey_name));
+                secukey_len = (int)((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|(buf[0]));
+                printf("write %s key's length is: %d bytes\n", namebuf, secukey_len);
+                for(i=0,j=0; i<secukey_len; i++,j++) {
+                    databuf[j]= hex_to_asc((secukey_data[i]>>4) & 0x0f);
+                    databuf[++j]= hex_to_asc((secukey_data[i]) & 0x0f);
+                    printf("%02x:%02x:", databuf[j-1], databuf[j]);
+                }
+                error = uboot_key_write(namebuf, databuf);
+                if(error >= 0) {
+                    printf("write ok!!\n");
+                    return 0;
+                }
+                else {
+                    printf("write error!!\n");
+                    goto err;
+                }	
+            }
+        }
+    }
+    else {
+        printf("flash device uninitialized!!");
+        goto err;
+    }
 		
-usage:
-	return 1;
+err:
+    return -1;
+}
+#endif
+
+
+#if defined(CONFIG_SECURE_STORAGE_BURNED)
+int ensure_securestore_key_init(char *seed, int seed_len)
+{
+    int ret = -1;
+
+    if(securestore_inited) {
+        printf("securestore key already inited and seed already writed!!\n");
+        return 1;
+    }
+
+    printf("start to init securestore key and write seed!!\n");
+
+    ret = securestore_key_init(seed, seed_len);
+    if(ret == 0) {
+        printf("init securestore key and write seed ok!!\n");
+        securestore_inited = 1;
+        ret = 0;
+    }
+    else {
+        printf("init securestore key or write seed error\n");
+        ret = -1;
+    }
+
+    return ret;
+}
+
+/**
+  *     cmd_securestore
+  *     read: command in *argv[], don't allow to read datas
+  *     return: 0->success, 1->have not writen, -1->failed
+  *
+  *     write: command in *argv[], and datas length in buf
+  *     return: 0->success, -1->failed
+  **/
+int cmd_securestore(int argc, char *argv[], char *buf)
+{
+    int error = -1;
+    unsigned int key_status = 0, sstorekey_len = 0;
+    char *sstorekey_cmd, *sstorekey_name, *sstorekey_data;
+    char name_buf[20], data_buf[4096];
+        
+    /* at least two arguments please */
+    if(argc < 2)
+        goto err;
+
+    memset(name_buf, 0, sizeof(name_buf));
+    memset(data_buf, 0, sizeof(data_buf));
+    
+    sstorekey_cmd = argv[1];
+    if(securestore_inited) {
+        if(argc > 2 && argc < 5) {
+            if(!strncmp(sstorekey_cmd, "read", strlen("read"))) {
+                if(argc > 3)
+                    goto err;
+                sstorekey_name = argv[2];
+                strncpy(name_buf, sstorekey_name, strlen(sstorekey_name));
+                error = securestore_key_query(name_buf, &key_status);
+                if(!error) {
+                    printf("key_status=%d\n", key_status);
+                    if(key_status == 0) {             //key has been not writen
+                        printf("%s has been not writen!!\n", name_buf);
+                        return 1;
+                    }
+                    else if(key_status == 1) {    //key has been writen
+                        printf("%s has been writen!!\n", name_buf);
+                        return 0;
+                    }
+                    else {
+                        printf("key_status: %d,reserved\n", key_status);
+                        return -1;
+                    }
+                }
+                else {
+                    printf("err :%d,%s:%d\n", error, __func__, __LINE__);
+                    return -1;
+                }
+            }
+            else if(!strncmp(sstorekey_cmd, "write", strlen("write"))) {
+                if(argc != 4)
+                    goto err;
+                sstorekey_name = argv[2];
+                sstorekey_data = argv[3];
+                strncpy(name_buf, sstorekey_name, strlen(sstorekey_name));
+                sstorekey_len = (int)((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|(buf[0]));
+                printf("write %s key's length is: %d\n", name_buf, sstorekey_len);
+                error = securestore_key_write(name_buf, sstorekey_data, sstorekey_len, 0);
+                if(!error) {
+                    if(!securestore_key_query(name_buf, &key_status))
+                        printf("after write, query key_status=%d\n", key_status);
+                    printf("write %s ok!!\n", name_buf);
+                    return 0;
+                }
+                else {
+                    printf("write %s error!!\n", name_buf);
+                    goto err;
+                }	
+            }
+        }
+    }
+    else {
+        printf("securestore device or securestore key uninitialized!!\n");
+        goto err;
+    }
+		
+err:
+    return -1;
 }
 #endif
