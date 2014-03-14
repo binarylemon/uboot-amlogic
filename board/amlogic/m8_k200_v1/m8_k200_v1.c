@@ -101,7 +101,7 @@ extern void hdmi_tx_power_init(void);
 void hdmi_tx_power_init(void)
 {
     // 
-    printf("hdmi tx power init\n");
+//    printf("hdmi tx power init\n");
 }
 #endif
 
@@ -446,6 +446,7 @@ static void board_i2c_init(void)
 #endif
 }
 
+#ifdef CONFIG_NET_WIFI
 void wifi_power_init()
 {
 	printf("mcli -- wifi_power_init in uboot --\n");
@@ -453,6 +454,7 @@ void wifi_power_init()
 	clrbits_le32(P_AO_RTI_PIN_MUX_REG,1<<18);
 	clrbits_le32(P_AO_GPIO_O_EN_N,1<<6);
 }
+#endif
 
 int board_init(void)
 {
@@ -478,8 +480,9 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
+#ifdef CONFIG_NET_WIFI
 	wifi_power_init();
-
+#endif
 	return 0;
 }
 

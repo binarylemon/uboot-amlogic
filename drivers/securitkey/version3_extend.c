@@ -9,7 +9,7 @@
 #include <linux/types.h>
 #include "aml_keys.h"
 #include <amlogic/securitykey.h>
-#define key_schem_print(a...) printk(a)
+#define key_schem_print(a...)   //printk(a)
 
 #define PATH_MAX	512
 static char secure_device[PATH_MAX];
@@ -554,7 +554,7 @@ int32_t version3_init(aml_keys_schematic_t * schematic, char * secure_dev)
     uint32_t headsize;
     if (IS_ERR_OR_NULL(prov))
     {
-    	printk("device name=%s open error \n",secure_dev);
+    	key_schem_print("device name=%s open error \n",secure_dev);
         return -EINVAL;
 
     }

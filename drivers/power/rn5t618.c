@@ -210,7 +210,7 @@ int rn5t618_get_battery_current(void)
 int rn5t618_set_gpio(int gpio, int output)
 {
     int val = output ? 1 : 0;
-    DBG("%s, gpio:%d, output:%d\n", __func__, gpio, output);
+//    DBG("%s, gpio:%d, output:%d\n", __func__, gpio, output);
     if (gpio < 0 || gpio > 3) {
         DBG("%s, wrong input of GPIO:%d\n", __func__, gpio);
         return -1;
@@ -696,7 +696,7 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x00BB, 0x00, 0x80);                       // set VWEAK to 3.0v
     udelay(100 * 1000);                                         // delay a short time
 
-    dump_pmu_register();
+//    dump_pmu_register();
 
     return 0;
 }

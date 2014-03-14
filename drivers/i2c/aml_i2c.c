@@ -621,7 +621,6 @@ static int __i2c_init_flag = 0;
 
 int aml_i2c_init(void) 
 {
-	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	extern struct aml_i2c_platform g_aml_i2c_plat;
 	
 	struct aml_i2c_platform *plat = &g_aml_i2c_plat;
@@ -630,7 +629,6 @@ int aml_i2c_init(void)
     if (__i2c_init_flag) {
         return ;    
     }
-	printf("aml_i2c_init\n");
 
 	if(plat == NULL)
 	{

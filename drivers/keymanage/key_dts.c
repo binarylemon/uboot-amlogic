@@ -205,7 +205,7 @@ static int unifykey_item_create(unsigned int dt_addr,int num)
 		memset(item_path,0,sizeof(item_path));
 		memset(cha,0,sizeof(cha));
 	}
-	printf("unifykey-num fact is %x\n",count);
+//	printf("unifykey-num fact is %x\n",count);
 #endif
 	return 0;
 }
@@ -237,13 +237,13 @@ int unifykey_dt_parse(void)
 	punifykey_num = (char*)fdt_getprop((const void *)dt_addr, nodeoffset, "efuse-version",NULL);
 	if(punifykey_num){
 		unify_key_info.efuse_version = be32_to_cpup((unsigned int*)punifykey_num);
-		printf("efuse-version config is %x\n",unify_key_info.efuse_version);
+//		printf("efuse-version config is %x\n",unify_key_info.efuse_version);
 	}
 	
 	unify_key_info.key_num = 0;
 	punifykey_num = (char*)fdt_getprop((const void *)dt_addr, nodeoffset, "unifykey-num",NULL);
 	if(punifykey_num){
-		printf("unifykey-num config is %x\n",be32_to_cpup((unsigned int*)punifykey_num));
+//		printf("unifykey-num config is %x\n",be32_to_cpup((unsigned int*)punifykey_num));
 		unify_key_info.key_num = be32_to_cpup((unsigned int*)punifykey_num);
 	}
 	else{
