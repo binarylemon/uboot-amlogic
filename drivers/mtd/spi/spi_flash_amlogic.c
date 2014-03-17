@@ -427,7 +427,8 @@ out:
 		
 		spi_cs_deactivate(slave);
 	}
-
+	
+	SET_CBUS_REG_MASK(SPI_FLASH_CTRL, 1<<SPI_ENABLE_AHB); /*for AHB data bus request*/
 	return 0;
 }
 
@@ -651,7 +652,7 @@ int spi_flash_write_amlogic(struct spi_flash *flash,u32 offset, size_t len, cons
 
 	//cache refresh
 	dcache_flush();
-
+	
 	return nReturn;
 }
 
@@ -728,7 +729,6 @@ int spi_flash_read_amlogic(struct spi_flash *flash,u32 offset, size_t len, void 
 
 	//cache refresh
 	dcache_flush();	
-
 	return 0;	
 }
 
