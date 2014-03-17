@@ -187,7 +187,7 @@
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-//#define CONFIG_CMD_USB 1
+#define CONFIG_CMD_USB 1
 #if defined(CONFIG_CMD_USB)
 	#define CONFIG_M8_USBPORT_BASE_A	0xC9040000
 	#define CONFIG_M8_USBPORT_BASE_B	0xC90C0000
