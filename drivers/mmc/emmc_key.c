@@ -617,7 +617,7 @@ int emmc_key_init( void *keypara)
 		card->key_protect = 1;	
 #endif
 
-	printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);
+//	printk("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx \n",__func__,__LINE__,lba_start,lba_end);
 #endif
 	if(!emmckey_info->key_init){
 		printk("%s:%d,emmc key init fail\n",__func__,__LINE__);
@@ -639,7 +639,7 @@ int emmc_key_init( void *keypara)
 		card->aml_emmckey_info = NULL;
 		return err;
 	}
-	printk("emmc key: %s:%d ok. \n",__func__,__LINE__);
+//	printk("emmc key: %s:%d ok. \n",__func__,__LINE__);
 
 	provider = aml_keybox_provider_get(emmc_provider.name);
 	if(provider){

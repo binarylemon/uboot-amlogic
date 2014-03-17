@@ -134,8 +134,10 @@ __TEXT_SIZE:
 #else
 #ifdef CONFIG_MESON_TRUSTZONE
 	.word CONFIG_SECURE_UBOOT_SIZE - READ_SIZE
+#elif defined CONFIG_AML_SECURE
+   .word 0x70000 - READ_SIZE
 #else
-     .word 0x60000 - READ_SIZE
+   .word 0x60000 - READ_SIZE
 #endif    
 #endif  
 

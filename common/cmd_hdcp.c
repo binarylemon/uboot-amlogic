@@ -65,6 +65,8 @@ static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
         hdmi_hdcp_wr_reg(ram_addr, value);
         j = ((i % 7) == 6) ? j + 2: j + 1;
     }
+    if(pre_clear == 1)
+        hdmi_hdcp_wr_reg(TX_HDCP_DKEY_OFFSET, 0xa);
 
     return 1;
 }

@@ -3,16 +3,29 @@
 #include <timming.c>
 #include <uartpin.c>
 #include <serial.c>
+
+#if !defined(CONFIG_M6_SECU_BOOT)
 #include <pinmux.c>
 #include <sdpinmux.c>
+#endif
+
 #include <memtest.c>
 #include <pll.c>
 #include <ddr.c>
+
+#if !defined(CONFIG_M6_SECU_BOOT)
 #include <mtddevices.c>
 #include <sdio.c>
 #include <debug_rom.c>
+#else
+#define memcpy ipl_memcpy
+#define get_timer get_utimer
+STATIC_PREFIX void debug_rom(char * file, int line){};
+#endif
+
 #include <usb_boot/usb_boot.c>
 #include <asm/arch/reboot.h>
+
 #ifdef CONFIG_ACS
 #include <storage.c>
 #include <acs.c>
@@ -79,11 +92,14 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     writel(0,P_WATCHDOG_TC);//disable Watchdog
     // initial pll
     pll_init(&__plls);
-    
-    __udelay(100000);//wait for a uart input 
+
+#if !defined(CONFIG_M6_SECU_BOOT)
+    __udelay(100000);//wait for a uart input     
 	 if(serial_tstc()){
 	    debug_rom(__FILE__,__LINE__);
 	 }
+#endif
+	 
     // initial ddr
     ddr_init_test();
     // load uboot

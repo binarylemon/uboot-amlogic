@@ -33,15 +33,15 @@ static int dump_video_info(void)
 }
 static int do_video_open(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("Video initializing...\n");
+//	printf("Video initializing...\n");
 	gdev = video_hw_init();
 	if(gdev == NULL)
 	{
 		printf("Initialize video device failed!\n");
 		return 1;
 	}
-	
-	return dump_video_info();
+//	dump_video_info();
+	return 0;
 }
 
 static int do_video_close(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])										  
@@ -58,7 +58,7 @@ static int do_video_clear(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 		printf("Please initialize video device first!\n");
 		return 1;
 	}
-	printf("LCD screen clear!\n");
+//	printf("LCD screen clear!\n");
 #ifdef CONFIG_OSD_SCALE_ENABLE
 	memset ((char *)gdev->frameAdrs, 0,
 		(gdev->fb_width*gdev->fb_height)*gdev->gdfBytesPP);

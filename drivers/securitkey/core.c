@@ -86,7 +86,7 @@ aml_keybox_provider_t * aml_keybox_provider_get(char * name)
     {
         if (providers[i] == NULL)
             continue;
-        printk("name=%s %s\n", providers[i]->name, name);
+//        printk("name=%s %s\n", providers[i]->name, name);
         if (strcmp(name, providers[i]->name))
             continue;
         return providers[i];
@@ -476,13 +476,13 @@ int register_aes_algorithm(int storage_version)
 {
 	int ret=-1;
 	if(storage_version == 1){
-		printk("%s:%d,old way\n",__func__,__LINE__);
+//		printk("%s:%d,old way\n",__func__,__LINE__);
 		aes_algorithm_encrypt = aml_key_encrypt;
 		aes_algorithm_decrypt = aml_key_decrypt;
 		ret = 0;
 	}
 	else if(storage_version == 2){
-		printk("%s:%d,new way\n",__func__,__LINE__);
+//		printk("%s:%d,new way\n",__func__,__LINE__);
 		aes_algorithm_encrypt = aml_keysafety_encrypt;
 		aes_algorithm_decrypt = aml_keysafety_decrypt;
 		ret = 0;
@@ -1666,7 +1666,7 @@ int uboot_key_initial(char *device)
 		if(error>=0){
 			error = key_set_version(device);
 			if(error>=0){
-				printk("device:%s, init key ok!!\n", device);
+//				printk("device:%s, init key ok!!\n", device);
 				uboot_key_inited = 1;
 				return 0;
 			}

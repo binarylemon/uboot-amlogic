@@ -216,7 +216,9 @@ int usb_pcd_irq()
 	return dwc_otg_irq();
 }
 
-#define buff ((char*)PCD_BUFF)
+//#define buff ((char*)PCD_BUFF)
+static char _buf[512];
+#define buff ((char*)_buf)
 void start_bulk_transfer(pcd_struct_t *_pcd)
 {
 	_pcd->bulk_lock = 1; // TODO : add lock code.

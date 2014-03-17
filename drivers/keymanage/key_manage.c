@@ -43,6 +43,27 @@
 #define KEY_WRITE_PROHIBIT	(11<<4)
 //#define ACS_ADDR_ADDR	0xd9000200
 
+/*function: key_unify_secure_boot_key
+ * keyname:
+ * keydata:
+ * keylen:
+ * return : 0: success, <0: fail, >0: exist
+ * */
+static int key_unify_secure_boot_key(char *keyname, unsigned char *keydata, int keylen)
+{
+	char str[128];
+	int ret;
+	char *securebootkey="secure_boot_set";
+	if(strcmp(keyname, securebootkey) != 0){
+		printf("keyname %s is eror\n",keyname);
+		return -1;
+	}
+	keylen = keylen;
+	memset(str,0,sizeof(str));
+	sprintf(str,"efuse %s 0x%x",securebootkey,(int)keydata);
+	ret = run_command(str, 0);
+	return ret;
+}
 
 typedef int (* key_unify_dev_init)(char *buf,unsigned int len);
 typedef int (* key_unify_dev_uninit)(void);
@@ -50,6 +71,7 @@ typedef int (* key_unify_dev_uninit)(void);
 extern ssize_t uboot_key_put(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);
 extern ssize_t uboot_key_get(char *device,char *key_name, char *key_data,int key_data_len,int ascii_flag);
 extern ssize_t uboot_key_query(char *device,char *key_name,unsigned int *keystate);
+
 static int key_general_nand_init(char *buf,unsigned int len)
 {
 	return 0;
@@ -120,18 +142,26 @@ static int key_securestorage_init(char *buf,unsigned int len)
 	return 0;
 #endif
 }
-static int key_securestorage_write(char *keyname,unsigned char *keydata,unsigned int datalen)
+static int key_securestorage_write(char *keyname,unsigned char *keydata,unsigned int datalen,enum key_manager_df_e flag)
 {
 	int err = -EINVAL;
 #ifdef CONFIG_SECURESTORAGEKEY
+	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
 	err = securestore_key_write(keyname, (char *)keydata,datalen,0);
 #endif
 	return err;
 }
-static int key_securestorage_read(char *keyname,unsigned char *keydata,unsigned int datalen,unsigned int *reallen)
+static int key_securestorage_read(char *keyname,unsigned char *keydata,unsigned int datalen,unsigned int *reallen,enum key_manager_df_e flag)
 {
 	int err = -EINVAL;
 #ifdef CONFIG_SECURESTORAGEKEY
+	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
 	err = securestore_key_read(keyname,(char *)keydata,datalen,reallen);
 #endif
 	return err;
@@ -196,11 +226,15 @@ static int key_efuse_init(char *buf,unsigned int len)
 	return 0;
 #endif
 }
-static int key_efuse_write(char *keyname,unsigned char *keydata,unsigned int datalen)
+static int key_efuse_write(char *keyname,unsigned char *keydata,unsigned int datalen,enum key_manager_df_e flag)
 {
 #ifdef CONFIG_EFUSE
 	char *title = keyname;
 	efuseinfo_item_t info;
+	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
 
 	if(efuse_getinfo(title, &info) < 0)
 		return -EINVAL;
@@ -220,13 +254,18 @@ static int key_efuse_write(char *keyname,unsigned char *keydata,unsigned int dat
 	return -EINVAL;
 #endif
 }
-static int key_efuse_read(char *keyname,unsigned char *keydata,unsigned int datalen,unsigned int *reallen)
+static int key_efuse_read(char *keyname,unsigned char *keydata,unsigned int datalen,unsigned int *reallen,enum key_manager_df_e flag)
 {
 #ifdef CONFIG_EFUSE
 	char *title = keyname;
 	efuseinfo_item_t info;
 	int err=0;
 	char *buf;
+	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
+
 	if(efuse_getinfo(title, &info) < 0)
 		return -EINVAL;
 	
@@ -250,6 +289,31 @@ static int key_efuse_read(char *keyname,unsigned char *keydata,unsigned int data
 	return -EINVAL;
 #endif
 }
+
+static int _key_query_secure_boot_set(char* keyname, unsigned int * keystate)
+{
+    unsigned int pos = 0;
+    unsigned int info_lis=0xffffffff;
+    int nChkVal = 0, nChkAddr = 0;
+
+    if(strcmp("secure_boot_set", keyname)){
+        printf("Err, key name (%s) is not secure_boot_set\n", keyname);
+        return -__LINE__;
+    }
+
+    //Check if bit7 && bit 6 are both 1
+    //Attention: check this code to stay same with cmd[efuse secure_boot_set] 
+    efuse_read(&nChkVal,sizeof(nChkVal),(loff_t*)&nChkAddr);
+    if(((nChkVal >> 7) & 1) && ((nChkVal >> 6) & 1))
+    {
+        *keystate = KEY_BURNED;
+        return __LINE__;
+    }		
+
+    *keystate = KEY_NO_EXIST;//key not burned
+    return 0;
+}
+
 static int key_efuse_query(char *keyname,unsigned int *keystate)
 {
 	int err=-EINVAL;
@@ -337,10 +401,19 @@ int key_unify_write(char *keyname,unsigned char *keydata,unsigned int datalen)
 		key_df = key_manage->df;
 		switch(key_manage->dev){
 			case KEY_M_EFUSE_NORMAL:
-				err = key_efuse_write(keyname,keydata,datalen);
+                {
+                    if(!strcmp("secure_boot_set", keyname))
+                    {
+                        err = key_unify_secure_boot_key(keyname, keydata, datalen);
+                    }
+                    else
+                    {
+                        err = key_efuse_write(keyname,keydata,datalen,key_df);
+                    }
+                }
 				break;
 			case KEY_M_SECURE_STORAGE:
-				err = key_securestorage_write(keyname,keydata,datalen);
+				err = key_securestorage_write(keyname,keydata,datalen,key_df);
 				if(err == 0x1fe){
 					err = -0x1fe;
 				}
@@ -384,10 +457,10 @@ int key_unify_read(char *keyname,unsigned char *keydata,unsigned int datalen,uns
 		key_df = key_manage->df;
 		switch(key_manage->dev){
 			case KEY_M_EFUSE_NORMAL:
-				err = key_efuse_read(keyname,keydata,datalen,reallen);
+				err = key_efuse_read(keyname,keydata,datalen,reallen,key_df);
 				break;
 			case KEY_M_SECURE_STORAGE:
-				err = key_securestorage_read(keyname,keydata,datalen,reallen);
+				err = key_securestorage_read(keyname,keydata,datalen,reallen,key_df);
 				break;
 			case KEY_M_GENERAL_NANDKEY:
 				err = key_general_nand_read(keyname,keydata,datalen,reallen,key_df);
@@ -429,17 +502,26 @@ int key_unify_query(char *keyname,unsigned int *keystate,unsigned int *keypermit
 		key_df = key_manage->df;
 		switch(key_manage->dev){
 			case KEY_M_EFUSE_NORMAL:
-				err = key_efuse_query(keyname,keystate);
-				*keypermit = KEY_READ_PERMIT;
-				if(err >= 0){
-					if(*keystate == KEY_BURNED){
-						*keypermit |= KEY_WRITE_PROHIBIT;
-					}
-					else if(*keystate == KEY_NO_EXIST){
-						*keypermit |= KEY_WRITE_PERMIT;
-					}
-				}
-				break;
+                {
+                    if(!strcmp("secure_boot_set", keyname)) {
+                        err = _key_query_secure_boot_set(keyname, keystate);
+                        *keypermit = KEY_READ_PROHIBIT;//not read!
+                    }
+                    else {
+                        err = key_efuse_query(keyname,keystate);
+                        *keypermit = KEY_READ_PERMIT;
+                    }
+
+                    if(err >= 0){
+                        if(*keystate == KEY_BURNED){
+                            *keypermit |= KEY_WRITE_PROHIBIT;
+                        }
+                        else if(*keystate == KEY_NO_EXIST){
+                            *keypermit |= KEY_WRITE_PERMIT;
+                        }
+                    }
+                }
+                break;
 			case KEY_M_SECURE_STORAGE:
 				err = key_securestorage_query(keyname,keystate);
 				*keypermit = KEY_READ_PROHIBIT;
@@ -458,6 +540,38 @@ int key_unify_query(char *keyname,unsigned int *keystate,unsigned int *keypermit
 	}
 	return err;
 }
+
+char* key_unify_query_key_format(char *keyname)
+{
+	char *keyformat=NULL;
+	struct key_item_t *key_manage;
+	key_manage = unifykey_find_item_by_name(keyname);
+	if(key_manage == NULL){
+		printf("%s:%d,%s key name is not exist\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
+	if(unifykey_item_verify_check(key_manage)){
+		printf("%s:%d,%s key name is invalid\n",__func__,__LINE__,keyname);
+		return -EINVAL;
+	}
+	switch(key_manage->df){
+		case KEY_M_HEXDATA:
+			keyformat="hexdata";
+		break;
+		case KEY_M_HEXASCII:
+			keyformat = "hexascii";
+		break;
+		case KEY_M_ALLASCII:
+			keyformat = "allascii";
+		break;
+		case KEY_M_MAX_DF:
+		default:
+			keyformat = "unkown mode";
+		break;
+	}
+	return keyformat;
+}
+
 /* function name: key_unify_uninit
  * functiion : uninit 
  * return : >=0 ok, <0 fail
@@ -552,6 +666,22 @@ int do_keyunify(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		return err;
 	}
+    if(!strcmp(cmd,"secure")){
+		addr = simple_strtoul(argv[3], NULL, 16);
+		len  = simple_strtoul(argv[4], NULL, 16);
+		err= key_unify_secure_boot_key(argv[2],(unsigned char *)addr,len);
+		if(err < 0){
+			printf("fail\n");
+		}
+		else if(err > 0){
+			printf("exist\n");
+		}
+		else{
+			printf("ok\n");
+		}
+		return err;
+	}
+
 	if(!strcmp(cmd,"uninit")){
 		key_unify_uninit();
 		return 0;
@@ -561,9 +691,6 @@ usage:
 	cmd_usage(cmdtp);
 	return 1;
 }
-
-
-
 
 U_BOOT_CMD(keyunify, CONFIG_SYS_MAXARGS, 1, do_keyunify,
 	"key unify sub-system",

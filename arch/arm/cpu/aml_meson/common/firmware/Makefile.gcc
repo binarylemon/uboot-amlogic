@@ -81,6 +81,8 @@ all: $(ALL) $(ELFFILES)
 $(basename $(FIRMWARE)).out:$(OBJS) $(obj)spl.o $(target_LDS)
 $(dir $(FIRMWARE))aml-debug-rom.out:$(OBJS) $(obj)debugrom.o $(obj)firmware.lds
 $(dir $(FIRMWARE))usb_spl.out:$(OBJS) $(obj)usb_spl.o $(obj)firmware.lds
+	$(LD) $(LDFLAGS) $(filter %.o,$^) $(PLATFORM_LIBGCC) -Map $(@:%=%.map) --cref -o $@
+	
 else
 ALL	= $(FIRMWARE) $(dir $(FIRMWARE))aml-debug-rom.bin \
 			$(basename $(FIRMWARE)).out $(dir $(FIRMWARE))aml-debug-rom.out

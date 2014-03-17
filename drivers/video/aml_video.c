@@ -25,7 +25,7 @@ GraphicDevice aml_gdev;
  */
 static void osd_layer_init(GraphicDevice gdev, int layer)
 {
-	printf("%s\n", __FUNCTION__);
+//	printf("%s\n", __FUNCTION__);
 	osd_init_hw();
 #ifdef CONFIG_OSD_SCALE_ENABLE
 	osd_setup(0,
@@ -363,8 +363,8 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 #ifdef CONFIG_OSD_SCALE_ENABLE
 int video_scale_bitmap(void)
 {
-	printf("video_scale_bitmap src width is %d, height is %d, dst width is %d, dst height is %d\n",
-			aml_gdev.fb_width, aml_gdev.fb_height, aml_gdev.winSizeX, aml_gdev.winSizeY);
+//	printf("video_scale_bitmap src width is %d, height is %d, dst width is %d, dst height is %d\n",
+//			aml_gdev.fb_width, aml_gdev.fb_height, aml_gdev.winSizeX, aml_gdev.winSizeY);
 	char *layer_str = NULL;
 	int osd_index = -1;
 	layer_str = getenv ("display_layer");

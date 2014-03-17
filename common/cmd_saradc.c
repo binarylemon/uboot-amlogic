@@ -26,7 +26,7 @@ static int do_saradc_open(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	}
 	saradc_enable();
 	current_channel = channel;
-	printf("SARADC open channel(%d).\n", channel);
+//	printf("SARADC open channel(%d).\n", channel);
 	
 	return 0;
 }

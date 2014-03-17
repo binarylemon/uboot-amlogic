@@ -51,14 +51,14 @@ vidinfo_t tv_info;
 
 int  video_dac_enable(unsigned char enable_mask)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
 	CLEAR_CBUS_REG_MASK(VENC_VDAC_SETTING, enable_mask&0x1f);
 	return 0;
 }
 
 int  video_dac_disable(void)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
 	SET_CBUS_REG_MASK(VENC_VDAC_SETTING, 0x1f);
     return 0;    
 }   
@@ -100,19 +100,19 @@ int  video_dac_disable(void)
 
 static void tv_power_on(void)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
 	video_dac_disable();    
     //power_on_lcd();      
 }
 static void tv_power_off(void)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
     //power_off_lcd();
 }
 
 static int tv_enable(void)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
 
 	tv_info.vd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
 	tv_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
@@ -129,7 +129,7 @@ static int tv_enable(void)
 
 void tv_disable(void)
 {
-//	debug("%s\n", __FUNCTION__);
+	debug("%s\n", __FUNCTION__);
     //power_off_lcd();
 }
 

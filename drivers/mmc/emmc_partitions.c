@@ -415,8 +415,8 @@ int mmc_device_init (struct mmc *mmc)
 	
 	ret = mmc_get_partition_table(mmc);
     if (ret == 0) { // ok
-        printf("Partition table get from SPL is : \n");
-        show_mmc_patition(mmc_config_of->partitions, mmc_config_of->part_num);
+//        printf("Partition table get from SPL is : \n");
+//        show_mmc_patition(mmc_config_of->partitions, mmc_config_of->part_num);
     } else {
         printf("mmc get partition error!\n");
         return -1;
@@ -432,7 +432,7 @@ int mmc_device_init (struct mmc *mmc)
     if (ret == 0) { // ok
         ret = mmc_partition_verify(mmc_config_of, pt_fmt);
         if (ret == 0) { // ok
-            printf("Partition table verified OK !\n");
+//            printf("Partition table verified OK !\n");
         } else {
             printf("Partition table verified ERROR!\n"
                     "Following is the partition table stored in eMMC/TSD: \n");

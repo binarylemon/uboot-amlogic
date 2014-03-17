@@ -806,7 +806,7 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 	ulong	temp_img_addr;
 
-
+    printf("uboot time: %d us.\n", get_utimer(0));
 	boot_fn(0, argc, argv, &images);
 
 	show_boot_progress (-9);

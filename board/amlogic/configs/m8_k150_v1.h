@@ -109,35 +109,6 @@
 
 #define CONFIG_AML1216
 
-#ifdef CONFIG_RN5T618
-#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
-#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
-
-#define CONFIG_ENABLE_PMU_WATCHDOG
-//#define CONFIG_RESET_TO_SYSTEM
-
-/*
- * under some cases default voltage of PMU output is 
- * not suitable for application, so you should take care
- * of the following macros which defined initial voltage
- * of each power domain when in SPL stage of uboot.
- */
-#define CONFIG_POWER_SPL                            // init power for all domians, must have
-
-/*
- * set to 1 if you want decrease voltage of VDDAO when suspend
- */
-#define CONFIG_VDDAO_VOLTAGE_CHANGE     1
-#ifdef CONFIG_VDDAO_VOLTAGE_CHANGE
-#define CONFIG_VDDAO_SUSPEND_VOLTAGE    825         // voltage of VDDAO when suspend
-#endif /* CONFIG_VDDAO_VOLTAGE_CHANGE */
-
-/*
- * DCDC mode switch when suspend 
- */
-#define CONFIG_DCDC_PFM_PMW_SWITCH      1
-#endif /* CONFIG_RN5T618 */
-
 #ifdef CONFIG_AML1216
 #define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
 #define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
@@ -156,14 +127,12 @@
 #define CONFIG_VDDAO_VOLTAGE            1100        // VDDAO voltage when boot, must have
 #define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
 
-#define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
+#define CONFIG_IOREF_1V8                1800        // IOREV_1.8v voltage when boot, option
 #define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
-#define CONFIG_RTC_0V9                   900        // RTC_0V9 voltage when boot, option
-#define CONFIG_VDD_LDO                  2800        // VDD_LDO voltage when boot, option
 #define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
 #define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
-#define CONFIG_AVDD1V8                  1800        // AVDD1.8V voltage when boot, option
 #define CONFIG_VCC_CAM                  1500        // voltage for camera when boot, option
+#define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
 
 #define CONFIG_VCC3V3                 	3150        // VCC3.3v voltage when boot, option
 

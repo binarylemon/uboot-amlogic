@@ -290,6 +290,12 @@ int v2_key_command(const int argc, char * const argv[], char *info)
 
         rcode = rcode >=0 ? 0 : rcode;
     }
+    else if(!strcmp("get_fmt", keyCmd))
+    {
+        char* fmt = NULL;
+        fmt = key_unify_query_key_format(subCmd_argv[1]);
+        sprintf(info, "success:%s\n", fmt);
+    }
     else{
         sprintf(info, "failed:Error keyCmd[%s]\n", keyCmd);
         DWN_ERR(info);

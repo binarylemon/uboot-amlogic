@@ -165,7 +165,7 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts("\n");	
 
 #ifdef CONFIG_POWER_SPL
-    power_init(POWER_INIT_MODE_USB_BURNING);
+    power_init(POWER_INIT_MODE_NORMAL);
 #endif
 
     // initial pll
