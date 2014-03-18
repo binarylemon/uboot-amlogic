@@ -49,9 +49,12 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
+	#define AML_MSG_RSA_1024 ("Aml log : M8-RSA-1024\n")
+	#define AML_MSG_RSA_2048 ("Aml log : M8-RSA-2048\n")
+	
 #if defined(CONFIG_AMLROM_SPL)
 	#define AML_MSG_FAIL ("Aml log : ERROR! TPL secure check fail!\n")
-	#define AML_MSG_PASS ("Aml log : TPL secure check pass!\n")	
+	#define AML_MSG_PASS ("Aml log : TPL secure check pass!\n")
 	#define MSG_SHOW serial_puts	
 #else
 	#define AML_MSG_FAIL ("Aml log : ERROR! Image secure check fail!\n")
@@ -170,6 +173,8 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 exit:
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
+
+	MSG_SHOW ((128 == cb1_ctx.len ) ? AML_MSG_RSA_1024 : AML_MSG_RSA_2048);
 	MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
 		
 	#undef AML_MSG_FAIL

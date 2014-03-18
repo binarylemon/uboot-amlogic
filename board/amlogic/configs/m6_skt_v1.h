@@ -337,7 +337,7 @@ save
 //#define CONFIG_AML_CRYPTO_UBOOT 1
 
 //M6 L1 cache enable for uboot decompress speed up
-//#define CONFIG_AML_SPL_L1_CACHE_ON	1
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
 
 //////////////////////////////////////////////////////////////////////////
 

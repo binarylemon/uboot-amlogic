@@ -5,7 +5,7 @@ OUTPUT_ARCH(arm)
 ENTRY(_start)
 SECTIONS
 {
-	. = AHB_SRAM_BASE;
+	. = CONFIG_DDR_INIT_ADDR;
 	
 	. = ALIGN(4);
 	.start      :
@@ -14,12 +14,12 @@ SECTIONS
 	
 	}
 #ifndef CONFIG_M6_SECU_BOOT
-	. =  AHB_SRAM_BASE+0x1b0;
+	. =  CONFIG_DDR_INIT_ADDR+0x1b0;
 	.magic :{
 	  *magic.o(.text)
 	}
 	
-	. = AHB_SRAM_BASE+0x200;
+	. = CONFIG_DDR_INIT_ADDR+0x200;
 	.acs_entry :{
 	  *acs_entry.o(.text)
 	}
@@ -46,5 +46,5 @@ SECTIONS
 	. = ALIGN(4);
 	_bssend = . ;
 }
-ASSERT(_end <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bootstrap too big");
-ASSERT(_bssend <= AHB_SRAM_BASE + READ_SIZE, "ROM BOOT bss  too big");
+ASSERT(_end <= CONFIG_DDR_INIT_ADDR + READ_SIZE, "ROM BOOT bootstrap too big");
+ASSERT(_bssend <= CONFIG_DDR_INIT_ADDR + READ_SIZE, "ROM BOOT bss  too big");

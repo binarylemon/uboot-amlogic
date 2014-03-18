@@ -12,128 +12,37 @@ _start:
 	ldr	pc,_undefined_instruction
 	ldr	pc,_software_interrupt
 	ldr	pc,_prefetch_abort
-    	ldr	pc,_data_abort
+	ldr	pc,_data_abort
 	ldr	pc,_not_used
 	ldr	pc,_irq
 	ldr	pc,_fiq
 
-#ifdef CONFIG_M6_SECU_BOOT	
-	.global __ihw_setting
-__ihw_setting:
-  .space 0x1b0 - (. - _start)
-  .org 0x1b0
-.global __magic_word
-__magic_word:
-  .word MAGIC_WORD1
-  .word MAGIC_WORD2
-  .word 0
-  .word 0
-  .word 0xfe0b0101
-  .word 0x3ec1e07f
-  .word 0xa9e00000
-  .word 0x00000075
-  .space 0x1fe - (. - _start)
-  .short 0xaa55
-#ifdef CONFIG_ACS
-.globl _acs_start
-_acs_start:
-  .word __acs_set
-#endif
-#endif
-	   
-	add	r0, r0, #1
-	add	r0, r0, #1
-	add	r0, r0, #1
-	add	r0, r0, #1
-reset:
-#if 0
-	ldr     r0,=0xda004004
-    ldr     r1,=0x80000510
-    str     r1,[r0]
-    
-    ldr     r0,=0xc8100014
-    mov     r1,#0x4000
-    str     r1,[r0]
 
+reset:
     
     ldr     r0,=0xc1109900
     mov     r1,#0
     str     r1,[r0]
-    wfi
-#endif
-    push {r0, r1, r2, r3, r4, r5, lr}
-    ldr     r0,=0xc1109900
-    mov     r1,#0
-    str     r1,[r0]
     
-#ifdef CONFIG_ROMBOOT_DEBUG
-    ldr     r0,=0xc1109900
-    mov     r1,#0
-    str     r1,[r0]
-	wfi
-#endif
+
     dmb
     isb
-/*
-  	ldr     sp, __ROM_STACK_END  // setup stack pointer 
-*/
-	/*
-		Whether I am running in SRAM 
-    */
-    /*
-    adr r0, _start       		// r0 <- current position of code
-    ldr r1, _AHB_SRAM_BASE  // test if we run from flash or RAM
-    cmp r0, r1           		// dont reloc during debug
-    beq sdram_running				// skip relocate 
-    ldr r2,_READ_SIZE
-    bl  ipl_memcpy
-    add pc,r1,#( sdram_running - _start )
-    */
-sdram_running:
-	ldr r3,__BSS_START
-	ldr r4,__BSS_END
-	mov r5,#0
-clr_bss:
-	cmp r3,r4
-	beq clr_bss_end
-	str r5,[r3]
-	add r3,r3,#4
-	b 	clr_bss
-clr_bss_end:
-
-    /*
-        Set vector base
-    */
-	mrc	p15, 0, r0, c1, c0, 0
-	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
-	mcr	p15, 0, r0, c1, c0, 0
-	adr r0, _start
-    mcr p15,0,r0,c12,c0,0
     ldr r0,__TEXT_BASE
     ldr r1,__TEXT_SIZE
-    bl	main    
-    pop	{r0, r1, r2, r3, r4, r5, pc}    
-#ifndef CONFIG_IMPROVE_UCL_DEC    
-#    ldr pc,__TEXT_BASE
-#else
-#	ldr pc,__TEXT_BASE_UCL_DEC
-#endif    
-_AHB_SRAM_BASE:
-    .word AHB_SRAM_BASE
-_READ_SIZE:
-	.word READ_SIZE
+    bl	main 
+      
+
+    ldr pc,__TEXT_BASE
+
 __TEXT_BASE:
     .word TEXT_BASE
-#ifdef CONFIG_IMPROVE_UCL_DEC        
-__TEXT_BASE_UCL_DEC:
-    .word TEXT_BASE - 0x800000
-#endif    
 __TEXT_SIZE:
 #ifdef CONFIG_BOARD_SIZE_LIMIT
     .word CONFIG_BOARD_SIZE_LIMIT
 #else
-    .word 0x60000 - READ_SIZE
-#endif    
+     .word 0x60000 - READ_SIZE
+#endif  
+
 __ROM_STACK_END:
 	.word ROM_STACK_END
 __BSS_START:
@@ -226,8 +135,8 @@ _not_used:		.word not_used
 _irq:			.word irq
 _fiq:			.word fiq
 _pad:			.word 0x12345678 /* now 16*4=64 */
-.global _end_ddr_init
-_end_ddr_init:
+.global _end_rom_spl
+_end_rom_spl:
 
 
 #ifdef CONFIG_M6_TEST_CPU_SWITCH
