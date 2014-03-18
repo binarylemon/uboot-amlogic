@@ -400,8 +400,7 @@ UBOOT_SECURE_OS := $(obj)uboot-secureos.bin
 ALL += $(UBOOT_SECURE_OS)
 endif
 
-M8_USB_TOOL_UBOOT_NAME = u-boot-usb-tool.bin
-M8_USB_DDR_UBOOT_NAME = u-boot-ddr.bin
+AML_USB_UBOOT_NAME = u-boot-usb.bin
 
 all:		$(ALL)
 
@@ -473,29 +472,29 @@ endif
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@		
 ifdef CONFIG_M8_SECU_BOOT
-	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(M8_USB_TOOL_UBOOT_NAME).temp		
+	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp		
 	@./tools/secu_boot/encrypto3 $@	
-	@./tools/secu_boot/encrypto3 $(obj)$(M8_USB_TOOL_UBOOT_NAME).temp
-	@rm -f $(obj)$(M8_USB_TOOL_UBOOT_NAME).temp
-	@$(obj)tools/convert --soc $(SOC)+  -s $(obj)ddr_init.bin -i $(obj)$(M8_USB_TOOL_UBOOT_NAME).temp.aml -o $(obj)$(M8_USB_TOOL_UBOOT_NAME)
-	@rm -f $(obj)$(M8_USB_TOOL_UBOOT_NAME).temp.aml
-	@./tools/secu_boot/encrypto3 $(obj)$(M8_USB_TOOL_UBOOT_NAME)		
+	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME).temp
+	@rm -f $(obj)$(AML_USB_UBOOT_NAME).temp
+	@$(obj)tools/convert --soc $(SOC)+  -s $(obj)ddr_init.bin -i $(obj)$(AML_USB_UBOOT_NAME).temp.aml -o $(obj)$(AML_USB_UBOOT_NAME)
+	@rm -f $(obj)$(AML_USB_UBOOT_NAME).temp.aml
+	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME)		
 ifdef CONFIG_AML_CRYPTO_UBOOT	
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
 	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
-	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(M8_USB_TOOL_UBOOT_NAME).aml \
-	$(obj)$(M8_USB_TOOL_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes 		
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml \
+	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes 		
 endif #CONFIG_AML_CRYPTO_UBOOT
 endif #CONFIG_M8_SECU_BOOT
 else #CONFIG_M6_SECU_BOOT	
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
-	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_spl.bin -i $(obj)u-boot-orig.bin -o $(obj)u-boot-usb.bin
+	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_spl.bin -i $(obj)u-boot-orig.bin -o $(obj)$(AML_USB_UBOOT_NAME)
 ifndef CONFIG_MESON_TRUSTZONE
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
 else
 	@./tools/secu_boot/encrypto2 $@
-	@./tools/secu_boot/encrypto2 $(obj)u-boot-usb.bin
+	@./tools/secu_boot/encrypto2 $(obj)$(AML_USB_UBOOT_NAME)
 endif
 
 ifdef CONFIG_AML_CRYPTO_UBOOT
@@ -503,7 +502,7 @@ ifeq ($(CONFIG_M6TVD),y)
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
 else #CONFIG_M6TVD
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $@.aml
-	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)u-boot-usb.bin.aml	
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml	
 endif #CONFIG_M6TVD
 endif #CONFIG_AML_CRYPTO_UBOOT
 
