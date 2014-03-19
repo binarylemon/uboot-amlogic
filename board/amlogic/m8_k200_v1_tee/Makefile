@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2006
+# (C) Copyright 2000, 2001, 2002
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 # See file CREDITS for list of people who contributed to this
@@ -12,7 +12,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -23,32 +23,22 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	:= $(obj)libmmc.o
+LIB	= $(obj)lib$(BOARD).o
 
-COBJS-$(CONFIG_ATMEL_MCI) += atmel_mci.o
-COBJS-$(CONFIG_BFIN_SDH) += bfin_sdh.o
-COBJS-$(CONFIG_DAVINCI_MMC) += davinci_mmc.o
-COBJS-$(CONFIG_FSL_ESDHC) += fsl_esdhc.o
-COBJS-$(CONFIG_GENERIC_MMC) += mmc.o
-COBJS-$(CONFIG_GENERIC_ATMEL_MCI) += gen_atmel_mci.o
-COBJS-$(CONFIG_MXC_MMC) += mxcmmc.o
-COBJS-$(CONFIG_OMAP3_MMC) += omap3_mmc.o
-COBJS-$(CONFIG_OMAP_HSMMC) += omap_hsmmc.o
-COBJS-$(CONFIG_PXA_MMC) += pxa_mmc.o
-COBJS-$(CONFIG_S5P_MMC) += s5p_mmc.o
-COBJS-$(CONFIG_AML_SDIO) += aml_sd_mmc.o
-COBJS-$(CONFIG_SECURITYKEY) += emmc_key.o
-COBJS-$(CONFIG_SECURE_MMC) += mmc_storage.o
-COBJS-$(CONFIG_STORE_COMPATIBLE) += emmc_partitions.o
+CSRCS	:= $(wildcard *.c */*.c)
+COBJS	:= $(CSRCS:%.c=%.o)
 
-COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-all:	$(LIB)
-
-$(LIB): $(obj).depend $(OBJS)
+$(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+
+clean:
+	rm -f $(OBJS)
+
+distclean:	clean
+	rm -f $(LIB) core *.bak $(obj).depend
 
 #########################################################################
 
@@ -56,5 +46,3 @@ $(LIB): $(obj).depend $(OBJS)
 include $(SRCTREE)/rules.mk
 
 sinclude $(obj).depend
-
-#########################################################################

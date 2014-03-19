@@ -8,7 +8,14 @@ DECLARE_GLOBAL_DATA_PTR;
 //IMPORTANT: following function must be call before the uboot relocation
 static void update_ddr_mmu_table(void)
 {
-	unsigned int ddr_size_ind = readl(CONFIG_DDR_SIZE_IND_ADDR);
+	unsigned int ddr_size_ind;
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	ddr_size_ind = meson_trustzone_sram_read_reg32(CONFIG_DDR_SIZE_IND_ADDR);
+#else
+	ddr_size_ind = readl(CONFIG_DDR_SIZE_IND_ADDR);
+#endif
+
 	if(ddr_size_ind < 0x80 || ddr_size_ind > 0x800) //legal DDR size: 128MB - 2GB
 	{
 		printf("Amloigc log : Illegal ACS DDR memory size setting %dMB!\n",ddr_size_ind);
