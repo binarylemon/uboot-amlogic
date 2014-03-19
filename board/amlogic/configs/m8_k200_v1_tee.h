@@ -20,6 +20,9 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+/* secure storage support both spi and emmc */
+#define CONFIG_SECURE_MMC
+#define CONFIG_SPI_NOR_SECURE_STORAGE
 
 //#define CONFIG_SECURESTORAGEKEY
 #ifdef CONFIG_SECURESTORAGEKEY
@@ -488,5 +491,60 @@
 * CPU switch test for uboot
 */
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
+
+/*
+ * TrustZone
+ */
+#define CONFIG_MESON_TRUSTZONE 1
+//#define CONFIG_MESON_SECUREARGS  1
+
+#ifdef CONFIG_MESON_TRUSTZONE
+#define SECURE_OS_COMPRESS_ADDR                  0x0E000000
+#define SECURE_OS_DECOMPRESS_ADDR                0x06200000
+#ifdef CONFIG_ACS
+#define SECURE_OS_ACS_SRAM_ADDR                  0xD9000200
+#define SECURE_OS_ACS_DRAM_ADDR                  0x0F000000
+#define SECURE_OS_ACS_LEN                        0x00000400
+#endif
+
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM        (32-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM          (32-4-4)
+// secure arguments address in SRAM
+#define SECUREARGS_ADDRESS_IN_SRAM               (32-4-4-4)
+#endif
+
+
+// use secureboot, need enable the following 2 config
+//#define CONFIG_M6_SECU_BOOT 1
+//#define #define CONFIG_AML_SPL_L1_CACHE_ON     1
+
+#define CONFIG_SECURE_STORAGE_BURNED
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_SECURESTORAGEKEY
+#define CONFIG_RANDOM_GENERATE
+#define CONFIG_CMD_SECURESTORE
+#define CONFIG_CMD_RANDOM
+#endif
+
+//#define CONFIG_CMD_SECURESTORE
+#ifdef CONFIG_CMD_SECURESTORE
+#ifndef CONFIG_SECURESTORAGEKEY
+#define CONFIG_SECURESTORAGEKEY
+#endif
+#endif
+
+//#define CONFIG_CMD_RANDOM
+#ifdef CONFIG_CMD_RANDOM
+#ifndef CONFIG_RANDOM_GENERATE
+#define CONFIG_RANDOM_GENERATE
+#endif
+#endif
+
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_MESON_STORAGE_BURN 1
+#define CONFIG_MESON_STORAGE_DEBUG
+#endif
 
 #endif //__CONFIG_M8_K200_V1_H__

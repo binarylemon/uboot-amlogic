@@ -112,6 +112,7 @@
 //#define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
 #define SPI_MEM_BASE                                0xcc000000
 #define AHB_SRAM_BASE                               0xd9000000  // AHB-SRAM-BASE
+#define CONFIG_DDR_INIT_ADDR                        (0xd9000000)
 
 #ifdef CONFIG_AML_ROMBOOT_SPL
 #define SPL_STATIC_FUNC     static

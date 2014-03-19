@@ -497,6 +497,10 @@ void aml1216_power_off_at_24M()
 #endif
 #endif
 
+    aml1216_set_bits(0x0035, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
+    aml1216_set_bits(0x003e, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
+    aml1216_set_bits(0x0047, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
+
     power_off_vcc_cam();                                                // close LDO6
     power_off_vcc28();                                                  // close LDO5
     power_off_vcck();                                                   // close DCDC1, vcck
@@ -535,6 +539,10 @@ void aml1216_power_on_at_24M()
     udelay__(1 * 1000);
     power_on_vcc50();
     i2c_pmu_write_b(0x0019, otg_status);
+
+    aml1216_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
+    aml1216_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
+    aml1216_set_bits(0x0047, 0x04, 0x07);                               // set DCDC OCP to 2A 
 }
 
 void aml1216_power_off_at_32K_1()

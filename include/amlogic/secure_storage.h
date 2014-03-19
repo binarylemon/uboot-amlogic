@@ -34,7 +34,7 @@ static inline int secure_storage_spi_read(char *buf,unsigned int len)
 }
 #endif
 
-#ifdef CONFIG_EMMC_SECURE_STORAGE
+#ifdef CONFIG_SECURE_MMC
 extern int secure_storage_emmc_write(char *buf,unsigned int len);
 extern int secure_storage_emmc_read(char *buf,unsigned int len);
 #else

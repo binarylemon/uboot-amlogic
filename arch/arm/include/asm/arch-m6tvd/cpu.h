@@ -109,6 +109,8 @@
 //#define AHB_SRAM_BASE                               0x49000000  // AHB-SRAM-BASE
 #define SPI_MEM_BASE                                0xcc000000
 #define AHB_SRAM_BASE                               0xd9000000  // AHB-SRAM-BASE
+#define CONFIG_USB_SPL_ADDR                         (CONFIG_SYS_TEXT_BASE - (32<<10)) //here need update when support 64KB SPL
+#define CONFIG_DDR_INIT_ADDR                        (0xd90000f0) //usb driver limit, bit4 must be 1
 
 #ifdef CONFIG_AML_ROMBOOT_SPL
 	#define SPL_STATIC_FUNC     static

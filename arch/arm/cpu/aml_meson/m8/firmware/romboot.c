@@ -6,6 +6,10 @@
 #include "secure.c"
 #endif//#if defined(CONFIG_M8_SECU_BOOT)
 
+#ifdef CONFIG_MESON_TRUSTZONE
+#include <secureloader.c>
+#endif
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
@@ -41,6 +45,10 @@ STATIC_PREFIX short check_sum(unsigned * addr,unsigned short check_sum,unsigned 
 
 SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 {
+	//unsigned int fp_prt = (unsigned int)fw_print_info;
+	if((((unsigned int)fw_print_info >> 24) & 0xFF) != 0xD9)
+		return;
+	
     serial_puts("Boot from");
     if(stage==0){
         serial_puts(" internal device ");
@@ -101,7 +109,15 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
+	unsigned len;
     unsigned temp_addr;
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif
+
 #if CONFIG_UCL
 #if defined (CONFIG_VLSI_EMULATOR)
     temp_addr=target;
@@ -111,6 +127,17 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 #else
     temp_addr=target;
 #endif
+
+	if((((unsigned int)fw_load_intl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
+	{	
+		memcpy(temp_addr,target,size); //here need fine tune!!
+#if defined(CONFIG_M8_SECU_BOOT)
+		serial_puts("Aml log : M8-TPL-SEC-DEC-1\n");
+		goto m8_tpl_dec;	
+#endif //CONFIG_M8_SECU_BOOT
+		serial_puts("Aml log : M8-TPL-UCL-DEC-1\n");		
+		goto m8_tpl_ucl_dec;
+	}
 
     unsigned * mem;    
     
@@ -138,6 +165,10 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
         case POR_1ST_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<2);
+#ifdef CONFIG_MESON_TRUSTZONE
+	 serial_puts("BootFrom SDIO C get storage: \n");
+	 sdio_secure_storage_get();
+#endif
         	break;
         case POR_1ST_SDIO_B:
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<2);break;
@@ -149,6 +180,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     }
 
 #if defined(CONFIG_M8_SECU_BOOT)
+m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
@@ -156,13 +188,23 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 	}	
 #endif //CONFIG_M8_SECU_BOOT
 
+m8_tpl_ucl_dec:
+
 #if defined (CONFIG_VLSI_EMULATOR)
     serial_puts("Load uncompressed image for PxP!\n");
 #else	
 
+#ifdef CONFIG_MESON_TRUSTZONE
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_SIZE_POSITION_IN_SRAM);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);
+#endif
+
 #if CONFIG_UCL    
 #ifndef CONFIG_IMPROVE_UCL_DEC
-	unsigned len;    
+	//unsigned len;    
     if(rc==0){
         serial_puts("ucl decompress...");
         rc=uclDecompress((char*)target,&len,(char*)temp_addr);
@@ -189,14 +231,35 @@ STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
 STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
     unsigned temp_addr;
+	unsigned len;
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	unsigned secure_addr;
+	unsigned secure_size;
+	unsigned *sram;
+#endif
+
 #if CONFIG_UCL
     temp_addr=target+0x800000;
 #else
     temp_addr=target;
 #endif
+
+	if((((unsigned int)fw_load_extl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
+	{	
+		memcpy(temp_addr,target,size); //here need fine tune!!
+#if defined(CONFIG_M8_SECU_BOOT)
+		serial_puts("Aml log : M8-TPL-SEC-DEC-2\n");
+		goto m8_tpl_dec;	
+#endif //CONFIG_M8_SECU_BOOT
+		serial_puts("Aml log : M8-TPL-UCL-DEC-2\n");		
+		goto m8_tpl_ucl_dec;
+	}
+
     int rc=sdio_read(temp_addr,size,por_cfg);   
 
 #if defined(CONFIG_M8_SECU_BOOT)
+m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
@@ -204,15 +267,25 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 	}	
 #endif //CONFIG_M8_SECU_BOOT
 
-
 #if defined (CONFIG_VLSI_EMULATOR)
     serial_puts("Load uncompressed image from SD 1 for PxP!\n");
 #else
 
 
+#ifdef CONFIG_MESON_TRUSTZONE
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM);
+	secure_addr = (*sram) + temp_addr - READ_SIZE;
+	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_SIZE_POSITION_IN_SRAM);
+	secure_size = (*sram);
+	secure_load(secure_addr, secure_size);
+#endif
+
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
-	unsigned len;
+m8_tpl_ucl_dec:
+
+	//unsigned len;
     if(!rc){
 	    serial_puts("ucl decompress...");
 	    rc=uclDecompress((char*)target,&len,(char*)temp_addr);

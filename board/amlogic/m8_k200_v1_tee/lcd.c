@@ -24,7 +24,7 @@
 //**********************************************//
 // backlight control
 //*********************************************//
-#define BL_LEVEL_DEFAULT		10	/** default brightness level */
+#define BL_LEVEL_DEFAULT		128	/** default brightness level */
 #define BL_LEVEL_MID			128	/** brightness middle level*/
 #define BL_LEVEL_MID_MAPPING	102	/** brightness middle level mapping to a new level*/
 #define BL_LEVEL_MAX			255	/** brightness level max, must match the rootfs setting*/
@@ -32,7 +32,7 @@
 
 //**** define backlight control method ***//
 #define BL_POWER_ON_DELAY	100	/** delay time before backlight power on(unit: ms) */
-#define BL_CTL				BL_CTL_PWM_COMBO	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE, BL_CTL_PWM_COMBO) */
+#define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
 //**** define backlight GPIO control ***//
@@ -40,39 +40,23 @@
 #define	BL_DIM_MIN			0xf	/** brightness diming level_min, negative logic */
 
 //**** define backlight PWM control ***//
-#define BL_PWM_PORT			BL_PWM_D	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-#define BL_PWM_USE_GPIO		0			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
+#define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
+#define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
 
-#define	BL_PWM_FREQ			10000	/** backlight control pwm frequency(unit: Hz) */
-#define BL_PWM_MAX         	90		/** brightness diminig duty_max(unit: %, positive logic) */
-#define BL_PWM_MIN         	5		/** brightness diminig duty_min(unit: %, positive logic) */
-
-//**** define backlight PWM_COMBO control ***//
-#define BL_PWM_COMBO_LEVEL_SWITCH		220
-
-#define BL_PWM_COMBO_HIGH_PORT			BL_PWM_C
-#define BL_PWM_COMBO_HIGH_METHOD		BL_CTL_PWM_NEGATIVE
-#define BL_PWM_COMBO_HIGH_FREQ			300000
-#define BL_PWM_COMBO_HIGH_DUTY_MAX		96
-#define BL_PWM_COMBO_HIGH_DUTY_MIN		89
-
-#define BL_PWM_COMBO_LOW_PORT			BL_PWM_D
-#define BL_PWM_COMBO_LOW_METHOD			BL_CTL_PWM_POSITIVE
-#define BL_PWM_COMBO_LOW_FREQ			10000
-#define BL_PWM_COMBO_LOW_DUTY_MAX		100
-#define BL_PWM_COMBO_LOW_DUTY_MIN		10
-
+#define	BL_PWM_FREQ			300000	/** backlight control pwm frequency(unit: Hz) */
+#define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
+#define BL_PWM_MIN         	25		/** brightness diminig duty_min(unit: %, positive logic) */
 
 //**** backlight PWM pinmux setting ***//
-const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x5000000},};
-const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48},{7, 0x18000200},};
+const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x1000000},};
+const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 //*********************************************//
 
 //**********************************************//
 // lcd config 
 //*********************************************//
 //**** lcd typical timing, select by include header file ***//
-#include <amlogic/panel/mipi/B080XAN01.h>
+#include <amlogic/panel/lvds/LP097X02.h>
 
 #define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 
@@ -86,13 +70,13 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48},{7, 0x18000200},};
 #define V_OFFSET			0	/** vertical display offset */
 
 #define DITHER_USER			0		/** 0=auto setting, 1=user define */
-#define DITHER_CTRL			0x000	/** user defined dither control, only valid when user_define=1 */
+#define DITHER_CTRL			0x600	/** user defined dither control, only valid when user_define=1 */
 
 #define VADJ_BRIGHTNESS		0x0		/** video adjust brightness */
 #define VADJ_CONTRAST		0x80	/** video adjust contrast */
 #define VADJ_SATURATION		0x100	/** video adjust saturation */
 
-#define GAMMA_EN			0		/** 0=disable gamma table, 1=enable gamma table */
+#define GAMMA_EN			1		/** 0=disable gamma table, 1=enable gamma table */
 #define GAMMA_REVERT		0		/** 0=normal, 1=revert */
 #define GAMMA_MULTI			0		/** gamma_multi(0=single gamma, RGB are same, 1=multi gamma, RGB are different) */
 									/** if gamma_multi=1, there must be 3 gamma tables, named as gamma_table_r, gamma_table_g, gamma_table_b */
@@ -112,11 +96,11 @@ static unsigned short gamma_table[256] = {
 };
 
 //**** default settings, don't modify them unless there is display problem ***//
-#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=1.5%, 4=2%) */
+#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
-#define PLL_CTRL				0x100042b	/** only valid when CLK_AUTO_GENERATION=0 */
-#define DIV_CTRL				0x18833		/** only valid when CLK_AUTO_GENERATION=0 */
-#define CLK_CTRL				0x3a82102	/** only valid when CLK_AUTO_GENERATION=0 */
+#define PLL_CTRL				0x1000232	/** only valid when CLK_AUTO_GENERATION=0 */
+#define DIV_CTRL				0x18803		/** only valid when CLK_AUTO_GENERATION=0 */
+#define CLK_CTRL				0x101		/** only valid when CLK_AUTO_GENERATION=0 */
 
 #define RGB_BASE				0xf0	/** rgb base control */
 #define RGB_COEFF				0x74a	/** rgb coeff control */
@@ -126,13 +110,7 @@ static unsigned short gamma_table[256] = {
 
 //**** lcd interface control configs ***//
 static DSI_Config_t lcd_mipi_config = {
-        .dsi_clk_min = 500,
-        .dsi_clk_max = 600,
-        .lane_num = 4,
-        .trans_mode=1,
-        .sleep_out_delay=100,
-        .display_on_delay=100,
-        .mipi_init_flag=0,
+	//to do
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -175,34 +153,22 @@ static Lcd_Power_Config_t lcd_power_off_uboot = {.type = LCD_POWER_TYPE_NULL, .g
 //**** power control settings, must follow panel on/off sequence ***//
 static Lcd_Power_Config_t lcd_power_on_config[] = {
 	{//step 1
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_29, 
+		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.delay = 20,
+	},
+	{//step 2
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
 		.value = LCD_POWER_GPIO_OUTPUT_LOW,
 		.delay = 20,
 	},
-	{//step 2
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
-		.delay = 14,
-	},
 	{//step 3
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
-		.delay = 5,
-	},
-	{//step 4
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
-		.delay = 70,
-	},
-	{//step 5
 		.type = LCD_POWER_TYPE_SIGNAL, 
 		.gpio = 0, 
 		.value = 0,
-		.delay = 5,
+		.delay = 50,
 	},
 };
 
@@ -212,23 +178,17 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 		.gpio = 0, 
 		.value = 0,
 		.delay = 20,
-	},	
-	{//step 3
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
-		.delay = 0,
 	},
 	{//step 2
-		.type = LCD_POWER_TYPE_CPU, 
-		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
-		.delay = 100,
-	},
-	{//step 4 
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
 		.value = LCD_POWER_GPIO_INPUT,
+		.delay = 20,
+	},
+	{//step 3
+		.type = LCD_POWER_TYPE_CPU, 
+		.gpio = GPIODV_29, 
+		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
 		.delay = 100,
 	},
 };
@@ -290,8 +250,8 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST << 0),
-		.pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
+		
+        .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 	},
