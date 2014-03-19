@@ -646,6 +646,9 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x0012, 0x00, 0x40);                       // disable watchdog
     rn5t618_set_bits(0x000f, 0x01, 0x01);                       // re-power-on system after reset
 #endif
+#ifdef CONFIG_DISABLE_POWER_KEY_OFF
+    rn5t618_set_bits(0x0010, 0x80, 0x80);                       // disable power off PMU by long press power key 
+#endif
     rn5t618_check_fault();
     rn5t618_write(0x04, 0xA5);
     rn5t618_read(0x009A, buf);
