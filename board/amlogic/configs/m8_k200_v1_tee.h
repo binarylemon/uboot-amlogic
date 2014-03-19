@@ -135,8 +135,8 @@
 
 #define CONFIG_RN5T618
 #ifdef CONFIG_RN5T618
-#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
-#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
+//#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
+//#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
 #define CONFIG_ALWAYS_POWER_ON                      // if platform without battery, must have
 
 /*
@@ -183,14 +183,14 @@
 
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
-#define CONFIG_SYS_LONGHELP	1
+//#define CONFIG_SYS_LONGHELP	1
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
  * Enable CONFIG_MUSB_UDD for Device functionalities.
  */
 /* #define CONFIG_MUSB_UDC		1 */
-//#define CONFIG_CMD_USB 1
+#define CONFIG_CMD_USB 1
 #if defined(CONFIG_CMD_USB)
 	#define CONFIG_M8_USBPORT_BASE_A	0xC9040000
 	#define CONFIG_M8_USBPORT_BASE_B	0xC90C0000
@@ -258,7 +258,6 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"preboot="\
-        "echo preboot...;" \
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
@@ -272,13 +271,12 @@
     "update_key="\
         "saradc open 0; " \
         "if saradc get_in_range 0 0x50; then " \
-            "msleep 400; " \
+            "msleep 50; " \
             "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
         "fi\0" \
     \
    	"update="\
         /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
-   		"echo update...; "\
         "run usb_burning; "\
         "if mmcinfo; then "\
             "if fatexist mmc 0 ${sdcburncfg}; then "\
@@ -295,10 +293,7 @@
         "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
-		"echo switch_bootmode...;"\
-	    "if test ${reboot_mode} = normal; then "\
-        "else if test ${reboot_mode} = charging; then "\
-		"else if test ${reboot_mode} = factory_reset; then "\
+        "if test ${reboot_mode} = factory_reset; then "\
 			"run recovery;"\
         "else if test ${reboot_mode} = update; then "\
         	"run update;"\
@@ -306,7 +301,7 @@
         	"run usb_burning;"\
         "else " \
         	"  "\
-        "fi;fi;fi;fi;fi\0" \
+        "fi;fi;fi\0" \
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
@@ -449,7 +444,7 @@
 	#error "Please set DDR3 capacity first in file m8_k200_v1.h\n"
 #endif
 
-#define CONFIG_M8_DUMP_DDR_INFO 1
+//#define CONFIG_M8_DUMP_DDR_INFO 1
 
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
@@ -466,7 +461,7 @@
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
 #define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
-#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
+//#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
 /* Pass open firmware flat tree*/
@@ -496,7 +491,6 @@
 * CPU switch test for uboot
 */
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
-
 
 /*
  * TrustZone
