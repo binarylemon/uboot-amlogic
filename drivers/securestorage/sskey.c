@@ -15,9 +15,11 @@
 #ifdef CONFIG_M8
 #define SECUREOS_KEY_DEFAULT_ADDR	0x061e0000
 #define SECUREOS_KEY_DEFAULT_SIZE	(128*1024)
+#define AESKEY_SIZE   0x30
 #else
 #define SECUREOS_KEY_DEFAULT_ADDR	0xa00e0000
 #define SECUREOS_KEY_DEFAULT_SIZE	(128*1024)
+#define AESKEY_SIZE   0x20
 #endif
 //#define SECUREOS_KEY_DEFAULT_ADDR	COMM_NS_CONTENT_ADDR
 //#define SECUREOS_KEY_DEFAULT_SIZE	COMM_NS_CONTENT_SIZE
@@ -93,21 +95,21 @@ int securestore_key_init( char *seed,int len)
 	int err;
 	int i;
 	//unsigned int size,addr;
-	char aeskey_data[32];
+	char aeskey_data[AESKEY_SIZE];
 	struct storage_hal_api_arg cmd_arg;
 	unsigned int retval;
 	unsigned int keyseed = (seed[0]<<24)|(seed[1]<<16)|(seed[2]<<8)|seed[3];
-	memset(aeskey_data,0,0x20);
-	err = random_generate(keyseed,(unsigned char *)aeskey_data,0x20);
+	memset(aeskey_data,0,AESKEY_SIZE);
+	err = random_generate(keyseed,(unsigned char *)aeskey_data,AESKEY_SIZE);
 	if(err < 0){
 		printf("generate random err :%d,%s:%d\n",err,__func__,__LINE__);
 		return err;
 	}
 #ifdef CONFIG_MESON_STORAGE_DEBUG
 	printf("random:\n");
-	for(i=0;i<32;i++){
+	for(i=0;i<AESKEY_SIZE;i++){
 		printf("%2x ",aeskey_data[i]);
-		if(i==15){
+		if(i%16 == 15){
 			printf("\n");
 		}
 	}
@@ -148,7 +150,7 @@ int securestore_key_init( char *seed,int len)
 	cmd_arg.cmd = STORAGE_HAL_API_INIT;
 	cmd_arg.namelen = 0;
 	cmd_arg.name_phy_addr = 0;
-	cmd_arg.datalen = 32;
+	cmd_arg.datalen = AESKEY_SIZE;
 	cmd_arg.data_phy_addr = (unsigned int)&aeskey_data[0];
 	cmd_arg.retval_phy_addr = (unsigned int)&retval;
 	err = meson_trustzone_storage(&cmd_arg);
