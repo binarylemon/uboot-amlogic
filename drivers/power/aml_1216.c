@@ -948,6 +948,13 @@ int aml1216_init(void)
     aml1216_check_fault();
     check_boot_up_source();
 
+    aml1216_set_bits(0x000f, 0xf0, 0xf0);           // GPIO2 power off last
+    aml1216_set_bits(0x0009, 0x01, 0x0f);           // boost power off first
+
+    aml1216_set_bits(0x0035, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+    aml1216_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+    aml1216_set_bits(0x0047, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+
     aml1216_set_bits(0x0011, 0x03, 0x03);
     aml1216_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
     aml1216_write(0x009C, 0x10);
@@ -966,6 +973,9 @@ int aml1216_init(void)
     /*
      * open charger
      */
+#ifdef CONFIG_VBUS_DC_SHORT_CONNECT
+    aml1216_set_bits(0x002a, 0x01, 0x01);
+#endif
     aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
     aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
     aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
