@@ -367,7 +367,7 @@ void get_sys_clk_rate(int * rate)
 	//set_nand_core_clk(212); 
 	//*rate = 212000000;  //
 		
-	set_nand_core_clk(rate); 
+	set_nand_core_clk(*rate); 
 	//set_nand_core_clk(255); 
 	//*rate = 255000000;  //		
 	
