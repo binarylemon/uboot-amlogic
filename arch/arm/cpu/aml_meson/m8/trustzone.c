@@ -250,6 +250,9 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 	unsigned int ret = 0;
 	struct sram_hal_api_arg arg = {};
 
+	if ((addr < SECURE_OS_ACS_SRAM_ADDR) || (addr > (SECURE_OS_ACS_SRAM_ADDR + SECURE_OS_ACS_LEN)))
+		return addr;
+
 	arg.cmd = SRAM_HAL_API_CAS;
 	arg.req_len = SECURE_OS_ACS_LEN;
 	arg.res_len = SECURE_OS_ACS_LEN;
