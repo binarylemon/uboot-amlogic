@@ -27,6 +27,19 @@
 #define SPI_NAND_FLAG			4
 #define SPI_EMMC_FLAG			5
 
+#define CARD_TYPE_SHIFT             4
+#define CARD_TYPE_MASK              0xf
+#define CARD_TYPE_UNKNOWN           0        /* unknown */
+#define CARD_TYPE_MMC               1        /* MMC card */
+#define CARD_TYPE_SD                2        /* SD card */
+#define CARD_TYPE_SDIO              3        /* SDIO card */
+#define CARD_TYPE_SD_COMBO          4        /* SD combo (IO+mem) card */
+#define CARD_TYPE_NON_SDIO          5        /* NON sdio device (means SD/MMC card) */
+
+#define AML_GET_CARD_TYPE(val, port)    ((val >> (port * CARD_TYPE_SHIFT)) & CARD_TYPE_MASK)
+#define AML_SET_CARD_TYPE(val, port, type)   \
+    (val |= ((type & CARD_TYPE_MASK) << (port * CARD_TYPE_SHIFT)))
+
 struct partitions {
 	char name[MAX_PART_NAME_LEN];			/* identifier string */
 	uint64_t size;			/* partition size */

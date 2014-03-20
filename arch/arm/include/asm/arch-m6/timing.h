@@ -2,6 +2,10 @@
 #define __AML_BOOT_TIMING_H
 #ifndef __ASSEMBLY__
 struct ddr_set{
+        unsigned int ddr_test;
+        unsigned int phy_memory_start;
+        unsigned int phy_memory_size;
+        unsigned int pub_dtar;	//ddr size, 8bit/16bit etc.
         unsigned short cl; // cas latency
         unsigned short t_faw;
         unsigned short t_mrd;

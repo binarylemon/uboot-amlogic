@@ -28,16 +28,21 @@ static void update_ddr_mmu_table(void)
 	int nSetting = 0;
 	extern ulong __mmu_table;
 	volatile unsigned int *pVMMUTable = __mmu_table;
-	for(nIndex = 0 ; nIndex < 0xc00;++nIndex)
+	unsigned m6_offset = 0;
+#if defined(CONFIG_M6)
+	m6_offset = 0x800;
+	nSetting = 0;
+	for(nIndex = 0 ; nIndex < 0x800; ++nIndex)
+		*(pVMMUTable+nIndex) = nSetting;
+#endif
+	for(nIndex = m6_offset ; nIndex < 0xc00;++nIndex)
 	{
-		if(nIndex< ddr_size_ind)
+		if(nIndex< (ddr_size_ind + m6_offset))
 			nSetting = (nIndex<<20)|(SEC_PROT_RW_RW | SEC_WB);
 		else
 			nSetting = 0;
-
 		*(pVMMUTable+nIndex) = nSetting;
 	}
-
 }
 #endif
 

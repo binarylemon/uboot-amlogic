@@ -350,7 +350,7 @@ void pinmux_select_chip(unsigned ce_enable, unsigned rb_enable, unsigned flag)
 }
 #endif
 
-void get_sys_clk_rate(int rate)
+void get_sys_clk_rate(int * rate)
 {
 #ifndef AML_NAND_UBOOT
 	struct clk *sys_clk;
@@ -373,7 +373,7 @@ void get_sys_clk_rate(int rate)
 	
 #else
 	set_nand_core_clk(200*10000); 
-	*rate = 200*1000000;
+	//*rate = 200*1000000;
 #endif
 #else
 	#ifndef AML_NAND_UBOOT

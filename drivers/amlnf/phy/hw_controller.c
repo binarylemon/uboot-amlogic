@@ -345,7 +345,7 @@ static int controller_hw_init(struct hw_controller *controller)
 	int ret = 0;
 
 	sys_clk_rate = 212;
-	get_sys_clk_rate(sys_clk_rate);
+	get_sys_clk_rate(&sys_clk_rate);
 
 	sys_time = (10000 / sys_clk_rate);
 
@@ -396,7 +396,8 @@ static int controller_adjust_timing(struct hw_controller *controller)
 		sys_clk_rate = 212;
 	else
 		sys_clk_rate = 255;
-	get_sys_clk_rate(sys_clk_rate);
+	
+	get_sys_clk_rate(&sys_clk_rate);
 
 	sys_time = (10000 / sys_clk_rate);
 	//sys_time = (10000 / (sys_clk_rate / 1000000));
@@ -429,7 +430,7 @@ static int controller_adjust_timing(struct hw_controller *controller)
 	NFC_SET_CFG(0);
 	NFC_SET_TIMING_ASYC(bus_timing, (bus_cycle - 1));
 	
-#ifdef AML_NAND_NEW_OOB
+#if defined (AML_NAND_NEW_OOB) && defined (CONFIG_NAND_AML_M8)
 	if(flash->pagesize > 4096){
 		aml_nand_msg("AML_NAND_NEW_OOB : new oob");
 		NFC_SET_OOB_MODE(3<<26);

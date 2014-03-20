@@ -209,12 +209,20 @@ static inline unsigned lowlevel_ddr(unsigned tag,struct ddr_set * timing_reg)
 }
 static inline unsigned lowlevel_mem_test_device(unsigned tag,struct ddr_set * timing_reg)
 {
+#ifdef CONFIG_ACS
+    return tag&&(unsigned)memTestDevice((volatile datum *)(timing_reg->phy_memory_start),timing_reg->phy_memory_size);
+#else
     return tag&&(unsigned)memTestDevice((volatile datum *)PHYS_MEMORY_START,PHYS_MEMORY_SIZE);
+#endif
 }
 
 static inline unsigned lowlevel_mem_test_data(unsigned tag,struct ddr_set * timing_reg)
 {
+#ifdef CONFIG_ACS
+    return tag&&(unsigned)memTestDataBus((volatile datum *) (timing_reg->phy_memory_start));
+#else
     return tag&&(unsigned)memTestDataBus((volatile datum *) PHYS_MEMORY_START);
+#endif
 }
 
 static inline unsigned lowlevel_mem_test_addr(unsigned tag,struct ddr_set * timing_reg)
@@ -224,7 +232,11 @@ static inline unsigned lowlevel_mem_test_addr(unsigned tag,struct ddr_set * timi
     ddr_addr_test();
     return 0;
 #else
+#ifdef CONFIG_ACS
+    return tag&&(unsigned)memTestAddressBus((volatile datum *)(timing_reg->phy_memory_start), timing_reg->phy_memory_size);
+#else
     return tag&&(unsigned)memTestAddressBus((volatile datum *)PHYS_MEMORY_START, PHYS_MEMORY_SIZE);
+#endif	//CONFIG_ACS
 #endif
 }
 
@@ -269,14 +281,22 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
 #define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
-
+#ifdef CONFIG_ACS
+	if(m6_ddr_init_test(__ddr_setting.ddr_test))
+#else
 	if(m6_ddr_init_test(DDR_TEST_BASEIC))
+#endif
     {
 	    serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000); 
 		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
 		while(1);
 	}
+
+#ifdef CONFIG_ACS
+	//pass ddr size: SPL <-> TPL
+	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);
+#endif
 
 	return 0;
 }

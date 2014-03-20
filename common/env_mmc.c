@@ -29,6 +29,11 @@
 #include <malloc.h>
 #include <errno.h>
 #include <partition_table.h>
+#ifdef CONFIG_STORE_COMPATIBLE
+#include <asm/arch/storage.h>
+#endif
+
+
 
 DECLARE_GLOBAL_DATA_PTR;
 extern env_t *env_ptr;

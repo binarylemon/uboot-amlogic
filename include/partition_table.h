@@ -1,8 +1,8 @@
 #ifndef _PARTITION_TABLE_H
 #define _PARTITION_TABLE_H
-#ifdef CONFIG_AML_MESON_8
+//#ifdef CONFIG_AML_MESON_8
 #include <asm/arch/storage.h>
-#endif
+//#endif
 #include <asm/arch/nand.h>
 
 

@@ -36,15 +36,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #endif
 
 static struct ddr_set __ddr_setting={
-                    .ddr_test		=  0x7,	//full define in ddr.c DDR_TEST_BASEIC = 0x7, DDR_TEST_ALL = 0xf
-                    .phy_memory_start = PHYS_MEMORY_START,
-                    .phy_memory_size  = PHYS_MEMORY_SIZE,
-                #ifdef M6_DDR3_1GB
-                    .pub_dtar		= 0x37fff3c0,
-                #endif
-                #ifdef M6_DDR3_512M
-                    .pub_dtar		= 0x73fff3c0,	//512M: 0x73fff3c0, 1GB: 0x37fff3c0
-                #endif
+
                 #ifdef DDR3_9_9_9
                     .cl             =   9,
                     .t_faw          =  20,//30:page size 2KB; 20:page size 1KB
@@ -163,7 +155,7 @@ static struct ddr_set __ddr_setting={
                     (0 << 4 )  |      // rank size.   0= 1 rank.   1 = 2 rank.
                     (ddr3_row_size << 2) |
                     (ddr3_col_size),
-         .init_pctl = init_pctl_ddr3
+         .init_pctl = init_pctl_ddr3        
 };
 
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))

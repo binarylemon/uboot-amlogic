@@ -376,7 +376,11 @@ int init_pctl_ddr3(struct ddr_set * timing_reg)
 	((CONFIG_M6_DDR_DTAR_ADDR >> 12) & ((1<<M6_DDR_ADDR_LSB_WIDTH) - 1)) << M6_DDR_ADDR_LOW_COL_LEN)
 	 
 	//writel((0x0 | (0x0 <<12) | (7 << 28)), P_PUB_DTAR_ADDR); 
+#ifdef CONFIG_ACS
+	writel(__ddr_setting.pub_dtar, P_PUB_DTAR_ADDR);
+#else
 	writel((M6_DTAR_DTCOL | (M6_DTAR_DTROW <<12) | (M6_DTAR_DTBANK << 28)), P_PUB_DTAR_ADDR); 
+#endif
 	//writel(0x0 | (0x0 <<12) | (7 << 28), P_PUB_DTAR_ADDR); //0xa0001800@1GB,32bit, not calulate but find, why?
 	//writel(0x0 | (0x0 <<12) | (7 << 28), P_PUB_DTAR_ADDR); //0x90001800@512MB,32bit,not calulate but find, why?
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
