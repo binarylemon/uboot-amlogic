@@ -319,10 +319,13 @@
 	"recovery="\
         "echo enter recovery;"\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm;fi;"\
         "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
+	      "if imgread kernel recovery ${loadaddr}; then "\
+	        "setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+				"else "\
+					"echo no recovery in flash; "\
+				"fi;\0" \
     \
 	"usb_burning=update 1000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
