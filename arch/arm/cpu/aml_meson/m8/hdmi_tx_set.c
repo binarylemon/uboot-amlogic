@@ -317,16 +317,7 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     hdmi_wr_reg(TX_HDCP_CONFIG3, tmp_add_data);
     hdmi_wr_reg(TX_HDCP_CONFIG0, 0x3<<3);
     
-    tmp_add_data  = 0;
-    tmp_add_data |= 1   << 7; // [7] cp_desired 
-    tmp_add_data |= 1   << 6; // [6] ess_config 
-    tmp_add_data |= 0   << 5; // [5] set_avmute 
-    tmp_add_data |= 0   << 4; // [4] clear_avmute 
-    tmp_add_data |= 1   << 3; // [3] hdcp_1_1 
-    tmp_add_data |= 0   << 2; // [2] forced_polarity 
-    tmp_add_data |= 0   << 1; // [1] forced_vsync_polarity 
-    tmp_add_data |= 0   << 0; // [0] forced_hsync_polarity
-    hdmi_wr_reg(TX_HDCP_MODE, tmp_add_data);
+    hdmi_wr_reg(TX_HDCP_MODE, 0x40);
     
     // --------------------------------------------------------
     // Release TX out of reset
