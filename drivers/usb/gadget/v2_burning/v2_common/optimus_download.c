@@ -1102,13 +1102,15 @@ static int _optimus_set_reboot_mode(const int cfgFlag)
             reboot_mode = AMLOGIC_NORMAL_BOOT;  
             break;
     }
+
+    return 0;
 }
 
 void optimus_reset(const int cfgFlag)
 {
     unsigned i = 0x100;
 
-    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
+    //writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
 
     //set reboot mode
     _optimus_set_reboot_mode(cfgFlag);
@@ -1138,7 +1140,7 @@ void optimus_reset(const int cfgFlag)
 
 void optimus_poweroff(void)
 {
-    writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
+    //writel(0, CONFIG_TPL_BOOT_ID_ADDR);//clear boot_id
 	reboot_mode_clear();
 
 #if CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN

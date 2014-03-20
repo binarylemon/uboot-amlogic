@@ -98,7 +98,7 @@ int  get_partition_table()
 
 		init_partiton_table(addr);
 
-//		show_partition_table();
+		show_partition_table();
 	}else{
 		printf("get_patition_table: get partition table failed!!\n");
 		ret = -1;

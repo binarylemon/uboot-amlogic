@@ -18,74 +18,94 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+#include <amlogic/aml_pmu_common.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+#include <amlogic/battery_parameter.h>
+/*
+ * add board battery parameters, this is a backup option if uboot process 
+ * battery parameters failed, each board shoud use your own battery parameters
+ */
+int config_battery_rdc = 87;
+struct battery_curve config_battery_curve[] = { 
+    {3132,      0,      0},  
+    {3273,      0,      0},  
+    {3414,      0,      0},  
+    {3555,      0,      0},  
+    {3625,      1,      3},  
+    {3660,      2,      8},  
+    {3696,      3,     16}, 
+    {3731,     10,     24}, 
+    {3766,     15,     38}, 
+    {3801,     26,     48}, 
+    {3836,     42,     56},
+    {3872,     52,     63},
+    {3942,     66,     74},
+    {4012,     79,     85},
+    {4083,     90,     94},
+    {4153,    100,    100}
+};
+#endif
 
 #if defined(CONFIG_CMD_NET)
 
 /*************************************************
   * Amlogic Ethernet controller operation
-  *
-  * Note: The LAN chip LAN8720 need to be reset by GPIOY_15
+  * 
+  * Note: The LAN chip LAN8720 need to be reset by GPIOA_23
   *
   *************************************************/
 static void setup_net_chip(void)
 {
-#ifdef CONFIG_NET_RGMII
-	/* setup ethernet clk */
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
-	/* setup ethernet pinmux */
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
-	/* setup ethernet mode */
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
-#elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
-	/* setup ethernet clk */
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x130);
-	/* setup ethernet pinmux */
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x8007ffe0);
-	/* setup ethernet mode */
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
-#else
-	/* setup ethernet clk */
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
-	/* setup ethernet pinmux */
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
-	/* setup ethernet mode */
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
-#endif
-
-	/* setup ethernet interrupt */
-	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN0_INTR_MASK, 1 << 8);
-	SET_CBUS_REG_MASK(SYS_CPU_0_IRQ_IN1_INTR_STAT, 1 << 8);
-
-	/* hardware reset ethernet phy */
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_EN_N, 1 << 15);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
-	udelay(2000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
+	//disable all other pins which share the GPIOA_23
+    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_0,(1<<6)); //LCDin_B7 R0[6]
+    CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_7,(1<<11));//ENC_11 R7[11]
+	//GPIOA_23 -> 0
+    CLEAR_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);    //RST -> 0
+    //GPIOA_23 output enable
+    CLEAR_CBUS_REG_MASK(PREG_EGPIO_EN_N,1<<23); //OUTPUT enable	
+    udelay(2000);
+	//GPIOA_23 -> 1
+    SET_CBUS_REG_MASK(PREG_EGPIO_O,1<<23);      //RST -> 1
+    udelay(2000);	
 }
 
 int board_eth_init(bd_t *bis)
-{
+{   	
+	//set clock
+    eth_clk_set(ETH_CLKSRC_MISC_PLL_CLK,800*CLK_1M,50*CLK_1M);	
+
+	//set pinmux
+    aml_eth_set_pinmux(ETH_BANK0_GPIOY1_Y9,ETH_CLK_OUT_GPIOY0_REG6_17,0);
+
+	//ethernet pll control
+    writel(readl(ETH_PLL_CNTL) & ~(0xF << 0), ETH_PLL_CNTL); // Disable the Ethernet clocks        
+    writel(readl(ETH_PLL_CNTL) | (0 << 3), ETH_PLL_CNTL);    // desc endianess "same order"   
+    writel(readl(ETH_PLL_CNTL) | (0 << 2), ETH_PLL_CNTL);    // data endianess "little"    
+    writel(readl(ETH_PLL_CNTL) | (1 << 1), ETH_PLL_CNTL);    // divide by 2 for 100M     
+    writel(readl(ETH_PLL_CNTL) | (1 << 0), ETH_PLL_CNTL);    // enable Ethernet clocks   
+    
+    udelay(1000);
+
+	//reset LAN8720 with GPIOA_23
     setup_net_chip();
 
     udelay(1000);
+	
+extern int aml_eth_init(bd_t *bis);
 
-#ifdef	CONFIG_USB_ETHER
-    extern int usb_eth_initialize(bd_t *bi);
-    usb_eth_initialize(bis);
-#else
-    extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);
-#endif
 
 	return 0;
 }
 #endif /* (CONFIG_CMD_NET) */
 
 #ifdef CONFIG_SARADC
-/*following key value are test with board
+/*following key value are test with board 
   [M3_SKT_V1 20110622]
   ref doc:
   1. m3_skt_v1.pdf(2011.06.22)
@@ -122,14 +142,14 @@ struct adc_device aml_adc_devices={
 };
 
 /* adc_init(&g_adc_info, ARRAY_SIZE(g_adc_info)); */
-/* void adc_init(struct adc_info *adc_info, unsigned int len)
+/* void adc_init(struct adc_info *adc_info, unsigned int len) 
      @trunk/common/sys_test.c */
 
 /*following is test code to test ADC & key pad*/
 /*
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-	saradc_enable();
+	saradc_enable();	
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
@@ -139,7 +159,7 @@ struct adc_device aml_adc_devices={
 		nKeyVal = get_adc_sample(4);
 		if(nKeyVal > 1000)
 			continue;
-
+		
 		printf("get_key(): %d\n", nKeyVal);
 		nCnt++;
 	}
@@ -266,23 +286,10 @@ int board_mmc_init(bd_t	*bis)
 }
 #endif
 
-#if CONFIG_AML_HDMI_TX
-/*
- * Init hdmi related power configuration
- * Refer to your board SCH, power including HDMI5V, HDMI1.8V, AVDD18_HPLL, etc
- */
-extern void hdmi_tx_power_init(void);
-void hdmi_tx_power_init(void)
-{
-    // 
-    printf("hdmi tx power init\n");
-}
-#endif
-
 #ifdef CONFIG_AML_I2C 
 /*I2C module is board depend*/
 static void board_i2c_set_pinmux(void){
-	/*@M6_SKT_V1.pdf*/
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
     /*********************************************/
     /*                | I2C_Master_AO        |I2C_Slave            |       */
@@ -319,11 +326,20 @@ struct aml_i2c_platform g_aml_i2c_plat = {
     }
 };
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+static void board_pmu_init(void)
+{
+    struct aml_pmu_driver *driver = aml_pmu_get_driver();
+    if (driver && driver->pmu_init) {
+        driver->pmu_init();
+    }
+}
+#endif
 
 static void board_i2c_init(void)
 {		
 	//set I2C pinmux with PCB board layout
-	/*@M6_SKT_V1.pdf*/
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
 	board_i2c_set_pinmux();
 
@@ -332,10 +348,13 @@ static void board_i2c_init(void)
 	aml_i2c_init();
 
 	//must call aml_i2c_init(); before any I2C operation	
-	/*M6 ref board*/
+	/*M6 board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10000);
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    board_pmu_init();
+#endif
 }
 #endif /*CONFIG_AML_I2C*/
 
@@ -381,7 +400,6 @@ void    board_nand_init(void)
 
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
-#if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE
     {
         .name = NAND_BOOT_NAME,
         .chip_enable_pad = AML_NAND_CE0,
@@ -392,26 +410,21 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
                 .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE),
             },
         },
-        .rbpin_mode=1,
-        .short_pgsz=384,
-        .ran_mode=0,
+        .rbpin_detect=1,
         .T_REA = 20,
         .T_RHOH = 15,
     },
-#endif
     {
         .name = NAND_NORMAL_NAME,
-        .chip_enable_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
-        .ready_busy_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4),// | (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
+        .chip_enable_pad = ((AML_NAND_CE0) | (AML_NAND_CE1 << 4) | (AML_NAND_CE2 << 8) | (AML_NAND_CE3 << 12)),
+        .ready_busy_pad = (AML_NAND_CE0) | (AML_NAND_CE1 << 4), //| (AML_NAND_CE1 << 8) | (AML_NAND_CE1 << 12)),
         .platform_nand_data = {
             .chip =  {
                 .nr_chips = 2,
                 .options = (NAND_TIMING_MODE5 | NAND_ECC_BCH60_1K_MODE | NAND_TWO_PLANE_MODE),
             },
         },
-        .rbpin_mode = 1,
-        .short_pgsz = 0,
-        .ran_mode = 0,
+        .rbpin_detect=1,
         .T_REA = 20,
         .T_RHOH = 15,
     }
@@ -420,7 +433,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
 
 struct aml_nand_device aml_nand_mid_device = {
     .aml_nand_platform = aml_nand_mid_platform,
-    .dev_num = ARRAY_SIZE(aml_nand_mid_platform),
+    .dev_num = 2,
 };
 #endif
 
@@ -430,28 +443,82 @@ struct aml_nand_device aml_nand_mid_device = {
 //@board schematic: m3_skt_v1.pdf
 //@pinmax: AppNote-M3-CorePinMux.xlsx
 //GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
-#define IO_AOBUS_BASE	0xc8100000
-#define AOBUS_REG_OFFSET(reg)   ((reg) )
-#define AOBUS_REG_ADDR(reg)	    (IO_AOBUS_BASE + AOBUS_REG_OFFSET(reg))
-static __inline__ void aml_set_reg32_bits( uint32_t _reg, const uint32_t _value,const uint32_t _start, const uint32_t _len)
-{
-	writel((readl(_reg) & ~((( 1L << (_len) )-1) << (_start)) | ((unsigned)((_value)&((1L<<(_len))-1)) << (_start))), _reg );
-}
-
 static void gpio_set_vbus_power(char is_power_on)
 {
+#if 0
 	if(is_power_on)
 	{
-		aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0,  3, 1);
-		aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0, 19, 1);
-	//	aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 0,  2, 1);
-	//	aml_set_reg32_bits(AOBUS_REG_ADDR(0x24), 1, 18, 1);
+		//@WA-AML8726-M3_REF_V1.0.pdf
+	    //GPIOA_26 -- VCCX2_EN
+		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
+	
+		//@WA-AML8726-M3_REF_V1.0.pdf
+		//GPIOD_9 -- USB_PWR_CTL
+		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
+		
+		udelay(100000);
 	}
 	else
 	{
-	}
-}
+		set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 0);
 
+		set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
+		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
+	}
+#endif	
+}
+static int usb_charging_detect_call_back(char bc_mode)
+{
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    struct aml_pmu_driver    *driver = aml_pmu_get_driver();
+    struct battery_parameter *battery;
+#endif
+	switch(bc_mode){
+		case BC_MODE_DCP:
+		case BC_MODE_CDP:
+			//Pull up chargging current > 500mA
+        #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * Policy:
+             * for charger and PC + charger, don't limit usb current
+             */
+            if (driver && driver->pmu_set_usb_current_limit) {
+                driver->pmu_set_usb_current_limit(-1);                  // -1 means do not limit usb current
+            }
+        #endif
+			break;
+
+		case BC_MODE_UNKNOWN:
+		case BC_MODE_SDP:
+		default:
+			//Limit chargging current <= 500mA
+			//Or detet dec-charger
+        #ifdef CONFIG_PLATFORM_HAS_PMU 
+            /* 
+             * for PC: 
+             * If pmu_usbcur_limit is 1 in dts, then set usb current by  
+             * value pmu_usbcur set in dts. If pmu_usbcur_limit is 0, then don't  
+             * limit  usb current. If not find battery parameters, set usb current 
+             * to 500mA as default 
+             */ 
+            battery = get_battery_para(); 
+            if (driver && battery && driver->pmu_set_usb_current_limit) { 
+                if (battery->pmu_usbcur_limit) { 
+                    driver->pmu_set_usb_current_limit(battery->pmu_usbcur); 
+                } else { 
+                    driver->pmu_set_usb_current_limit(-1); 
+                } 
+            } else { 
+                driver->pmu_set_usb_current_limit(500); 
+            } 
+        #endif 
+			break;
+	}
+	return 0;
+}
 //note: try with some M3 pll but only following can work
 //USB_PHY_CLOCK_SEL_M3_XTAL @ 1 (24MHz)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
@@ -460,10 +527,10 @@ static void gpio_set_vbus_power(char is_power_on)
 struct amlogic_usb_config g_usb_config_m6_skt={
 	USB_PHY_CLK_SEL_XTAL,
 	1, //PLL divider: (clock/12 -1)
-	CONFIG_M6_USBPORT_BASE,
+	CONFIG_M6_USBPORT_BASE_A,
 	USB_ID_MODE_SW_HOST,
 	gpio_set_vbus_power, //set_vbus_power
-	NULL,
+	usb_charging_detect_call_back,
 };
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
@@ -482,22 +549,21 @@ int board_init(void)
 #ifdef	BOARD_LATE_INIT
 int board_late_init(void)
 {
+	unsigned char val;
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
 	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
-
-#ifdef CONFIG_AW_AXP20
-set_dcdc2(1500);	//set DC-DC2 to 1500mV
-set_dcdc3(1100);	//set DC-DC3 to 1100mV
-#endif
 
 	return 0;
 }
 #endif
+
+
 
 
 //POWER key
@@ -511,56 +577,25 @@ inline int get_key(void)
 {
 	return (((readl(P_RTC_ADDR1) >> 2) & 1) ? 0 : 1);
 }
-#ifdef CONFIG_SWITCH_BOOT_MODE
-int switch_boot_mode(void)
-{
-	printf("switch_boot_mode\n");
-	unsigned int suspend_status_current2 = readl(P_AO_RTI_STATUS_REG2);
-	printf("suspend_status_current2=%x\n",suspend_status_current2);
-	if((suspend_status_current2 == 0))
-	{
-		run_command ("suspend", 0);
-	}
-	return 0;
-}
-#endif
 
-
-/*//AC online
-inline void ac_online_init(void)
-{
-	axp_charger_open();
-}
-
-inline int is_ac_online(void)
-{
-	return axp_charger_is_ac_online();
-}
-
-//Power off
-void power_off(void)
-{
-	axp_power_off();
-}
-*/
 #ifdef CONFIG_AML_TINY_USBTOOL
-	int usb_get_update_result(void)
+int usb_get_update_result(void)
+{
+	unsigned long upgrade_step;
+	upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
+	printf("upgrade_step = %d\n", upgrade_step);
+	if(upgrade_step == 1)
 	{
-		unsigned long upgrade_step;
-		upgrade_step = simple_strtoul (getenv ("upgrade_step"), NULL, 16);
-		printf("upgrade_step = %d\n", upgrade_step);
-		if(upgrade_step == 1)
-		{
-			run_command("defenv", 1);
-			run_command("setenv upgrade_step 2", 1);
-			run_command("saveenv", 1);
-			return 0;
-		}
-		else
-		{
-			return -1;
-		}
+		run_command("defenv", 1);
+		run_command("setenv upgrade_step 2", 1);
+		run_command("saveenv", 1);
+		return 0;
 	}
+	else
+	{
+		return -1;
+	}
+}
 #endif
 
 

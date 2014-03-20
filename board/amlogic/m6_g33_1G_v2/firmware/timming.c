@@ -36,7 +36,15 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #endif
 
 static struct ddr_set __ddr_setting={
-
+                    .ddr_test		=  0x7,	//full define in ddr.c DDR_TEST_BASEIC = 0x7, DDR_TEST_ALL = 0xf
+                    .phy_memory_start = PHYS_MEMORY_START,
+                    .phy_memory_size  = PHYS_MEMORY_SIZE,
+                #ifdef M6_DDR3_1GB
+                    .pub_dtar		= 0x37fff3c0,
+                #endif
+                #ifdef M6_DDR3_512M
+                    .pub_dtar		= 0x73fff3c0,	//512M: 0x73fff3c0, 1GB: 0x37fff3c0
+                #endif
                 #ifdef DDR3_9_9_9
                     .cl             =   9,
                     .t_faw          =  20,//30:page size 2KB; 20:page size 1KB
@@ -45,9 +53,9 @@ static struct ddr_set __ddr_setting={
                     .t_rcd          =   9,
                     .t_rfc          = 107,//4Gb:174~200; 2Gb:107; 1Gb:74
                     .t_rp           =   9,
-                    .t_rrd          =   4,//6 or 5:page size 2KB; 4:page size 1KB
+                    .t_rrd          =   4,
                     .t_rtp          =   5,
-                    .t_wr           =  10,
+                    .t_wr           =   10,
                     .t_wtr          =   5,
                     .t_cwl          =   7,
                     .t_mod          =  10,
@@ -128,7 +136,7 @@ static struct ddr_set __ddr_setting={
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              (1 << 3) |    	            //[B3]2T mode, default is disable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
@@ -139,7 +147,7 @@ static struct ddr_set __ddr_setting={
                            },
                     .zqcr  = (( 1 << 24) | 0x11dd),   //0x11dd->22 ohm;0x1155->0 ohm
                     .zq0cr1 = 0x1d,//0x18,   //PUB ZQ0CR1
-         .ddr_pll_cntl = 0x10200 | (M6_DDR_CLK/12), //528MHz
+         .ddr_pll_cntl=0x10200 | (M6_DDR_CLK/12), //504MHz 1022a
          .ddr_clk = (M6_DDR_CLK),
          .ddr_ctrl= (0 << 24 ) |      //pctl_brst 4,
                     (0xff << 16) |    //reorder en for the 8 channel.
@@ -155,7 +163,7 @@ static struct ddr_set __ddr_setting={
                     (0 << 4 )  |      // rank size.   0= 1 rank.   1 = 2 rank.
                     (ddr3_row_size << 2) |
                     (ddr3_col_size),
-         .init_pctl = init_pctl_ddr3        
+         .init_pctl=init_pctl_ddr3
 };
 
 STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setting")))
@@ -175,8 +183,8 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 	//PLL=600MHz:   PD=0,RESET=0,OD=1,N=1,M=50
 	//0x1098[0xc1104260]
 	.sys_pll_cntl=	(0  << 16) | //OD
-					(1  << 9 ) | //N
-					(50 << 0 ),	 //M
+					(3  << 9 ) | //N
+					(100 << 0 ),	 //M
 	//A9 clock setting
 	//0x1067[0xc110419c]
     .sys_clk_cntl=	(1 << 7) | // 0:oscin 1:scale out
@@ -185,8 +193,8 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
                   	(0 << 2) | // 0:div1, 1:div2, 2:div3, 3:divn
                   	(1 << 0),  // 0:oscin, 1:sys_pll, 2:ddr_pll, 3:no clock 
     //A9 clock              	
-    .sys_clk=1200,//MHz
-    .a9_clk=1200, //MHz
+    .sys_clk=800,//MHz
+    .a9_clk=800, //MHz
     
     .other_pll_cntl=0x00000219,//0x19*24/1=600M
 
