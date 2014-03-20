@@ -135,7 +135,17 @@
 #define CONFIG_USB_DWC_OTG_294  1
 #define CONFIG_CMD_USB 1
 
-#define CONFIG_AML_TINY_USBTOOL
+#ifdef CONFIG_NEXT_NAND
+#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
+#define CONFIG_AML_V2_USBTOOL 1
+#endif//#ifdef CONFIG_NEXT_NAND
+
+#if CONFIG_AML_V2_USBTOOL
+#define CONFIG_SHA1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
+#endif// #if CONFIG_AML_V2_USBTOOL
+
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
@@ -179,7 +189,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x85100000\0" \
+	"fb_addr=0x89700000\0" \
 	"sleep_threshold=20\0" \
 	"batlow_threshold=10\0" \
 	"batfull_threshold=100\0" \
