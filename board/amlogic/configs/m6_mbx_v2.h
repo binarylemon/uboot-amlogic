@@ -1,5 +1,5 @@
-#ifndef __CONFIG_M6_MBX_V2_H__
-#define __CONFIG_M6_MBX_V2_H__
+#ifndef __CONFIG_M6_MBX_V1_H__
+#define __CONFIG_M6_MBX_V1_H__
 
 #define CONFIG_AML_MESON_6 1
 #define CONFIG_MACH_MESON6_MBX
@@ -176,125 +176,88 @@
 
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"mmc_logo_offset=0x24000\0" \
+	"mmc_boot_offset=0x44000\0" \
+	"mmc_recovery_offset=0x34000\0" \
+	"mmc_lk_size=0x4000\0" \
 	"loadaddr=0x82000000\0" \
-		"loadaddr_logo=0x83000000\0" \
-		"testaddr=0x82400000\0" \
-		"console=ttyS0,115200n8\0" \
-		"mmcargs=setenv bootargs console=${console} " \
-		"boardname=m6_mbx\0" \
-		"chipname=8726m6\0" \
-		"machid=4e27\0" \
-		"hdmimode=1080p\0" \
-		"cvbsmode=576cvbs\0" \
-		"outputmode=1080p\0" \
-		"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
-		"preloaddtb=imgread dtb boot ${loadaddr}\0" \
-		"video_dev=tvout\0" \
-		"display_width=1920\0" \
-		"display_height=1080\0" \
-		"display_bpp=24\0" \
-		"display_color_format_index=24\0" \
-		"display_layer=osd2\0" \
-		"display_color_fg=0xffff\0" \
-		"display_color_bg=0\0" \
-		"fb_addr=0x85100000\0" \
-		"fb_width=1280\0"\
-		"fb_height=720\0"\
-		"partnum=2\0" \
-		"p0start=1000000\0" \
-		"p0size=400000\0" \
-		"p0path=uImage\0" \
-		"p1start=1400000\0" \
-		"p1size=8000000\0" \
-		"p1path=android.rootfs\0" \
-		"bootstart=0\0" \
-		"bootsize=60000\0" \
-		"bootpath=u-boot.bin\0" \
-		"sdcburncfg=aml_sdc_burn.ini\0"\
-		"normalstart=1000000\0" \
-		"normalsize=400000\0" \
-		"upgrade_step=0\0" \
-		"firstboot=1\0" \
-		"store=0\0"\
-		"preboot="\
-			"echo preboot...;" \
-			"if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
-			"if itest ${upgrade_step} == 1; then  "\
-				"defenv; setenv upgrade_step 2; saveenv;"\
-			"fi; "\
-			"run prepare;"\
-			"run storeargs;"\
-			"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
-			"run update_key; " \
-			"run switch_bootmode\0" \
-		\
-		"update_key="\
-			"saradc open 0; " \
-			"if saradc get_in_range 0 0x50; then " \
-				"msleep 400; " \
-				"if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
-			"fi\0" \
-		\
-		"update="\
-			/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
-			"echo update...; "\
-			"run usb_burning; "\
-			"if mmcinfo; then "\
-				"if fatexist mmc 0 ${sdcburncfg}; then "\
-					"run sdc_burning; "\
-				"else "\
-					"if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-					"run recovery;"\
-				"fi;"\
-			"else "\
-				"run recovery;"\
-			"fi;\0"\
-		\
-		"storeargs="\
-			"setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
-		\
-		"switch_bootmode="\
-			"echo switch_bootmode...;"\
-			"if test ${reboot_mode} = normal; then "\
-			"else if test ${reboot_mode} = charging; then "\
-			"else if test ${reboot_mode} = factory_reset; then "\
-				"run recovery;"\
-			"else if test ${reboot_mode} = update; then "\
-				"run update;"\
-			"else if test ${reboot_mode} = usb_burning; then "\
-				"run usb_burning;"\
-			"else " \
-				"  "\
-			"fi;fi;fi;fi;fi\0" \
-		\
-		"prepare="\
-			"logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
-			"imgread res logo ${loadaddr_logo}; "\
-			"unpackimg ${loadaddr_logo}; "\
-			"logo source ${outputmode}; bmp display ${bootup_offset}; bmp scale;"\
-			"\0"\
-		\
-		"storeboot="\
-			"echo Booting...; "\
-			"if unifykey get usid; then  "\
-				"setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
-			"fi;"\
-			"imgread kernel boot ${loadaddr};"\
-			"bootm;"\
-			"run recovery\0" \
-		\
-		"recovery="\
-			"echo enter recovery;"\
-			"if mmcinfo; then "\
-				"if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-			"fi; "\
-			"imgread kernel recovery ${loadaddr}; "\
-			"bootm\0" \
-		\
-		"usb_burning=update 1000\0" \
-		"sdc_burning=sdc_burn ${sdcburncfg}\0"
+	"testaddr=0x82400000\0" \
+	"loadaddr_misc=0x83000000\0" \
+	"usbtty=cdc_acm\0" \
+	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+	"boardname=m6_mbx\0" \
+	"chipname=8726m6\0" \
+	"machid=4e27\0" \
+	"video_dev=tvout\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=16\0" \
+	"display_layer=osd1\0" \
+	"display_color_fg=0xffff\0" \
+	"display_color_bg=0\0" \
+	"fb_addr=0x85900000\0" \
+	"sleep_threshold=20\0" \
+	"upgrade_step=0\0" \
+	"batlow_threshold=10\0" \
+	"batfull_threshold=98\0" \
+	"outputmode=1080p\0" \
+	"outputtemp=1080p\0" \
+	"hdmimode=1080p\0" \
+	"cvbsmode=576cvbs\0" \
+	"cvbsenable=false\0" \
+	"vdacswitchmode=cvbs\0" \
+    "usb_burning=update 1000\0" \
+	"firstboot=1\0" \
+	"preboot="\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
+        "if test ${reboot_mode} = factory_reset; then run factoryreset_wipe_data; fi;"\
+        "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
+        "run nand_key_burning; "\
+        "run upgrade_check; run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
+	"mbr_write=if test ${upgrade_step} != 2; then mmcinfo 1; mmc read 1 82000000 0 1; mw.l 820001fc 0 1; mmc write 1 82000000 0 1;fi;\0" \
+	"upgrade_check="\
+        "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; "\
+        "if itest ${upgrade_step} == 3; then save; run update; fi;\0" \
+	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
+	"irremote_update=if irkey 0x41beb14e 500000 ;then run update; fi\0" \
+	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then run usb_burning; fi; fi\0" \
+	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
+	"nandargs=run cvbscheck; "\
+            "imgread res logo ${loadaddr_misc};unpackimg ${loadaddr_misc}; cp ${bootup_offset} 0x85100000 ${bootup_size}; "\
+            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x85100000,${outputtemp},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
+	"nandboot=echo Booting ...;run nandargs;imgread kernel boot ${loadaddr};hdcp prefetch nand;bootm;run recovery\0" \
+	"recovery=echo enter recovery;run nandargs;"\
+            "if mmcinfo; then "\
+                "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
+            "fi; "\
+            "imgread kernel recovery ${loadaddr}; bootm\0" \
+	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
+	"storage=null\0" \
+	"factoryreset_wipe_data="\
+        "echo ---wipe_data=${wipe_data}; "\
+        "imgread kernel recovery ${loadaddr}; bootm; "\
+       "\0" \
+	"usbnet_devaddr=00:15:18:01:81:31;\0" \
+	"usbnet_hostddr=00:15:18:01:a1:3b;\0" \
+	"cdc_connect_timeout=9999999999;\0" \
+    "update="\
+        "echo update...; run usb_burning; "\
+        "if mmcinfo; then "\
+            "if fatexist mmc 0 ${sdcburncfg}; then "\
+                "run sdc_burning; "\
+            "else "\
+                "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+                "run recovery;"\
+            "fi;"\
+        "else "\
+            "run recovery;"\
+        "fi;\0"\
 
-#define CONFIG_BOOTCOMMAND  "run storeboot"
+#define CONFIG_BOOTCOMMAND  "run nandboot"
+
 
 //\\temp above
 
@@ -307,14 +270,14 @@
 //spi
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_CMD_SAVEENV
-#define CONFIG_ENV_SECT_SIZE 0x1000
- #define CONFIG_ENV_IN_SPI_OFFSET 0x80000
+#define CONFIG_ENV_SECT_SIZE		0x1000
+ #define CONFIG_ENV_IN_SPI_OFFSET           		0x80000
 //nand
-#define CONFIG_ENV_IN_NAND_OFFSET 0x400000
-#define CONFIG_ENV_BLOCK_NUM 2
+#define CONFIG_ENV_IN_NAND_OFFSET       0x400000
+#define CONFIG_ENV_BLOCK_NUM    2
 //emmc
-#define CONFIG_SYS_MMC_ENV_DEV 1
-#define CONFIG_ENV_IN_EMMC_OFFSET 0x80000
+#define CONFIG_SYS_MMC_ENV_DEV		  1
+#define CONFIG_ENV_IN_EMMC_OFFSET		0x80000
 
 #define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
 						/* initial data */
