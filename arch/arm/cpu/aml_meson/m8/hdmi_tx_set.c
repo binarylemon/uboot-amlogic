@@ -447,7 +447,7 @@ static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
         vs_adjust   = 1;
     } else {
         hs_begin    = de_h_end + front_porch_venc; // 1675 + 38 = 1713
-        vs_adjust   = 0;
+        vs_adjust   = 1;
     }
     hs_end  = modulo(hs_begin + hsync_pixels_venc,   total_pixels_venc); // (1713 + 124) % 1716 = 121
     aml_write_reg32_op(P_ENCI_DVI_HSO_BEGIN,  hs_begin);  // 1713
