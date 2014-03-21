@@ -564,6 +564,38 @@ int board_late_init(void)
 #endif
 
 
+static int power_key_num = 0;
+static int update_key_num = 0;
+
+void magic_checkstatus(int saveEnvFlag){
+	static int adc_init = 0;
+
+	if(!adc_init){
+		run_command("saradc open 0", 0);
+		adc_init = 1;
+	}
+	
+	if( 0 == run_command("getkey", 0)){
+		power_key_num++;
+	}
+	if( 0 == run_command("saradc get_in_range 0x95 0x150 1", 0)){
+		update_key_num++;
+	}
+
+	printf("magic_checkstatus power(%d) adc(%d)\n", power_key_num, update_key_num);
+
+	if(saveEnvFlag){
+		if(power_key_num >= 2 && update_key_num >= 2){
+			setenv("magic_key_status", "update");
+			return;
+		}
+
+		if(power_key_num >= 2){
+			setenv("magic_key_status", "poweron");
+			return;
+		}
+	}
+}
 
 
 //POWER key

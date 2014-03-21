@@ -146,6 +146,7 @@
 #define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #endif// #if CONFIG_AML_V2_USBTOOL
 
+#define CONFIG_CMD_AML_MAGIC
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
@@ -172,7 +173,6 @@
 	"testaddr=0x82400000\0" \
 	"loadaddr_misc=0x83000000\0" \
 	"console=ttyS0,115200n8\0" \
-	"mmcargs=setenv bootargs console=${console} " \
 	"upgrade_step=0\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
 	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
@@ -196,29 +196,33 @@
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"firstboot=1\0" \
 	"magic_key_status=none\0" \
+    "update_key_times=0\0"\
 	"store=0\0"\
 	"preboot="\
-	"if itest ${upgrade_step} == 3; then run update; fi; "\
-	"if itest ${upgrade_step} == 1; then  "\
-		"defenv; setenv upgrade_step 2; saveenv;"\
-	"fi; "\
-	"magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status};run switch_bootmode;\0"\
-	"switch_bootmode="\
-	"if test ${reboot_mode} = normal; then "\
-	"run prepare; bmp display ${poweron_offset}; "\
-	"else if test ${reboot_mode} = factory_reset; then "\
-	"run recovery; "\
-	"else if test ${reboot_mode} = update; then "\
-	"run update; "\
-	"else if test ${reboot_mode} = usb_burning; then "\
-	"run usb_burning; "\
-	"else if test ${magic_key_status} = update; then "\
-	"run update; "\
-	"else if test ${magic_key_status} = poweron; then "\
-	"run prepare; bmp display ${poweron_offset}; run bootcmd; "\
-	"else "\
-	"run charging_or_not; "\
-	"fi; fi; fi; fi; fi; fi\0" \
+        "if itest ${upgrade_step} == 3; then run update; fi; "\
+        "if itest ${upgrade_step} == 1; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+			"fi; "\
+		"get_rebootmode; clear_rebootmode; magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status}; "\
+		"usbbc; run batlow_or_not; setenv sleep_count 0; "\
+		"run switch_bootmode\0" \
+		\
+        "switch_bootmode="\
+        "if test ${reboot_mode} = normal; then "\
+        "run prepare; bmp display ${poweron_offset}; "\
+        "else if test ${reboot_mode} = factory_reset; then "\
+        "run recovery; "\
+        "else if test ${reboot_mode} = update; then "\
+        "run update; "\
+        "else if test ${reboot_mode} = usb_burning; then "\
+        "run usb_burning; "\
+        "else if test ${magic_key_status} = update; then "\
+        "run update; "\
+        "else if test ${magic_key_status} = poweron; then "\
+        "run prepare; bmp display ${poweron_offset}; run bootcmd; "\
+        "else "\
+        "run charging_or_not; "\
+        "fi; fi; fi; fi; fi; fi\0" \
 	\
 	"prepare="\
 	"video clear; video open; video clear; video dev bl_on; " \
@@ -308,11 +312,15 @@
 	"fi\0" \
 	\
 	"powerkey_or_not="\
-	"if getkey; then "\
-	"msleep 500; "\
-	"if getkey; then "\
-		"video clear; bmp display ${poweron_offset};run bootcmd; "\
-	"fi; "\
+		"if getkey; then "\
+			"msleep 400; "\
+			"if getkey; then "\
+                "setenv update_key_times 0;"\
+				"video clear; bmp display ${poweron_offset};run bootcmd; "\
+            "else "\
+                "calc ${update_key_times} + 1 update_key_times;"\
+                "if itest ${update_key_times} >= 3; then echo --key update--; run update; fi;"\
+			"fi; "\
 	"fi\0" \
 	\
 	"updatekey_or_not="\
@@ -341,7 +349,8 @@
 	"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 	"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 	"bmp display ${batterylow_offset}; msleep 1000\0"\
-	"ota_update=run prepare;"\
+    "ota_update=run prepare;"\
+        "echo ota_update..;"\
 	"if mmcinfo; then "\
 	"if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; fi; "\
 	"fi;"\
@@ -353,7 +362,8 @@
 	
 		
 #define CONFIG_BOOTCOMMAND  \
-	"store read boot 82000000 0 800000; "\
+    "echo bootcmd...;"\
+    "imgread kernel boot ${loadaddr}; "\
 	"setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
 	"bootm;"\
 	"run ota_update"
