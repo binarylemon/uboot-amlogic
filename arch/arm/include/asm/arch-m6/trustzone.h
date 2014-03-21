@@ -29,6 +29,10 @@
 #define TRUSTZONE_HAL_API_EFUSE	0x100
 #define TRUSTZONE_HAL_API_STORAGE   0x200
 
+#define CALL_TRUSTZONE_MON                      0x4
+#define TRUSTZONE_MON_CORE_RD_SOC_REV1          0x209
+#define TRUSTZONE_MON_CORE_RD_SOC_REV2          0x20A
+
 
 #ifdef CONFIG_MESON_STORAGE_BURN
 struct storage_hal_api_arg{
