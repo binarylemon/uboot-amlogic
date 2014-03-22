@@ -211,11 +211,10 @@
     "usb_burning=update 1000\0" \
 	"firstboot=1\0" \
 	"preboot="\
+        "run upgrade_check; "\
         "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
-        "if test ${reboot_mode} = factory_reset; then run factoryreset_wipe_data; fi;"\
-        "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
         "run nand_key_burning; "\
-        "run upgrade_check; run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
+        "run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
 	"mbr_write=if test ${upgrade_step} != 2; then mmcinfo 1; mmc read 1 82000000 0 1; mw.l 820001fc 0 1; mmc write 1 82000000 0 1;fi;\0" \
 	"upgrade_check="\
         "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; "\
@@ -227,13 +226,24 @@
 	"nandargs=run cvbscheck; "\
             "imgread res logo ${loadaddr_misc};unpackimg ${loadaddr_misc}; cp ${bootup_offset} 0x85100000 ${bootup_size}; "\
             "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x85100000,${outputtemp},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
-	"switch_bootmode=if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi\0" \
-	"nandboot=echo Booting ...;run nandargs;imgread kernel boot ${loadaddr};hdcp prefetch nand;bootm;run recovery\0" \
-	"recovery=echo enter recovery;run nandargs;"\
-            "if mmcinfo; then "\
-                "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-            "fi; "\
-            "imgread kernel recovery ${loadaddr}; bootm\0" \
+	"switch_bootmode="\
+        "if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
+        "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
+        "if test ${reboot_mode} = update; then run update; fi\0" \
+	"nandboot="\
+        "echo Booting ...;"\
+        "run nandargs;"\
+        "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
+        "imgread kernel boot ${loadaddr};"\
+        "hdcp prefetch nand;"\
+        "bootm;run recovery\0" \
+	"recovery="\
+        "echo enter recovery;"\
+        "run nandargs;"\
+        "if mmcinfo; then "\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
+        "fi; "\
+        "imgread kernel recovery ${loadaddr}; bootm\0" \
 	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
 	"storage=null\0" \
 	"factoryreset_wipe_data="\
