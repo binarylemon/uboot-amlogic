@@ -2147,6 +2147,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	loff_t offset;
 	int bad_block_cnt =0;
     loff_t adjust_offset = 0,key_block;
+	uint64_t last_size =0;
 	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE )) ? mtd->erasesize : (NAND_MINI_PART_SIZE ));
 	//uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
 	unsigned int bad_blk_addr[128];
@@ -2244,41 +2245,39 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 					start_blk++;
 				} while (start_blk < (mini_part_size >> phys_erase_shift));
 				if(mini_part_size > NAND_SYS_PART_SIZE) {
-						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >128)) {
+						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >10)) {
 							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
 						}
 				}
 			}
 			else {
-				file_system_part = 1;
-			}
-
-			if ((i == (nr - 1)) && (part_save_in_env == 0)) {
+				last_size = mtd->size - adjust_offset;
 				start_blk = 0;
 				bad_block_cnt =0;
 				memset((unsigned char *)bad_blk_addr,0xff,128*sizeof(int));
 				do {
 					offset = adjust_offset + start_blk * mtd->erasesize;
 					error = mtd->block_isbad(mtd, offset);
-					if (error == FACTORY_BAD_BLOCK_ERROR) {
-						adjust_offset += mtd->erasesize;
-						continue;
-					}
-					else if(error){
+					 if(error && (error != FACTORY_BAD_BLOCK_ERROR)){
 							if(bad_block_cnt < 128)
 							bad_blk_addr[bad_block_cnt] = offset>> phys_erase_shift;
-							printk("%s:%d find %d bad addr =%d\n",bad_block_cnt,bad_blk_addr[bad_block_cnt]);
+							printk("%s:%d find %d bad addr =%d\n",__func__,__LINE__,bad_block_cnt,bad_blk_addr[bad_block_cnt]);
 							bad_block_cnt++;
 						}
 					start_blk++;
-				} while (start_blk < (mini_part_size >> phys_erase_shift));
-					if(mini_part_size > NAND_SYS_PART_SIZE) {
-						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >128)) {
+				} while (start_blk < (last_size >> phys_erase_shift));
+					if(last_size > NAND_SYS_PART_SIZE) {
+						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >10)) {
 							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
 						}
 					}	
-				temp_parts->size = NAND_SYS_PART_SIZE;
+				
 			}
+
+			if ((i == (nr - 1)) && (part_save_in_env == 0)) 
+				
+				temp_parts->size = NAND_SYS_PART_SIZE;
+				
 			else if (mini_part_size != MTDPART_SIZ_FULL)
 				temp_parts->size = mini_part_size + (adjust_offset - temp_parts->offset);
 			adjust_offset += mini_part_size;
