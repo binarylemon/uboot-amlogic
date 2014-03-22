@@ -2267,7 +2267,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 					start_blk++;
 				} while (start_blk < (last_size >> phys_erase_shift));
 					if(last_size > NAND_SYS_PART_SIZE) {
-						if(((bad_block_cnt * 32) > (mini_part_size >> phys_erase_shift))||(bad_block_cnt >10)) {
+						if(((bad_block_cnt * 32) > (last_size >> phys_erase_shift))||(bad_block_cnt >10)) {
 							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
 						}
 					}	
