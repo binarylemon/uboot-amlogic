@@ -250,13 +250,15 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 	unsigned int ret = 0;
 	struct sram_hal_api_arg arg = {};
 
-	if ((addr < SECURE_OS_ACS_SRAM_ADDR) || (addr > (SECURE_OS_ACS_SRAM_ADDR + SECURE_OS_ACS_LEN)))
-		return addr;
 
 	arg.cmd = SRAM_HAL_API_CAS;
 	arg.req_len = SECURE_OS_ACS_LEN;
 	arg.res_len = SECURE_OS_ACS_LEN;
-	arg.req_phy_addr = meson_trustzone_sram_read_reg32(addr);
+
+	if ((addr < SECURE_OS_ACS_SRAM_ADDR) || (addr > (SECURE_OS_ACS_SRAM_ADDR + SECURE_OS_ACS_LEN)))
+		arg.req_phy_addr = *((volatile unsigned int*)addr);
+	else
+		arg.req_phy_addr = meson_trustzone_sram_read_reg32(addr);
 	arg.res_phy_addr = SECURE_OS_ACS_DRAM_ADDR;
 	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
 
