@@ -38,13 +38,13 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #endif
 
 #ifdef DDR3_11_11_11
-	#define CFG_M6TV_DDR_CL  10
+	#define CFG_M6TV_DDR_CL  11
 	#define CFG_M6TV_DDR_FAW 32
 	#define CFG_M6TV_DDR_RAS 28
 	#define CFG_M6TV_DDR_RC  38
-	#define CFG_M6TV_DDR_RCD 10
+	#define CFG_M6TV_DDR_RCD 11
 	#define CFG_M6TV_DDR_RFC 240
-	#define CFG_M6TV_DDR_RP  10
+	#define CFG_M6TV_DDR_RP  11
 	#define CFG_M6TV_DDR_RRD 6
 	#define CFG_M6TV_DDR_WR  12
 	#define CFG_M6TV_DDR_CWL 8
@@ -165,7 +165,7 @@ static struct ddr_set __ddr_setting={
                     			(0 << 2 ) |   //[B2]cas latency bit 0.
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(1 << 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
                                 (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 #ifdef ENABLE_WRITE_LEVELING
                                 (1 << 7)|     // Write leveling enable
@@ -191,7 +191,7 @@ static struct ddr_set __ddr_setting={
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
                            ,
-                    .zq0cr0  = 0x109ad,
+                    .zq0cr0  =(0xd<<0)|(0xd<<5)|(0x3<<10)|(0x3<<15),
                     .zq0cr1  = 0x19, // 0x1d for GT ddr
                     .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
                     .t_dxccr_dqsres  = 0x1, //ODT: pull down, 688ohms
