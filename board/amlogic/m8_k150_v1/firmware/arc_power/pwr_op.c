@@ -351,8 +351,9 @@ void aml1216_set_pfm(int dcdc, int en)
      udelay__(1000); 
 }
 
-int aml1216_set_gpio(int pin, int val)
+int aml1216_set_gpio(int gpio, int val)
 {
+#if 0
     unsigned char data;
 
     if (pin <= 0 || pin > 3 || val > 1 || val < 0) {
@@ -367,6 +368,22 @@ int aml1216_set_gpio(int pin, int val)
     aml1216_set_bits(0x0013, data, (1 << pin));
     udelay__(50);
     return 0;
+#else
+    unsigned int data;
+
+    if (gpio > 4 || gpio <= 0) {
+        return;    
+    }
+
+    data = (1 << (gpio + 11));
+    if (val) {
+        i2c_pmu_write_w(PWR_DN_SW_ENABLE_ADDR, data);    
+    } else {
+        i2c_pmu_write_w(PWR_UP_SW_ENABLE_ADDR, data);    
+    }
+    udelay(100);
+    return 0;
+#endif
 }
 
 static unsigned int VDDEE_voltage_table[] = {                   // voltage table of VDDEE
@@ -499,7 +516,6 @@ void aml1216_power_off_at_24M()
 
     aml1216_set_bits(0x0035, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
     aml1216_set_bits(0x003e, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
-    aml1216_set_bits(0x0047, 0x03, 0x07);                               // set DCDC OCP to 0.95A to protect DCDC
 
     power_off_vcc_cam();                                                // close LDO6
     power_off_vcc28();                                                  // close LDO5
@@ -515,7 +531,7 @@ void aml1216_power_on_at_24M()
     wait_uart_empty();
     printf_arc("\n");
 
-    aml1216_set_gpio(3, 1);                                             // should open LDO1.2v before open VCCK
+    aml1216_set_gpio(3, 0);                                             // should open LDO1.2v before open VCCK
     udelay__(6 * 1000);                                                 // must delay 25 ms before open vcck
 
     power_on_vcck();                                                    // open DCDC1, vcck
@@ -535,14 +551,13 @@ void aml1216_power_on_at_24M()
 #endif
     aml1216_set_gpio(2, 0);                                     // open vccx2
 
-    aml1216_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
+    aml1216_set_gpio(3, 1);                                     // close ldo 1.2v when vcck is opened
     udelay__(1 * 1000);
     power_on_vcc50();
     i2c_pmu_write_b(0x0019, otg_status);
 
     aml1216_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
     aml1216_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
-    aml1216_set_bits(0x0047, 0x04, 0x07);                               // set DCDC OCP to 2A 
 }
 
 void aml1216_power_off_at_32K_1()

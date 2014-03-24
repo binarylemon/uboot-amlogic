@@ -313,6 +313,7 @@ int aml1216_set_gpio(int pin, int val)
         printf("ERROR, invalid input value, pin = %d, val= %d\n", pin, val);
         return -1;
     }
+#if 0
     if (val < 2) {
         data = ((val ? 1 : 0) << (pin));
     } else {
@@ -321,6 +322,16 @@ int aml1216_set_gpio(int pin, int val)
     }
     printf("%s, GPIO:%d, val:%d\n", __func__, pin, val);
     return aml1216_set_bits(0x0013, data, (1 << pin));
+#else
+    data = (1 << (pin + 11));
+    printf("%s, GPIO:%d, val:%d\n", __func__, pin, val);
+    if (val) {
+        aml1216_write16(0x0084, data);
+    } else {
+        aml1216_write16(0x0082, data);
+    }
+    return 0;
+#endif
 }
 
 int aml1216_get_gpio(int pin, int *val)
@@ -953,7 +964,6 @@ int aml1216_init(void)
 
     aml1216_set_bits(0x0035, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
     aml1216_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
-    aml1216_set_bits(0x0047, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
 
     aml1216_set_bits(0x0011, 0x03, 0x03);
     aml1216_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
@@ -986,9 +996,14 @@ int aml1216_init(void)
 
     aml1216_set_gpio(2, 0);                     // open VCCX2
     aml1216_set_gpio(3, 1);                     // close ldo 1.2v
-    udelay(1000 * 100);
+    aml1216_set_bits(0x001A, 0x00, 0x06);
+    aml1216_set_bits(0x0023, 0x00, 0x0e);
+    aml1216_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
+    udelay(1000 * 500);
     printf("%s, open boost\n", __func__);
     aml1216_write16(0x0082, 0x0001);            // software boost up
+    udelay(1000);
+    aml1216_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
     dump_pmu_register();
 
