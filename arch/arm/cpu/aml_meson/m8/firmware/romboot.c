@@ -268,9 +268,9 @@ m8_tpl_dec:
 #endif //CONFIG_M8_SECU_BOOT
 
 #if defined (CONFIG_VLSI_EMULATOR)
+m8_tpl_ucl_dec:
     serial_puts("Load uncompressed image from SD 1 for PxP!\n");
 #else
-
 
 #ifdef CONFIG_MESON_TRUSTZONE
 	sram = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECURE_OS_OFFSET_POSITION_IN_SRAM);

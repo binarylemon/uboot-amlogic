@@ -407,9 +407,7 @@ all:		$(ALL)
 ifeq ($(CONFIG_VLSI_EMULATOR),y)
 $(obj)u-boot.hex:	$(obj)u-boot.bin
 		xxd -p -c1 $< > $@
-		$(OBJDUMP) -D -x build/firmware.out > firmware.asm
-		cp -rf $@ ../out
-		cp -rf $@ ../../software/out
+		$(OBJDUMP) -D -x build/firmware.out > firmware.asm		
 endif
 
 
