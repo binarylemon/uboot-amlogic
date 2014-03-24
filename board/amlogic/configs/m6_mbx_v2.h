@@ -257,7 +257,7 @@
         "echo update...; run usb_burning; "\
         "if mmcinfo; then "\
             "if fatexist mmc 0 ${sdcburncfg}; then "\
-                "run sdc_burn ${sdcburncfg}; "\
+                "sdc_burn ${sdcburncfg}; "\
             "else "\
                 "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
                 "run recovery;"\

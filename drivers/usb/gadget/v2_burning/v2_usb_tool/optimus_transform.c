@@ -1,6 +1,7 @@
 #include "../v2_burning_i.h"
 #include "usb_pcd.h"
 #include "platform.h"
+#include <partition_table.h>
 
 #define MYDBG(fmt ...) printf("OPT]"fmt)
 
@@ -307,8 +308,6 @@ int optimus_mem_md (int argc, char * const argv[], char *info)
 
 int set_low_power_for_usb_burn(int arg, char* buff)
 {
-    int ret = 0;
-
     if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()){
         return 0;//just return ok as usb producing mode as LCD not initialized yet!
     }
@@ -342,13 +341,13 @@ int set_low_power_for_usb_burn(int arg, char* buff)
 int optimus_erase_bootloader(char* info)
 {
     int ret = 0;
+    extern int device_boot_flag;
 
 #if ROM_BOOT_SKIP_BOOT_ENABLED
     optimus_enable_romboot_skip_boot();
 #else
-    if(optimus_storage_init(0)){
-        DWN_ERR("Fail in storage_init\n");
-        //return __LINE__;
+    if(SPI_EMMC_FLAG == device_boot_flag || SPI_NAND_FLAG == device_boot_flag){
+        run_command("sf probe 2", 0);
     }
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
