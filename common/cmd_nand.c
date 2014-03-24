@@ -367,6 +367,10 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		return 0;
 	}
+	if (strcmp(cmd, "init") == 0) {
+		nand_init();
+		return 0;
+	}	
 //cmd for nand test , if nand is ok , then trigger power off
 	if (strcmp(cmd, "test") == 0) {
 		int ret=-1;
@@ -905,6 +909,7 @@ U_BOOT_CMD(nand, CONFIG_SYS_MAXARGS, 1, do_nand,
 	"nand  show_para_page 0|1\n"
 #endif
 	"nand  errstat \n"
+	"nand init\n"
 );
 
 static int nand_load_image(cmd_tbl_t *cmdtp, nand_info_t *nand,

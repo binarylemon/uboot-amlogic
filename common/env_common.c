@@ -222,7 +222,12 @@ int env_import(const char *buf, int check)
 		if (crc32(0, ep->data, ENV_SIZE) != crc) {
 			set_default_env("!bad CRC");
 			return 0;
-		}
+        }else if(ep->data[0] == 0xff){
+			printf("check env data = 0xff, set default env\n");
+			set_default_env("!check env data is 0xff");
+			saveenv();
+			return 0;
+ 		}
 	}
 
 	if (himport_r(&env_htab, (char *)ep->data, ENV_SIZE, '\0', 0)) {
