@@ -146,7 +146,7 @@ static int key_securestorage_write(char *keyname,unsigned char *keydata,unsigned
 {
 	int err = -EINVAL;
 #ifdef CONFIG_SECURESTORAGEKEY
-	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+	if(flag >= KEY_M_MAX_DF){
 		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
 		return -EINVAL;
 	}
@@ -158,7 +158,7 @@ static int key_securestorage_read(char *keyname,unsigned char *keydata,unsigned 
 {
 	int err = -EINVAL;
 #ifdef CONFIG_SECURESTORAGEKEY
-	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
+	if(flag >= KEY_M_MAX_DF){
 		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
 		return -EINVAL;
 	}
@@ -231,8 +231,8 @@ static int key_efuse_write(char *keyname,unsigned char *keydata,unsigned int dat
 #ifdef CONFIG_EFUSE
 	char *title = keyname;
 	efuseinfo_item_t info;
-	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
-		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+	if(flag >= KEY_M_MAX_DF){
+		printf("%s:%d,%s key config [%x] err\n",__func__,__LINE__,keyname, flag);
 		return -EINVAL;
 	}
 
@@ -261,8 +261,8 @@ static int key_efuse_read(char *keyname,unsigned char *keydata,unsigned int data
 	efuseinfo_item_t info;
 	int err=0;
 	char *buf;
-	if((flag != KEY_M_HEXDATA)||(flag != KEY_M_HEXASCII)||(flag != KEY_M_ALLASCII)){
-		printf("%s:%d,%s key config err\n",__func__,__LINE__,keyname);
+	if(flag >= KEY_M_MAX_DF){
+		printf("%s:%d,%s key config[%x] err\n",__func__,__LINE__,keyname, flag);
 		return -EINVAL;
 	}
 

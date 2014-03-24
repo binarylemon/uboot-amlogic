@@ -237,7 +237,7 @@ int unifykey_dt_parse(void)
 	punifykey_num = (char*)fdt_getprop((const void *)dt_addr, nodeoffset, "efuse-version",NULL);
 	if(punifykey_num){
 		unify_key_info.efuse_version = be32_to_cpup((unsigned int*)punifykey_num);
-//		printf("efuse-version config is %x\n",unify_key_info.efuse_version);
+		printf("efuse-version config is %x\n",unify_key_info.efuse_version);
 	}
 	
 	unify_key_info.key_num = 0;

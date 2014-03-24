@@ -348,7 +348,7 @@ int optimus_erase_bootloader(char* info)
 #else
     if(optimus_storage_init(0)){
         DWN_ERR("Fail in storage_init\n");
-        return __LINE__;
+        //return __LINE__;
     }
     ret = store_erase_ops((u8*)"boot", 0, 0, 0);
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED

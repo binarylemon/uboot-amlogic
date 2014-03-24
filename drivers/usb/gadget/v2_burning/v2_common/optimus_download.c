@@ -89,7 +89,7 @@ struct imgBurnInfo_bootloader{
 COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 
 
-#if defined(CONFIG_ACS)
+#if defined(CONFIG_ACS) && !defined(CONFIG_M8_SECU_BOOT)
 static void _show_partition_table(const struct partitions* pPartsTab)
 {
 	int i=0;
@@ -1064,10 +1064,16 @@ int optimus_set_burn_complete_flag(void)
     if(check_uboot_loaded_for_burn(0))
     {
         upgrade_step = "2";
-        rc = run_command("defenv", 0);//use new env directly if uboot is new !!!
-        if(rc){
-            DWN_ERR("Fail in defenv!, rc=%d\n", rc);
-            return __LINE__;
+
+        //Don't re-defenv when usb pruducing as it has bug when spi boot. 
+        //Luckly, usb burn don't modify any env!!!!!
+        if(OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get())
+        {
+            rc = run_command("defenv", 0);//use new env directly if uboot is new !!!
+            if(rc){
+                DWN_ERR("Fail in defenv!, rc=%d\n", rc);
+                return __LINE__;
+            }
         }
     }
 

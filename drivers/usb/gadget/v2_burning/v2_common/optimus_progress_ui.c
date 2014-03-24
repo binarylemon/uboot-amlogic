@@ -29,14 +29,14 @@ const char* env_ui_report_burning = "bmp display ${upgrade_upgrading_offset}";
 int video_res_prepare_for_upgrade(HIMAGE hImg)
 {
     char* env_name  = NULL;
-    const char* env_value = NULL;
     int ret = 0;
+    const char* UpgradeLogoAddr = (const char*)OPTIMUS_DOWNLOAD_DISPLAY_BUF;
+    char env_buf[32];
 
-    env_value = "unpackimg ${loadaddr_misc}";
-    ret = run_command(env_value, 0);
-    if(ret)
+    sprintf(env_buf, "unpackimg 0x%p", UpgradeLogoAddr);
+    DWN_MSG("%s\n", env_buf);
+    if(1)
     {//Failed to load logo resources from memory, then Load it from package
-        void* resAddr      = (void*)simple_strtoul(getenv("loadaddr_misc"), NULL, 0);
         unsigned imgItemSz = 0;
         HIMAGEITEM hItem = NULL;
 
@@ -48,14 +48,14 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
         }
 
         imgItemSz = (unsigned)image_item_get_size(hItem);
-        ret = image_item_read(hImg, hItem, resAddr, imgItemSz);
+        ret = image_item_read(hImg, hItem, (void*)UpgradeLogoAddr, imgItemSz);
         if(ret){
             DWN_ERR("Fail to read item logo\n");
             image_item_close(hItem); return __LINE__;
         }
         image_item_close(hItem);
 
-        ret = run_command(env_value, 0);
+        ret = run_command(env_buf, 0);
         if(ret){
             DWN_ERR("Exception: Fail to unpack image in the package.\n");
             return __LINE__;
@@ -64,7 +64,6 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
 
     //video prepare to show upgrade bmp
     {
-        char env_buf[32];
 
 #ifdef CONFIG_VIDEO_AMLLCD
         if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get())
@@ -111,7 +110,11 @@ static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report b
     char* bmpAddrEnv = getenv((char*)bmpOffsetName);
 
     if(!bmpAddrEnv){
-        ret = run_command("unpackimg ${loadaddr_misc}", 0);//need re-unpack after 'defenv'
+        const char* UpgradeLogoAddr = (const char*)OPTIMUS_DOWNLOAD_DISPLAY_BUF;
+        char env_buf[32];
+        sprintf(env_buf, "unpackimg 0x%p", UpgradeLogoAddr);
+
+        ret = run_command(env_buf, 0);//need re-unpack after 'defenv'
         if(ret){
             DWN_ERR("Fail in re-unpack res img\n");
             return __LINE__;

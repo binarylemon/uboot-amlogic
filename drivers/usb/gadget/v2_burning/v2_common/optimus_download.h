@@ -89,8 +89,8 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_KEY_DECRYPT_BUF                 OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW//buffer for decrypt the key
 #define OPTIMUS_KEY_DECRYPT_BUF_SZ              OPTIMUS_DOWNLOAD_SLOT_SZ              
 
-#define OPTIMUS_DOWNLOAD_DISPLAY_BUF            (OPTIMUS_DOWNLOAD_SPARSE_INFO_FOR_VERIFY + (2U<<20))//buffer to display logo
-#define OPTIMUS_DOWNLOAD_BUF_FREE_USE           (OPTIMUS_DOWNLOAD_DISPLAY_BUF + (2U<<20))//free buffer not used by downloading
+#define OPTIMUS_DOWNLOAD_DISPLAY_BUF            (OPTIMUS_DOWNLOAD_SPARSE_INFO_FOR_VERIFY + (2U<<20))//buffer to display logo, 10M used now
+#define OPTIMUS_DOWNLOAD_BUF_FREE_USE           (OPTIMUS_DOWNLOAD_DISPLAY_BUF + (10U<<20))//free buffer not used by downloading, 2 + 64 + 2 + 10 
 
 #define COMPILE_TIME_ASSERT(expr)       typedef char assert_type[(expr) ? 1 : -1]
 

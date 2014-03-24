@@ -67,7 +67,6 @@
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
 #define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
-#define CONFIG_SD_BURNING_SUPPORT_LED    1//1 then using led flickering states changing to show burning states when sdcard burning
 #define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
 #endif// #if CONFIG_AML_V2_USBTOOL
 
@@ -154,7 +153,7 @@
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
 
-#define CONFIG_IMPROVE_UCL_DEC   1
+//#define CONFIG_IMPROVE_UCL_DEC   1
 
 #ifdef CONFIG_IMPROVE_UCL_DEC
 #define UCL_DEC_EN_IDCACHE        1
@@ -209,6 +208,7 @@
 	"cvbsenable=false\0" \
 	"vdacswitchmode=cvbs\0" \
     "usb_burning=update 1000\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"firstboot=1\0" \
 	"preboot="\
         "run upgrade_check; "\
@@ -257,7 +257,7 @@
         "echo update...; run usb_burning; "\
         "if mmcinfo; then "\
             "if fatexist mmc 0 ${sdcburncfg}; then "\
-                "run sdc_burning; "\
+                "run sdc_burn ${sdcburncfg}; "\
             "else "\
                 "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
                 "run recovery;"\

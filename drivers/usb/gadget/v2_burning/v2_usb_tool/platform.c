@@ -191,7 +191,10 @@ static void set_usb_phy_config(int cfg)
 
 void close_usb_phy_clock(int cfg)
 {
-    dwc_otg_power_off_phy();//close phy
+    dwc_otg_pullup(0);//disconnect
+    __udelay(20);
+
+    //dwc_otg_power_off_phy();//close phy
     return;
 }
 
