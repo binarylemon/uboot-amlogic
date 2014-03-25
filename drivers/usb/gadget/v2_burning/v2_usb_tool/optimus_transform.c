@@ -308,9 +308,7 @@ int optimus_mem_md (int argc, char * const argv[], char *info)
 
 int set_low_power_for_usb_burn(int arg, char* buff)
 {
-#if defined CONFIG_VIDEO_AMLLCD || USB_BURN_POWER_CONTROL
     int ret = 0;
-#endif // defined CONFIG_VIDEO_AMLLCD || USB_BURN_POWER_CONTROL
 
     if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()){
         return 0;//just return ok as usb producing mode as LCD not initialized yet!
@@ -319,7 +317,7 @@ int set_low_power_for_usb_burn(int arg, char* buff)
 #if defined(CONFIG_VIDEO_AMLLCD)
     //axp to low power off LCD, no-charging
     MYDBG("To close LCD\n");
-    int ret = run_command("video dev disable", 0);
+    ret = run_command("video dev disable", 0);
     if(ret){
         if(buff) sprintf(buff, "Fail to close back light");
         printf("Fail to close back light\n");
