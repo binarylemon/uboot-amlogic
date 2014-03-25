@@ -10,7 +10,7 @@
 #include "aml_keys.h"
 #include <amlogic/securitykey.h>
 
-#include <asm/arch/meson_cpu.h>
+#include <asm/arch/cpu.h>
 #define key_schem_print(a...)   //printk(a)
 
 
@@ -72,6 +72,7 @@ struct v3_key_storage_head storage_head={
 					 * version 2: key is encrypted with aml_keysafety_encrypt(aes), the aes is polarssl algorithm
 					 * above two aes way is different, 
 					 */
+
 #else
 	.version = 1,
 #endif

@@ -6,6 +6,7 @@
 #ifndef _CPU_H
 #define _CPU_H
 #include <config.h>
+#include <asm/plat-cpu.h>
 #if CONFIG_AML_MESON==0
 #error please define CONFIG_AML_MESON
 #endif
@@ -291,5 +292,9 @@
 //support "editenv"
 #define CONFIG_CMD_EDITENV 1
 /*default command select end*/
+
+
+
+#define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8
 
 #endif /* _CPU_H */
