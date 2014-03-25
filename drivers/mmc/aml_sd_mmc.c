@@ -16,9 +16,9 @@
 #include <asm/arch/sdio.h>
 #include <mmc.h>
 
-//#ifdef CONFIG_STORE_COMPATIBLE
+#ifdef CONFIG_STORE_COMPATIBLE
 #include <asm/arch/storage.h>
-//#endif
+#endif
 
 #define sd_debug(a...) debug("[%08u,%s]:",(unsigned int)get_timer(0),__func__);debug(a);debug("\n")
 #define PREG_SDIO_CFG     	CBUS_REG_ADDR(SDIO_CONFIG)
