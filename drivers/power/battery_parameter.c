@@ -69,7 +69,7 @@
 #define MIN_VBUS_CURRENT_LIMIT  100                     // min VBUS current limit
 #endif
 
-#ifdef CONFIG_AML1216
+#if defined(CONFIG_AML1216) || defined(CONFIG_AML1218)
 #define MAX_CHARGE_CURRENT      2000000                 // max charging current, in uA
 #define MIN_CHARGE_CURRENT      0                       // min charging current, in uA
 #define MAX_CHARGE_VOLTAGE      4400000                 // max charge target voltage, in uV

@@ -27,6 +27,8 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
     #define DEVID 0x64
 #elif defined CONFIG_AML1216
     #define DEVID 0x6A
+#elif defined CONFIG_AML1218
+    #define DEVID 0x6A
 #else
     #warning no PMU device is selected
 #endif
@@ -424,7 +426,7 @@ void rn5t618_power_init(int init_mode)
 #define AML1216_LDO1                 5
 #define AML1216_LDO2                 6
 #define AML1216_LDO3                 7
-#define AAML1216_LDO4                8
+#define AML1216_LDO4                 8
 #define AML1216_LDO5                 9
 
 static unsigned int VDDEE_voltage_table[] = {                   // voltage table of VDDEE
@@ -541,7 +543,6 @@ int aml1216_set_dcdc_voltage(int dcdc, int voltage)
     int range    = 64;
     int step     = 19;
     int start    = 1881;
-    int bit_mask = 0x3f;
     int idx_cur;
     int val;
 
@@ -553,7 +554,6 @@ int aml1216_set_dcdc_voltage(int dcdc, int voltage)
         step     = 50; 
         range    = 64; 
         start    = 3600;
-        bit_mask = 0x1f;
     }
     idx_cur  = hard_i2c_read168(DEVID, addr);
     idx_to   = find_idx(start, voltage, step, range);
@@ -835,6 +835,425 @@ void aml1216_power_init(int init_mode)
 }
 #endif
 
+#ifdef CONFIG_AML1218
+
+#define AML1218_DCDC1                1
+#define AML1218_DCDC2                2
+#define AML1218_DCDC3                3
+#define AML1218_BOOST                4
+
+#define AML1218_LDO1                 5
+#define AML1218_LDO2                 6
+#define AML1218_LDO3                 7
+#define AML1218_LDO4                 8
+#define AML1218_LDO5                 9
+
+static unsigned int VDDEE_voltage_table[] = {                   // voltage table of VDDEE
+    1184, 1170, 1156, 1142, 1128, 1114, 1100, 1086, 
+    1073, 1059, 1045, 1031, 1017, 1003, 989, 975, 
+    961,  947,  934,  920,  906,  892,  878, 864, 
+    850,  836,  822,  808,  794,  781,  767, 753 
+};
+
+int find_idx_by_vddEE_voltage(int voltage, unsigned int *table)
+{
+    int i;
+
+    for (i = 0; i < 32; i++) {
+        if (voltage >= table[i]) {
+            break;    
+        }
+    }
+    if (voltage == table[i]) {
+        return i;    
+    }
+    return i - 1;
+}
+
+int aml1218_set_vddEE_voltage(int voltage)
+{
+    int addr = 0x005d;
+    int idx_to, idx_cur;
+    unsigned current;
+    unsigned char val;
+ 
+    val = hard_i2c_read168(DEVID, addr);
+    idx_cur = ((val & 0x7c) >> 2);
+    idx_to = find_idx_by_vddEE_voltage(voltage, VDDEE_voltage_table);
+
+    current = idx_to*5; 
+
+    print_voltage_info("VDDEE", -1, voltage, idx_cur, idx_to, addr);
+    
+    val &= ~0x7c;
+    val |= (idx_to << 2);
+
+    hard_i2c_write168(DEVID, addr, val);
+    __udelay(5 * 100);
+}
+
+void aml1218_set_bits(uint32_t add, uint8_t bits, uint8_t mask)
+{
+    uint8_t val;
+    val = hard_i2c_read168(DEVID, add);
+    val &= ~(mask);                                         // clear bits;
+    val |=  (bits & mask);                                  // set bits;
+    hard_i2c_write168(DEVID, add, val);
+}
+
+int find_idx(int start, int target, int step, int size)
+{
+    int i = 0; 
+    do { 
+        if ((start - step) < target) {
+            break;    
+        }    
+        start -= step;
+        i++; 
+    } while (i < size);
+    return i;
+}
+
+void aml1218_set_pfm(int dcdc, int en)
+{
+    unsigned char val;
+    unsigned char bit, addr;
+
+    if (dcdc < 1 || dcdc > AML1218_DCDC3 || en > 1 || en < 0) {
+        return ;    
+    }
+    switch(dcdc) {
+    case AML1218_DCDC1:
+        addr = 0x3b;
+        bit  = 5;
+        break;
+
+    case AML1218_DCDC2:
+        addr = 0x44;
+        bit  = 5;
+        break;
+
+    case AML1218_DCDC3:
+        addr = 0x4e;
+        bit  = 7;
+        break;
+
+    case AML1218_BOOST:
+        addr = 0x28;
+        bit  = 0;
+        break;
+
+    default:
+        break;
+    }
+    if (en) {
+        val = 1 << bit;
+    } else {
+        val = 0 << bit;    
+    }
+    aml1218_set_bits(addr, val, (1 << bit));
+    __udelay(100);
+}
+
+int aml1218_set_dcdc_voltage(int dcdc, int voltage)
+{
+    int addr;
+    int idx_to;
+    int range    = 64;
+    int step     = 19;
+    int start    = 1881;
+    int idx_cur;
+    int val;
+
+    if (dcdc > 3 || dcdc < 0) {
+        return -1;    
+    }
+    addr = 0x34+(dcdc-1)*9;
+    if (dcdc == 3) {
+        step     = 50; 
+        range    = 64; 
+        start    = 3600;
+    }
+    idx_cur  = hard_i2c_read168(DEVID, addr);
+    idx_to   = find_idx(start, voltage, step, range);
+    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
+    val = idx_cur;
+    idx_cur = (idx_cur & 0x7e) >> 1;
+    while (idx_cur != idx_to) {
+        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
+            idx_cur++;    
+        } else {
+            idx_cur--;
+        }
+        val &= ~0x7e;
+        val |= (idx_cur << 1);
+        hard_i2c_write168(DEVID, addr, val);
+        __udelay(100);                                          // atleast delay 100uS
+    }
+    __udelay(100);                         // wait a moment
+    return 0;
+}
+
+static int ldo2_voltage[] = {
+    3330, 3290, 3240, 3190,  3140, 3090, 3040, 2990, 
+    2940, 2890, 2840, 2790,  2740, 2690, 2640, 2600, 
+    2560, 2510, 2460, 2410,  2360, 2310, 2260, 2210, 
+    2160, 2110, 2060, 2010,  1960, 1910, 1860, 1820, 
+    2200, 2160, 2110, 2060,  2010, 1960, 1910, 1860, 
+    1810, 1760, 1710, 1660,  1610, 1560, 1510, 1460, 
+    1420, 1380, 1330, 1280,  1230, 1180, 1130, 1080,
+    1030,  980,  930,  880,   830,  780,  730,  680
+};
+
+static int ldo3_voltage[] = {
+    3640, 3600, 3550, 3500,  3450, 3400, 3350, 3300, 
+    3250, 3200, 3150, 3100,  3050, 3000, 2950, 2900, 
+    2800, 2760, 2710, 2660,  2610, 2560, 2510, 2460, 
+    2410, 2360, 2310, 2260,  2210, 2160, 2110, 2070, 
+    2250, 2220, 2170, 2120,  2070, 2020, 1970, 1920, 
+    1870, 1820, 1770, 1720,  1670, 1620, 1570, 1530, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720, 680
+};
+
+static int ldo4_voltage[] = {
+    3640, 3600, 3550, 3500,  3450, 3400, 3350, 3300,
+    3250, 3200, 3150, 3100,  3050, 3000, 2950, 2900, 
+    2800, 2760, 2710, 2660,  2610, 2560, 2510, 2460, 
+    2410, 2360, 2310, 2260,  2210, 2160, 2110, 2070, 
+    2250, 2220, 2170, 2120,  2070, 2020, 1970, 1920, 
+    1870, 1820, 1770, 1720,  1670, 1620, 1570, 1530, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+static int ldo5_voltage[] = {
+    3320, 3270, 3220, 3170,  3120, 3070, 3020, 2970, 
+    2920, 2870, 2820, 2770,  2720, 2670, 2620, 2570, 
+    2530, 2500, 2450, 2400,  2350, 2300, 2250, 2200, 
+    2150, 2100, 2050, 2000,  1950, 1900, 1850, 1810, 
+    2200, 2140, 2090, 2040,  1990, 1940, 1890, 1840, 
+    1790, 1740, 1690, 1640,  1590, 1540, 1490, 1440, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+static int ldo6_voltage[] = {
+    3410, 3380, 3330, 3280,  3230, 3180, 3130, 3080, 
+    3030, 2980, 2940, 2900,  2860, 2820, 2780, 2700, 
+    2600, 2550, 2490, 2450,  2410, 2370, 2330, 2290, 
+    2250, 2210, 2170, 2130,  2090, 2050, 2010, 1950, 
+    2010, 1970, 1930, 1890,  1850, 1810, 1770, 1730, 
+    1690, 1650, 1610, 1570,  1530, 1500, 1460, 1420, 
+    1260, 1220, 1180, 1140,  1100, 1060, 1020,  980, 
+     940,  900,  860,  820,   780,  740,  700,  660
+};
+
+static int ldo7_voltage[] = {
+    3930, 3870, 3820, 3770,  3720, 3660, 3610, 3570, 
+    3620, 3570, 3520, 3470,  3420, 3370, 3320, 3270, 
+    3010, 2960, 2910, 2860,  2810, 2760, 2710, 2660, 
+    2610, 2560, 2510, 2460,  2410, 2360, 2310, 2260, 
+    2300, 2250, 2200, 2150,  2100, 2050, 2000, 1950, 
+    1990, 1940, 1890, 1840,  1790, 1740, 1690, 1640, 
+    1410, 1370, 1320, 1270,  1220, 1170, 1120, 1070, 
+    1020,  970,  920,  870,   820,  770,  720,  680
+};
+
+struct ldo_attr {
+    int ldo;
+    int addr;
+    int mask;
+    int size;
+    int *voltage_table;
+};
+
+static struct ldo_attr aml1218_ldo_attr[] = {
+    {
+        .ldo  = 2,
+        .addr = 0x62,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo2_voltage,
+    }, 
+    {
+        .ldo  = 3,
+        .addr = 0x65,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo3_voltage,
+    }, 
+    {
+        .ldo  = 4,
+        .addr = 0x68,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo4_voltage,
+    }, 
+    {
+        .ldo  = 5,
+        .addr = 0x6b,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo5_voltage,
+    }, 
+    {
+        .ldo  = 6,
+        .addr = 0x6e,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo6_voltage,
+    }, 
+    {
+        .ldo  = 7,
+        .addr = 0x71,
+        .mask = 0x3f,
+        .size = 64,
+        .voltage_table = ldo7_voltage,
+    }, 
+};
+
+int aml1218_set_ldo_voltage(int ldo, int voltage)
+{
+    int idx_cur, idx_to, i, j;
+    struct ldo_attr *attr = aml1218_ldo_attr;
+
+    for (i = 0; i < ARRAY_SIZE(aml1218_ldo_attr); i++) {
+        if (attr[i].ldo == ldo) {
+            break;
+        } 
+    }
+    if (i >= ARRAY_SIZE(aml1218_ldo_attr)) {
+        serial_puts("Wrong LDO value:");
+        serial_put_hex(ldo, 8);
+        serial_puts("\n");
+        return -1;
+    }
+
+    for (j = 0; j < attr[i].size - 1; j++) {
+        if (attr[i].voltage_table[j] >= voltage && attr[i].voltage_table[j + 1] <= voltage) {
+            break;    
+        }
+    }
+    if (j >= attr[i].size - 1) {
+        serial_puts("Wrong voltage value:");
+        serial_put_hex(voltage, 32);
+        serial_puts("\n");
+        return -1;
+    }
+
+    idx_to = j;
+    idx_cur = hard_i2c_read168(DEVID, attr[i].addr);
+    
+    print_voltage_info("LDO", ldo, voltage, idx_cur, idx_to, attr[i].addr);
+    aml1218_set_bits(attr[i].addr, (uint8_t)idx_to, attr[i].mask);
+    __udelay(5 * 100);
+}
+
+void aml1218_check_vbat(int init)
+{
+    unsigned char val1, val2, val3;
+
+    if (init) {
+        val1 = hard_i2c_read168(DEVID, 0x0087);
+        val2 = hard_i2c_read168(DEVID, 0x0088);
+        val3 = hard_i2c_read168(DEVID, 0x0089);
+        serial_puts("-- fault status: ");
+        serial_put_hex(val1, 8);
+        serial_put_hex(val2, 8);
+        serial_put_hex(val3, 8);
+        serial_puts("\n");
+        __udelay(10 * 1000);
+        hard_i2c_write168(DEVID, 0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
+        hard_i2c_write168(DEVID, 0x009C, 0x10);
+        hard_i2c_write168(DEVID, 0x009D, 0x04);//close force charge and discharge sample mask
+        hard_i2c_write168(DEVID, 0x009E, 0x08);//enable VBAT measure result average 4 samples
+        hard_i2c_write168(DEVID, 0x009F, 0x20);//enable IBAT measure result average 4 samples
+        hard_i2c_write168(DEVID, 0x009A, 0x20);
+        hard_i2c_write168(DEVID, 0x00B8, 0x00);
+        hard_i2c_write168(DEVID, 0x00A9, 0x8f);
+
+        hard_i2c_write168(DEVID, 0x00A0, 0x01);//select auto-sampling timebase is 2ms
+        hard_i2c_write168(DEVID, 0x00A1, 0x15);//set the IBAT measure threshold and enable auto IBAT +VBAT_in_active sample
+        hard_i2c_write168(DEVID, 0x00C9, 0x06);// open DCIN_OK and USB_OK IRQ
+    }
+    __udelay(80000);
+    val1 = hard_i2c_read168(DEVID, 0x00af);
+    val2 = hard_i2c_read168(DEVID, 0x00b0);
+    serial_puts("\n-- vbat: 0x");
+    serial_put_hex(val2, 8);
+    serial_put_hex(val1, 8);
+    serial_puts("\n");
+}
+
+void aml1218_power_init(int init_mode)
+{
+    aml1218_check_vbat(1);
+    if (init_mode == POWER_INIT_MODE_NORMAL) {
+#ifdef CONFIG_VCCK_VOLTAGE
+        aml1218_set_vddEE_voltage(CONFIG_VCCK_VOLTAGE); 
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_DDR_VOLTAGE
+        aml1218_set_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
+        __udelay(2000);              
+#endif
+
+#ifdef CONFIG_VDDAO_VOLTAGE
+        aml1218_set_dcdc_voltage(1, CONFIG_VDDAO_VOLTAGE); 
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_VCC3V3
+        //aml1218_set_dcdc_voltage(3, CONFIG_VCC3V3);
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_IOREF_1V8
+        aml1218_set_ldo_voltage(2, CONFIG_IOREF_1V8);
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_VCC2V8 
+        aml1218_set_ldo_voltage(3, CONFIG_VCC2V8);
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_DVDD_1V8 
+        aml1218_set_ldo_voltage(4, CONFIG_DVDD_1V8);
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_VCC2V5 
+        aml1218_set_ldo_voltage(5, CONFIG_VCC2V5);
+        __udelay(2000);
+#endif
+
+#ifdef CONFIG_VCC_CAM
+        aml1218_set_ldo_voltage(6, CONFIG_VCC_CAM);
+        hard_i2c_write168(DEVID, 0x83, 0x01);                           // open LDO6
+#endif
+
+#ifdef CONFIG_VDDIO_AO28
+        aml1218_set_ldo_voltage(7, CONFIG_VDDIO_AO28);
+        __udelay(2000);
+#endif
+    } else if (init_mode == POWER_INIT_MODE_USB_BURNING) {
+        /*
+         * if under usb burning mode, keep VCCK and VDDEE
+         * as low as possible for power saving and stable issue
+         */
+        aml1218_set_dcdc_voltage(1, 900);                       // set cpu voltage                      
+        aml1218_set_vddEE_voltage(950);                         // set VDDEE voltage
+    }
+    aml1218_set_pfm(1, 0);                                      // DC1 ~ 3 to fix PWM
+    aml1218_set_pfm(2, 0);
+    aml1218_set_pfm(3, 0);
+    aml1218_check_vbat(0);
+}
+#endif
+
 void power_init(int init_mode)
 {
     hard_i2c_init();
@@ -855,6 +1274,8 @@ void power_init(int init_mode)
     rn5t618_power_init(init_mode);
 #elif defined CONFIG_AML1216
     aml1216_power_init(init_mode);
+#elif defined CONFIG_AML1218
+    aml1218_power_init(init_mode);
 #endif
     __udelay(1000);
 }

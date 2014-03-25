@@ -103,4 +103,10 @@ endif
 	@echo The mark in board is "M8_k150_V1"
 	@echo config command: \"make m8_k150_v1_config\"
 	@echo
+
+	@echo =======================================================================
+	@echo The mark in board is "M8_k160_V1"
+	@echo config command: \"make m8_k160_v1_config\"
+	@echo
+
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)
