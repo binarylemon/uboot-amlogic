@@ -221,6 +221,7 @@ static int menukey = 0;
 static __inline__ int abortboot(int bootdelay)
 {
 	int abort = 0;
+	char cKey = 0; //for key filter, only "enter" key can triger abort
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
     char key;
 #endif
@@ -228,7 +229,7 @@ static __inline__ int abortboot(int bootdelay)
 #ifdef CONFIG_MENUPROMPT
 	printf(CONFIG_MENUPROMPT);
 #else
-	printf("Hit any key to stop autoboot -- : %2d ", bootdelay);
+	printf("Hit Enter key to stop autoboot -- : %2d ", bootdelay);
 #endif
 
 #if defined CONFIG_ZERO_BOOTDELAY_CHECK
@@ -238,8 +239,9 @@ static __inline__ int abortboot(int bootdelay)
 	 */
 	if (bootdelay >= 0) {
 		if (tstc()) {	/* we got a key press	*/
-			(void) getc();  /* consume input	*/
+			cKey = getc();  /* consume input	*/
 			puts ("\b\b\b 0");
+			if(13 == cKey) //only "enter" key can triger abort
 			abort = 1;	/* don't auto boot	*/
 		}
 	}
@@ -253,21 +255,26 @@ static __inline__ int abortboot(int bootdelay)
 		for (i=0; !abort && i<100; ++i) {
 			if (tstc()) {	/* we got a key press	*/
 				printf("tstc enter\n");
-				abort  = 1;	/* don't auto boot	*/
-				bootdelay = 0;	/* no more delay	*/
 # ifdef CONFIG_MENUKEY
 				menukey = getc();
+				cKey = menukey;
             #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
                 key = menukey;
             #endif
 # else
             #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 				key = getc();  /* consume input	*/
+				cKey = key;
             #else
-                getc();
+                cKey = getc();
             #endif
 # endif
-				break;
+				if(13 == cKey) //only "enter" key can triger abort
+				{
+					abort  = 1; /* don't auto boot	*/
+					bootdelay = 0;	/* no more delay	*/
+					break;
+				}
 			}
 			//printf("%2d\n",i);
 #if defined(CONFIG_VLSI_EMULATOR)
