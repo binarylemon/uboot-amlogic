@@ -154,7 +154,7 @@
 
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
-#define CONFIG_SYS_LONGHELP	1
+//#define CONFIG_SYS_LONGHELP	1
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
@@ -268,7 +268,7 @@
 		"fi\0" \
 		\
 	"recovery="\
-		"run prepare; bmp display ${bootup_offset}; "\
+		"run prepare; bmp display ${poweron_offset}; "\
 		"if imgread kernel recovery ${loadaddr}; then "\
 			"setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
 		"else "\
@@ -317,20 +317,20 @@
 	"sleep_get_key="\
 		"run aconline_or_not;"\
 		"if getkey; then " \
-			"msleep 100; "\
+			"msleep 50; "\
 			"if getkey; then "\
 				"setenv sleep_enable 0; "\
 			"fi; "\
 		"fi; "\
 		"if saradc get_in_range 0x0 0x380; then "\
-			"msleep 100; "\
+			"msleep 50; "\
 			"if saradc get_in_range 0x0 0x380; then "\
 				"setenv sleep_enable 0; fi; "\
 			"fi\0" \
 		\
 	"powerkey_or_not="\
 		"if getkey; then "\
-			"msleep 500; "\
+			"msleep 50; "\
 			"if getkey; then "\
 				"video clear; bmp display ${poweron_offset};run bootcmd; "\
 			"fi; "\
@@ -338,7 +338,7 @@
 		\
 	"updatekey_or_not="\
 		"if saradc get_in_range 0x95 0x150; then "\
-			"msleep 500; " \
+			"msleep 50; " \
 			"if getkey; then "\
 				"if saradc get_in_range 0x95 0x150; then "\
 					"run update; "\
@@ -510,7 +510,7 @@
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
 #define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
-#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
+//#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
 /* Pass open firmware flat tree*/
