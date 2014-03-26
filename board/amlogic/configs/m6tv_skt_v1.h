@@ -277,6 +277,8 @@
 //M6TV L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
 
+//DDR pre-init setting
+//#define CONFIG_AML_DDR_PRESET 1
 /*-----------------------------------------------------------------------
  * power down
  */

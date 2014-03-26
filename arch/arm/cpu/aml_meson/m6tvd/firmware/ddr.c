@@ -180,6 +180,19 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 //complete DDR init setting with a full memory test
 #define DDR_TEST_ALL    (DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
+#if defined(CONFIG_AML_DDR_PRESET)
+	//Note: function implement is locate in timming.c for each board
+	//		   e.g:  m6tvd_skt_v1/firmware/timming.c	
+	if(aml_ddr_pre_init())
+	{
+		serial_puts("\nDDR pre-init fail! Reset...\n");
+		__udelay(10000); 
+		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);		
+		while(1);
+	}
+#endif //CONFIG_AML_DDR_PRESET
+
+
 	if(m6_ddr_init_test(DDR_TEST_BASEIC))
     {
 	    serial_puts("\nDDR init test fail! Reset...\n");

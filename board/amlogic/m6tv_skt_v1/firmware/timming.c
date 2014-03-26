@@ -285,3 +285,24 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 
 STATIC_PREFIX_DATA char init_script[DEBUGROM_CMD_BUF_SIZE] __attribute__((section(".setting")))
 ="r c1107d54";
+
+
+#if defined(CONFIG_AML_DDR_PRESET)
+int aml_ddr_pre_init()
+{
+	int nRet = 0;
+	//here you can add action to adjust __ddr_setting with input (e.g. DDR capacity)
+	//...
+	
+	
+	serial_puts("\nAml log : "); //demo code
+	serial_puts(CONFIG_SYS_PROMPT); //demo code
+	serial_puts("\b ddr pre-init "); //demo code
+	serial_puts(nRet ? "fail\n" : "pass\n"); //demo code
+	
+
+	//IMPORTANT: if nRet is none-zero then the system will reset with watch dog
+	return nRet;
+}
+#endif //CONFIG_AML_DDR_PRESET
+
