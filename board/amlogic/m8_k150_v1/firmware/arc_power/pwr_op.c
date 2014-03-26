@@ -526,6 +526,7 @@ void aml1216_power_off_at_24M()
 void aml1216_power_on_at_24M()
 {
     printf_arc("enter 24MHz. reason:");
+    aml1216_set_gpio(2, 0);                                     // open vccx2
 
     serial_put_hex(exit_reason, 32);
     wait_uart_empty();
@@ -549,11 +550,15 @@ void aml1216_power_on_at_24M()
     aml1216_set_vddEE_voltage(CONFIG_VDDAO_VOLTAGE);
 #endif
 #endif
-    aml1216_set_gpio(2, 0);                                     // open vccx2
 
     aml1216_set_gpio(3, 1);                                     // close ldo 1.2v when vcck is opened
-    udelay__(1 * 1000);
+    aml1216_set_bits(0x001A, 0x00, 0x06);
+    power_off_vcc50();
+    udelay__(300 * 1000);
+    printf_arc("open boost\n");
     power_on_vcc50();
+    udelay__(1000);
+    aml1216_set_bits(0x1A, 0x06, 0x06);
     i2c_pmu_write_b(0x0019, otg_status);
 
     aml1216_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A

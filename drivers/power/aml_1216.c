@@ -1187,7 +1187,7 @@ int aml1216_calculate_rdc(void)
     if (v_hi > 4000) {                          // to avoid PMU don't charge when battery voltage is high
         return 0;    
     }
-    aml1216_set_charging_current(300 * 1000);          // charge current to 500mA 
+    aml1216_set_charge_enable(0);               // charge current to 500mA 
     udelay(1000 * 1000);
     i_lo = 0;
     v_lo = 0;
@@ -1196,7 +1196,7 @@ int aml1216_calculate_rdc(void)
         i_lo += aml1216_get_battery_current();
         udelay(8000);
     }
-    aml1216_set_charging_current(1050 * 1000);         // charge current to 1.05A 
+    aml1216_set_charge_enable(1);               // charge current to 1.05A 
     udelay(1000 * 1000);
     i_hi = 0;
     v_hi = 0;
@@ -1241,6 +1241,7 @@ int aml1216_rdc_init(void)
     int rdc_tmp;
     char buf[100];
 
+    aml1216_set_charging_current(1500 * 1000);
     aml1216_battery_test = 1;
     aml1216_set_bits(0x009A, 0x80, 0x80);                               // clear cloumber counter
     for (i = 0; i < 8; i++) {
