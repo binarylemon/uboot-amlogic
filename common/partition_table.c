@@ -177,6 +177,8 @@ void set_storage_device_flag()
 	 int ret = 0, tmp_num = -1;
 	 
 	 s = getenv("store");
+	 if (!s)
+		return; 
 	 tmp_num = simple_strtoul(s,NULL,16);
 	 printf("set_storage_device_flag: store %d\n",tmp_num);
 	 if(tmp_num != device_boot_flag){

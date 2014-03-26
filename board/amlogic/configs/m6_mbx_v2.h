@@ -210,6 +210,7 @@
     "usb_burning=update 1000\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"firstboot=1\0" \
+	"store=0\0"\
 	"preboot="\
         "run upgrade_check; "\
         "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
