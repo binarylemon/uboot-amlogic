@@ -23,6 +23,7 @@ struct meson_pm_config {
     int sleepcount;
     void (*set_vccx2)(int power_on);
     void (*set_exgpio_early_suspend)(int power_on);
+	void (*set_pinmux)(int power_on);
 };
 
 
@@ -503,7 +504,8 @@ void meson_pm_suspend(void)
 	pdata = (struct meson_pm_config *)malloc(sizeof(struct meson_pm_config));
 	pdata->set_vccx2 = NULL;
 	pdata->set_exgpio_early_suspend = NULL;
-
+	extern void m6tvdref_set_pinmux(int power_on);
+	pdata->set_pinmux = m6tvdref_set_pinmux;
 	
 #ifdef ADJUST_CORE_VOLTAGE
      unsigned vcck_backup = readl(P_LED_PWM_REG0) & 0xf;
@@ -545,6 +547,9 @@ void meson_pm_suspend(void)
 
     if (pdata->set_vccx2) {
         pdata->set_vccx2(OFF);
+    }
+	if (pdata->set_pinmux) {
+        pdata->set_pinmux(OFF);
     }
 	printf("a\n");
     
@@ -641,6 +646,9 @@ void meson_pm_suspend(void)
 
     if (pdata->set_vccx2) {
         pdata->set_vccx2(ON);
+    }
+    if (pdata->set_pinmux) {
+        pdata->set_pinmux(ON);
     }
     wait_uart_empty();
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL , (1 << 7)); //a9 use pll

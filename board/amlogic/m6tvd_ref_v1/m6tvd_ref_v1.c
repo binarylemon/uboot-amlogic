@@ -388,7 +388,7 @@ static void restore_pinmux(void)
      }
 }
 
-void m6tvref_set_pinmux(int power_on)
+void m6tvdref_set_pinmux(int power_on)
 {
     int i = 0;
     if (power_on) {
