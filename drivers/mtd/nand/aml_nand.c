@@ -2038,7 +2038,8 @@ static void aml_platform_adjust_timing(struct aml_nand_chip *aml_chip)
 }
 static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_addr,int cnt)
 {
-	 int mini_part_blk_num, start_blk ,i,j;
+	 int mini_part_blk_num ,i,j;
+	 uint64_t start_blk;
 	struct mtd_info *mtd = &aml_chip->mtd;
 	struct erase_info erase_info_test;
 	int error = 0;
@@ -2058,7 +2059,8 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 	if(!((bad_blk_addr[i] > 0)&&(bad_blk_addr[i] < total_blk)))
 	 	continue;
 	  printk("enter test %d block \n",bad_blk_addr[i]);
-	start_blk = bad_blk_addr[i]<<phys_erase_shift;
+	start_blk = bad_blk_addr[i];
+	start_blk = start_blk<<phys_erase_shift;
 	memset((unsigned char *)data_buf,bad_blk_addr[i],mtd->writesize);
 	test_flag = 0;
 		aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_GOOD;
@@ -2069,7 +2071,7 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 
 		error = mtd->erase(mtd, &erase_info_test);
 		if(error) {
-			printk("BBT REPAIR:erase %d fail \n",start_blk);
+			printk("BBT REPAIR:erase %08lx fail \n",start_blk);
 			aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
 			continue;
 		}
@@ -2083,7 +2085,7 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 		aml_oob_ops.oobbuf = NULL;
 		error = mtd->write_oob(mtd, start_blk+j*mtd->writesize, &aml_oob_ops);
 		if (error) {
-			printk("blk check good but write failed: %llx, %d\n", (uint64_t)start_blk, error);
+			printk("blk check good but write failed: %08lx, %d\n", (uint64_t)start_blk, error);
 			aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
 			test_flag = 1;
 			break;
@@ -2100,7 +2102,7 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 			aml_oob_ops.oobbuf = NULL;
 			error = mtd->read_oob(mtd, start_blk+j*mtd->writesize, &aml_oob_ops);
 				if (error) {
-					printk("ecc failed: %llx, %d\n", (uint64_t)start_blk, error);
+					printk("ecc failed: %08lx, %d\n", (uint64_t)start_blk, error);
 					aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
 					test_flag = 1;
 					break;
@@ -2115,7 +2117,7 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 		erase_info_test.len = mtd->erasesize;
 		error = mtd->erase(mtd, &erase_info_test);
 			if(error) {
-				printk("BBT REPAIR:erase %d fail \n",start_blk);
+				printk("BBT REPAIR:erase %08lx fail \n",start_blk);
 				aml_chip->block_status[bad_blk_addr[i]] = NAND_BLOCK_BAD;
 				continue;
 			}

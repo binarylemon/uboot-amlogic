@@ -998,7 +998,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 				printk("%s, fill page:0x%x\n", __func__, priv_slc_page);
 			}
 		}
-		printk("%s, write_page:0x%x\n", __func__, write_page);	
+		//printk("%s, write_page:0x%x\n", __func__, write_page);	
 		chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, write_page);
 
 		if (unlikely(raw))
