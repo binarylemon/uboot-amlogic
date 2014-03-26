@@ -33,6 +33,7 @@
 #define TRUSTZONE_MON_CORE_RD_SOC_REV1          0x209
 #define TRUSTZONE_MON_CORE_RD_SOC_REV2          0x20A
 
+#define TRUSTZONE_HAL_API_SRAM                  0x400
 
 #ifdef CONFIG_MESON_STORAGE_BURN
 struct storage_hal_api_arg{
@@ -53,9 +54,20 @@ struct storage_hal_api_arg{
 
 #endif
 
+#define SRAM_HAL_API_CAS 0x401
+struct sram_hal_api_arg {
+	unsigned int cmd;
+	unsigned int req_len;
+	unsigned int res_len;
+	unsigned int req_phy_addr;
+	unsigned int res_phy_addr;
+	unsigned int ret_phy_addr;
+};
 
 
 
+uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+uint32_t meson_trustzone_acs_addr(uint32_t addr);
 
 
 

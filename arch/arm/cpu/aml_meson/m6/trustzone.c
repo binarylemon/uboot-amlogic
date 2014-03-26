@@ -341,3 +341,42 @@ uint32_t meson_trustzone_read_socrev2()
 
 	return r0;
 }
+
+#ifdef CONFIG_ACS
+uint32_t meson_trustzone_acs_addr(uint32_t addr)
+{
+	unsigned int ret = 0;
+	struct sram_hal_api_arg arg = {};
+
+	arg.cmd = SRAM_HAL_API_CAS;
+	arg.req_len = SECURE_OS_ACS_LEN;
+	arg.res_len = SECURE_OS_ACS_LEN;
+
+	if ((addr < SECURE_OS_ACS_SRAM_ADDR) || (addr > (SECURE_OS_ACS_SRAM_ADDR + SECURE_OS_ACS_LEN)))
+		arg.req_phy_addr = *((volatile unsigned int*)addr);
+	else
+		arg.req_phy_addr = meson_trustzone_sram_read_reg32(addr);
+	arg.res_phy_addr = SECURE_OS_ACS_DRAM_ADDR;
+	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+
+	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
+	register uint32_t r2 asm("r2") = (unsigned int)(&arg);
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    __asmeq("%3", "r2")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1), "r"(r2));
+	} while (0);
+
+	ov_dcache_invalid_range(arg.res_phy_addr, (arg.res_len));
+	ret = arg.res_phy_addr;
+
+	return ret;
+}
+#endif
+
