@@ -44,11 +44,9 @@
 #define BATTERY_LOW_THRESHOLD       20
 #endif
 
-#define DRV_TYPE "c6"
-
 #define PANEL_NAME		"panel"
-#define DRIVER_DATE		"20140212"
-#define DRIVER_VER		"u"
+#define DRV_TYPE		"c6"
+#define DRIVER_DATE		"20140325"
 
 #define VPP_OUT_SATURATE            (1 << 0)
 
@@ -66,6 +64,7 @@ typedef struct {
 } lcd_dev_t;
 
 static lcd_dev_t *pDev = NULL;
+static char * dt_addr;
 static int dts_ready = 0;
 
 vidinfo_t panel_info = {
@@ -86,10 +85,6 @@ vidinfo_t panel_info = {
 
 	.priv	=	NULL,		/* Pointer to driver-specific data */
 };
-
-static char * dt_addr;
-static int amlogic_gpio_name_map_num(const char *name);
-static int amlogic_gpio_set(int gpio, int flag);
 
 static unsigned bl_level;
 
@@ -251,13 +246,13 @@ static void lcd_ports_ctrl_minilvds(Bool_t status)
 	
 	if (status) {
 		WRITE_LCD_CBUS_REG(pinmux_reg, (READ_LCD_CBUS_REG(pinmux_reg) | pinmux_bit));
-		amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[1]);
+		aml_lcd_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[1]);
 	}else {
 		WRITE_LCD_CBUS_REG(pinmux_reg, (READ_LCD_CBUS_REG(pinmux_reg) & ~(pinmux_bit)));
 		for (i=0; i<n; i++) {
-			amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux_pins[i], LCD_POWER_GPIO_INPUT);
+			aml_lcd_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_pinmux_pins[i], LCD_POWER_GPIO_INPUT);
 		}
-		amlogic_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], LCD_POWER_GPIO_INPUT);
+		aml_lcd_gpio_set(pDev->pConf->lcd_control.mlvds_config->mlvds_pinmux->tcon_gpio[0], LCD_POWER_GPIO_INPUT);
 	}
 	DBG_PRINT("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
 }
@@ -290,7 +285,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
 			WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 			mdelay(20);
-			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
+			aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
 		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
 			switch (pDev->bl_config->pwm_port) {
@@ -318,7 +313,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 			}
 			mdelay(20);
 			if (pDev->bl_config->pwm_gpio_used)
-				amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
+				aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
 		}
 		else if (pDev->bl_config->method == BL_CTL_PWM_COMBO) {
 			switch (pDev->bl_config->combo_high_port) {
@@ -367,12 +362,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	}
 	else {
 		if (pDev->bl_config->method == BL_CTL_GPIO) {
-			amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
+			aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
 		}
 		else if ((pDev->bl_config->method == BL_CTL_PWM_NEGATIVE) || (pDev->bl_config->method == BL_CTL_PWM_POSITIVE)) {
 			if (pDev->bl_config->pwm_gpio_used) {
 				if (pDev->bl_config->gpio)
-					amlogic_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
+					aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
 			}
 			switch (pDev->bl_config->pwm_port) {
 				case BL_PWM_A:
@@ -609,7 +604,7 @@ static void lcd_power_ctrl(Bool_t status)
 			DBG_PRINT("lcd_power_on_uboot\n");
 			switch (pDev->pConf->lcd_power_ctrl.power_on_uboot.type) {
 				case LCD_POWER_TYPE_CPU:
-					amlogic_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_on_uboot.value);
+					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_on_uboot.value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -637,7 +632,7 @@ static void lcd_power_ctrl(Bool_t status)
 			DBG_PRINT("%s %s step %d\n", __FUNCTION__, (status ? "ON" : "OFF"), i+1);
 			switch (pDev->pConf->lcd_power_ctrl.power_on_config[i].type) {
 				case LCD_POWER_TYPE_CPU:
-					amlogic_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_on_config[i].value);
+					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_on_config[i].value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -685,7 +680,7 @@ static void lcd_power_ctrl(Bool_t status)
 			DBG_PRINT("%s %s step %d\n", __FUNCTION__, (status ? "ON" : "OFF"), i+1);
 			switch (pDev->pConf->lcd_power_ctrl.power_off_config[i].type) {
 				case LCD_POWER_TYPE_CPU:
-					amlogic_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_off_config[i].value);
+					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_off_config[i].value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -730,7 +725,7 @@ static void lcd_power_ctrl(Bool_t status)
 			DBG_PRINT("lcd_power_off_uboot\n");
 			switch (pDev->pConf->lcd_power_ctrl.power_off_uboot.type) {
 				case LCD_POWER_TYPE_CPU:
-					amlogic_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_off_uboot.value);
+					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_off_uboot.value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -784,15 +779,6 @@ static void set_lcd_gamma_table_lvds(u16 *data, u32 rgb_mask, u16 gamma_coeff)
 	}
 	while (!(READ_LCD_REG(L_GAMMA_CNTL_PORT) & (0x1 << LCD_ADR_RDY)));
 	WRITE_LCD_REG(L_GAMMA_ADDR_PORT, (0x1 << LCD_H_AUTO_INC) | (0x1 << rgb_mask) | (0x23 << LCD_HADR));
-}
-
-static void set_video_adjust(Lcd_Config_t *pConf)
-{
-	DBG_PRINT("vadj_brightness = 0x%x, vadj_contrast = 0x%x, vadj_saturation = 0x%x.\n", pConf->lcd_effect.vadj_brightness, pConf->lcd_effect.vadj_contrast, pConf->lcd_effect.vadj_saturation);
-	WRITE_LCD_REG(VPP_VADJ2_Y, (pConf->lcd_effect.vadj_brightness << 8) | (pConf->lcd_effect.vadj_contrast << 0));
-	WRITE_LCD_REG(VPP_VADJ2_MA_MB, (pConf->lcd_effect.vadj_saturation << 16));
-	WRITE_LCD_REG(VPP_VADJ2_MC_MD, (pConf->lcd_effect.vadj_saturation << 0));
-	WRITE_LCD_REG(VPP_VADJ_CTRL, 0xf);	//enable video adjust
 }
 
 static void write_tcon_double(MLVDS_Tcon_Config_t *mlvds_tcon)
@@ -1192,13 +1178,10 @@ static void vclk_set_lcd(int lcd_type, int vclk_sel, unsigned long pll_reg, unsi
 	vid_div_reg = ((vid_div_reg & 0x1ffff) | (1 << 16) | (1 << 15) | (0x3 << 0));	//select vid2_pll and enable clk
 	xd = (clk_ctrl_reg >> CLK_CTRL_XD) & 0xf;
 
-	if(vclk_sel) {
+	if(vclk_sel)
 		WRITE_LCD_CBUS_REG_BITS(HHI_VIID_CLK_CNTL, 0, 19, 1);	//disable vclk2_en
-	}
-	else {
+	else
 		WRITE_LCD_CBUS_REG_BITS(HHI_VID_CLK_CNTL, 0, 19, 2);	//disable vclk1_en1, en0
-	}
-
 	udelay(2);
 
     WRITE_LCD_CBUS_REG( HHI_VIID_PLL_CNTL, pll_reg | (1<<29));
@@ -1351,18 +1334,16 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     unsigned long rd_data;
 
     unsigned pll_reg, div_reg, clk_reg, xd;
-    int pll_sel, pll_div_sel, vclk_sel;
+    int vclk_sel;
 	int lcd_type, ss_level;
 	
 	pll_reg = pConf->lcd_timing.pll_ctrl;
 	div_reg = pConf->lcd_timing.div_ctrl;
 	clk_reg = pConf->lcd_timing.clk_ctrl;
-	ss_level = ((pConf->lcd_timing.clk_ctrl) >>16) & 0xf;
-    pll_sel = ((pConf->lcd_timing.clk_ctrl) >>12) & 0x1;
-	pll_div_sel = 1;
-    vclk_sel = ((pConf->lcd_timing.clk_ctrl) >>4) & 0x1;
+	ss_level = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_SS) & 0xf;
+    vclk_sel = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_VCLK_SEL) & 0x1;
 	xd = 1;
-	
+
 	lcd_type = pConf->lcd_basic.lcd_type;
 
     switch(pConf->lcd_control.mlvds_config->TL080_phase) {
@@ -1830,6 +1811,15 @@ static void init_phy_lvds(Lcd_Config_t *pConf)
 	WRITE_LCD_REG(LVDS_PHY_CNTL8,0xcccc);
 }
 
+static void set_video_adjust(Lcd_Config_t *pConf)
+{
+	DBG_PRINT("vadj_brightness = 0x%x, vadj_contrast = 0x%x, vadj_saturation = 0x%x.\n", pConf->lcd_effect.vadj_brightness, pConf->lcd_effect.vadj_contrast, pConf->lcd_effect.vadj_saturation);
+	WRITE_LCD_REG(VPP_VADJ2_Y, (pConf->lcd_effect.vadj_brightness << 8) | (pConf->lcd_effect.vadj_contrast << 0));
+	WRITE_LCD_REG(VPP_VADJ2_MA_MB, (pConf->lcd_effect.vadj_saturation << 16));
+	WRITE_LCD_REG(VPP_VADJ2_MC_MD, (pConf->lcd_effect.vadj_saturation << 0));
+	WRITE_LCD_REG(VPP_VADJ_CTRL, 0xf);	//enable video adjust
+}
+
 static unsigned error_abs(unsigned num1, unsigned num2)
 {
 	if (num1 >= num2)
@@ -1987,7 +1977,7 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 	
 	pConf->lcd_timing.sync_duration_num = sync_duration;
 	pConf->lcd_timing.sync_duration_den = 10;
-	printf("lcd_clk=%u.%uMHz, frame_rate=%u.%uHz.\n\n", (lcd_clk / 1000000), ((lcd_clk / 1000) % 1000), (sync_duration / pConf->lcd_timing.sync_duration_den), ((sync_duration * 10 / pConf->lcd_timing.sync_duration_den) % 10));
+	printf("lcd_clk=%u.%03uMHz, frame_rate=%u.%uHz.\n\n", (lcd_clk / 1000000), ((lcd_clk / 1000) % 1000), (sync_duration / pConf->lcd_timing.sync_duration_den), ((sync_duration * 10 / pConf->lcd_timing.sync_duration_den) % 10));
 }
 
 static void lcd_tcon_config(Lcd_Config_t *pConf)
@@ -2085,6 +2075,10 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 
 static void lcd_control_config(Lcd_Config_t *pConf)
 {
+	unsigned char ss_level = (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf;
+	
+	ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
+	
 	switch (pConf->lcd_basic.lcd_type) {
 		case LCD_DIGITAL_LVDS:
 			if (pConf->lcd_control.lvds_config->lvds_repack_user == 0) {
@@ -2097,6 +2091,7 @@ static void lcd_control_config(Lcd_Config_t *pConf)
 		default:
 			break;
 	}
+    pConf->lcd_timing.clk_ctrl = ((pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (ss_level << CLK_CTRL_SS));
 }
 
 static void lcd_config_init(Lcd_Config_t *pConf)
@@ -2105,7 +2100,6 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	struct aml_pmu_driver *pmu_driver;
 	int battery_percent;
 #endif
-	unsigned char ss_level = (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf;
 	
 	lcd_control_config(pConf);
 	if (pConf->lcd_timing.clk_ctrl & (1 << CLK_CTRL_AUTO)) {
@@ -2117,8 +2111,7 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 		printf("Custome clock parameters.\n");
 		printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 	}
-	ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
-	pConf->lcd_timing.clk_ctrl = ((pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (ss_level << CLK_CTRL_SS));
+	
 	lcd_sync_duration(pConf);
 	lcd_tcon_config(pConf);
 	
@@ -2268,95 +2261,7 @@ static void _lcd_init(Lcd_Config_t *pConf)
 	lcd_set_current_vmode(VMODE_LCD);
 }
 
-static int amlogic_gpio_name_map_num(const char *name)
-{
-	int i;
-	
-	for(i = 0; i < GPIO_MAX; i++) {
-		if(!strcmp(name, amlogic_gpio_type_table[i]))
-			break;
-	}
-	if (i == GPIO_MAX) {
-		printf("wrong gpio name %s, i=%d\n", name, i);
-		i = -1;
-	}
-	return i;
-}
-
-static int amlogic_gpio_set(int gpio, int flag)
-{
-	int gpio_bank, gpio_bit;
-	
-	if ((gpio>=GPIOZ_0) && (gpio<=GPIOZ_12)) {	//GPIOZ_0~12
-		gpio_bit = gpio - GPIOZ_0 + 16;
-		gpio_bank = PREG_PAD_GPIO6_EN_N;
-	}
-	else if ((gpio>=GPIOE_0) && (gpio<=GPIOE_11)) {	//GPIOE_0~11
-		gpio_bit = gpio - GPIOE_0;
-		gpio_bank = PREG_PAD_GPIO6_EN_N;
-	}
-	else if ((gpio>=GPIOY_0) && (gpio<=GPIOY_15)) {	//GPIOY_0~15
-		gpio_bit = gpio - GPIOY_0;
-		gpio_bank = PREG_PAD_GPIO5_EN_N;
-	}
-	else if ((gpio>=GPIOX_0) && (gpio<=GPIOX_31)) {	//GPIOX_0~31
-		gpio_bit = gpio - GPIOX_0;
-		gpio_bank = PREG_PAD_GPIO4_EN_N;
-	}
-	else if ((gpio>=GPIOX_32) && (gpio<=GPIOX_35)) {	//GPIOX_32~35
-		gpio_bit = gpio - GPIOX_32 + 20;
-		gpio_bank = PREG_PAD_GPIO3_EN_N;
-	}
-	else if ((gpio>=BOOT_0) && (gpio<=BOOT_17)) {	//BOOT_0~17
-		gpio_bit = gpio - BOOT_0;
-		gpio_bank = PREG_PAD_GPIO3_EN_N;
-	}
-	else if ((gpio>=GPIOD_0) && (gpio<=GPIOD_9)) {	//GPIOD_0~9
-		gpio_bit = gpio - GPIOD_0 + 16;
-		gpio_bank = PREG_PAD_GPIO2_EN_N;
-	}
-	else if ((gpio>=GPIOC_0) && (gpio<=GPIOC_15)) {	//GPIOC_0~15
-		gpio_bit = gpio - GPIOC_0;
-		gpio_bank = PREG_PAD_GPIO2_EN_N;
-	}
-	else if ((gpio>=CARD_0) && (gpio<=CARD_8)) {	//CARD_0~8
-		gpio_bit = gpio - CARD_0 + 23;
-		gpio_bank = PREG_PAD_GPIO5_EN_N;
-	}
-	else if ((gpio>=GPIOB_0) && (gpio<=GPIOB_23)) {	//GPIOB_0~23
-		gpio_bit = gpio - GPIOB_0;
-		gpio_bank = PREG_PAD_GPIO1_EN_N;
-	}
-	else if ((gpio>=GPIOA_0) && (gpio<=GPIOA_27)) {	//GPIOA_0~27
-		gpio_bit = gpio - GPIOA_0;
-		gpio_bank = PREG_PAD_GPIO0_EN_N;
-	}
-	else if ((gpio>=GPIOAO_0) && (gpio<=GPIOAO_11)) {	//GPIOAO_0~11
-		gpio_bit = gpio - GPIOAO_0;
-		gpio_bank = GPIOAO_bank_bit0_11(bit);
-		printf("don't support GPIOAO Port yet\n");
-		return -2;
-	}
-	else {
-		printf("Wrong GPIO Port number: %d\n", gpio);
-		return -1;
-	}
-	
-	if (flag == LCD_POWER_GPIO_OUTPUT_LOW) {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank+1, 0, gpio_bit, 1);
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 0, gpio_bit, 1);
-	}
-	else if (flag == LCD_POWER_GPIO_OUTPUT_HIGH) {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank+1, 1, gpio_bit, 1);
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 0, gpio_bit, 1);
-	}
-	else {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 1, gpio_bit, 1);
-	}
-	return 0;
-}
-
-static int amlogic_pmu_gpio_name_map_num(const char *name)
+static int aml_lcd_pmu_gpio_name_map_num(const char *name)
 {
 	int index;
 	
@@ -2775,10 +2680,10 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 				p += strlen(p) + 1;
 				str = p;
 				if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_on_uboot.gpio = amlogic_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_gpio_name_map_num(str);
 				}
 				else if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_on_uboot.gpio = amlogic_pmu_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
@@ -2796,7 +2701,7 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 			pConf->lcd_power_ctrl.power_on_uboot.delay = 50;
 			DBG_PRINT("find power_on_uboot: type = %s(%d), ", lcd_power_type_table[pConf->lcd_power_ctrl.power_on_uboot.type], pConf->lcd_power_ctrl.power_on_uboot.type);
 			if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
-				DBG_PRINT("gpio = %s(%d), ", amlogic_gpio_type_table[pConf->lcd_power_ctrl.power_on_uboot.gpio], pConf->lcd_power_ctrl.power_on_uboot.gpio);
+				DBG_PRINT("gpio = %s(%d), ", aml_lcd_gpio_type_table[pConf->lcd_power_ctrl.power_on_uboot.gpio], pConf->lcd_power_ctrl.power_on_uboot.gpio);
 				DBG_PRINT("value = %d\n", pConf->lcd_power_ctrl.power_on_uboot.value);
 			}
 			else if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
@@ -2834,10 +2739,10 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 				p += strlen(p) + 1;
 				str = p;
 				if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_off_uboot.gpio = amlogic_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_gpio_name_map_num(str);
 				}
 				else if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_off_uboot.gpio = amlogic_pmu_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
@@ -2855,7 +2760,7 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 			pConf->lcd_power_ctrl.power_off_uboot.delay = 0;
 			DBG_PRINT("find power_off_uboot: type = %s(%d), ", lcd_power_type_table[pConf->lcd_power_ctrl.power_off_uboot.type], pConf->lcd_power_ctrl.power_off_uboot.type);
 			if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
-				DBG_PRINT("gpio = %s(%d), ", amlogic_gpio_type_table[pConf->lcd_power_ctrl.power_off_uboot.gpio], pConf->lcd_power_ctrl.power_off_uboot.gpio);
+				DBG_PRINT("gpio = %s(%d), ", aml_lcd_gpio_type_table[pConf->lcd_power_ctrl.power_off_uboot.gpio], pConf->lcd_power_ctrl.power_off_uboot.gpio);
 				DBG_PRINT("value = %d\n", pConf->lcd_power_ctrl.power_off_uboot.value);
 			}
 			else if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
@@ -2889,10 +2794,10 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 				p += strlen(p) + 1;
 				str = p;
 				if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_on_config[i].gpio = amlogic_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_gpio_name_map_num(str);
 				}
 				else if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_on_config[i].gpio = amlogic_pmu_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
@@ -2946,10 +2851,10 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 				p += strlen(p) + 1;
 				str = p;
 				if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_off_config[i].gpio = amlogic_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_gpio_name_map_num(str);
 				}
 				else if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_off_config[i].gpio = amlogic_pmu_gpio_name_map_num(str);
+					pConf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
@@ -2982,7 +2887,7 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 	for (i=0; i<pConf->lcd_power_ctrl.power_on_step; i++) {
 		DBG_PRINT("power on step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pConf->lcd_power_ctrl.power_on_config[i].type], pConf->lcd_power_ctrl.power_on_config[i].type);
 		if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
-			DBG_PRINT("power on step %d: gpio = %s(%d)\n", i+1, amlogic_gpio_type_table[pConf->lcd_power_ctrl.power_on_config[i].gpio], pConf->lcd_power_ctrl.power_on_config[i].gpio);
+			DBG_PRINT("power on step %d: gpio = %s(%d)\n", i+1, aml_lcd_gpio_type_table[pConf->lcd_power_ctrl.power_on_config[i].gpio], pConf->lcd_power_ctrl.power_on_config[i].gpio);
 			DBG_PRINT("power on step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].value);
 		}
 		else if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
@@ -2995,7 +2900,7 @@ static inline int _get_lcd_power_config(Lcd_Config_t *pConf)
 	for (i=0; i<pConf->lcd_power_ctrl.power_off_step; i++) {
 		DBG_PRINT("power off step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pConf->lcd_power_ctrl.power_off_config[i].type], pConf->lcd_power_ctrl.power_off_config[i].type);
 		if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
-			DBG_PRINT("power off step %d: gpio = %s(%d)\n", i+1, amlogic_gpio_type_table[pConf->lcd_power_ctrl.power_off_config[i].gpio], pConf->lcd_power_ctrl.power_off_config[i].gpio);
+			DBG_PRINT("power off step %d: gpio = %s(%d)\n", i+1, aml_lcd_gpio_type_table[pConf->lcd_power_ctrl.power_off_config[i].gpio], pConf->lcd_power_ctrl.power_off_config[i].gpio);
 			DBG_PRINT("power off step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].value);
 		}
 		else if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
@@ -3113,7 +3018,7 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			bl_conf->gpio = GPIOD_1;
 		}
 		else {
-			bl_conf->gpio = amlogic_gpio_name_map_num(propdata);
+			bl_conf->gpio = aml_lcd_gpio_name_map_num(propdata);
 		}
 		DBG_PRINT("bl gpio = %s(%d)\n", propdata, bl_conf->gpio);
 	}
@@ -3357,7 +3262,7 @@ int lcd_probe(void)
         printf("[tcon]: Not enough memory.\n");
         return -1;
     }
-	printf("lcd driver version: %s@%s%s\n", DRIVER_DATE, DRIVER_VER, DRV_TYPE);
+	printf("lcd driver version: %s%s\n", DRIVER_DATE, DRV_TYPE);
 	
 	dts_ready = 0;	//prepare dts_ready flag, default no dts
 #ifdef CONFIG_OF_LIBFDT

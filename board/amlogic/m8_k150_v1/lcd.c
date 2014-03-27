@@ -126,13 +126,17 @@ static unsigned short gamma_table[256] = {
 
 //**** lcd interface control configs ***//
 static DSI_Config_t lcd_mipi_config = {
-        .dsi_clk_min = 500,
-        .dsi_clk_max = 600,
-        .lane_num = 4,
-        .trans_mode=1,
-        .sleep_out_delay=100,
-        .display_on_delay=100,
-        .mipi_init_flag=0,
+    .lane_num = 4,
+    .bit_rate_min = 500,
+    .bit_rate_max = 600,
+    .factor_numerator = 0,
+
+    .operation_mode = 1,
+    .transfer_ctrl = 0,
+    .sleep_out_delay = 100,
+    .display_on_delay = 100,
+    .init_on_flag = 0,
+    .init_off_flag = 0,
 };
 
 static LVDS_Config_t lcd_lvds_config = {

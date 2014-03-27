@@ -1,5 +1,5 @@
 /*
- * AMLOGIC TCON controller driver.
+ * AMLOGIC lcd controller driver.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <common.h>
 #include <linux/list.h>
 #include <amlogic/aml_lcd.h>
+#include <asm/arch/aml_lcd_gpio.h>
 
 /* for GAMMA_CNTL_PORT */
    /// GAMMA VCOM POL
@@ -124,10 +125,10 @@
    #define LCD_PACK_LITTLE          0   
    
 /* for video encoder */
-   #define	LVDS_DELAY				0
-   #define	TTL_DELAY				19
+   #define LVDS_DELAY				0
+   #define TTL_DELAY				19
 
-   #define	MLVDS_DELAY				0
+   #define MLVDS_DELAY				0
    
 //********************************************//
 // for clk parameter auto generation
@@ -135,9 +136,9 @@
 //**** clk parameters bit ***/
 	#define PLL_CTRL_LOCK			31
 	#define PLL_CTRL_PD				30
-	#define	PLL_CTRL_OD				16
-	#define	PLL_CTRL_N				9
-	#define	PLL_CTRL_M				0	//[8:0]
+	#define PLL_CTRL_OD				16	//[17:16]
+	#define PLL_CTRL_N				9	//[13:9]
+	#define PLL_CTRL_M				0	//[8:0]
 	
 	#define DIV_CTRL_DIV_POST		12	//[14:12]
 	#define DIV_CTRL_LVDS_CLK_EN	11
@@ -145,16 +146,17 @@
 	#define DIV_CTRL_POST_SEL		8	//[9:8]
 	#define	DIV_CTRL_DIV_PRE		4	//[6:4]
 
-	#define	CLK_TEST_FLAG			31
-	#define	CLK_CTRL_AUTO			30
-	//#define	CLK_CTRL_PLL_SEL		10
-	//#define	CLK_CTRL_DIV_SEL		9
-	#define	CLK_CTRL_VCLK_SEL		8
-	#define	CLK_CTRL_SS				4	//[7:4]
-	#define	CLK_CTRL_XD				0	//[3:0]
+	#define CLK_CTRL_AUTO			31
+	#define CLK_TEST_FLAG			30
+	//#define CLK_CTRL_PLL_SEL		10
+	//#define CLK_CTRL_DIV_SEL		9
+	#define CLK_CTRL_VCLK_SEL		8
+	#define CLK_CTRL_SS				4	//[7:4]
+	#define CLK_CTRL_XD				0	//[3:0]
 
 	#define PLL_WAIT_LOCK_CNT		100
-//**** clk frequency limit ***/
+
+/**** clk frequency limit ***/
 	/* PLL */
 	#define FIN_FREQ				(24 * 1000)
 	#define PLL_M_MIN				2
@@ -283,7 +285,7 @@ typedef struct {
     u32 h_active_area;/* screen physical width in "mm" unit */
     u32 v_active_area;/* screen physical height in "mm" unit */
 
-    Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
+    Lcd_Type_t lcd_type;
     u16 lcd_bits;         // 6 or 8 bits
 	u16 lcd_bits_option;  //option=0, means the panel only support one lcd_bits option
 }Lcd_Basic_t;
@@ -307,9 +309,10 @@ typedef struct {
 	u16 de_hstart;
 	u16 de_vstart;
 	u16 de_valid;
+	u32 vsync_h_phase; //[31]sign [15:0]value
 	u32 h_offset;
 	u32 v_offset;
-  u32 vsync_h_phase; //[31]sign [15:0]value
+
     u16 sth1_hs_addr;
     u16 sth1_he_addr;
     u16 sth1_vs_addr;
@@ -527,401 +530,5 @@ Lcd_Bl_Config_t bl_config_dft;
 //*************************************//
 
 extern void mdelay(unsigned long msec);
-
-typedef enum {
-	GPIOZ_0=0,
-	GPIOZ_1=1,
-	GPIOZ_2=2,
-	GPIOZ_3=3,
-	GPIOZ_4=4,
-	GPIOZ_5=5,
-	GPIOZ_6=6,
-	GPIOZ_7=7,
-	GPIOZ_8=8,
-	GPIOZ_9=9,
-	GPIOZ_10=10,
-	GPIOZ_11=11,
-	GPIOZ_12=12,
-	GPIOE_0=13,
-	GPIOE_1=14,
-	GPIOE_2=15,
-	GPIOE_3=16,
-	GPIOE_4=17,
-	GPIOE_5=18,
-	GPIOE_6=19,
-	GPIOE_7=20,
-	GPIOE_8=21,
-	GPIOE_9=22,
-	GPIOE_10=23,
-	GPIOE_11=24,
-	GPIOY_0=25,
-	GPIOY_1=26,
-	GPIOY_2=27,
-	GPIOY_3=28,
-	GPIOY_4=29,
-	GPIOY_5=30,
-	GPIOY_6=31,
-	GPIOY_7=32,
-	GPIOY_8=33,
-	GPIOY_9=34,
-	GPIOY_10=35,
-	GPIOY_11=36,
-	GPIOY_12=37,
-	GPIOY_13=38,
-	GPIOY_14=39,
-	GPIOY_15=40,
-	GPIOX_0=41,
-	GPIOX_1=42,
-	GPIOX_2=43,
-	GPIOX_3=44,
-	GPIOX_4=45,
-	GPIOX_5=46,
-	GPIOX_6=47,
-	GPIOX_7=48,
-	GPIOX_8=49,
-	GPIOX_9=50,
-	GPIOX_10=51,
-	GPIOX_11=52,
-	GPIOX_12=53,
-	GPIOX_13=54,
-	GPIOX_14=55,
-	GPIOX_15=56,
-	GPIOX_16=57,
-	GPIOX_17=58,
-	GPIOX_18=59,
-	GPIOX_19=60,
-	GPIOX_20=61,
-	GPIOX_21=62,
-	GPIOX_22=63,
-	GPIOX_23=64,
-	GPIOX_24=65,
-	GPIOX_25=66,
-	GPIOX_26=67,
-	GPIOX_27=68,
-	GPIOX_28=69,
-	GPIOX_29=70,
-	GPIOX_30=71,
-	GPIOX_31=72,
-	GPIOX_32=73,
-	GPIOX_33=74,
-	GPIOX_34=75,
-	GPIOX_35=76,
-	BOOT_0=77,
-	BOOT_1=78,
-	BOOT_2=79,
-	BOOT_3=80,
-	BOOT_4=81,
-	BOOT_5=82,
-	BOOT_6=83,
-	BOOT_7=84,
-	BOOT_8=85,
-	BOOT_9=86,
-	BOOT_10=87,
-	BOOT_11=88,
-	BOOT_12=89,
-	BOOT_13=90,
-	BOOT_14=91,
-	BOOT_15=92,
-	BOOT_16=93,
-	BOOT_17=94,
-	GPIOD_0=95,
-	GPIOD_1=96,
-	GPIOD_2=97,
-	GPIOD_3=98,
-	GPIOD_4=99,
-	GPIOD_5=100,
-	GPIOD_6=101,
-	GPIOD_7=102,
-	GPIOD_8=103,
-	GPIOD_9=104,
-	GPIOC_0=105,
-	GPIOC_1=106,
-	GPIOC_2=107,
-	GPIOC_3=108,
-	GPIOC_4=109,
-	GPIOC_5=110,
-	GPIOC_6=111,
-	GPIOC_7=112,
-	GPIOC_8=113,
-	GPIOC_9=114,
-	GPIOC_10=115,
-	GPIOC_11=116,
-	GPIOC_12=117,
-	GPIOC_13=118,
-	GPIOC_14=119,
-	GPIOC_15=120,
-	CARD_0=121,
-	CARD_1=122,
-	CARD_2=123,
-	CARD_3=124,
-	CARD_4=125,
-	CARD_5=126,
-	CARD_6=127,
-	CARD_7=128,
-	CARD_8=129,
-	GPIOB_0=130,
-	GPIOB_1=131,
-	GPIOB_2=132,
-	GPIOB_3=133,
-	GPIOB_4=134,
-	GPIOB_5=135,
-	GPIOB_6=136,
-	GPIOB_7=137,
-	GPIOB_8=138,
-	GPIOB_9=139,
-	GPIOB_10=140,
-	GPIOB_11=141,
-	GPIOB_12=142,
-	GPIOB_13=143,
-	GPIOB_14=144,
-	GPIOB_15=145,
-	GPIOB_16=146,
-	GPIOB_17=147,
-	GPIOB_18=148,
-	GPIOB_19=149,
-	GPIOB_20=150,
-	GPIOB_21=151,
-	GPIOB_22=152,
-	GPIOB_23=153,
-	GPIOA_0=154,
-	GPIOA_1=155,
-	GPIOA_2=156,
-	GPIOA_3=157,
-	GPIOA_4=158,
-	GPIOA_5=159,
-	GPIOA_6=160,
-	GPIOA_7=161,
-	GPIOA_8=162,
-	GPIOA_9=163,
-	GPIOA_10=164,
-	GPIOA_11=165,
-	GPIOA_12=166,
-	GPIOA_13=167,
-	GPIOA_14=168,
-	GPIOA_15=169,
-	GPIOA_16=170,
-	GPIOA_17=171,
-	GPIOA_18=172,
-	GPIOA_19=173,
-	GPIOA_20=174,
-	GPIOA_21=175,
-	GPIOA_22=176,
-	GPIOA_23=177,
-	GPIOA_24=178,
-	GPIOA_25=179,
-	GPIOA_26=180,
-	GPIOA_27=181,
-	GPIOAO_0=182,
-	GPIOAO_1=183,
-	GPIOAO_2=184,
-	GPIOAO_3=185,
-	GPIOAO_4=186,
-	GPIOAO_5=187,
-	GPIOAO_6=188,
-	GPIOAO_7=189,
-	GPIOAO_8=190,
-	GPIOAO_9=191,
-	GPIOAO_10=192,
-	GPIOAO_11=193,
-	GPIO_MAX=194,
-}gpio_t;
-
-static const char* amlogic_gpio_type_table[]={
-	"GPIOZ_0",
-	"GPIOZ_1",
-	"GPIOZ_2",
-	"GPIOZ_3",
-	"GPIOZ_4",
-	"GPIOZ_5",
-	"GPIOZ_6",
-	"GPIOZ_7",
-	"GPIOZ_8",
-	"GPIOZ_9",
-	"GPIOZ_10",
-	"GPIOZ_11",
-	"GPIOZ_12",
-	"GPIOE_0",
-	"GPIOE_1",
-	"GPIOE_2",
-	"GPIOE_3",
-	"GPIOE_4",
-	"GPIOE_5",
-	"GPIOE_6",
-	"GPIOE_7",
-	"GPIOE_8",
-	"GPIOE_9",
-	"GPIOE_10",
-	"GPIOE_11",
-	"GPIOY_0",
-	"GPIOY_1",
-	"GPIOY_2",
-	"GPIOY_3",
-	"GPIOY_4",
-	"GPIOY_5",
-	"GPIOY_6",
-	"GPIOY_7",
-	"GPIOY_8",
-	"GPIOY_9",
-	"GPIOY_10",
-	"GPIOY_11",
-	"GPIOY_12",
-	"GPIOY_13",
-	"GPIOY_14",
-	"GPIOY_15",
-	"GPIOX_0",
-	"GPIOX_1",
-	"GPIOX_2",
-	"GPIOX_3",
-	"GPIOX_4",
-	"GPIOX_5",
-	"GPIOX_6",
-	"GPIOX_7",
-	"GPIOX_8",
-	"GPIOX_9",
-	"GPIOX_10",
-	"GPIOX_11",
-	"GPIOX_12",
-	"GPIOX_13",
-	"GPIOX_14",
-	"GPIOX_15",
-	"GPIOX_16",
-	"GPIOX_17",
-	"GPIOX_18",
-	"GPIOX_19",
-	"GPIOX_20",
-	"GPIOX_21",
-	"GPIOX_22",
-	"GPIOX_23",
-	"GPIOX_24",
-	"GPIOX_25",
-	"GPIOX_26",
-	"GPIOX_27",
-	"GPIOX_28",
-	"GPIOX_29",
-	"GPIOX_30",
-	"GPIOX_31",
-	"GPIOX_32",
-	"GPIOX_33",
-	"GPIOX_34",
-	"GPIOX_35",
-	"BOOT_0",
-	"BOOT_1",
-	"BOOT_2",
-	"BOOT_3",
-	"BOOT_4",
-	"BOOT_5",
-	"BOOT_6",
-	"BOOT_7",
-	"BOOT_8",
-	"BOOT_9",
-	"BOOT_10",
-	"BOOT_11",
-	"BOOT_12",
-	"BOOT_13",
-	"BOOT_14",
-	"BOOT_15",
-	"BOOT_16",
-	"BOOT_17",
-	"GPIOD_0",
-	"GPIOD_1",
-	"GPIOD_2",
-	"GPIOD_3",
-	"GPIOD_4",
-	"GPIOD_5",
-	"GPIOD_6",
-	"GPIOD_7",
-	"GPIOD_8",
-	"GPIOD_9",
-	"GPIOC_0",
-	"GPIOC_1",
-	"GPIOC_2",
-	"GPIOC_3",
-	"GPIOC_4",
-	"GPIOC_5",
-	"GPIOC_6",
-	"GPIOC_7",
-	"GPIOC_8",
-	"GPIOC_9",
-	"GPIOC_10",
-	"GPIOC_11",
-	"GPIOC_12",
-	"GPIOC_13",
-	"GPIOC_14",
-	"GPIOC_15",
-	"CARD_0",
-	"CARD_1",
-	"CARD_2",
-	"CARD_3",
-	"CARD_4",
-	"CARD_5",
-	"CARD_6",
-	"CARD_7",
-	"CARD_8",
-	"GPIOB_0",
-	"GPIOB_1",
-	"GPIOB_2",
-	"GPIOB_3",
-	"GPIOB_4",
-	"GPIOB_5",
-	"GPIOB_6",
-	"GPIOB_7",
-	"GPIOB_8",
-	"GPIOB_9",
-	"GPIOB_10",
-	"GPIOB_11",
-	"GPIOB_12",
-	"GPIOB_13",
-	"GPIOB_14",
-	"GPIOB_15",
-	"GPIOB_16",
-	"GPIOB_17",
-	"GPIOB_18",
-	"GPIOB_19",
-	"GPIOB_20",
-	"GPIOB_21",
-	"GPIOB_22",
-	"GPIOB_23",
-	"GPIOA_0",
-	"GPIOA_1",
-	"GPIOA_2",
-	"GPIOA_3",
-	"GPIOA_4",
-	"GPIOA_5",
-	"GPIOA_6",
-	"GPIOA_7",
-	"GPIOA_8",
-	"GPIOA_9",
-	"GPIOA_10",
-	"GPIOA_11",
-	"GPIOA_12",
-	"GPIOA_13",
-	"GPIOA_14",
-	"GPIOA_15",
-	"GPIOA_16",
-	"GPIOA_17",
-	"GPIOA_18",
-	"GPIOA_19",
-	"GPIOA_20",
-	"GPIOA_21",
-	"GPIOA_22",
-	"GPIOA_23",
-	"GPIOA_24",
-	"GPIOA_25",
-	"GPIOA_26",
-	"GPIOA_27",
-	"GPIOAO_0",
-	"GPIOAO_1",
-	"GPIOAO_2",
-	"GPIOAO_3",
-	"GPIOAO_4",
-	"GPIOAO_5",
-	"GPIOAO_6",
-	"GPIOAO_7",
-	"GPIOAO_8",
-	"GPIOAO_9",
-	"GPIOAO_10",
-	"GPIOAO_11",
-	"GPIO_MAX",
-}; 
 
 #endif /* LCDOUTC_H */

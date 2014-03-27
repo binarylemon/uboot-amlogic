@@ -28,7 +28,5 @@
 #define VSYNC_H_ADJUST_SIGN 0  /** 0=positive,1=negative */
 #define VSYNC_H_ADJUST      0  /** adj_sign(0=positive, 1=negative), adj_value. default is 0 */
 //************************************************
-/** special power on command, 2 data is a pair(reg, value). if the first valu is 0xff, second value is delay time(unit: ms). ending flag is 0xff,0xff. */
-static unsigned short dsi_power_on_cmd[] = {0xFF,0xFF};
 
 #endif

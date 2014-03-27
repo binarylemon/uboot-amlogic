@@ -57,7 +57,10 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/osd_hw.o
 endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
-COBJS-$(CONFIG_AML_LCD_EXTERN_TC101) += lcd/lcd_extern/tc101.o
+COBJS-$(CONFIG_AML_LCD_EXTERN_I2C_TC101) += lcd/lcd_extern/i2c_tc101.o
+COBJS-$(CONFIG_AML_LCD_EXTERN_SPI_LD070WS2) += lcd/lcd_extern/spi_LD070WS2.o
+COBJS-$(CONFIG_AML_LCD_EXTERN_MIPI_LD070WX4) += lcd/lcd_extern/mipi_LD070WX4.o
+COBJS-$(CONFIG_AML_LCD_EXTERN_MIPI_N070ICN) += lcd/lcd_extern/mipi_N070ICN.o
 COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o tvout/dsp.o \
 	tvout/tv_out.o
 
