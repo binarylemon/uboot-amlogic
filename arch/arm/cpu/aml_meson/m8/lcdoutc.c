@@ -3707,8 +3707,8 @@ static void _lcd_test(unsigned num)
 			case 1:
 				WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
 				WRITE_LCD_REG(ENCL_TST_MDSEL, 1);
-				WRITE_LCD_REG(ENCL_TST_CLRBAR_STRT, 0);
-				WRITE_LCD_REG(ENCL_TST_CLRBAR_WIDTH, pDev->pConf->lcd_basic.h_active / 8);
+				WRITE_LCD_REG(ENCL_TST_CLRBAR_STRT, pDev->pConf->lcd_timing.video_on_pixel);
+				WRITE_LCD_REG(ENCL_TST_CLRBAR_WIDTH, (pDev->pConf->lcd_basic.h_active / 9));
 				WRITE_LCD_REG(ENCL_TST_EN, 1);
 				printf("show test pattern 1\n");
 				printf("video dev test 0: disable test pattern\n");
