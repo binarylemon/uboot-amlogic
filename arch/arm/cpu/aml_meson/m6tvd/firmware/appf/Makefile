@@ -107,7 +107,7 @@ $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
 
 ifeq "$(FIRMWARE_AUTO_UPDATE)" "y"
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m6tv/power_firmware.dat
+	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m6tvd/power_firmware.dat
 endif
 
 $(OUTDIR)/appf_srec.txt: $(OUTDIR)/appf.axf
