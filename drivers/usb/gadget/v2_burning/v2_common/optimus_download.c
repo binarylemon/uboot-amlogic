@@ -748,11 +748,11 @@ int is_optimus_burn_complete(void)
     int is_burn_completed = 0;
 
     is_burn_completed = (OPTIMUS_IMG_STA_BURN_COMPLETE == OptimusImgBurnInfo.imgBurnSta);
-    if(!is_optimus_burn_complete){
+    if(!is_burn_completed){
         DWN_MSG("imgSzDisposed 0x%llx != imgPktSz 0x%llx\n", OptimusImgBurnInfo.imgSzDisposed, OptimusImgBurnInfo.imgPktSz);
     }
 
-    return is_optimus_burn_complete;
+    return is_burn_completed;
 }
 
 u32 optimus_download_img_data(const u8* data, const u32 size, char* errInfo)
@@ -1067,13 +1067,17 @@ int optimus_set_burn_complete_flag(void)
 
         //Don't re-defenv when usb pruducing as it has bug when spi boot. 
         //Luckly, usb burn don't modify any env!!!!!
-        if(OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get())
+        /*if(OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get())*/
         {
-            rc = run_command("defenv", 0);//use new env directly if uboot is new !!!
-            if(rc){
-                DWN_ERR("Fail in defenv!, rc=%d\n", rc);
-                return __LINE__;
-            }
+            extern int device_boot_flag;
+            char str_store[8];
+
+            sprintf(str_store, "%d", device_boot_flag);
+            DWN_MSG("store=%s\n", str_store);
+            /*rc = run_command("defenv", 0);//use new env directly if uboot is new !!!*/
+            set_default_env("## save_setting ##\n");//use new env directly if uboot is new !!!
+            setenv("store", str_store);
+            setenv("firstboot", "1");
         }
     }
 

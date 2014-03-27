@@ -17,6 +17,7 @@
 #define STORE_BOOT_ERASE_ALL   				          3
 #define STORE_BOOT_SCRUB_ALL				          4
 
+static char _mbrFlag[4] ;
 
 int info_disprotect = 0;
 static inline int isstring(char *p)
@@ -383,9 +384,13 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		else if(POR_EMMC_BOOT()){
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
 			tmp_buf= (unsigned char *)addr;
+#ifndef CONFIG_M8_SECU_BOOT
 			//modify the 55 AA info for emmc uboot
+            _mbrFlag[0] = tmp_buf[510];
+            _mbrFlag[1] = tmp_buf[511];
 			tmp_buf[510]=0;
 			tmp_buf[511]=0;
+#endif// #if defined(CONFIG_M8_SECU_BOOT)
 			sprintf(str, "mmc  write bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
 			store_dbg("command: %s\n", str);
 			ret = run_command(str, 0);
@@ -438,8 +443,11 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				store_msg("mmc cmd %s failed \n",cmd);
 				return -1;
 			}
-		    tmp_buf[510]=0x55;
-			tmp_buf[511]=0xaa;
+
+#ifndef CONFIG_M8_SECU_BOOT
+		    tmp_buf[510]= _mbrFlag[0];
+			tmp_buf[511]= _mbrFlag[1];
+#endif// #ifndef CONFIG_M8_SECU_BOOT
 			return ret;
 		}else{
 			store_dbg("CARD BOOT, %s %d ",__func__,__LINE__);
@@ -509,6 +517,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		if(POR_NAND_BOOT()){	
 			sprintf(str, "amlnf  init  %d ",init_flag);
 			printf("command:	%s\n", str);
+            device_boot_flag = NAND_BOOT_FLAG;		
 			ret = run_command(str, 0);
 			if(ret != 0){
 				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
@@ -601,6 +610,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		else if(POR_EMMC_BOOT()){
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
+            device_boot_flag = EMMC_BOOT_FLAG;		
 			ret = run_command("mmcinfo 1", 0);
 			if(ret != 0){
 				store_msg("mmc cmd %s failed \n",cmd);
