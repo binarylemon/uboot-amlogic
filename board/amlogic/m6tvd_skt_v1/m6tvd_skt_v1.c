@@ -36,7 +36,7 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x309);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x211);
 #elif defined(CONFIG_NET_RMII_CLK_EXTERNAL)
@@ -50,7 +50,7 @@ static void setup_net_chip(void)
 	/* setup ethernet clk */
 	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x702);
 	/* setup ethernet pinmux */
-	WRITE_CBUS_REG(PERIPHS_PIN_MUX_6, 0x4007ffe0);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x4007ffe0);
 	/* setup ethernet mode */
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);
 #endif
@@ -101,7 +101,7 @@ static void setup_internal_phy(void)
 	WRITE_CBUS_REG(0x103e, 0x45000828);  
 #else
 	WRITE_CBUS_REG(0x1076, 0x00008d00);
-	WRITE_CBUS_REG(0x2032, 0x00000000);
+	WRITE_CBUS_REG(0x2032, 0x3f000000);
 	WRITE_CBUS_REG(0x2042, 0x47803442);
 	WRITE_CBUS_REG(0x2046, 0x89637989);
 	WRITE_CBUS_REG(0x1102, 0x00000800);
@@ -109,7 +109,7 @@ static void setup_internal_phy(void)
 	//WRITE_CBUS_REG(0x103e, 0x45040828);
 	//WRITE_CBUS_REG(0x103e, 0x45000828);
 	WRITE_CBUS_REG(0x103c, 0x12848485);
-	WRITE_CBUS_REG(0x103f, 0x61ea4000);
+	WRITE_CBUS_REG(0x103f, 0x46ea4000);
 	WRITE_CBUS_REG(0x1040, 0x00000001);
 	WRITE_CBUS_REG(0x1041, 0x3000);
 	WRITE_CBUS_REG(0x1042, 0x55055009);  
@@ -188,6 +188,10 @@ U_BOOT_CMD(
 
 #endif //CONFIG_SARADC
 
+void m6tvdref_set_pinmux(int power_on)
+{
+
+}
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
@@ -730,9 +734,6 @@ int board_init(void)
     
 #endif    
     
-#ifdef CONFIG_INTERNAL_PHY
-	   setup_internal_phy();
-#endif
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/

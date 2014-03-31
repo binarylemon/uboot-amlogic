@@ -29,7 +29,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 #if (CFG_M6TV_DDR_CLK >= 408 ) && (CFG_M6TV_DDR_CLK <533)
 	#define DDR3_7_7_7
 #elif  (CFG_M6TV_DDR_CLK >= 533 ) && (CFG_M6TV_DDR_CLK <667)
-	#define DDR3_9_9_9 
+	#define DDR3_11_11_11 
 #elif  (CFG_M6TV_DDR_CLK >= 667 ) && (CFG_M6TV_DDR_CLK <=804)
 	#define DDR3_11_11_11
 #endif
@@ -38,37 +38,40 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 //Following setting for board 7366MX-ADTV-SOCKET-V120121029 with DDR H5TQ4G63MFR (hynix)
 #ifdef DDR3_11_11_11
 	#define CFG_M6TV_DDR_CL  11
-	#define CFG_M6TV_DDR_FAW 32
-	#define CFG_M6TV_DDR_RAS 28
-	#define CFG_M6TV_DDR_RC  39
-	#define CFG_M6TV_DDR_RCD 11
-	#define CFG_M6TV_DDR_RFC 240
-	#define CFG_M6TV_DDR_RP  11
-	#define CFG_M6TV_DDR_RRD 6
-	#define CFG_M6TV_DDR_WR  12
+	#define CFG_M6TV_DDR_FAW 40+11
+	#define CFG_M6TV_DDR_RAS 29
+	#define CFG_M6TV_DDR_RC  40
+	#define CFG_M6TV_DDR_RCD 12
+	#define CFG_M6TV_DDR_RFC 241
+	#define CFG_M6TV_DDR_RP  12
+	#define CFG_M6TV_DDR_RRD 8
+	#define CFG_M6TV_DDR_WR  13
 	#define CFG_M6TV_DDR_CWL 8
 	#define CFG_M6TV_DDR_MOD 12
-	#define CFG_M6TV_DDR_MRD 4
+	#define CFG_M6TV_DDR_MRD 6
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
+	#define CFG_M6TV_DDR_ZQ0CR1   0X5d //0x6a //0x5d //0x4c //0x5d
+	//5a 6a is good for m6tv socket board
+	//5d for test other board
 #endif
 
 #ifdef DDR3_9_9_9
-	#define CFG_M6TV_DDR_CL  10
-	#define CFG_M6TV_DDR_FAW 30
-	#define CFG_M6TV_DDR_RAS 24
-	#define CFG_M6TV_DDR_RC  33
-	#define CFG_M6TV_DDR_RCD 9
-	#define CFG_M6TV_DDR_RFC 200
-	#define CFG_M6TV_DDR_RP  9
-	#define CFG_M6TV_DDR_RRD 5
-	#define CFG_M6TV_DDR_WR  10
-	#define CFG_M6TV_DDR_CWL 7
-	#define CFG_M6TV_DDR_MOD 12
-	#define CFG_M6TV_DDR_MRD 7
+	#define CFG_M6TV_DDR_CL  9
+	#define CFG_M6TV_DDR_FAW 40+11 //30 marine modify
+	#define CFG_M6TV_DDR_RAS 28+1 //24   //marine modify
+	#define CFG_M6TV_DDR_RC  39+1  //33   //marine modify
+	#define CFG_M6TV_DDR_RCD 11+1  //marine modify
+	#define CFG_M6TV_DDR_RFC 240+1 //200 marine modify
+	#define CFG_M6TV_DDR_RP  11+1  //marine modify
+	#define CFG_M6TV_DDR_RRD 8 //5  //marine modify
+	#define CFG_M6TV_DDR_WR  12+1  //10 marine modify
+	#define CFG_M6TV_DDR_CWL 8  // marine modify
+	#define CFG_M6TV_DDR_MOD 12  // marine modify
+	#define CFG_M6TV_DDR_MRD 7    // 4 marine modify
 	#define CFG_M6TV_DDR_AL  0
-	#define CFG_M6TV_DDR_ZQ0CR1 0x5d
-
+	#define CFG_M6TV_DDR_ZQ0CR1   0X5a //0x6a //0x5d //0x4c //0x5d
+	//5a 6a is good for m6tv socket board
+	//5d for test other board
 #endif
 
 #ifdef DDR3_7_7_7
@@ -132,14 +135,15 @@ static struct ddr_set __ddr_setting={
                     .t_clr          =  8,
                     .t_dqs          =  2,
                     .t_zqcl         =  512,
-                    .t_rtw          =  4,
-                    .t_rtp          =  6,
-                    .t_wtr          =  6,
-                    .t_xp           =  5,
+                    .t_rtw          =  8, //marine modify
+                    .t_rtp          =  8,  //marine modify
+                    .t_wtr          =  8,  //marine modify
+                  //  .t_rtw          =
+                    .t_xp           =  6,//5,marine modify
                     .t_xpdll        =  20,
-                    .t_cksrx        =  5,
-                    .t_cksre        =  5,
-                    .t_cke          =  4,
+                    .t_cksrx        =  10,//5, marine modify from 5 to 10
+                    .t_cksre        =  10,//5, marine modify from 5 to 10
+                    .t_cke          =  6,  //marine modify from 4 to 6
                     
                     .mrs={  [0]=(1 << 12) |   //[B12] 1 fast exit from power down (tXARD), 0 slow (txARDS).
                     			(6<<9)|       //@@[B11,B10,B9]WR recovery. It will be calcualted by get_mrs0()@ddr_init_pctl.c                    						  
@@ -151,8 +155,8 @@ static struct ddr_set __ddr_setting={
                     			(0 << 2 ) |   //[B2]cas latency bit 0.
 								(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
                     			                    						      
-                            [1]=(0 << 9)|(0 << 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-                                (0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+                            [1]=(0 << 9)|(0<< 6)|(1<< 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+                                (0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 						#ifdef ENABLE_WRITE_LEVELING
                                 (1 << 7)|     // Write leveling enable
 						#endif
@@ -180,17 +184,22 @@ static struct ddr_set __ddr_setting={
                     .zq0cr0 = 0,
                     .zq0cr1 = CFG_M6TV_DDR_ZQ0CR1,//0x18,   //PUB ZQ0CR1
                     .cmdzq  = 0,
-                    .t_dxccr_dqsres = 0x4,//ODT: pull down, 500ohms
+                    .t_dxccr_dqsres = 0x7,//ODT: pull down, 500ohms
                     					  //PUB_DXCCR[8:5]: DQS resister. DQSRES[3]: 0 - pull down, 1-pull up. 
                     					  //DQSRES[2:0]:000-open, use extern ODT,
                     					  //                      001-688ohms,010-611ohms,011-550ohms,
                     					  //                      100-500ohms,101-458ohms,110-393ohms,
                     					  //                      111-344ohms
-                    .t_dxccr_dqsnres= 0xc,//ODT: pull up,500ohms
+                    .t_dxccr_dqsnres= 0xf,//ODT: pull up,500ohms
                     					  //PUB_DXCCR[12:9]: DQS# resister
-                    .t_acbdlr_ck0bd = 15, //PUB_ACBDLR[5:0]: ck0 bit delay
-                    .t_acbdlr_acbd  = 0,  //PUB_ACBDLR[23:18]: address/command bit delay
-         .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
+                    .t_acbdlr_ck0bd =22,//23, //PUB_ACBDLR[5:0]: ck0 bit delay
+                    .t_acbdlr_acbd  =00,  //PUB_ACBDLR[23:18]: address/command bit delay  
+                    //marine add if use 1t mode   0< acbd -ck0bd <20 maybe fine now use 10/12 ---socket board
+                    //marine add if use 2t mode   -40< acbd -ck0bd <-10  maybe fine now use -30   need fine tune ---socket board
+
+			 //marine add if use 2t mode   -30< acbd -ck0bd <-20  maybe fine now use -23   need fine tune ---loadboard
+						 
+	  .ddr_pll_cntl= (CFG_M6TV_PLL_OD << 16)|(CFG_M6TV_PLL_N<<9)|(CFG_M6TV_PLL_M<<0),
          .ddr_clk= CFG_M6TV_DDR_CLK/2, //DDR PLL output is half of target DDR clock
 	     //#define P_MMC_DDR_CTRL 	   0xc8006000 
          .ddr_ctrl= (0x7f << 16) |     // bit 25:16  ddr command filter bank and read write over timer limit
