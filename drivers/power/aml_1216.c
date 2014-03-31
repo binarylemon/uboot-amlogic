@@ -986,9 +986,9 @@ int aml1216_init(void)
 #ifdef CONFIG_VBUS_DC_SHORT_CONNECT
     aml1216_set_bits(0x002a, 0x01, 0x01);
 #endif
-    aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
-    aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
-    aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
+  //aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
+  //aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
+  //aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x0c);
     aml1216_write(0x012a, 0x0f);                // David Li
@@ -1187,7 +1187,7 @@ int aml1216_calculate_rdc(void)
     if (v_hi > 4000) {                          // to avoid PMU don't charge when battery voltage is high
         return 0;    
     }
-    aml1216_set_charge_enable(0);               // charge current to 500mA 
+    aml1216_set_charging_current(300 * 1000);       // 300mA
     udelay(1000 * 1000);
     i_lo = 0;
     v_lo = 0;
@@ -1196,7 +1196,7 @@ int aml1216_calculate_rdc(void)
         i_lo += aml1216_get_battery_current();
         udelay(8000);
     }
-    aml1216_set_charge_enable(1);               // charge current to 1.05A 
+    aml1216_set_charging_current(1200 * 1000);      // 1200mA
     udelay(1000 * 1000);
     i_hi = 0;
     v_hi = 0;
@@ -1241,7 +1241,6 @@ int aml1216_rdc_init(void)
     int rdc_tmp;
     char buf[100];
 
-    aml1216_set_charging_current(1500 * 1000);
     aml1216_battery_test = 1;
     aml1216_set_bits(0x009A, 0x80, 0x80);                               // clear cloumber counter
     for (i = 0; i < 8; i++) {
