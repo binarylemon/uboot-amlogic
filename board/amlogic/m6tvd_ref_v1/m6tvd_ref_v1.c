@@ -413,30 +413,74 @@ int switch_boot_mode(void)
 	setup_internal_phy();
 #endif
 	printf("switch_boot_mode\n");
-    	u32 reboot_mode_current = reboot_mode;
+    u32 reboot_mode_current = reboot_mode;
 	char *suspend = getenv("suspend");
 	int ret0 = strcmp(suspend,"on");
 	if (ret0 == 0){
-	  setenv("suspend","off");
-	  saveenv();
-	  printf("enter suspend = %s\n",suspend);
-	  run_command("suspend",0);
+		setenv("suspend","off");
+		saveenv();
+		printf("enter suspend = %s\n",suspend);
+		run_command("suspend",0);
 	}
     printf("reboot_mode_current=%x\n",reboot_mode_current);
     switch(reboot_mode_current)
 	{
 	case AMLOGIC_LOCK_REBOOT:
 	{
-	   printf("AML suspend boot....\n");
-	   run_command("suspend",0);
+		printf("AML suspend boot....\n");
+		reboot_mode = 0;
+		run_command("suspend",0);
 	}
 	case AMLOGIC_UPDATE_REBOOT:
 	case AMLOGIC_FACTORY_RESET_REBOOT:
 	{
 	    run_command("run recoveryinand",0);
-    	    extern int aml_autoscript(void);
-            aml_autoscript();
+    	extern int aml_autoscript(void);
+        aml_autoscript();
 	}
+	}
+
+	unsigned int suspend_status_current2 = readl(P_AO_RTI_STATUS_REG2);
+	char *suspend_str = getenv ("suspend");
+	char *factory_standby_str = getenv ("factory_standby");
+	printf("suspend = %s\n", suspend_str);
+	printf("factory_standby = %s\n", factory_standby_str);
+	printf("suspend_status_current2=0x%x\n",suspend_status_current2);
+
+	if(!strcmp(factory_standby_str, "1"))
+	{
+		if(suspend_status_current2 == 0x1234abcd)
+		{
+			writel(0,P_AO_RTI_STATUS_REG2);
+			run_command ("set suspend off", 0);
+			run_command ("save", 0);
+		}
+		else
+		{
+			run_command ("suspend", 0);
+		}
+	}
+	else
+	{
+		if(!strcmp(suspend_str, "on"))
+ 		{
+			run_command ("set suspend done", 0);
+			run_command ("save", 0);
+			run_command ("suspend", 0);
+		}
+		else if(!strcmp(suspend_str, "done"))
+		{
+			if(suspend_status_current2 == 0x1234abcd)
+			{
+				writel(0,P_AO_RTI_STATUS_REG2);
+				run_command ("set suspend off", 0);
+				run_command ("save", 0);
+			}
+			else
+			{
+				run_command ("suspend", 0);
+			}
+		}
 	}
     return 0;
 }

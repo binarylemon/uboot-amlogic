@@ -454,7 +454,7 @@ void enter_power_down()
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
 		{
-			writel(0,P_AO_RTI_STATUS_REG2);
+//			writel(0,P_AO_RTI_STATUS_REG2);
 			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
 			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
 			writel(10,0xc1109904);
