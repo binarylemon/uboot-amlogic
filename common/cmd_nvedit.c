@@ -1059,7 +1059,7 @@ void replace(char* org, char* find, char* rep)
 int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *cmd, *s, *args;
-	char env_bootargs[128],rep[20];
+	char rep[20];
 	unsigned char store=0,tmp = 0;
 	char *p1 = NULL, *p2;
 	
@@ -1069,9 +1069,10 @@ int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	cmd = argv[1];	
 
 	if(!strcmp(cmd,"storage")){
+        char env_bootargs[512],
 		s = getenv("store");
 		store = simple_strtoul(s,NULL,16);
-		memset(env_bootargs, 0, 128);
+		//memset(env_bootargs, 0, 128);
 		args =  getenv("bootargs");
 		if(!strstr(args, "storage")){ // no storage in bootargs
 			//printf("####set bootargs of the storage value\n");
@@ -1079,7 +1080,7 @@ int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			sprintf(env_bootargs, "%s storage=%d", getenv("bootargs"), store);
 			setenv("bootargs", env_bootargs);
 			saveenv();
-			
+
 			//printf("####put_storage : bootargs %s\n",getenv("bootargs"));
 		}else{ // check storage value in bootargs
 

@@ -1063,22 +1063,19 @@ int optimus_set_burn_complete_flag(void)
     upgrade_step = check_uboot_loaded_for_burn(0) ? "2" : "1";
     if(check_uboot_loaded_for_burn(0))
     {
+        extern int device_boot_flag;
+
         upgrade_step = "2";
+        char str_store[8];
 
-        //Don't re-defenv when usb pruducing as it has bug when spi boot. 
-        //Luckly, usb burn don't modify any env!!!!!
-        /*if(OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get())*/
-        {
-            extern int device_boot_flag;
-            char str_store[8];
-
-            sprintf(str_store, "%d", device_boot_flag);
-            DWN_MSG("store=%s\n", str_store);
-            /*rc = run_command("defenv", 0);//use new env directly if uboot is new !!!*/
-            set_default_env("## save_setting ##\n");//use new env directly if uboot is new !!!
-            setenv("store", str_store);
-            setenv("firstboot", "1");
-        }
+        sprintf(str_store, "%d", device_boot_flag);
+        DWN_MSG("store=%s\n", str_store);
+        /*rc = run_command("defenv", 0);//use new env directly if uboot is new !!!*/
+        set_default_env("## save_setting ##\n");//use new env directly if uboot is new !!!
+        setenv("store", str_store);
+        setenv("firstboot", "1");
+        rc = run_command("setenv bootargs ${bootargs} storage=${store}", 0);
+        DWN_MSG("bootargs=%s\n", getenv("bootargs"));
     }
 
     DWN_MSG("Set upgrade_step to %s\n", upgrade_step);
