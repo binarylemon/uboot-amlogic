@@ -64,8 +64,7 @@ int ddr_init_hw(struct ddr_set * timing_set)
     {
 	serial_puts("\nPUB init fail! Reset...\n");
 	__udelay(10000);
-	writel((1<<22) | (3<<24), P_WATCHDOG_TC);
-	while(1);
+	AML_WATCH_DOG_START();
     }    
 
     //asm volatile("wfi");

@@ -183,8 +183,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
-		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
-		while(1);
+		AML_WATCH_DOG_START();
 	}	
 #endif //CONFIG_M8_SECU_BOOT
 
@@ -262,8 +261,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
-		writel((1<<22)|(3<<24)|500, P_WATCHDOG_TC);
-		while(1);
+		AML_WATCH_DOG_START();
 	}	
 #endif //CONFIG_M8_SECU_BOOT
 

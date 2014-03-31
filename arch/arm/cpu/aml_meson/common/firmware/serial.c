@@ -111,6 +111,8 @@ void serial_put_hex(unsigned int data,unsigned bitlen)
             serial_putc(0x61+s-10);
     }
 
+	serial_wait_tx_empty();
+
 }
 
 SPL_STATIC_FUNC void serial_put_dec(unsigned int data)
@@ -126,6 +128,8 @@ SPL_STATIC_FUNC void serial_put_dec(unsigned int data)
 
 	for(--i;i >=0;--i)	
 		serial_putc(szTxt[i]);
+
+	serial_wait_tx_empty();
 }
 
 
@@ -138,7 +142,6 @@ void do_exception(unsigned reason,unsigned lr)
     serial_puts("\tlink addr:");
         serial_put_dword(lr);
 #ifdef CONFIG_ENABLE_WATCHDOG
-	writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);//enable watch dog
+	AML_WATCH_DOG_START();//enable watch dog
 #endif
-    //~ writel((1<<22)|1000000,P_WATCHDOG_TC);//enable Watchdog
 }

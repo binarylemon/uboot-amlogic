@@ -187,8 +187,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	{
 		serial_puts("\nDDR pre-init fail! Reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);		
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 #endif //CONFIG_AML_DDR_PRESET
 

@@ -171,7 +171,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_ENABLE_WATCHDOG
 	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
    		serial_puts("\nload uboot error,now reset the chip");
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+		AML_WATCH_DOG_START();
 	}
 #else
     load_uboot(__TEXT_BASE,__TEXT_SIZE);
@@ -188,7 +188,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	if(load_secureos()){
 		serial_puts("\nload secureOS fail,now reset the chip");
 		ovFlag = 1;		
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+		AML_WATCH_DOG_START();
 	}
 	else{		
 		ovFlag = 0;

@@ -134,7 +134,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 				serial_puts(__FILE__);
 				serial_puts(__FUNCTION__);
 				serial_put_dword(__LINE__);
-				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+				AML_WATCH_DOG_START();
 			}
 		}
 #endif
@@ -218,7 +218,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 				serial_puts(__FILE__);
 				serial_puts(__FUNCTION__);
 				serial_put_dword(__LINE__);
-				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+				AML_WATCH_DOG_START();
 			}
 		}
 #endif

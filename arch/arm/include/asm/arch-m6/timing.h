@@ -105,7 +105,7 @@ struct pll_clk_settings{
 				serial_puts(__FUNCTION__);serial_puts("-"); \
 				serial_put_dec(__LINE__); \
 				serial_puts("\nReboot with watch dog...\n"); \
-				writel((1<<22) | (3<<24)|100, P_WATCHDOG_TC); while(1);\
+				AML_WATCH_DOG_START();\
 			} \
 		}
 

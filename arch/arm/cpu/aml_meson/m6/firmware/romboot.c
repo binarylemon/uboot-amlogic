@@ -189,8 +189,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		{
 			//serial_puts("\nError! SPL is corrupt!\n");
 			serial_puts("\nErr! SPL is corrupt!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);
+			AML_WATCH_DOG_START();
 		}break;
 	}
 
@@ -231,9 +230,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		{
 			//serial_puts("\nError! Wrong MX chip!\n");
 			serial_puts("\nErr! Wrong MX chip!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);
-		
+			AML_WATCH_DOG_START();		
 		}
 		typedef  int (*func_rsa_exp)(fp_intx * G, fp_intx * X, fp_intx * P, fp_intx * Y);		
 		func_rsa_exp fp_exptmodx = (func_rsa_exp)MX_ROM_EXPT_MODE;
@@ -296,8 +293,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		if(memcmp_aml(szRSAPUK1Hash,szEFUSE+128+8,32))
 		{
 			serial_puts("\nError! RSA 1st key is corrupt!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);
+			AML_WATCH_DOG_START();
 		}
 #endif //#if defined(CONFIG_M6_SECU_BOOT_2RSA)
 
@@ -369,8 +365,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 		{
 			//serial_puts("\nError! UBoot is corrupt!\n");
 			serial_puts("\nErr! UBoot is corrupt!\n");
-			writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-			while(1);			
+			AML_WATCH_DOG_START();		
 		}
 
 #if defined(CONFIG_M6_SECU_BOOT_2RSA)
@@ -382,8 +377,7 @@ static void aml_m6_sec_boot_check_2RSA_key(const unsigned char *pSRC)
 	{	
 		//serial_puts("\nError! UBoot is corrupt!\n");
 		serial_puts("\nErr! UBoot is corrupt!\n");
-		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-		while(1);	
+		AML_WATCH_DOG_START();
 	}
 }
 
@@ -415,8 +409,7 @@ static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 	{
 		//serial_puts("\nError! UBoot is corrupt!\n");
 		serial_puts("\nErr! UBoot is corrupt!\n");
-		writel((1<<22) | (3<<24)|500, P_WATCHDOG_TC);
-		while(1);
+		AML_WATCH_DOG_START();
 	}	
 
 #endif

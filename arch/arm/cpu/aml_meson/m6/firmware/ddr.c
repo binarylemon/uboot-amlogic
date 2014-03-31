@@ -96,8 +96,7 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 		//error, because all clk setting base on 24MHz
 		serial_puts("\nERROR! XTAL is wrong, try to reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 
 	int nPLL = readl(P_HHI_DDR_PLL_CNTL);
@@ -288,8 +287,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	{
 		serial_puts("\nDDR pre-init fail! Reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);      
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 #endif //CONFIG_AML_DDR_PRESET
 
@@ -302,8 +300,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
     {
 	    serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 
 #ifdef CONFIG_ACS

@@ -208,7 +208,6 @@ unsigned m6_ddr_init_test(int arg)
         }
     }
     serial_puts("\nDDR check pass!\n");
-    //writel(0, P_WATCHDOG_TC);
     return por_cfg;
 }
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
@@ -232,8 +231,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	{
 		serial_puts("\nDDR pre-init fail! Reset...\n");
 		__udelay(10000); 
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);      
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 #endif //CONFIG_AML_DDR_PRESET
 
@@ -245,8 +243,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
     {
         serial_puts("\nDDR init test fail! Reset...\n");
         __udelay(10000); 
-        writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);      
-        while(1);
+		AML_WATCH_DOG_START();
     }
 
 #ifdef CONFIG_ACS

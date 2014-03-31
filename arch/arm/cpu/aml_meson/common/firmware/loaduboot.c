@@ -110,7 +110,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts(__FILE__);
 		serial_puts(__FUNCTION__);
 		serial_put_dword(__LINE__);
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+		AML_WATCH_DOG_START();
 	}
 #endif
 #if CONFIG_ENABLE_EXT_DEVICE_RETRY
