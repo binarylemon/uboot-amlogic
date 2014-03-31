@@ -146,6 +146,8 @@
 	"bootpath=u-boot-512M-UartB.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"suspend=done\0" \
+    "factory_standby=0\0" \
 	"recoveryinand=lcdctl bl_on;mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
