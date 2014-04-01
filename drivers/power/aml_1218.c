@@ -545,9 +545,12 @@ int aml1218_set_charging_current(int current)
     } else {                                    // input is charge ratio
         current = (current * board_battery_para.pmu_battery_cap) / 100 + 100; 
     } 
+#if 0
     if (current < 750) {                        // for charge current stable issue@4.7uH
         current = 750;    
     }
+#endif
+
     aml1218_read(0x012b, &cur_val);
     idx_to = (current-300) / 150;
     if (!aml1218_battery_test) {                // do not print when test

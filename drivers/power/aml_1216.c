@@ -544,10 +544,13 @@ int aml1216_set_charging_current(int current)
         current = current / 1000;
     } else {                                    // input is charge ratio
         current = (current * board_battery_para.pmu_battery_cap) / 100 + 100; 
-    } 
+    }
+#if 0  
     if (current < 750) {                        // for charge current stable issue@4.7uH
         current = 750;    
     }
+#endif
+
     aml1216_read(0x012b, &cur_val);
     idx_to = (current-300) / 150;
     if (!aml1216_battery_test) {                // do not print when test
@@ -1269,6 +1272,11 @@ int aml1216_update_calibrate(int charge)
     voltage = aml1216_get_battery_voltage(); 
     current = aml1216_get_battery_current();
     status  = aml1216_get_charge_status(0);
+    
+    if (current < 0 )
+    {
+        current = current * (-1);
+    }
     if (status == 1) {                        // charging
         ocv = voltage - (current * rdc) / 1000;
     } else {
