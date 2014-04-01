@@ -264,7 +264,13 @@ int tv_out_open(int mode)
         __raw_writel(tvinfoTab[mode].xres, P_VPP_POSTBLEND_H_SIZE);
 #endif
 #if CONFIG_AML_HDMI_TX
-	set_disp_mode(mode);
+    if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )
+    {
+        extern void set_vmode_clk(vmode_t mode);
+        set_vmode_clk(mode);
+    }
+    else
+	   set_disp_mode(mode);
 #endif
         return 0;
     }

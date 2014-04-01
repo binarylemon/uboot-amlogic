@@ -64,6 +64,15 @@ static void set_hpll_clk_out(unsigned clk)
         case 1086:
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL, 0x43e);
             break;
+        case 1296:
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x59c88000);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xca49b022);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x0023b100);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012385);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x600c0436);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x400c0436);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00016385);
+            break;
         default:
             break;
     }
@@ -143,6 +152,11 @@ static void set_vid_pll_div(unsigned div)
             aml_set_reg32_bits_op(P_HHI_VID_DIVIDER_CNTL, 0, 8, 2);
             aml_set_reg32_bits_op(P_HHI_VID_DIVIDER_CNTL, 0, 12, 3);
             break;
+        case 6:
+            aml_set_reg32_bits_op(P_HHI_VID_DIVIDER_CNTL, 5, 4, 3);
+            aml_set_reg32_bits_op(P_HHI_VID_DIVIDER_CNTL, 0, 8, 2);
+            aml_set_reg32_bits_op(P_HHI_VID_DIVIDER_CNTL, 0, 12, 3);
+            break;
         default:
             break;
     }
@@ -212,10 +226,10 @@ static void set_vdac1_div(unsigned div)
 // hdmi_tx_pixel_div unsigned encp_div unsigned enci_div unsigned enct_div unsigned ecnl_div;
 static enc_clk_val_t setting_enc_clk_val[] = {
     {VMODE_480I,       1080, 4, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
-    {VMODE_480CVBS,    1080, 4, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_480CVBS,    1296, 4, 1, 1, VIU_ENCI,  6, 4, 2,-1,  2, -1, -1,  2,  -1},
     {VMODE_480P,       1080, 4, 1, 1, VIU_ENCP,  5, 4, 2, 1, -1, -1, -1,  1,  -1},
     {VMODE_576I,       1080, 4, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
-    {VMODE_576CVBS,    1080, 4, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_576CVBS,    1296, 4, 1, 1, VIU_ENCI,  6, 4, 2,-1,  2, -1, -1,  2,  -1},
     {VMODE_576P,       1080, 4, 1, 1, VIU_ENCP,  5, 4, 2, 1, -1, -1, -1,  1,  -1},
     {VMODE_720P,       1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
     {VMODE_1080I,      1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
