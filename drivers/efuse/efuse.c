@@ -936,5 +936,69 @@ int efuse_aml_init_plus(void)
 }
 #endif //CONFIG_AML_EFUSE_INIT_PLUS
 
+/* function: efuse_read_intlItem
+ * intl_item: item name,name is [temperature,cvbs_trimming]
+ * buf:  output para
+ * size: buf size
+ * */
+int efuse_read_intlItem(char *intl_item,char *buf,int size)
+{
+	efuse_socchip_type_e soc_type;
+	loff_t pos;
+	int len;
+	int ret=-1;
+	soc_type = efuse_get_socchip_type();
+	switch(soc_type){
+		case EFUSE_SOC_CHIP_M3:
+			//pos = ;
+			break;
+		case EFUSE_SOC_CHIP_M6:
+		case EFUSE_SOC_CHIP_M6TV:
+		case EFUSE_SOC_CHIP_M6TVLITE:
+			//pos = ; 
+			break;
+		case EFUSE_SOC_CHIP_M8:
+			if(strcmp(intl_item,"temperature") == 0){
+				pos = 502;
+				len = 2;
+				if(size <= 0){
+					printf("%s input size:%d is error\n",intl_item,size);
+					return -1;
+				}
+				if(len > size){
+					len = size;
+				}
+				ret = efuse_read( buf, len, &pos );
+				return ret;
+			}
+			if(strcmp(intl_item,"cvbs_trimming") == 0){
+				/* cvbs note: 
+				 * cvbs has 2 bytes, position is 504 and 505, 504 is low byte,505 is high byte
+				 * p504[bit2~0] is cvbs trimming CDAC_GSW<2:0>
+				 * p505[bit7] : 1--wrote cvbs, 0-- not wrote cvbs
+				 * */
+				pos = 504;
+				len = 2;
+				if(size <= 0){
+					printf("%s input size:%d is error\n",intl_item,size);
+					return -1;
+				}
+				if(len > size){
+					len = size;
+				}
+				ret = efuse_read( buf, len, &pos );
+				return ret;
+			}
+			break;
+		case EFUSE_SOC_CHIP_M6TVD:
+			break;
+		case EFUSE_SOC_CHIP_UNKNOW:
+		default:
+			printf("%s:%d chip is unkow\n",__func__,__LINE__);
+			//return -1;
+			break;
+	}
+	return ret;
+}
 
 

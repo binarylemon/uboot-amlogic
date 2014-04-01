@@ -227,6 +227,7 @@
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
+	"vdac_config=0x10\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
 	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=tvout\0" \
@@ -289,7 +290,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${bootargs} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${bootargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\

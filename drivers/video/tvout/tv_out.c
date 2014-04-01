@@ -173,6 +173,64 @@ static void enable_vsync_interrupt(void)
     }
 }
 
+#if CONFIG_AML_MESON_8
+static unsigned int vdac_cfg_valid = 0, vdac_cfg_value = 0;
+void cvbs_config_vdac(unsigned int flag, unsigned int cfg)
+{
+	vdac_cfg_value = cfg&0x7;
+
+	// flag 1/0 for validity of vdac config
+	if( (flag&0xc0) == 0x80 )
+		vdac_cfg_valid = 1;
+	else
+		vdac_cfg_valid = 0;
+
+	return ;
+}
+static void cvbs_cntl_output(unsigned int open)
+{
+	unsigned int cntl0=0, cntl1=0;
+	
+	if( open == 0 )// close
+	{
+		cntl0 = 0;
+		cntl1 = 8;
+		WRITE_MPEG_REG(HHI_VDAC_CNTL0, cntl0);
+		WRITE_MPEG_REG(HHI_VDAC_CNTL1, cntl1);
+	}
+	else if( open == 1 )// open
+	{
+		cntl0 = 0x1;
+		cntl1 = (vdac_cfg_valid==0)?0:vdac_cfg_value;
+		WRITE_MPEG_REG(HHI_VDAC_CNTL1, cntl1);
+		WRITE_MPEG_REG(HHI_VDAC_CNTL0, cntl0);
+	}
+
+	return ;
+}
+
+#if CONFIG_EFUSE
+extern int efuse_read_intlItem(char *intl_item,char *buf,int size);
+
+void cvbs_trimming(void)
+{
+	char cvbs_buf[2] = {0,0}, cvbs_value[8];
+	int ret;
+	int fake;
+
+	ret = efuse_read_intlItem("cvbs_trimming", cvbs_buf, 2);
+	printf("cvbs trimming: 0x%x, 0x%x\n", cvbs_buf[0], cvbs_buf[1]);
+	cvbs_config_vdac(cvbs_buf[1], cvbs_buf[0]);
+
+	sprintf(cvbs_value, "0x%x", (cvbs_buf[0]<<8)|cvbs_buf[1] );
+	setenv("vdac_config",cvbs_value);
+
+	return ;
+}
+#endif
+
+#endif
+
 int tv_out_open(int mode)
 {
 #if CONFIG_AML_HDMI_TX
@@ -184,10 +242,19 @@ int tv_out_open(int mode)
     {
         tvmode = mode;
 
+#if CONFIG_AML_MESON_8
+		cvbs_cntl_output(0);
+#endif
+
         s = tvregsTab[mode];
         while (MREG_END_MARKER != s->reg)
             setreg(s++);
-	
+
+#if CONFIG_AML_MESON_8
+		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )
+			cvbs_cntl_output(1);
+#endif
+
 //	tvoutc_setclk(mode);
 //	enable_vsync_interrupt();
 #if CONFIG_AML_MESON_6

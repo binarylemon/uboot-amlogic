@@ -415,7 +415,12 @@ extern void init_secure_firmware(void);
 	setenv("bootargs", env_bootargs);
 	printf("bootargs = %s\n", env_bootargs);
 #endif
-	
+
+#if defined(CONFIG_AML_MESON_8)&&defined(CONFIG_EFUSE)
+	extern void cvbs_trimming(void);
+	cvbs_trimming();
+#endif
+
 #ifdef CONFIG_PREBOOT
 	if ((p = getenv ("preboot")) != NULL) {
 # ifdef CONFIG_AUTOBOOT_KEYED
