@@ -32,7 +32,7 @@ int m8_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
     memset(buf,0,sizeof(buf));
 	num=fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	m8_caculate();
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 
 	#define AML_M8_SECURE_BOOT_ID			(0x4C42384D) //M8BL
 	#define AML_M8_SECURE_BOOT_ID_32KBSPL	(0x424B3233) //32KB
@@ -51,7 +51,7 @@ int m8_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 	#define AML_M8_SPL_SIZE_ID   (AML_M8_SECURE_BOOT_ID_32KBSPL)
 #endif
 
-#ifdef CONFIG_M8_SECU_BOOT_2RSA	
+#ifdef CONFIG_AML_SECU_BOOT_V2_2RSA	
 	#define AML_M8_AML_RSA_STAGE (AML_RSA_STAGE_2_0)
 #else
 	#define AML_M8_AML_RSA_STAGE (AML_RSA_STAGE_1_0)
@@ -121,7 +121,7 @@ int m8_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
        
         fwrite(buf,sizeof(char),count,fp_out);
 		
-		#ifdef CONFIG_M8_SECU_BOOT
+		#ifdef CONFIG_AML_SECU_BOOT_V2
 		nTPLLength += count;
 		//if(sizeof(buf) != count)
 		if(count & 0xF)
@@ -132,7 +132,7 @@ int m8_write(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 		#endif
 	}
 
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 	fseek(fp_out,AML_M8_SPL_READ_SIZE - 4,SEEK_SET);
 	fwrite(&nTPLLength,sizeof(nTPLLength),1,fp_out);
 	
@@ -154,7 +154,7 @@ int m8_write_crypto(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
     memset(buf,0,sizeof(buf));
 	num=fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);
 	m8_caculate();
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 
 	#define AML_M8_SECURE_BOOT_ID			(0x4C42384D) //M8BL
 	#define AML_M8_SECURE_BOOT_ID_32KBSPL	(0x424B3233) //32KB
@@ -173,7 +173,7 @@ int m8_write_crypto(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 	#define AML_M8_SPL_SIZE_ID   (AML_M8_SECURE_BOOT_ID_32KBSPL)
 #endif
 
-#ifdef CONFIG_M8_SECU_BOOT_2RSA	
+#ifdef CONFIG_AML_SECU_BOOT_V2_2RSA	
 	#define AML_M8_AML_RSA_STAGE (AML_RSA_STAGE_4_0)
 #else
 	#define AML_M8_AML_RSA_STAGE (AML_RSA_STAGE_3_0)
@@ -243,7 +243,7 @@ int m8_write_crypto(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
        
         fwrite(buf,sizeof(char),count,fp_out);
 		
-		#ifdef CONFIG_M8_SECU_BOOT
+		#ifdef CONFIG_AML_SECU_BOOT_V2
 		nTPLLength += count;
 		//if(sizeof(buf) != count)
 		if(count & 0xF)
@@ -254,7 +254,7 @@ int m8_write_crypto(FILE * fp_spl,FILE * fp_in ,FILE * fp_out)
 		#endif
 	}
 
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 	fseek(fp_out,AML_M8_SPL_READ_SIZE - 4,SEEK_SET);
 	fwrite(&nTPLLength,sizeof(nTPLLength),1,fp_out);
 	
@@ -276,9 +276,9 @@ int m8_write_ex(FILE * fp_spl,FILE * fp_in ,FILE * fp_out,unsigned addr)
     memset(buf,0,sizeof(buf));
 	num = fread(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_spl);   // add num assignment to avoid compile warning
 	m8_caculate();
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 	while(1);//deadlock here, not support
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 	fwrite(buf,sizeof(buf[0]),sizeof(buf)/sizeof(buf[0]),fp_out);
 	while(!feof(fp_spl))
 	{

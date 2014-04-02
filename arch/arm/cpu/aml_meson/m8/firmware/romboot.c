@@ -2,9 +2,9 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
-#if defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_AML_SECU_BOOT_V2)
 #include "secure.c"
-#endif//#if defined(CONFIG_M8_SECU_BOOT)
+#endif//#if defined(CONFIG_AML_SECU_BOOT_V2)
 
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <secureloader.c>
@@ -131,10 +131,10 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 	if((((unsigned int)fw_load_intl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
 	{	
 		memcpy(temp_addr,target,size); //here need fine tune!!
-#if defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_AML_SECU_BOOT_V2)
 		serial_puts("Aml log : M8-TPL-SEC-DEC-1\n");
 		goto m8_tpl_dec;	
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 		serial_puts("Aml log : M8-TPL-UCL-DEC-1\n");		
 		goto m8_tpl_ucl_dec;
 	}
@@ -179,13 +179,13 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
            return 1;
     }
 
-#if defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_AML_SECU_BOOT_V2)
 m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		AML_WATCH_DOG_START();
 	}	
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 
 m8_tpl_ucl_dec:
 
@@ -247,23 +247,23 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 	if((((unsigned int)fw_load_extl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
 	{	
 		memcpy(temp_addr,target,size); //here need fine tune!!
-#if defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_AML_SECU_BOOT_V2)
 		serial_puts("Aml log : M8-TPL-SEC-DEC-2\n");
 		goto m8_tpl_dec;	
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 		serial_puts("Aml log : M8-TPL-UCL-DEC-2\n");		
 		goto m8_tpl_ucl_dec;
 	}
 
     int rc=sdio_read(temp_addr,size,por_cfg);   
 
-#if defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_AML_SECU_BOOT_V2)
 m8_tpl_dec:
 	if(aml_sec_boot_check((unsigned char *)temp_addr))
 	{		
 		AML_WATCH_DOG_START();
 	}	
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 
 #if defined (CONFIG_VLSI_EMULATOR)
 m8_tpl_ucl_dec:

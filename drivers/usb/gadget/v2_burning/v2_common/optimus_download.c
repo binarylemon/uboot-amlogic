@@ -89,7 +89,7 @@ struct imgBurnInfo_bootloader{
 COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 
 
-#if defined(CONFIG_ACS) && !defined(CONFIG_M8_SECU_BOOT)
+#if defined(CONFIG_ACS) && !defined(CONFIG_AML_SECU_BOOT_V2)
 static void _show_partition_table(const struct partitions* pPartsTab)
 {
 	int i=0;

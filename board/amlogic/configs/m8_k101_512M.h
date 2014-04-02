@@ -538,7 +538,7 @@
 #define CONFIG_CMD_SARADC
 #define CONFIG_CMD_IMGPACK 1
 //M8 security boot
-//#define CONFIG_M8_SECU_BOOT	1
+//#define CONFIG_AML_SECU_BOOT_V2	1
 
 //M8 L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1

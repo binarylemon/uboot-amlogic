@@ -14,7 +14,7 @@ ifdef CONFIG_M8
 endif
 	$(MAKE) -f Makefile.$(targetComplier)
 	$(MAKE) -f Makefile.ddr_init
-ifdef CONFIG_M8_SECU_BOOT
+ifdef CONFIG_AML_SECU_BOOT_V2
 	$(MAKE) -f Makefile.usb
 endif
 ifeq ($(CONFIG_CMD_RUNARC),y)

@@ -341,7 +341,7 @@
 //#define CONFIG_AML_DDR_PRESET 1
 
 //M8 security boot
-//#define CONFIG_M8_SECU_BOOT	1
+//#define CONFIG_AML_SECU_BOOT_V2	1
 
 //To build the encrypted uboot with key: aml-rsa-key.k1a and aml-aes-key.aes
 //#define CONFIG_AML_CRYPTO_UBOOT 1

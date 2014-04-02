@@ -689,12 +689,12 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif //CONFIG_M6_SECU_BOOT
 
 
-#ifdef CONFIG_M8_SECU_BOOT
+#ifdef CONFIG_AML_SECU_BOOT_V2
 	extern int aml_sec_boot_check(unsigned char *pSRC);
 	ret = aml_sec_boot_check((unsigned char *)load_addr);
 	if(0 != ret)
 		return ret;	
-#endif //CONFIG_M8_SECU_BOOT
+#endif //CONFIG_AML_SECU_BOOT_V2
 
 
 #ifdef CONFIG_AML_GATE_INIT
