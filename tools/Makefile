@@ -91,7 +91,7 @@ NOPED_OBJ_FILES-y += mkimage.o
 OBJ_FILES-$(CONFIG_NETCONSOLE) += ncb.o
 NOPED_OBJ_FILES-y += os_support.o
 OBJ_FILES-$(CONFIG_SHA1_CHECK_UB_IMG) += ubsha1.o
-OBJ_FILES-$(CONFIG_AML_MESON)	+=convert.o m1_romboot.o a3_romboot.o m3_romboot.o m6_romboot.o m8_romboot.o
+OBJ_FILES-$(CONFIG_AML_MESON)	+=convert.o m1_romboot.o a3_romboot.o m3_romboot.o m6_romboot.o m8_romboot.o m6tvd_romboot.o
 OBJ_FILES-$(CONFIG_UCL) += uclpack.o
 OBJ_FILES-$(CONFIG_AML_SUSPEND) += bin2code.o
 OBJ_FILES-$(CONFIG_JOIN_UBOOT_SECUREOS) += join_uboot_secureos.o
@@ -207,7 +207,7 @@ $(obj)ncb$(SFX):	$(obj)ncb.o
 $(obj)ubsha1$(SFX):	$(obj)os_support.o $(obj)sha1.o $(obj)ubsha1.o
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 $(obj)convert$(SFX): $(obj)convert.o \
-										$(obj)m1_romboot.o $(obj)a3_romboot.o $(obj)m3_romboot.o $(obj)m6_romboot.o $(obj)m8_romboot.o
+										$(obj)m1_romboot.o $(obj)a3_romboot.o $(obj)m3_romboot.o $(obj)m6_romboot.o $(obj)m8_romboot.o $(obj)m6tvd_romboot.o
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^
 $(obj)uclpack$(SFX): $(obj)uclpack.o $(LIBUCL_FILE)
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^

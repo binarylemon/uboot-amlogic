@@ -17,3 +17,7 @@ int m6_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
 int m8_write(FILE *spl, FILE *in, FILE *out);
 int m8_write_crypto(FILE *spl, FILE *in, FILE *out);
 int m8_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
+/* tools/m6tvd_romboot.c */
+int m6tvd_write(FILE *spl, FILE *in, FILE *out);
+int m6tvd_write_ex(FILE *spl, FILE *in, FILE *out,unsigned addr);
+int m6tvd_write_crypto(FILE *spl, FILE *in, FILE *out);

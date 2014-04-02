@@ -2,6 +2,10 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
+#if defined(CONFIG_AML_SECU_BOOT_V2)
+#include "secure.c"
+#endif//#if defined(CONFIG_AML_SECU_BOOT_V2)
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
@@ -122,7 +126,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
                 return rc;
             }
 #endif
-            serial_puts("Boot From SPI");
+            serial_puts("Boot From SPI\n");
             memcpy((unsigned*)temp_addr,mem,size);
             break;
         case POR_1ST_SDIO_C:
@@ -137,13 +141,21 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
         default:
            return 1;
     }
+
+#if defined(CONFIG_AML_SECU_BOOT_V2)
+	if(aml_sec_boot_check((unsigned char *)temp_addr))
+	{
+		AML_WATCH_DOG_START();
+	}
+#endif //CONFIG_AML_SECU_BOOT_V2
+
 #if CONFIG_UCL    
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;    
     if(rc==0){
-        serial_puts("ucl decompress\n");
+        serial_puts("ucl decompress...");
         rc=uclDecompress((char*)target,&len,(char*)temp_addr);
-        serial_puts(rc?"decompress false\n":"decompress true\n");
+        serial_puts(rc?"fail\n":"pass\n");
     }
 #endif    
 #endif    
@@ -170,14 +182,23 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 #else
     temp_addr=target;
 #endif
-    int rc=sdio_read(temp_addr,size,por_cfg);    
+    int rc=sdio_read(temp_addr,size,por_cfg);   
+
+#if defined(CONFIG_AML_SECU_BOOT_V2)
+	if(aml_sec_boot_check((unsigned char *)temp_addr))
+	{	
+		AML_WATCH_DOG_START();
+	}	
+#endif //CONFIG_AML_SECU_BOOT_V2
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	unsigned len;
     if(!rc){
-	    serial_puts("ucl decompress\n");
+	    serial_puts("ucl decompress...");
 	    rc=uclDecompress((char*)target,&len,(char*)temp_addr);
-        serial_puts("decompress finished\n");
+        //serial_puts("decompress finished\n");
+        serial_puts(rc?"fail\n":"pass\n");
     }
 #endif    
 #endif

@@ -285,8 +285,8 @@
 
 //#define CONFIG_CMD_MATH         1
 
-//m6 security boot
-//#define CONFIG_M6_SECU_BOOT	1
+//m6tvd security boot
+//#define CONFIG_AML_SECU_BOOT_V2 1
 
 //To build the encrypted uboot with key: aml-rsa-key.k1a and aml-aes-key.aes
 //#define CONFIG_AML_CRYPTO_UBOOT 1
