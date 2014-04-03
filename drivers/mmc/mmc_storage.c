@@ -615,10 +615,10 @@ int mmc_storage_test(struct mmc * mmc)
 #endif
 int secure_storage_emmc_read(char *buf,unsigned int len)
 {
-	mmc_secure_storage_ops(buf, len, 0);
+	return mmc_secure_storage_ops(buf, len, 0);
 }
 int secure_storage_emmc_write(char *buf,unsigned int len)
 {
-	mmc_secure_storage_ops(buf, len, 1);
+	return mmc_secure_storage_ops(buf, len, 1);
 }
 
