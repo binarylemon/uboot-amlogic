@@ -428,6 +428,13 @@ else   #ELSE CONFIG_AML_MESON
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
 $(UBOOT_SECURE_OS): $(obj)u-boot.bin $(SECURE_OS_BIN)
 		$(obj)tools/join_uboot_secureos $(obj)u-boot.bin  $(SECURE_OS_BIN) $(UBOOT_SECURE_OS)
+ifdef CONFIG_AML_SECU_BOOT_V2
+	@./tools/secu_boot/encrypto3 $@
+ifdef CONFIG_AML_CRYPTO_UBOOT
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
+	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
+endif
+endif
 ifdef CONFIG_M6_SECU_BOOT
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat

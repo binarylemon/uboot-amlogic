@@ -283,3 +283,35 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 }
 #endif
 
+uint32_t meson_trustzone_boot_check(unsigned char *addr)
+{
+	unsigned int ret = 0;
+	struct sram_hal_api_arg arg = {};
+
+
+	arg.cmd = SRAM_HAL_API_CHECK;
+	arg.req_len = 0x1000000;
+	arg.res_len = 0;
+	arg.req_phy_addr = addr;
+	arg.res_phy_addr = NULL;
+	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+
+	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
+	register uint32_t r2 asm("r2") = (unsigned int)(&arg);
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    __asmeq("%3", "r2")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1), "r"(r2));
+	} while (0);
+
+	ov_dcache_invalid_range(arg.res_phy_addr, (arg.res_len));
+	ret = arg.res_phy_addr;
+
+	return ret;
+}

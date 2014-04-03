@@ -1,16 +1,22 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
 
-
+#include <config.h>
 
 #define READ_SIZE       32*1024     // Size for data reading
-#define SECURE_OS_OFFSET_POSITION_IN_SRAM	(32-4)
-#define SECURE_OS_SIZE_POSITION_IN_SRAM 		(32-4-4)
+#ifdef CONFIG_M8
+#define SECURE_OS_SRAM_BASE (512+32)
+#else
+#define SECURE_OS_SRAM_BASE 32
+#endif
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM (SECURE_OS_SRAM_BASE-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM   (SECURE_OS_SRAM_BASE-4-4)
+
 static unsigned char buf[READ_SIZE];
+
 void record_offset(unsigned int postion)
 {
 	unsigned int *pbuf;

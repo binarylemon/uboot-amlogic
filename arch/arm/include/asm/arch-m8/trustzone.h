@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef __MESON6_TRUSTZONE_H
-#define __MESON6_TRUSTZONE_H
+#ifndef __MESON8_TRUSTZONE_H
+#define __MESON8_TRUSTZONE_H
 
 #include <asm/arch/io.h>
 
@@ -65,6 +65,19 @@
 #define TRUSTZONE_HAL_API_SRAM                  0x400
 
 
+/* Secure OS defines */
+#define SECURE_OS_COMPRESS_ADDR                 0x0E000000
+#define SECURE_OS_ACS_SRAM_ADDR                 0xD9000200
+#define SECURE_OS_ACS_DRAM_ADDR                 0x0F000000
+#define SECURE_OS_ACS_LEN                       0x00000400
+
+#define SECURE_OS_SRAM_BASE (512+32)
+#define SECURE_OS_OFFSET_POSITION_IN_SRAM       (SECURE_OS_SRAM_BASE-4)
+#define SECURE_OS_SIZE_POSITION_IN_SRAM         (SECURE_OS_SRAM_BASE-4-4)
+// secure arguments address in SRAM
+#define SECUREARGS_ADDRESS_IN_SRAM              (SECURE_OS_SRAM_BASE-4-4-4)
+
+
 #ifdef CONFIG_MESON_STORAGE_BURN
 struct storage_hal_api_arg{
 	unsigned int cmd;
@@ -85,6 +98,7 @@ struct storage_hal_api_arg{
 #endif
 
 #define SRAM_HAL_API_CAS 0x401
+#define SRAM_HAL_API_CHECK 0x402
 struct sram_hal_api_arg {
 	unsigned int cmd;
 	unsigned int req_len;
@@ -98,5 +112,6 @@ uint32_t meson_trustzone_rtc_read_reg32(uint32_t addr);
 uint32_t meson_trustzone_rtc_write_reg32(uint32_t addr, uint32_t value);
 uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
 uint32_t meson_trustzone_acs_addr(uint32_t addr);
+uint32_t meson_trustzone_boot_check(unsigned char *addr);
 
 #endif

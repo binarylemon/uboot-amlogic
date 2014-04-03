@@ -7,6 +7,7 @@
 #endif//#if defined(CONFIG_AML_SECU_BOOT_V2)
 
 #ifdef CONFIG_MESON_TRUSTZONE
+#include <asm/arch/trustzone.h>
 #include <secureloader.c>
 #endif
 
