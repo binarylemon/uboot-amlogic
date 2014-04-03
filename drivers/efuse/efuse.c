@@ -145,7 +145,6 @@ struct efuse_chip_info_t{
 	unsigned int Id2;
 	efuse_socchip_type_e type;
 };
-
 static const struct efuse_chip_info_t efuse_chip_info[]={
 	{.Id1=0x000027ed, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M8},   //M8 second version
 	{.Id1=0x000025e2, .Id2=0xe3a01000, .type=EFUSE_SOC_CHIP_M8},   //M8 first version
@@ -164,6 +163,7 @@ struct efuse_chip_identify_t{
 	efuse_socchip_type_e type;
 };
 static const struct efuse_chip_identify_t efuse_chip_hw_info[]={
+	{.chiphw_mver=27, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M8BABY},      //M8BABY ok
 	{.chiphw_mver=26, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M6TVD},      //M6TVD ok
 	{.chiphw_mver=25, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M8},      //M8 ok
 	{.chiphw_mver=24, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M6TVLITE},  //M6TVC,M6TVLITE(M6C)
@@ -177,6 +177,8 @@ static const struct efuse_chip_identify_t efuse_chip_hw_info[]={
 efuse_socchip_type_e efuse_get_socchip_type(void)
 {
 	efuse_socchip_type_e type;
+	unsigned int *pID1 =(unsigned int *)0xd9040004;
+	unsigned int *pID2 =(unsigned int *)0xd904002c;
 	type = EFUSE_SOC_CHIP_UNKNOW;
 	if(cpu_is_before_m6()){
 		type = EFUSE_SOC_CHIP_M3;
@@ -229,6 +231,7 @@ static int efuse_checkversion(char *buf)
 					}
 					break;
 				case EFUSE_SOC_CHIP_M8:
+				case EFUSE_SOC_CHIP_M8BABY:
 					if(ver != M8_EFUSE_VERSION_SERIALNUM_V1){
 						ver = -1;
 					}
@@ -357,6 +360,7 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 			versionPOS = V2_EFUSE_VERSION_OFFSET; //3;
 			break;
 		case EFUSE_SOC_CHIP_M8:
+		case EFUSE_SOC_CHIP_M8BABY:
 			versionPOS = M8_EFUSE_VERSION_OFFSET;//509
 			break;
 		case EFUSE_SOC_CHIP_M6TVD:
@@ -635,6 +639,7 @@ int efuse_set_versioninfo(efuseinfo_item_t *info)
 			ret = 0;
 			break;
 		case EFUSE_SOC_CHIP_M8:
+		case EFUSE_SOC_CHIP_M8BABY:
 			info->offset = M8_EFUSE_VERSION_OFFSET; //509
 			info->data_len = M8_EFUSE_VERSION_DATA_LEN;
 			info->enc_len = M8_EFUSE_VERSION_ENC_LEN;
@@ -780,6 +785,7 @@ unsigned efuse_readcustomerid(void)
 				efuse_active_customerid = val;			
 			break;
 		case EFUSE_SOC_CHIP_M8:
+		case EFUSE_SOC_CHIP_M8BABY:
 			break;
 		case EFUSE_SOC_CHIP_M6TVD:
 			break;
@@ -927,7 +933,7 @@ int efuse_aml_init_plus(void)
 		}
 	#undef AML_MX_EFUSE_CHECK_1	
 	}
-	else if(soc_type == EFUSE_SOC_CHIP_M8){
+	else if((soc_type == EFUSE_SOC_CHIP_M8)||(soc_type == EFUSE_SOC_CHIP_M8BABY)){
 	}
 	else if(soc_type == EFUSE_SOC_CHIP_M6TVD ){
 	}
@@ -958,6 +964,7 @@ int efuse_read_intlItem(char *intl_item,char *buf,int size)
 			//pos = ; 
 			break;
 		case EFUSE_SOC_CHIP_M8:
+		case EFUSE_SOC_CHIP_M8BABY:
 			if(strcmp(intl_item,"temperature") == 0){
 				pos = 502;
 				len = 2;

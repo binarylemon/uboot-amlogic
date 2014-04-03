@@ -31,7 +31,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M6_MBX_V1"
 	@echo config command: \"make m6_mbx_v1_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M6_G33_1GB_V2"
 	@echo config command: \"make m6_g33_1G_v2_config\"
@@ -39,7 +39,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M6_G33_512_V2"
 	@echo config command: \"make m6_g33_512M_v2_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M6_MBX_V2"
 	@echo config command: \"make m6_mbx_v2_config\"
@@ -111,6 +111,16 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8_k160_V1"
 	@echo config command: \"make m8_k160_v1_config\"
+	@echo
+
+	@echo =======================================================================
+	@echo The mark in board is "M8B_SKT_V1"
+	@echo config command: \"make m8b_skt_v1_config\"
+	@echo
+
+	@echo =======================================================================
+	@echo The mark in board is "M8B_PXP_V1"
+	@echo config command: \"make m8b_pxp_v1_config\"
 	@echo
 
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)

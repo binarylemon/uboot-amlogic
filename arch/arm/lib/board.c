@@ -624,8 +624,10 @@ unsigned int before_nand_init =  get_utimer(0);
 #if defined(CONFIG_CMD_NAND)
 	puts ("NAND:  ");
 #ifdef  CONFIG_NEXT_NAND
+#ifndef CONFIG_VLSI_EMULATOR
 	ret = amlnf_init(0x0);  
 	init_ret = ret;
+#endif
 // flag = 0,indicate normal boot;
 //flag = 1, indicate update; 
 //flag = 2, indicate need erase 

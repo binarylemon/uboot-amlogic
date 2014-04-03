@@ -1,7 +1,7 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 #include <m8_smp.dat>
 #endif
 
@@ -36,7 +36,7 @@ short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
 }
 #endif
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 SPL_STATIC_FUNC int load_m8_smp_code()
 {
 	serial_puts("Start load M8 SMP code!\n");
@@ -60,7 +60,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	int rc=0;
     serial_puts("\nHHH\n");
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	load_m8_smp_code();
 #endif
 

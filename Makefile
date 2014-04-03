@@ -392,7 +392,7 @@ ALL += $(obj)u-boot-comp.bin
 endif
 ifeq ($(CONFIG_VLSI_EMULATOR),y)
 ALL += $(obj)u-boot.hex
-endif 
+endif
 
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
 SECURE_OS_BIN := secure_os/otzone-ucl.bin
@@ -407,7 +407,7 @@ all:		$(ALL)
 ifeq ($(CONFIG_VLSI_EMULATOR),y)
 $(obj)u-boot.hex:	$(obj)u-boot.bin
 		xxd -p -c1 $< > $@
-		$(OBJDUMP) -D -x build/firmware.out > firmware.asm		
+		$(OBJDUMP) -D -x build/firmware.out > firmware.asm
 endif
 
 
@@ -428,12 +428,12 @@ else   #ELSE CONFIG_AML_MESON
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
 $(UBOOT_SECURE_OS): $(obj)u-boot.bin $(SECURE_OS_BIN)
 		$(obj)tools/join_uboot_secureos $(obj)u-boot.bin  $(SECURE_OS_BIN) $(UBOOT_SECURE_OS)
-ifdef CONFIG_M6_SECU_BOOT		
+ifdef CONFIG_M6_SECU_BOOT
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
 else
 	@./tools/secu_boot/encrypto2 $@
-endif		
+endif
 endif
 endif  #END CONFIG_JOIN_UBOOT_SECUREOS
 
@@ -468,24 +468,24 @@ else
 $(obj)u-boot.bin:	$(obj)u-boot-orig.bin $(obj)firmware.bin
 endif
 ifndef CONFIG_M6_SECU_BOOT
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@		
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 ifdef CONFIG_AML_SECU_BOOT_V2
-	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp		
-	@./tools/secu_boot/encrypto3 $@	
+	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp
+	@./tools/secu_boot/encrypto3 $@
 	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME).temp
 	@rm -f $(obj)$(AML_USB_UBOOT_NAME).temp
 	@$(obj)tools/convert --soc $(SOC)+  -s $(obj)ddr_init.bin -i $(obj)$(AML_USB_UBOOT_NAME).temp.aml -o $(obj)$(AML_USB_UBOOT_NAME)
 	@rm -f $(obj)$(AML_USB_UBOOT_NAME).temp.aml
-	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME)		
-ifdef CONFIG_AML_CRYPTO_UBOOT	
+	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME)
+ifdef CONFIG_AML_CRYPTO_UBOOT
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
-	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
+	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml \
-	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes 		
+	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes
 endif #CONFIG_AML_CRYPTO_UBOOT
 endif #CONFIG_AML_SECU_BOOT_V2
-else #CONFIG_M6_SECU_BOOT	
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
+else #CONFIG_M6_SECU_BOOT
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
 	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_spl.bin -i $(obj)u-boot-orig.bin -o $(obj)$(AML_USB_UBOOT_NAME)
 ifndef CONFIG_MESON_TRUSTZONE
 ifdef CONFIG_M6_SECU_AUTH_KEY
@@ -497,10 +497,10 @@ endif
 
 ifdef CONFIG_AML_CRYPTO_UBOOT
 ifeq ($(CONFIG_M6TVD),y)
-	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
 else #CONFIG_M6TVD
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $@.aml
-	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml	
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml
 endif #CONFIG_M6TVD
 endif #CONFIG_AML_CRYPTO_UBOOT
 
@@ -509,11 +509,11 @@ endif #CONFIG_M6_SECU_BOOT
 
 else #CONFIG_IMPROVE_UCL_DEC
 $(obj)u-boot.bin:	$(obj)u-boot-comp-comp.bin $(obj)firmware.bin
-ifndef CONFIG_M6_SECU_BOOT	
+ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
-else		
-	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@	
-ifndef CONFIG_MESON_TRUSTZONE	
+else
+	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+ifndef CONFIG_MESON_TRUSTZONE
 ifdef CONFIG_M6_SECU_AUTH_KEY
 	@./tools/secu_boot/encrypto2 $@ ./tools/secu_boot/keys/rsa_key_comm_pub.dat
 else
@@ -596,8 +596,19 @@ $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoco
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif #END CONFIG_IMPROVE_UCL_DEC
 else #NOT CONFIG_M8
+ifeq ($(CONFIG_M8B),y)
+ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
+else #NOT CONFIG_IMPROVE_UCL_DEC
+$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
+	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
+endif #END CONFIG_IMPROVE_UCL_DEC
+else #NOT CONFIG_M8B
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
+endif #END CONFIG_M8B
 endif #END CONFIG_M8
 endif #END CONFIG_M6TV
 endif #END CONFIG_M6
