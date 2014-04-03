@@ -224,12 +224,12 @@ void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, unsigned
 
 int find_idx(int start, int target, int step, int size)
 {
-    int i = 0;  
+    int i = 0; 
     do { 
-        if (start >= target) {
+        if ((start - step) < target) {
             break;    
         }    
-        start += step;
+        start -= step;
         i++; 
     } while (i < size);
     return i;
@@ -386,59 +386,6 @@ int aml1218_set_gpio(int gpio, int val)
 #endif
 }
 
-static unsigned int VDDEE_voltage_table[] = {                   // voltage table of VDDEE
-    1184, 1170, 1156, 1142, 1128, 1114, 1100, 1086, 
-    1073, 1059, 1045, 1031, 1017, 1003, 989, 975, 
-    961,  947,  934,  920,  906,  892,  878, 864, 
-    850,  836,  822,  808,  794,  781,  767, 753 
-};
-
-int find_idx_by_vddEE_voltage(int voltage, unsigned int *table)
-{
-    int i;
-
-    for (i = 0; i < 32; i++) {
-        if (voltage >= table[i]) {
-            break;    
-        }
-    }
-    if (voltage == table[i]) {
-        return i;    
-    }
-    return i - 1;
-}
-
-
-int aml1218_set_vddEE_voltage(int voltage)
-{
-    int addr = 0x005d;
-    int idx_to, idx_cur;
-    unsigned current;
-    unsigned char val;
- 
-    val = i2c_pmu_read_b(addr);
-    idx_cur = ((val & 0xfc) >> 2);
-    idx_to = find_idx_by_vddEE_voltage(voltage, VDDEE_voltage_table);
-
-    current = idx_to*5; 
-
-#if 1                                                           // for debug
-    printf_arc("\nVDDEE current set from 0x");
-    serial_put_hex(idx_cur, 8);
-    printf_arc(" to 0x");
-    serial_put_hex(idx_to, 8);
-    printf_arc(", addr:0x");
-    serial_put_hex(addr, 8);
-    printf_arc("\n");
-#endif
-    
-    val &= ~0xfc;
-    val |= (idx_to << 2);
-
-    i2c_pmu_write_b(addr, val);
-    __udelay(5 * 100);
-}
-
 int aml1218_get_battery_voltage()
 {
     unsigned short val; 
@@ -481,16 +428,88 @@ void aml_pmu_power_ctrl(int on, int bit_mask)
 #define power_off_vcc28()           aml_pmu_power_ctrl(0, 1 << AML1218_POWER_LDO5_BIT)
 #define power_on_vcc28()            aml_pmu_power_ctrl(1, 1 << AML1218_POWER_LDO5_BIT) 
 
-#define power_off_vcck()            aml_pmu_power_ctrl(0, 1 << AML1218_POWER_DC1_BIT)  
-#define power_on_vcck()             aml_pmu_power_ctrl(1, 1 << AML1218_POWER_DC1_BIT)
+#define power_off_vcck()            aml_pmu_power_ctrl(0, 1 << AML1218_POWER_EXT_DCDC_VCCK_BIT)  
+#define power_on_vcck()             aml_pmu_power_ctrl(1, 1 << AML1218_POWER_EXT_DCDC_VCCK_BIT)
 
 #define power_off_vcc33()           aml_pmu_power_ctrl(0, 1 << AML1218_POWER_DC3_BIT)  
 #define power_on_vcc33()            aml_pmu_power_ctrl(1, 1 << AML1218_POWER_DC3_BIT)
 #define power_off_vcc50()           aml_pmu_power_ctrl(0, 1 << AML1218_POWER_DC4_BIT)
 #define power_on_vcc50()            aml_pmu_power_ctrl(1, 1 << AML1218_POWER_DC4_BIT)
-#define power_off_vcck12()          aml_pmu_power_ctrl(0, 1 << AML1218_POWER_EXT_DCDC_VCCK_BIT)
-#define power_on_vcck12()           aml_pmu_power_ctrl(1, 1 << AML1218_POWER_EXT_DCDC_VCCK_BIT)
 
+static char format_buf[12] = {};
+static char *format_dec_value(unsigned int val)
+{
+    unsigned int tmp, i = 11;
+
+    for (i = 0; i < 12; i++) {
+        format_buf[i] = 0;
+    }
+    i = 11;
+    while (val) {
+        tmp = val % 10; 
+        val /= 10;
+        format_buf[--i] = tmp + '0';
+    }
+    return format_buf + i;
+}
+
+static void print_voltage_info(char *voltage_prefix, int voltage_idx, unsigned int voltage, unsigned int reg_from, unsigned int reg_to, unsigned int addr)
+{
+    printf_arc(voltage_prefix);
+    if (voltage_idx >= 0) {
+        serial_put_hex(voltage_idx, 8);
+    }
+    printf_arc(" set to ");
+    printf_arc(format_dec_value(voltage));
+    printf_arc(", register from 0x");
+    serial_put_hex(reg_from, 16);
+    printf_arc(" to 0x");
+    serial_put_hex(reg_to, 16);
+    printf_arc(", addr:0x");
+    serial_put_hex(addr, 16);
+    printf_arc("\n");
+}
+
+int aml1218_set_dcdc_voltage(int dcdc, int voltage)
+{
+    int addr;
+    int idx_to;
+    int range    = 64;
+    int step     = 19;
+    int start    = 1881;
+    int idx_cur;
+    int val;
+
+    if (dcdc > 3 || dcdc < 0) {
+        return -1;    
+    }
+    addr = 0x34+(dcdc-1)*9;
+    if (dcdc == 3) {
+        step     = 50; 
+        range    = 64; 
+        start    = 3600;
+    }
+    idx_cur  = i2c_pmu_read_b(addr);
+    idx_to   = find_idx(start, voltage, step, range);
+#if 1
+    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
+#endif
+    val = idx_cur;
+    idx_cur = (idx_cur & 0x7e) >> 1;
+    while (idx_cur != idx_to) {
+        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
+            idx_cur++;    
+        } else {
+            idx_cur--;
+        }
+        val &= ~0x7e;
+        val |= (idx_cur << 1);
+        i2c_pmu_write_b(addr, val);
+        __udelay(100);                                          // atleast delay 100uS
+    }
+    __udelay(100);                         // wait a moment
+    return 0;
+}
 
 void aml1218_power_off_at_24M()
 {
@@ -504,7 +523,7 @@ void aml1218_power_off_at_24M()
 
 #if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
 #if CONFIG_VDDAO_VOLTAGE_CHANGE
-    aml1218_set_vddEE_voltage(CONFIG_VDDAO_SUSPEND_VOLTAGE);
+    aml1218_set_dcdc_voltage(1, CONFIG_VDDAO_SUSPEND_VOLTAGE);
 #endif
 #endif
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
@@ -526,6 +545,7 @@ void aml1218_power_off_at_24M()
 void aml1218_power_on_at_24M()
 {
     printf_arc("enter 24MHz. reason:");
+    aml1218_set_gpio(2, 0);                                     // open vccx2
 
     serial_put_hex(exit_reason, 32);
     wait_uart_empty();
@@ -546,14 +566,18 @@ void aml1218_power_on_at_24M()
 #endif
 #if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)
 #if CONFIG_VDDAO_VOLTAGE_CHANGE
-    aml1218_set_vddEE_voltage(CONFIG_VDDAO_VOLTAGE);
+    aml1218_set_dcdc_voltage(1, CONFIG_VDDAO_VOLTAGE);
 #endif
 #endif
-    aml1218_set_gpio(2, 0);                                     // open vccx2
 
     aml1218_set_gpio(3, 1);                                     // close ldo 1.2v when vcck is opened
-    udelay__(1 * 1000);
+    aml1218_set_bits(0x001A, 0x00, 0x06);
+    power_off_vcc50();
+    udelay__(50 * 1000);
+    printf_arc("open boost\n");
     power_on_vcc50();
+    udelay__(1000);
+    aml1218_set_bits(0x1A, 0x06, 0x06);
     i2c_pmu_write_b(0x0019, otg_status);
 
     aml1218_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A

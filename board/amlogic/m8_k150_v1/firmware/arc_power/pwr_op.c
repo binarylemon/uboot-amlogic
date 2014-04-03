@@ -554,7 +554,7 @@ void aml1216_power_on_at_24M()
     aml1216_set_gpio(3, 1);                                     // close ldo 1.2v when vcck is opened
     aml1216_set_bits(0x001A, 0x00, 0x06);
     power_off_vcc50();
-    udelay__(300 * 1000);
+    udelay__(50 * 1000);
     printf_arc("open boost\n");
     power_on_vcc50();
     udelay__(1000);

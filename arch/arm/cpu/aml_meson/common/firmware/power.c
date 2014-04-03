@@ -769,6 +769,7 @@ void aml1216_check_vbat(int init)
 
 void aml1216_power_init(int init_mode)
 {
+    aml1216_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
     aml1216_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
     aml1216_set_bits(0x001c, 0x06, 0x06);
     aml1216_set_bits(0x0045, 0x08, 0x08);
@@ -1198,6 +1199,14 @@ void aml1218_check_vbat(int init)
 
 void aml1218_power_init(int init_mode)
 {
+    aml1218_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
+    aml1218_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
+    aml1218_set_bits(0x001c, 0x06, 0x06);
+    aml1218_set_bits(0x0045, 0x08, 0x08);
+    aml1218_set_bits(0x003c, 0x08, 0x08);
+    aml1218_set_bits(0x0121, 0x04, 0x04);
+    aml1218_set_bits(0x011f, 0x04, 0x04);
+    aml1218_set_bits(0x011d, 0x04, 0x04);
     aml1218_check_vbat(1);
     if (init_mode == POWER_INIT_MODE_NORMAL) {
 #ifdef CONFIG_VCCK_VOLTAGE
@@ -1207,6 +1216,8 @@ void aml1218_power_init(int init_mode)
 
 #ifdef CONFIG_DDR_VOLTAGE
         aml1218_set_dcdc_voltage(2, CONFIG_DDR_VOLTAGE);
+        __udelay(2000);              
+        hard_i2c_write168(DEVID, 0x0082, 0x04);                     // open DCDC2 
         __udelay(2000);              
 #endif
 

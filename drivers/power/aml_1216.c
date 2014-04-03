@@ -216,6 +216,25 @@ int aml1216_get_vbus_voltage(void)
     return result;
 }
 
+int aml1216_get_vsys_voltage(void)
+{
+    uint8_t val[2] = {};
+    int     result;
+
+    aml1216_write(0x00AA, 0xC3);                            // select VBUS channel
+    aml1216_write(0x009A, 0x28);
+    udelay(100);
+    aml1216_reads(0x00B1, val, 2);
+    result = ((val[1] & 0x1f) << 8) + val[0];
+    if (result & 0x1000) {                                  // complement code
+        result = 0;                                         // avoid ADC offset 
+    } else {
+        result = result * 6400 / 4096;
+    }
+
+    return result;
+}
+
 int aml1216_get_charge_status(int print)
 {
     uint8_t val;
@@ -1169,6 +1188,14 @@ void terminal_print(int x, int y, char *str)
 }
 
 
+static uint32_t aml1216_get_chg_status(void)
+{
+    uint8_t val;
+
+    aml1216_read(0x0172, &val);
+    return val;
+}
+
 static int32_t coulomb = 0;
 static int32_t ocv     = 0;
 static int32_t ibat    = 0;
@@ -1383,7 +1410,7 @@ static void inline update_energy_charge(int ocv, int energy, int coulomb, int co
           //sprintf(buf, "update energy %9lld for %4d mV, index:%2d\n", 
           //        battery_energy_charge[i].energy, battery_energy_charge[i].ocv, i);
           //terminal_print(0, 35, buf);
-            sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,\n", 
+            sprintf(buf, "%2d;  %4d;  %9lld;  %4d;  %4d;\n", 
                     i,
                     battery_energy_charge[i].ocv, 
                     battery_energy_charge[i].energy, 
@@ -1420,7 +1447,7 @@ static void inline update_energy_discharge(int ocv, int energy, int coulomb, int
           //sprintf(buf, "update energy %9lld for %4d mV, index:%2d\n", 
           //       battery_energy_discharge[i].energy, battery_energy_discharge[i].ocv, i);
           //terminal_print(0, 35, buf);
-            sprintf(buf, "%2d,  %4d,  %9lld,  %4d,  %4d,\n", 
+            sprintf(buf, "%2d;  %4d;  %9lld;  %4d;  %4d;\n", 
                     i,
                     battery_energy_discharge[i].ocv, 
                     battery_energy_discharge[i].energy, 
@@ -1480,6 +1507,8 @@ int aml1216_battery_calibrate(void)
     int     ocv_avg = 0;
     int     rdc_average = 0, rdc_total = 0, rdc_cnt = 0, rdc_update_flag = 0, rdc_tmp = 0;
     int     charge_eff;
+    uint32_t s_r;
+    int     vsys;
 
     ClearScreen();
     terminal_print(0,  7, "=============================== WARNING ================================\n");
@@ -1509,7 +1538,7 @@ int aml1216_battery_calibrate(void)
     ClearScreen(); 
     terminal_print(0, 1, "'Q' = quit, 'S' = Skip this step\n");
     terminal_print(0, 4, "coulomb     energy_c    ibat   prev_ibat    ocv"
-                         "     ocv_hist    coulomb_p   vbat    rdc\n");
+                         "     ocv_hist    coulomb_p   vbat    rdc   s_r  vsys\n");
     if (!aml1216_rdc_init()) {
         terminal_print(0, 36, "#### calculate RDC failed, stop test!!! ####\n");
         goto out;
@@ -1556,12 +1585,14 @@ int aml1216_battery_calibrate(void)
         energy_p = energy_c;
         do_div(energy_p, 3700);
         update_energy_charge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        s_r = aml1216_get_chg_status();
+        vsys = aml1216_get_vsys_voltage();
         size  = sprintf(buf, 
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, ocv_history);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d  \n",
-                        (int32_t)energy_p, vbat, rdc);
+                        "        %4d,  %4d,  %4d,  %02x,  %4d\n",
+                        (int32_t)energy_p, vbat, rdc, s_r, vsys);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
         prev_coulomb = coulomb;
@@ -1649,6 +1680,7 @@ int aml1216_battery_calibrate(void)
     }
 #endif
     energy_c = 0;
+    ibat_cnt = 0;
     while (1) {
         if (tstc()) {
             key = getc();
@@ -1666,12 +1698,14 @@ int aml1216_battery_calibrate(void)
         energy_p = energy_c;
         do_div(energy_p, 3700);
         update_energy_discharge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        s_r = aml1216_get_chg_status();
+        vsys = aml1216_get_vsys_voltage();
         size  = sprintf(buf, 
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, ocv_history);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d  \n",
-                        (int32_t)energy_p, vbat, rdc);
+                        "        %4d,  %4d,  %4d,  %02x,  %4d\n",
+                        (int32_t)energy_p, vbat, rdc, s_r, vsys);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
         prev_coulomb = coulomb;
@@ -1679,8 +1713,13 @@ int aml1216_battery_calibrate(void)
         prev_ibat = ibat;
         udelay(1000000);
         if (ocv < 3350) {
-            terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
-            break;
+            ibat_cnt++;
+            if (ibat_cnt > 10) {
+                terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
+                break;
+            }
+        } else {
+            ibat_cnt = 0;    
         }
     }
 

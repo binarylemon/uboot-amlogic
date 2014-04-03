@@ -216,6 +216,25 @@ int aml1218_get_vbus_voltage(void)
     return result;
 }
 
+int aml1218_get_vsys_voltage(void)
+{
+    uint8_t val[2] = {};
+    int     result;
+
+    aml1218_write(0x00AA, 0xC3);                            // select VBUS channel
+    aml1218_write(0x009A, 0x28);
+    udelay(100);
+    aml1218_reads(0x00B1, val, 2);
+    result = ((val[1] & 0x1f) << 8) + val[0];
+    if (result & 0x1000) {                                  // complement code
+        result = 0;                                         // avoid ADC offset 
+    } else {
+        result = result * 6400 / 4096;
+    }
+
+    return result;
+}
+
 int aml1218_get_charge_status(int print)
 {
     uint8_t val;
@@ -962,6 +981,12 @@ int aml1218_init(void)
     aml1218_check_fault();
     check_boot_up_source();
 
+    aml1218_set_bits(0x000f, 0xf0, 0xf0);           // GPIO2 power off last
+    aml1218_set_bits(0x0009, 0x01, 0x0f);           // boost power off first
+
+    aml1218_set_bits(0x0035, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+    aml1218_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+
     aml1218_set_bits(0x0011, 0x03, 0x03);
     aml1218_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
     aml1218_write(0x009C, 0x10);
@@ -982,9 +1007,12 @@ int aml1218_init(void)
     /*
      * open charger
      */
-    aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
-    aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
-    aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li
+#ifdef CONFIG_VBUS_DC_SHORT_CONNECT
+    aml1218_set_bits(0x002a, 0x01, 0x01);
+#endif
+  //aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
+  //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
+  //aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li
     aml1218_set_bits(0x0128, 0x06, 0x06);
     aml1218_write(0x0129, 0x0c);
     aml1218_write(0x012a, 0x0f);                // David Li
@@ -992,9 +1020,14 @@ int aml1218_init(void)
 
     aml1218_set_gpio(2, 0);                     // open VCCX2
     aml1218_set_gpio(3, 1);                     // close ldo 1.2v
-    udelay(1000 * 100);
+    aml1218_set_bits(0x001A, 0x00, 0x06);
+    aml1218_set_bits(0x0023, 0x00, 0x0e);
+    aml1218_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
+    udelay(1000 * 500);
     printf("%s, open boost\n", __func__);
     aml1218_write16(0x0082, 0x0001);            // software boost up
+    udelay(1000);
+    aml1218_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
     dump_pmu_register();
 
@@ -1157,6 +1190,14 @@ void terminal_print(int x, int y, char *str)
 }
 
 
+static uint32_t aml1218_get_chg_status(void)
+{
+    uint32_t val;
+
+    aml1218_reads(0x00DE, &val, 4);
+    return val;
+}
+
 static int32_t coulomb = 0;
 static int32_t ocv     = 0;
 static int32_t ibat    = 0;
@@ -1260,6 +1301,11 @@ int aml1218_update_calibrate(int charge)
     voltage = aml1218_get_battery_voltage(); 
     current = aml1218_get_battery_current();
     status  = aml1218_get_charge_status(0);
+    
+    if (current < 0 )
+    {
+        current = current * (-1);
+    }
     if (status == 1) {                        // charging
         ocv = voltage - (current * rdc) / 1000;
     } else {
@@ -1463,6 +1509,8 @@ int aml1218_battery_calibrate(void)
     int     ocv_avg = 0;
     int     rdc_average = 0, rdc_total = 0, rdc_cnt = 0, rdc_update_flag = 0, rdc_tmp = 0;
     int     charge_eff;
+    uint32_t s_r;
+    int     vsys;
 
     ClearScreen();
     terminal_print(0,  7, "=============================== WARNING ================================\n");
@@ -1539,12 +1587,14 @@ int aml1218_battery_calibrate(void)
         energy_p = energy_c;
         do_div(energy_p, 3700);
         update_energy_charge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        s_r = aml1218_get_chg_status();
+        vsys = aml1218_get_vsys_voltage();
         size  = sprintf(buf, 
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, ocv_history);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d  \n",
-                        (int32_t)energy_p, vbat, rdc);
+                        "        %4d,  %4d,  %4d,  %02x,  %4d\n",
+                        (int32_t)energy_p, vbat, rdc, s_r, vsys);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
         prev_coulomb = coulomb;
@@ -1632,6 +1682,7 @@ int aml1218_battery_calibrate(void)
     }
 #endif
     energy_c = 0;
+    ibat_cnt = 0;
     while (1) {
         if (tstc()) {
             key = getc();
@@ -1649,12 +1700,14 @@ int aml1218_battery_calibrate(void)
         energy_p = energy_c;
         do_div(energy_p, 3700);
         update_energy_discharge(update_ocv(ocv), energy_c, coulomb, energy_p);
+        s_r = aml1218_get_chg_status();
+        vsys = aml1218_get_vsys_voltage();
         size  = sprintf(buf, 
                         "%4d,   %12lld,   %4d,       %4d,  %4d,        %4d,",
                         coulomb, energy_c, ibat, prev_ibat, ocv, ocv_history);
         size += sprintf(buf + size,
-                        "        %4d,  %4d,  %4d  \n",
-                        (int32_t)energy_p, vbat, rdc);
+                        "        %4d,  %4d,  %4d,  %02x,  %4d\n",
+                        (int32_t)energy_p, vbat, rdc, s_r, vsys);
         buf[size] = '\0';
         terminal_print(0, 5, buf);
         prev_coulomb = coulomb;
@@ -1662,8 +1715,13 @@ int aml1218_battery_calibrate(void)
         prev_ibat = ibat;
         udelay(1000000);
         if (ocv < 3350) {
-            terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
-            break;
+            ibat_cnt++;
+            if (ibat_cnt > 10) {
+                terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
+                break;
+            }
+        } else {
+            ibat_cnt = 0;    
         }
     }
 
