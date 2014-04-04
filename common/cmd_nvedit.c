@@ -1069,7 +1069,7 @@ int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	cmd = argv[1];	
 
 	if(!strcmp(cmd,"storage")){
-        char env_bootargs[512],
+        char env_bootargs[512];
 		s = getenv("store");
 		store = simple_strtoul(s,NULL,16);
 		//memset(env_bootargs, 0, 128);
