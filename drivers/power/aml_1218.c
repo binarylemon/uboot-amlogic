@@ -238,13 +238,16 @@ int aml1218_get_vsys_voltage(void)
 int aml1218_get_charge_status(int print)
 {
     uint8_t val;
+    uint32_t reg_all;
     /*
      * work around for charge status register can't update problem
      */
     aml1218_read(0x00E0, &val);
+    aml1218_reads(0x00DE, &reg_all, 4);
     if (print) {
-        printf("--charge status:0x%02x", val);     
+        printf("--charge status:0x%08x", reg_all);     
     }
+    aml1218_set_bits(0x004f, (reg_all & 0x02000000) >> 22, 0x08);
     if (val & 0x18) {
         if (charger_sign_bit) {
             /*
@@ -978,6 +981,7 @@ int aml1218_init(void)
 {
     printf("Call %s, %d\n", __func__, __LINE__);
 
+    aml1218_get_charge_status(0);
     aml1218_check_fault();
     check_boot_up_source();
 
@@ -1019,7 +1023,7 @@ int aml1218_init(void)
     aml1218_write(0x012c, 0x20);
 
     aml1218_set_gpio(2, 0);                     // open VCCX2
-    aml1218_set_gpio(3, 1);                     // close ldo 1.2v
+    aml1218_set_gpio(3, 0);                     // close ldo 1.2v
     aml1218_set_bits(0x001A, 0x00, 0x06);
     aml1218_set_bits(0x0023, 0x00, 0x0e);
     aml1218_write16(0x0084, 0x0001);            // close boost before open it, according Harry 

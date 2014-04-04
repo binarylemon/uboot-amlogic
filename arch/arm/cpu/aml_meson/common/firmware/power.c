@@ -770,7 +770,7 @@ void aml1216_check_vbat(int init)
 void aml1216_power_init(int init_mode)
 {
     aml1216_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
-    aml1216_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
+//    aml1216_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
     aml1216_set_bits(0x001c, 0x06, 0x06);
     aml1216_set_bits(0x0045, 0x08, 0x08);
     aml1216_set_bits(0x003c, 0x08, 0x08);
@@ -1200,7 +1200,7 @@ void aml1218_check_vbat(int init)
 void aml1218_power_init(int init_mode)
 {
     aml1218_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
-    aml1218_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
+//    aml1218_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
     aml1218_set_bits(0x001c, 0x06, 0x06);
     aml1218_set_bits(0x0045, 0x08, 0x08);
     aml1218_set_bits(0x003c, 0x08, 0x08);

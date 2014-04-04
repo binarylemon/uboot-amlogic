@@ -245,6 +245,10 @@ int aml1216_get_charge_status(int print)
     if (print) {
         printf("--charge status:0x%02x", val);     
     }
+    /*
+     * limit duty cycle of DC3 according CHG_GAT_BAT_LV bit
+     */
+    aml1216_set_bits(0x004f, (val & 0x01) << 3, 0x08);
     if (val & 0x18) {
         if (charger_sign_bit) {
             /*
@@ -978,6 +982,7 @@ int aml1216_init(void)
 {
     printf("Call %s, %d\n", __func__, __LINE__);
 
+    aml1216_get_charge_status(0);
     aml1216_check_fault();
     check_boot_up_source();
 
@@ -1017,7 +1022,7 @@ int aml1216_init(void)
     aml1216_write(0x012c, 0x20);
 
     aml1216_set_gpio(2, 0);                     // open VCCX2
-    aml1216_set_gpio(3, 1);                     // close ldo 1.2v
+    aml1216_set_gpio(3, 0);                     // close ldo 1.2v
     aml1216_set_bits(0x001A, 0x00, 0x06);
     aml1216_set_bits(0x0023, 0x00, 0x0e);
     aml1216_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
