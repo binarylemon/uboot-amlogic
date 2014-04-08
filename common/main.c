@@ -416,7 +416,7 @@ extern void init_secure_firmware(void);
 	printf("bootargs = %s\n", env_bootargs);
 #endif
 
-#if defined(CONFIG_AML_MESON_8)&&defined(CONFIG_EFUSE)
+#if defined(CONFIG_AML_MESON_8)&&defined(CONFIG_EFUSE)&&defined(CONFIG_VIDEO_AMLTVOUT)
 	extern void cvbs_trimming(void);
 	cvbs_trimming();
 #endif
