@@ -238,6 +238,8 @@ int aml1216_get_vsys_voltage(void)
 int aml1216_get_charge_status(int print)
 {
     uint8_t val;
+    int  vsys_voltage;
+    vsys_voltage = aml1216_get_vsys_voltage();
     /*
      * work around for charge status register can't update problem
      */
@@ -248,7 +250,15 @@ int aml1216_get_charge_status(int print)
     /*
      * limit duty cycle of DC3 according CHG_GAT_BAT_LV bit
      */
-    aml1216_set_bits(0x004f, (val & 0x01) << 3, 0x08);
+    if (vsys_voltage >= 4350)
+    {
+        aml1216_set_bits(0x004f, 0x08, 0x08);
+    }
+    else
+    {
+        aml1216_set_bits(0x004f, 0x00, 0x08);
+    }   
+    //aml1216_set_bits(0x004f, (val & 0x01) << 3, 0x08);
     if (val & 0x18) {
         if (charger_sign_bit) {
             /*
