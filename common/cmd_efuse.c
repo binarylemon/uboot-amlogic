@@ -10,6 +10,7 @@
 #define EFUSE_DUMP 2
 //#define EFUSE_VERSION 3
 #define EFUSE_SECURE_BOOT_SET 6
+#define EFUSE_INFO 7
 
 int __aml_sec_boot_check_efuse(unsigned char *pSRC)
 {	
@@ -43,6 +44,8 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		action = EFUSE_VERSION;*/
 	else if(strcmp(argv[1], "secure_boot_set") == 0)
 		action=EFUSE_SECURE_BOOT_SET;
+	else if(strcmp(argv[1], "info") == 0)
+		action=EFUSE_INFO;
 	else{
 		printf("%s arg error\n", argv[1]);
 		return -1;
@@ -193,6 +196,23 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 			efuse_write(nAddr, EFUSE_BYTES, (loff_t*)&pos);
 		}
 	}
+	// efuse info
+	else if(action==EFUSE_INFO){	
+		#define THERMAL_CAL_FLAG_OFF 503
+		#define CVBS_FLAG_OFF 505
+		memcpy(buf, efuse_dump(), EFUSE_BYTES);
+		//printf("thermal sensor %x\n", buf[503] << 8 | buf[502]);
+		if (buf[THERMAL_CAL_FLAG_OFF] & 1 << 7)
+			printf("thermal sensor has been calibrated\n");
+		else
+			printf("thermal sensor hasn't calibrated\n");
+		//printf("cvbs %x\n", buf[504] << 8 | buf[505]);
+		if (buf[CVBS_FLAG_OFF] >> 6 ==  2)
+			printf("cvbs has been calibrated\n");
+		else
+			printf("cvbs hasn't calibrated\n");
+		return 0;
+	}
 	else{
 		printf("arg error\n");
 		return -1;	
@@ -220,7 +240,8 @@ int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 U_BOOT_CMD(
 	efuse,	4,	1,	do_efuse,
-	"efuse version/licence/mac/hdcp/usid read/write or dump raw efuse data commands",
+	"efuse version/licence/mac/hdcp/usid read/write or dump raw efuse data commands"
+	" or info(display chip efuse info)",
 	"[read/write] [licence/mac/hdc/usid/machineid] [mem_addr]\n"
 	"	   [read/wirte] para read ; write ;\n"
 	"				read need not mem_addr;write need\n"
@@ -229,6 +250,8 @@ U_BOOT_CMD(
 	"	   [mem_addr] usr do \n"
 	"efuse [dump]\n"
 	"	   dump raw efuse data\n"
+	"efuse [info]\n"
+	"          display the chip efuse info\n"
 	"efuse [secure_boot_set] [mem_addr]\n"
 	"	   decrypt the EFUSE pattern from address mem_addr which contain setting\n"	
 	"	   for secure boot, if pass then the setting will be programmed to the chip\n"
