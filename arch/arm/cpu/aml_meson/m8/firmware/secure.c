@@ -17,6 +17,7 @@
  *             any of this file before verified.
  * Remark: 
  *			 1. 2013.12.10 v0.1 for decrypt only
+ *			 2. 2014.04.10 v0.2 check secure boot flag before decrypt 
  *
  **************************************************************************************************************/
 
@@ -131,7 +132,12 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 	else
 	{
 		unsigned int nState  = 0;
-		fp_02(&nState,0,4);		
+		fp_02(&nState,0,4);
+		if(!(nState & (1<<7)))
+		{
+			nRet = 0;
+			goto exit;
+		}
 		fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
 		cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
 	}
@@ -174,12 +180,14 @@ exit:
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
-	MSG_SHOW ((128 == cb1_ctx.len ) ? AML_MSG_RSA_1024 : AML_MSG_RSA_2048);
-	MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
-		
+	if(0 != cb1_ctx.len)
+	{
+		MSG_SHOW ((128 == cb1_ctx.len ) ? AML_MSG_RSA_1024 : AML_MSG_RSA_2048);
+		MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
+	}
 	#undef AML_MSG_FAIL
 	#undef AML_MSG_PASS
-	#undef MSG_SHOW		
+	#undef MSG_SHOW
 	
 #endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)	
 
