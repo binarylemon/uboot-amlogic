@@ -415,8 +415,8 @@ int mmc_device_init (struct mmc *mmc)
 	
 	ret = mmc_get_partition_table(mmc);
     if (ret == 0) { // ok
-//        printf("Partition table get from SPL is : \n");
-//        show_mmc_patition(mmc_config_of->partitions, mmc_config_of->part_num);
+        printf("Partition table get from SPL is : \n");
+        show_mmc_patition(mmc_config_of->partitions, mmc_config_of->part_num);
     } else {
         printf("mmc get partition error!\n");
         return -1;

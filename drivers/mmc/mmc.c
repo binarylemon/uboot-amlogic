@@ -621,7 +621,7 @@ int mmc_send_op_cond(struct mmc *mmc)
 	mmc->ocr = *response;
 
 	mmc->high_capacity = ((mmc->ocr & OCR_HCS) == OCR_HCS);
-	mmc->rca = 0;
+	mmc->rca = 1;
 
 	return 0;
 }
