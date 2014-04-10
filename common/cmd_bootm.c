@@ -642,6 +642,16 @@ int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return ret;
 }
 
+unsigned int __aml_get_kernel_crypto_addr(void)
+{
+	return load_addr; /* Default Load Address */
+}
+
+//Note: image loader should implementation
+//         aml_boot_addr_update() for seucre and normal boot
+unsigned int aml_get_kernel_crypto_addr(void)
+	__attribute__((weak, alias("__aml_get_kernel_crypto_addr")));
+
 /*******************************************************************/
 /* bootm - boot application image from image in memory */
 /*******************************************************************/
@@ -692,10 +702,10 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #ifdef CONFIG_AML_SECU_BOOT_V2
 #ifdef CONFIG_MESON_TRUSTZONE
 	extern int meson_trustzone_boot_check(unsigned char *addr);
-	ret = meson_trustzone_boot_check((unsigned char *)load_addr);
+	ret = meson_trustzone_boot_check((unsigned char *)aml_get_kernel_crypto_addr());
 #else
 	extern int aml_sec_boot_check(unsigned char *pSRC);
-	ret = aml_sec_boot_check((unsigned char *)load_addr);
+	ret = aml_sec_boot_check((unsigned char *)aml_get_kernel_crypto_addr());
 #endif
 	if(0 != ret)
 		return ret;	
