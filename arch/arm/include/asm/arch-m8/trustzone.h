@@ -68,7 +68,7 @@
 /* Secure OS defines */
 #define SECURE_OS_COMPRESS_ADDR                 0x0E000000
 #define SECURE_OS_ACS_SRAM_ADDR                 0xD9000200
-#define SECURE_OS_ACS_DRAM_ADDR                 0x0F000000
+#define SECURE_OS_ACS_DRAM_ADDR                 0x0E400000
 #define SECURE_OS_ACS_LEN                       0x00000400
 
 #define SECURE_OS_SRAM_BASE (512+32)
