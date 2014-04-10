@@ -1,133 +1,134 @@
-#Everybody attention!
-#This is important!
-#Run this script before your commit, make sure all board config of amlogic can be compiled successfully.
+#!/bin/bash
+
+#------------IMPORTANT------------#
+#--RUN THIS SCRIPT BEFOR COMMIT---#
+#---------------------------------#
+
+#usage:
 #
+#./check_compile.sh            -check amlogic board configs (ref: board/amlogic/boards.cfg)
+#./check_compile.sh cus        -check customer board configs (ref: customer/board/boards.cfg)
+#./check_compile.sh all        -check both amlogic and customer boards
 
-#how to use
 
-#./check_compile.sh
-#Check basic configs
+declare -a cfg_file=[]
 
-#./check_compile.sh all
-#Check all configs
-
-declare -i RESULT=0
-declare DETAIL
-declare CFG
 if [ "$1" == "all" ]
 then
-  declare -a CONFIG=(
-    m6_skt_v1
-    m6_ref_v1
-    m6_ref_v2
-    m6l_skt_v1
-    m6s_skt_v1
-    m6tv_skt_v1
-    m6tv_ref_v1
-    m6tvd_skt_v1
-    m6_ramos_v1
-    m6_ainol_v1
-    m6_ainol_e3
-    m6_ainol_e4
-    m6_ainol_848_v1
-    m6_emdoor_1024_600
-    m6_emdoor_1024_768
-    m6_newsmy_v1
-    m6_asd_pi3100
-    m6_asd_pi3900
-    m6_chinach_v1
-    m6_g33new_512M
-    m6_g33new_1GB
-    m6_g33_1212
-    m6_winaccord_v1
-    m6_yifang_m7000nbd
-    mx_dongle_g02
-    m6_mbx_v1
-    m6_mbx_v1_r2
-    m6_dongle
-    m6_dongle_v131
-    m6_dongle_g40ref
-    m6_duokan_mbx_g19ref
-    m6tv_h02_v1
-    m6tv_h03_v1
-    m6_dvb_g17
-    m6tv_h04_v1
-    m6tv_h05_v1
-    m6tv_h06_v1
-    m6_gadmei_g11t80
-    m8_skt_v1
-    m8_k200_v1
-    m8_k100_1G
-    m8_k100_2G
-    m8_k101_1G
-    m8_k101_512M
-    m8_k102_v1
-    m8_k01
-    m8_k03_M101_v1
-    m8_k03_M102_v1
-    m8_k03_M901_v1
-    m8_k03_M902_v1
-    m8_k04_m3x13_v1
-    m8_k05_hp
-    m8_k06_Nabi2C_v1
-    m8_k06_NabiJR_v1
-    m8_k08_v1
-    m8_k09_v1
-    m8_k12_MA975M8_v1
-    )
+  if [ -f "customer/board/boards.cfg" ]
+  then
+    cfg_file[0]="board/amlogic/boards.cfg"
+    cfg_file[1]="customer/board/boards.cfg"
+  else
+    #if customer folder doesn't exit
+    cfg_file[0]="board/amlogic/boards.cfg"
+  fi
 else
-  declare -a CONFIG=(
-    m6_skt_v1
-    m6_ref_v1
-    m6_ref_v2
-    m6l_skt_v1
-    m6s_skt_v1
-    m6tv_skt_v1
-    m6tv_ref_v1
-    m6tvd_skt_v1
-    m8_skt_v1
-    m8_k200_v1
-    m8_k100_1G
-    m8_k100_2G
-    m8_k101_1G
-    m8_k101_512M
-    m8_k102_v1
-  )
+  if [ "$1" == "cus" ]
+  then
+    cfg_file[0]="customer/board/boards.cfg"
+  else
+    cfg_file[0]="board/amlogic/boards.cfg"
+  fi
 fi
 
-declare -i BAR_TOTAL=20
-declare -i BAR_LOOP
+declare RESULT
+declare -i LOOP_NUM
+declare -i CFG_START=0
 
-for BD in ${CONFIG[@]}
+for cfg in ${cfg_file[@]}
 do
-  CFG=`echo "${BD}_config"`
-  DETAIL=$DETAIL'#--------'
-  DETAIL=$DETAIL$BD
-  BAR_LOOP=BAR_TOTAL-`expr length $BD`
-  if [ "$BAR_LOOP" -gt "0" ]
+  RESULT=$RESULT'\n#'
+  for x in $(seq 20)
+  do RESULT=$RESULT'~'
+  done
+  if [ "$cfg" == "board/amlogic/boards.cfg" ]
   then
-    for tmp in `seq $BAR_LOOP`;do DETAIL=$DETAIL'-';done
+    RESULT=$RESULT'AMLOGIC BOARDS'
+  else
+    RESULT=$RESULT'CUSTOMER BOARD'
   fi
-  make distclean
-  make $CFG
-  make -j
-  if [ $? != 0 ]
-  then DETAIL=$DETAIL'-failed---'
-    RESULT=$RESULT+1
-  else DETAIL=$DETAIL'-pass-----'
-  fi
-  DETAIL=$DETAIL'#\n'
+  for x in $(seq 20)
+  do RESULT=$RESULT'~'
+  done
+  RESULT=$RESULT'#\n'
+
+  declare -a ARRAY
+  declare -i TOTAL
+  while read line
+  do
+    if [[ $CFG_START = 1 ]]
+    #if get start position of configs
+    then
+      if [ -n "$line" ] && [ "#" != `expr substr "$line" 1 1` ]
+      then
+        #echo -n "one line: "
+        #store each configs
+        ind=`expr index "$line" ' '`
+        sub=`expr substr "$line" 1 "$ind"`
+        ARRAY[$TOTAL]=$sub
+        TOTAL=$TOTAL+1
+      else
+        #blank line process
+        if [ -z "$line" ]
+        then
+          continue
+        else
+          #re-meet # lines, means end of configs
+          if [ "#" = `expr substr "$line" 1 1` ]
+          then
+            break
+          fi
+        fi
+      fi
+    else
+      #try to get start position
+      str_length=${#line}
+      #echo $str_length
+      if [ "$str_length" -gt "10" ]
+      then
+        cfg_str=`expr substr "$line" 1 10`
+        #start position synbol: a line of #
+        if [ "$cfg_str" == "##########" ]
+        then
+          CFG_START=1
+        fi
+      fi
+    fi
+  done < $cfg
+
+  #run make and print result
+  declare -i BAR_TOTAL=25
+  declare -i BAR_LOOP
+  for cfg in ${ARRAY[@]}
+  do
+    LOOP_NUM=$LOOP_NUM+1
+    RESULT=$RESULT'#--------'
+    if [ "$LOOP_NUM" -lt "10" ]
+    then RESULT=$RESULT'00'$LOOP_NUM
+    else
+      if [ "$LOOP_NUM" -lt "100" ]
+      then RESULT=$RESULT'0'$LOOP_NUM
+      else RESULT=$RESULT$LOOP_NUM
+      fi
+    fi
+    RESULT=$RESULT'--------'$cfg
+    BAR_LOOP=BAR_TOTAL-`expr length $cfg`
+    if [ "$BAR_LOOP" -gt "0" ]
+    then
+      for tmp in `seq $BAR_LOOP`;do RESULT=$RESULT'-';done
+    fi
+    make distclean
+    make $cfg -j
+    if [ $? != 0 ]
+    then RESULT=$RESULT'-failed---'
+    else RESULT=$RESULT'-pass-----'
+    fi
+    RESULT=$RESULT'#\n'
+  done
+  CFG_START=0
+  unset ARRAY
+  TOTAL=0
 done
 
-echo "#--------------------------------------#"
-echo "#---------compile check result---------#"
-echo "#--------------------------------------#"
-if [[ $RESULT = 0 ]]
-then
-    echo "#-----------------PASS-----------------#"
-else
-    echo "#----------------FAILED----------------#"
-fi
-echo "#--------------------------------------#"
-echo "#---------------DETAIL-----------------#"
-echo -e $DETAIL
+echo -e $RESULT
