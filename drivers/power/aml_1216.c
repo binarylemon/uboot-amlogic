@@ -1006,13 +1006,13 @@ int aml1216_init(void)
     aml1216_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
     aml1216_write(0x009C, 0x10);
     aml1216_write(0x009D, 0x04);//close force charge and discharge sample mask
-    aml1216_write(0x009E, 0x08);//enable VBAT measure result average 4 samples
-    aml1216_write(0x009F, 0x20);//enable IBAT measure result average 4 samples
+    aml1216_write(0x009E, 0x18);//enable VBAT measure result average 4 samples
+    aml1216_write(0x009F, 0x60);//enable IBAT measure result average 4 samples
     aml1216_write(0x009A, 0x20);
     aml1216_write(0x00B8, 0x00);
     aml1216_write(0x00A9, 0x8f);
 
-    aml1216_write(0x00A0, 0x01);//select auto-sampling timebase is 2ms
+    aml1216_write(0x00A0, 0x00);//select auto-sampling timebase is 2ms
     aml1216_write(0x00A1, 0x15);//set the IBAT measure threshold and enable auto IBAT +VBAT_in_active sample
     aml1216_write(0x00C9, 0x06);// open DCIN_OK and USB_OK IRQ
 
@@ -1026,6 +1026,7 @@ int aml1216_init(void)
   //aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
+    aml1216_set_bits(0x012b, 0x20, 0x20);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x0c);
     aml1216_write(0x012a, 0x0f);                // David Li
@@ -1306,13 +1307,19 @@ int aml1216_rdc_init(void)
 
 int aml1216_update_calibrate(int charge)
 {
-    int32_t  voltage, current;
+    int32_t  voltage = 0, current = 0;
     uint8_t  status;
     int      rdc_c = 0;
+    int      i;
 
     coulomb = aml1216_get_coulomber(); 
-    voltage = aml1216_get_battery_voltage(); 
-    current = aml1216_get_battery_current();
+    for (i = 0; i < 8; i++) {
+        voltage += aml1216_get_battery_voltage(); 
+        current += aml1216_get_battery_current();
+        udelay(8000);
+    }
+    current /= 8;
+    voltage /= 8;
     status  = aml1216_get_charge_status(0);
     
     if (current < 0 )

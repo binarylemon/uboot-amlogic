@@ -1200,6 +1200,7 @@ void aml1218_check_vbat(int init)
 
 void aml1218_power_init(int init_mode)
 {
+    aml1218_set_bits(0x0033, 0x00, 0x70);                           // test
     aml1218_set_bits(0x0047, 0x00, 0x07);                           // David Wang, set DCDC3 current to 1.5A
     aml1218_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
 //    aml1218_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
