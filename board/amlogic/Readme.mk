@@ -49,6 +49,10 @@ endif
 	@echo config command: \"make m6_mbx_v2_tee_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M6_DONGLE_G35_V1 with TEE"
+	@echo config command: \"make m6_dongle_g35_v1_config\"
+	
+	@echo =======================================================================
 	@echo The mark in board is "M6S_SKT_V1", relative to chip M6S
 	@echo config command: \"make m6s_skt_v1_config\"
 
