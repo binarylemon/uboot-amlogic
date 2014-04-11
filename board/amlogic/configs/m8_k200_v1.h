@@ -69,6 +69,7 @@
 
 #define CONFIG_UNIFY_KEY_MANAGE 1
 #define CONFIG_CMD_PWM  1
+//#define CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2 1  //open this macro if need read encrypted kernel/dtb with whole part size
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1

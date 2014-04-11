@@ -23,6 +23,7 @@
 #include <libfdt.h>
 #define DTB_PRELOAD_SZ  (4U<<10) //Total read 4k at first to read the image header
 
+#ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
 static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     unsigned    kernel_size;
@@ -94,6 +95,75 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
     return 0;
 }
 #else
+static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
+
+static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    unsigned char* loadaddr = 0;
+    int rc = 0;
+    const char* loadaddrStr = NULL;
+    unsigned char* DtbDestAddr = (unsigned char*)CONFIG_DTB_LOAD_ADDR;
+    unsigned char* dtbLoadAddr = 0;
+    boot_img_hdr *hdr_addr = NULL;
+    int genFmt = 0;
+    unsigned    kernel_size = 0;
+    unsigned    ramdisk_size = 0;
+    unsigned    DtbStartOffset = 0;
+    unsigned dtbSz = 0;
+
+    debugP("%s, %s, %s\n", argv[0], argv[1], argv[2]);
+    loadaddrStr = (2 < argc) ? argv[2] : getenv("loadaddr");
+    loadaddr = (unsigned char*)simple_strtoul(loadaddrStr, NULL, 16);
+    hdr_addr = (boot_img_hdr*)loadaddr;
+
+    rc = do_image_read_kernel(cmdtp, flag, argc, argv);
+    if(rc){
+        errorP("Fail to read kernel img for dtb, rc=%d\n", rc);
+        return __LINE__;
+    }
+
+#ifdef CONFIG_MESON_TRUSTZONE
+	extern int meson_trustzone_boot_check(unsigned char *addr);
+	rc = meson_trustzone_boot_check((unsigned char *)loadaddr);
+#else
+	extern int aml_sec_boot_check(unsigned char *pSRC);
+	rc = aml_sec_boot_check((unsigned char *)loadaddr);
+#endif
+	if(rc){
+        errorP("Fail when sec_check, rc=%d\n", rc);
+        return __LINE__;
+    }
+
+    genFmt = genimg_get_format(hdr_addr);
+    if(IMAGE_FORMAT_ANDROID != genFmt) {
+        errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n", genFmt, IMAGE_FORMAT_ANDROID);
+        return __LINE__;
+    }
+
+    kernel_size     =(hdr_addr->kernel_size + (hdr_addr->page_size-1)+hdr_addr->page_size)&(~(hdr_addr->page_size -1));
+    ramdisk_size    =(hdr_addr->ramdisk_size + (hdr_addr->page_size-1))&(~(hdr_addr->page_size -1));
+    dtbSz           = hdr_addr->second_size;
+    DtbStartOffset = kernel_size + ramdisk_size;
+    debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
+    debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
+    debugP("dtbSz 0x%x\n", dtbSz);
+    dtbLoadAddr =   loadaddr + DtbStartOffset;
+
+    if(fdt_check_header(dtbLoadAddr)){
+        errorP("dtb head check failed\n");
+        return __LINE__;
+    }
+    if((1U<<20) < dtbSz){
+        errorP("dtb size 0x%x > max 1M\n", dtbSz);
+        return __LINE__;
+    }
+    memcpy(DtbDestAddr, dtbLoadAddr, dtbSz);
+
+    return 0;
+}
+#endif//#ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
+
+#else
 static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     errorP("unsupported as CONFIG_OF_LIBFDT undef\n");
@@ -101,7 +171,7 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 }
 #endif//#ifdef CONFIG_OF_LIBFDT
 
-
+#ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     unsigned    kernel_size;
@@ -159,6 +229,36 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
     return 0;
 }
+#else
+//To read the whole partition size if CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2 defined
+static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    unsigned char* partName = (unsigned char*)argv[1];
+    unsigned char* loadaddr = 0;
+    int rc = 0;
+    uint64_t flashReadOff = 0;
+    const char* loadaddrStr = (2 < argc) ? argv[2] : getenv("loadaddr");
+    u64 partSz = 0;
+
+    loadaddr = (unsigned char*)simple_strtoul(loadaddrStr, NULL, 16);
+
+    debugP("%s, %s, %s\n", argv[0], argv[1], argv[2]);
+    rc = store_get_partititon_size(partName, &partSz);
+    if(rc || !partSz){
+        errorP("Fail to get capacity for part %s, partSz %lldSec\n", partName, partSz);
+        return __LINE__;
+    }
+    partSz <<= 9;//trans sector to byte
+    printf("part[%s] sz %lldMB\n", partName, partSz>>20);
+    rc = store_read_ops(partName, loadaddr, flashReadOff, partSz);
+    if(rc){
+        errorP("Fail to read 0x%xB from part[%s] at offset 0\n", IMG_PRELOAD_SZ, partName);
+        return __LINE__;
+    }
+
+    return 0;
+}
+#endif//#ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
 
 #define AML_RES_IMG_VERSION         0x01
 #define AML_RES_IMG_V1_MAGIC_LEN    8
