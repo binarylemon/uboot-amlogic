@@ -197,7 +197,6 @@
 	"mmc_recovery=echo enter recovery;run vdacswitchconfig;run mmcargs;if mmcinfo; then if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;fi; if usb start; then if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;fi; mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_lk_size}; bootm\0" \
 	"detect_storage=echo detect_storage ;nand exist; setenv no_nand $?; if test ${no_nand} = 0; then setenv storage nand ; echo setenv storage nand; else if test ${no_nand} = 1; then setenv storage mmc ;echo setenv storage mmc; run mbr_write;fi;fi\0" \
 	"recovery=if test ${storage} = nand; then run nand_recovery; else if test ${storage} = mmc; then run mmc_recovery;fi;fi\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,${fb_addr},720p\0" \
 	"storage=null\0" \
 	"compatible_boot=if test ${storage} = null; then run detect_storage;fi;if test ${storage} = nand; then echo compatible nand;run nandboot;else if test ${storage} = mmc; then run mmcboot;fi;fi\0" \
 	"factoryreset_wipe_data=echo ---wipe_data=${wipe_data}; if itest ${wipe_data} == failed; then if itest ${storage} == nand; then nand read recovery ${loadaddr} 0 600000; bootm;else if itest ${storage} == mmc; then mmcinfo 1; mmc read 1 ${loadaddr} ${mmc_recovery_offset} ${mmc_lk_size}; bootm; fi;fi;fi\0" \
@@ -224,7 +223,9 @@
 		"run cvbscheck;"\
 		"mmcinfo 1;"\
 		"setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${fb_addr},${outputtemp},full androidboot.resolution=${outputmode} nohlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
-	"switch_bootmode="\
+	"bootargs="\
+	    "root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,${fb_addr},720p\0" \
+    "switch_bootmode="\
 		"if test ${reboot_mode} = factory_reset;"\
 			"then run recovery;"\
 		"else if test ${reboot_mode} = update;"\
