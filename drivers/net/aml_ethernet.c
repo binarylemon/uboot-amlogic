@@ -65,6 +65,8 @@ static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_IC_IP101ALF         0x02430c54
 #define PHY_MICREL_8091         0x221560
 
+#define PHY_INTERNAL            0x79898963
+
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
 #define MAC_MODE_RGMII                   2
@@ -76,7 +78,34 @@ static int g_debug = 0;
 static unsigned int get_cpuid(){
 	return READ_CBUS_REG(0x1f53)&0xff;
 }
+#define INTERNAL_PHY 1
+#ifdef INTERNAL_PHY
+#define  SMI_ADDR_TSTCNTL     20
+#define  SMI_ADDR_TSTREAD1    21
+#define  SMI_ADDR_TSTREAD2    22
+#define  SMI_ADDR_TSTWRITE    23
 
+#define  WR_ADDR_A0CFG        0x11
+#define  WR_ADDR_A1CFG        0x12
+#define  WR_ADDR_A2CFG        0x13
+#define  WR_ADDR_A3CFG        0x14
+#define  WR_ADDR_A4CFG        0x15
+#define  WR_ADDR_A5CFG        0x16
+#define  WR_ADDR_A6CFG        0x17
+#define  WR_ADDR_A7CFG        0x18
+#define  WR_ADDR_A8CFG        0x1a
+#define  WR_ADDR_A9CFG        0x1b
+#define  WR_ADDR_A10CFG       0x1c
+#define  WR_ADDR_A11CFG       0x1d
+
+#define  RD_ADDR_A3CFG        (0x14 << 5)
+#define  RD_ADDR_A4CFG        (0x15 << 5)
+#define  RD_ADDR_A5CFG        (0x16 << 5)
+#define  RD_ADDR_A6CFG        (0x17 << 5)
+
+#define  TSTCNTL_RD           ((1 << 15) | (1 << 10))
+#define  TSTCNTL_WR           ((1 << 14) | (1 << 10))
+#endif
 
 
 
@@ -140,7 +169,106 @@ static unsigned int phy_reg_rd(int phyad, unsigned int reg)
 
 	return tmp;
 }
+#ifdef INTERNAL_PHY
+static void initTSTMODE(int phyad)
+{
+	phy_reg_wr(phyad, SMI_ADDR_TSTCNTL, 0x0400);
+	phy_reg_wr(phyad, SMI_ADDR_TSTCNTL, 0x0000);
+	phy_reg_wr(phyad, SMI_ADDR_TSTCNTL, 0x0400);
 
+}
+
+static void closeTSTMODE(int phyad)
+{
+	phy_reg_wr(phyad, SMI_ADDR_TSTCNTL, 0x0000);
+
+}
+
+
+static void init_internal_phy(int phyad)
+{
+        initTSTMODE(phyad);
+        // write tstcntl addr val
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x1354);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR);//write addr 0
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x38);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A0CFG);//write addr 0x11
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x0c00);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A1CFG);//write addr 0x12
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3e00);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A2CFG);//write addr 0x13
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xf902);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A3CFG);//write addr 0x14
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3412);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A4CFG);//write addr 0x15
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x2636);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A5CFG);//write addr 0x16
+        phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,3);//write val
+        phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A7CFG);//write addr 0x18
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x108);
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A9CFG);//write addr 0x1b
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xda00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A11CFG);//write addr 0x1d
+	closeTSTMODE(phyad);
+}
+
+
+void init_internal_phy_10B(int phyad)
+{
+
+	initTSTMODE(phyad);
+	// write tstcntl addr val
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x0000);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR);//write addr 0
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x38);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A0CFG);//write addr 0x11
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x0c00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A1CFG);//write addr 0x12
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3e00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A2CFG);//write addr 0x13
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xf902);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A3CFG);//write addr 0x14
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3412);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A4CFG);//write addr 0x15
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x2236);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A5CFG);//write addr 0x16
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,3);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A7CFG);//write addr 0x18
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x108);//write val by chandle (2)
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A9CFG);//write addr 0x1b
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xda00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A11CFG);//write addr 0x1d
+	closeTSTMODE(phyad);
+}
+
+void init_internal_phy_100B(int phyad)
+{
+
+	initTSTMODE(phyad);
+	// write tstcntl addr val
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x9354);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|0x00);//write addr 0x00
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x38);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A0CFG);//write addr 0x11
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x0c00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A1CFG);//write addr 0x12
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3e00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A2CFG);//write addr 0x13
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xf902);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A3CFG);//write addr 0x14
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x3412);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A4CFG);//write addr 0x15
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xa406);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A5CFG);//write addr 0x16
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x0003);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A7CFG);//write addr 0x18
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0x00a6);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A9CFG);//write addr 0x1b
+	phy_reg_wr(phyad,SMI_ADDR_TSTWRITE,0xda00);//write val
+	phy_reg_wr(phyad,SMI_ADDR_TSTCNTL,TSTCNTL_WR|WR_ADDR_A11CFG);//write addr 0x1d
+	closeTSTMODE(phyad);
+}
+#endif
 static inline void _dcache_flush_range_for_net(unsigned startAddr, unsigned endAddr)
 {
 	dcache_flush_range(startAddr, endAddr - startAddr + 1);
@@ -252,10 +380,16 @@ static void netdev_chk(void)
 			case PHY_MICREL_8091:
 				rint2 = phy_reg_rd(id,1);
 				gS->linked = rint2&(1<<2);
-				rint2 = phy_reg_rd(id,0);
-				speed = (rint2 & (0x1<<13))? 1:0;
+				rint2 = phy_reg_rd(id,30);
+				speed = (rint2 & (0x1<<1))? 1:0;
 				rint2 = phy_reg_rd(id,5);
-				full = (rint2 & (0x1<<8))? 1:0;
+				full = (rint2 & 0x1)? 1:0;
+				break;
+			case PHY_INTERNAL:
+				rint2 = phy_reg_rd(id, 31);
+				speed = (rint2 & (1 << 3)) >> 3;
+				full = ((rint2 >> 4) & 1);
+				gS->linked = rint2 & (1 << 2);
 				break;
 			case PHY_SMSC_8700:
 			case PHY_SMSC_8720:
@@ -276,6 +410,11 @@ static void netdev_chk(void)
 		}
 		if (speed == 0) {
 			printf("10m\n");
+#ifdef INTERNAL_PHY
+			init_internal_phy_10B(id);
+			int val =0x4100b040;
+			writel(val,ETH_PLL_CNTL);
+#endif
 			writel(readl(ETH_MAC_0_Configuration) & ~ ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);
 			if(get_cpuid() >= 0x16){	
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
@@ -290,6 +429,11 @@ static void netdev_chk(void)
 			}
 		} else if (speed == 1) {
 			printf("100m\n");
+#ifdef INTERNAL_PHY
+			init_internal_phy_100B(id);
+			int val = (8<<27)|(7 << 24)|(1<<16)|(1<<15)|(1 << 13)|(1 << 12)|(4 << 4)|(0 << 1);
+			writel(val,ETH_PLL_CNTL);
+#endif
 			writel(readl(ETH_MAC_0_Configuration) | ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
 			if(get_cpuid() >= 0x16){	
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
@@ -341,6 +485,8 @@ static void set_phy_mode(void)
 		case PHY_MICREL_8091:
         		val = phy_reg_rd(phyad, 0x16);
 			phy_reg_wr(phyad, 0x16, (val & ~(0x8020)));
+			break;
+		case PHY_INTERNAL:
 			break;
 		case PHY_SMSC_8700:
 		case PHY_SMSC_8720:
@@ -427,7 +573,9 @@ static int eth_reset(struct _gStruct* emac_config)
 		printf("Error to detected phy\n");
 		return -1;
 	}
-
+#ifdef INTERNAL_PHY
+	init_internal_phy(phyad);
+#endif
 	set_phy_mode();
 	val = PHY_CR_AN | PHY_CR_RSTAN;
 	phy_reg_wr(phyad, PHY_CR, val);
