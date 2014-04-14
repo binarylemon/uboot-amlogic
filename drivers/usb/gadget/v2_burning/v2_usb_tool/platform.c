@@ -195,6 +195,7 @@ void close_usb_phy_clock(int cfg)
     __udelay(20);
 
     //dwc_otg_power_off_phy();//close phy
+    run_command("sleep 1", 0);//sleep sometime to improve pc compatibility!!
     return;
 }
 

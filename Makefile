@@ -479,6 +479,10 @@ ifndef CONFIG_M6_SECU_BOOT
 ifdef CONFIG_AML_SECU_BOOT_V2
 	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp
 	@./tools/secu_boot/encrypto3 $@
+ifdef CONFIG_JOIN_UBOOT_SECUREOS
+		$(obj)tools/join_uboot_secureos $(obj)$(AML_USB_UBOOT_NAME).temp  $(SECURE_OS_BIN) $(obj)$(AML_USB_UBOOT_NAME).secure_os.bin
+	@cp -f $(obj)$(AML_USB_UBOOT_NAME).secure_os.bin $(obj)$(AML_USB_UBOOT_NAME).temp
+endif
 	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME).temp
 	@rm -f $(obj)$(AML_USB_UBOOT_NAME).temp
 	@$(obj)tools/convert --soc $(SOC)+  -s $(obj)ddr_init.bin -i $(obj)$(AML_USB_UBOOT_NAME).temp.aml -o $(obj)$(AML_USB_UBOOT_NAME)

@@ -54,6 +54,16 @@ int aml_check_is_ready_for_sdc_produce(void)
     return 1;//is ready for sdcard producing
 }
 
+static unsigned _get_romcode_boot_id(void)
+{
+    unsigned* pBootId = &C_ROM_BOOT_DEBUG->boot_id;
+    unsigned boot_id = *pBootId;
+#ifdef CONFIG_MESON_TRUSTZONE
+    boot_id = meson_trustzone_sram_read_reg32(pBootId);
+#endif// #ifdef CONFIG_MESON_TRUSTZONE
+
+    return boot_id;
+}
 
 //is the uboot loaded from usb otg
 int is_tpl_loaded_from_usb(void)
@@ -61,8 +71,8 @@ int is_tpl_loaded_from_usb(void)
 #if 0
     return (MESON_USB_BURNER_REBOOT == readl(CONFIG_TPL_BOOT_ID_ADDR));
 #else
-    DWN_DBG("C_ROM_BOOT_DEBUG->boot_id %d\n", C_ROM_BOOT_DEBUG->boot_id);
-    return (2 == C_ROM_BOOT_DEBUG->boot_id);
+    DWN_DBG("_get_romcode_boot_id()=%d\n", _get_romcode_boot_id());
+    return (2 <= _get_romcode_boot_id());
 #endif//
 }
 
@@ -72,7 +82,7 @@ int is_tpl_loaded_from_ext_sdmmc(void)
 {
     /*return (MESON_SDC_BURNER_REBOOT == readl(CONFIG_TPL_BOOT_ID_ADDR));*/
     //see loaduboot.c, only boot from sdcard when "boot_id == 1"
-    return (1 == C_ROM_BOOT_DEBUG->boot_id);
+    return (1 == _get_romcode_boot_id());
 }
 
 //Check if uboot loaded from external sdmmc or usb otg

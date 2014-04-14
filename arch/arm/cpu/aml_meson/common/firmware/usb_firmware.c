@@ -31,93 +31,43 @@
 unsigned int ovFlag;
 #endif
 
+static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decompressedAddr, unsigned* decompressedLen)
+{
+    int ret = __LINE__; 
+
+    serial_puts("\n\nucl Decompress START ====>\n");
+    serial_puts("compressData "), serial_put_hex((unsigned)compressData, 32), serial_puts(",");
+    serial_puts("decompressedAddr "), serial_put_hex((unsigned)decompressedAddr, 32), serial_puts(".\n");
+
+#if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
+    extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
+    ret = uclDecompress((char*)decompressedAddr, decompressedLen, (char*)compressData);
+
+    serial_puts("uclDecompress "), serial_puts(ret ? "FAILED!!\n": "OK.\n");
+    serial_puts("\n<====ucl Decompress END. \n\n");
+#endif// #ifndef CONFIG_IMPROVE_UCL_DEC
+#endif//#if CONFIG_UCL
+
+    if(ret){
+        serial_puts("decompress FAILED ret="), serial_put_dec(ret), serial_puts("\n");
+    }
+    else{
+        serial_puts("decompressedLen "), serial_put_hex(*decompressedLen, 32), serial_puts(".\n");
+    }
+
+    return ret;
+}
+
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
 #ifdef CONFIG_M8
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
-	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s, wathdog will disabled after TPL enter usb burning mode
 	writel(readl(0xc8100000), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
 #endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
-
-	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
-
-//write ENCI_MACV_N0 (CBUS 0x1b30) to 0, disable Macrovision
-#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
-	writel(0, CBUS_REG_ADDR(ENCI_MACV_N0));
-#endif
-
-//Default to open ARM JTAG for M6 only
-#if  defined(CONFIG_M6) || defined(CONFIG_M6TV)
-	#define AML_M6_JTAG_ENABLE
-	#define AML_M6_JTAG_SET_ARM
-
-	//for M6 only. And it will cause M3 fail to boot up.
-	//TEST_N enable: This bit should be set to 1 as soon as possible during the 
-	//Boot process to prevent board changes from placing the chip into a production test mode
-	setbits_le32(0xda004000,(1<<0));
-
-	// set bit [12..14] to 1 in AO_RTI_STATUS_REG0
-	// This disables boot device fall back feature in MX Rev-D
-	// This still enables bootloader to detect which boot device
-	// is selected during boot time. 
-	switch(readl(0xc8100000))
-	{
-	case 0x6b730001:
-	case 0x6b730002: writel(readl(0xc8100000) |(0x70<<8),0xc8100000);break;
-	}
-
-#endif
-
-
-#if defined(CONFIG_M8)
-	//A9 JTAG enable
-	writel(0x102,0xda004004);
-	//TDO enable
-	writel(readl(0xc8100014)|0x4000,0xc8100014);
-	
-	//detect sdio debug board
-	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
-	
-	// clear sdio pinmux
-	setbits_le32(P_PREG_PAD_GPIO0_O,0x3f<<22);
-	setbits_le32(P_PREG_PAD_GPIO0_EN_N,0x3f<<22);
-	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);  //clear sd d1~d3 pinmux
-	
-	if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){  //sd_d3 low, debug board in
-		serial_puts("\nsdio debug board detected ");
-		clrbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);   //clear AO uart pinmux
-		setbits_le32(P_PERIPHS_PIN_MUX_8,3<<9);
-		
-		if((readl(P_PREG_PAD_GPIO0_I)&(1<<22)))
-			writel(0x220,P_AO_SECURE_REG1);  //enable sdio jtag
-	}
-	else{
-		serial_puts("\nno sdio debug board detected ");
-		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
-	}
-#endif 
-
-
-#ifdef AML_M6_JTAG_ENABLE
-	#ifdef AML_M6_JTAG_SET_ARM
-		//A9 JTAG enable
-		writel(0x80000510,0xda004004);
-		//TDO enable
-		writel(readl(0xc8100014)|0x4000,0xc8100014);
-	#elif AML_M6_JTAG_SET_ARC
-		//ARC JTAG enable
-		writel(0x80051001,0xda004004);
-		//ARC bug fix disable
-		writel((readl(0xc8100040)|1<<24),0xc8100040);
-	#endif	//AML_M6_JTAG_SET_ARM
-
-	//Watchdog disable
-	//writel(0,0xc1109900);
-	//asm volatile ("wfi");
-
-#endif //AML_M6_JTAG_ENABLE
 
 	//Note: Following msg is used to calculate romcode boot time
 	//         Please DO NOT remove it!
@@ -133,25 +83,77 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts(" ");
 	serial_puts(__DATE__);
 	serial_puts("\n");	
-	    
-    // load uboot
-	if(load_uboot(__TEXT_BASE,__TEXT_SIZE)){
-   		serial_puts("\nload uboot error,now reset the chip");
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
-	}
 
+#if 0
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+	load_m8_smp_code();
+#endif
+
+#ifdef  CONFIG_AML_SPL_L1_CACHE_ON
+	aml_cache_enable();
+	//serial_puts("\nSPL log : ICACHE & DCACHE ON\n");
+#endif	//CONFIG_AML_SPL_L1_CACHE_ON
+#endif//#if 0
+	   
     serial_puts("\nTE : ");
 	serial_put_dec(TIMERE_GET());
 	serial_puts("\n");
 
-    serial_puts("\nSystem Started\n");
+    if(aml_sec_boot_check((unsigned char*)__TEXT_BASE))
+    {
+        serial_puts("\nSecure_boot_check FAILED,reset chip to let PC know!\n");
+        AML_WATCH_DOG_START();
+    }
 
-#ifdef CONFIG_M8
-	//if bootup failed, switch to next boot device
-	writel(0, P_WATCHDOG_TC); //disable watchdog
-	//temp added
-	writel(0,0xc8100000);
-#endif
+#ifdef CONFIG_MESON_TRUSTZONE
+    {
+        unsigned* ubootBinAddr  = (unsigned*)CONFIG_USB_SPL_ADDR;
+        unsigned* psecureargs   = 0;
+        unsigned  decompressedLen = 0;
+        unsigned  secureosOffset  = 0;
+        unsigned char* compressedAddr   = 0;
+        unsigned char* decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
+        int ret = 1;
+
+        secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
+        compressedAddr   = (unsigned char*)ubootBinAddr + secureosOffset;
+        serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
+        ret = _usb_ucl_decompress(compressedAddr, decompressedAddr, &decompressedLen);
+        if(ret){
+            serial_puts("\nload secureos error,now reset chip to let PC know\n");
+            AML_WATCH_DOG_START();
+        }
+
+        psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
+        *psecureargs = 0;
+#ifdef CONFIG_MESON_SECUREARGS
+        *psecureargs = __secureargs;	
+#endif// #ifdef CONFIG_MESON_SECUREARGS
+    }
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+ 
+    // load uboot
+    {
+        int ret = 1;
+        unsigned char* tplTargeTextBase = (unsigned char*)__TEXT_BASE;
+        unsigned char* tplTempAddr = tplTargeTextBase + 0x800000;
+        unsigned  decompressedLen = 0;
+
+		memcpy(tplTempAddr, tplTargeTextBase, __TEXT_SIZE); //here need fine tune!!
+
+        ret = _usb_ucl_decompress(tplTempAddr, tplTargeTextBase, &decompressedLen);
+        if(ret){
+            serial_puts("\nload uboot error,reset chip to let PC know");
+            AML_WATCH_DOG_START();
+        }
+        ret = check_sum((unsigned*)tplTargeTextBase, 0, 0);
+        if(ret){
+            serial_puts("check magic error, So reset the chip!!\n");
+            AML_WATCH_DOG_START();
+        }
+    }
+
+    serial_puts("\nSystem Started\n");
 
 #ifdef CONFIG_MESON_TRUSTZONE		
     return ovFlag;

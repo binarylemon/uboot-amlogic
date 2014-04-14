@@ -60,12 +60,39 @@ typedef struct _RunBinInfo_s{
 #pragma pack(push, 4)
 typedef struct _UclDecompressInfo{
     BinRunInfoHead_t    binRunHead;
-    unsigned            srcDataAddr;//
+    unsigned char*      srcDataAddr;//
     unsigned            srcDataLen;
-    unsigned            decompressedAddr;
+    unsigned char*      decompressedAddr;
     unsigned            decompressedLen;
 }UclDecompressInfo_t;
 #pragma pack(pop)
+
+static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decompressedAddr, unsigned* decompressedLen)
+{
+    int ret = __LINE__; 
+
+    serial_puts("\n\nucl Decompress START ====>\n");
+    serial_puts("compressData "), serial_put_hex((unsigned)compressData, 32), serial_puts(",");
+    serial_puts("decompressedAddr "), serial_put_hex((unsigned)decompressedAddr, 32), serial_puts(".\n");
+
+#if CONFIG_UCL
+#ifndef CONFIG_IMPROVE_UCL_DEC
+    ret = uclDecompress((char*)decompressedAddr, decompressedLen, (char*)compressData);
+
+    serial_puts("uclDecompress "), serial_puts(ret ? "FAILED!!\n": "OK.\n");
+    serial_puts("\n<====ucl Decompress END. \n\n");
+#endif// #ifndef CONFIG_IMPROVE_UCL_DEC
+#endif//#if CONFIG_UCL
+
+    if(ret){
+        serial_puts("decompress FAILED ret="), serial_put_dec(ret), serial_puts("\n");
+    }
+    else{
+        serial_puts("decompressedLen "), serial_put_hex(*decompressedLen, 32), serial_puts(".\n");
+    }
+
+    return ret;
+}
 
 static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
@@ -164,6 +191,9 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts(__DATE__);
 	serial_puts("\n");	
 
+    serial_puts("__TEXT_BASE, __TEXT_SIZE "), 
+        serial_put_hex(__TEXT_BASE, 32), serial_puts(",\t"), serial_put_hex(__TEXT_SIZE, 32), serial_puts("\n");
+
 #ifdef CONFIG_POWER_SPL
     power_init(POWER_INIT_MODE_NORMAL);
 #endif
@@ -225,18 +255,25 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #ifdef CONFIG_M8
 	//enable watchdog, then when bootup failed, switch to next boot device
-	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+	//writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
 #endif// #ifdef CONFIG_M8
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
     serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
     serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
 
+#if 1
     if(BIN_RUN_INFO_MAGIC_PARA != paraMagic)//default to run ddr_init.bin, Attention that sram area will not clear if not poweroff!
     {
         ret = _ddr_init_main(__TEXT_BASE, __TEXT_SIZE);
         binRunInfoHead->retVal = ret;
         return ret;
     }
+#else
+    binRunInfoHead->runType = BIN_RUN_TYPE_UCL_DECOMPRESS;
+    ((UclDecompressInfo_t*)binRunInfoHead)->srcDataAddr = (unsigned char*)(2U<<20);
+
+	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);
+#endif//#if 1
 
     if(BIN_RUN_INFO_VERSION != binRunInfoHead->version){
         serial_puts("run info version "), serial_put_hex(binRunInfoHead->version, 16), serial_puts("error\n");
@@ -247,27 +284,45 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         case BIN_RUN_TYPE_UCL_DECOMPRESS:
             {
                 UclDecompressInfo_t*    uclDecompressInfo   = (UclDecompressInfo_t*)binRunInfoHead;
+                unsigned char*          tplSrcDataAddr      = uclDecompressInfo->srcDataAddr;
+                unsigned                secureosOffset      = 0;
+                unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
 
-                serial_puts("\n\nDecompress compressed TPL START ====>\n");
-                uclDecompressInfo->decompressedAddr = CONFIG_SYS_TEXT_BASE;
-                serial_puts("srcAdrr "), serial_put_hex(uclDecompressInfo->srcDataAddr, 32), serial_puts(",");
-#ifndef CONFIG_IMPROVE_UCL_DEC
-				ret = uclDecompress(uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen, uclDecompressInfo->srcDataAddr);
-#endif
-				if(ret){
-                    serial_puts("uclDecompress failed\n");
+                uclDecompressInfo->decompressedAddr = (unsigned char*)CONFIG_SYS_TEXT_BASE;
+#ifdef CONFIG_MESON_TRUSTZONE
+                tplSrcDataAddr += READ_SIZE;
+                serial_puts("READ_SIZE "), serial_put_hex(READ_SIZE, 32), serial_puts(",");
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+                ret = _usb_ucl_decompress(tplSrcDataAddr, uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
+                if(ret){
+                    break;
                 }
                 else
                 {
-                    serial_puts("uclDecompress OK\n");
-                    serial_puts("decompressed to addr ["), serial_put_hex(uclDecompressInfo->decompressedAddr, 32), 
-                        serial_puts("] in sz ["), serial_put_hex(uclDecompressInfo->decompressedLen, 32), serial_puts("]\n");
-                    ret = check_sum((char*)uclDecompressInfo->decompressedAddr, 0, 0);
+                    ret = check_sum((unsigned*)uclDecompressInfo->decompressedAddr, 0, 0);
                     if(ret){
                         serial_puts("check magic error\n");
+                        break;
                     }
                 }
-                serial_puts("<=====Decompress compressed TPL END\n");
+
+#ifdef CONFIG_MESON_TRUSTZONE
+                secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
+                serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
+                uclDecompressInfo->decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
+                ret = _usb_ucl_decompress((unsigned char*)ubootBinAddr + secureosOffset, 
+                        uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
+                if(ret){
+                    break;
+                }
+                unsigned* psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
+                *psecureargs = 0;
+#ifdef CONFIG_MESON_SECUREARGS
+                *psecureargs = __secureargs;	
+#endif// #ifdef CONFIG_MESON_SECUREARGS
+
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+
             }
             break;
             

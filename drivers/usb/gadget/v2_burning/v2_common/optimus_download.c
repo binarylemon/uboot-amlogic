@@ -177,8 +177,12 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
         DWN_ERR("Fail in _check_partition_table_consistency\n");
         return 0;
     }
+    if(size > (1U<<20)){
+        DWN_ERR("uboot.bin size 0x%x > 1M unsupported\n", size);
+        return __LINE__;
+    }
 
-    size = size < 0x60000 ? 0x60000 : size;
+    size = size <= 0x60000 ? 0x60000 : (1U<<20);//384K when non-secure_os, 1M when secure_os
     ret = store_boot_write((unsigned char*)data, 0, size);
 
     return ret ? 0 : dataSzReceived;
