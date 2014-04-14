@@ -119,7 +119,8 @@ do
       for tmp in `seq $BAR_LOOP`;do RESULT=$RESULT'-';done
     fi
     make distclean
-    make $cfg -j
+    make $cfg'_config'
+    make -j
     if [ $? != 0 ]
     then RESULT=$RESULT'-failed---'
     else RESULT=$RESULT'-pass-----'
