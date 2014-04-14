@@ -510,4 +510,10 @@
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
 
+
+#define CONFIG_DSP_VSYNC_INTERRUPT 		1
+
+
+
+
 #endif //__CONFIG_M6_REF_V1_H__

@@ -357,4 +357,7 @@ save
 */
 //#define CONFIG_M6_TEST_CPU_SWITCH 1
 
+//#define CONFIG_DSP_VSYNC_INTERRUPT 		1
+
+
 #endif //__CONFIG_M6_SKT_V1_H__

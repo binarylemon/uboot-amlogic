@@ -12,6 +12,7 @@ LIB	= $(obj)lib$(SOC).o
 
 COBJS-$(CONFIG_AML_SDIO)+=sdio.o
 COBJS-$(CONFIG_CMD_RUNARC)+=cmd_arc.o
+COBJS-$(CONFIG_DSP_VSYNC_INTERRUPT) += dsp.o
 COBJS	= clock.o gpio.o pinmux.o $(COBJS-y)
 SOBJS := mmutable.o
 
@@ -45,7 +46,7 @@ endif
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-all:	power_firmware $(obj).depend $(LIB)
+all:	power_firmware dsp_firmware $(obj).depend $(LIB) 
 
 $(LIB):	$(OBJS)	
 	$(call cmd_link_o_target, $(OBJS))	
@@ -72,6 +73,14 @@ else
 power_firmware:
 endif
 
+
+.PHONY: dsp_firmware
+ifdef CONFIG_DSP_VSYNC_INTERRUPT
+dsp_firmware:
+	make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/dsp_firmware
+else
+dsp_firmware:
+endif
 
 #########################################################################
 
