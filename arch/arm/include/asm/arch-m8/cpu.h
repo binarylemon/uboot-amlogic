@@ -301,4 +301,8 @@
 
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8
 
+//support gpio cmd
+#define CONFIG_AML_GPIO_CMD 1
+#define CONFIG_AML_GPIO 1
+
 #endif /* _CPU_H */

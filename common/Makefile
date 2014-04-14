@@ -168,6 +168,8 @@ COBJS-y += store_interface.o
 COBJS-y += cmd_burnup.o
 endif
 
+COBJS-$(CONFIG_AML_GPIO_CMD) += cmd_gpio.o
+
 COBJS-$(CONFIG_CMD_NET) += cmd_net.o
 COBJS-$(CONFIG_CMD_ONENAND) += cmd_onenand.o
 COBJS-$(CONFIG_CMD_OTP) += cmd_otp.o

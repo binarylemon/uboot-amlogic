@@ -433,10 +433,7 @@ struct aml_nand_device aml_nand_mid_device = {
 #define IO_AOBUS_BASE	0xc8100000
 #define AOBUS_REG_OFFSET(reg)   ((reg) )
 #define AOBUS_REG_ADDR(reg)	    (IO_AOBUS_BASE + AOBUS_REG_OFFSET(reg))
-static __inline__ void aml_set_reg32_bits( uint32_t _reg, const uint32_t _value,const uint32_t _start, const uint32_t _len)
-{
-	writel((readl(_reg) & ~((( 1L << (_len) )-1) << (_start)) | ((unsigned)((_value)&((1L<<(_len))-1)) << (_start))), _reg );
-}
+
 
 static void gpio_set_vbus_power(char is_power_on)
 {
