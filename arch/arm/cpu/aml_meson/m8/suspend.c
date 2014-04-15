@@ -478,7 +478,7 @@ static void auto_clk_gating_setup(
 #ifdef CONFIG_MESON_TRUSTZONE
 int meson_power_suspend(void)
 {
-	return meson_trustzone_suspend();
+	return meson_trustzone_suspend_uboot();
 }
 #else
 
