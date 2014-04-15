@@ -344,7 +344,7 @@ static int spi_securestorage_init(void *keypara)
 	}
 	printk("spi secure storage part count %d ok\n",(securestorage_part-error));
 	if(securestorage_info->secure_valid == 1){
-		printk("spi secure starge valid addr:%llx,size:0x%llx\n",securestorage_info->valid_node->offset,securestorage_info->valid_node->size);
+		printk("spi secure storage valid addr:%llx,size:0x%llx\n",securestorage_info->valid_node->offset,securestorage_info->valid_node->size);
 	}
 exit:
 	kfree(securedata);

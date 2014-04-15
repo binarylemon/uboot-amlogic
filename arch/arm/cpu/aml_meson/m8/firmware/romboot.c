@@ -9,6 +9,7 @@
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <asm/arch/trustzone.h>
 #include <secureloader.c>
+#include <spisecustorage.c>
 #endif
 
 #if CONFIG_UCL
@@ -161,14 +162,18 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 #endif
             serial_puts("Boot From SPI\n");
             //memcpy((unsigned*)temp_addr,mem,size);
-			ipl_memcpy((unsigned char*)temp_addr,(unsigned char*)mem,size);
+            ipl_memcpy((unsigned char*)temp_addr,(unsigned char*)mem,size);
+#ifdef CONFIG_MESON_TRUSTZONE
+            serial_puts("Boot From SPI get storage\n");
+            spi_secure_storage_get(NOR_START_ADDR,0,0);
+#endif
             break;
         case POR_1ST_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<2);
 #ifdef CONFIG_MESON_TRUSTZONE
-	 serial_puts("BootFrom SDIO C get storage: \n");
-	 sdio_secure_storage_get();
+            serial_puts("Boot From SDIO C get storage\n");
+            sdio_secure_storage_get();
 #endif
         	break;
         case POR_1ST_SDIO_B:

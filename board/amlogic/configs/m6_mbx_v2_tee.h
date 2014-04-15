@@ -79,12 +79,6 @@
 #define CONFIG_CMD_SF    1
 
 #if defined(CONFIG_CMD_SF)
-#define CONFIG_SECURE_MMC
-#define CONFIG_SPI_NOR_SECURE_STORAGE
-#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
-#define SPI_MIN_ROOM_SIZE       0x200000               
-#endif  
-
 #define SPI_WRITE_PROTECT  1
 #define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
@@ -465,6 +459,9 @@
 #define CONFIG_RANDOM_GENERATE
 #define CONFIG_CMD_SECURESTORE
 #define CONFIG_CMD_RANDOM
+/* secure storage support both spi and emmc */
+#define CONFIG_SECURE_MMC
+#define CONFIG_SPI_NOR_SECURE_STORAGE
 #endif
 
 #endif //CONFIG_MESON_TRUSTZONE

@@ -5,6 +5,7 @@
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <asm/arch/trustzone.h>
 #include <secureloader.c>
+#include <spisecustorage.c>
 #endif
 
 #if CONFIG_UCL
@@ -482,9 +483,6 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 #define P_PREG_JTAG_GPIO_ADDR  (volatile unsigned long *)0xc110802c
 #endif
 
-#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
-#include <spisecustorage.c>
-#endif
 
 STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
@@ -521,9 +519,9 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 #endif
             serial_puts("BootFrom SPI\n");
             memcpy((unsigned*)temp_addr,mem,size);
-            #ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+#ifdef CONFIG_MESON_TRUSTZONE
             spi_secure_storage_get(NOR_START_ADDR,0,0);
-            #endif
+#endif
             break;
         case POR_1ST_SDIO_C:
         	serial_puts("BootFrom SDIO C\n");
