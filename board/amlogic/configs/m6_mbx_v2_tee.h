@@ -447,58 +447,27 @@
 //#define CONFIG_CMD_SUSPEND 1
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
-/*-----------------------------------------------------------------------
- * TRUSTZONE
- */
-// use secureboot, need enable the following 2 config, it is (CONFIG_M6_SECU_BOOT and CONFIG_AML_SPL_L1_CACHE_ON)
-//#define CONFIG_AML_SPL_L1_CACHE_ON     1
 
-//#define CONFIG_SECURE_STORAGE_BURNED
+/*
+ * Secure OS
+ */
+#define CONFIG_MESON_TRUSTZONE 1
+
+#ifdef CONFIG_MESON_TRUSTZONE
+//#define CONFIG_MESON_SECUREARGS  1
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+#define SECURE_OS_DECOMPRESS_ADDR 0x85200000
+#define CONFIG_SECURE_STORAGE_BURNED
 #ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_MESON_STORAGE_BURN 1
+#define CONFIG_MESON_STORAGE_DEBUG
 #define CONFIG_SECURESTORAGEKEY
 #define CONFIG_RANDOM_GENERATE
 #define CONFIG_CMD_SECURESTORE
 #define CONFIG_CMD_RANDOM
 #endif
 
-//#define CONFIG_CMD_SECURESTORE
-#ifdef CONFIG_CMD_SECURESTORE
-#ifndef CONFIG_SECURESTORAGEKEY
-#define CONFIG_SECURESTORAGEKEY
-#endif
-#endif
-
-//#define CONFIG_CMD_RANDOM
-#ifdef CONFIG_CMD_RANDOM
-#ifndef CONFIG_RANDOM_GENERATE
-#define CONFIG_RANDOM_GENERATE
-#endif
-#endif
-
-#ifdef CONFIG_SECURE_STORAGE_BURNED
-#define CONFIG_MESON_STORAGE_BURN 1
-//#define CONFIG_MESON_STORAGE_DEBUG
-#endif
-
-#define CONFIG_MESON_TRUSTZONE	1
-//#define CONFIG_MESON_SECUREARGS  1
-
-#ifdef CONFIG_MESON_TRUSTZONE
-#define SECURE_OS_COMPRESS_ADDR                  0x8E000000
-#define SECURE_OS_DECOMPRESS_ADDR                0xA0100000
-#define CONFIG_JOIN_UBOOT_SECUREOS	1
-#ifdef CONFIG_ACS
-#define SECURE_OS_ACS_SRAM_ADDR                  0xD9000200
-#define SECURE_OS_ACS_DRAM_ADDR                  0x8F000000
-#define SECURE_OS_ACS_LEN                        0x00000400
-#endif
-
-#define SECURE_OS_OFFSET_POSITION_IN_SRAM      (32-4)
-#define SECURE_OS_SIZE_POSITION_IN_SRAM                (32-4-4)
-
-// secure arguments address in SRAM
-#define SECUREARGS_ADDRESS_IN_SRAM		(32-4-4-4)
-#endif
+#endif //CONFIG_MESON_TRUSTZONE
 
 
 #endif //__CONFIG_M6_REF_V1_H__

@@ -3,6 +3,7 @@
 #include <asm/arch/romboot.h>
 
 #ifdef CONFIG_MESON_TRUSTZONE
+#include <asm/arch/trustzone.h>
 #include <secureloader.c>
 #endif
 

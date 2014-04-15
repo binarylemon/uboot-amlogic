@@ -21,6 +21,10 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
+#ifdef CONFIG_MESON_TRUSTZONE
+#include <asm/arch/trustzone.h>
+#endif
+
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
 
 int load_secureos(void)
