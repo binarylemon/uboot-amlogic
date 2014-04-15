@@ -58,7 +58,6 @@ vidinfo_t panel_info;
 
 static unsigned bl_level = 0;
 
-#if 0
 static void lvds_ports_ctrl(Bool_t status)
 {
     debug("%s: %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -71,9 +70,7 @@ static void lvds_ports_ctrl(Bool_t status)
         WRITE_MPEG_REG(LVDS_GEN_CNTL,  READ_MPEG_REG(LVDS_GEN_CNTL) & ~(1 << 3)); // disable fifo
     }
 }
-#endif
 
-extern void mdelay(unsigned long msec);
 static void backlight_power_ctrl(Bool_t status)
 {
 	debug("%s: power %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -214,6 +211,8 @@ static Lvds_Phy_Control_t lcd_lvds_phy_control =
     .lvds_swing_ctl = 0x3,
     .lvds_vcm_ctl   = 0x2,
     .lvds_ref_ctl   = 0xf,
+    .lvds_phy_ctl0 = 0x2,
+    .lvds_fifo_wr_mode = 0x3,
 };
 
 //Define LVDS data mapping, pn swap.
@@ -258,7 +257,7 @@ Lcd_Config_t lcd_config =
         .stv1_vs_addr = 3,
         .stv1_ve_addr = 5,
 
-		.pol_cntl_addr = (0x0 << LCD_CPH1_POL) |(0x1 << LCD_HS_POL) | (0x1 << LCD_VS_POL),
+		.pol_cntl_addr = (0x0 << LCD_CPH1_POL) |(0x0 << LCD_HS_POL) | (0x1 << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 		.dual_port_cntl_addr = (1<<LCD_TTL_SEL) | (1<<LCD_ANALOG_SEL_CPH3) | (1<<LCD_ANALOG_3PHI_CLK_SEL) | (0<<LCD_RGB_SWP) | (0<<LCD_BIT_SWP),
@@ -370,17 +369,16 @@ static void lcd_io_init(void)
     //set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
-extern int lcd_probe(void);
 static int lcd_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
 
-	panel_info.vd_base = (void *)simple_strtoul(getenv("fb_addr"), NULL, 0);
-	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, 0);
-	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, 0);
-	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 0);
-	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
-	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
+	panel_info.vd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
+	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
+	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, NULL);
+	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
+	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
+	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
 
 	lcd_sync_duration(&lcd_config);
 	//lcd_setup_gamma_table(&lcd_config);
@@ -391,7 +389,6 @@ static int lcd_enable(void)
     return 0;
 }
 
-extern int lcd_remove(void);
 void lcd_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
@@ -424,7 +421,7 @@ vidinfo_t panel_info =
 
 struct panel_operations panel_oper =
 {
-	.enable	=	(void *)lcd_enable,
+	.enable	=	lcd_enable,
 	.disable	=	lcd_disable,
 	.bl_on	=	power_on_backlight,
 	.bl_off	=	power_off_backlight,

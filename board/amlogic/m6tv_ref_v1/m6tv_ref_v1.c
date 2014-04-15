@@ -2,12 +2,15 @@
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
 #include <malloc.h>
+#include <mmc.h>
 
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
 #include <asm/arch/aml_eth_pinmux.h>
 #include <asm/arch/io.h>
 #endif /*(CONFIG_CMD_NET)*/
+#include <version.h>
+#include <timestamp.h>
 
 #if defined(CONFIG_AML_I2C)
 #include <aml_i2c.h>
@@ -65,7 +68,7 @@ static void setup_net_chip(void)
 
 int board_eth_init(bd_t *bis)
 {   	
-
+    printf("board_eth_init\n");
     setup_net_chip();
 
     udelay(1000);
@@ -129,6 +132,26 @@ U_BOOT_CMD(
 );
 
 #endif //CONFIG_SARADC
+extern  int mmc_device_partitions (struct mmc *mmc);
+static int partition_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    int ret = 0;
+
+    struct mmc *mmc_ver; //struct mmc *mmc
+    mmc_ver = find_mmc_device(1);
+    if (mmc_ver) {
+        ret = mmc_device_partitions(mmc_ver); // init eMMC/tSD
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+	debug_mmcinfo,	2,	1,	partition_set,
+	" M6TVD debug mmc info & check partition ",
+	" if check erro, then write partition to emmc reveser partition \n"
+	" usage: partition \n"
+);
 
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
@@ -149,6 +172,7 @@ int switch_boot_mode(void)
 	case AMLOGIC_LOCK_REBOOT:
 	{
 	   printf("AML suspend boot....\n");
+		reboot_mode = 0;
 	   run_command("suspend",0);
 	}    
 	case AMLOGIC_UPDATE_REBOOT:
@@ -158,6 +182,47 @@ int switch_boot_mode(void)
     	    extern int aml_autoscript(void);
             aml_autoscript();  
 	}
+	}
+	unsigned int suspend_status_current2 = readl(P_AO_RTI_STATUS_REG2);
+	char *suspend_str = getenv ("suspend");
+	char *factory_standby_str = getenv ("factory_standby");
+	printf("suspend = %s\n", suspend_str);
+	printf("factory_standby = %s\n", factory_standby_str);
+	printf("suspend_status_current2=0x%x\n",suspend_status_current2);
+	if(!strcmp(factory_standby_str, "1"))
+	{
+		if(suspend_status_current2 == 0x1234abcd)
+		{
+			writel(0,P_AO_RTI_STATUS_REG2);
+			run_command ("set suspend off", 0);
+			run_command ("save", 0);
+		}
+		else
+		{
+			run_command ("suspend", 0);
+		}
+	}
+	else
+	{
+		if(!strcmp(suspend_str, "on"))
+ 		{
+			run_command ("set suspend done", 0);
+			run_command ("save", 0);
+			run_command ("suspend", 0);
+		}
+		else if(!strcmp(suspend_str, "done"))
+		{
+			if(suspend_status_current2 == 0x1234abcd)
+			{
+				writel(0,P_AO_RTI_STATUS_REG2);
+				run_command ("set suspend off", 0);
+				run_command ("save", 0);
+			}
+			else
+			{
+				run_command ("suspend", 0);
+			}
+		}
 	}
     return 0;
 }
@@ -303,8 +368,8 @@ static void sdio_pwr_off(unsigned port)
 
 	/// @todo NOT FINISH
 }
-#define CONFIG_TSD      1
-//#define CONFIG_EMMC     1
+#define CONFIG_EMMC     1
+//#define CONFIG_TSD      1
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
@@ -318,6 +383,7 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
 	sdio_register(mmc,aml_priv);
+#if 0
 	 #ifdef CONFIG_TSD
 	     if(mmc->block_dev.dev > 0)//tsd
 	           mmc->block_dev.if_type = IF_TYPE_SD;
@@ -325,6 +391,11 @@ static void board_mmc_register(unsigned port)
 	     if(mmc->block_dev.dev > 0)//emmc
 	           mmc->block_dev.if_type = IF_TYPE_MMC;
 	#endif
+#endif
+	mmc->block_dev.if_type = IF_TYPE_SD;
+	if(port == SDIO_PORT_C){
+		mmc->block_dev.if_type = IF_TYPE_MMC;
+	}
 
 #if 0    
     strncpy(mmc->name,aml_priv->name,31);
@@ -599,7 +670,6 @@ struct aml_nand_device aml_nand_mid_device = {
 //@board schematic: m3_skt_v1.pdf
 //@pinmax: AppNote-M3-CorePinMux.xlsx
 //GPIOA_26 used to set VCCX2_EN: 0 to enable power and 1 to disable power
-#if 0
 static void gpio_set_vbus_power(char is_power_on)
 {
 	if(is_power_on)
@@ -625,7 +695,6 @@ static void gpio_set_vbus_power(char is_power_on)
 		set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 1);		
 	}
 }
-#endif
 
 static int usb_charging_detect_call_back(char bc_mode)
 {

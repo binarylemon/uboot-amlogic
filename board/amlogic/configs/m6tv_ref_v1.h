@@ -142,7 +142,7 @@
 	"bootpath=u-boot-512M-UartB.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
-	"recoveryinand=mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
+	"recoveryinand=lcdctl bl_on;mmcinfo;mmc read 1 82000000 8000 4000;bootm\0" \
 	"has.accelerometer=false\0" \
 
 #define CONFIG_BOOTCOMMAND  "mmcinfo 1;run mmcargs;run prepare;bmp display ${loadaddr};lcdctl bl_on;mmc read 1 82000000 c000 4000;bootm"
@@ -161,6 +161,8 @@
 //#define CONFIG_AMLROM_NANDBOOT 1
 //#endif 
 
+#define CONFIG_PARTITIONS_STORE
+#define CONFIG_ENV_OVERWRITE
 #define CONFIG_ENV_SIZE         (0x2000)
 
 #ifdef CONFIG_SPI_BOOT
@@ -302,6 +304,9 @@
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 may or may not be populated */
 
+#define CONFIG_OF_LIBFDT	1
+#define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
+#define CONFIG_ANDROID_IMG	1
 
 //m6 security boot
 //#define CONFIG_M6_SECU_BOOT	1

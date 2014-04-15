@@ -150,6 +150,8 @@ typedef struct {
     unsigned int lvds_swing_ctl;
     unsigned int lvds_vcm_ctl;
     unsigned int lvds_ref_ctl;
+    unsigned int lvds_phy_ctl0;
+    unsigned int lvds_fifo_wr_mode;
 } Lvds_Phy_Control_t;
 
 typedef struct {
