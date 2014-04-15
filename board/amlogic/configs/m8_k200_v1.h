@@ -250,7 +250,7 @@
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
