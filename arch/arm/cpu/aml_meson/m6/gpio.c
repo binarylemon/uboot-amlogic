@@ -202,12 +202,9 @@ unsigned int p_pin_mux_reg_addr[]=
 extern int gpio_irq;
 extern int gpio_flag;
 #define NONE 0xffffffff
-//#define debug
-#ifdef debug
-	#define gpio_print(...) printf(__VA_ARGS__)
-#else 
-	#define gpio_print(...)
-#endif
+#define gpio_print(...) 
+int gpio_debug=0;
+
 //gpio subsystem set pictrl subsystem gpio owner
 enum gpio_reg_type
 {
@@ -635,14 +632,15 @@ int gpio_amlogic_requst(struct gpio_chip *chip,unsigned offset)
 	unsigned int i,reg,bit;
 	unsigned int *gpio_reg=&gpio_to_pin[offset][0];
 	unsigned long flags;
-	gpio_print("==%s==%d\n",__FUNCTION__,__LINE__);
 		for(i=0;i<sizeof(gpio_to_pin[offset])/sizeof(gpio_to_pin[offset][0]);i++){
 			if(gpio_reg[i]!=NONE)
 			{
 				reg=GPIO_REG(gpio_reg[i]);
 				bit=GPIO_BIT(gpio_reg[i]);
 				aml_clr_reg32_mask(p_pin_mux_reg_addr[reg],1<<bit);
-				gpio_print("clr reg=%d,bit =%d\n",reg,bit);
+				gpio_print("clr reg=%d,bit =%d\n",reg,bit);				
+				if(gpio_debug)
+					printf("clear pinmux reg%d[%d]=%d\n",reg,bit,aml_get_reg32_bits(p_pin_mux_reg_addr[reg],bit,1));
 			}
 		}
 }
@@ -654,12 +652,13 @@ int gpio_amlogic_direction_input(struct gpio_chip *chip,unsigned offset)
 {
 	unsigned int reg,bit;
 	unsigned long flags;
-	gpio_print("==%s==%d\n",__FUNCTION__,__LINE__);
 	
 	reg=GPIO_REG(amlogic_pins[offset].out_en_reg_bit);
 	bit=GPIO_BIT(amlogic_pins[offset].out_en_reg_bit);
 	aml_set_reg32_mask(p_gpio_oen_addr[reg],1<<bit);
 	
+	if(gpio_debug)
+		printf("set output en 0x%x[%d]=%d\n",p_gpio_oen_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
 	return 0;
 }
 
@@ -668,7 +667,6 @@ int gpio_amlogic_get(struct gpio_chip *chip,unsigned offset)
 	unsigned int reg,bit,ret;
 	unsigned long flags;
 	
-	gpio_print("==%s==%d\n",__FUNCTION__,__LINE__);
 	reg=GPIO_REG(amlogic_pins[offset].input_value_reg_bit);
 	bit=GPIO_BIT(amlogic_pins[offset].input_value_reg_bit);
 	ret=aml_get_reg32_bits(p_gpio_input_addr[reg],bit,1);
@@ -691,15 +689,14 @@ int gpio_amlogic_direction_output(struct gpio_chip *chip,unsigned offset, int va
 		reg=GPIO_REG(amlogic_pins[offset].out_value_reg_bit);
 		bit=GPIO_BIT(amlogic_pins[offset].out_value_reg_bit);
 		aml_clr_reg32_mask(p_gpio_output_addr[reg],1<<bit);
-		gpio_print("out reg=%x,value=%x\n",p_gpio_output_addr[reg],aml_read_reg32(p_gpio_output_addr[reg]));
 	}
 	reg=GPIO_REG(amlogic_pins[offset].out_en_reg_bit);
 	bit=GPIO_BIT(amlogic_pins[offset].out_en_reg_bit);
 	aml_clr_reg32_mask(p_gpio_oen_addr[reg],1<<bit);
-	gpio_print("==%s==%d\n",__FUNCTION__,__LINE__);
-	gpio_print("oen reg=%x,value=%x\n",p_gpio_oen_addr[reg],aml_read_reg32(p_gpio_oen_addr[reg]));
-	gpio_print("value=%d\n",value);
-	
+	if(gpio_debug){
+		printf("set output en 0x%x[%d]=%d\n",p_gpio_oen_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
+		printf("set output val 0x%x[%d]=%d\n",p_gpio_output_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
+	}
 	return 0;
 }
 void	gpio_amlogic_set(struct gpio_chip *chip,unsigned offset, int value)
@@ -825,7 +822,7 @@ static int amlogic_pin_to_pullup(unsigned int pin ,unsigned int *reg,unsigned in
 		return -1;
 	return 0;
 }
-static int m6_set_pullup(unsigned int pin,unsigned int val)
+static int m6_set_pullup(unsigned int pin,unsigned int val,unsigned int pullupen)
 {
 	unsigned int reg=0,bit=0,ret;
 	ret=amlogic_pin_to_pullup(pin,&reg,&bit);
@@ -838,6 +835,12 @@ static int m6_set_pullup(unsigned int pin,unsigned int val)
 	}
 	return ret;
 }
+static int m6_set_highz(unsigned int pin)
+{
+	m6_set_pullup(pin,0,0);
+	gpio_amlogic_direction_input(NULL,pin);
+	return 0;
+}
 
 struct gpio_chip amlogic_gpio_chip={
 	.request=gpio_amlogic_requst,
@@ -846,6 +849,7 @@ struct gpio_chip amlogic_gpio_chip={
 	.direction_output=gpio_amlogic_direction_output,
 	.set=gpio_amlogic_set,
 	.name_to_pin=gpio_amlogic_name_to_num,
+	.set_highz=m6_set_highz,
 	.set_pullup=m6_set_pullup,
 };
 

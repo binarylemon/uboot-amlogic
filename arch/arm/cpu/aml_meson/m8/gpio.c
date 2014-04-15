@@ -9,6 +9,7 @@ Linux gpio.C
 #include <asm/arch/gpio.h>
 #include <amlogic/gpio.h>
 
+int gpio_debug=0;
 
 struct gpio_addr
 {
@@ -583,6 +584,8 @@ int gpio_amlogic_requst(struct gpio_chip *chip ,unsigned offset)
 				reg=GPIO_REG(gpio_reg[i]);
 				bit=GPIO_BIT(gpio_reg[i]);
 				aml_clr_reg32_mask(p_pin_mux_reg_addr[reg],1<<bit);
+				if(gpio_debug)
+					printf("clear pinmux reg%d[%d]=%d\n",reg,bit,aml_get_reg32_bits(p_pin_mux_reg_addr[reg],bit,1));
 			}
 		}
 }
@@ -594,7 +597,9 @@ int gpio_amlogic_direction_input(struct gpio_chip *chip ,unsigned offset)
 	unsigned int reg,bit;
 	reg=GPIO_REG(amlogic_pins[offset].out_en_reg_bit);
 	bit=GPIO_BIT(amlogic_pins[offset].out_en_reg_bit);
-	aml_set_reg32_mask(p_gpio_oen_addr[reg],1<<bit);
+	aml_set_reg32_mask(p_gpio_oen_addr[reg],1<<bit);	
+	if(gpio_debug)
+		printf("set output en 0x%x[%d]=%d\n",p_gpio_oen_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
 	return 0;
 }
 
@@ -640,6 +645,10 @@ int gpio_amlogic_direction_output(struct gpio_chip *chip ,unsigned offset, int v
 	reg=GPIO_REG(amlogic_pins[offset].out_en_reg_bit);
 	bit=GPIO_BIT(amlogic_pins[offset].out_en_reg_bit);
 	aml_clr_reg32_mask(p_gpio_oen_addr[reg],1<<bit);
+	if(gpio_debug){
+		printf("set output en 0x%x[%d]=%d\n",p_gpio_oen_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
+		printf("set output val 0x%x[%d]=%d\n",p_gpio_output_addr[reg],bit,aml_get_reg32_bits(p_gpio_oen_addr[reg],bit,1));
+	}
 	return 0;
 }
 void	gpio_amlogic_set(struct gpio_chip *chip ,unsigned offset, int value)
@@ -726,6 +735,12 @@ static int m8_set_pullup(unsigned int pin,unsigned int val,unsigned int pullen)
 	}
 	return ret;
 }
+static int m8_set_highz(unsigned int pin)
+{
+	m8_set_pullup(pin,0,0);
+	gpio_amlogic_direction_input(NULL,pin);
+	return 0;
+}
 
 struct gpio_chip amlogic_gpio_chip={
 	.request=gpio_amlogic_requst,
@@ -734,6 +749,7 @@ struct gpio_chip amlogic_gpio_chip={
 	.direction_output=gpio_amlogic_direction_output,
 	.set=gpio_amlogic_set,
 	.set_pullup=m8_set_pullup,
+	.set_highz=m8_set_highz,
 	.name_to_pin=gpio_amlogic_name_to_num,
 };
 

@@ -44,15 +44,25 @@ void amlogic_set_value(unsigned int pin,int value)
 	else
 		printf("%d out of range\n",pin);
 }
-void amlogic_set_pull_up(unsigned int pin,int value)
+void amlogic_set_pull_up(unsigned int pin,int value,unsigned int pullen)
 {
 	if(pin>=0 && pin <=GPIO_MAX){
 		if(amlogic_gpio_chip.set_pullup)
-			amlogic_gpio_chip.set_pullup(pin,value);
+			amlogic_gpio_chip.set_pullup(pin,value,pullen);
 	}
 	else
 		printf("%d out of range\n",pin);
 }
+void amlogic_set_highz(unsigned int pin)
+{
+	if(pin>=0 && pin <=GPIO_MAX){
+		if(amlogic_gpio_chip.set_pullup)
+			amlogic_gpio_chip.set_highz(pin);
+	}
+	else
+		printf("%d out of range\n",pin);
+}
+
 int  gpioname_to_pin(const char *name)
 {
 	if (amlogic_gpio_chip.name_to_pin)
