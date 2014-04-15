@@ -152,14 +152,14 @@
 	#define CLK_CTRL_AUTO			31
 	#define CLK_TEST_FLAG			30
 	#define CLK_CTRL_FRAC			16	//[27:16]
-	#define CLK_CTRL_LEVEL			12	//[13:12]
+	#define CLK_CTRL_LEVEL			12	//[14:12]
 	//#define CLK_CTRL_PLL_SEL		10
 	//#define CLK_CTRL_DIV_SEL		9
 	#define CLK_CTRL_VCLK_SEL		8
 	#define CLK_CTRL_SS				4	//[7:4]
 	#define CLK_CTRL_XD				0	//[3:0]
 	
-	#define PLL_WAIT_LOCK_CNT		100
+	#define PLL_WAIT_LOCK_CNT		200
 
 /**** clk frequency limit ***/
 	/* PLL */
@@ -167,7 +167,7 @@
 	#define PLL_M_MIN				2
 	#define PLL_M_MAX				511
 	#define PLL_N_MIN				1
-	#define PLL_N_MAX				2
+	#define PLL_N_MAX				1
 	
 	#define PLL_FREF_MIN			(5 * 1000)
 	#define PLL_FREF_MAX			(25 * 1000)
