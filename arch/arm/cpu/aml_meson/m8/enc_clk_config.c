@@ -36,6 +36,7 @@ static void set_hpll_clk_out(unsigned clk)
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xce59c822);   // optimise HPLL VCO 2.97GHz performance
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x0123b100);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012385);
+            aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c34d0b);
             
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
@@ -46,6 +47,7 @@ static void set_hpll_clk_out(unsigned clk)
         case 1488:
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
+            aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08930e9b);
             while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
                 ;
             }
