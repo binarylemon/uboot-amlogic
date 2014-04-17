@@ -129,6 +129,8 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     tmp_add_data |= 1   << 0; // [0] tx_dig_reset_n_ch0
     hdmi_wr_reg(TX_SYS5_TX_SOFT_RESET_1, tmp_add_data);
 
+		hdmi_wr_reg(TX_HDCP_MEM_CONFIG, 0x0);
+
     tmp_add_data  = 0;
     tmp_add_data |= 0   << 4; // [4] HDMI_CH0_RST_IN
     tmp_add_data |= 1   << 2; // [0] tx_ddc_hdcp_reset_n
@@ -257,14 +259,43 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     // AVI frame
     //hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x00, 0x46);              // PB0: Checksum
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x01, 0x5e);              // PB1 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+    switch(vic) {
+    case HDMI_640x480p60:
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_1440x480p60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x58);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    }
+    switch(vic) {
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x03);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, vic);               // PB4: [7]    Rsrv
     if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, 0);             // if mode is 4k, then set vic = 0 and set to VSDB
     }
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv
-                                                                        //      [3:0]  PixelRepeat
+    switch(vic) {
+    case HDMI_480i60:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 1); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1C, 0x82);              // HB0: packet type=0x82
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1D, 0x02);              // HB1: packet version =0x02
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1E, 0x0D);              // HB2: payload bytes=13
@@ -280,19 +311,10 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
 
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1F, 0xFF);              // Enable AVI packet generation
 
-    tmp_add_data = 0xa; // time_divider[7:0] for DDC I2C bus clock
+    tmp_add_data = 0x18 - 1; // time_divider[7:0] for DDC I2C bus clock
     hdmi_wr_reg(TX_HDCP_CONFIG3, tmp_add_data);
     
-    tmp_add_data  = 0;
-    tmp_add_data |= 1   << 7; // [7] cp_desired 
-    tmp_add_data |= 1   << 6; // [6] ess_config 
-    tmp_add_data |= 0   << 5; // [5] set_avmute 
-    tmp_add_data |= 0   << 4; // [4] clear_avmute 
-    tmp_add_data |= 1   << 3; // [3] hdcp_1_1 
-    tmp_add_data |= 0   << 2; // [2] forced_polarity 
-    tmp_add_data |= 0   << 1; // [1] forced_vsync_polarity 
-    tmp_add_data |= 0   << 0; // [0] forced_hsync_polarity
-    hdmi_wr_reg(TX_HDCP_MODE, tmp_add_data);
+    hdmi_wr_reg(TX_HDCP_MODE, 0x40);
     
     // --------------------------------------------------------
     // Release TX out of reset
@@ -514,7 +536,7 @@ static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
         vs_adjust   = 1;
     } else {
         hs_begin    = de_h_end + front_porch_venc; // 1675 + 38 = 1713
-        vs_adjust   = 0;
+        vs_adjust   = 1;
     }
     hs_end  = modulo(hs_begin + hsync_pixels_venc,   total_pixels_venc); // (1713 + 124) % 1716 = 121
     aml_write_reg32_op(P_ENCI_DVI_HSO_BEGIN,  hs_begin);  // 1713
@@ -587,8 +609,8 @@ static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
     // Annie 01Sep2011: Register VENC_DVI_SETTING and VENC_DVI_SETTING_MORE are no long valid, use VPU_HDMI_SETTING instead.
     aml_write_reg32_op(P_VPU_HDMI_SETTING, (0                                 << 0) | // [    0] src_sel_enci
                          (0                                 << 1) | // [    1] src_sel_encp
-                         (HSYNC_POLARITY                                 << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
-                         (VSYNC_POLARITY                                 << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
+                         (0                                 << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
+                         (0                                 << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
                          (0                                 << 4) | // [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
                          (((1==0)?1:0)  << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
                                                                     //                          0=output CrYCb(BRG);
