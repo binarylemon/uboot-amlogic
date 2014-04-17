@@ -65,6 +65,62 @@ static void setup_net_chip(void)
 	udelay(2000);
 	SET_CBUS_REG_MASK(PREG_PAD_GPIO5_O, 1 << 15);
 }
+static void setup_internal_phy(void)
+{
+		printf("setup_internal_phy\n");
+#if 0	
+		WRITE_CBUS_REG(0x1076, 0x00000113);
+		WRITE_CBUS_REG(0x2032, 0x00000000);
+		WRITE_CBUS_REG(0x2042, 0x4700b002);
+		WRITE_CBUS_REG(0x2046, 0x89637989);
+		WRITE_CBUS_REG(0x1102, 0x00000800);
+		WRITE_CBUS_REG(0x103d, 0x10d396e1);
+		//WRITE_CBUS_REG(0x103e, 0x45040828);
+		//WRITE_CBUS_REG(0x103e, 0x45000828);
+		WRITE_CBUS_REG(0x103c, 0x12848480);
+		WRITE_CBUS_REG(0x103f, 0x3dea4000);
+		WRITE_CBUS_REG(0x1040, 0x00000004);
+		WRITE_CBUS_REG(0x1041, 0x0);
+		WRITE_CBUS_REG(0x1042, 0x2a855008);  
+		WRITE_CBUS_REG(0x103e, 0x45040828);
+		WRITE_CBUS_REG(0x103e, 0x45000828);
+#elif 0
+	WRITE_CBUS_REG(0x1076, 0x193);
+	WRITE_CBUS_REG(0x2032, 0x00000000);
+	WRITE_CBUS_REG(0x2042, 0x4100b000);
+	WRITE_CBUS_REG(0x2046, 0x89637989);
+	WRITE_CBUS_REG(0x1102, 0x800);
+	WRITE_CBUS_REG(0x103d, 0x10d396e1);
+	WRITE_CBUS_REG(0x103e, 0x45000828);
+	WRITE_CBUS_REG(0x103c, 0x128484bf);
+	WRITE_CBUS_REG(0x103f, 0x7bdea4000);
+	WRITE_CBUS_REG(0x1040, 0xf);
+	WRITE_CBUS_REG(0x1041, 0x0);
+	WRITE_CBUS_REG(0x1042, 0x2a855008);
+	WRITE_CBUS_REG(0x103e, 0x45040828);
+	WRITE_CBUS_REG(0x103e, 0x45000828);  
+#else
+	WRITE_CBUS_REG(0x1076, 0x00008d00);
+	WRITE_CBUS_REG(0x2032, 0x3f000000);
+	WRITE_CBUS_REG(0x2042, 0x47803442);
+	WRITE_CBUS_REG(0x2046, 0x89637989);
+	WRITE_CBUS_REG(0x1102, 0x00000800);
+	WRITE_CBUS_REG(0x103d, 0x10d396e1);
+	//WRITE_CBUS_REG(0x103e, 0x45040828);
+	//WRITE_CBUS_REG(0x103e, 0x45000828);
+	WRITE_CBUS_REG(0x103c, 0x12848485);
+	WRITE_CBUS_REG(0x103f, 0x61ea4000);
+	WRITE_CBUS_REG(0x1040, 0x00000001);
+	WRITE_CBUS_REG(0x1041, 0x0);
+	WRITE_CBUS_REG(0x1042, 0x55055009);  
+	WRITE_CBUS_REG(0x103e, 0x4504187d);
+	WRITE_CBUS_REG(0x103e, 0x4500187d);
+	WRITE_CBUS_REG(0x2042, 0x47802442);
+	WRITE_CBUS_REG(0x2042, 0x47803442);
+
+	
+#endif
+}
 
 int board_eth_init(bd_t *bis)
 {   	
@@ -153,9 +209,205 @@ U_BOOT_CMD(
 	" usage: partition \n"
 );
 
+#if defined(CONFIG_AML_SUSPEND)
+typedef struct {
+    char name[32];
+    unsigned bank;
+    unsigned bit;
+    gpio_mode_t mode;
+    unsigned value;
+    unsigned enable;
+    unsigned keep_last;
+} gpio_data_t;
+
+#define MAX_GPIO 2
+
+static gpio_data_t gpio_data[MAX_GPIO] = {
+    // ----------------------------------- bl ----------------------------------
+    {"GPIOX2 -- BL_EN",         GPIOX_bank_bit0_31(2),     GPIOX_bit_bit0_31(2),  GPIO_OUTPUT_MODE, 1, 1, 1},
+    // ----------------------------------- panel ----------------------------------
+    {"GPIOZ5 -- PANEL_PWR",     GPIOZ_bank_bit0_19(5),     GPIOZ_bit_bit0_19(5),  GPIO_OUTPUT_MODE, 1, 1, 1},
+    // ----------------------------------- i2c ----------------------------------
+    //{"GPIOZ6 -- iic",           GPIOZ_bank_bit0_19(6),     GPIOZ_bit_bit0_19(6),  GPIO_OUTPUT_MODE, 1, 1, 1},
+    //{"GPIOZ7 -- iic",           GPIOZ_bank_bit0_19(7),     GPIOZ_bit_bit0_19(7),  GPIO_OUTPUT_MODE, 1, 1, 1},
+};
+
+static void save_gpio(int port)
+{
+    gpio_data[port].mode = get_gpio_mode(gpio_data[port].bank, gpio_data[port].bit);
+    if (gpio_data[port].mode==GPIO_OUTPUT_MODE)
+    {
+        if (gpio_data[port].enable){
+            printf("%d---change %s output %d to input\n", port, gpio_data[port].name, gpio_data[port].value);
+            gpio_data[port].value = get_gpio_val(gpio_data[port].bank, gpio_data[port].bit);
+            set_gpio_mode(gpio_data[port].bank, gpio_data[port].bit, GPIO_INPUT_MODE);
+        } else{
+            printf("%d---no change %s output %d\n", port, gpio_data[port].name, gpio_data[port].value);
+        }
+    } else {
+        printf("%d---%s input %d\n", port, gpio_data[port].name, gpio_data[port].mode);
+    }
+}
+
+static void restore_gpio(int port)
+{
+    if ((gpio_data[port].mode==GPIO_OUTPUT_MODE)&&(gpio_data[port].enable))
+    {
+        set_gpio_val(gpio_data[port].bank, gpio_data[port].bit, gpio_data[port].value);
+        set_gpio_mode(gpio_data[port].bank, gpio_data[port].bit, GPIO_OUTPUT_MODE);
+        printf("%d---%s output %d\n", port, gpio_data[port].name, gpio_data[port].value);
+    } else {
+        printf("%d---%s output/input:%d, enable:%d\n", port, gpio_data[port].name, gpio_data[port].mode, gpio_data[port].value);
+    }
+}
+
+typedef struct {
+    char name[32];
+    unsigned reg;
+    unsigned bits;
+    unsigned enable;
+} pinmux_data_t;
+
+
+#define MAX_PINMUX 10
+
+pinmux_data_t pinmux_data[MAX_PINMUX] = {
+    {"PERIPHS_PIN_MUX_0",         0, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_1",         1, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_2",         2, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_3",         3, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_4",         4, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_5",         5, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_6",         6, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_7",         7, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_8",         8, 0xffffffff,               1},
+    {"PERIPHS_PIN_MUX_9",         9, 0xffffffff,               1},
+};
+#define MAX_INPUT_MODE 9
+pinmux_data_t gpio_inputmode_data[MAX_INPUT_MODE] = {
+    {"LCDGPIOA",         P_PREG_PAD_GPIO0_EN_N, 0x3fffffff,                 1},
+    {"LCDGPIOB",         P_PREG_PAD_GPIO1_EN_N, 0x00ffffff,                 1},
+    {"GPIOX0_12",        P_PREG_PAD_GPIO4_EN_N, 0x00001fff,                 1},
+    {"BOOT0_17",         P_PREG_PAD_GPIO3_EN_N, 0x0003ffff,                 1},
+    {"GPIOZ0_19",        P_PREG_PAD_GPIO6_EN_N, 0x000fffff,                 1},
+    {"GPIOY0_27",        P_PREG_PAD_GPIO2_EN_N, 0x0fffffff,                 1},
+    {"GPIOW0_19",        P_PREG_PAD_GPIO5_EN_N, 0x000fffff,                 1},
+    {"CRAD0_8",          P_PREG_PAD_GPIO5_EN_N, 0xff000000,                 1},
+    {"GPIOP6",           P_PREG_PAD_GPIO1_EN_N, 0x40000000,                 1},
+};
+
+#define MAX_RESUME_OUTPUT_MODE 1
+pinmux_data_t gpio_outputmode_data[MAX_RESUME_OUTPUT_MODE] = {
+    {"GPIOZ6_7",        P_PREG_PAD_GPIO6_EN_N, 0x000fff3f,                 1},
+};
+static unsigned pinmux_backup[10];
+
+#define MAX_PADPULL 7
+
+pinmux_data_t pad_pull[MAX_PADPULL] = {
+    {"PAD_PULL_UP_REG0",         P_PAD_PULL_UP_REG0, 0xffffffff,               1},
+    {"PAD_PULL_UP_REG1",         P_PAD_PULL_UP_REG1, 0x00000000,               1},
+    {"PAD_PULL_UP_REG2",         P_PAD_PULL_UP_REG2, 0xffffffff,               1},
+    {"PAD_PULL_UP_REG3",         P_PAD_PULL_UP_REG3, 0xffffffff,               1},
+    {"PAD_PULL_UP_REG4",         P_PAD_PULL_UP_REG4, 0xffffffff,               1},
+    {"PAD_PULL_UP_REG5",         P_PAD_PULL_UP_REG5, 0xffffffff,               1},
+    {"PAD_PULL_UP_REG6",         P_PAD_PULL_UP_REG6, 0xffffffff,               1},
+};
+
+static unsigned pad_pull_backup[MAX_PADPULL];
+
+int  clear_mio_mux_m6tv(unsigned mux_index, unsigned mux_mask)
+{
+    unsigned mux_reg[] = {PERIPHS_PIN_MUX_0, PERIPHS_PIN_MUX_1, PERIPHS_PIN_MUX_2,PERIPHS_PIN_MUX_3,
+        PERIPHS_PIN_MUX_4,PERIPHS_PIN_MUX_5,PERIPHS_PIN_MUX_6,PERIPHS_PIN_MUX_7,PERIPHS_PIN_MUX_8,
+        PERIPHS_PIN_MUX_9,PERIPHS_PIN_MUX_10,PERIPHS_PIN_MUX_11,PERIPHS_PIN_MUX_12};
+    if (mux_index < 13) {
+        CLEAR_CBUS_REG_MASK(mux_reg[mux_index], mux_mask);
+        return 0;
+    }
+    return -1;
+}
+
+static void save_pinmux(void)
+{
+    int i;
+    for (i=0;i<10;i++){
+        pinmux_backup[i] = READ_CBUS_REG(PERIPHS_PIN_MUX_0+i);
+        printf("--PERIPHS_PIN_MUX_%d = %x\n", i,pinmux_backup[i]);
+    }
+    for (i=0;i<MAX_PADPULL;i++){
+        pad_pull_backup[i] = readl(pad_pull[i].reg);
+        printf("--PAD_PULL_UP_REG%d = %x\n", i,pad_pull_backup[i]);
+    }
+    for (i=0;i<MAX_PINMUX;i++){
+        if (pinmux_data[i].enable){
+            printf("%s %x\n", pinmux_data[i].name, pinmux_data[i].bits);
+            clear_mio_mux_m6tv(pinmux_data[i].reg, pinmux_data[i].bits);
+        }
+    }
+    for (i=0;i<MAX_PADPULL;i++){
+        if (pad_pull[i].enable){
+            printf("%s %x\n", pad_pull[i].name, pad_pull[i].bits);
+            writel(readl(pad_pull[i].reg) | pad_pull[i].bits,pad_pull[i].reg);
+        }
+    }
+    for (i=0;i<MAX_INPUT_MODE;i++){
+        if (gpio_inputmode_data[i].enable){
+            printf("%s %x\n", gpio_inputmode_data[i].name, gpio_inputmode_data[i].bits);
+            writel(readl(gpio_inputmode_data[i].reg) | gpio_inputmode_data[i].bits,gpio_inputmode_data[i].reg);
+        }
+    }
+}
+
+static void restore_pinmux(void)
+{
+    int i;
+    /*for (i=0;i<MAX_RESUME_OUTPUT_MODE;i++){
+        if (gpio_outputmode_data[i].enable){
+            printk("%s %x\n", gpio_outputmode_data[i].name, gpio_outputmode_data[i].bits);
+            writel(gpio_outputmode_data[i].reg, readl(gpio_outputmode_data[i].reg) & gpio_outputmode_data[i].bits);
+        }
+    }
+    set_gpio_val(GPIOZ_bank_bit0_19(6), GPIOZ_bit_bit0_19(6), 1);
+    set_gpio_mode(GPIOZ_bank_bit0_19(6), GPIOZ_bit_bit0_19(6), GPIO_OUTPUT_MODE);
+    set_gpio_val(GPIOZ_bank_bit0_19(7), GPIOZ_bit_bit0_19(7), 1);
+    set_gpio_mode(GPIOZ_bank_bit0_19(7), GPIOZ_bit_bit0_19(7), GPIO_OUTPUT_MODE);*/
+    clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<19));
+    setbits_le32(P_PREG_PAD_GPIO5_O,(1<<19));
+    for (i=0;i<10;i++){
+    	 printf("++PERIPHS_PIN_MUX_%d = %x\n", i,pinmux_backup[i]);
+         WRITE_CBUS_REG(PERIPHS_PIN_MUX_0+i, pinmux_backup[i]);
+     }
+     for (i=0;i<MAX_PADPULL;i++){
+    	 printf("++PAD_PULL_UP_REG%d = %x\n", i,pad_pull_backup[i]);
+         writel(pad_pull_backup[i],pad_pull[i].reg);
+     }
+}
+
+void m6tvdref_set_pinmux(int power_on)
+{
+    int i = 0;
+    if (power_on) {
+        restore_pinmux();
+        for (i=0;i<MAX_GPIO;i++)
+            restore_gpio(i);
+        printf( "%s() Power ON\n", __FUNCTION__);
+    } else {
+        save_pinmux();
+        for (i=0;i<MAX_GPIO;i++)
+            save_gpio(i);
+        printf( "%s() Power OFF\n", __FUNCTION__);
+    }
+}
+
+#endif
 #ifdef CONFIG_SWITCH_BOOT_MODE
 int switch_boot_mode(void)
 {
+
+#ifdef CONFIG_INTERNAL_PHY
+	setup_internal_phy();
+#endif
 	printf("switch_boot_mode\n");
     	u32 reboot_mode_current = reboot_mode;
 	char *suspend = getenv("suspend");
