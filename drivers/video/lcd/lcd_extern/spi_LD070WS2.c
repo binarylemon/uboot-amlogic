@@ -12,7 +12,7 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
-#include <asm/arch/aml_lcd_gpio.h>
+#include <asm/arch-m8/aml_lcd_gpio.h>
 #include <amlogic/aml_lcd_extern.h>
 
 //#define LCD_EXT_DEBUG_INFO
@@ -20,9 +20,9 @@
 #define LCD_EXTERN_NAME		"lcd_spi_LD070WS2"
 #define LCD_EXTERN_TYPE		LCD_EXTERN_SPI
 
-#define GPIO_SPI_CS			GPIODV_1
-#define GPIO_SPI_CLK		GPIODV_16
-#define GPIO_SPI_DATA		GPIODV_17
+#define GPIO_SPI_CS			GPIOY_5
+#define GPIO_SPI_CLK		GPIOZ_13
+#define GPIO_SPI_DATA		GPIOZ_14
 
 #define SPI_DELAY		30 //unit: us
 
@@ -129,7 +129,7 @@ static void lcd_extern_spi_init(void)
         }
         i++;
     }
-    printk("%s\n", __FUNCTION__);
+   // printk("%s\n", __FUNCTION__);
 }
 
 static void lcd_extern_spi_off(void)
@@ -151,7 +151,7 @@ static void lcd_extern_spi_off(void)
         }
         i++;
     }
-    printk("%s\n", __FUNCTION__);
+    //printk("%s\n", __FUNCTION__);
     mdelay(10);
     spi_gpio_off();
 }
