@@ -1299,10 +1299,10 @@ void osd_init_hw(void)
 	data32 = readl(P_VPP_OFIFO_SIZE);
 	#ifdef CONFIG_M8
         data32 &= 0xffffe000; //0~13bit
+        data32 |= 0x77f;
         #else
-        data32 = 0xfffff000;  //0~12bit
+        data32 |= 0x300;  //0~12bit
         #endif
-	data32 |= 0x77f;
 	writel(data32, P_VPP_OFIFO_SIZE);
 
 #if defined(CONFIG_FB_OSD2_CURSOR)    
