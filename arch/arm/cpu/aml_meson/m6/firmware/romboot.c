@@ -5,7 +5,9 @@
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <asm/arch/trustzone.h>
 #include <secureloader.c>
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
 #include <spisecustorage.c>
+#endif
 #endif
 
 #if CONFIG_UCL
@@ -519,7 +521,8 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 #endif
             serial_puts("BootFrom SPI\n");
             memcpy((unsigned*)temp_addr,mem,size);
-#ifdef CONFIG_MESON_TRUSTZONE
+#ifdef CONFIG_SPI_NOR_SECURE_STORAGE
+            serial_puts("BootFrom SPI get storage\n");
             spi_secure_storage_get(NOR_START_ADDR,0,0);
 #endif
             break;
