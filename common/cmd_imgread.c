@@ -15,6 +15,7 @@
 #define debugP(fmt...) //printf("L%d:", __LINE__),printf(fmt)
 #define errorP(fmt...) printf("Err imgread(L%d):", __LINE__),printf(fmt)
 #define wrnP(fmt...)   printf("wrn:"fmt)
+#define MsgP(fmt...)   printf("[imgread]"fmt)
 
 #define IMG_PRELOAD_SZ  (1U<<20) //Total read 1M at first to read the image header
 #define RES_OLD_FMT_READ_SZ (8U<<20)
@@ -22,6 +23,61 @@
 #ifdef CONFIG_OF_LIBFDT
 #include <libfdt.h>
 #define DTB_PRELOAD_SZ  (4U<<10) //Total read 4k at first to read the image header
+
+#if defined(CONFIG_ANDROID_IMG)
+#define SECURE_BOOT_MAGIC_SZ    16
+#define SECURE_IMG_HDR_MAGIC    "AMLSECU!"
+#define SECURE_IMG_HDR_VESRION  (0x0801)
+
+#pragma pack(push, 4)
+typedef struct _encrypt_boot_img_info
+{
+    unsigned char magic[SECURE_BOOT_MAGIC_SZ];    //magic to identify whether it is a encrypted boot image
+
+    unsigned int  version;                  //version for this header struct
+
+    unsigned int  totalLenAfterEncrypted;   //totaol length after encrypted with AMLETool (not include the 2K header)
+
+    unsigned char unused[1024 - SECURE_BOOT_MAGIC_SZ - 2 * sizeof(unsigned int)];
+
+}AmlEncryptBootImgInfo;
+
+typedef struct _boot_img_hdr_secure_boot
+{
+    boot_img_hdr            normalHead;
+    unsigned char           reserve4Other[1024 - sizeof(boot_img_hdr)];
+
+    AmlEncryptBootImgInfo   encrypteImgInfo;
+}AmlSecureBootImgHeader;
+
+#pragma pack(pop)
+
+/*#define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]*/
+/*COMPILE_TYPE_CHK(2048  == sizeof(AmlSecureBootImgHeader), _cc);*/
+
+static unsigned _aml_get_secure_boot_kernel_size(const void* pLoadaddr)
+{
+    const AmlSecureBootImgHeader* amlSecureBootImgHead = (const AmlSecureBootImgHeader*)pLoadaddr;
+    const AmlEncryptBootImgInfo*  amlEncrypteBootimgInfo = &amlSecureBootImgHead->encrypteImgInfo;
+    int rc = 0;
+    unsigned secureKernelImgSz = 0;
+
+    rc = !memcmp(SECURE_IMG_HDR_MAGIC, amlEncrypteBootimgInfo->magic, 8) 
+            && (SECURE_IMG_HDR_VESRION == amlEncrypteBootimgInfo->version);
+    if(rc){
+        secureKernelImgSz = amlEncrypteBootimgInfo->totalLenAfterEncrypted;
+        MsgP("Secure kernel sz 0x%x\n", secureKernelImgSz);
+    }
+
+    return secureKernelImgSz;
+}
+
+#else
+static unsigned _aml_get_secure_boot_kernel_size(const void* pLoadaddr)
+{
+    return 0;
+}
+#endif// #if defined(CONFIG_ANDROID_IMG)
 
 #ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
 static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -39,6 +95,7 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
     unsigned char* dtbLoadAddr = 0;
     int DtbStartOffset = 0;
     unsigned char* DtbDestAddr = (unsigned char*)CONFIG_DTB_LOAD_ADDR;
+    unsigned secureKernelImgSz = 0;
 
     debugP("argc %d, argv:%s, %s, %s\n", argc, argv[0], argv[1], argv[2]);
     if(2 < argc){
@@ -73,16 +130,45 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
     debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
     debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
     debugP("dtbSz 0x%x\n", dtbSz);
-    dtbLoadAddr =   loadaddr + DtbStartOffset;
+    dtbLoadAddr = loadaddr + DtbStartOffset;//default dtb load size
 
-    if(actualBootImgSz > PreloadSz)
+    secureKernelImgSz = _aml_get_secure_boot_kernel_size(loadaddr);
+    if(secureKernelImgSz)
     {
-        dtbLoadAddr = loadaddr + PreloadSz;
+        if(actualBootImgSz > PreloadSz)
+        {
+            rc = store_read_ops((unsigned char*)partName, loadaddr + PreloadSz, PreloadSz, secureKernelImgSz - PreloadSz);
+            if(rc){
+                errorP("Fail in store read: part(%s), buf(0x%p), offset(0x%x), size(0x%x)\n", 
+                        partName, loadaddr + PreloadSz, PreloadSz, secureKernelImgSz - PreloadSz);
+                return __LINE__;
+            }
+        }
 
-        rc = store_read_ops((unsigned char*)partName, dtbLoadAddr, DtbStartOffset, dtbSz);
+#ifdef CONFIG_AML_SECU_BOOT_V2
+#ifdef CONFIG_MESON_TRUSTZONE
+        extern int meson_trustzone_boot_check(unsigned char *addr);
+        rc = meson_trustzone_boot_check(loadaddr + 2048);
+#else
+        extern int aml_sec_boot_check(unsigned char *pSRC);
+        rc = aml_sec_boot_check(loadaddr + 2048);
+#endif
         if(rc){
-            errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", dtbSz, partName, DtbStartOffset);
+            errorP("Fail when sec_check, rc=%d\n", rc);
             return __LINE__;
+        }
+#endif//#ifdef CONFIG_AML_SECU_BOOT_V2
+    }
+    else
+    {
+        if(actualBootImgSz > PreloadSz)
+        {
+            dtbLoadAddr = loadaddr + PreloadSz;//Just load PreloadSz + dtbSz
+            rc = store_read_ops((unsigned char*)partName, dtbLoadAddr, DtbStartOffset, dtbSz);
+            if(rc){
+                errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", dtbSz, partName, DtbStartOffset);
+                return __LINE__;
+            }
         }
     }
 
@@ -184,7 +270,8 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     unsigned char* loadaddr = 0;
     int rc = 0;
     uint64_t flashReadOff = 0;
-
+    unsigned secureKernelImgSz = 0;
+    
     if(2 < argc){
         loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
     }
@@ -206,13 +293,22 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
         return __LINE__;
     }
 
-    kernel_size     =(hdr_addr->kernel_size + (hdr_addr->page_size-1)+hdr_addr->page_size)&(~(hdr_addr->page_size -1));
-    ramdisk_size    =(hdr_addr->ramdisk_size + (hdr_addr->page_size-1))&(~(hdr_addr->page_size -1));
-    dtbSz           = hdr_addr->second_size;
-    actualBootImgSz = kernel_size + ramdisk_size + dtbSz;
-    debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
-    debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
-    debugP("dtbSz 0x%x, Total actualBootImgSz 0x%x\n", dtbSz, actualBootImgSz);
+    //Check if encrypted image
+    secureKernelImgSz = _aml_get_secure_boot_kernel_size(loadaddr);
+    if(secureKernelImgSz)
+    {
+        actualBootImgSz = secureKernelImgSz;
+    }
+    else
+    {
+        kernel_size     =(hdr_addr->kernel_size + (hdr_addr->page_size-1)+hdr_addr->page_size)&(~(hdr_addr->page_size -1));
+        ramdisk_size    =(hdr_addr->ramdisk_size + (hdr_addr->page_size-1))&(~(hdr_addr->page_size -1));
+        dtbSz           = hdr_addr->second_size;
+        actualBootImgSz = kernel_size + ramdisk_size + dtbSz;
+        debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
+        debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
+        debugP("dtbSz 0x%x, Total actualBootImgSz 0x%x\n", dtbSz, actualBootImgSz);
+    }
 
     if(actualBootImgSz > IMG_PRELOAD_SZ)
     {

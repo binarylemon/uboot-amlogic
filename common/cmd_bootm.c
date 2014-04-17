@@ -642,14 +642,23 @@ int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return ret;
 }
 
-unsigned int __aml_get_kernel_crypto_addr(void)
+unsigned char* __aml_get_kernel_crypto_addr(const char* straddr)
 {
-	return load_addr; /* Default Load Address */
+    unsigned _loadaddr = load_addr;/* Default Load Address */
+
+    if(straddr)
+    {
+        unsigned useraddr = simple_strtoul(straddr, NULL, 16);
+        _loadaddr = useraddr ? useraddr : _loadaddr;
+    }
+    _loadaddr += 0x800;//shift 0x800 Android format head
+
+    return (unsigned char*)_loadaddr;;
 }
 
 //Note: image loader should implementation
 //         aml_boot_addr_update() for seucre and normal boot
-unsigned int aml_get_kernel_crypto_addr(void)
+unsigned char* aml_get_kernel_crypto_addr(const char* straddr)
 	__attribute__((weak, alias("__aml_get_kernel_crypto_addr")));
 
 /*******************************************************************/
@@ -702,10 +711,10 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #ifdef CONFIG_AML_SECU_BOOT_V2
 #ifdef CONFIG_MESON_TRUSTZONE
 	extern int meson_trustzone_boot_check(unsigned char *addr);
-	ret = meson_trustzone_boot_check((unsigned char *)aml_get_kernel_crypto_addr());
+	ret = meson_trustzone_boot_check(aml_get_kernel_crypto_addr(argc < 2 ? NULL : argv[1]));
 #else
 	extern int aml_sec_boot_check(unsigned char *pSRC);
-	ret = aml_sec_boot_check((unsigned char *)aml_get_kernel_crypto_addr());
+	ret = aml_sec_boot_check(aml_get_kernel_crypto_addr(argc < 2 ? NULL : argv[1]));
 #endif
 	if(0 != ret)
 		return ret;	
