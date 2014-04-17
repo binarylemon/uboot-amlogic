@@ -31,9 +31,9 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 
 #if (CFG_M6TV_DDR_CLK >= 400 ) && (CFG_M6TV_DDR_CLK <533)
 	#define DDR3_7_7_7
-#elif  (CFG_M6TV_DDR_CLK >= 533 ) && (CFG_M6TV_DDR_CLK <667)
+#elif  (CFG_M6TV_DDR_CLK >= 533 ) && (CFG_M6TV_DDR_CLK <680)
 	#define DDR3_9_9_9 
-#elif  (CFG_M6TV_DDR_CLK >= 667 ) && (CFG_M6TV_DDR_CLK <900)
+#elif  (CFG_M6TV_DDR_CLK >= 680 ) && (CFG_M6TV_DDR_CLK <900)
 	#define DDR3_11_11_11
 #endif
 
@@ -41,7 +41,7 @@ static int init_pctl_ddr3(struct ddr_set * ddr_setting);
 	#define CFG_M6TV_DDR_CL  11
 	#define CFG_M6TV_DDR_FAW 32
 	#define CFG_M6TV_DDR_RAS 28
-	#define CFG_M6TV_DDR_RC  39
+	#define CFG_M6TV_DDR_RC  38
 	#define CFG_M6TV_DDR_RCD 11
 	#define CFG_M6TV_DDR_RFC 240
 	#define CFG_M6TV_DDR_RP  11
@@ -184,14 +184,14 @@ static struct ddr_set __ddr_setting={
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              (1 << 3) |    	            //[B3]2T mode, default is disable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
                               (1 << 17) |     	   //[B17]0: slow exit; 1: fast exit. power down exit
 						      (0xf << 8)      	   // [B15-B8]15 cycles empty will entry power down mode.
                            ,
-                    .zq0cr0  = 0x109ce,
+                    .zq0cr0  = 0x109ad,
                     .zq0cr1  = 0x19, // 0x1d for GT ddr
                     .cmdzq   = 0x109ce,  //need enable FORCE_CMDZQ_ENABLE
                     .t_dxccr_dqsres  = 0x1, //ODT: pull down, 688ohms
