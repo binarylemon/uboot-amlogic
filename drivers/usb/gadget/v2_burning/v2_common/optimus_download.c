@@ -88,8 +88,7 @@ struct imgBurnInfo_bootloader{
 
 COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 
-
-#if defined(CONFIG_ACS) && !defined(CONFIG_AML_SECU_BOOT_V2)
+#if defined(CONFIG_ACS)
 static void _show_partition_table(const struct partitions* pPartsTab)
 {
 	int i=0;
@@ -114,33 +113,53 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
     const int acsOffsetInSpl   = START_ADDR - AHB_SRAM_BASE;
     const int addrMapFromAhb2Bin = AHB_SRAM_BASE - uboot_bin;
 
-    const struct acs_setting* acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
-    const unsigned partTabAddrInBin             = acsSettingInBin->partition_table_addr - addrMapFromAhb2Bin;
-    const struct partitions*  partsTabInBin     = (const struct partitions*)partTabAddrInBin;
+    const struct acs_setting* acsSettingInBin   = NULL;
+    unsigned partTabAddrInBin             = NULL;
+    const struct partitions*  partsTabInBin     = NULL;
 
-    const struct acs_setting* acsSettingInSram  = (struct acs_setting*)(*(unsigned*)START_ADDR);
-    const struct partitions*  partsTabInSram    = (const struct partitions*)acsSettingInSram->partition_table_addr;
+    const struct acs_setting* acsSettingInSram  = NULL;
+    const struct partitions*  partsTabInSram    = NULL;
 
-    if(strncmp(MAGIC_ACS, acsSettingInBin->acs_magic, strlen(MAGIC_ACS))){
-        DWN_ERR("magic(%s) is not acs magic(%s)\n", acsSettingInBin->acs_magic, MAGIC_ACS);
-        return __LINE__;
+    DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
+    acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
+    
+    if( !(acsSettingInBin < uboot_bin + 64*1024) ){//acs not in the spl
+        DWN_MSG("Acs not in the spl of uboot_bin\n");
+        return 0;
     }
-    if(strncmp(MAGIC_ACS, acsSettingInSram->acs_magic, strlen(MAGIC_ACS))){
-        DWN_ERR("magic(%s) is not acs magic(%s)\n", acsSettingInBin->acs_magic, MAGIC_ACS);
-        return __LINE__;
+    if(memcmp(MAGIC_ACS, acsSettingInBin->acs_magic, strlen(MAGIC_ACS))
+        || memcmp(TABLE_MAGIC_NAME, acsSettingInBin->partition_table_magic, strlen(TABLE_MAGIC_NAME)))
+    {
+        DWN_MSG("acs magic OR part magic in ubootin not match\n");
+        return 0;//Not to check partTable as acs magic or part magic not match in u-boot.bin, maybe encrypted by AMLETOOL
+    }
+    partTabAddrInBin  = acsSettingInBin->partition_table_addr - addrMapFromAhb2Bin;
+    partsTabInBin     = (const struct partitions*)partTabAddrInBin;
+
+#ifndef CONFIG_MESON_TRUSTZONE
+    acsSettingInSram  = (struct acs_setting*)(*(unsigned*)START_ADDR);
+#else
+    //twice eget value at sram address and copy 1K to memory
+    acsSettingInSram  = (struct acs_setting*)meson_trustzone_acs_addr(START_ADDR);
+    DWN_MSG("[Trust]acsSettingInSram=0x%p\n", acsSettingInSram);
+#endif// #ifndef CONFIG_MESON_TRUSTZONE
+    partsTabInSram    = (const struct partitions*)acsSettingInSram->partition_table_addr;
+    DWN_MSG("partsTabInSram=0x%p\n", partsTabInSram);
+
+    if(memcmp(MAGIC_ACS, acsSettingInSram->acs_magic, strlen(MAGIC_ACS))
+       || memcmp(TABLE_MAGIC_NAME, acsSettingInSram->partition_table_magic, strlen(TABLE_MAGIC_NAME)))
+    {
+        DWN_MSG("acs magic OR part magic in SPL not match\n");
+        return __LINE__;//Not to check partTable as acs magic or part magic not match in SRAM, assert this!!
     }
 
-    if(strncmp(TABLE_MAGIC_NAME, acsSettingInBin->partition_table_magic, strlen(TABLE_MAGIC_NAME))){
-        DWN_ERR("magic(%s) is not in part magic\n", TABLE_MAGIC_NAME);
-        return __LINE__;
-    }
-    if(strncmp(TABLE_MAGIC_NAME, acsSettingInSram->partition_table_magic, strlen(TABLE_MAGIC_NAME))){
-        DWN_ERR("magic(%s) is not in part magic\n", TABLE_MAGIC_NAME);
-        return __LINE__;
-    }
+#ifdef CONFIG_MESON_TRUSTZONE
+    partsTabInSram    = (const struct partitions*)meson_trustzone_acs_addr((unsigned)&acsSettingInSram->partition_table_addr);
+#endif// #ifndef CONFIG_MESON_TRUSTZONE
 
     rc = memcmp(partsTabInSram, partsTabInBin, partitionTableSz);
-    DWN_MSG("Check MBR %s\n", !rc ? "OK" : "FAILED!");
+    DWN_MSG("Check parts table %s\n", !rc ? "OK." : "FAILED!");
+#if 0//I comment print as str-prefix function (strcmp, strcmp, and .etc) are all not reliable in uboot
     if(rc)
     {
         DWN_MSG("acs_setting    0x%p, 0x%p\n", acsSettingInBin, acsSettingInSram);
@@ -154,8 +173,9 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
         _show_partition_table(partsTabInSram);
         return __LINE__;
     }
+#endif//#if 0
 
-    return 0;
+    return rc;
 }
 #else
 #define _check_partition_table_consistency(a)   0
@@ -178,8 +198,8 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
         return 0;
     }
     if(size > (1U<<20)){
-        DWN_ERR("uboot.bin size 0x%x > 1M unsupported\n", size);
-        return __LINE__;
+        DWN_ERR("uboot.bin size 0x%llx > 1M unsupported\n", size);
+        return 0;
     }
 
     size = size <= 0x60000 ? 0x60000 : (1U<<20);//384K when non-secure_os, 1M when secure_os
@@ -1062,14 +1082,13 @@ int is_the_flash_first_burned(void)
 int optimus_set_burn_complete_flag(void)
 {
     int rc = 0;
-    const char* upgrade_step = "1";
+    const int IsTplLoadedFromBurningPackage = check_uboot_loaded_for_burn(0);
+    const char* const upgrade_step = IsTplLoadedFromBurningPackage ? "2" : "1";
 
-    upgrade_step = check_uboot_loaded_for_burn(0) ? "2" : "1";
-    if(check_uboot_loaded_for_burn(0))
+    if(IsTplLoadedFromBurningPackage)
     {
         extern int device_boot_flag;
 
-        upgrade_step = "2";
         char str_store[8];
 
         sprintf(str_store, "%d", device_boot_flag);
@@ -1083,7 +1102,7 @@ int optimus_set_burn_complete_flag(void)
     }
 
     DWN_MSG("Set upgrade_step to %s\n", upgrade_step);
-    rc = setenv("upgrade_step", upgrade_step);
+    rc = setenv("upgrade_step", (char*)upgrade_step);
     if(rc){
         DWN_ERR("Fail to set upgraded_step to 1\n");
     }
@@ -1220,8 +1239,13 @@ int optimus_burn_complete(const int choice)
 #if ROM_BOOT_SKIP_BOOT_ENABLED
 int optimus_enable_romboot_skip_boot(void)
 {
-	//enable romboot skip_boot function to jump to usb boot
+#ifdef CONFIG_MESON_TRUSTZONE
+	writel(meson_trustzone_sram_read_reg32(SKIP_BOOT_REG_BACK_ADDR), 0xc8100000); //disable watchdog
+#else
 	writel(readl(SKIP_BOOT_REG_BACK_ADDR), 0xc8100000); //disable watchdog
+#endif// #ifdef CONFIG_MESON_TRUSTZONE
+
+	//enable romboot skip_boot function to jump to usb boot
     DWN_MSG("Skip boot flag[%x]\n", readl(0xc8100000));
 }
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
