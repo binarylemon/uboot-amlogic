@@ -37,6 +37,8 @@
 #include <linux/ctype.h>
 #include <asm/byteorder.h>
 
+#include "aml_dt.c"
+
 #if defined(CONFIG_CMD_USB)
 #include <usb.h>
 #endif
@@ -302,6 +304,8 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		{
 			fdt_addr = (images.rd_end
 				+ ((ulong)temp_android_hdr->page_size - 1)) & (~((ulong)temp_android_hdr->page_size - 1));
+			/*get_multi_dt_entry, compatible with single dt*/
+			fdt_addr = get_multi_dt_entry(fdt_addr);
 			images.ft_addr = (char *)fdt_addr;
 			images.ft_len = fdt_totalsize(fdt_addr);
 			printf("    Flat device tree start addr = 0x%x, len = 0x%x magic=0x%x\n",

@@ -50,6 +50,9 @@ arch/arm/cpu/aml_meson/m6/firmware/arc_power/boot_code.dat
 arch/arm/cpu/aml_meson/m6tv/power_firmware.dat
 arch/arm/cpu/aml_meson/m8/power_firmware.dat
 arch/arm/cpu/aml_meson/m8/firmware/m8_smp.dat
+arch/arm/cpu/aml_meson/m8b/power_firmware.dat
+arch/arm/cpu/aml_meson/m8b/firmware/m8_smp.dat
+arch/arm/cpu/aml_meson/m6tvd/power_firmware.dat
 
 
 *.depend
