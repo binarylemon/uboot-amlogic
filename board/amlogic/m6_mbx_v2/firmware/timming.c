@@ -136,7 +136,7 @@ static struct ddr_set __ddr_setting={
                     		  (0 << 2) |		   //[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
                     		  					   // and is ignored for mDDR/LPDDR2 and DDR3
                               (1 << 5) |      	   //[B5] 1: ddr3 protocal; 0 : ddr2 protocal
-                              //(1 << 3) |    	            //[B3]2T mode, default is disable
+                              (1 << 3) |    	            //[B3]2T mode, default is enable
                               //(tFAW/tRRD <<18) | //@@[B19,B18]tFAW will be set according to the calculation with t_rrd and t_faw
                                               	   // in file /firmware/ddr_init_pctl.c
                                               	   // 0:tFAW=4*tRRD 1:tFAW=5*tRRD 2:tFAW=6*tRRD
