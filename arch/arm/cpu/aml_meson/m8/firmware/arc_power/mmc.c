@@ -649,6 +649,9 @@ void hx_ddr_power_down_enter()
 	writel(g_ddr_settings[_PUB_PGCR3]&(~(0xFF<<16)),P_DDR0_PUB_PGCR3);
 	writel(g_ddr_settings[_PUB_PGCR3]&(~(0xFF<<16)),P_DDR1_PUB_PGCR3);
 
+	writel(readl(P_DDR0_PUB_ACIOCR3)|0x2,P_DDR0_PUB_ACIOCR3);
+	writel(readl(P_DDR1_PUB_ACIOCR3)|0x2,P_DDR1_PUB_ACIOCR3);
+
 	//asm volatile ("wfi");
 	
 	// enable retention
