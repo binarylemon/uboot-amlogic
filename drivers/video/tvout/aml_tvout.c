@@ -126,12 +126,12 @@ static int tvout_open(int argc, char *argv[])
 		printf("tv %s %s failed\n",argv[0], argv[1]);
 		return 1;
 	}
-#if CONFIG_AML_MESON_6
-	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I){
-		udelay(3*1000*1000);
-		start_dsp();
-	}
-#endif
+//#if CONFIG_AML_MESON_6
+//	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I){
+//		udelay(3*1000*1000);
+//		start_dsp();
+//	}
+//#endif
 	return 0;
 usage:
 #if CONFIG_AML_MESON_8
