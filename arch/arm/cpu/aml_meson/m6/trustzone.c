@@ -326,8 +326,7 @@ uint32_t meson_trustzone_boot_check(unsigned char *addr)
 		    : "r"(r0), "r"(r1), "r"(r2));
 	} while (0);
 
-	ov_dcache_invalid_range(arg.res_phy_addr, (arg.res_len));
-	ret = arg.res_phy_addr;
+	ret = r0;
 
 	return ret;
 }
