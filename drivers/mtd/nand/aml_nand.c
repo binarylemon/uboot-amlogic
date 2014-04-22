@@ -2138,7 +2138,7 @@ static int aml_repair_bbt(struct aml_nand_chip *aml_chip,unsigned int *bad_blk_a
 }
 static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 {
-	int mini_part_blk_num, start_blk = 0;
+	int mini_part_blk_num;
 	struct mtd_info *mtd = &aml_chip->mtd;
 	struct aml_nand_platform *plat = aml_chip->platform;
 #ifdef CONFIG_MTD_PARTITIONS
@@ -2149,7 +2149,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 	loff_t offset;
 	int bad_block_cnt =0;
     loff_t adjust_offset = 0,key_block;
-	uint64_t last_size =0;
+	uint64_t last_size =0,start_blk = 0;
 	uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE )) ? mtd->erasesize : (NAND_MINI_PART_SIZE ));
 	//uint64_t mini_part_size = ((mtd->erasesize > (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE)) ? mtd->erasesize : (NAND_MINI_PART_SIZE + NAND_MINIKEY_PART_SIZE));
 	unsigned int bad_blk_addr[128];
@@ -2268,11 +2268,11 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 						}
 					start_blk++;
 				} while (start_blk < (last_size >> phys_erase_shift));
-					if(last_size > NAND_SYS_PART_SIZE) {
-						if(((bad_block_cnt * 32) > (last_size >> phys_erase_shift))||(bad_block_cnt >10)) {
+				
+				if(bad_block_cnt >10) {
 							aml_repair_bbt(aml_chip,bad_blk_addr,bad_block_cnt);
 						}
-					}	
+						
 				
 			}
 
@@ -2944,7 +2944,7 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 			}
 		}
 	#endif
-		if(block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
+		if((aml_chip->aml_nandenv_info->env_valid_node->env_status) && (block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)){
 				 aml_nand_free_valid_env(mtd);
 	}
 #else 
@@ -2957,7 +2957,7 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 		}
 #endif
 			
-		if(((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr){
+		if ((aml_chip->aml_nandenv_info->env_valid_node->env_status) && (((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)){
 			 aml_nand_free_valid_env(mtd);
 		}
 #endif
@@ -3541,7 +3541,7 @@ dma_retry_plane1:
 	}
 
 exit:
-	return 0;  //do not return error when failed
+	return error;  
 }
 
 static void aml_nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip, const uint8_t *buf)
@@ -5865,6 +5865,7 @@ static int aml_nand_save_env(struct mtd_info *mtd, u_char *buf)
 		if ((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr + i) > pages_per_blk) {
 
 			if((aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr -i) == pages_per_blk) {
+				aml_chip->aml_nandenv_info->env_valid_node->env_status = 0;
 				addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
 				addr *= mtd->erasesize;
 				memset(&aml_env_erase_info, 0, sizeof(struct erase_info));
@@ -5872,7 +5873,9 @@ static int aml_nand_save_env(struct mtd_info *mtd, u_char *buf)
 				aml_env_erase_info.addr = addr;
 				aml_env_erase_info.len = mtd->erasesize;
 				error = mtd->erase(mtd, &aml_env_erase_info);
-				printk("---erase bad env block and write env into new block\n");
+				aml_chip->aml_nandenv_info->env_valid_node->env_status = 1;
+				aml_chip->aml_nandenv_info->env_valid_node->ec++;
+				printk("---erase bad env block:%llx \n",addr);
 			}
 			env_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
 			if (env_free_node == NULL)
@@ -5909,13 +5912,14 @@ static int aml_nand_save_env(struct mtd_info *mtd, u_char *buf)
 	addr = aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr;
 	addr *= mtd->erasesize;
 	addr += aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr * mtd->writesize;
+	printk("%s:%d,save env to %llx\n",__func__,__LINE__,addr);
 	if (aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr == 0) {
 
 		memset(&aml_env_erase_info, 0, sizeof(struct erase_info));
 		aml_env_erase_info.mtd = mtd;
 		aml_env_erase_info.addr = addr;
 		aml_env_erase_info.len = mtd->erasesize;
-
+		aml_chip->aml_nandenv_info->env_valid_node->env_status = 0;
 		error = mtd->erase(mtd, &aml_env_erase_info);
 		if (error) {
 			printk("env free blk erase failed %d\n", error);
@@ -5923,6 +5927,7 @@ static int aml_nand_save_env(struct mtd_info *mtd, u_char *buf)
 			return error;
 		}
 		aml_chip->aml_nandenv_info->env_valid_node->ec++;
+		aml_chip->aml_nandenv_info->env_valid_node->env_status = 1;
 	}
 
 	nand_bbt_info = &aml_chip->aml_nandenv_info->nand_bbt_info;
@@ -5948,9 +5953,15 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	int error = 0,env_page_num=0, start_blk, total_blk, env_blk, i, j, pages_per_blk, bad_blk_cnt = 0, max_env_blk, phys_erase_shift,ret =0;
 	loff_t offset;
 	unsigned char *data_buf;
+	unsigned char   *good_addr;
+	int k,env_status = 0,scan_status =0;
 	struct mtd_oob_ops aml_oob_ops;
 	unsigned char env_oob_buf[sizeof(struct env_oobinfo_t)];
 
+	good_addr = kzalloc(256, GFP_KERNEL);
+	if (good_addr == NULL)
+		return -ENOMEM;
+	memset(good_addr,0,256);
 	data_buf = kzalloc(mtd->writesize, GFP_KERNEL);
 	if (data_buf == NULL)
 		return -ENOMEM;
@@ -5964,6 +5975,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	if (aml_chip->aml_nandenv_info->env_valid_node == NULL)
 		return -ENOMEM;
 	aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr = -1;
+	aml_chip->aml_nandenv_info->env_valid_node->env_status = 1;
 	env_page_num = CONFIG_ENV_SIZE /mtd->writesize;
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
@@ -5992,6 +6004,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 
 		offset = mtd->erasesize;
 		offset *= start_blk;
+		scan_status = 0;
 		error = mtd->block_isbad(mtd, offset);
 		if (error) {
 			for (j=0; j<MAX_BAD_BLK_NUM; j++) {
@@ -6004,7 +6017,8 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 			//aml_chip->aml_nandenv_info->nand_bbt_info.nand_bbt[bad_blk_cnt++] = start_blk;
 			continue;
 		}
-
+RE_ENV:		
+		
 		aml_oob_ops.mode = MTD_OOB_AUTO;
 		aml_oob_ops.len = mtd->writesize;
 		aml_oob_ops.ooblen = sizeof(struct env_oobinfo_t);
@@ -6017,8 +6031,15 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 
 		error = mtd->read_oob(mtd, offset, &aml_oob_ops);
 		if ((error != 0) && (error != -EUCLEAN)) {
-			printk("blk check good but read failed: %llx, %d\n", (uint64_t)offset, error);
+			//printk("blk check good but read failed: %llx, %d\n", (uint64_t)offset, error);
+			printk("%s:%d,offset =%llx\n",__func__,__LINE__,offset);
+			offset += CONFIG_ENV_SIZE;
+			if((scan_status++ > 6)||(!(offset % mtd->erasesize))) {
+			printk("scan env block end or find block after scaning env addr %d times\n",scan_status);
+				scan_status = 0;
 			continue;
+			}
+			goto RE_ENV;
 		}
 
 		aml_chip->aml_nandenv_info->env_init = 1;
@@ -6124,6 +6145,8 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 			}
 
 			if (!memcmp(env_oobinfo->name, ENV_NAND_MAGIC, 4)){
+				//printk("%d page find env:%llx\n",i,(uint64_t)offset);
+				good_addr[i] = 1;
 				aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = i;
 			}
 			else
@@ -6131,12 +6154,31 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 		}
 	}
 	if ((mtd->writesize < CONFIG_ENV_SIZE) && (aml_chip->aml_nandenv_info->env_valid == 1)) {
+		#if 0
 		i = aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr;
 		if(((i+1)%env_page_num)!=0){
 			aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = (i-(env_page_num- (i+1)%env_page_num));
 			ret = -1;
-			printk("aml_nand_env_init :  last env incomplete\n");
+			printk("aml_nand_env_init :  find  env incomplete\n");
 		}
+		#else
+		if(ret == -1) {
+			for(i=0; i<(pages_per_blk/env_page_num); i++) {
+				env_status =0;
+				for(k=0;k<env_page_num;k++) {
+					if(!good_addr[k+i*env_page_num]) {
+						printk("find %d page env fail\n",(k+i*env_page_num));
+						env_status = 1;
+						break;
+					}
+				}
+				if(!env_status)  {	
+					printk("find %d page env ok\n",(i*env_page_num));
+				 	aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr = k+i*env_page_num -1;
+				}
+			}
+		}
+		#endif
 		i = (CONFIG_ENV_SIZE + mtd->writesize - 1) / mtd->writesize;
 		aml_chip->aml_nandenv_info->env_valid_node->phy_page_addr -= (i - 1);
 	}
@@ -6160,6 +6202,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	debug("CONFIG_ENV_SIZE=0x%x; ENV_HEADER_SIZE=0x%x; ENV_SIZE=0x%x; bbt=0x%x; default_environment_size=0x%x\n",
 		CONFIG_ENV_SIZE, ENV_HEADER_SIZE, ENV_SIZE, sizeof(struct aml_nand_bbt_info), default_environment_size);
 	kfree(data_buf);
+	kfree(good_addr);
 	return ret;
 }
 

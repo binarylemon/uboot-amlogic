@@ -381,7 +381,7 @@
 #define BBT_TAIL_MAGIC					"bbte"
 #define MTD_PART_MAGIC					"anpt"
 
-#define NAND_SYS_PART_SIZE				0x20000000
+#define NAND_SYS_PART_SIZE				0x8000000
 #define ENV_NAND_SCAN_BLK                            50
 #define REMAIN_TAIL_BLOCK_NUM		8
 #define NAND_KEY_SAVE_MULTI_BLOCK
@@ -448,6 +448,7 @@ struct env_valid_node_t {
         int rd_flag;
         struct env_valid_node_t *next;
 #endif
+	int16_t env_status;
 };
 
 struct env_free_node_t {

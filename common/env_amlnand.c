@@ -474,7 +474,7 @@ int nand_saveenv(void)
 		aml_env_erase_info.mtd = mtd;
 		aml_env_erase_info.addr = addr;
 		aml_env_erase_info.len = mtd->erasesize;
-
+		aml_chip->aml_nandenv_info->env_valid_node->env_status = 0;
 		error = mtd->erase(mtd, &aml_env_erase_info);
 		if (error) {
 			printf("env free blk erase failed %d\n", error);
@@ -482,6 +482,7 @@ int nand_saveenv(void)
 			return error;
 		}
 		aml_chip->aml_nandenv_info->env_valid_node->ec++;
+		aml_chip->aml_nandenv_info->env_valid_node->env_status = 1;
 	}
 
     env_new_p = (env_t *)malloc (CONFIG_ENV_SIZE);
