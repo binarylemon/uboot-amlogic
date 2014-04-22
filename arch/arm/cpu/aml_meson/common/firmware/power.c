@@ -991,18 +991,16 @@ int aml1218_set_dcdc_voltage(int dcdc, int voltage)
     print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
     val = idx_cur;
     idx_cur = (idx_cur & 0x7e) >> 1;
-    while (idx_cur != idx_to) {
-        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
-            idx_cur++;    
-        } else {
-            idx_cur--;
-        }
-        val &= ~0x7e;
-        val |= (idx_cur << 1);
-        hard_i2c_write168(DEVID, addr, val);
-        __udelay(100);                                          // atleast delay 100uS
+
+    step = idx_cur - idx_to;
+    if (step < 0) {
+        step = -step;    
     }
-    __udelay(100);                         // wait a moment
+    val &= ~0x7e;
+    val |= (idx_to << 1);
+    hard_i2c_write168(DEVID, addr, val);
+    __udelay(20 * step);
+
     return 0;
 }
 
@@ -1200,14 +1198,18 @@ void aml1218_check_vbat(int init)
 
 void aml1218_power_init(int init_mode)
 {
+    aml1218_set_bits(0x0140, 0x08, 0x1f);                           // enable ramp control, 10us/step
+    aml1218_set_bits(0x0141, 0x08, 0x1f);                           // enable ramp control, 10us/step
+    aml1218_set_bits(0x0142, 0x08, 0x1f);                           // enable ramp control, 10us/step
+
     aml1218_set_bits(0x0033, 0x00, 0x70);                           // test
     aml1218_set_bits(0x0047, 0x00, 0x07);                           // David Wang, set DCDC3 current to 1.5A
-    aml1218_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
-//    aml1218_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
+    aml1218_set_bits(0x001b, 0x06, 0x46);                           // Enable DCDC1 & 2 fault
     aml1218_set_bits(0x001c, 0x06, 0x06);
     aml1218_set_bits(0x0045, 0x08, 0x08);
     aml1218_set_bits(0x003c, 0x08, 0x08);
-    aml1218_set_bits(0x0121, 0x04, 0x04);
+    hard_i2c_write168(DEVID, 0x0121, 0x12);                         // enable DC3 oc
+    hard_i2c_write168(DEVID, 0x004d, 0x00);
     aml1218_set_bits(0x011f, 0x04, 0x04);
     aml1218_set_bits(0x011d, 0x04, 0x04);
     aml1218_check_vbat(1);

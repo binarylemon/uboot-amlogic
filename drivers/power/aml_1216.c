@@ -1020,9 +1020,6 @@ int aml1216_init(void)
     /*
      * open charger
      */
-#ifdef CONFIG_VBUS_DC_SHORT_CONNECT
-    aml1216_set_bits(0x002a, 0x01, 0x01);
-#endif
   //aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li

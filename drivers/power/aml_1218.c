@@ -919,11 +919,13 @@ static void dump_pmu_register(void)
 {
     uint8_t val[16];
     int     i;
+    int     addr_table[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 
+                            17, 18, 19, 20, 21, 22, 23, 24, 34, 35, 36, 37};
 
     printf("[aml1218] DUMP ALL REGISTERS\n");
-    for (i = 0; i < 24; i++) {
-        aml1218_reads(i * 16, val, 16);
-        printf("0x%03x - %03x: ", i * 16, i * 16 + 15);
+    for (i = 0; i < ARRAY_SIZE(addr_table); i++) {
+        aml1218_reads(addr_table[i] * 16, val, 16);
+        printf("0x%03x - %03x: ", addr_table[i] * 16, addr_table[i] * 16 + 15);
         printf("%02x %02x %02x %02x ",   val[0],  val[1],  val[2],  val[3]);
         printf("%02x %02x %02x %02x   ", val[4],  val[5],  val[6],  val[7]);
         printf("%02x %02x %02x %02x ",   val[8],  val[9],  val[10], val[11]);
@@ -1011,9 +1013,6 @@ int aml1218_init(void)
     /*
      * open charger
      */
-#ifdef CONFIG_VBUS_DC_SHORT_CONNECT
-    aml1218_set_bits(0x002a, 0x01, 0x01);
-#endif
   //aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li

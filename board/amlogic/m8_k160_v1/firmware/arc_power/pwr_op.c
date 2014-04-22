@@ -496,18 +496,16 @@ int aml1218_set_dcdc_voltage(int dcdc, int voltage)
 #endif
     val = idx_cur;
     idx_cur = (idx_cur & 0x7e) >> 1;
-    while (idx_cur != idx_to) {
-        if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
-            idx_cur++;    
-        } else {
-            idx_cur--;
-        }
-        val &= ~0x7e;
-        val |= (idx_cur << 1);
-        i2c_pmu_write_b(addr, val);
-        __udelay(100);                                          // atleast delay 100uS
+
+    step = idx_cur - idx_to;
+    if (step < 0) {
+        step = -step;    
     }
-    __udelay(100);                         // wait a moment
+    val &= ~0x7e;
+    val |= (idx_to << 1);
+    i2c_pmu_write_b(addr, val);
+    __udelay(20 * step);
+
     return 0;
 }
 
@@ -600,14 +598,14 @@ void aml1218_power_off_at_32K_1()
     udelay__(10);
 
     power_off_vcc18();
-    power_off_vcc33();                                  // close DCDC3, VCC3.3v
+//  power_off_vcc33();                                  // close DCDC3, VCC3.3v
 }
 
 void aml1218_power_on_at_32K_1()
 {
     unsigned int    reg;
 
-    power_on_vcc33();                                // open ext DCDC 3.3v
+//  power_on_vcc33();                                // open ext DCDC 3.3v
     power_on_vcc18();
 
     reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
