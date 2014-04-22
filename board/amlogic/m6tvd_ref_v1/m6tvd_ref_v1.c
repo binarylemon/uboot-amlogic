@@ -653,9 +653,9 @@ static void board_mmc_register(unsigned port)
 #endif
 
 	mmc->block_dev.if_type = IF_TYPE_SD;
-	if(port == SDIO_PORT_C){
-		mmc->block_dev.if_type = IF_TYPE_MMC;
-	}
+	//if(port == SDIO_PORT_C){
+	//	mmc->block_dev.if_type = IF_TYPE_MMC;
+	//}
 
 
 #if 0
