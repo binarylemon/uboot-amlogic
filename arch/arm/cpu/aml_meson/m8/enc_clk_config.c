@@ -47,7 +47,7 @@ static void set_hpll_clk_out(unsigned clk)
         case 1488:
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
-            aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08930e9b);
+            aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
             while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
                 ;
             }

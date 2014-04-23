@@ -1163,7 +1163,7 @@ static void hdmi_tx_phy(HDMI_Video_Codes_t vic)
         aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c34d0b);
         break;
     default:
-        aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08930e9b);
+        aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
     }
     aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 0);
     aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 1);       // Soft Reset HDMI PHY
