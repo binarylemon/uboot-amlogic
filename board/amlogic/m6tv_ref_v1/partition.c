@@ -638,7 +638,7 @@ int find_dev_num_by_partition_name (char *name)
 
 static int init_mmc_partion_tbl(struct mmc_partitions_fmt *pt_fmt_v)
 {
-    int i;
+    int i=0;
     strncpy(&pt_fmt_v->magic[0],"MPT",sizeof(pt_fmt_v->magic));
 	strncpy(pt_fmt_v->version, "01.00.00", MAX_MMC_PART_NAME_LEN);
     pt_fmt_v->part_num = sizeof(partitions_emmc)/sizeof(partitions_emmc[i]);
@@ -673,6 +673,7 @@ int mmc_device_partitions (struct mmc *mmc)
 {
 	int ret=0;
     struct mmc_partitions_fmt *pt_fmt;
+    int part_num,i=0;
 
     pt_fmt = kmalloc(sizeof(struct mmc_partitions_fmt), 0);
 	if(pt_fmt == NULL){
@@ -686,7 +687,15 @@ int mmc_device_partitions (struct mmc *mmc)
 		ret = -1;
         goto error_exit1;
 	}
+	
+    if(mmc->capacity < 0xe6000000) {
+        part_num = sizeof(partitions_emmc)/sizeof(partitions_emmc[i]);
 
+        for(i = 0;i < part_num;i++){
+            if(strcmp(partitions_emmc[i].name,"data")==0)
+				partitions_emmc[i].size=(uint64_t)1350*1024*1024;
+        }
+    }
 	memset(mmc_config_of,0x0,(sizeof(struct mmc_config)));
 
     init_device_mmc_config_of(mmc_config_of);

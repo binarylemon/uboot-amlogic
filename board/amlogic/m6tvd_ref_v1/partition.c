@@ -34,7 +34,7 @@ struct partitions partitions_emmc[]={
         {
             .name = "ubootenv",
             .offset = 2*1024*1024,
-            .size = 0x20000,
+            .size = 128*1024,
         },
         {
             .name = "dtvenv",
@@ -67,39 +67,34 @@ struct partitions partitions_emmc[]={
             .size = 640*1024*1024,
         },
         {
+            .name = "cache",
+            .offset = 680*1024*1024,
+            .size = 64*1024*1024,
+        },
+        {
             .name = "param",
-            .offset = 672*1024*1024,
+            .offset = 744*1024*1024,
             .size = 16*1024*1024,
         },
         {
             .name = "dtv",
-            .offset = 688*1024*1024,
+            .offset = 760*1024*1024,
             .size = 256*1024*1024,
         },
         {
             .name = "atv",
-            .offset = 944*1024*1024,
+            .offset = 1016*1024*1024,
             .size = 192*1024*1024,
         },
         {
-            .name = "cache",
-            .offset = 1136*1024*1024,
+            .name = "dtvbackup",
+            .offset = 1208*1024*1024,
             .size = 64*1024*1024,
         },
         {
             .name = "data",
-            .offset = 1200*1024*1024,
-            .size = 1336*1024*1024,
-        },
-        {
-            .name = "dtvbackup",
-            .offset = (uint64_t)2536*1024*1024,
-            .size = 64*1024*1024,
-        },
-        {
-            .name = "media_part",
-            .offset = (uint64_t)2600*1024*1024,
-            .size = 170*1024*1024,
+            .offset = 1280*1024*1024,
+            .size = (uint64_t)2400*1024*1024,
         },
 };
 
@@ -643,7 +638,7 @@ int find_dev_num_by_partition_name (char *name)
 
 static int init_mmc_partion_tbl(struct mmc_partitions_fmt *pt_fmt_v)
 {
-    int i;
+    int i=0;
     strncpy(&pt_fmt_v->magic[0],"MPT",sizeof(pt_fmt_v->magic));
 	strncpy(pt_fmt_v->version, "01.00.00", MAX_MMC_PART_NAME_LEN);
     pt_fmt_v->part_num = sizeof(partitions_emmc)/sizeof(partitions_emmc[i]);
@@ -678,6 +673,7 @@ int mmc_device_partitions (struct mmc *mmc)
 {
 	int ret=0;
     struct mmc_partitions_fmt *pt_fmt;
+    int part_num,i=0;
 
     pt_fmt = kmalloc(sizeof(struct mmc_partitions_fmt), 0);
 	if(pt_fmt == NULL){
@@ -691,7 +687,15 @@ int mmc_device_partitions (struct mmc *mmc)
 		ret = -1;
         goto error_exit1;
 	}
+	
+    if(mmc->capacity < 0xe6000000) {
+        part_num = sizeof(partitions_emmc)/sizeof(partitions_emmc[i]);
 
+        for(i = 0;i < part_num;i++){
+            if(strcmp(partitions_emmc[i].name,"data")==0)
+				partitions_emmc[i].size=(uint64_t)1350*1024*1024;
+        }
+    }
 	memset(mmc_config_of,0x0,(sizeof(struct mmc_config)));
 
     init_device_mmc_config_of(mmc_config_of);
@@ -701,6 +705,7 @@ int mmc_device_partitions (struct mmc *mmc)
         ret = mmc_partition_verify(mmc_config_of, pt_fmt);
         if (ret == 0) { // ok
             printf("Partition table verified OK!\n");
+			show_mmc_patition(pt_fmt->partitions, pt_fmt->part_num);
         } else {
             printf("Partition table verified ERROR!\n"
                     "Following is the partition table stored in eMMC/TSD: \n");
