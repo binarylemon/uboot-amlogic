@@ -29,6 +29,10 @@
 #define SECURE_IMG_HDR_MAGIC    "AMLSECU!"
 #define SECURE_IMG_HDR_VESRION  (0x0801)
 
+#ifdef CONFIG_AML_SECU_BOOT_V2
+int g_nIMGReadFlag = 0;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
+
 #pragma pack(push, 4)
 typedef struct _encrypt_boot_img_info
 {
@@ -157,6 +161,8 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
             errorP("Fail when sec_check, rc=%d\n", rc);
             return __LINE__;
         }
+		else
+			g_nIMGReadFlag = 1;
 #endif//#ifdef CONFIG_AML_SECU_BOOT_V2
     }
     else
@@ -219,6 +225,10 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
         errorP("Fail when sec_check, rc=%d\n", rc);
         return __LINE__;
     }
+#ifdef CONFIG_AML_SECU_BOOT_V2
+	else
+		g_nIMGReadFlag = 1;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
 
     genFmt = genimg_get_format(hdr_addr);
     if(IMAGE_FORMAT_ANDROID != genFmt) {
@@ -271,7 +281,12 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     int rc = 0;
     uint64_t flashReadOff = 0;
     unsigned secureKernelImgSz = 0;
-    
+
+#ifdef CONFIG_AML_SECU_BOOT_V2
+	if(g_nIMGReadFlag)
+		return 0;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
+
     if(2 < argc){
         loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
     }
@@ -335,6 +350,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     uint64_t flashReadOff = 0;
     const char* loadaddrStr = (2 < argc) ? argv[2] : getenv("loadaddr");
     u64 partSz = 0;
+
+#ifdef CONFIG_AML_SECU_BOOT_V2
+	if(g_nIMGReadFlag)
+		return 0;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
 
     loadaddr = (unsigned char*)simple_strtoul(loadaddrStr, NULL, 16);
 
