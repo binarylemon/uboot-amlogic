@@ -492,11 +492,14 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		else
 			printf("\nNAND %s: ", scrub ? "scrub" : "erase");
 		
-		if(!strcmp(argv[argc_cnt], "whole"))
+		if (argv[argc_cnt])
 		{
-			off = 0;
-			size = nand->size;
-			printf("whole chip.\n");
+			if(!strcmp(argv[argc_cnt], "whole"))
+			{
+				off = 0;
+				size = nand->size;
+				printf("whole chip.\n");
+			}
 		}
 		else
 		{
