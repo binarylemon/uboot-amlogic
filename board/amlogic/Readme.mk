@@ -33,6 +33,10 @@ endif
 	@echo config command: \"make m6_mbx_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M6_MBX_V1_TEE"
+	@echo config command: \"make m6_mbx_v1_tee_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M6_G33_1GB_V2"
 	@echo config command: \"make m6_g33_1G_v2_config\"
 
