@@ -299,12 +299,15 @@ static __inline__ int abortboot(int bootdelay)
                 cKey = getc();
             #endif
 # endif
-				if(13 == cKey) //only "enter" key can triger abort
-				{
-					abort  = 1; /* don't auto boot	*/
-					bootdelay = 0;	/* no more delay	*/
-					break;
-				}
+	            switch (cKey) {
+	            case 0x03:      /* ^C - Ctrl+C */
+	            case 0x0d:      /* Enter */
+	            case 0x20:      /* Space */
+	                abort = 1;
+	                break;
+	            default:
+	                break;
+	            }
 			}
 			//printf("%2d\n",i);
 #if defined(CONFIG_VLSI_EMULATOR)
@@ -314,7 +317,8 @@ static __inline__ int abortboot(int bootdelay)
 #endif //CONFIG_VLSI_EMULATOR
 		}
 
-		printf("\b\b\b%2d ", bootdelay);
+		if(!abort)
+			printf("\b\b\b%2d ", bootdelay);
 	}
 
 	putc('\n');
