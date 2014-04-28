@@ -31,6 +31,7 @@
 
 #ifdef CONFIG_AML_SECU_BOOT_V2
 extern int g_nIMGReadFlag;
+static unsigned char _imgLoadedPart[16];
 #endif //#ifdef CONFIG_AML_SECU_BOOT_V2
 
 #pragma pack(push, 4)
@@ -40,7 +41,7 @@ typedef struct _encrypt_boot_img_info
 
     unsigned int  version;                  //version for this header struct
 
-    unsigned int  totalLenAfterEncrypted;   //totaol length after encrypted with AMLETool (not include the 2K header)
+    unsigned int  totalLenAfterEncrypted;   //totaol length after encrypted with AMLETool (including the 2K header)
 
     unsigned char unused[1024 - SECURE_BOOT_MAGIC_SZ - 2 * sizeof(unsigned int)];
 
@@ -161,8 +162,10 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
             errorP("Fail when sec_check, rc=%d\n", rc);
             return __LINE__;
         }
-		else
+		else{
+            strcpy(_imgLoadedPart, partName);
 			g_nIMGReadFlag = 1;
+        }
 #endif//#ifdef CONFIG_AML_SECU_BOOT_V2
     }
     else
@@ -282,11 +285,6 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     uint64_t flashReadOff = 0;
     unsigned secureKernelImgSz = 0;
 
-#ifdef CONFIG_AML_SECU_BOOT_V2
-	if(g_nIMGReadFlag)
-		return 0;
-#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
-
     if(2 < argc){
         loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
     }
@@ -294,6 +292,26 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
         loadaddr = (unsigned char*)simple_strtoul(getenv("loadaddr"), NULL, 16);
     }
     hdr_addr = (boot_img_hdr*)loadaddr;
+
+#ifdef CONFIG_AML_SECU_BOOT_V2
+	while(g_nIMGReadFlag){
+        //1,Ensure the header magic is correct, or the $loadaddr is overlapped
+        genFmt = genimg_get_format(hdr_addr);
+        if(IMAGE_FORMAT_ANDROID != genFmt) {
+            MsgP("Fmt in preaddr 0x%x != android(0x%x)\n", genFmt, IMAGE_FORMAT_ANDROID);
+            g_nIMGReadFlag = 0;
+            break;//break here to reload the secure encrypted image
+        }
+
+        //2, check whether it load the same kernel
+        if(strcmp(partName, _imgLoadedPart)){
+            g_nIMGReadFlag = 0;
+            break;//break here as user now load not the same kernel as 'imgread dtb'
+        }
+
+		return 0;//the kernel aready loaded and decrpted
+    }
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
 
     rc = store_read_ops((unsigned char*)partName, loadaddr, flashReadOff, IMG_PRELOAD_SZ);
     if(rc){
