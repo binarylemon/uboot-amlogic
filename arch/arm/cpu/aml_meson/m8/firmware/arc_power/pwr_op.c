@@ -614,10 +614,13 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
-        if(remote_detect_key()){
-            exit_reason = 6;
-        	break;
-        }
+		if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){
+			break;
+		}
+		if(remote_detect_key()){
+			exit_reason = 6;
+			break;
+		}
 #endif
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
