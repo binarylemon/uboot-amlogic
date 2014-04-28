@@ -21,40 +21,31 @@
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
 
-#ifdef CONFIG_MESON_TRUSTZONE
 #include <asm/arch/trustzone.h>
-#endif
 
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
 
 int load_secureos(void)
 {
- 	int rc=0;
- 	unsigned len;    
+	int rc = 0;
+	unsigned len;
+	unsigned *psecureargs = NULL;
 
- 	// verify secureOS validation 		
-/*
-#ifndef CONFIG_MESON_SECUREBOOT_WITHOUT_DECRYPT	
-	rc=spldecrypt(SECURE_OS_COMPRESS_ADDR);
-	if(rc)
-		goto exit;	
-#endif		
-*/ 	
-
-	unsigned* psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
-	*psecureargs = 0;
+	psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
+	*psecureargs = NULL;
 #ifdef CONFIG_MESON_SECUREARGS
-	*psecureargs = __secureargs;	
+	*psecureargs = __secureargs;
 #endif
-	
- 	// UCL decompress 	 	
-#ifdef CONFIG_MESON_TRUSTZONE
+
+	/* UCL decompress */
+	/* enable cache to speed up decompress */
+#if CONFIG_AML_SPL_L1_CACHE_ON
+	aml_cache_enable();
+#endif
 	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR)); 	
-//#else 	
-// 	rc=uclDecompress((char*)(SECURE_OS_DECOMPRESS_ADDR), &len,(char*)(SECURE_OS_COMPRESS_ADDR+SECUREOS_HEAD_SIZE)); 	
-#endif 	 	
-exit:
-	return rc; 	 	
- }
- 
- 
+#if CONFIG_AML_SPL_L1_CACHE_ON
+	aml_cache_disable();
+#endif
+
+	return rc;
+}
