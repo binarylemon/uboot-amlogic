@@ -669,6 +669,10 @@ unsigned char* aml_get_kernel_crypto_addr(const char* straddr)
 /* bootm - boot application image from image in memory */
 /*******************************************************************/
 
+#ifdef CONFIG_AML_SECU_BOOT_V2
+int g_nIMGReadFlag = 0;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
+
 int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong		iflag;
@@ -713,7 +717,6 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 
 #ifdef CONFIG_AML_SECU_BOOT_V2
-	extern int g_nIMGReadFlag;
 #ifdef CONFIG_MESON_TRUSTZONE
 	extern int meson_trustzone_boot_check(unsigned char *addr);
 	if(!g_nIMGReadFlag)

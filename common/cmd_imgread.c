@@ -30,7 +30,7 @@
 #define SECURE_IMG_HDR_VESRION  (0x0801)
 
 #ifdef CONFIG_AML_SECU_BOOT_V2
-int g_nIMGReadFlag = 0;
+extern int g_nIMGReadFlag;
 #endif //#ifdef CONFIG_AML_SECU_BOOT_V2
 
 #pragma pack(push, 4)
