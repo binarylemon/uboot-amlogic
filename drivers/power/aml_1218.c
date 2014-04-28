@@ -1023,7 +1023,7 @@ int aml1218_init(void)
     aml1218_write(0x012c, 0x20);
 
     aml1218_set_gpio(2, 0);                     // open VCCX2
-    aml1218_set_gpio(3, 0);                     // close ldo 1.2v
+    //aml1218_set_gpio(3, 0);                     // close ldo 1.2v
     aml1218_set_bits(0x001A, 0x00, 0x06);
     aml1218_set_bits(0x0023, 0x00, 0x0e);
     aml1218_write16(0x0084, 0x0001);            // close boost before open it, according Harry 

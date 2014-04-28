@@ -533,6 +533,7 @@ void aml1218_power_off_at_24M()
 
     aml1218_set_bits(0x0035, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
     aml1218_set_bits(0x003e, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
+    aml1218_set_bits(0x0047, 0x03, 0x07);                               // set DCDC3
 
     power_off_vcc_cam();                                                // close LDO6
     power_off_vcc28();                                                  // close LDO5
@@ -549,7 +550,7 @@ void aml1218_power_on_at_24M()
     wait_uart_empty();
     printf_arc("\n");
 
-    aml1218_set_gpio(3, 1);                                             // should open LDO1.2v before open VCCK
+    //aml1218_set_gpio(3, 1);                                             // should open LDO1.2v before open VCCK
     udelay__(6 * 1000);                                                 // must delay 25 ms before open vcck
 
     power_on_vcck();                                                    // open DCDC1, vcck
@@ -568,7 +569,7 @@ void aml1218_power_on_at_24M()
 #endif
 #endif
 
-    aml1218_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
+    //aml1218_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
     aml1218_set_bits(0x001A, 0x00, 0x06);
     power_off_vcc50();
     udelay__(50 * 1000);
@@ -580,6 +581,7 @@ void aml1218_power_on_at_24M()
 
     aml1218_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
     aml1218_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
+    aml1218_set_bits(0x0047, 0x04, 0x07);                               // set DCDC3
 }
 
 void aml1218_power_off_at_32K_1()

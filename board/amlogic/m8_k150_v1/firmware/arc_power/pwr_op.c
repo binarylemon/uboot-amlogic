@@ -516,6 +516,7 @@ void aml1216_power_off_at_24M()
 
     aml1216_set_bits(0x0035, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
     aml1216_set_bits(0x003e, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
+    aml1216_set_bits(0x0047, 0x03, 0x07);                               // set DCDC3
 
     power_off_vcc_cam();                                                // close LDO6
     power_off_vcc28();                                                  // close LDO5
@@ -563,6 +564,7 @@ void aml1216_power_on_at_24M()
 
     aml1216_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
     aml1216_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
+    aml1216_set_bits(0x0047, 0x04, 0x07);                               // set DCDC3
 }
 
 void aml1216_power_off_at_32K_1()
