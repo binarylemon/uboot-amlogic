@@ -281,8 +281,8 @@ typedef struct amlogic_usb_config{
 #define BOARD_USB_MODE_SLAVE	1
 #define BOARD_USB_MODE_CHARGER	2
 #define BOARD_USB_MODE_MAX	3
-amlogic_usb_config_t * board_usb_start(int mode);
-int board_usb_stop(int mode);
+amlogic_usb_config_t * board_usb_start(int mode,int index);
+int board_usb_stop(int mode,int index);
 void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode);
 
 #endif //__ARCH_ARM_MESON_USB_H_U_BOOT__

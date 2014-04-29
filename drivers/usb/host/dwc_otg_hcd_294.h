@@ -697,6 +697,7 @@ typedef struct dwc_otg_device
   
   int disabled;
 
+	int index;
 } dwc_otg_device_t;
 /**
  * Reads the content of a register.

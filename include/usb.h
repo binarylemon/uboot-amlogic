@@ -135,7 +135,7 @@ struct usb_device {
 	defined(CONFIG_USB_OMAP3) || defined(CONFIG_USB_DA8XX) || \
 	defined(CONFIG_USB_BLACKFIN) || defined(CONFIG_USB_DWC_OTG_HCD)
 
-int usb_lowlevel_init(void);
+int usb_lowlevel_init(int index);
 int usb_lowlevel_stop(void);
 int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 			void *buffer, int transfer_len);
@@ -169,7 +169,7 @@ int usb_kbd_deregister(void);
 
 #endif
 /* routines */
-int usb_init(void); /* initialize the USB Controller */
+int usb_init(int index); /* initialize the USB Controller */
 int usb_stop(void); /* stop the USB Controller */
 
 

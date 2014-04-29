@@ -33,6 +33,7 @@
 #define USB_PHY_PORT_C	    (0x100000)
 #define USB_PHY_PORT_D	    (0x140000)
 #define USB_PHY_PORT_MSK	(0x1f0000)
+#define USB_PHY_PORT_MAX	2
 
 #define PREI_USB_PHY_REG_A     0x2200
 #define PREI_USB_PHY_REG_B     0x2208
@@ -270,8 +271,8 @@ typedef struct amlogic_usb_config{
 #define BOARD_USB_MODE_SLAVE	1
 #define BOARD_USB_MODE_CHARGER	2
 #define BOARD_USB_MODE_MAX	3
-amlogic_usb_config_t * board_usb_start(int mode);
-int board_usb_stop(int mode);
+amlogic_usb_config_t * board_usb_start(int mode,int index);
+int board_usb_stop(int mode,int index);
 void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode);
 
 #endif //__ARCH_ARM_MESON_USB_H_U_BOOT__

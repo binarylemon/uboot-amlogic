@@ -1704,7 +1704,7 @@ next:
  * --- Init functions ------------------------------------------------------ 
  */
 int
-usb_lowlevel_init(void)
+usb_lowlevel_init(int index)
 {
     dwc_otg_device_t *dwc_otg_device = &dwc_otg_dev;
     int             retval = 0;
@@ -1714,7 +1714,7 @@ usb_lowlevel_init(void)
     
     printf("dwc_usb driver version: %s\n",DWC_DRIVER_VERSION);
     
-    usb_config = board_usb_start(BOARD_USB_MODE_HOST);
+    usb_config = board_usb_start(BOARD_USB_MODE_HOST,index);
 
     if(!usb_config || !usb_config->base_addr){
 	    	ERR("Bad usb config or base addr! Need call board_usb_init() in board init\n");
@@ -1736,7 +1736,7 @@ usb_lowlevel_init(void)
 
     printf("USB (%d) base addr: 0x%x\n",port_idx,usb_config->base_addr);
     dwc_otg_device->base = (void *)usb_config->base_addr;
-
+    dwc_otg_device->index = index;
     snpsid = dwc_read_reg32((uint32_t *) ((uint8_t *) dwc_otg_device->base + 0x40));
 
     if ((snpsid & 0xFFFF0000) != 0x4F540000) {
@@ -1815,7 +1815,7 @@ usb_lowlevel_stop(void)
 #endif
 
     dwc_otg_hcd_stop(core_if);
-    board_usb_stop(BOARD_USB_MODE_HOST);
+    board_usb_stop(BOARD_USB_MODE_HOST,dwc_otg_dev.index);
 #if 0
     if(core_if->temp_buffer) {
         kfree(core_if->temp_buffer);

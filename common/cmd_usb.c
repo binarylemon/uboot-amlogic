@@ -511,6 +511,7 @@ int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 
 	int i;
+	int usb_index = 0;
 	struct usb_device *dev = NULL;
 	extern char usb_started;
 #ifdef CONFIG_USB_STORAGE
@@ -520,11 +521,14 @@ int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (argc < 2)
 		return cmd_usage(cmdtp);
 
+	if(argc == 3) 
+		usb_index = (int)simple_strtoul(argv[2], NULL, 16);
+
 	if ((strncmp(argv[1], "reset", 5) == 0) ||
 		 (strncmp(argv[1], "start", 5) == 0)) {
 		usb_stop();
-		printf("(Re)start USB...\n");
-		i = usb_init();
+		printf("(Re)start USB(%d)...\n",usb_index);
+		i = usb_init(usb_index);
 		if (i >= 0) {
 #ifdef CONFIG_USB_STORAGE
 			/* try to recognize storage devices immediately */
@@ -709,8 +713,8 @@ int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #include <asm/arch/usb.h>
 int do_usbbc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	board_usb_start(BOARD_USB_MODE_CHARGER);
-	board_usb_stop(BOARD_USB_MODE_CHARGER);
+	board_usb_start(BOARD_USB_MODE_CHARGER,0);
+	board_usb_stop(BOARD_USB_MODE_CHARGER,0);
 	return 0;
 }
 U_BOOT_CMD(

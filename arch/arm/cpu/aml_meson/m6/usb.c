@@ -32,7 +32,7 @@
 #include <asm/arch/usb.h>
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-static amlogic_usb_config_t * g_usb_cfg[BOARD_USB_MODE_MAX];
+static amlogic_usb_config_t * g_usb_cfg[BOARD_USB_MODE_MAX][USB_PHY_PORT_MAX];
 
 static char * g_clock_src_name_m6[]={
     "XTAL input",
@@ -245,34 +245,42 @@ static void usb_bc_detect(amlogic_usb_config_t * usb_cfg)
 	usb_cfg->battery_charging_det_cb(bc_mode);
 
 }
-amlogic_usb_config_t * board_usb_start(int mode)
+amlogic_usb_config_t * board_usb_start(int mode,int index)
 {
-	if(mode < 0 || mode >= BOARD_USB_MODE_MAX||!g_usb_cfg[mode])
+	if(mode < 0 || mode >= BOARD_USB_MODE_MAX||!g_usb_cfg[mode][index])
 		return 0;
 
 
-	set_usb_phy_clock(g_usb_cfg[mode]);
-	set_usb_phy_power(g_usb_cfg[mode],1);//on
+	set_usb_phy_clock(g_usb_cfg[mode][index]);
+	set_usb_phy_power(g_usb_cfg[mode][index],1);//on
 	if(mode == BOARD_USB_MODE_CHARGER && 
-	    g_usb_cfg[mode]->battery_charging_det_cb)
-		usb_bc_detect(g_usb_cfg[mode]);
-	return g_usb_cfg[mode];
+	    g_usb_cfg[mode][index]->battery_charging_det_cb)
+		usb_bc_detect(g_usb_cfg[mode][index]);
+	return g_usb_cfg[mode][index];
 }
 
-int board_usb_stop(int mode)
+int board_usb_stop(int mode,int index)
 {
 	printf("board_usb_stop cfg: %d\n",mode);
 	if(mode < 0 || mode >= BOARD_USB_MODE_MAX)
 		return 1;
-	set_usb_phy_power(g_usb_cfg[mode],0);//off
+	set_usb_phy_power(g_usb_cfg[mode][index],0);//off
 
 	return 0;
 }
 void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
 {
+	static int usb_index = 0;
 	if(mode < 0 || mode >= BOARD_USB_MODE_MAX || !usb_cfg)
 		return ;
-	printf("register usb cfg[%d] = %p\n",mode,usb_cfg);
-	g_usb_cfg[mode] = usb_cfg;
+	
+	if(mode == BOARD_USB_MODE_HOST){		
+		if(usb_index >= USB_PHY_PORT_MAX)
+			return;
+		g_usb_cfg[mode][usb_index] = usb_cfg;
+		usb_index++;
+	}else
+		g_usb_cfg[mode][0] = usb_cfg;
+	printf("register usb cfg[%d][%d] = %p\n",mode,(mode==BOARD_USB_MODE_HOST)?usb_index:0,usb_cfg);
 }
 #endif //CONFIG_USB_DWC_OTG_HCD

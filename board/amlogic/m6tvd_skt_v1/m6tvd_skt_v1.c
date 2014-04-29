@@ -695,7 +695,7 @@ static int usb_charging_detect_call_back(char bc_mode)
 //USB_PHY_CLOCK_SEL_M3_XTAL_DIV2 @ 0 (12MHz)
 //USB_PHY_CLOCK_SEL_M3_DDR_PLL @ 27(336MHz); @Rev2663 M3 SKT board DDR is 336MHz
 //                                                            43 (528MHz); M3 SKT board DDR not stable for 528MHz
-struct amlogic_usb_config g_usb_config_m6_skt={
+struct amlogic_usb_config g_usb_config_m6_skt_a={
 	USB_PHY_CLK_SEL_XTAL,
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M6_USBPORT_BASE_A,
@@ -703,7 +703,31 @@ struct amlogic_usb_config g_usb_config_m6_skt={
 	NULL,//gpio_set_vbus_power, //set_vbus_power
 	NULL,
 };
-struct amlogic_usb_config g_usb_config_m6_skt_a={
+struct amlogic_usb_config g_usb_config_m6_skt_b={
+	USB_PHY_CLK_SEL_XTAL,
+	1, //PLL divider: (clock/12 -1)
+	CONFIG_M6_USBPORT_BASE_B,
+	USB_ID_MODE_SW_HOST,
+	NULL,//gpio_set_vbus_power, //set_vbus_power
+	NULL,
+};
+struct amlogic_usb_config g_usb_config_m6_skt_c={
+	USB_PHY_CLK_SEL_XTAL,
+	1, //PLL divider: (clock/12 -1)
+	CONFIG_M6_USBPORT_BASE_C,
+	USB_ID_MODE_SW_HOST,
+	NULL,//gpio_set_vbus_power, //set_vbus_power
+	NULL,
+};
+struct amlogic_usb_config g_usb_config_m6_skt_d={
+	USB_PHY_CLK_SEL_XTAL,
+	1, //PLL divider: (clock/12 -1)
+	CONFIG_M6_USBPORT_BASE_D,
+	USB_ID_MODE_SW_HOST,
+	NULL,//gpio_set_vbus_power, //set_vbus_power
+	NULL,
+};
+struct amlogic_usb_config g_usb_config_m6_skt_h={
 	USB_PHY_CLK_SEL_XTAL,
 	1, //PLL divider: (clock/12 -1)
 	CONFIG_M6_USBPORT_BASE_A,
@@ -741,8 +765,11 @@ int board_init(void)
 	board_ir_init();
 #endif
 #ifdef CONFIG_USB_DWC_OTG_HCD
-	board_usb_init(&g_usb_config_m6_skt,BOARD_USB_MODE_HOST);
-	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_CHARGER);
+	board_usb_init(&g_usb_config_m6_skt_a,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt_b,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt_c,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt_d,BOARD_USB_MODE_HOST);
+	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 
