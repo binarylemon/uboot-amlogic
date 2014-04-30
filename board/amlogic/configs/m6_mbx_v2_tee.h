@@ -442,6 +442,7 @@
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
 
+#define CONFIG_AML_SPL_L1_CACHE_ON 1
 /*
  * Secure OS
  */
