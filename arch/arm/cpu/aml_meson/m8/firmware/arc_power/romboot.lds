@@ -28,5 +28,5 @@ SECTIONS
         . = ALIGN(4);
         _end = .;
 }
-ASSERT(_end <= _STACK_END-1024, " too big");
+ASSERT(_end <= _STACK_END-3072, " too big");
 

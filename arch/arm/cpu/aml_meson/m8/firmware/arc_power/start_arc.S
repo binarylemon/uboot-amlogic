@@ -53,7 +53,7 @@ _start:
 	
 
 	
-		mov  sp, 0xc000
+		mov  sp, 0x8000 ;=_STACK_END
 		NOP
 		NOP
 

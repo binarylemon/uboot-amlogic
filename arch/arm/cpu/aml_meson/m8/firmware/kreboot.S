@@ -46,7 +46,7 @@ pwr_restart:
 
 	dmb
 	isb
-	mov sp,#0x4000
+	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
 
 #if 1
 	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
