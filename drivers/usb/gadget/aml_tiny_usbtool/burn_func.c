@@ -624,6 +624,8 @@ int usb_run_command (const char *cmd, char* buff)
   *	"secukey_nand write boardid:"    (boardid key datas form 0x82000000 address)
   *	"secukey_nand read serialno"
   *	"secukey_nand write serialno:"    (serialno key datas form 0x82000000 address)
+  *	"secukey_nand read MFG_Serialno"
+  *	"secukey_nand write MFG_Serialno:"    (MFG_Serialno key datas form 0x82000000 address)
   *
   *    // for key to securestorage
   *	"efuse write random"   (random datas form 0x82000000 address)
@@ -640,14 +642,14 @@ int usb_run_command (const char *cmd, char* buff)
       else if(!strncmp(cmd, "efuse", strlen("efuse")) ||
             !strncmp(cmd, "read hdcp", strlen("read hdcp")) ||!strncmp(cmd, "write hdcp:", strlen("write hdcp:")) ||
             !strncmp(cmd, "secukey_efuse", strlen("secukey_efuse")) ||!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
-            int i = 0, ret = -1, key_device_index = -1, boardid_key_len = 0, serialno_key_len = 0, random_len = 0;
+            int i = 0, ret = -1, key_device_index = -1, boardid_key_len = 0, serialno_key_len = 0, MFG_Serialno_key_len = 0, random_len = 0;
             int widevinekeybox_len = 0, PlayReadykeybox_len = 0, MobiDRMPrivate_len = 0, MobiDRMPublic_len = 0;
             char widevinekeybox_verify_data_receive[20], widevinekeybox_verify_data_calculate[20];
             char PlayReadykeybox_verify_data_receive[20], PlayReadykeybox_verify_data_calculate[20];
             char MobiDRMPrivate_verify_data_receive[20], MobiDRMPrivate_verify_data_calculate[20];
             char MobiDRMPublic_verify_data_receive[20], MobiDRMPublic_verify_data_calculate[20];
             char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
-            char *hdcp = NULL, *boardid = NULL, *serialno = NULL, *random = NULL;
+            char *hdcp = NULL, *boardid = NULL, *serialno = NULL, *MFG_Serialno = NULL, *random = NULL;
             char *widevinekeybox = NULL, *PlayReadykeybox = NULL, *MobiDRMPrivate = NULL, *MobiDRMPublic = NULL;
 
             enum {
@@ -842,6 +844,25 @@ int usb_run_command (const char *cmd, char* buff)
                argv[0] = "flash";
                argv[1] = "write";
                argv[2] = "serialno";
+               argv[3] = key_data;
+               argc = 4;
+            }
+
+             if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MFG_Serialno:", strlen("MFG_Serialno:"))) {
+#define MFG_SERIALNO_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MFG_Serialno data from address:0x82000000
+               char length[4] = {0};
+               MFG_Serialno = (char *)MFG_SERIALNO_DATA_ADDR;
+               for(i=0; i<4; i++) {
+                  length[i] = *MFG_Serialno++;
+                  //printf("length[%d]=0x%02x\n", i, length[i]);
+               }
+               MFG_Serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               printf("MFG_Serialno_key_len=%d(maximum length limit is %d)\n", MFG_Serialno_key_len, SECUKEY_BYTES);
+               memcpy(key_data, MFG_Serialno, MFG_Serialno_key_len);
+               printf("receive %d MFG_Serialno key datas from address:0x82000000:\n%s\n", MFG_Serialno_key_len, key_data);
+               argv[0] = "flash";
+               argv[1] = "write";
+               argv[2] = "MFG_Serialno";
                argv[3] = key_data;
                argc = 4;
             }
@@ -1156,7 +1177,7 @@ int usb_run_command (const char *cmd, char* buff)
 
             if(!strncmp(argv[2], "version", strlen("version")) ||!strncmp(argv[2], "mac", strlen("mac")) ||!strncmp(argv[2], "mac_bt", strlen("mac_bt")) ||
                 !strncmp(argv[2], "mac_wifi", strlen("mac_wifi")) ||!strncmp(argv[2], "usid", strlen("usid")) ||!strncmp(argv[2], "hdcp", strlen("hdcp")) ||
-                !strncmp(argv[2], "boardid", strlen("boardid")) || !strncmp(argv[2], "serialno", strlen("serialno")))
+                !strncmp(argv[2], "boardid", strlen("boardid")) || !strncmp(argv[2], "serialno", strlen("serialno")) || !strncmp(argv[2], "MFG_Serialno", strlen("MFG_Serialno")))
                 key_device_index = 1;   // flash -> efuse or nand or emmc
             else if(!strncmp(argv[2], "random", strlen("random")) ||!strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox")) || 
                 !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox")) ||!strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate")) ||
@@ -1509,12 +1530,15 @@ int usb_run_command (const char *cmd, char* buff)
 
             /* read/write boardid/serialno */
             else if(!strncmp(argv[1], "read", strlen("read")) && (!strncmp(argv[2], "boardid", strlen("boardid")) ||
-                !strncmp(argv[2], "serialno", strlen("serialno")))) {
+                !strncmp(argv[2], "serialno", strlen("serialno")) || !strncmp(argv[2], "MFG_Serialno", strlen("MFG_Serialno")))) {
                ret = cmd_secukey(argc, argv, buff);
                if(!ret) {
                     printf("%s_key_data=%s\n", argv[2], buff);
                     memcpy(key_data, buff, strlen(buff));
-                    sprintf(buff, "success:(%s has been writen)", argv[2]);
+                    if(!strncmp(argv[2], "MFG_Serialno", strlen("MFG_Serialno")))
+                        sprintf(buff, "success:(%s)", key_data);
+                    else
+                        sprintf(buff, "success:(%s has been writen)", argv[2]);
                 }
                 else if(ret == 1) {
                      sprintf(buff, "failed:(%s has been not writen)", argv[2]);
@@ -1526,7 +1550,7 @@ int usb_run_command (const char *cmd, char* buff)
                }
             }
             else if(!strncmp(argv[1], "write", strlen("write")) && (!strncmp(argv[2], "boardid", strlen("boardid")) ||
-                !strncmp(argv[2], "serialno", strlen("serialno")))) {
+                !strncmp(argv[2], "serialno", strlen("serialno")) || !strncmp(argv[2], "MFG_Serialno", strlen("MFG_Serialno")))) {
                for(i=0; i<4; i++) buff[i] = (char)((strlen(argv[3]) >> (i*8)) & 0xff);
                ret = cmd_secukey(argc, argv, buff);
                if(!ret)
