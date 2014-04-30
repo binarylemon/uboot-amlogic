@@ -74,6 +74,8 @@ ifneq ($(CONFIG_NEXT_NAND),y)
 COBJS-$(CONFIG_ENV_IS_IN_AML_NAND) += env_amlnand.o
 endif
 
+COBJS-$(CONFIG_CMD_CALINFO) += cmd_calinfo.o
+
 COBJS-$(CONFIG_ENV_IS_IN_NVRAM) += env_nvram.o
 COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
