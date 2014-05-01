@@ -269,30 +269,27 @@
 
 #define CONFIG_BOOTCOMMAND  "run nandboot"
 
-
-//\\temp above
-
 #define CONFIG_AUTO_COMPLETE	1
-
-#define CONFIG_ENV_SIZE         0x8000
+#define CONFIG_ENV_SIZE		(64 * 1024)
 
 #define CONFIG_STORE_COMPATIBLE
 
-//spi
+// SPI
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_CMD_SAVEENV
 #define CONFIG_ENV_SECT_SIZE		0x1000
- #define CONFIG_ENV_IN_SPI_OFFSET           		0x80000
-//nand
-#define CONFIG_ENV_IN_NAND_OFFSET       0x400000
-#define CONFIG_ENV_BLOCK_NUM    2
-//emmc
-#define CONFIG_SYS_MMC_ENV_DEV		  1
-#define CONFIG_ENV_IN_EMMC_OFFSET		0x80000
+#define CONFIG_ENV_IN_SPI_OFFSET	0x100000
+
+// NAND
+#define CONFIG_ENV_IN_NAND_OFFSET	0x400000
+#define CONFIG_ENV_BLOCK_NUM		2
+
+// eMMC
+#define CONFIG_SYS_MMC_ENV_DEV		1
+#define CONFIG_ENV_IN_EMMC_OFFSET	0x80000
 
 #define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
 						/* initial data */
-
 
 #define BOARD_LATE_INIT
 #define CONFIG_PREBOOT
