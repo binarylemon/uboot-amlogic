@@ -36,6 +36,10 @@ declare RESULT
 declare -i LOOP_NUM
 declare -i CFG_START=0
 
+# Use a dummy file as the Secure OS binary to check compilation
+# for TEE enabled build.
+export SECURE_OS_BIN="README"
+
 for cfg in ${cfg_file[@]}
 do
   RESULT=$RESULT'\n#'
@@ -119,6 +123,8 @@ do
       for tmp in `seq $BAR_LOOP`;do RESULT=$RESULT'-';done
     fi
     make distclean
+    #make $cfg'_config' > $cfg'_config'.log 2>&1
+    #make -j >> $cfg'_config'.log 2>&1
     make $cfg'_config'
     make -j
     if [ $? != 0 ]

@@ -395,7 +395,7 @@ ALL += $(obj)u-boot.hex
 endif
 
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
-SECURE_OS_BIN := secure_os/otzone-ucl.bin
+SECURE_OS_BIN ?= secure_os/otzone-ucl.bin
 UBOOT_SECURE_OS := $(obj)uboot-secureos.bin
 ALL += $(UBOOT_SECURE_OS)
 endif
