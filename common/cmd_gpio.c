@@ -35,6 +35,8 @@ int do_gpio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 					amlogic_set_pull_up(pin,1,1);
 				else if (!strcmp(argv[4],"pd"))
 					amlogic_set_pull_up(pin,0,1);
+				else if (!strcmp(argv[3],"hz"))
+					amlogic_set_highz(pin);
 				else
 					goto out;
 			}

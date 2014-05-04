@@ -298,6 +298,10 @@
 #define CONFIG_CMD_EDITENV 1
 /*default command select end*/
 
+//support gpio cmd
+#define CONFIG_AML_GPIO_CMD 1
+#define CONFIG_AML_GPIO 1
+
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8
 
 #endif /* _CPU_H */
