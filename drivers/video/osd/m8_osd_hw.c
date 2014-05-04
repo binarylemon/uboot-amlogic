@@ -1923,6 +1923,8 @@ void osd_init_hw(void)
 	writel(data32, P_VIU_OSD1_CTRL_STAT);
 	writel(data32, P_VIU_OSD2_CTRL_STAT);
 
+	setbits_le32(P_VPP_MISC,VPP_OUT_SATURATE);
+
 	data32 = readl(P_VPP_OFIFO_SIZE);
 	#ifdef CONFIG_M8
         data32 &= 0xffffe000; //0~13bit
