@@ -78,7 +78,6 @@ static int g_debug = 0;
 static unsigned int get_cpuid(){
 	return READ_CBUS_REG(0x1f53)&0xff;
 }
-#define INTERNAL_PHY 1
 #ifdef INTERNAL_PHY
 #define  SMI_ADDR_TSTCNTL     20
 #define  SMI_ADDR_TSTREAD1    21
