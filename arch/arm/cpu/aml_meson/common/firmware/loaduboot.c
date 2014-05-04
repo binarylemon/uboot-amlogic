@@ -73,6 +73,16 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	size= 0xC0000; //max is 1MBytes ?
 #else
 	size=__TEXT_SIZE;
+
+#if defined(AML_UBOOT_SINFO_OFFSET)
+	unsigned int *pAUINF = (unsigned int *)(((unsigned int)load_uboot & 0xFFFF8000)+(AML_UBOOT_SINFO_OFFSET));
+	size = *pAUINF++;
+	size = *pAUINF - size;
+	size += 0x200;  //for secure boot, just add 512 without check, for simple
+	if(size < (100<<10) || size > (1<<20)) //illegal size, restore to default from rom_spl.s
+		size = __TEXT_SIZE;
+#endif //AML_UBOOT_SINFO_OFFSET
+
 #endif
 	//boot_id = 1;
 	if(boot_id>1)
