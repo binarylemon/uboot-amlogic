@@ -146,7 +146,7 @@
  * of each power domain when in SPL stage of uboot.
  */
 #define CONFIG_POWER_SPL                            // init power for all domians, must have
-#define CONFIG_VCCK_VOLTAGE             1050        // CPU core voltage when boot, must have
+#define CONFIG_VCCK_VOLTAGE             1100        // CPU core voltage when boot, must have
 #define CONFIG_VDDAO_VOLTAGE            1150        // VDDAO voltage when boot, must have
 #define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
 
