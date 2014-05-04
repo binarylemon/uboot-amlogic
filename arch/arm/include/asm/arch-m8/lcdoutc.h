@@ -255,11 +255,11 @@ typedef enum
 } Lcd_Type_t;
 
 static const char* lcd_type_table[]={
-	"MIPI",	
+	"MIPI",
 	"LVDS",
 	"eDP",
 	"TTL",
-	"miniLVDS",
+	//"miniLVDS",
 	"invalid",
 };
 
@@ -268,7 +268,7 @@ static const char* lcd_type_table_match[]={
 	"lvds",
 	"edp",
 	"ttl",
-	"minilvds",
+	//"minilvds",
 	"invalid",
 };
 
@@ -378,6 +378,14 @@ typedef struct {
     u16 GammaTableB[256];
 } Lcd_Effect_t;
 
+//mipi dsi config
+#define DSI_INIT_ON_MAX              100
+#define DSI_INIT_OFF_MAX             30
+
+#define BIT_OPERATION_MODE_INIT      0
+#define BIT_OPERATION_MODE_DISP      4
+#define BIT_TRANS_CTRL_CLK           0
+#define BIT_TRANS_CTRL_SWITCH        4 //[5:4]
 typedef struct DSI_Config_s{
     unsigned char lane_num;
     unsigned int bit_rate_max;
@@ -396,22 +404,14 @@ typedef struct DSI_Config_s{
     unsigned int venc_data_width;
     unsigned int dpi_data_format;
     unsigned int venc_fmt;
-    unsigned char operation_mode;  //mipi-dsi operation mode: video, command
-    unsigned char transfer_ctrl;  //LP mode auto stop clk lane
+    unsigned int operation_mode;  //mipi-dsi operation mode: video, command. [4]display , [0]init
+    unsigned int transfer_ctrl;  //[0]LP mode auto stop clk lane, [5:4]phy switch between LP and HS
     unsigned char video_mode_type;  //burst, non-burst(sync pulse, sync event)
 
-    unsigned char init_on_flag;
-    unsigned char init_off_flag;
-    unsigned int sleep_out_delay;
-    unsigned int display_on_delay;
+    unsigned char *dsi_init_on;
+    unsigned char *dsi_init_off;
+    unsigned char lcd_extern_init;
 }DSI_Config_t;
-
-typedef struct {
-	unsigned lvds_vswing;
-	unsigned lvds_repack_user;
-	unsigned lvds_repack;
-	unsigned pn_swap;
-} LVDS_Config_t;
 
 typedef struct {
 	unsigned char link_user;
@@ -422,6 +422,13 @@ typedef struct {
 	unsigned char preemphasis;
 	unsigned int bit_rate;
 } EDP_Config_t;
+
+typedef struct {
+	unsigned lvds_vswing;
+	unsigned lvds_repack_user;
+	unsigned lvds_repack;
+	unsigned pn_swap;
+} LVDS_Config_t;
 
 typedef struct {
 	unsigned char rb_swap;

@@ -64,9 +64,9 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 #define VALID_HVSYNC		1	/** 0=disable signal, 1=enable signal */
 #define VALID_DE			1	/** 0=disable signal, 1=enable signal */
 
-#define H_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define H_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define H_OFFSET			0	/** horizontal display offset */
-#define V_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define V_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define V_OFFSET			0	/** vertical display offset */
 
 #define DITHER_USER			0		/** 0=auto setting, 1=user define */
@@ -110,17 +110,18 @@ static unsigned short gamma_table[256] = {
 
 //**** lcd interface control configs ***//
 static DSI_Config_t lcd_mipi_config = {
-    .lane_num = 4,
-    .bit_rate_min = 500,
-    .bit_rate_max = 600,
-    .factor_numerator = 0,
-
-    .operation_mode = 1,
-    .transfer_ctrl = 0,
-    .sleep_out_delay = 100,
-    .display_on_delay = 100,
-    .init_on_flag = 0,
-    .init_off_flag = 0,
+#ifdef LCD_MIPI_DSI_CONFIG
+    .lane_num = LANE_NUM,
+    .bit_rate_min = LANE_BIT_RATE_MIN,
+    .bit_rate_max = LANE_BIT_RATE_MAX,
+    .factor_numerator   = 0,
+    .factor_denominator = 10,
+    .operation_mode = ((MIPI_MODE_INIT << BIT_OPERATION_MODE_INIT) | (MIPI_MODE_DISP << BIT_OPERATION_MODE_DISP)),
+    .transfer_ctrl  = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH)),
+    .dsi_init_on  = &mipi_init_on_table[0],
+    .dsi_init_off = &mipi_init_off_table[0],
+    .lcd_extern_init = LCD_EXTERN_INIT,
+#endif
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -133,7 +134,7 @@ static LVDS_Config_t lcd_lvds_config = {
 static EDP_Config_t lcd_edp_config = {
 	.link_user = 1,		/** 0=auto setting, 1=user define link config */
 	.link_rate = 1,		/** 0=1.62G, 1=2.7G, only valid when link_user=1 */
-	.lane_count = 4,	/** 1,2,4, only valid when edp_user=1 */
+	.lane_count = 4,	/** 1,2,4, only valid when link_user=1 */
 	.link_adaptive = 0,	/** 0=fixed user defined vswing, 1=auto setting vswing by training */
 	.vswing = 0,		/** support level 0,1,2,3, user defined vswing, only valid when adaptive=0 */
 	.preemphasis = 0,	/** fixed vaule */
@@ -150,10 +151,10 @@ static TTL_Config_t lcd_ttl_config = {
 // lcd power control 
 //*********************************************//
 //**** power contrl support define ***//
-//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL
+//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL, LCD_POWER_TYPE_INITIAL
 //cpu_gpio: gpio name such as GPIODV_29...
 //pmu_gpio: LCD_POWER_PMU_GPIO0, LCD_POWER_PMU_GPIO1, LCD_POWER_PMU_GPIO2, LCD_POWER_PMU_GPIO3, LCD_POWER_PMU_GPIO4
-//value: LCD_POWER_GPIO_OUTPUT_LOW, LCD_POWER_GPIO_OUTPUT_HIGH, LCD_POWER_GPIO_INPUT
+//value: 0=LCD_POWER_GPIO_OUTPUT_LOW, 1=LCD_POWER_GPIO_OUTPUT_HIGH, 2=LCD_POWER_GPIO_INPUT
 //delay: unit in ms
 
 //**** spcial control only for uboot ***//
@@ -165,25 +166,25 @@ static Lcd_Power_Config_t lcd_power_on_config[] = {
 	{//step 1
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 20,
 	},
 	{//step 2
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 14,
 	},
 	{//step 3
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 5,
 	},
 	{//step 4
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.value = 1,
 		.delay = 70,
 	},
 	{//step 5
@@ -204,19 +205,19 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 	{//step 3
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 0,
 	},
 	{//step 2
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.value = 1,
 		.delay = 100,
 	},
 	{//step 4 
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
-		.value = LCD_POWER_GPIO_INPUT,
+		.value = 2,
 		.delay = 100,
 	},
 };
@@ -288,6 +289,7 @@ Lcd_Config_t lcd_config_dft = {
 		.rgb_base_addr = RGB_BASE,
 		.rgb_coeff_addr = RGB_COEFF,
 		.dith_user = DITHER_USER,
+		.dith_cntl_addr = DITHER_CTRL,
 		.vadj_brightness = VADJ_BRIGHTNESS,
 		.vadj_contrast = VADJ_CONTRAST,
 		.vadj_saturation = VADJ_SATURATION,

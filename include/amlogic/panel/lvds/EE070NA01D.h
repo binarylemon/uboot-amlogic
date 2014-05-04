@@ -1,5 +1,6 @@
 #ifndef PANEL_TYPICAL_TIMING_H
 #define PANEL_TYPICAL_TIMING_H
+#include <asm/arch/lcdoutc.h>
 
 //*****************************************
 // Define LCD Typical Timing Parameters

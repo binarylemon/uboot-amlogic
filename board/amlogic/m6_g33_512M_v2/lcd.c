@@ -64,9 +64,9 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{1, 0x10000000}};
 #define VALID_HVSYNC		1	/** 0=disable signal, 1=enable signal */
 #define VALID_DE			1	/** 0=disable signal, 1=enable signal */
 
-#define H_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define H_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define H_OFFSET			0	/** horizontal display offset */
-#define V_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define V_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define V_OFFSET			0	/** vertical display offset */
 
 #define DITHER_USER			0		/** 0=auto setting, 1=user define */
@@ -127,10 +127,10 @@ static TTL_Config_t lcd_ttl_config = {
 // lcd power control 
 //*********************************************//
 //**** power contrl support define ***//
-//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL
+//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL, LCD_POWER_TYPE_INITIAL
 //cpu_gpio: gpio name such as GPIODV_29...
 //pmu_gpio: LCD_POWER_PMU_GPIO0, LCD_POWER_PMU_GPIO1, LCD_POWER_PMU_GPIO2, LCD_POWER_PMU_GPIO3, LCD_POWER_PMU_GPIO4
-//value: LCD_POWER_GPIO_OUTPUT_LOW, LCD_POWER_GPIO_OUTPUT_HIGH, LCD_POWER_GPIO_INPUT
+//value: 0=LCD_POWER_GPIO_OUTPUT_LOW, 1=LCD_POWER_GPIO_OUTPUT_HIGH, 2=LCD_POWER_GPIO_INPUT
 //delay: unit in ms
 
 //**** spcial control only for uboot ***//
@@ -142,25 +142,25 @@ static Lcd_Power_Config_t lcd_power_on_config[] = {
 	{//step 1
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIOD_8, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 0,
 	},
 	{//step 2
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIOA_27, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 10,
 	},
 	{//step 3
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIOD_8, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.value = 1,
 		.delay = 20,
 	},
 	{//step 4
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO3, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 20,
 	},
 	{//step 5
@@ -181,19 +181,19 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 	{//step 2
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO3, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.value = 1,
 		.delay = 30,
 	},
 	{//step 3
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIOD_8, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 0,
 	},
 	{//step 4
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIOA_27, 
-		.value = LCD_POWER_GPIO_INPUT,
+		.value = 2,
 		.delay = 100,
 	},
 };
@@ -255,8 +255,8 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST <<0),
-    .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
+		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST << 0),
+		.pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 	},
@@ -265,6 +265,7 @@ Lcd_Config_t lcd_config_dft = {
 		.rgb_base_addr = RGB_BASE,
 		.rgb_coeff_addr = RGB_COEFF,
 		.dith_user = DITHER_USER,
+		.dith_cntl_addr = DITHER_CTRL,
 		.vadj_brightness = VADJ_BRIGHTNESS,
 		.vadj_contrast = VADJ_CONTRAST,
 		.vadj_saturation = VADJ_SATURATION,

@@ -53,7 +53,7 @@
 
 #define PANEL_NAME		"panel"
 #define DRV_TYPE		"c8"
-#define DRIVER_DATE		"20140415"
+#define DRIVER_DATE		"20140429"
 
 #define VPP_OUT_SATURATE            (1 << 0)
 
@@ -108,10 +108,9 @@ static DSI_Config_t lcd_mipi_config = {
     .bit_rate_min = 0,
     .bit_rate_max = 0,
     .transfer_ctrl = 0,
-    .init_on_flag = 0,
-    .init_off_flag = 0,
-    .sleep_out_delay = 10,
-    .display_on_delay = 10,
+    .dsi_init_on = NULL,
+    .dsi_init_off = NULL,
+    .lcd_extern_init = 0,
 };
 
 static EDP_Config_t lcd_edp_config = {
@@ -735,6 +734,7 @@ static unsigned get_lcd_backlight_level(void)
     return bl_level;
 }
 
+static void set_control_mipi(Lcd_Config_t *pConf);
 static int set_control_edp(Lcd_Config_t *pConf);
 static int lcd_power_ctrl_video(Bool_t status) //for special interface
 {
@@ -742,28 +742,24 @@ static int lcd_power_ctrl_video(Bool_t status) //for special interface
 
     if (status) {
         switch(pDev->pConf->lcd_basic.lcd_type) {
-#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
             case LCD_DIGITAL_MIPI:
-                mipi_dsi_link_on(pDev->pConf);
+                set_control_mipi(pDev->pConf);
                 break;
             case LCD_DIGITAL_EDP:
                 ret = set_control_edp(pDev->pConf);
                 break;
-#endif
             default:
                 break;
         }
     }
     else {
         switch(pDev->pConf->lcd_basic.lcd_type) {
-#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
             case LCD_DIGITAL_MIPI:
                 mipi_dsi_link_off(pDev->pConf);  //link off command
                 break;
             case LCD_DIGITAL_EDP:
                 ret = dplpm_link_off();  //link off command
                 break;
-#endif
             default:
                 break;
         }
@@ -2277,7 +2273,6 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 static void lcd_control_config_pre(Lcd_Config_t *pConf) //before generate_clk_parameter
 {
     unsigned vclk_sel, ss_level;
-    unsigned int bit_rate;
 
     vclk_sel = 1;
     ss_level = (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf;
@@ -2285,16 +2280,7 @@ static void lcd_control_config_pre(Lcd_Config_t *pConf) //before generate_clk_pa
     switch (pConf->lcd_basic.lcd_type) {
         case LCD_DIGITAL_MIPI:
             ss_level = ((ss_level > 0) ? 1 : 0);
-            if (pConf->lcd_control.mipi_config->bit_rate_max == 0) {
-                bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 3 * 8) / pConf->lcd_control.mipi_config->lane_num;
-                pConf->lcd_control.mipi_config->bit_rate_min = bit_rate;
-                pConf->lcd_control.mipi_config->bit_rate_max = bit_rate + (pConf->lcd_timing.lcd_clk / 1000) + 10000;
-                printf("mipi dsi bit_rate min=%dMHz, max=%dMHz\n", (pConf->lcd_control.mipi_config->bit_rate_min / 1000), (pConf->lcd_control.mipi_config->bit_rate_max / 1000));
-            }
-            if (pConf->lcd_control.mipi_config->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
-                pConf->lcd_control.mipi_config->bit_rate_max = MIPI_PHY_MAX_CLK_IN;
-                printf("mipi dsi bit_rate_max is out of support, adjust to %dMHz\n", (MIPI_PHY_MAX_CLK_IN / 1000));
-            }
+            set_mipi_dsi_control_config(pConf);
             break;
         case LCD_DIGITAL_EDP:
             ss_level = ((ss_level > 0) ? 1 : 0);
@@ -2322,39 +2308,14 @@ static void lcd_control_config_pre(Lcd_Config_t *pConf) //before generate_clk_pa
     pConf->lcd_timing.clk_ctrl |= ((vclk_sel << CLK_CTRL_VCLK_SEL) | (ss_level << CLK_CTRL_SS));
 }
 
-static void lcd_control_config_post(Lcd_Config_t *pConf) //before generate_clk_parameter
+static void lcd_control_config_post(Lcd_Config_t *pConf) //after generate_clk_parameter
 {
-    unsigned pre_div, post_div, xd;
-    unsigned pclk, lanebyteclk;
-
     switch (pConf->lcd_basic.lcd_type) {
-#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
         case LCD_DIGITAL_MIPI:
-            post_div = 1;//(((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_POST) & 0x7) + 1;
-            pre_div = ((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_PRE) & 0x7;
-            pre_div = div_pre_table[pre_div];
-            xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
-
-            pclk = pConf->lcd_timing.lcd_clk;
-            pConf->lcd_control.mipi_config->bit_rate = pclk * pre_div * post_div * xd;
-
-            if (pConf->lcd_control.mipi_config->factor_numerator == 0) {
-                pclk = pConf->lcd_timing.lcd_clk;
-                lanebyteclk = pConf->lcd_control.mipi_config->bit_rate / 8;
-                DBG_PRINT("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
-                        (pConf->lcd_control.mipi_config->bit_rate / 1000000), ((pConf->lcd_control.mipi_config->bit_rate / 1000) % 1000), (lanebyteclk / 1000000), ((lanebyteclk / 1000) % 1000));
-
-                pConf->lcd_control.mipi_config->factor_denominator = lanebyteclk/1000;
-                pConf->lcd_control.mipi_config->factor_numerator = pclk/1000;
-                //cfg->factor_denominator = 10;
-            }
-            DBG_PRINT("d=%d, n=%d, factor=%d.%02d\n", pConf->lcd_control.mipi_config->factor_denominator, pConf->lcd_control.mipi_config->factor_numerator, 
-                    (pConf->lcd_control.mipi_config->factor_denominator/pConf->lcd_control.mipi_config->factor_numerator), 
-                    ((pConf->lcd_control.mipi_config->factor_denominator % pConf->lcd_control.mipi_config->factor_numerator) * 100 / pConf->lcd_control.mipi_config->factor_numerator));
+            set_mipi_dsi_control_config_post(pConf);
             break;
         case LCD_DIGITAL_EDP:
             break;
-#endif
         default:
             break;
     }
@@ -2405,11 +2366,95 @@ static void lcd_config_init(Lcd_Config_t *pConf)
 	}
 }
 
-static void print_lcd_clock(void)
+static void print_lcd_info(Lcd_Config_t *pConf)
 {
-	DBG_PRINT("vid2 pll clk = %d\n", clk_util_clk_msr(62));
-	DBG_PRINT("lvds fifo clk = %d\n", clk_util_clk_msr(24));
-	DBG_PRINT("cts encl clk = %d\n", clk_util_clk_msr(9));
+#ifdef LCD_DEBUG_INFO
+    unsigned lcd_clk;
+    int h_adj, v_adj;
+
+    lcd_clk = (pConf->lcd_timing.lcd_clk / 1000);
+    h_adj = ((pConf->lcd_timing.h_offset >> 31) & 1);
+    v_adj = ((pConf->lcd_timing.v_offset >> 31) & 1);
+
+    printf("\nLCD mode: %s %ubit, %ux%u@%u.%uHz\n"
+           "lcd_clk           %u.%03uMHz\n"
+           "ss_level          %d\n"
+           "clk_pol           %d\n\n",
+           lcd_type_table[pConf->lcd_basic.lcd_type], pConf->lcd_basic.lcd_bits, pConf->lcd_basic.h_active, pConf->lcd_basic.v_active, (pConf->lcd_timing.sync_duration_num / 10), (pConf->lcd_timing.sync_duration_num % 10),
+           (lcd_clk / 1000), (lcd_clk % 1000), ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf), ((pConf->lcd_timing.pol_cntl_addr >> LCD_CPH1_POL) & 1));
+
+    printf("h_period          %d\n"
+           "v_period          %d\n"
+           "hs_width          %d\n"
+           "hs_backporch      %d\n"
+           "hs_pol            %d\n"
+           "vs_width          %d\n"
+           "vs_backporch      %d\n"
+           "vs_pol            %d\n"
+           "vs_h_phase        %s%d\n"
+           "hvsync_valid      %d\n"
+           "de_valid          %d\n"
+           "h_offset          %s%d\n"
+           "v_offset          %s%d\n\n",
+           pConf->lcd_basic.h_period, pConf->lcd_basic.v_period,
+           pConf->lcd_timing.hsync_width, pConf->lcd_timing.hsync_bp, ((pConf->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1),
+           pConf->lcd_timing.vsync_width, pConf->lcd_timing.vsync_bp, ((pConf->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1),
+           (((pConf->lcd_timing.vsync_h_phase >> 31) & 1) ? "-":""), (pConf->lcd_timing.vsync_h_phase & 0xffff), pConf->lcd_timing.hvsync_valid, pConf->lcd_timing.de_valid,
+           (h_adj ? "-" : ""), (pConf->lcd_timing.h_offset & 0xffff), (v_adj ? "-" : ""), (pConf->lcd_timing.v_offset & 0xffff));
+
+    switch (pConf->lcd_basic.lcd_type) {
+        case LCD_DIGITAL_TTL:
+            printf("rb_swap           %u\n"
+                   "bit_swap          %u\n\n",
+                   pConf->lcd_control.ttl_config->rb_swap, pConf->lcd_control.ttl_config->bit_swap);
+            break;
+        case LCD_DIGITAL_LVDS:
+            printf("vswing_level      %u\n"
+                   "lvds_repack       %u\n"
+                   "pn_swap           %u\n\n",
+                   pConf->lcd_control.lvds_config->lvds_vswing, pConf->lcd_control.lvds_config->lvds_repack, pConf->lcd_control.lvds_config->pn_swap);
+            break;
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8)
+        case LCD_DIGITAL_MIPI:
+            printf("dsi_lane_num      %u\n"
+                   "dsi_bit_rate      %u.%03uMHz\n"
+                   "operation_mode    %u(%s), %u(%s)\n"
+                   "transfer_ctrl     %u, %u\n\n",
+                   pDev->pConf->lcd_control.mipi_config->lane_num,
+                   (pDev->pConf->lcd_control.mipi_config->bit_rate / 1000000), ((pDev->pConf->lcd_control.mipi_config->bit_rate % 1000000) / 1000),
+                   ((pDev->pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_INIT) &1), (((pDev->pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_INIT) & 1) ? "COMMAND" : "VIDEO"),
+                   ((pDev->pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_DISP) & 1), (((pDev->pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_DISP) & 1) ? "COMMAND" : "VIDEO"),
+                   ((pDev->pConf->lcd_control.mipi_config->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1), ((pDev->pConf->lcd_control.mipi_config->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 3));
+            break;
+        case LCD_DIGITAL_EDP:
+            printf("link_rate         %s\n"
+                   "lane_count        %u\n"
+                   "link_adaptive     %u\n"
+                   "vswing            %u\n\n",
+                   ((pConf->lcd_control.edp_config->link_rate == 0) ? "1.62G" : "2.7G"), pConf->lcd_control.edp_config->lane_count,
+                   pConf->lcd_control.edp_config->link_adaptive, pConf->lcd_control.edp_config->vswing);
+            break;
+#endif
+        default:
+            break;
+    }
+
+    if (pConf->lcd_effect.dith_user)
+        printf("dither_ctrl       0x%x\n", pConf->lcd_effect.dith_cntl_addr);
+
+    printf("pll_ctrl          0x%08x\n"
+           "div_ctrl          0x%08x\n"
+           "clk_ctrl          0x%08x\n"
+           "video_on_pixel    %d\n"
+           "video_on_line     %d\n\n",
+           pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl,
+           pConf->lcd_timing.video_on_pixel, pConf->lcd_timing.video_on_line);
+
+    printf("vid2 pll clk      %dMHz\n"
+           "lvds fifo clk     %dMHz\n"
+           "cts encl clk      %dMHz\n\n",
+           clk_util_clk_msr(62), clk_util_clk_msr(24), clk_util_clk_msr(9));
+#endif
 }
 
 static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
@@ -2424,7 +2469,6 @@ static void _init_lcd_driver(Lcd_Config_t *pConf)	//before power on lcd
 			set_pll_lcd(pConf);
 			set_venc_lcd(pConf);
 			set_tcon_lcd(pConf);
-			set_control_mipi(pConf);
 			init_dphy(pConf);
 			break;
 		case LCD_DIGITAL_EDP:
@@ -2576,7 +2620,7 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 	char* lcd_model;
 	char* propdata;
 	char propname[30];
-	int i;
+	int i, j;
 	
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
 	if(nodeoffset < 0) {
@@ -2715,10 +2759,10 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 			cfg->bit_rate_max = 0;
 		} 
 		else {
-			cfg->bit_rate_min = (be32_to_cpup((u32*)propdata))*1000;
-			cfg->bit_rate_max = (be32_to_cpup((((u32*)propdata)+1)))*1000;
+			cfg->bit_rate_min = be32_to_cpup((u32*)propdata);
+			cfg->bit_rate_max = be32_to_cpup((((u32*)propdata)+1));
 		}
-		DBG_PRINT("dsi bit_rate min = %dMHz, max = %dMHz\n", (cfg->bit_rate_min/1000), (cfg->bit_rate_max/1000));
+		DBG_PRINT("dsi bit_rate min = %dMHz, max = %dMHz\n", cfg->bit_rate_min, cfg->bit_rate_max);
 		propdata = fdt_getprop(dt_addr, nodeoffset, "pclk_lanebyteclk_factor", NULL);
 		if(propdata == NULL){
 			printf("faild to get pclk_lanebyteclk_factor\n");
@@ -2732,43 +2776,84 @@ static inline int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_operation_mode", NULL);
 		if(propdata == NULL){
 			printf("faild to get dsi_operation_mode\n");
-			 cfg->operation_mode = OPERATION_COMMAND_MODE;
+			 cfg->operation_mode = ((OPERATION_COMMAND_MODE << BIT_OPERATION_MODE_INIT) | (OPERATION_VIDEO_MODE << BIT_OPERATION_MODE_DISP));
 		} 
 		else {
-			cfg->operation_mode= (unsigned char)(be32_to_cpup((u32*)propdata));
+			cfg->operation_mode= (((be32_to_cpup((u32*)propdata)) << BIT_OPERATION_MODE_INIT) | ((be32_to_cpup((((u32*)propdata)+1))) << BIT_OPERATION_MODE_DISP));
 		}
-		DBG_PRINT("dsi_operation_mode = %s(%d)\n", (cfg->operation_mode ? "command":"video"), cfg->operation_mode);
+		DBG_PRINT("dsi_operation_mode init=%d, display=%d\n", ((cfg->operation_mode>>BIT_OPERATION_MODE_INIT) & 1), ((cfg->operation_mode>>BIT_OPERATION_MODE_DISP) & 1));
 		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_transfer_ctrl", NULL);
 		if(propdata == NULL){
 			printf("faild to get dsi_transfer_ctrl\n");
-			 cfg->transfer_ctrl = 0;
+			 cfg->transfer_ctrl = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH));
 		} 
 		else {
-			cfg->transfer_ctrl= (unsigned char)(be32_to_cpup((u32*)propdata));
+			cfg->transfer_ctrl= (((be32_to_cpup((u32*)propdata)) << BIT_TRANS_CTRL_CLK) | ((be32_to_cpup((((u32*)propdata)+1))) << BIT_TRANS_CTRL_SWITCH));
 		}
-		DBG_PRINT("dsi_transfer_ctrl = %d\n", cfg->transfer_ctrl);
-
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_on_off_init", NULL);
+		DBG_PRINT("dsi_transfer_ctrl clk=%d, switch=%d\n", ((cfg->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1), ((cfg->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 1));
+		//detect dsi init on table
+		cfg->dsi_init_on = get_dsi_init_table(1);//dsi_init_on
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_init_on", NULL);
 		if(propdata == NULL){
-			printf("faild to get dsi_on_off_init\n");
-			cfg->init_on_flag = 0;
-			cfg->init_off_flag = 0;
+			printf("faild to get dsi_init_on\n");
 		}
 		else {
-			cfg->init_on_flag = (unsigned char)(be32_to_cpup((u32*)propdata));
-			cfg->init_off_flag = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
+			i = 0;
+			while(i < DSI_INIT_ON_MAX) {
+				if ((be32_to_cpup((((u32*)propdata)+i))) == 0xff) {
+					if ((be32_to_cpup((((u32*)propdata)+i+1))) == 0xff) {
+						i += 2;
+						break;
+					}
+					i += 2;
+				}
+				else {
+					i = i + 3 + (be32_to_cpup((((u32*)propdata)+i+2)));
+				}
+			}
+			DBG_PRINT("dsi_init_on: ");
+			for (j=0; j<i; j++) {
+				cfg->dsi_init_on[j] = (be32_to_cpup((((u32*)propdata)+j)));
+				DBG_PRINT("0x%02x ", cfg->dsi_init_on[j]);
+			}
+			DBG_PRINT("\n");
 		}
-		DBG_PRINT("dsi_on_init = %d, dsi_on_init = %d\n", cfg->init_on_flag, cfg->init_off_flag);
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_sleep_out_display_on_delay", NULL);
+		//detect dsi init off table
+		cfg->dsi_init_off = get_dsi_init_table(0);//dsi_init_off
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_init_off", NULL);
 		if(propdata == NULL){
-			printf("faild to get dsi_sleep_out_display_on_delay\n");
-			cfg->sleep_out_delay  =10; 
-			cfg->display_on_delay  =10;
-		} 
-		else {
-			cfg->sleep_out_delay =(be32_to_cpup((u32*)propdata));
-			cfg->display_on_delay =(be32_to_cpup((((u32*)propdata)+1)));
+			printf("faild to get dsi_init_off\n");
 		}
+		else {
+			i = 0;
+			while(i < DSI_INIT_OFF_MAX) {
+				if ((be32_to_cpup((((u32*)propdata)+i))) == 0xff) {
+					if ((be32_to_cpup((((u32*)propdata)+i+1))) == 0xff) {
+						i += 2;
+						break;
+					}
+					i += 2;
+				}
+				else {
+					i = i + 3 + (be32_to_cpup((((u32*)propdata)+i+2)));
+				}
+			}
+			DBG_PRINT("dsi_init_off: ");
+			for (j=0; j<i; j++) {
+				cfg->dsi_init_off[j] = (be32_to_cpup((((u32*)propdata)+j)));
+				DBG_PRINT("0x%02x ", cfg->dsi_init_off[j]);
+			}
+			DBG_PRINT("\n");
+		}
+		propdata = fdt_getprop(dt_addr, nodeoffset, "lcd_extern_init", NULL);
+		if(propdata == NULL){
+			printf("faild to get lcd_extern_init\n");
+			cfg->lcd_extern_init = 0;
+		}
+		else {
+			cfg->lcd_extern_init = (unsigned char)(be32_to_cpup((u32*)propdata));
+		}
+		DBG_PRINT("lcd_extern_init = %d\n", cfg->lcd_extern_init);
 	}
 
 	return ret;
@@ -3734,7 +3819,7 @@ int lcd_probe(void)
 
 	_set_panel_info();
 	_lcd_init(pDev->pConf);
-	print_lcd_clock();
+	print_lcd_info(pDev->pConf);
 	return 0;
 }
 

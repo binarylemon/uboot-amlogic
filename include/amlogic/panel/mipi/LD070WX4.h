@@ -1,5 +1,6 @@
 #ifndef PANEL_TYPICAL_TIMING_H
 #define PANEL_TYPICAL_TIMING_H
+#include <asm/arch/lcdoutc.h>
 
 //*****************************************
 // Define LCD Typical Timing Parameters
@@ -26,7 +27,39 @@
 #define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
 #define VSYNC_H_ADJUST_SIGN 1  /** 0=positive,1=negative */
 #define VSYNC_H_ADJUST      4  /** adj_sign(0=positive, 1=negative), adj_value. default is 0 */
-
 //************************************************
+// MIPI DSI config
+//************************************************
+#define LCD_MIPI_DSI_CONFIG
+#define LANE_NUM            4
+#define LANE_BIT_RATE_MIN   400  /** bit rate min(unit in MHz) */
+#define LANE_BIT_RATE_MAX   500  /** bit rate max(unit in MHz) */
+#define MIPI_MODE_INIT      0    /** operation mode when init(0=video, 1=command) */
+#define MIPI_MODE_DISP      0    /** operation mode when display(0=video, 1=command) */
+#define LCD_EXTERN_INIT     0    /** if the init command size is large, should use lcd_extern init */
+//data_type,command,para_num,parameters...
+static unsigned char mipi_init_on_table[] = {//table size < 100
+    0x15,0x01,1,0x00, //sleep out
+    0xff,20,     //delay 20ms
+    0x15,0xAE,1,0x0B, 
+    0x15,0xEE,1,0xEA, 
+    0x15,0xEF,1,0x5F, 
+    0x15,0xF2,1,0x68, 
+    0x15,0xEE,1,0x0, 
+    0x15,0xEF,1,0x0, 
+
+    0x05,0x11,0,  //sleep out
+    0xff,200,     //delay 200ms
+    0x05,0x29,0,  //display on
+    0xff,100,     //delay 100ms
+    0xff,0xff,   //ending flag
+};
+static unsigned char mipi_init_off_table[] = {//table size < 50
+    0x05,0x28,0, //display off
+    0xff,10,     //delay 10ms
+    0x05,0x10,0, //sleep in
+    0xff,10,     //delay 10ms
+    0xff,0xff,   //ending flag
+};
 
 #endif

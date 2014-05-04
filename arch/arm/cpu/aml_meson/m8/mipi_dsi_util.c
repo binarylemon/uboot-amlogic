@@ -1,8 +1,10 @@
 #include <asm/arch/mipi_dsi_reg.h>
 #include <asm/arch/io.h>
 #include <asm/arch/lcd_reg.h>
-#include <amlogic/aml_lcd_extern.h>
 #include "mipi_dsi_util.h"
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/aml_lcd_extern.h>
+#endif
 
 //#define PRINT_DEBUG_INFO
 #ifdef PRINT_DEBUG_INFO
@@ -19,93 +21,147 @@
 #define MIPI_DSI_DCS_ACK_TYPE           MIPI_DSI_DCS_NO_ACK     // Define if DSI command need ack: req_ack or no_ack
 #define MIPI_DSI_VIDEO_MODE_TYPE        BURST_MODE              // Applicable only to video mode. Define picture data transfer method: non-burst sync pulse; non-burst sync event; or burst.
 #define MIPI_DSI_TEAR_SWITCH            MIPI_DCS_DISABLE_TEAR
+#define CMD_TIMEOUT_CNT                 3000
 //===============================================================================
 
-#define RETRY_CNT       2000
-#define WARNNING_CNT    100
+static const char *video_mode_type_table[] = {
+    "COLOR_16BIT_CFG_1",
+    "COLOR_16BIT_CFG_2",
+    "COLOR_16BIT_CFG_3",
+    "COLOR_18BIT_CFG_1",
+    "COLOR_18BIT_CFG_2(loosely)",
+    "COLOR_24BIT",
+    "COLOR_20BIT_LOOSE",
+    "COLOR_24_BIT_YCBCR",
+    "COLOR_16BIT_YCBCR",
+    "COLOR_30BIT",
+    "COLOR_36BIT",
+    "COLOR_12BIT",
+    "COLOR_RGB_111",
+    "COLOR_RGB_332",
+    "COLOR_RGB_444",
+    "un-support type",
+};
 
-static inline void print_mipi_cmd_status(int cnt)
+static DSI_Config_t *dsi_config = NULL;
+static unsigned char dsi_init_on_table[DSI_INIT_ON_MAX]={0xff,0xff};
+static unsigned char dsi_init_off_table[DSI_INIT_OFF_MAX]={0xff,0xff};
+static unsigned char dsi_init_on_table_dft[] = {
+    0x05,0x11,0,
+    0xff,50,
+    0x05,0x29,0,
+    0xff,20,
+    0xff,0xff,
+};
+
+unsigned char *get_dsi_init_table(int flag)
 {
-    if (cnt <= WARNNING_CNT) {
-        printf("cmd error: status=0x%04x, int0=0x%06x, int1=0x%06x\n", READ_LCD_REG(MIPI_DSI_DWC_CMD_PKT_STATUS_OS), READ_LCD_REG(MIPI_DSI_DWC_INT_ST0_OS), READ_LCD_REG(MIPI_DSI_DWC_INT_ST1_OS));
+    if (flag > 0)
+        return &dsi_init_on_table[0];
+    else
+        return &dsi_init_off_table[0];
+}
+
+static inline void print_mipi_cmd_status(int cnt, unsigned status)
+{
+    if (cnt == 0) {
+        printf("cmd error: status=0x%04x, int0=0x%06x, int1=0x%06x\n", status, READ_LCD_REG(MIPI_DSI_DWC_INT_ST0_OS), READ_LCD_REG(MIPI_DSI_DWC_INT_ST1_OS));
     }
 }
 
-static void print_info(DSI_Config_t *cfg)
+static void print_info(void)
 {
+    int i, j, n;
+
+    if (dsi_config == NULL) {
+        printf("dsi config is NULL\n");
+        return;
+    }
     printf("================================================\n");
     printf("MIPI DSI Config\n");
-    printf(" Lane Num:              %d\n", cfg->lane_num);
-    printf(" Bit Rate min:          %dMHz\n", (cfg->bit_rate_min / 1000));
-    printf(" Bit Rate max:          %dMHz\n", (cfg->bit_rate_max / 1000));
-    printf(" Bit Rate:              %d.%03dMHz\n", (cfg->bit_rate / 1000000), (cfg->bit_rate % 1000000) / 1000);
-    printf(" Pclk lanebyte factor:  %d\n", ((cfg->factor_numerator * 100 / cfg->factor_denominator) + 5) / 10);
-    printf(" Operation mode:        %s\n", (cfg->operation_mode == OPERATION_COMMAND_MODE) ? "COMMAND":"VIDEO");
-    printf(" Transfer control:       %d\n", cfg->transfer_ctrl);
-    if(cfg->video_mode_type == NON_BURST_SYNC_PULSE) {
+    printf(" Lane Num:              %d\n", dsi_config->lane_num);
+    printf(" Bit Rate min:          %dMHz\n", (dsi_config->bit_rate_min / 1000));
+    printf(" Bit Rate max:          %dMHz\n", (dsi_config->bit_rate_max / 1000));
+    printf(" Bit Rate:              %d.%03dMHz\n", (dsi_config->bit_rate / 1000000), (dsi_config->bit_rate % 1000000) / 1000);
+    printf(" Pclk lanebyte factor:  %d\n", ((dsi_config->factor_numerator * 100 / dsi_config->factor_denominator) + 5) / 10);
+    printf(" Operation mode:\n");
+    printf("     init:              %s\n", ((dsi_config->operation_mode == OPERATION_COMMAND_MODE>>BIT_OPERATION_MODE_INIT) & 1) ? "COMMAND":"VIDEO");
+    printf("     display:           %s\n", ((dsi_config->operation_mode == OPERATION_COMMAND_MODE>>BIT_OPERATION_MODE_DISP) & 1) ? "COMMAND":"VIDEO");
+    printf(" Transfer control:\n");
+    printf("     clk auto stop:     %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1));
+    printf("     transfer switch:   %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 3));
+    if(dsi_config->video_mode_type == NON_BURST_SYNC_PULSE) {
         printf(" Video mode type:       NON_BURST_SYNC_PULSE\n");
     }
-    else if(cfg->video_mode_type == NON_BURST_SYNC_EVENT) {
+    else if(dsi_config->video_mode_type == NON_BURST_SYNC_EVENT) {
         printf(" Video mode type:       NON_BURST_SYNC_EVENT\n");
     }
-    else if(cfg->video_mode_type == BURST_MODE) {
+    else if(dsi_config->video_mode_type == BURST_MODE) {
         printf(" Video mode type:       BURST_MODE\n");
     }
 
-    printf(" Venc format:           %d\n", cfg->venc_fmt);
-
-    switch(cfg->dpi_data_format) {
-        case COLOR_16BIT_CFG_1  :
-            printf(" Data Format:           COLOR_16BIT_CFG_1\n");
-            break;
-        case COLOR_16BIT_CFG_2  :
-            printf(" Data Format:           COLOR_16BIT_CFG_2\n");
-            break;
-        case COLOR_16BIT_CFG_3  :
-            printf(" Data Format:           COLOR_16BIT_CFG_3\n");
-            break;
-        case COLOR_18BIT_CFG_1  :
-            printf(" Data Format:           COLOR_18BIT_CFG_1\n");
-            break;
-        case COLOR_18BIT_CFG_2  :
-            printf(" Data Format:           COLOR_18BIT_CFG_2\n");
-            break;
-        case COLOR_24BIT        :
-            printf(" Data Format:           COLOR_24BIT\n");
-            break;
-        case COLOR_20BIT_LOOSE  :
-            printf(" Data Format:           COLOR_20BIT_LOOSE\n");
-            break;
-        case COLOR_24_BIT_YCBCR :
-            printf(" Data Format:           COLOR_24BIT_YCBCR\n");
-            break;
-        case COLOR_16BIT_YCBCR  :
-            printf(" Data Format:           COLOR_16BIT_YCBCR\n");
-            break;
-        case COLOR_30BIT        :
-            printf(" Data Format:           COLOR_30BIT\n");
-            break;
-        case COLOR_36BIT        :
-            printf(" Data Format:           COLOR_36BIT\n");
-            break;
-        case COLOR_12BIT        :
-            printf(" Data Format:           COLOR_12BIT\n");
-            break;
-        case COLOR_RGB_111      :
-            printf(" Data Format:           COLOR_RGB_111\n");
-            break;
-        case COLOR_RGB_332      :
-            printf(" Data Format:           COLOR_RGB332\n");
-            break;
-        case COLOR_RGB_444      :
-            printf(" Data Format:           COLOR_RGB444\n");
-            break;
-        default            :
-            printf(" Error: un-support Data Format, Please Check\n");
-            break;
-    }
+    //printf(" Venc format:           %d\n", dsi_config->venc_fmt);
+    printf(" Data Format:           %s\n\n", video_mode_type_table[dsi_config->dpi_data_format]);
     //printf(" POLARITY:              HIGH ACTIVE\n");
-    printf(" Enable CRC/ECC/BTA\n");
+    //printf(" Enable CRC/ECC/BTA\n");
+
+    if (dsi_config->dsi_init_on) {
+        printf("DSI INIT ON:\n");
+        i = 0;
+        while (i < DSI_INIT_ON_MAX) {
+            if (dsi_config->dsi_init_on[i] == 0xff) {
+                n = 2;
+                if (dsi_config->dsi_init_on[i+1] == 0xff) {
+                    printf("    0x%02x,0x%02x\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
+                    break;
+                }
+                else {
+                    printf("    0x%02x,%d,\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
+                }
+            }
+            else {
+                n = 3 + dsi_config->dsi_init_on[i+2];
+                printf("    ");
+                for (j=0; j<n; j++) {
+                    if (j == 2)
+                        printf("%d,", dsi_config->dsi_init_on[i+j]);
+                    else
+                        printf("0x%02x,", dsi_config->dsi_init_on[i+j]);
+                }
+                printf("\n");
+            }
+            i += n;
+        }
+    }
+    if (dsi_config->dsi_init_off) {
+        printf("DSI INIT OFF:\n");
+        i = 0;
+        while (i < DSI_INIT_OFF_MAX) {
+            if (dsi_config->dsi_init_off[i] == 0xff) {
+                n = 2;
+                if (dsi_config->dsi_init_off[i+1] == 0xff) {
+                    printf("    0x%02x,0x%02x\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
+                    break;
+                }
+                else {
+                    printf("    0x%02x,%d,\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
+                }
+            }
+            else {
+                n = 3 + dsi_config->dsi_init_off[i+2];
+                printf("    ");
+                for (j=0; j<n; j++) {
+                    if (j == 2)
+                        printf("%d,", dsi_config->dsi_init_off[i+j]);
+                    else
+                        printf("0x%02x,", dsi_config->dsi_init_off[i+j]);
+                }
+                printf("\n");
+            }
+            i += n;
+        }
+    }
+    printf("DSI INIT EXTERN:        %d\n", dsi_config->lcd_extern_init);
     printf("================================================\n");
 }
 
@@ -183,13 +239,14 @@ static void wait_bta_ack(void)
 static void wait_cmd_fifo_empty(void)
 {
     unsigned int cmd_status;
-    int i= RETRY_CNT;
+    int i= CMD_TIMEOUT_CNT;
 
     do {
+        udelay(10);
         i--;
-        print_mipi_cmd_status(i);
         cmd_status = READ_LCD_REG(MIPI_DSI_DWC_CMD_PKT_STATUS_OS);
-    } while((((cmd_status >> BIT_GEN_CMD_EMPTY) & 0x1) != 0x1) && (i!=0));
+    } while((((cmd_status >> BIT_GEN_CMD_EMPTY) & 0x1) != 0x1) && (i>0));
+    print_mipi_cmd_status(i, cmd_status);
 }
 
 // ----------------------------------------------------------------------------
@@ -254,73 +311,21 @@ static unsigned int generic_if_rd(unsigned int address)
 }
 
 // ----------------------------------------------------------------------------
-// Function: DCS_write_short_packet_0_para
-// DCS Write Short Packet 0 Parameter with Generic Interface
-// Supported DCS Command: DCS_ENTER_SLEEP_MODE/DCS_EXIT_IDLE_MODE/DCS_EXIT_INVERT_MODE
-//                        DCS_EXIT_SLEEP_MODE/DCS_SET_DISPLAY_OFF/DCS_SET_DISPLAY_ON
-//                        DCS_SET_TEAR_OFF/DCS_SOFT_RESET/DCS_NOP
-// ----------------------------------------------------------------------------
-static void DCS_write_short_packet_0_para(unsigned int data_type,
-                                          unsigned int vc_id,
-                                          unsigned int dcs_command,
-                                          unsigned int req_ack)
-{
-    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((0x0 << BIT_GEN_WC_MSBYTE) |
-                            (dcs_command << BIT_GEN_WC_LSBYTE) |
-                            (vc_id << BIT_GEN_VC)              |
-                            (data_type << BIT_GEN_DT)));
-    if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
-        wait_bta_ack();
-    }
-    else if( req_ack == MIPI_DSI_DCS_NO_ACK ) {
-        wait_cmd_fifo_empty();
-    }
-}
-
-// ----------------------------------------------------------------------------
-// Function: DCS_write_short_packet_1_para
-// DCS Write Short Packet 1 Parameter with Generic Interface
+//                           Function: generic_read_packet_0_para
+// Generic Read Packet 0 Parameter with Generic Interface
 // Supported DCS Command: DCS_SET_ADDRESS_MODE/DCS_SET_GAMMA_CURVE/
 //                        DCS_SET_PIXEL_FORMAT/DCS_SET_TEAR_ON
 // ----------------------------------------------------------------------------
-static void DCS_write_short_packet_1_para(unsigned int data_type,
-                                          unsigned int vc_id,
-                                          unsigned int dcs_command,
-                                          unsigned int para,
-                                          unsigned int req_ack)
+static unsigned int generic_read_packet_0_para(unsigned char data_type, unsigned char vc_id, unsigned char dcs_command)
 {
-    // DPRINT(" para is %x, dcs_command is %x\n", para, dcs_command);
-    // DPRINT(" vc_id %x, data_type is %x\n", vc_id, data_type);
-    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((para << BIT_GEN_WC_MSBYTE)        |
-                            (dcs_command << BIT_GEN_WC_LSBYTE) |
-                            (vc_id << BIT_GEN_VC)              |
-                            (data_type << BIT_GEN_DT)));
-    if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
-        wait_bta_ack();
-    }
-    else if( req_ack == MIPI_DSI_DCS_NO_ACK ) {
-        wait_cmd_fifo_empty();
-    }
-}
-
-// ----------------------------------------------------------------------------
-//                           Function: DCS_read_packet_no_para
-// DCS Write Short Packet 1 Parameter with Generic Interface
-// Supported DCS Command: DCS_SET_ADDRESS_MODE/DCS_SET_GAMMA_CURVE/
-//                        DCS_SET_PIXEL_FORMAT/DCS_SET_TEAR_ON
-// ----------------------------------------------------------------------------
-static unsigned int DCS_read_packet_no_para(unsigned int data_type,
-                                            unsigned int vc_id,
-                                            unsigned int dcs_command)
-{
-    unsigned read_data;
+    unsigned int read_data;
 
     // DPRINT(" para is %x, dcs_command is %x\n", para, dcs_command);
     // DPRINT(" vc_id %x, data_type is %x\n", vc_id, data_type);
-    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((0x0 << BIT_GEN_WC_MSBYTE)         |
-                            (dcs_command << BIT_GEN_WC_LSBYTE) |
-                            (vc_id << BIT_GEN_VC)              |
-                            (data_type << BIT_GEN_DT)));
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((0 << BIT_GEN_WC_MSBYTE)                           |
+                                            (((unsigned int)dcs_command) << BIT_GEN_WC_LSBYTE) |
+                                            (((unsigned int)vc_id) << BIT_GEN_VC)              |
+                                            (((unsigned int)data_type) << BIT_GEN_DT)));
 
     read_data = wait_for_generic_read_response();
 
@@ -328,42 +333,70 @@ static unsigned int DCS_read_packet_no_para(unsigned int data_type,
 }
 
 // ----------------------------------------------------------------------------
-//                           Function: DCS_long_write_packet
-// DCS Long Write Packet
-// Supported DCS Command: DCS_SET_COLUMN_ADDRESS/DCS_SET_PAGE_ADDRESS
-//                        DCS_WRITE_MEMORY_START/DCS_WRITE_MEMORY_CONTINUE
+//                           Function: generic_write_short_packet
+// Generic Write Short Packet with Generic Interface
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
+//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
 // ----------------------------------------------------------------------------
-static void DCS_long_write_packet(unsigned int data_type,    // DSI data type, such as DCS Long Write Packet
-                                  unsigned int vc_id,        // Virtual Channel ID
-                                  unsigned int dcs_command,  // DCS Command, such as set_column_address/set_page_address
-                                  unsigned char* payload,    // Payload(including dcs_cmd+payload)
-                                  unsigned int pld_size,     // Payload size, from LSB to MSB, include dcs_cmd+payload
-                                  unsigned int req_ack)      // if need check ack for bta
+static void dsi_generic_write_short_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
 {
-    unsigned int payload_data=0, header_data;
+    unsigned int d_command, d_para;
+
+    vc_id &= 0x3;
+    data_type &= 0x3f;
+    d_command = ((unsigned int)payload[1]) & 0xff;
+    d_para = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para << BIT_GEN_WC_MSBYTE)       |
+                                            (d_command << BIT_GEN_WC_LSBYTE)     |
+                                            (((unsigned int)vc_id) << BIT_GEN_VC) |
+                                            (((unsigned int)data_type) << BIT_GEN_DT)));
+    if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
+        wait_bta_ack();
+    }
+    else if( req_ack == MIPI_DSI_DCS_NO_ACK ) {
+        wait_cmd_fifo_empty();
+    }
+}
+
+// ----------------------------------------------------------------------------
+//                           Function: generic_long_write_packet
+// Generic Long Write Packet with Generic Interface
+// Supported Data Type: DT_GEN_LONG_WR, DT_DCS_LONG_WR
+// ----------------------------------------------------------------------------
+static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
+{
+    unsigned int d_command, payload_data=0, header_data;
     unsigned int cmd_status;
-    unsigned int i;
+    unsigned int i, d_start_index;
     int j;
 
-    // Write Payload Register First
-    for(i=0; i<pld_size; i++) {
-        if(i%4 == 0)    { payload_data = 0; }
-        payload_data = payload_data | (payload[i] << 8*(i%4));
+    vc_id &= 0x3;
+    data_type &= 0x3f;
+    d_command = ((unsigned int)payload[1]) & 0xff;
+    pld_count = (pld_count + 1) & 0xffff;//include command
+    d_start_index = 3;//payload[3] start (payload[0]: data_type, payload[1]: command, payload[2]: para_num)
 
-        if(i%4 == 3 || i == pld_size-1) {                                      // when last byte
+    // Write Payload Register First
+    payload_data = d_command;
+    for(i=1; i<pld_count; i++) {
+        if(i%4 == 0)
+            payload_data = 0;
+        payload_data |= (((unsigned int)payload[i-1+d_start_index]) << 8*(i%4));
+
+        if((i%4 == 3) || (i == (pld_count-1))) {  // when last byte  //write max 4 byte payload data once
             // Check the pld fifo status before write to it, do not need check every word
-            if(i == pld_size/3 || i == pld_size/2) {
-                j = RETRY_CNT;
+            if((i == (pld_count/3)) || (i == (pld_count/2))) {
+                j = CMD_TIMEOUT_CNT;
                 do {
+                    udelay(10);
                     j--;
-                    print_mipi_cmd_status(j);
-                    cmd_status = READ_LCD_REG( MIPI_DSI_DWC_CMD_PKT_STATUS_OS);
+                    cmd_status = READ_LCD_REG(MIPI_DSI_DWC_CMD_PKT_STATUS_OS);
                 } while((((cmd_status >> BIT_GEN_PLD_W_FULL) & 0x1) == 0x1) && (j>0));
+                print_mipi_cmd_status(j, cmd_status);
             }
-            if(dcs_command == DCS_WRITE_MEMORY_CONTINUE) {
-                WRITE_LCD_REG( MIPI_DSI_DWC_GEN_PLD_DATA_OS, payload_data);               // Use direct memory write to save time when in WRITE_MEMORY_CONTINUE
-                // (*(MIPI_DSI_DWC_GEN_PLD_DATA_OS|0xc1100000)) = payload_data;
-                // *(volatile unsigned long *)((0xc1100000)|((MIPI_DSI_DWC_GEN_PLD_DATA_OS)<<2))=payload_data;
+            if(d_command == DCS_WRITE_MEMORY_CONTINUE) { // Use direct memory write to save time when in WRITE_MEMORY_CONTINUE
+                WRITE_LCD_REG(MIPI_DSI_DWC_GEN_PLD_DATA_OS, payload_data);
             }
             else {
                 generic_if_wr(MIPI_DSI_DWC_GEN_PLD_DATA_OS, payload_data);
@@ -372,25 +405,85 @@ static void DCS_long_write_packet(unsigned int data_type,    // DSI data type, s
     }
 
     // Check cmd fifo status before write to it
-    j = RETRY_CNT;
+    j = CMD_TIMEOUT_CNT;
     do {
+        udelay(10);
         j--;
-        print_mipi_cmd_status(j);
-        cmd_status = READ_LCD_REG( MIPI_DSI_DWC_CMD_PKT_STATUS_OS);
+        cmd_status = READ_LCD_REG(MIPI_DSI_DWC_CMD_PKT_STATUS_OS);
     } while((((cmd_status >> BIT_GEN_CMD_FULL) & 0x1) == 0x1) && (j>0));
+    print_mipi_cmd_status(j, cmd_status);
     // Write Header Register
-    header_data = (((((pld_size) & 0xff00) >> 8) << BIT_GEN_WC_MSBYTE) |
-                    (((pld_size) & 0x00ff) << BIT_GEN_WC_LSBYTE)        |
-                    (vc_id << BIT_GEN_VC)                               |
-                    (data_type << BIT_GEN_DT));
+    header_data = ( (((unsigned int)pld_count) << BIT_GEN_WC_LSBYTE) |//include command
+                    (((unsigned int)vc_id) << BIT_GEN_VC)                |
+                    (((unsigned int)data_type) << BIT_GEN_DT));
     generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, header_data);
-
-    // Check BTA ACK
     if (req_ack == MIPI_DSI_DCS_REQ_ACK) {
         wait_bta_ack();
     }
     else if (req_ack == MIPI_DSI_DCS_NO_ACK) {
         wait_cmd_fifo_empty();
+    }
+}
+
+// ----------------------------------------------------------------------------
+//                           Function: dsi_generic_write_cmd
+// Generic Write Command
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
+//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
+//                      DT_GEN_LONG_WR, DT_DCS_LONG_WR,
+//                      DT_SET_MAX_RPS
+// ----------------------------------------------------------------------------
+void dsi_generic_write_cmd(unsigned char* payload)
+{
+    int i=0, j=0;
+    unsigned char vc_id = MIPI_DSI_VIRTUAL_CHAN_ID;
+    unsigned int req_ack = MIPI_DSI_DCS_ACK_TYPE;
+
+    //payload struct:
+    //data_type, command, para_num, parameters...
+    //data_type=0xff, command=0xff, means ending flag
+    //data_type=0xff, command<0xff, means delay time(unit ms)
+    while(i < DSI_CMD_SIZE_MAX) {
+        if(payload[i]==0xff) {
+            j = 2;
+            if(payload[i+1]==0xff)
+                break;
+            else
+                mdelay(payload[i+1]);
+        }
+        else {
+            j = 3 + payload[i+2]; //payload[i+2] is parameter num
+            switch (payload[i]) {//analysis data_type
+                case DT_DCS_SHORT_WR_0:
+                case DT_GEN_SHORT_WR_0:
+                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 0, req_ack);
+                    break;
+                case DT_DCS_SHORT_WR_1:
+                case DT_GEN_SHORT_WR_1:
+                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 1, req_ack);
+                    break;
+                case DT_DCS_LONG_WR:
+                case DT_GEN_LONG_WR:
+                    dsi_generic_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
+                    break;
+                case DT_SET_MAX_RPS:
+                    printf("to do data_type: 0x%2x\n", payload[i]);
+                    break;
+                case DT_TURN_ON:
+                    WRITE_LCD_REG_BITS(MIPI_DSI_TOP_CNTL, 1, 2, 1);
+                    mdelay(20); //wait for vsync trigger
+                    WRITE_LCD_REG_BITS(MIPI_DSI_TOP_CNTL, 0, 2, 1);
+                    mdelay(20); //wait for vsync trigger
+                    break;
+                case DT_SHUT_DOWN:
+                    WRITE_LCD_REG_BITS(MIPI_DSI_TOP_CNTL, 1, 2, 1);
+                    mdelay(20); //wait for vsync trigger
+                    break;
+                default:
+                    printf("un-support data_type: 0x%02x\n", payload[i]);
+            }
+        }
+        i += j;
     }
 }
 
@@ -455,7 +548,7 @@ static void dsi_phy_init(unsigned char lane_num)
     }
 }
 
-static void dsi_phy_config(Lcd_Config_t *pConf)
+static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
 {
     DPRINT("%s\n", __func__);
     //Digital
@@ -524,10 +617,8 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
                               int operation_mode,                // video mode/command mode
                               tv_enc_lcd_type_t output_type,     // video type, such as 1080x720
                               int vid_mode_type,                 // video mode : burst/non_burst
-                              int check_phy_status,              // enable/disable phy lock check, disable for multiple pic test
                               Lcd_Config_t *p)
 {
-    int real_lane_num = lane_num+1;
     int num_of_chunk;
     int pixel_per_chunk = 4;
     int byte_per_chunk=0;
@@ -535,7 +626,7 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     int chunk_overhead;
     int vid_null_size=0;
 
-    totol_bytes_per_chunk = real_lane_num*pixel_per_chunk*3/4;
+    totol_bytes_per_chunk = lane_num*pixel_per_chunk*3/4;
 
     // one lene has 8 bytes for 4 pixels
     // according to DSI spec line50
@@ -591,9 +682,9 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // 1,    Configure Lane number and phy stop wait time
     if ((output_type != TV_ENC_LCD240x160_dsi) && (output_type != TV_ENC_LCD1920x1200p) &&
         (output_type != TV_ENC_LCD2560x1600) && (output_type != TV_ENC_LCD768x1024p)) {
-        WRITE_LCD_REG( MIPI_DSI_DWC_PHY_IF_CFG_OS, (0x28 << BIT_PHY_STOP_WAIT_TIME) | (lane_num << BIT_N_LANES));
+        WRITE_LCD_REG( MIPI_DSI_DWC_PHY_IF_CFG_OS, (0x28 << BIT_PHY_STOP_WAIT_TIME) | ((lane_num-1) << BIT_N_LANES));
     } else {
-        WRITE_LCD_REG( MIPI_DSI_DWC_PHY_IF_CFG_OS, (1 << BIT_PHY_STOP_WAIT_TIME) | (lane_num << BIT_N_LANES));
+        WRITE_LCD_REG( MIPI_DSI_DWC_PHY_IF_CFG_OS, (1 << BIT_PHY_STOP_WAIT_TIME) | ((lane_num-1) << BIT_N_LANES));
     }
 
     // 2.1,  Configure Virtual channel settings
@@ -621,8 +712,9 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
                         (1 << BIT_LP_VBP_EN)  |                  // enalbe lp
                         (1 << BIT_LP_VSA_EN)  |                  // enalbe lp
                         (1 << BIT_FRAME_BTA_ACK_EN) |            // enable BTA after one frame, TODO, need check
-                        //(1 << BIT_LP_CMD_EN) |                   // enable the command transmission only in lp mode    //evoke add for test
+                        //(1 << BIT_LP_CMD_EN) |                   // enable the command transmission only in lp mode
                         (vid_mode_type << BIT_VID_MODE_TYPE) );  // burst/non burst
+        WRITE_LCD_REG( MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (4 << 16) | (4 << 0));  //[23:16]outvact, [7:0]invact
 
         // 3.2   Configure video packet size settings
         if( vid_mode_type == BURST_MODE ) {                                        // burst mode
@@ -693,72 +785,62 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     }
 }
 
-static void mipi_dsi_config(Lcd_Config_t *pConf)
+static void mipi_dsi_host_config(Lcd_Config_t *pConf)
 {
     unsigned int        dpi_data_format;
     unsigned int        venc_data_width;
     tv_enc_lcd_type_t   venc_format;
     unsigned char       lane_num;
-    unsigned char       operation_mode, video_mode_type;
+    unsigned char       operation_mode_init, video_mode_type;
 
-    operation_mode  = pConf->lcd_control.mipi_config->operation_mode;
+    operation_mode_init  = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1);
     video_mode_type = pConf->lcd_control.mipi_config->video_mode_type;
     venc_format     = pConf->lcd_control.mipi_config->venc_fmt;
     venc_data_width = pConf->lcd_control.mipi_config->venc_data_width;
     dpi_data_format = pConf->lcd_control.mipi_config->dpi_data_format;
-    lane_num        = pConf->lcd_control.mipi_config->lane_num - 1;
+    lane_num        = pConf->lcd_control.mipi_config->lane_num;
 
-    DPRINT("%s, %d\n", __func__, __LINE__);
 #ifdef PRINT_DEBUG_INFO
-    print_info(pConf->lcd_control.mipi_config);
+    print_info();
 #endif
 
     DPRINT("Set mipi_dsi_host\n");
-    set_mipi_dcs(MIPI_DSI_CMD_TRANS_TYPE,            //0: high speed, 1: low power
-                 MIPI_DSI_DCS_ACK_TYPE,              // if need bta ack check
+    set_mipi_dcs(MIPI_DSI_CMD_TRANS_TYPE,              // 0: high speed, 1: low power
+                 MIPI_DSI_DCS_ACK_TYPE,                // if need bta ack check
                  MIPI_DSI_TEAR_SWITCH);                // enable tear ack
 
-    DPRINT("%s, %d\n", __func__, __LINE__);
     set_mipi_dsi_host(lane_num,                        // Lane number
                       MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
                       venc_data_width,                 // MIPI dsi venc data bit width
                       dpi_data_format,                 // MIPI dsi dpi data format
                       0,                               // Chroma sub sample, only for YUV 422 or 420, even or odd
-                      operation_mode,                  // DSI operation mode, video or command
+                      operation_mode_init,             // DSI operation mode, video or command
                       venc_format,                     // Venc resolution format, eg, 240x160
                       video_mode_type,                 // Video mode, burst or non-burst
-                      1,                               // If check the phy status, need check when first pic
                       pConf);
 }
 
 void mipi_dsi_link_on(Lcd_Config_t *pConf)
 {
-    int vcid = MIPI_DSI_VIRTUAL_CHAN_ID;
-    int req_ack = MIPI_DSI_DCS_ACK_TYPE;
-    unsigned int        dpi_data_format;
-    unsigned int        venc_data_width;
-    tv_enc_lcd_type_t   venc_format;
-    unsigned char       lane_num;
-    unsigned char       operation_mode, video_mode_type;
-    int i=0, j=0, ending_flag=0;
+    unsigned int      dpi_data_format;
+    unsigned int      venc_data_width;
+    tv_enc_lcd_type_t venc_format;
+    unsigned char     lane_num;
+    unsigned char     operation_mode_disp, video_mode_type;
 #ifdef CONFIG_AML_LCD_EXTERN
     struct aml_lcd_extern_driver_t *lcd_extern_driver;
 #endif
+    unsigned int init_flag = 0;
 
     printf("%s\n", __FUNCTION__);
-    operation_mode  = OPERATION_VIDEO_MODE;//pConf->lcd_control.mipi_config->operation_mode;
+    operation_mode_disp = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
     video_mode_type = pConf->lcd_control.mipi_config->video_mode_type;
     venc_format     = pConf->lcd_control.mipi_config->venc_fmt;
     venc_data_width = pConf->lcd_control.mipi_config->venc_data_width;
     dpi_data_format = pConf->lcd_control.mipi_config->dpi_data_format;
-    lane_num        = pConf->lcd_control.mipi_config->lane_num - 1;
+    lane_num        = pConf->lcd_control.mipi_config->lane_num;
 
-    if(pConf->lcd_control.mipi_config->transfer_ctrl == 0)
-        startup_transfer_video();
-    else
-        startup_transfer_cmd();
-
-    if (pConf->lcd_control.mipi_config->init_on_flag ==1) {
+    if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
         lcd_extern_driver = aml_lcd_extern_get_driver();
         if (lcd_extern_driver == NULL) {
@@ -766,76 +848,50 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_on_cmd_8) {
-                while(ending_flag == 0) {
-                    if(lcd_extern_driver->init_on_cmd_8[i]==0xff) {
-                        j = 2;
-                        if(lcd_extern_driver->init_on_cmd_8[i+1]==0xff)
-                            ending_flag = 1;
-                        else
-                            mdelay(lcd_extern_driver->init_on_cmd_8[i+1]);
-                    }
-                    else {
-                        j = lcd_extern_driver->init_on_cmd_8[i];
-                        if (j == 1) {//no parameter
-                            DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, lcd_extern_driver->init_on_cmd_8[i+1], req_ack);
-                        }
-                        else if (j == 2) {//1 parameter
-                            DCS_write_short_packet_1_para(DT_DCS_SHORT_WR_1, vcid, lcd_extern_driver->init_on_cmd_8[i+1], lcd_extern_driver->init_on_cmd_8[i+2], req_ack);
-                        }
-                        else {//long write
-                            DCS_long_write_packet(DT_DCS_LONG_WR, vcid, lcd_extern_driver->init_on_cmd_8[i+1], &lcd_extern_driver->init_on_cmd_8[i+1], j, req_ack);
-                        }
-                        j++;
-                    }
-                    i += j;
-                }
-                printf("%s power on init\n", lcd_extern_driver->name);
+                dsi_generic_write_cmd(lcd_extern_driver->init_on_cmd_8);
+                printf("[extern]%s dsi init on\n", lcd_extern_driver->name);
             }
+            init_flag++;
         }
 #endif
     }
 
-    DPRINT("send sleep out\n");
-    DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, DCS_EXIT_SLEEP_MODE, req_ack);
-    mdelay(pConf->lcd_control.mipi_config->sleep_out_delay);
+    if (pConf->lcd_control.mipi_config->dsi_init_on) {
+        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
+        init_flag++;
+        DPRINT("dsi init on\n");
+    }
 
-    DPRINT("send display on\n");
-    DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, DCS_SET_DISPLAY_ON, req_ack);
-    mdelay(pConf->lcd_control.mipi_config->display_on_delay);
+    if (init_flag == 0) {
+        dsi_generic_write_cmd(dsi_init_on_table_dft);
+        printf("[warning]: not init for mipi-dsi, use default command\n");
+    }
 
-    if (operation_mode != pConf->lcd_control.mipi_config->operation_mode) {
+    if (operation_mode_disp != ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1)) {
         set_mipi_dsi_host(lane_num,                        // Lane number
-                      MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
-                      venc_data_width,                 // MIPI dsi venc RGB data bit width
-                      dpi_data_format,                 // MIPI dsi dpi data format
-                      0,                               // Chroma sub sample, only for YUV 422 or 420, even or odd
-                      operation_mode,                  // DSI operation mode, video or command
-                      venc_format,                     // Venc resolution format, eg, 240x160
-                      video_mode_type,                 // Video mode, burst or non-burst
-                      1,                               // If check the phy status, need check when first pic
-                      pConf);
+                          MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
+                          venc_data_width,                 // MIPI dsi venc RGB data bit width
+                          dpi_data_format,                 // MIPI dsi dpi data format
+                          0,                               // Chroma sub sample, only for YUV 422 or 420, even or odd
+                          operation_mode_disp,             // DSI operation mode, video or command
+                          venc_format,                     // Venc resolution format, eg, 240x160
+                          video_mode_type,                 // Video mode, burst or non-burst
+                          pConf);
     }
 }
 
 void mipi_dsi_link_off(Lcd_Config_t *pConf)
 {
-    int vcid = MIPI_DSI_VIRTUAL_CHAN_ID;
-    int req_ack = 0;
-    int i=0, j=0, ending_flag=0;
 #ifdef CONFIG_AML_LCD_EXTERN
     struct aml_lcd_extern_driver_t *lcd_extern_driver;
 #endif
 
-    printf("%s\n", __FUNCTION__);
-    DPRINT("send display off\n");
-    DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, DCS_SET_DISPLAY_OFF, req_ack);
-    mdelay(10);
+    if (pConf->lcd_control.mipi_config->dsi_init_off) {
+        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
+        DPRINT("dsi init off\n");
+    }
 
-    DPRINT("send enter sleep mode\n");
-    DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, DCS_ENTER_SLEEP_MODE, req_ack);
-    mdelay(20);
-
-    if (pConf->lcd_control.mipi_config->init_off_flag ==1) {
+    if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
         lcd_extern_driver = aml_lcd_extern_get_driver();
         if (lcd_extern_driver == NULL) {
@@ -843,39 +899,34 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_off_cmd_8) {
-                while(ending_flag == 0) {
-                    if(lcd_extern_driver->init_off_cmd_8[i]==0xff) {
-                        j = 2;
-                        if(lcd_extern_driver->init_off_cmd_8[i+1]==0xff)
-                            ending_flag = 1;
-                        else
-                            mdelay(lcd_extern_driver->init_off_cmd_8[i+1]);
-                    }
-                    else {
-                        j = lcd_extern_driver->init_off_cmd_8[i];
-                        if (j == 1) {//no parameter
-                            DCS_write_short_packet_0_para(DT_DCS_SHORT_WR_0, vcid, lcd_extern_driver->init_off_cmd_8[i+1], req_ack);
-                        }
-                        else if (j == 2) {//1 parameter
-                            DCS_write_short_packet_1_para(DT_DCS_SHORT_WR_1, vcid, lcd_extern_driver->init_off_cmd_8[i+1], lcd_extern_driver->init_off_cmd_8[i+2], req_ack);
-                        }
-                        else {//long write
-                            DCS_long_write_packet(DT_DCS_LONG_WR, vcid, lcd_extern_driver->init_off_cmd_8[i+1], &lcd_extern_driver->init_off_cmd_8[i+1], j, req_ack);
-                        }
-                        j++;
-                    }
-                    i += j;
-                }
-                printf("%s power off init\n", lcd_extern_driver->name);
+                dsi_generic_write_cmd(lcd_extern_driver->init_off_cmd_8);
+                printf("[extern]%s dsi init off\n", lcd_extern_driver->name);
             }
         }
 #endif
     }
 }
 
-void set_mipi_dsi_control(Lcd_Config_t *pConf)
+void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
 {
+    unsigned int bit_rate;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
+
+    dsi_config = pConf->lcd_control.mipi_config;
+    if (cfg->bit_rate_max == 0) {
+        bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 3 * 8) / cfg->lane_num;
+        cfg->bit_rate_min = bit_rate - 20*1000;
+        cfg->bit_rate_max = bit_rate - 20*1000 + (pConf->lcd_timing.lcd_clk / 1000);
+        printf("mipi dsi bit_rate min=%dMHz, max=%dMHz\n", (cfg->bit_rate_min / 1000), (cfg->bit_rate_max / 1000));
+    }
+    else {
+        cfg->bit_rate_min *= 1000;
+        cfg->bit_rate_max *= 1000;
+    }
+    // if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
+        // cfg->bit_rate_max = MIPI_PHY_MAX_CLK_IN;
+        // printf("mipi dsi bit_rate_max is out of support, adjust to %dMHz\n", (MIPI_PHY_MAX_CLK_IN / 1000));
+    // }
 
     cfg->video_mode_type = MIPI_DSI_VIDEO_MODE_TYPE;
     if(pConf->lcd_basic.lcd_bits == 6){
@@ -886,15 +937,49 @@ void set_mipi_dsi_control(Lcd_Config_t *pConf)
         cfg->venc_data_width = MIPI_DSI_VENC_COLOR_24B;
     }
 
-    if((pConf->lcd_basic.h_active !=240)&&(pConf->lcd_basic.h_active !=768)&&(pConf->lcd_basic.h_active !=1920)&&(pConf->lcd_basic.h_active !=2560))
-        cfg->venc_fmt=TV_ENC_LCD1280x720;
-    else
-        cfg->venc_fmt=TV_ENC_LCD768x1024p;
+    switch ((cfg->transfer_ctrl >> BIT_TRANS_CTRL_SWITCH) & 3) {
+        case 1: //standard
+            cfg->venc_fmt=TV_ENC_LCD768x1024p;
+            break;
+        case 2: //slow
+            cfg->venc_fmt=TV_ENC_LCD1280x720;
+            break;
+        case 0: //auto
+        default:
+            if((pConf->lcd_basic.h_active !=240)&&(pConf->lcd_basic.h_active !=768)&&(pConf->lcd_basic.h_active !=1920)&&(pConf->lcd_basic.h_active !=2560))
+                cfg->venc_fmt=TV_ENC_LCD1280x720;
+            else
+                cfg->venc_fmt=TV_ENC_LCD768x1024p;
+            break;
+    }
+}
+
+void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
+{
+    unsigned pre_div, post_div, xd;
+    unsigned pclk, lanebyteclk;
+    DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
+
+    post_div = (((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_POST) & 0x7) + 1;
+    pre_div = ((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_PRE) & 0x7;
+    pre_div = div_pre_table[pre_div];
+    xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+
+    pclk = pConf->lcd_timing.lcd_clk;
+    cfg->bit_rate = pclk * pre_div * post_div * xd;
 
     if (cfg->factor_numerator == 0) {
-        pConf->lcd_control.mipi_config->factor_denominator = pConf->lcd_control.mipi_config->bit_rate / 8 / 1000;
-        pConf->lcd_control.mipi_config->factor_numerator = pConf->lcd_timing.lcd_clk / 1000;
+        lanebyteclk = cfg->bit_rate / 8;
+        DPRINT("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
+                 (cfg->bit_rate / 1000000), ((cfg->bit_rate / 1000) % 1000), (lanebyteclk / 1000000), ((lanebyteclk / 1000) % 1000));
+
+        cfg->factor_denominator = lanebyteclk/1000;
+        cfg->factor_numerator = pclk/1000;
+        //cfg->factor_denominator = 10;
     }
+    DPRINT("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
+             ((cfg->factor_denominator % cfg->factor_numerator) * 100 / cfg->factor_numerator));
+
     cfg->hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
     cfg->hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
     cfg->hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
@@ -903,10 +988,20 @@ void set_mipi_dsi_control(Lcd_Config_t *pConf)
     cfg->vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
     cfg->vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
     cfg->vact = pConf->lcd_basic.v_active;
+}
 
-    dsi_phy_config(pConf);
+void set_mipi_dsi_control(Lcd_Config_t *pConf)
+{
+    mipi_dsi_host_config(pConf);
 
-    mipi_dsi_config(pConf);
+    mipi_dsi_phy_config(pConf);
+
+    if(((pConf->lcd_control.mipi_config->transfer_ctrl >> BIT_TRANS_CTRL_CLK) & 1) == 0)
+        startup_transfer_video();
+    else
+        startup_transfer_cmd();
+
+    mipi_dsi_link_on(pConf);
 }
 
 void mipi_dsi_off(void)
