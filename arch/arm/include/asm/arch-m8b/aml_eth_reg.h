@@ -1,17 +1,4 @@
-/*******************************************************************
- * 
- *  Copyright C 2011 by Amlogic, Inc. All Rights Reserved.
- *
- *  Description: phriphs register definitions for Apollo.
- *
- *  Author: zhouzhi
- *  Created: 2008-8-10 
- *
- *  
- *  Remark: 2011.08.02 merge by Hisun bao
- *                from /arch/arm/include/asm/arch-m1
- *
- *******************************************************************/
+
 #ifndef __AML_ETH_REG_H__
 #define __AML_ETH_REG_H__
 
@@ -471,29 +458,14 @@
 #define ETH_PLL_CNTL_DATEND                     (1<<2)
 #define ETH_PLL_CNTL_DESEND                     (1<<3)
 
+
+#define M8BETH_PLL_CNTL_DATEND                     (1<<1)
+#define M8BETH_PLL_CNTL_DESEND                     (1<<2)
 #include "register.h"
 
 #define ETH_PLL_CNTL                            CBUS_REG_ADDR(PREG_ETHERNET_ADDR0)
 
-/*
-	please refer following doc for detail
-	@AppNote-M3-ClockTrees.docx
-	
-	select clk: -> CBUS_REG(0x1076)
-	
-	7-sys_pll_div2
-	6-vid2_pll_clk
-	5-vid_pll_clk
-	4-aud_pll_clk
-	3-ddr_pll_clk
-	2-misc_pll_clk
-	1-sys_pll_clk
-	0-XTAL
 
-	clk_freq:800MHz
-	output_clk:50MHz
-	aways,maybe changed for others?	
-*/
 
 #define ETH_CLKSRC_XTAL             (0)
 #define ETH_CLKSRC_SYS_PLL_CLK      (1)
@@ -504,6 +476,33 @@
 #define ETH_CLKSRC_VID2_PLL_CLK     (6)
 #define ETH_CLKSRC_SYS_PLL_DIV2_CLK (7)
 #define CLK_1M						(1000000)
+
+typedef union eth_aml_reg0 {
+    /** raw register data */
+   	unsigned int d32;
+    /** register bits */
+	struct {
+        unsigned phy_intf_sel:1;
+        unsigned data_endian:1;
+        unsigned desc_endian:1;
+        unsigned rx_clk_rmii_invert:1;
+        unsigned rgmii_tx_clk_src:1;
+        unsigned rgmii_tx_clk_phase:2;
+        unsigned rgmii_tx_clk_ratio:3;
+        unsigned phy_ref_clk_enable:1;
+        unsigned clk_rmii_i_invert:1;
+        unsigned clk_en:1;
+        unsigned adj_enable:1;
+        unsigned adj_setup:1; 
+        unsigned adj_delay:5;
+        unsigned adj_skew:5;
+        unsigned cali_start:1;
+        unsigned cali_rise:1;
+        unsigned cali_sel:3;
+        unsigned rgmii_rx_reuse:1;
+        unsigned eth_urgent:1;
+		} b;
+} eth_aml_reg0_t;
 
 #define ETH_VALIDE_CLKSRC(clk,out_clk) ((clk%out_clk)==0)
 

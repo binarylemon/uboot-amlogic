@@ -20,25 +20,70 @@ DECLARE_GLOBAL_DATA_PTR;
 /*************************************************
   * Amlogic Ethernet controller operation
   * 
-  * Note: The LAN chip LAN8720 need to be reset
+  * Note: RTL8211F gbit_phy use RGMII interface
   *
   *************************************************/
 static void setup_net_chip(void)
 {
-	//m8 only use externel clock
-	/* setup ethernet clk */
-	WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x4f00); // clock Input 50 inverted : bit14 =1 Div : 6:0 = 0 En : bit8 = 1  Sel : bit 11:9 = 7
+  	eth_aml_reg0_t eth_reg0;
+	/*m8b mac clock use externel phy clock(125m/25m/2.5m)
+	 setup ethernet clk need calibrate to configre
+	 setup ethernet pinmux use DIF_TTL_0N/P 1N/P 2N/P 3N/P 4N/P GPIOH(3-9) */
+#ifdef RMII_PHY_INTERFACE
 	/* setup ethernet pinmux use gpioz(5-14) */
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, (1 << 15) | (1 << 14) | (1 << 13) | (1 << 12) |
-	(1 << 11) | (1 << 8 ) | (1 << 7 ) | (1 << 10) | (1 << 6 ) | (1 << 5 ));
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,0xff7f);
+	eth_reg0.d32 = 0;
+	eth_reg0.b.phy_intf_sel = 0;
+	eth_reg0.b.data_endian = 0;
+	eth_reg0.b.desc_endian = 0;
+	eth_reg0.b.rx_clk_rmii_invert = 0;
+	eth_reg0.b.rgmii_tx_clk_src = 0;
+	eth_reg0.b.rgmii_tx_clk_phase = 0;
+	eth_reg0.b.rgmii_tx_clk_ratio = 1;
+	eth_reg0.b.phy_ref_clk_enable = 1;
+	eth_reg0.b.clk_rmii_i_invert = 1;
+	eth_reg0.b.clk_en = 1;
+	eth_reg0.b.adj_enable = 1;
+	eth_reg0.b.adj_setup = 0;
+	eth_reg0.b.adj_delay = 18;
+	eth_reg0.b.adj_skew = 0;
+	eth_reg0.b.cali_start = 0;
+	eth_reg0.b.cali_rise = 0;
+	eth_reg0.b.cali_sel = 0;
+	eth_reg0.b.rgmii_rx_reuse = 0;
+	eth_reg0.b.eth_urgent = 0;
+	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32 );//1          //rmii mode
+#elif RGMII_PHY_INTERFACE
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0xffff);
+	eth_reg0.d32 = 0;
+	eth_reg0.b.phy_intf_sel = 1;
+	eth_reg0.b.data_endian = 0;
+	eth_reg0.b.desc_endian = 1;
+	eth_reg0.b.rx_clk_rmii_invert = 0;
+	eth_reg0.b.rgmii_tx_clk_src = 0;
+	eth_reg0.b.rgmii_tx_clk_phase = 0;
+	eth_reg0.b.rgmii_tx_clk_ratio = 2;
+	eth_reg0.b.phy_ref_clk_enable = 1;
+	eth_reg0.b.clk_rmii_i_invert = 1;
+	eth_reg0.b.clk_en = 1;
+	eth_reg0.b.adj_enable = 1;
+	eth_reg0.b.adj_setup = 1;
+	eth_reg0.b.adj_delay = 4;
+	eth_reg0.b.adj_skew = 0xc;
+	eth_reg0.b.cali_start = 0;
+	eth_reg0.b.cali_rise = 0;
+	eth_reg0.b.cali_sel = 0;
+	eth_reg0.b.rgmii_rx_reuse = 0;
+	eth_reg0.b.eth_urgent = 0;
+WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);// rgmii mode
+#endif
 	/* setup ethernet mode */
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, 0x241);//bit6-4 :100 rmii mode
 	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
-	/* hardware reset ethernet phy : gpioz14 connect phyreset pin*/
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_EN_N, 1 << 31);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+	/* hardware reset ethernet phy : gpioh_4 connect phyreset pin*/
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_EN_N, 1 << 23);
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
 	udelay(2000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+	SET_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
 }
 
 int board_eth_init(bd_t *bis)

@@ -64,9 +64,8 @@ static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_ATHEROS_8035		0x004dd072
 #define PHY_IC_IP101ALF         0x02430c54
 #define PHY_MICREL_8091         0x221560
-
 #define PHY_INTERNAL            0x79898963
-
+#define PHY_RTL_8211F         0x001cc915
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
 #define MAC_MODE_RGMII                   2
@@ -74,7 +73,20 @@ static int g_mac_mode = MAC_MODE_RMII_CLK_EXTERNAL;
 
 static int g_debug = 0;
 //#define ET_DEBUG
-
+/*
+M6TV
+ 23
+M6TVlite
+ 24
+M8
+ 25
+M6TVd
+ 26
+M8baby
+ 27
+G9TV
+ 28
+*/
 static unsigned int get_cpuid(){
 	return READ_CBUS_REG(0x1f53)&0xff;
 }
@@ -106,7 +118,9 @@ static unsigned int get_cpuid(){
 #define  TSTCNTL_WR           ((1 << 14) | (1 << 10))
 #endif
 
+/*
 
+*/
 
 static void hardware_reset(void)
 {
@@ -121,7 +135,11 @@ static void hardware_reset(void)
 		udelay(500000);
 		SET_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
 	}
-	udelay(500000);
+	if(get_cpuid() == 0x1b){ // m8b  It is not known when the chips to change //27
+		CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
+		udelay(500000);
+		SET_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
+	}
 	printf("ETH PHY hardware reset OK\n");
 
 	return;
@@ -368,6 +386,12 @@ static void netdev_chk(void)
 				full = ((rint2) & (1 << 13));
 				gS->linked = rint2 & (1 << 10);
 				break;
+			case PHY_RTL_8211F:
+				rint2 = phy_reg_rd(id, 17);
+				speed = (rint2 & (3 << 14)) >> 14;
+				full = ((rint2) & (1 << 13));
+				gS->linked = rint2 & (1 << 10);
+				break;	
 			case PHY_IC_IP101ALF:
 				rint2 = phy_reg_rd(id,1);
 				gS->linked = rint2&(1<<2);
@@ -415,7 +439,7 @@ static void netdev_chk(void)
 			writel(val,ETH_PLL_CNTL);
 #endif
 			writel(readl(ETH_MAC_0_Configuration) & ~ ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);
-			if(get_cpuid() >= 0x16){	
+			if( get_cpuid() < 0x1B ){
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
 				// ---------------------------------------------
 				// Test 50Mhz Input Divide by 2
@@ -434,7 +458,7 @@ static void netdev_chk(void)
 			writel(val,ETH_PLL_CNTL);
 #endif
 			writel(readl(ETH_MAC_0_Configuration) | ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
-			if(get_cpuid() >= 0x16){	
+			if(get_cpuid()< 0x1B){
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
 				// ---------------------------------------------
 				// Test 50Mhz Input Divide by 2
@@ -447,7 +471,7 @@ static void netdev_chk(void)
 			}	
 		} else {
 			printf("1000m\n");
-			if(get_cpuid() >= 0x16){	
+			if(get_cpuid() >= 0x1B){
 
 				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII, ETH_MAC_0_Configuration);	// program mac
 			}
@@ -480,6 +504,7 @@ static void set_phy_mode(void)
 	switch (g_phy_Identifier) {
 		case PHY_ATHEROS_8032:
 		case PHY_ATHEROS_8035:
+		case PHY_RTL_8211F:
 			break;
 		case PHY_MICREL_8091:
         		val = phy_reg_rd(phyad, 0x16);
@@ -1411,6 +1436,36 @@ static int  do_netspeed(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	return 0;
 
 }
+#ifdef CONFIG_M8B
+static int do_eth_cali(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned int reg, value;
+	int rise=0;
+	int sel=0;
+	char *cmd = NULL;
+
+
+	if (argc < 3) {
+		return cmd_usage(cmdtp);
+	}
+	rise = simple_strtoul(argv[1], NULL, 10);
+	sel = simple_strtoul(argv[2], NULL, 10);
+	eth_aml_reg0_t eth_reg0;
+	eth_reg0.d32 = READ_CBUS_REG(PREG_ETHERNET_ADDR0);
+	eth_reg0.b.cali_start = 1;
+	eth_reg0.b.cali_rise = rise;
+	eth_reg0.b.cali_sel = sel;
+	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);
+	printf("0x%x\n",  READ_CBUS_REG(PREG_ETHERNET_ADDR0));
+	return 0;
+}
+U_BOOT_CMD(
+		cali, 2, 1, do_eth_cali,
+		"configure clock phare",
+		"             - phare mac clock.\n"
+	  );
+#endif
+
 U_BOOT_CMD(
 		netspd_f, 3, 1, do_netspeed,
 		"enforce eth speed",
