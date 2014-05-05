@@ -308,6 +308,12 @@
 #define CONFIG_AML_GPIO_CMD 1
 #define CONFIG_AML_GPIO 1
 
+//max watchdog timer: 8.388s
+#define AML_WATCHDOG_TIME_SLICE				128	//us
+#define AML_WATCHDOG_ENABLE_OFFSET			19
+#define AML_WATCHDOG_CPU_RESET_CNTL			0xf	//qual-core
+#define AML_WATCHDOG_CPU_RESET_OFFSET		24
+
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8
 
 #endif /* _CPU_H */

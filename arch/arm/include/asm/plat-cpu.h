@@ -10,7 +10,25 @@
 #define MESON_CPU_TYPE_MESON8		0x80
 #define MESON_CPU_TYPE_MESON8B		0x8B
 
-//here, right place ?
-#define AML_WATCH_DOG_START() do{writel(0, P_WATCHDOG_RESET);writel((10|((1<<22)|(3<<24))), P_WATCHDOG_TC);while(1);}while(0);
+//set watchdog timer by ms
+#define AML_WATCH_DOG_SET(time) \
+	writel(0, P_WATCHDOG_RESET); \
+	writel((((int)(time * 1000 / AML_WATCHDOG_TIME_SLICE)) | \
+	(1<<AML_WATCHDOG_ENABLE_OFFSET) | \
+	(AML_WATCHDOG_CPU_RESET_CNTL<<AML_WATCHDOG_CPU_RESET_OFFSET)), P_WATCHDOG_TC);
+
+//disable watchdog
+#define AML_WATCH_DOG_DISABLE() \
+	writel(0, P_WATCHDOG_TC); \
+	writel(0, P_WATCHDOG_RESET);
+
+//start watchdog immediately
+#define AML_WATCH_DOG_START() \
+	do{ \
+		writel(0, P_WATCHDOG_RESET); \
+		writel((10|((1<<AML_WATCHDOG_ENABLE_OFFSET)| \
+			(AML_WATCHDOG_CPU_RESET_CNTL<<AML_WATCHDOG_CPU_RESET_OFFSET))), P_WATCHDOG_TC); \
+		while(1); \
+	}while(0);
 
 #endif

@@ -253,7 +253,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #ifdef CONFIG_M8
 	//enable watchdog, then when bootup failed, switch to next boot device
-	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+	AML_WATCH_DOG_SET(5000); //5s
 #endif// #ifdef CONFIG_M8
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
     serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");

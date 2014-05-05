@@ -194,7 +194,7 @@ unsigned m6_ddr_init_test(int arg)
     //serial_putc('\n');
     por_cfg=0;
     //to protect with watch dog?
-    //writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+    //AML_WATCH_DOG_SET(5000);
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
     {
         //writel(0, P_WATCHDOG_RESET);

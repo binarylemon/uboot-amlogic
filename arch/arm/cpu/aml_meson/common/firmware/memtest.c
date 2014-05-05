@@ -188,7 +188,7 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
 {
 #ifdef CONFIG_M8
     //Watchdog disable
-    writel(0, P_WATCHDOG_TC);
+    AML_WATCH_DOG_DISABLE();;
 #endif
     unsigned long offset;
     unsigned long nWords = nBytes / sizeof(datum);
@@ -257,7 +257,7 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
     serial_putc('\n');
 
 #ifdef CONFIG_M8
-	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s
+	AML_WATCH_DOG_SET(5000); //5s
 #endif
 
     return (NULL);

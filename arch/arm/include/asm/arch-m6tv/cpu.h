@@ -168,6 +168,11 @@
 #define CONFIG_CMD_EDITENV 1
 /*default command select end*/
 
+//max watchdog timer: 41.943s
+#define AML_WATCHDOG_TIME_SLICE				10	//us
+#define AML_WATCHDOG_ENABLE_OFFSET			22
+#define AML_WATCHDOG_CPU_RESET_CNTL			3
+#define AML_WATCHDOG_CPU_RESET_OFFSET		24
 
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON6TV
 

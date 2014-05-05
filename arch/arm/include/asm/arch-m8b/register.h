@@ -1278,7 +1278,7 @@
 #define WATCHDOG_TC                                0x2640
 #define WATCHDOG_RESET                             0x2641
 #define WATCHDOG_RESET_REG                         (WATCHDOG_RESET)
-	#define WATCHDOG_ENABLE_BIT         22
+	#define WATCHDOG_ENABLE_BIT         19
 // -----------------------------------------------------------
 #define AHB_ARBITER_REG                            0x2642
 #define AHB_ARBDEC_REG                             0x2643

@@ -258,14 +258,12 @@ unsigned m6_ddr_init_test(int arg)
     por_cfg=0;
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
 	{
-        writel(0, P_WATCHDOG_RESET);
         por_cfg=mem_test[i](arg&(1<<i),&__ddr_setting);
         serial_puts("\nStage ");
         serial_put_hex(i,8);
         serial_puts(" Result ");
         serial_put_hex(por_cfg,32);
 	}
-	writel(0, P_WATCHDOG_TC);
 	ddr_start_again=por_cfg?1:ddr_start_again;
 	serial_putc('\n');
 	return por_cfg;

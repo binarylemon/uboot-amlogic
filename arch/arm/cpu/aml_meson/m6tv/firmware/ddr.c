@@ -155,14 +155,12 @@ unsigned m6_ddr_init_test(int arg)
     por_cfg=0;
     for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
 	{
-        writel(0, P_WATCHDOG_RESET);
         por_cfg=mem_test[i](arg&(1<<i),&__ddr_setting);
         serial_puts("\nStage ");
         serial_put_hex(i,8);
         serial_puts(" Result ");
         serial_put_hex(por_cfg,32);
 	}
-	writel(0, P_WATCHDOG_TC);
 	ddr_start_again=por_cfg?1:ddr_start_again;
 	return por_cfg;
 }
@@ -188,7 +186,6 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 		serial_puts("\nDDR pre-init fail! Reset...\n");
 		__udelay(10000); 
 		AML_WATCH_DOG_START();
-
 	}
 #endif //CONFIG_AML_DDR_PRESET
 
@@ -197,8 +194,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
     {
 	    serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000); 
-		//writel((1<<22) | (3<<24), P_WATCHDOG_TC);		
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 
 	return 0;
