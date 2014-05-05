@@ -342,6 +342,9 @@
 //M8 L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
 
+//To use RSA2048 key aml-rsa-key.k2a
+#define CONFIG_AML_RSA_2048 1
+
 
 /*-----------------------------------------------------------------------
  * power down
@@ -372,7 +375,8 @@
 
    #undef CONFIG_AML_SUSPEND
    #undef CONFIG_CMD_SUSPEND
-   
+
+   #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif
 
 

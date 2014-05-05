@@ -20,15 +20,15 @@
  *
  **************************************************************************************************************/
 
-#if !defined(__AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__)
-#define __AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
+#if !defined(__AMLOGIC_M8B_SECURE_C_DF77292A_3548_4CAC_9B69_D04E3143D496__)
+#define __AMLOGIC_M8B_SECURE_C_DF77292A_3548_4CAC_9B69_D04E3143D496__
 
 //help info show config
 #define AML_SECURE_PROCESS_MSG_SHOW 1
 
 unsigned int g_action[3][16]={
-	{0xd904706c,0xd904a59c,0xd904038c,0xd904441c,0xd9047458,0xd9044518,
-	 0xd904455c,0xd904459c,0xd9046e44,0xd904d014,0xd904cf60,0xd904a4f4},
+	{0xd9046fb4,0xd904b0a4,0xd9040408,0xd9044358,0xd90473a0,0xd9044454,
+	 0xd9044498,0xd90444e4,0xd9046d8c,0xd904ce04,0xd904cd50,0xd904a304},
 	{0xd9046f90,0xd904a388,0xd904038c,0xd9044340,0xd904737c,0xd904443c,
 	 0xd9044480,0xd90444c0,0xd9046d68,0xd904cde0,0xd904cd2c,0xd904a2e0},
 	{0xd904716c,0xd904b364,0xd904038c,0xd934441c,0xd9047258,0xd9044578, 
@@ -44,7 +44,7 @@ typedef  int  (*t_func_r1)( int a);
 typedef  int  (*t_func_r2)( int a, int b);
 typedef  int  (*t_func_r3)( int a, int b, int c);
 
-static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,unsigned char *pkey2,int nkey2Len)
+static int aml_m8b_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,unsigned char *pkey2,int nkey2Len)
 {	
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
@@ -100,8 +100,7 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 	
 	switch(* (unsigned int *)0xd9040004)
 	{
-	case 0x25e2: break;
-	case 0x27ed: nStep = 1 ; break;
+	case 0xae8: break;
 	default: goto exit;break;
 	}
 		
@@ -185,7 +184,7 @@ exit:
 
 int aml_sec_boot_check(unsigned char *pSRC)
 {
-	return aml_m8_sec_boot_check(pSRC,0,0,0,0);
+	return aml_m8b_sec_boot_check(pSRC,0,0,0,0);
 }
 
 #if !defined(CONFIG_AMLROM_SPL)
@@ -205,10 +204,10 @@ int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	unsigned char sz2[] = {
 	0x01,0x37,0x4B,};
 
-	return aml_m8_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2));
+	return aml_m8b_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2));
 }
 #endif //
 
 //here can add more feature like encrypt...
 
-#endif //__AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
+#endif //__AMLOGIC_M8B_SECURE_C_DF77292A_3548_4CAC_9B69_D04E3143D496__
