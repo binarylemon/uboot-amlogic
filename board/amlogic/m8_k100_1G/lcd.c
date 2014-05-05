@@ -32,7 +32,7 @@
 
 //**** define backlight control method ***//
 #define BL_POWER_ON_DELAY	200	/** delay time before backlight power on(unit: ms) */
-#define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
+#define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE, BL_CTL_EXTERN) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
 //**** define backlight GPIO control ***//

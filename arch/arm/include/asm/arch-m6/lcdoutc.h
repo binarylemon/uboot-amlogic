@@ -466,10 +466,11 @@ Lcd_Config_t lcd_config_dft;
 
 typedef enum {
 	BL_CTL_GPIO = 0,
-	BL_CTL_PWM_NEGATIVE,
-	BL_CTL_PWM_POSITIVE,
-	BL_CTL_PWM_COMBO,
-	BL_CTL_MAX,
+	BL_CTL_PWM_NEGATIVE = 1,
+	BL_CTL_PWM_POSITIVE = 2,
+	BL_CTL_PWM_COMBO = 3,
+	BL_CTL_EXTERN = 4,
+	BL_CTL_MAX = 5,
 } BL_Ctrl_Method_t;
 
 static const char* bl_ctrl_method_table[]={
@@ -477,7 +478,8 @@ static const char* bl_ctrl_method_table[]={
 	"pwm_negative",
 	"pwm_positive",
 	"pwm_combo",
-	"null"
+	"extern",
+	"null",
 };
 
 typedef enum {

@@ -55,6 +55,12 @@
 #define LCD_BPP LCD_COLOR16
 //#define LCD_TEST_PATTERN
 
+//LCD and BL extern control
+#define CONFIG_AML_BL_EXTERN
+#ifdef CONFIG_AML_BL_EXTERN
+#define CONFIG_AML_BL_EXTERN_PMU_AML1218
+#endif
+
 //Enable storage devices
 #define CONFIG_CMD_SF    1
 
