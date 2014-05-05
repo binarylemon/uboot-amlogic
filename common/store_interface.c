@@ -19,7 +19,12 @@
 #define STORE_BOOT_ERASE_ALL   				          3
 #define STORE_BOOT_SCRUB_ALL				          4
 
+//Ignore mbr since mmc driver already handled 
+//#define MMC_UBOOT_CLEAR_MBR
+
+#ifdef MMC_UBOOT_CLEAR_MBR   
 static char _mbrFlag[4] ;
+#endif
 
 static int _info_disprotect_back_before_mmcinfo1 = 0;//mmcinfo 1 will clear info_disprotect before run_command("mmc erase 1")
 int info_disprotect = 0;
@@ -388,11 +393,13 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
 			tmp_buf= (unsigned char *)addr;
 #ifndef CONFIG_AML_SECU_BOOT_V2
+            #ifdef MMC_UBOOT_CLEAR_MBR
 			//modify the 55 AA info for emmc uboot
             _mbrFlag[0] = tmp_buf[510];
             _mbrFlag[1] = tmp_buf[511];
 			tmp_buf[510]=0;
 			tmp_buf[511]=0;
+			#endif
 #endif// #if defined(CONFIG_AML_SECU_BOOT_V2)
 			sprintf(str, "mmc  write bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
 			store_dbg("command: %s\n", str);
@@ -448,8 +455,10 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			}
 
 #ifndef CONFIG_AML_SECU_BOOT_V2
+            #ifdef MMC_UBOOT_CLEAR_MBR
 		    tmp_buf[510]= _mbrFlag[0];
 			tmp_buf[511]= _mbrFlag[1];
+			#endif
 #endif// #ifndef CONFIG_AML_SECU_BOOT_V2
 			return ret;
 		}else{
