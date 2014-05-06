@@ -49,6 +49,9 @@ static int aml_m8b_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int n
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
+	#define AML_MSG_RSA_1024 ("Aml log : M8-RSA-1024\n")
+	#define AML_MSG_RSA_2048 ("Aml log : M8-RSA-2048\n")
+	
 #if defined(CONFIG_AMLROM_SPL)
 	#define AML_MSG_FAIL ("Aml log : ERROR! TPL secure check fail!\n")
 	#define AML_MSG_PASS ("Aml log : TPL secure check pass!\n")	
@@ -100,7 +103,7 @@ static int aml_m8b_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int n
 	
 	switch(* (unsigned int *)0xd9040004)
 	{
-	case 0xae8: break;
+	case 0xb72: break;
 	default: goto exit;break;
 	}
 		
@@ -127,7 +130,12 @@ static int aml_m8b_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int n
 	else
 	{
 		unsigned int nState  = 0;
-		fp_02(&nState,0,4);		
+		fp_02(&nState,0,4);
+		if(!(nState & (1<<7)))
+		{
+			nRet = 0;
+			goto exit;
+		}
 		fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
 		cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
 	}
@@ -169,11 +177,15 @@ static int aml_m8b_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int n
 exit:
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
-	MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
-		
+
+	if(0 != cb1_ctx.len)
+	{
+		MSG_SHOW ((128 == cb1_ctx.len ) ? AML_MSG_RSA_1024 : AML_MSG_RSA_2048);
+		MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
+	}
 	#undef AML_MSG_FAIL
 	#undef AML_MSG_PASS
-	#undef MSG_SHOW		
+	#undef MSG_SHOW
 	
 #endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)	
 
@@ -204,6 +216,7 @@ int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	unsigned char sz2[] = {
 	0x01,0x37,0x4B,};
 
+	printf("aml log : here !\n");
 	return aml_m8b_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2));
 }
 #endif //
