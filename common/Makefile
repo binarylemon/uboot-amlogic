@@ -39,8 +39,6 @@ COBJS-$(CONFIG_SERIAL_MULTI) += serial.o
 COBJS-y += stdio.o
 COBJS-y += xyzModem.o
 
-COBJS-y += cmd_gpiotest.o
-
 # core command
 COBJS-y += cmd_boot.o
 COBJS-$(CONFIG_CMD_BOOTM) += cmd_bootm.o
