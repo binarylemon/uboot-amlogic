@@ -64,7 +64,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_M8
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
-	writel(((1<<22) | 500000), P_WATCHDOG_TC); //5s, wathdog will disabled after TPL enter usb burning mode
+	AML_WATCH_DOG_SET(5000); //5s, wathdog will disabled after TPL enter usb burning mode
 	writel(readl(0xc8100000), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
 #endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode

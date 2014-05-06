@@ -195,7 +195,7 @@ unsigned ddr_init(int arg)
 	//serial_putc('\n');
 	por_cfg=0;
 	//to protect with watch dog?
-	//writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
+	//AML_WATCH_DOG_SET(1000);
 	for(i=0;i<MEM_DEVICE_TEST_ITEMS_BASE&&por_cfg==0;i++)
 	{
 		//writel(0, P_WATCHDOG_RESET);
@@ -210,7 +210,7 @@ unsigned ddr_init(int arg)
 		}
 	}
 	serial_puts("\nDDR check pass!\n");
-	//writel(0, P_WATCHDOG_TC);
+	//AML_WATCH_DOG_DISABLE();
 	return por_cfg;
 }
 
@@ -241,8 +241,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	{
 		serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000);
-		writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC);
-		while(1);
+		AML_WATCH_DOG_START();
 	}
 #endif
 
