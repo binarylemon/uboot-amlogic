@@ -10,7 +10,7 @@
  *
  */
 #include <common.h>
-#include <amlogic/unify_key.h>
+#include <amlogic/keyunify.h>
 #include <malloc.h>
 
 #ifdef CONFIG_OF_LIBFDT
@@ -21,29 +21,7 @@
 #define errorP(fmt...) printf("Err key(L%d):", __LINE__),printf(fmt)
 #define wrnP(fmt...)   printf("wrn:"fmt)
 
-#if 0
-static const char* unifykey_dt_get_proper(const char* keyName, const char* propName)
-    const char* DtAddr = CONFIG_DTB_LOAD_ADDR;
-    int rc = 0;
-    const void* pProperty = NULL;
-    int nodeoffset = 0;
-
-    rc = fdt_check_header(DtAddr);
-	if(rc){
-        errorP(" error: image data is not a fdt\n");
-        return __LINE__;
-    }
-	nodeoffset = fdt_path_offset((const void *)dt_addr, "/unifykey");
-	if(nodeoffset < 0) {
-		errorP(" dts: not find  node %s.\n",fdt_strerror(nodeoffset));
-		return -1;
-	}
-
-    pProperty = fdt_getprop(DtAddr, nodeoffset, keyName, NULL);
-
-	return pProperty;
-}
-#endif//#if 0
+extern int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen);
 
 static int key_drv_init(void)
 {
@@ -68,19 +46,19 @@ static int do_key_get(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     rcode = key_drv_init();
     if(rcode){
         errorP("fail in key_drv_init\n");
-        return __LINE__;
+        return -__LINE__;
     }
 
     keyValBuf = (char*)malloc(keyValMaxLen);
     if(!keyValBuf){
         errorP("malloc failed\n");
-        return __LINE__;
+        return -__LINE__;
     }
-    rcode = key_unify_read(keyName, keyValBuf, keyValMaxLen, &reallen);
+    rcode = v2_key_read(keyName, (u8*)keyValBuf, keyValMaxLen/2, keyValBuf + keyValMaxLen/2, &reallen);
     if(rcode < 0 || !reallen){
         errorP("failed to read key [%s], rc=%d, reallen=%d\n", keyName, rcode, reallen);
         free(keyValBuf);
-        return __LINE__;
+        return -__LINE__;
     }
 
     keyValBuf[reallen] = 0;

@@ -35,6 +35,13 @@ extern int key_unify_read(char *keyname,unsigned char *keydata,unsigned int data
 *    return: >=0: successful; others: failed. 
 */
 extern int key_unify_query(char *keyname,unsigned int *keystate,unsigned int *keypermit);
+
+//get the key device from dtd
+const char* key_unify_query_key_device(char *keyname);
+
+//get the key format from dtd
+const char* key_unify_query_key_format(char *keyname);
+
 /* function name: key_unify_uninit
  * functiion : 
  * return : >=0 ok, <0 fail
@@ -58,6 +65,18 @@ static inline  int key_unify_query(char *keyname,unsigned int *keystate,unsigned
 	return -EINVAL;
 }
 static inline  int key_unify_uninit(void)
+{
+	return -EINVAL;
+}
+
+//get the key device from dtd
+const char* key_unify_query_key_device(char *keyname)
+{
+	return -EINVAL;
+}
+
+//get the key format from dtd
+const char* key_unify_query_key_format(char *keyname)
 {
 	return -EINVAL;
 }

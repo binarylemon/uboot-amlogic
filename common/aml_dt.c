@@ -18,9 +18,9 @@
 unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 	unsigned int dt_magic = readl(fdt_addr);
 	unsigned int dt_total = 0;
-	printf("      Process device tree. dt magic: %x\n", dt_magic);
+	/*printf("      Process device tree. dt magic: %x\n", dt_magic);*/
 	if(dt_magic == DT_HEADER_MAGIC){/*normal dtb*/
-		printf("      One dtb detected\n");
+		/*printf("      One dtb detected\n");*/
 		return fdt_addr;
 	}
 	if(dt_magic == AML_DT_HEADER_MAGIC){/*multi dtb*/
@@ -28,14 +28,12 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		dt_total = readl(fdt_addr + AML_DT_TOTAL_DTB_OFFSET);
 		printf("      Multi dtb detected, support %d dtbs.\n", dt_total);
 		int i = 0;
-		unsigned int aml_dt_len = strlen(getenv(AML_DT_UBOOT_ENV));
+		unsigned char *aml_dt_buf = getenv(AML_DT_UBOOT_ENV);
+		unsigned int aml_dt_len = aml_dt_buf ? strlen(aml_dt_buf) : 0;
 		if(aml_dt_len <= 0){
 			printf("      Get env aml_dt failed!\n");
 			return fdt_addr;
 		}
-		unsigned char *aml_dt_buf;
-		aml_dt_buf = malloc (aml_dt_len);
-		aml_dt_buf = getenv(AML_DT_UBOOT_ENV);
 		unsigned char aml_dt_soc[AML_DT_IND_LENGTH+1];
 		unsigned char aml_dt_plat[AML_DT_IND_LENGTH+1];
 		unsigned char aml_dt_vari[AML_DT_IND_LENGTH+1];
@@ -92,7 +90,6 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		aml_dt_soc[AML_DT_IND_LENGTH] = '\0';
 		aml_dt_plat[AML_DT_IND_LENGTH] = '\0';
 		aml_dt_vari[AML_DT_IND_LENGTH] = '\0';
-		free(aml_dt_buf);
 		/*aml_dt process end*/
 
 		printf("        soc: \"%s\", platform: \"%s\", variant: \"%s\"\n", aml_dt_soc, aml_dt_plat, aml_dt_vari);

@@ -52,6 +52,68 @@ struct key_item_t *unifykey_find_item_by_name(char *name)
 	}
 	return NULL;
 }
+
+const char* key_unify_query_key_format(char *keyname)
+{
+	char *keyformat=NULL;
+	struct key_item_t *key_manage;
+	key_manage = unifykey_find_item_by_name(keyname);
+	if(key_manage == NULL){
+		printf("%s:%d,%s key name is not exist\n",__func__,__LINE__,keyname);
+		return NULL;
+	}
+	if(unifykey_item_verify_check(key_manage)){
+		printf("%s:%d,%s key name is invalid\n",__func__,__LINE__,keyname);
+		return NULL;
+	}
+	switch(key_manage->df){
+		case KEY_M_HEXDATA:
+			keyformat= UNIFYKEY_DATAFORMAT_HEXDATA;
+		break;
+		case KEY_M_HEXASCII:
+			keyformat = UNIFYKEY_DATAFORMAT_HEXASCII;
+		break;
+		case KEY_M_ALLASCII:
+			keyformat = UNIFYKEY_DATAFORMAT_ALLASCII;
+		break;
+		case KEY_M_MAX_DF:
+		default:
+		break;
+	}
+	return keyformat;
+}
+
+
+const char* key_unify_query_key_device(char *keyname)
+{
+	char *keydevice=NULL;
+	struct key_item_t *key_manage;
+	key_manage = unifykey_find_item_by_name(keyname);
+	if(key_manage == NULL){
+		printf("%s:%d,%s key name is not exist\n",__func__,__LINE__,keyname);
+		return NULL;
+	}
+	if(unifykey_item_verify_check(key_manage)){
+		printf("%s:%d,%s key name is invalid\n",__func__,__LINE__,keyname);
+		return NULL;
+	}
+	switch(key_manage->dev){
+		case KEY_M_EFUSE_NORMAL:
+			keydevice= UNIFYKEY_DEVICE_EFUSEKEY;
+            break;
+		case KEY_M_SECURE_STORAGE:
+			keydevice = UNIFYKEY_DEVICE_SECURESKEY;
+            break;
+		case KEY_M_GENERAL_NANDKEY:
+			keydevice = UNIFYKEY_DEVICE_NANDKEY;
+            break;
+		default:
+			keydevice = "unkown device";
+            break;
+	}
+	return keydevice;
+}
+
 char unifykey_get_efuse_version(void)
 {
 	char ver=0;

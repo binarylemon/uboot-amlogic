@@ -29,6 +29,8 @@
 #define SECURE_IMG_HDR_MAGIC    "AMLSECU!"
 #define SECURE_IMG_HDR_VESRION  (0x0801)
 
+extern unsigned int get_multi_dt_entry(unsigned int fdt_addr);
+
 #ifdef CONFIG_AML_SECU_BOOT_V2
 extern int g_nIMGReadFlag;
 static unsigned char _imgLoadedPart[16];
@@ -181,11 +183,13 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
         }
     }
 
-    memcpy(DtbDestAddr, dtbLoadAddr, dtbSz);
-    if(fdt_check_header(DtbDestAddr)){
+    dtbLoadAddr = get_multi_dt_entry(dtbLoadAddr);
+    if(fdt_check_header(dtbLoadAddr)){
         errorP("dtb head check failed\n");
         return __LINE__;
     }
+    dtbSz       = fdt_totalsize(dtbLoadAddr);
+    memcpy(DtbDestAddr, dtbLoadAddr, dtbSz);
 
     return 0;
 }

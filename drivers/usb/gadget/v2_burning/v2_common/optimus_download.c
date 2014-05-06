@@ -19,8 +19,10 @@
 #define MAGIC_ACS   "acs_"
 #endif//#if defined(CONFIG_ACS)
 
+extern unsigned int get_multi_dt_entry(unsigned int fdt_addr);
+
 #ifndef CONFIG_UNIFY_KEY_MANAGE
-int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo)
+int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen)
 {
     DWN_ERR("burn key not supported as CONFIG_UNIFY_KEY_MANAGE undef!!");
     return OPT_DOWN_FAIL;
@@ -436,21 +438,25 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
                 int rc = 0;
                 char* dtbLoadAddr = (char*)CONFIG_DTB_LOAD_ADDR;
                 const int DtbMaxSz = (2U<<20);
+                unsigned fdtSz = 0;
+                unsigned char* destDtb = NULL;
 
-                rc = fdt_check_header(data);
+                destDtb = get_multi_dt_entry(data);
+                rc = fdt_check_header(destDtb);
                 if(rc){
                     sprintf(errInfo, "failed at fdt_check_header\n");
                     DWN_ERR(errInfo);
                     return 0;
                 }
-                if(DtbMaxSz <= dataSz){
-                    sprintf(errInfo, "failed: fdt header ok but sz 0%x > max 0x%x\n", dataSz, DtbMaxSz);
+                fdtSz = fdt_totalsize(destDtb);
+                if(DtbMaxSz <= fdtSz){
+                    sprintf(errInfo, "failed: fdt header ok but sz 0%x > max 0x%x\n", fdtSz, DtbMaxSz);
                     DWN_ERR(errInfo);
                     return 0;
                 }
 
                 DWN_MSG("load dtb to 0x%p\n", dtbLoadAddr);
-                memcpy(dtbLoadAddr, data, dataSz);
+                memcpy(dtbLoadAddr, destDtb, fdtSz);
             }
 
             burnSz = dataSz;
@@ -500,11 +506,12 @@ static int optimus_storage_read(struct ImgBurnInfo* pDownInfo, u64 addrOrOffsetI
 
         case OPTIMUS_MEDIA_TYPE_KEY_UNIFY:
             {
+                unsigned fmtLen = 0;
                 if(addrOrOffsetInBy){
                     DWN_ERR("OH NO, IS key len > 64K!!? addrOrOffsetInBy is 0x%llx not 0\n", addrOrOffsetInBy);
                     return OPT_DOWN_FAIL;
                 }
-                ret = v2_key_read(pDownInfo->partName, buff, readSzInBy, errInfo);
+                ret = v2_key_read(pDownInfo->partName, buff, readSzInBy, errInfo, &fmtLen);
             }
             break;
 

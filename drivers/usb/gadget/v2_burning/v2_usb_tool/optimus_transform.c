@@ -480,7 +480,7 @@ int optimus_working (const char *cmd, char* buff)
         memcpy(buff, "success", strlen("success"));//use memcpy but not strcpy to not overwrite storage/key info
     }
 
-	printf("info[%s]\n",buff);
+	printf("[info]%s\n",buff);
 	return ret;
 }
 

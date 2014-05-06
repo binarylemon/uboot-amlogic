@@ -49,7 +49,7 @@ int v2_key_command(const int argc, char * const argv[], char *info);
  *@keyValLen: keyVal len is strict when read, i.e, user must know the length of key he/she wnat to read!! 
  *@errInfo: start it with success if burned ok, or format error info into it tell pc burned failed
  */
-int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo);
+int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen);
 
 /*
  *This fucntion called by mwrite command, mread= bulkcmd "download key .." + n * download transfer, for key n==1

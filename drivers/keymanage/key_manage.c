@@ -541,37 +541,6 @@ int key_unify_query(char *keyname,unsigned int *keystate,unsigned int *keypermit
 	return err;
 }
 
-char* key_unify_query_key_format(char *keyname)
-{
-	char *keyformat=NULL;
-	struct key_item_t *key_manage;
-	key_manage = unifykey_find_item_by_name(keyname);
-	if(key_manage == NULL){
-		printf("%s:%d,%s key name is not exist\n",__func__,__LINE__,keyname);
-		return -EINVAL;
-	}
-	if(unifykey_item_verify_check(key_manage)){
-		printf("%s:%d,%s key name is invalid\n",__func__,__LINE__,keyname);
-		return -EINVAL;
-	}
-	switch(key_manage->df){
-		case KEY_M_HEXDATA:
-			keyformat="hexdata";
-		break;
-		case KEY_M_HEXASCII:
-			keyformat = "hexascii";
-		break;
-		case KEY_M_ALLASCII:
-			keyformat = "allascii";
-		break;
-		case KEY_M_MAX_DF:
-		default:
-			keyformat = "unkown mode";
-		break;
-	}
-	return keyformat;
-}
-
 /* function name: key_unify_uninit
  * functiion : uninit 
  * return : >=0 ok, <0 fail
