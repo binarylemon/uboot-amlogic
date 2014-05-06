@@ -277,14 +277,14 @@
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_DDR_CLK    792 //696 //768  //792// (636)
+#define CFG_DDR_CLK    636 //696 //768  //792// (636)
 
-#define CFG_DDR_AUTO_DETECT
-#define CFG_DDR_MODE   CFG_DDR_16BIT_LANE01
+//#define CFG_DDR_AUTO_DETECT
+#define CFG_DDR_MODE   CFG_DDR_32BIT
 
 //On board DDR capactiy
-//#define CFG_DDR3_1GB
-#define CFG_DDR3_2GB
+#define CFG_DDR3_1GB
+//#define CFG_DDR3_2GB
 //#define CFG_DDR3_4GB
 //above setting will affect following:
 //board/amlogic/m8_skt_v1/firmware/timming.c
@@ -380,5 +380,5 @@
    #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif
 
-
+#define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif //__CONFIG_M8B_SKT_V1_H__

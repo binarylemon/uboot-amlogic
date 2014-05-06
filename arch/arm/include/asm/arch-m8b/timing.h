@@ -129,7 +129,7 @@ struct pll_clk_settings{
 				serial_puts(__FILE__); \
 				serial_puts(__FUNCTION__); \
 				serial_put_dword(__LINE__); \
-				writel((1<<22) | (3<<24)|1000, P_WATCHDOG_TC); \
+				AML_WATCH_DOG_START(); \
 			} \
 		}
 

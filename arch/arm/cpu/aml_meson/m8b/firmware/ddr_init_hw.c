@@ -33,10 +33,6 @@ else
 	asm("NOP");
 	asm("DMB");
 	asm("ISB");
-
-	serial_put_hex(readl(P_DMC_DDR_CTRL), 32);
-	serial_puts("\n");
-	//if(timing_set->t_mmc_ddr_ctrl >> ):
 }
 
 int ddr_init_hw(struct ddr_set * timing_set)

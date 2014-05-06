@@ -33,7 +33,7 @@ unsigned int ovFlag;
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
@@ -206,7 +206,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//serial_put_dword((spl_boot_end));
 #endif
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_DISABLE(); //disable watchdog
 	//temp added

@@ -25,7 +25,7 @@ static void delay_us(unsigned long us)
 	#define hx_serial_put_hex 
 #endif
 
-#define DDR_INIT_WHILE_LOOP_MAX 100	//all while loop share this number
+#define DDR_INIT_WHILE_LOOP_MAX 1000	//all while loop share this number
 #define DDR_INIT_WHILE_LOOP(counter) \
 		__udelay(1);	\
 		counter++; \

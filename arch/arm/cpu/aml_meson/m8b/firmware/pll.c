@@ -193,7 +193,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
  	__udelay(100);
 
 	n_pll_try_times=0;
-
+/*
 	//VID2 PLL init
 	do{
 		PLL_ENTER_RESET(HHI_VID2_PLL_CNTL);
@@ -207,7 +207,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		PLL_LOCK_CHECK(n_pll_try_times,4);
 
 	}while((Rd_cbus(HHI_VID2_PLL_CNTL)&(1<<31))==0);
-
+*/
 	__udelay(100);
 }
 
