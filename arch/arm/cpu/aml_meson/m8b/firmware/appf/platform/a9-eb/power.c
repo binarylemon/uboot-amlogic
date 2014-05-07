@@ -175,7 +175,7 @@ void run_arc_program()
 	**********From 3rd of vaddr1 address, store two target trainning 
 	**********original data. ********************************************
 	********************************************************************/
-
+/*
 	writel(readl(P_DDR0_CLK_CTRL)|(1), P_DDR0_CLK_CTRL);
 	writel(readl(P_DDR1_CLK_CTRL)|(1), P_DDR1_CLK_CTRL);
 
@@ -236,7 +236,7 @@ void run_arc_program()
 			pbuffer1++;
 		}
 	}
-	
+*/	
 	clean_dcache_v7_l1();
 
 	//**********************//

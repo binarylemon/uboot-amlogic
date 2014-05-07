@@ -623,20 +623,20 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 void arc_pwr_register(struct arc_pwr_op *pwr_op)
 {
 //    printf_arc("%s\n", __func__);
-	pwr_op->power_off_at_24M    = rn5t618_power_off_at_24M;
-	pwr_op->power_on_at_24M     = rn5t618_power_on_at_24M;
+	pwr_op->power_off_at_24M    = 0;//rn5t618_power_off_at_24M;
+	pwr_op->power_on_at_24M     = 0;//rn5t618_power_on_at_24M;
 
-	pwr_op->power_off_at_32K_1  = rn5t618_power_off_at_32K_1;
-	pwr_op->power_on_at_32K_1   = rn5t618_power_on_at_32K_1;
-	pwr_op->power_off_at_32K_2  = rn5t618_power_off_at_32K_2;
-	pwr_op->power_on_at_32K_2   = rn5t618_power_on_at_32K_2;
+	pwr_op->power_off_at_32K_1  = 0;//rn5t618_power_off_at_32K_1;
+	pwr_op->power_on_at_32K_1   = 0;//rn5t618_power_on_at_32K_1;
+	pwr_op->power_off_at_32K_2  = 0;//rn5t618_power_off_at_32K_2;
+	pwr_op->power_on_at_32K_2   = 0;//rn5t618_power_on_at_32K_2;
 
 	pwr_op->power_off_ddr15     = 0;//rn5t618_power_off_ddr15;
 	pwr_op->power_on_ddr15      = 0;//rn5t618_power_on_ddr15;
 
-	pwr_op->shut_down           = rn5t618_shut_down;
+	pwr_op->shut_down           = 0;//rn5t618_shut_down;
 
-	pwr_op->detect_key          = rn5t618_detect_key;
+	pwr_op->detect_key          = 0;//rn5t618_detect_key;
 }
 
 

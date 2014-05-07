@@ -132,6 +132,10 @@ void copy_reboot_code()
 	}
 }
 
+unsigned int PWR_A9_MEM_PD[2];
+#define P_AO_RTI_PWR_A9_MEM_PD0 0xc81000F4
+#define P_AO_RTI_PWR_A9_MEM_PD1 0xc81000F8
+
 static void cpu_off()
 {
 
@@ -149,12 +153,18 @@ static void cpu_off()
 	udelay__(100);
 	// l2 sram sleep
 	writel(readl(P_AO_RTI_PWR_A9_CNTL1) | (0x1 << 0),P_AO_RTI_PWR_A9_CNTL1);
+
+	PWR_A9_MEM_PD[1] = readl(P_AO_RTI_PWR_A9_MEM_PD1);
+	writel(readl(P_AO_RTI_PWR_A9_MEM_PD1) | 0xf, P_AO_RTI_PWR_A9_MEM_PD1);
+	PWR_A9_MEM_PD[0] = readl(P_AO_RTI_PWR_A9_MEM_PD0);
+	writel(readl(P_AO_RTI_PWR_A9_MEM_PD0) | (0x3ffff << 0), P_AO_RTI_PWR_A9_MEM_PD0);
 }
 
 void restart_arm()
 {
 
-	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	writel(PWR_A9_MEM_PD[0], P_AO_RTI_PWR_A9_MEM_PD0);
+	writel(PWR_A9_MEM_PD[1], P_AO_RTI_PWR_A9_MEM_PD1);
 // l2 sram sleep
 	writel(readl(P_AO_RTI_PWR_A9_CNTL1) & (~(0x1 << 0)),P_AO_RTI_PWR_A9_CNTL1);
 
@@ -228,7 +238,7 @@ void enter_power_down()
 
 	store_restore_plls(0);
 
-	ddr_self_refresh();
+//	ddr_self_refresh();
 
  	f_serial_puts("CPU off...\n");
  	wait_uart_empty();
@@ -243,7 +253,7 @@ void enter_power_down()
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
 
-	switch_24M_to_32K();
+//	switch_24M_to_32K();
 
 	if(p_arc_pwr_op->power_off_at_32K_1)
 		p_arc_pwr_op->power_off_at_32K_1();
@@ -260,7 +270,7 @@ void enter_power_down()
 			p_arc_pwr_op->power_off_ddr15();
 	}
 
-#if 1
+#if 0
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
 	for(i=0;i<10;i++)
@@ -287,7 +297,7 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_32K_1();
 
 
-	switch_32K_to_24M();
+//	switch_32K_to_24M();
 
 
 	// power on even more domains
@@ -298,7 +308,7 @@ void enter_power_down()
 
 	f_serial_puts("step 8: ddr resume\n");
 	wait_uart_empty();
-	ddr_resume();
+//	ddr_resume();
 
 	f_serial_puts("restore pll\n");
 	wait_uart_empty();
@@ -325,8 +335,8 @@ void enter_power_down()
 			writel(0,P_AO_RTI_STATUS_REG2);
 			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
 			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-			writel(10,0xc1109904);
-			writel(1<<22|3<<24,0xc1109900);
+		//	writel(10,0xc1109904);
+			writel(1<<19|1<<24|10,0xc1109900);
 
 		    do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
 		}

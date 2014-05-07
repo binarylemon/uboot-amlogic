@@ -44,8 +44,8 @@ OBJECTS= $(OUTDIR)/os_api.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/platform.o \
 				 $(OUTDIR)/platform/$(PLATFORM)/power.o \
 	       $(OUTDIR)/platform/$(PLATFORM)/context.o \
-         $(OUTDIR)/platform/$(PLATFORM)/reset.o 
-#         $(OUTDIR)/serial.o
+         $(OUTDIR)/platform/$(PLATFORM)/reset.o \
+         $(OUTDIR)/serial.o
         
 CPU=cortex-a9
 GCC= TRUE
@@ -93,7 +93,7 @@ clean:
 	rm -f $(OUTDIR)/appf.bin
 	rm -f $(OUTDIR)/appf_srec.txt
 	rm -f $(EXTINCDIR)/power_firmware.dat
-	rm -f $(SRCTREE)/arch/arm/cpu/aml_meson/m8/power_firmware.dat
+	rm -f $(SRCTREE)/arch/arm/cpu/aml_meson/m8b/power_firmware.dat
 	mkdir -p $(OUTDIR)/platform/$(PLATFORM)
 	
 $(OUTDIR)/%.o : %.c Makefile $(MAPFILE) $(HEADERS)
@@ -106,7 +106,7 @@ $(OUTDIR)/appf.axf: $(OBJECTS) $(MAPFILE) Makefile
 $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	$(fromelf) -O binary $<  $@
 	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m8/power_firmware.dat
+	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m8b/power_firmware.dat
 
 $(OUTDIR)/appf_srec.txt: $(OUTDIR)/appf.axf
 	$(fromelf) --gap-fill 0xff -O srec $< $@

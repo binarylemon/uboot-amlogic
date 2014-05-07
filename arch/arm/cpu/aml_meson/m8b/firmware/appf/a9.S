@@ -100,8 +100,8 @@ restore_a9_debug	FUNCTION
 	ENDFUNC
 
 save_a9_other	FUNCTION
-	MRC	p15,0,r1,c15,c0,0	; Read Power Control Register
-	STR	r1, [r0], #4
+;	MRC	p15,0,r1,c15,c0,0	; Read Power Control Register
+;	STR	r1, [r0], #4
 
 	MRC	p15,0,r3,c0,c0,0	; Read Main ID Register
 	UBFX	r3, r3, #20, #4		; Extract major version number
@@ -119,9 +119,9 @@ save_a9_other	FUNCTION
 	ENDFUNC
 
 restore_a9_other	FUNCTION
-	LDR	r1, [r0], #4
-	ANDS	r1, r1, #0x01		; We only restore the Dynamic Clock gating bit
-	MCR	p15,0,r1,c15,c0,0	; Write Power Control Register
+;	LDR	r1, [r0], #4
+;	ANDS	r1, r1, #0x01		; We only restore the Dynamic Clock gating bit
+;	MCR	p15,0,r1,c15,c0,0	; Write Power Control Register
 	
 	MRC	p15,0,r3,c0,c0,0	; Read Main ID Register
 	UBFX	r3, r3, #20, #4		; Extract major version number

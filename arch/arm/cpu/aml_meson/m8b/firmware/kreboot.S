@@ -47,8 +47,7 @@ pwr_restart:
 	dmb
 	isb
 	mov sp,#0x4000
-
-#if 1
+#if 0
 	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
 	mov	r10, #11
 	str	 r10, [r9]
@@ -114,7 +113,7 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	   DMB
 	   ISB
 
-
+#if 0
 		//enable all channel
 		ldr r1,=0xFFF
 		ldr r0,=0xc8006204
@@ -155,7 +154,7 @@ store_loop2:
 	cmp r4, #0
 	bne store_loop2
 end_ch_store:
-
+#endif
 /* for debug */
 //    adr r1,reset_addr
 //    ldr r0,[r1]
