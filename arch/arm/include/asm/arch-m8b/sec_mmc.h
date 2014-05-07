@@ -41,6 +41,9 @@
 
 #define DMC_SEC_VIO0  		0xda002040    //DDR0 read
  // DDR0 read Bad access request information.
+ //31.   1: secuity range violation.
+ //30.   1: protection range violation.
+ //29.   1: DDR space range overflow.
  //26.    WRITE.  1 = write. 
  //25:23. *PROT. 
  //22:21. *BURST.
@@ -58,10 +61,14 @@
 #define DMC_SEC_VIO7  		 0xda00205c
 
 #define DMC_PROT_RANGE  	 0xda002080
+  //31:16.  protection range end address high 16 bits.
+  //15:0.   protection range end address low 16 bits.
 #define DMC_PROT_EN 	 	 0xda002084
+  //31:16.  projection range enable bit for each port  write access
+  //15:0.  projection range enable bit for each ports read access. 
 #define DMC_PROT_CTRL 	 	 0xda002088
-#define DMC_PROT_STS 	 	 0xda00208c
-
+  // 31:  enable address protection function.
+  //30:0.   not used.
 
 
 #endif //__M8_SEC_MMC__

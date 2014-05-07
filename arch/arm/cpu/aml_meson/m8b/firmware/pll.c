@@ -191,23 +191,5 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	}while((Rd_cbus(HHI_VID_PLL_CNTL)&(1<<31))==0);
 
  	__udelay(100);
-
-	n_pll_try_times=0;
-/*
-	//VID2 PLL init
-	do{
-		PLL_ENTER_RESET(HHI_VID2_PLL_CNTL);
-		Wr_cbus(HHI_VID2_PLL_CNTL2,CFG_VID2_PLL_CNTL_2);
-		Wr_cbus(HHI_VID2_PLL_CNTL3,CFG_VID2_PLL_CNTL_3);
-		Wr_cbus(HHI_VID2_PLL_CNTL4,CFG_VID2_PLL_CNTL_4);
-		Wr_cbus(HHI_VID2_PLL_CNTL5,CFG_VID2_PLL_CNTL_5);
-		PLL_SETUP(HHI_VID2_PLL_CNTL, plls->vid2_pll_cntl);
-		PLL_RELEASE_RESET(HHI_VID2_PLL_CNTL);
-
-		PLL_LOCK_CHECK(n_pll_try_times,4);
-
-	}while((Rd_cbus(HHI_VID2_PLL_CNTL)&(1<<31))==0);
-*/
-	__udelay(100);
 }
 

@@ -150,13 +150,6 @@ mmc_init_all:
 	writel(0, P_MMC_SOFT_RST1);
 	writel(~0, P_MMC_SOFT_RST);
 	writel(~0, P_MMC_SOFT_RST1);
-	
-	//M8 DDR0/1 channel select
-	//#define CONFIG_DDRX2_S12  (0)
-	//#define CONFIG_DDR1_ONLY  (1)
-	//#define CONFIG_DDRX2_S30  (2)
-	//#define CONFIG_DDR0_ONLY  (3)
-	//#define CONFIG_DDR_CHANNEL_SET (CONFIG_DDRX2_S12)
 
 	unsigned int nMMC_DDR_set = timing_set->t_mmc_ddr_ctrl;
 	int nM8_DDR_CHN_SET = (nMMC_DDR_set >> 24 ) & 3;

@@ -71,7 +71,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
-#if defined(CONFIG_M8)
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
