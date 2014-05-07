@@ -186,7 +186,7 @@ STATIC_PREFIX
 datum * 
 memTestDevice(volatile datum * baseAddress, unsigned long nBytes)	
 {
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
     //Watchdog disable
     AML_WATCH_DOG_DISABLE();;
 #endif
@@ -256,7 +256,7 @@ memTestDevice(volatile datum * baseAddress, unsigned long nBytes)
 #undef AML_DEBUG_ROM
     serial_putc('\n');
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	AML_WATCH_DOG_SET(5000); //5s
 #endif
 

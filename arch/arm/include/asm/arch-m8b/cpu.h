@@ -20,14 +20,6 @@
 //DDR1: 0x40000000 - 0x4000007F (128Bytes) for CONFIG_DDRX2_S30
 #define CONFIG_DDR1_DTAR_ADDR (0x0000 | ((CONFIG_DDRX2_S30 == CONFIG_DDR_CHANNEL_SET) ? (1<<30) : (1<<12)))
 
-
-//M8 DDR0/1 channel select
-#define CONFIG_DDRX2_S12  (0)
-#define CONFIG_DDR1_ONLY  (1)
-#define CONFIG_DDRX2_S30  (2)
-#define CONFIG_DDR0_ONLY  (3)
-//#define CONFIG_DDR_CHANNEL_SET (CONFIG_DDRX2_S12) //board.h
-
 //M8 DDR0/1 address map bank mode
 #define CONFIG_DDR_ADDR_MAP_BANK_MODE_2_BNK   (0)
 #define CONFIG_DDR_ADDR_MAP_BANK_MODE_4_BNK   (1)
@@ -38,26 +30,22 @@
 	#define CONFIG_DDR_COL_BITS  (10)
 #endif //CONFIG_DDR_COL_BITS
 
-#define DDR_DTAR_BANK_GET(addr,bit_row,bit_col,ambm_set,chn_set)  ((((addr) >> ((bit_row)+(bit_col)+ (chn_set ? 2 : 3))) & (ambm_set ? 4 : 6)) | \
-																		(((addr) >> ((bit_col)+( chn_set ? 2 : 3))) & (ambm_set ? 3 : 1)))
+#define DDR_DTAR_BANK_GET(addr,bit_row,bit_col,ambm_set)  ((((addr) >> ((bit_row)+(bit_col)+ (3))) & (ambm_set ? 4 : 6)) | \
+																		(((addr) >> ((bit_col)+(3))) & (ambm_set ? 3 : 1)))
 
-#define DDR_DTAR_DTROW_GET(addr,bit_row,bit_col,ambm_set,chn_set) (( (addr) >> (( chn_set ? (ambm_set+1) : (ambm_set+2))+(bit_col)+2)) & ((1<< (bit_row))-1))
+#define DDR_DTAR_DTROW_GET(addr,bit_row,bit_col,ambm_set) (( (addr) >> (( (ambm_set+2))+(bit_col)+2)) & ((1<< (bit_row))-1))
 #define DDR_DTAR_DTCOL_GET(addr,bit_col)                 (( (addr) >> 2) & ((1<< (bit_col))-1))
 
-#define CONFIG_DDR0_DTAR_DTBANK  DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET,CONFIG_DDR_CHANNEL_SET)
-#define CONFIG_DDR0_DTAR_DTROW   DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET,CONFIG_DDR_CHANNEL_SET)
+#define CONFIG_DDR0_DTAR_DTBANK  DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET)
+#define CONFIG_DDR0_DTAR_DTROW   DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET)
 #define CONFIG_DDR0_DTAR_DTCOL   DDR_DTAR_DTCOL_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_COL_BITS)
-
-#define CONFIG_DDR1_DTAR_DTBANK  DDR_DTAR_BANK_GET(CONFIG_DDR1_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET,CONFIG_DDR_CHANNEL_SET)
-#define CONFIG_DDR1_DTAR_DTROW   DDR_DTAR_DTROW_GET(CONFIG_DDR1_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET,CONFIG_DDR_CHANNEL_SET)
-#define CONFIG_DDR1_DTAR_DTCOL   DDR_DTAR_DTCOL_GET(CONFIG_DDR1_DTAR_ADDR,CONFIG_DDR_COL_BITS)
 
 //DDR mode
 #define CFG_DDR_32BIT			1
 #define CFG_DDR_16BIT_LANE02	2	//DDR lane0+lane2
 #define CFG_DDR_16BIT_LANE01	3	//DDR lane0+lane1
 #define CFG_DDR_MODE_STO_ADDR	0	//2 //2 bits, store in efuse etc..
-#define CFG_DDR_MODE_STO_OFFSET	0//6	//offset of these 2 bits
+#define CFG_DDR_MODE_STO_OFFSET	0	//6	//offset of these 2 bits
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

@@ -260,7 +260,6 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_DDR_CHANNEL_SET (CONFIG_DDRX2_S12)
 #define CONFIG_DDR_AMBM_SET    (CONFIG_DDR_ADDR_MAP_BANK_MODE_4_BNK)
 
 //For DDR PUB training not check the VT done flag
