@@ -61,7 +61,7 @@ int cpu_sdio_init(unsigned port)
         	setbits_le32(P_PERIPHS_PIN_MUX_2,0x3f<<10);break;
         case SDIO_PORT_C://SDIOC GPIOB_2~GPIOB_7
             clrbits_le32(P_PERIPHS_PIN_MUX_2,(0x1f<<22));
-            setbits_le32(P_PERIPHS_PIN_MUX_6,(0x3f<<24));
+            setbits_le32(P_PERIPHS_PIN_MUX_6,(0x3f<<26));
             //printf("inand sdio  port:%d\n",port);
             break;
         case SDIO_PORT_XC_A:
