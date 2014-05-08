@@ -943,7 +943,10 @@ int efuse_aml_init_plus(void)
 #endif //CONFIG_AML_EFUSE_INIT_PLUS
 
 /* function: efuse_read_intlItem
- * intl_item: item name,name is [temperature,cvbs_trimming]
+ * intl_item: item name,name is [temperature,cvbs_trimming,temper_cvbs]
+ *            [temperature: 2byte]
+ *            [cvbs_trimming: 2byte]
+ *            [temper_cvbs: 4byte]
  * buf:  output para
  * size: buf size
  * */
@@ -986,6 +989,19 @@ int efuse_read_intlItem(char *intl_item,char *buf,int size)
 				 * */
 				pos = 504;
 				len = 2;
+				if(size <= 0){
+					printf("%s input size:%d is error\n",intl_item,size);
+					return -1;
+				}
+				if(len > size){
+					len = size;
+				}
+				ret = efuse_read( buf, len, &pos );
+				return ret;
+			}
+			if(strcmp(intl_item,"temper_cvbs") == 0){
+				pos = 502;
+				len = 4;
 				if(size <= 0){
 					printf("%s input size:%d is error\n",intl_item,size);
 					return -1;
