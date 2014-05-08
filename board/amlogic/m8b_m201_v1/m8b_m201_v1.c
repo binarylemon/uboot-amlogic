@@ -366,8 +366,17 @@ void board_ir_init(void)
 
 }
 #endif
+void borad_power_init(void)
+{
+	printf("power init\n");
+	//power on VCC5V
+	gpio_amlogic_requst(NULL, GPIODV_29);
+	gpio_amlogic_direction_output(NULL, GPIODV_29, 0);
+	
+}
 int board_init(void)
 {
+	borad_power_init();
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
 #if CONFIG_JERRY_NAND_TEST //temp test	
