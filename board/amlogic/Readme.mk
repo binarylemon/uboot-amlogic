@@ -129,6 +129,11 @@ endif
 	@echo
 
 	@echo =======================================================================
+	@echo The mark in board is "M8_m101_v1"
+	@echo config command: \"make m8_m101_v1_config\"
+	@echo
+
+	@echo =======================================================================
 	@echo The mark in board is "M8B_PXP_V1"
 	@echo config command: \"make m8b_pxp_v1_config\"
 	@echo

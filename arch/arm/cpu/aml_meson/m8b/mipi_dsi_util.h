@@ -1,21 +1,8 @@
 #ifndef MIPI_DSI_UTIL_H
 #define MIPI_DSI_UTIL_H
 
-#if 0
-#include <mach/register.h>
-#include <asm/arch-m8/mipi_dsi_reg.h>
-#include <linux/amlogic/vout/lcdoutc.h>
-#else
 #include <asm/arch/lcdoutc.h>
 #include <asm/arch/register.h>
-#endif
-
-//#define PRINT_DEBUG_INFO
-#ifdef PRINT_DEBUG_INFO
-#define DPRINT(...)		printf(__VA_ARGS__)
-#else
-#define DPRINT(...)
-#endif
 
 // --------------------------------------------------------
 // MIPI DSI Data Type/ MIPI DCS Command Type Definitions
@@ -310,9 +297,9 @@ typedef enum {DT_VSS                 = 0x01,
 #define BIT_ACK_ERR_1               1
 #define BIT_ACK_ERR_0               0
 
-// Transfer mode parameters
-#define TRANS_VIDEO_MODE            0
-#define TRANS_COMMAND_MODE          1
+// Operation mode parameters
+#define OPERATION_VIDEO_MODE        0
+#define OPERATION_COMMAND_MODE      1
 
 // Command transfer type in command mode
 #define DCS_TRANS_HS                0
@@ -563,79 +550,6 @@ typedef enum tv_enc_lcd_type_e{
         TV_ENC_LCD_TYPE_MAX
 } tv_enc_lcd_type_t;   /* tv encoder output format */
 
-int set_lcd_clk(unsigned int display_w, unsigned int display_h,
-                unsigned int color_code, unsigned int lane_num,
-                unsigned int refresh_rate);
-void init_mipi_dsi_phy(Lcd_Config_t *pConf);
-
-void start_mipi_dsi_host(void);                                             // close the default reset
-
-void powerup_mipi_dsi_dphy(void);                                           // power up mipi_dsi and dphy
-void powerdown_mipi_dsi_dphy(void);                                         // power down mipi_dsi and dphy
-
-void set_mipi_int(void);                                                    // configure mipi interrupt registers
-void set_mipi_dcs(int trans_type,                                       // 0: high speed, 1: low power
-                int ack_req,                                          // 1: request ack, 0: do not need ack
-                int tear_en                                           // 1: enable tear ack, 0: disable tear ack
-                );                                                     // configure command mode relative registers
-
-void set_mipi_edpi(unsigned int edpi_allowed_cmd_size,                  // allowed command size for edpi
-                unsigned int vcid,                                   // virtual id for DBI
-                unsigned short start_col,                            // start column address
-                unsigned short end_col,                              // end column address
-                unsigned short start_page,                           // start page address
-                unsigned short end_page,                             // end page address
-                unsigned int pixel2byte,                             // pixel-to-byte format
-                unsigned int req_ack,                                // if need check ack for bta
-                unsigned int color_code                              // color code
-                );
-
-extern void check_phy_st(void);                                                    // Check the status of the dphy: phylock and stopstateclklane
-
-extern void delay_us(int us);
-extern void config_video_para(Lcd_Config_t    *pConf); // Configure video parameter such HFP/HSA/HBP/HACT...
-                
-
-extern void wait_bta_ack(void);                                                    // wait ack from bta
-extern void wait_cmd_fifo_empty(void);                                             // wait generic fifo empty
-extern unsigned int wait_for_generic_read_response(void);                          // wait read response
-
-extern unsigned int generic_if_wr(unsigned int address, unsigned int data_in); // Generic Interface Write
-extern unsigned int generic_if_rd(unsigned int address);                       // Generic Interface Read
-
-extern void DCS_write_short_packet_0_para(unsigned int data_type,              // DSI data type, such as DCS Short Write Packet 1 Parameter
-                unsigned int vc_id,                  // Virtual Channel ID
-                unsigned int dcs_command,            // DCS Command, such as enter_idle_mode
-                unsigned int req_ack                 // request ack for bta
-                );
-
-extern void DCS_write_short_packet_1_para(unsigned int data_type,              // DSI data type, such as DCS Short Write Packet 1 Parameter
-                unsigned int vc_id,                  // Virtual Channel ID
-                unsigned int dcs_command,            // DCS Command, such as set_address_mode
-                unsigned int para,                   // Parameter
-                unsigned int req_ack                 // request ack for bta
-                );
-
-extern unsigned int  DCS_read_packet_no_para(unsigned int data_type,           // DSI data type, such as DCS Read Packet no Parameter
-                unsigned int vc_id,               // Virtual Channel ID
-                unsigned int dcs_command          // DCS Command, such as get_address_mode
-                );
-
-extern void DCS_long_write_packet(unsigned int data_type,                      // DSI data type, such as DCS Long Write Packet
-                unsigned int vc_id,                          // Virtual Channel ID
-                unsigned int dcs_command,                    // DCS Command, such as set_column_address/set_page_address
-                unsigned char* payload,                       // Payload include: dcs_command+payload
-                unsigned int pld_size,                       // Payload size, from LSB to MSB
-                unsigned int req_ack                         // if need check ack for bta
-                );
-
-
-extern void check_mipi_dsi_color_config (unsigned int venc_color_type, unsigned int dpi_color_type);
-
-void startup_mipi_dsi_host(void);
-
-extern void auo_panel_init(void);
-
 // DCS COMMAND LIST
 #define DCS_CMD_CODE_ENTER_IDLE_MODE      0x0
 #define DCS_CMD_CODE_ENTER_INVERT_MODE    0x1  
@@ -651,25 +565,9 @@ extern void auo_panel_init(void);
 #define DCS_CMD_CODE_SET_TEAR_OFF         0xb 
 #define DCS_CMD_CODE_SOFT_RESET           0xc
 
-void set_pll_mipi(Lcd_Config_t *p);
-void set_venc_mipi(Lcd_Config_t *pConf);
-void set_control_mipi(Lcd_Config_t *p);
-void init_phy_mipi(Lcd_Config_t *pConf);
-void set_tcon_mipi(Lcd_Config_t *p);
-void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status);
-
-//****************************************************************************************************/
-//      from test_prm.h
-//****************************************************************************************************/
-#define MIPI_DSI_VIRTUAL_CHAN_ID        0                       // Range [0,3]
-/////pConf->dsi_cfg->trans_mode;
-#define MIPI_DSI_TRANS_MODE             TRANS_VIDEO_MODE        // Define DSI communication mode: video mode or command_mode.
-#define MIPI_DSI_CMD_TRANS_TYPE         DCS_TRANS_HS            // Define DSI command transfer type: high speed or low power
-#define MIPI_DSI_DCS_ACK_TYPE           MIPI_DSI_DCS_REQ_ACK    // Define if DSI command need ack: req_ack or no_ack
-#define MIPI_DSI_TRANS_VIDEO_MODE       BURST_MODE              // Applicable only to video mode. Define picture data transfer method: non-burst sync pulse; non-burst sync event; or burst.
-#define MIPI_DSI_TEAR_SWITCH            MIPI_DCS_DISABLE_TEAR
-//****************************************************************************************************/
-//      from test_prm.h
-//****************************************************************************************************/
+extern void mipi_dsi_link_on(Lcd_Config_t *pConf);
+extern void mipi_dsi_link_off(Lcd_Config_t *pConf);
+extern void set_mipi_dsi_control(Lcd_Config_t *pConf);
+extern void mipi_dsi_off(void);
 
 #endif

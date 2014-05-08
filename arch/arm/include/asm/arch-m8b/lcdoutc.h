@@ -1,5 +1,5 @@
 /*
- * AMLOGIC TCON controller driver.
+ * AMLOGIC lcd controller driver.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <common.h>
 #include <linux/list.h>
 #include <amlogic/aml_lcd.h>
+#include <asm/arch/aml_lcd_gpio.h>
 
 /* for GAMMA_CNTL_PORT */
    /// GAMMA VCOM POL
@@ -124,10 +125,10 @@
    #define LCD_PACK_LITTLE          0   
    
 /* for video encoder */
-	#define	MIPI_DELAY				2
-	#define	LVDS_DELAY				8
-	#define	EDP_DELAY				8
-	#define	TTL_DELAY				19
+	#define MIPI_DELAY				2
+	#define LVDS_DELAY				8
+	#define EDP_DELAY				8
+	#define TTL_DELAY				19
 
 //********************************************//
 // for clk parameter auto generation
@@ -136,36 +137,37 @@
 	#define PLL_CTRL_LOCK			31
 	#define PLL_CTRL_EN				30
 	#define PLL_CTRL_RST			29
-	#define	PLL_CTRL_OD				9	//[10:9]
-	#define	PLL_CTRL_N				24	//[28:24]
-	#define	PLL_CTRL_M				0	//[8:0]
+	#define PLL_CTRL_OD				9	//[10:9]
+	#define PLL_CTRL_N				24	//[28:24]
+	#define PLL_CTRL_M				0	//[8:0]
 
-	#define	DIV_CTRL_EDP_DIV1		24	//[26:24]
-	#define	DIV_CTRL_EDP_DIV0		20	//[23:20]
+	#define DIV_CTRL_EDP_DIV1		24	//[26:24]
+	#define DIV_CTRL_EDP_DIV0		20	//[23:20]
 	#define DIV_CTRL_DIV_POST		12	//[14:12]
 	#define DIV_CTRL_LVDS_CLK_EN	11
 	#define DIV_CTRL_PHY_CLK_DIV2	10
 	#define DIV_CTRL_POST_SEL		8	//[9:8]
 	#define	DIV_CTRL_DIV_PRE		4	//[6:4]
 
-	#define	CLK_TEST_FLAG			31
-	#define	CLK_CTRL_AUTO			30
-	#define	CLK_CTRL_FRAC			16	//[27:16]
-	#define	CLK_CTRL_LEVEL			12	//[13:12]
-	//#define	CLK_CTRL_PLL_SEL		10
-	//#define	CLK_CTRL_DIV_SEL		9
-	#define	CLK_CTRL_VCLK_SEL		8
-	#define	CLK_CTRL_SS				4	//[7:4]
-	#define	CLK_CTRL_XD				0	//[3:0]
+	#define CLK_CTRL_AUTO			31
+	#define CLK_TEST_FLAG			30
+	#define CLK_CTRL_FRAC			16	//[27:16]
+	#define CLK_CTRL_LEVEL			12	//[14:12]
+	//#define CLK_CTRL_PLL_SEL		10
+	//#define CLK_CTRL_DIV_SEL		9
+	#define CLK_CTRL_VCLK_SEL		8
+	#define CLK_CTRL_SS				4	//[7:4]
+	#define CLK_CTRL_XD				0	//[3:0]
 	
-	#define PLL_WAIT_LOCK_CNT		100
-//**** clk frequency limit ***/
+	#define PLL_WAIT_LOCK_CNT		200
+
+/**** clk frequency limit ***/
 	/* PLL */
 	#define FIN_FREQ				(24 * 1000)
 	#define PLL_M_MIN				2
 	#define PLL_M_MAX				511
 	#define PLL_N_MIN				1
-	#define PLL_N_MAX				2
+	#define PLL_N_MAX				1
 	
 	#define PLL_FREF_MIN			(5 * 1000)
 	#define PLL_FREF_MAX			(25 * 1000)
@@ -177,7 +179,7 @@
 	#define DIV_PRE_MAX_CLK_IN		(1500 * 1000)
 	#define DIV_POST_MAX_CLK_IN		(1000 * 1000)
 	/* CRT_VIDEO */
-	#define CRT_VID_MAX_CLK_IN		(600 * 1000)
+	#define CRT_VID_MAX_CLK_IN		(1300 * 1000)
 	/* ENCL */
 	#define ENCL_MAX_CLK_IN			(333 * 1000)
 	/* lcd interface video clk */
@@ -270,14 +272,13 @@ static const char* lcd_type_table_match[]={
 	"invalid",
 };
 
+#define SS_LEVEL_MAX	5
 static const char *lcd_ss_level_table[]={
 	"0",
 	"0.5%",
 	"1%",
+	"1.5%",
 	"2%",
-	"3%",
-	"4%",
-	"5%",
 };
 
 #define PANEL_MODEL_DEFAULT	"Panel_Default"
@@ -292,7 +293,7 @@ typedef struct {
     u32 h_active_area;/* screen physical width in "mm" unit */
     u32 v_active_area;/* screen physical height in "mm" unit */
 
-    Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
+    Lcd_Type_t lcd_type;
     u16 lcd_bits;         // 6 or 8 bits
 	u16 lcd_bits_option;  //option=0, means the panel only support one lcd_bits option
 }Lcd_Basic_t;
@@ -316,6 +317,7 @@ typedef struct {
 	u16 de_hstart;
 	u16 de_vstart;
 	u16 de_valid;
+	u32 vsync_h_phase; //[31]sign [15:0]value
 	u32 h_offset;
 	u32 v_offset;
 
@@ -377,32 +379,31 @@ typedef struct {
 } Lcd_Effect_t;
 
 typedef struct DSI_Config_s{
-        unsigned int    dsi_clk_div;
-        unsigned int    dsi_clk_max;
-        unsigned int    dsi_clk_min;
-        unsigned int    numerator;
-        unsigned int    denominator;
-        unsigned int    dsi_cur_clk;
-        unsigned int    pol_vs_hs_de;
-        unsigned int    venc_color_type;
-        unsigned int    dpi_color_type;
-        unsigned char   dpi_chroma_subsamp;
-        unsigned int    venc_fmt;
-        unsigned char   lane_num;
-        unsigned char   refresh_rate;
-        unsigned char   trans_mode;
-				unsigned int    hline;
-				unsigned int    hsa; 
-				unsigned int    hbp; 
-				unsigned int    vsa; 
-				unsigned int    vbp; 
-				unsigned int    vfp; 
-				unsigned int    vact;
-        unsigned char   trans_type;    //such ad hs or lp
-        unsigned char   ack_type;      //if need bta ack check
-        unsigned char   tear_switch;
+    unsigned char lane_num;
+    unsigned int bit_rate_max;
+    unsigned int bit_rate_min;
+    unsigned int bit_rate;
+    unsigned int factor_denominator;
+    unsigned int factor_numerator;
+    unsigned int hline;
+    unsigned int hsa;
+    unsigned int hbp;
+    unsigned int vsa;
+    unsigned int vbp;
+    unsigned int vfp;
+    unsigned int vact;
 
-        unsigned char   is_rgb;        //whether dpi color type is rgb
+    unsigned int venc_data_width;
+    unsigned int dpi_data_format;
+    unsigned int venc_fmt;
+    unsigned char operation_mode;  //mipi-dsi operation mode: video, command
+    unsigned char transfer_ctrl;  //LP mode auto stop clk lane
+    unsigned char video_mode_type;  //burst, non-burst(sync pulse, sync event)
+
+    unsigned char init_on_flag;
+    unsigned char init_off_flag;
+    unsigned int sleep_out_delay;
+    unsigned int display_on_delay;
 }DSI_Config_t;
 
 typedef struct {
@@ -428,15 +429,10 @@ typedef struct {
 } TTL_Config_t;
 
 typedef struct {
-	unsigned phy_ctrl;
-} DPHY_Config_t;
-
-typedef struct {
 	DSI_Config_t *mipi_config;
 	LVDS_Config_t *lvds_config;
 	EDP_Config_t *edp_config;
 	TTL_Config_t *ttl_config;
-	DPHY_Config_t *phy_config;
 } Lcd_Control_Config_t;
 
 typedef enum {
@@ -486,10 +482,11 @@ Lcd_Config_t lcd_config_dft;
 
 typedef enum {
 	BL_CTL_GPIO = 0,
-	BL_CTL_PWM_NEGATIVE,
-	BL_CTL_PWM_POSITIVE,
-	BL_CTL_PWM_COMBO,
-	BL_CTL_MAX,
+	BL_CTL_PWM_NEGATIVE = 1,
+	BL_CTL_PWM_POSITIVE = 2,
+	BL_CTL_PWM_COMBO = 3,
+	BL_CTL_EXTERN = 4,
+	BL_CTL_MAX = 5,
 } BL_Ctrl_Method_t;
 
 static const char* bl_ctrl_method_table[]={
@@ -497,7 +494,8 @@ static const char* bl_ctrl_method_table[]={
 	"pwm_negative",
 	"pwm_positive",
 	"pwm_combo",
-	"null"
+	"extern",
+	"null",
 };
 
 typedef enum {
@@ -514,6 +512,7 @@ typedef struct {
 	unsigned level_mid_mapping;
 	unsigned level_min;
 	unsigned level_max;
+	unsigned short power_on_delay;
 	unsigned char method;
 	int gpio;
 	unsigned dim_max;
@@ -549,283 +548,5 @@ Lcd_Bl_Config_t bl_config_dft;
 //*************************************//
 
 extern void mdelay(unsigned long msec);
-
-typedef enum {
-	GPIOAO_0=0,
-	GPIOAO_1=1,
-	GPIOAO_2=2,
-	GPIOAO_3=3,
-	GPIOAO_4=4,
-	GPIOAO_5=5,
-	GPIOAO_6=6,
-	GPIOAO_7=7,
-	GPIOAO_8=8,
-	GPIOAO_9=9,
-	GPIOAO_10=10,
-	GPIOAO_11=11,
-	GPIOAO_12=12,
-	GPIOAO_13=13,
-	GPIOZ_0=14,
-	GPIOZ_1=15,
-	GPIOZ_2=16,
-	GPIOZ_3=17,
-	GPIOZ_4=18,
-	GPIOZ_5=19,
-	GPIOZ_6=20,
-	GPIOZ_7=21,
-	GPIOZ_8=22,
-	GPIOZ_9=23,
-	GPIOZ_10=24,
-	GPIOZ_11=25,
-	GPIOZ_12=26,
-	GPIOZ_13=27,
-	GPIOZ_14=28,
-	GPIOH_0=29,
-	GPIOH_1=30,
-	GPIOH_2=31,
-	GPIOH_3=32,
-	GPIOH_4=33,
-	GPIOH_5=34,
-	GPIOH_6=35,
-	GPIOH_7=36,
-	GPIOH_8=37,
-	GPIOH_9=38,
-	BOOT_0=39,
-	BOOT_1=40,
-	BOOT_2=41,
-	BOOT_3=42,
-	BOOT_4=43,
-	BOOT_5=44,
-	BOOT_6=45,
-	BOOT_7=46,
-	BOOT_8=47,
-	BOOT_9=48,
-	BOOT_10=49,
-	BOOT_11=50,
-	BOOT_12=51,
-	BOOT_13=52,
-	BOOT_14=53,
-	BOOT_15=54,
-	BOOT_16=55,
-	BOOT_17=56,
-	BOOT_18=57,
-	CARD_0=58,
-	CARD_1=59,
-	CARD_2=60,
-	CARD_3=61,
-	CARD_4=62,
-	CARD_5=63,
-	CARD_6=64,
-	GPIODV_0=65,
-	GPIODV_1=66,
-	GPIODV_2=67,
-	GPIODV_3=68,
-	GPIODV_4=69,
-	GPIODV_5=70,
-	GPIODV_6=71,
-	GPIODV_7=72,
-	GPIODV_8=73,
-	GPIODV_9=74,
-	GPIODV_10=75,
-	GPIODV_11=76,
-	GPIODV_12=77,
-	GPIODV_13=78,
-	GPIODV_14=79,
-	GPIODV_15=80,
-	GPIODV_16=81,
-	GPIODV_17=82,
-	GPIODV_18=83,
-	GPIODV_19=84,
-	GPIODV_20=85,
-	GPIODV_21=86,
-	GPIODV_22=87,
-	GPIODV_23=88,
-	GPIODV_24=89,
-	GPIODV_25=90,
-	GPIODV_26=91,
-	GPIODV_27=92,
-	GPIODV_28=93,
-	GPIODV_29=94,
-	GPIOY_0=95,
-	GPIOY_1=96,
-	GPIOY_2=97,
-	GPIOY_3=98,
-	GPIOY_4=99,
-	GPIOY_5=100,
-	GPIOY_6=101,
-	GPIOY_7=102,
-	GPIOY_8=103,
-	GPIOY_9=104,
-	GPIOY_10=105,
-	GPIOY_11=106,
-	GPIOY_12=107,
-	GPIOY_13=108,
-	GPIOY_14=109,
-	GPIOY_15=110,
-	GPIOY_16=111,
-	GPIOX_0=112,
-	GPIOX_1=113,
-	GPIOX_2=114,
-	GPIOX_3=115,
-	GPIOX_4=116,
-	GPIOX_5=117,
-	GPIOX_6=118,
-	GPIOX_7=119,
-	GPIOX_8=120,
-	GPIOX_9=121,
-	GPIOX_10=122,
-	GPIOX_11=123,
-	GPIOX_12=124,
-	GPIOX_13=125,
-	GPIOX_14=126,
-	GPIOX_15=127,
-	GPIOX_16=128,
-	GPIOX_17=129,
-	GPIOX_18=130,
-	GPIOX_19=131,
-	GPIOX_20=132,
-	GPIOX_21=133,
-	GPIO_TEST_N=134,
-	GPIO_MAX=135,
-}gpio_t;
-
-static const char* amlogic_gpio_type_table[]={
-	"GPIOAO_0",
-	"GPIOAO_1",
-	"GPIOAO_2",
-	"GPIOAO_3",
-	"GPIOAO_4",
-	"GPIOAO_5",
-	"GPIOAO_6",
-	"GPIOAO_7",
-	"GPIOAO_8",
-	"GPIOAO_9",
-	"GPIOAO_10",
-	"GPIOAO_11",
-	"GPIOAO_12",
-	"GPIOAO_13",
-	"GPIOZ_0",
-	"GPIOZ_1",
-	"GPIOZ_2",
-	"GPIOZ_3",
-	"GPIOZ_4",
-	"GPIOZ_5",
-	"GPIOZ_6",
-	"GPIOZ_7",
-	"GPIOZ_8",
-	"GPIOZ_9",
-	"GPIOZ_10",
-	"GPIOZ_11",
-	"GPIOZ_12",
-	"GPIOZ_13",
-	"GPIOZ_14",
-	"GPIOH_0",
-	"GPIOH_1",
-	"GPIOH_2",
-	"GPIOH_3",
-	"GPIOH_4",
-	"GPIOH_5",
-	"GPIOH_6",
-	"GPIOH_7",
-	"GPIOH_8",
-	"GPIOH_9",
-	"BOOT_0",
-	"BOOT_1",
-	"BOOT_2",
-	"BOOT_3",
-	"BOOT_4",
-	"BOOT_5",
-	"BOOT_6",
-	"BOOT_7",
-	"BOOT_8",
-	"BOOT_9",
-	"BOOT_10",
-	"BOOT_11",
-	"BOOT_12",
-	"BOOT_13",
-	"BOOT_14",
-	"BOOT_15",
-	"BOOT_16",
-	"BOOT_17",
-	"BOOT_18",
-	"CARD_0",
-	"CARD_1",
-	"CARD_2",
-	"CARD_3",
-	"CARD_4",
-	"CARD_5",
-	"CARD_6",
-	"GPIODV_0",
-	"GPIODV_1",
-	"GPIODV_2",
-	"GPIODV_3",
-	"GPIODV_4",
-	"GPIODV_5",
-	"GPIODV_6",
-	"GPIODV_7",
-	"GPIODV_8",
-	"GPIODV_9",
-	"GPIODV_10",
-	"GPIODV_11",
-	"GPIODV_12",
-	"GPIODV_13",
-	"GPIODV_14",
-	"GPIODV_15",
-	"GPIODV_16",
-	"GPIODV_17",
-	"GPIODV_18",
-	"GPIODV_19",
-	"GPIODV_20",
-	"GPIODV_21",
-	"GPIODV_22",
-	"GPIODV_23",
-	"GPIODV_24",
-	"GPIODV_25",
-	"GPIODV_26",
-	"GPIODV_27",
-	"GPIODV_28",
-	"GPIODV_29",
-	"GPIOY_0",
-	"GPIOY_1",
-	"GPIOY_2",
-	"GPIOY_3",
-	"GPIOY_4",
-	"GPIOY_5",
-	"GPIOY_6",
-	"GPIOY_7",
-	"GPIOY_8",
-	"GPIOY_9",
-	"GPIOY_10",
-	"GPIOY_11",
-	"GPIOY_12",
-	"GPIOY_13",
-	"GPIOY_14",
-	"GPIOY_15",
-	"GPIOY_16",
-	"GPIOX_0",
-	"GPIOX_1",
-	"GPIOX_2",
-	"GPIOX_3",
-	"GPIOX_4",
-	"GPIOX_5",
-	"GPIOX_6",
-	"GPIOX_7",
-	"GPIOX_8",
-	"GPIOX_9",
-	"GPIOX_10",
-	"GPIOX_11",
-	"GPIOX_12",
-	"GPIOX_13",
-	"GPIOX_14",
-	"GPIOX_15",
-	"GPIOX_16",
-	"GPIOX_17",
-	"GPIOX_18",
-	"GPIOX_19",
-	"GPIOX_20",
-	"GPIOX_21",
-	"GPIO_TEST_N",
-	"GPIO_MAX",
-}; 
 
 #endif /* LCDOUTC_H */
