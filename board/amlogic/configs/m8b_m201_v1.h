@@ -1,7 +1,7 @@
-#ifndef __CONFIG_M8B_SKT_V1_H__
-#define __CONFIG_M8B_SKT_V1_H__
+#ifndef __CONFIG_M8B_M201_V1_H__
+#define __CONFIG_M8B_M201_V1_H__
 
-#define CONFIG_MACH_MESON8_SKT  // generate M8 SKT machid number
+#define CONFIG_MACH_MESON8_M201  // generate M8 M201 machid number
 
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
@@ -285,7 +285,7 @@
 //#define CFG_DDR3_2GB
 //#define CFG_DDR3_4GB
 //above setting will affect following:
-//board/amlogic/m8_skt_v1/firmware/timming.c
+//board/amlogic/m8_m201_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
 //DDR row/col size
@@ -307,7 +307,7 @@
 	#define CONFIG_DDR3_COL_SIZE (2)
 	#define CONFIG_DDR_ROW_BITS  (16)
 #elif !defined(CFG_DDR3_1GB) && !defined(CFG_DDR3_2GB) && !defined(CFG_DDR3_4GB)
-	#error "Please set DDR3 capacity first in file m8_skt_v1.h\n"
+	#error "Please set DDR3 capacity first in file m8_m201_v1.h\n"
 #endif
 
 #define CONFIG_DUMP_DDR_INFO 1
@@ -322,7 +322,7 @@
 #elif defined(CFG_DDR3_4GB)
 	#define PHYS_MEMORY_SIZE     (0x100000000) // 4GB ??
 #else
-	#error "Please define DDR3 memory capacity in file m8_skt_v1.h\n"
+	#error "Please define DDR3 memory capacity in file m8_m201_v1.h\n"
 #endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
@@ -379,4 +379,4 @@
 #endif
 
 #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
-#endif //__CONFIG_M8B_SKT_V1_H__
+#endif //__CONFIG_M8B_M201_V1_H__
