@@ -1,7 +1,7 @@
-#ifndef __CONFIG_M8B_M201_V1_H__
-#define __CONFIG_M8B_M201_V1_H__
+#ifndef __CONFIG_M8B_M102_V1_H__
+#define __CONFIG_M8B_M102_V1_H__
 
-#define CONFIG_MACH_MESON8_M201  // generate M8 M201 machid number
+#define CONFIG_MACH_MESON8_M102  // generate M8 M102 machid number
 
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
@@ -286,7 +286,7 @@
 	#error "Please set DDR capacity first!\n"
 #endif
 //above setting will affect following:
-//board/amlogic/m8_m201_v1/firmware/timming.c
+//board/amlogic/m8_m102_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
 #define CONFIG_DUMP_DDR_INFO 1
@@ -369,4 +369,4 @@
 #endif
 
 #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
-#endif //__CONFIG_M8B_M201_V1_H__
+#endif //__CONFIG_M8B_M102_V1_H__
