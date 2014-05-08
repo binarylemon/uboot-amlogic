@@ -7,7 +7,7 @@
 extern int gpio_debug;
 int do_gpio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int pin;
+	int pin,val;
 	int i;
 	for(i=0;i<argc;i++)
 		printf("%s\n",argv[i]);
@@ -71,6 +71,14 @@ int do_gpio(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			else
 				goto out;
 		}
+		udelay(100);
+		val=amlogic_get_value(pin);
+		printf("get %s val=%d,%s\n",argv[1],val,val==1? "high":"low");
+	}
+	else if(!strcmp(argv[2],"get"))
+	{
+		val=amlogic_get_value(pin);
+		printf("get %s val=%d,%s\n",argv[1],val,val==1? "high":"low");
 	}
 	else
 		goto out;
@@ -85,6 +93,8 @@ U_BOOT_CMD(
 	"gpio commands",
 	"GPIONAME out high/low [pp/pd/hz]\n"
 	"gset GPIONAME in [pp/pd/hz]\n"
+	"gset GPIONAME get\n"
+	"gset debug 1/0-- open debug\n"
 );
 
 /****************************************************/
