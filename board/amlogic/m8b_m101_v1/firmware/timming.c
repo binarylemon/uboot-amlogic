@@ -62,7 +62,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#define CFG_DDR_RTODT (0)
 	#define CFG_DDR_RTW   (4)
 
-	#define CFG_DDR_REFI  (8)
+	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
 
 	#define CFG_DDR_CL    (7)
@@ -105,7 +105,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#define CFG_DDR_RTODT (0)
 	#define CFG_DDR_RTW   (4)
 
-	#define CFG_DDR_REFI  (8)
+	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
 		
 	#define CFG_DDR_CL    (9)
@@ -149,7 +149,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#define CFG_DDR_RTODT (0)
 	#define CFG_DDR_RTW   (4)
 
-	#define CFG_DDR_REFI  (8)
+	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
 		
 	#define CFG_DDR_CL    (11)
