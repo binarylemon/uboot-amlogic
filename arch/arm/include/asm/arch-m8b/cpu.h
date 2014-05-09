@@ -12,6 +12,7 @@
 #endif
 //U boot code control
 
+#if 0
 //DDR training address, DO NOT modify
 //DDR0: 0x0F00 - 0x0F7F (128Bytes)
 #define CONFIG_DDR0_DTAR_ADDR (0x0f00)
@@ -39,6 +40,75 @@
 #define CONFIG_DDR0_DTAR_DTBANK  DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET)
 #define CONFIG_DDR0_DTAR_DTROW   DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_DDR_AMBM_SET)
 #define CONFIG_DDR0_DTAR_DTCOL   DDR_DTAR_DTCOL_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR_COL_BITS)
+#else
+
+#if !defined(CONFIG_DDR_COL_BITS)
+	#define CONFIG_DDR_COL_BITS  (10)
+#endif //CONFIG_DDR_COL_BITS
+
+//DDR training address, DO NOT modify
+//DDR0: 0x0F00 - 0x0F7F (128Bytes)
+#define CONFIG_M8B_RANK0_DTAR_ADDR (0xf00)
+
+//M8baby support 16bit and 32bit mode
+//#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_32BIT) //m8b_xxx_xxx.h
+#define CONFIG_M8B_DDR_BIT_MODE_32BIT  (0)
+#define CONFIG_M8B_DDR_BIT_MODE_16BIT  (1)
+
+//M8baby support two ranks: Rank0 or Rank0+1
+//#define CONFIG_M8B_DDR_RANK_SET  (CONFIG_M8B_DDR_RANK0_ONLY) //m8b_xxx_xxx.h.
+#define CONFIG_M8B_DDR_RANK0_ONLY      (0)
+#define CONFIG_M8B_DDR_RANK0_AND_RANK1 (1)
+
+#define CONFIG_M8B_DDR_RANK0_SIZE_256M  (1)
+#define CONFIG_M8B_DDR_RANK0_SIZE_512M  (2)
+#define CONFIG_M8B_DDR_RANK0_SIZE_1GB   (3)
+#define CONFIG_M8B_DDR_RANK0_SIZE_2GB   (0)
+
+#define CONFIG_M8B_DDR_RANK1_START_ADDR_256M  (256<<20)
+#define CONFIG_M8B_DDR_RANK1_START_ADDR_512M  (512<<20)
+#define CONFIG_M8B_DDR_RANK1_START_ADDR_1GB   (1<<30)
+#define CONFIG_M8B_DDR_RANK1_START_ADDR_2GB   (2<<30)
+
+//M8 DDR0/1 address map bank mode
+#define CONFIG_M8B_DDR_BANK_MODE_2_BNK   (0)
+#define CONFIG_M8B_DDR_BANK_MODE_4_BNK   (1)
+
+//M8baby support 4 mode to abstract bank from address
+//#define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12 ) //m8b_xxx_xxx.h
+#define CONFIG_M8B_DDR_BANK_SET_S12	    (0)
+#define CONFIG_M8B_DDR_BANK_SET_S13_S12	(1)
+#define CONFIG_M8B_DDR_BANK_SET_S8      (2)
+#define CONFIG_M8B_DDR_BANK_SET_S9_S8   (3)
+
+#if !defined(CONFIG_M8B_DDR_RANK_SET)
+  #define CONFIG_M8B_DDR_RANK_SET  (CONFIG_M8B_DDR_RANK0_ONLY)
+#endif
+
+#if !defined(CONFIG_M8B_DDR_BANK_SET)
+  #define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12 )
+#endif
+
+#if !defined(CONFIG_M8B_DDR_BIT_MODE_SET)
+  #define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_32BIT)  
+#endif
+
+#define M8BABY_DDR_DTAR_BANK_GET(addr,bit_row,bit_col,bank_set,bit_set) \
+	((((addr >> (bit_row+bit_col+(3-bit_set)+(bank_set&1))) & ((bank_set&1) ? 1 : 3)) << ((bank_set & 1)+1) ) |\
+		 ((addr >>(((bank_set&2) ? 6 : bit_col)+(2-bit_set))) & ((bank_set&1)?3:1)))
+
+#define M8BABY_DDR_DTAR_DTROW_GET(addr,bit_row,bit_col,bank_set,bit_set) \
+	(( (addr) >> (bit_col+((bank_set&1)+(3-bit_set))) & ((1<< (bit_row))-1)))
+
+
+#define M8BABY_DDR_DTAR_DTCOL_GET(addr,bit_col,bank_set,bit_set) \
+	((( (addr) >> (2-bit_set)) & ((1<< (((bank_set) & 2) ? 6 : (bit_col)))-1))| \
+		(((bank_set) & 2)? ((((addr) >> (((bank_set) & 1)+(9-bit_set)))&((1<<((bit_col)-6))-1))<<6):(0)))
+
+#define CONFIG_DDR0_DTAR_DTBANK  M8BABY_DDR_DTAR_BANK_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,CONFIG_M8B_DDR_BIT_MODE_SET)
+#define CONFIG_DDR0_DTAR_DTROW   M8BABY_DDR_DTAR_DTROW_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,CONFIG_M8B_DDR_BIT_MODE_SET)
+#define CONFIG_DDR0_DTAR_DTCOL   M8BABY_DDR_DTAR_DTCOL_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,CONFIG_M8B_DDR_BIT_MODE_SET)
+#endif
 
 //DDR mode
 #define CFG_DDR_32BIT			1

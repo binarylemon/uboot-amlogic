@@ -345,37 +345,25 @@ static struct ddr_set __ddr_setting={
 	.t_ddr_pll_cntl= (CFG_PLL_OD << 16)|(CFG_PLL_N<<9)|(CFG_PLL_M<<0),
 	.t_ddr_clk= CFG_DDR_CLK/2, //DDR PLL output is half of target DDR clock
 	
-	.t_mmc_ddr_ctrl=(0x1<<16)	|	//bit 16. bank page policy.	
-					(0<<15)		|	//bit 15. channel mode.  0 : 32bits mode. 1: 16bits mode.
-					(CONFIG_DDR_AMBM_SET<<13)|
-									//bit 14:13. ddr1 address map bank mode
-										// 00 = address switch between 2 banks  bank[0] selection bits [12].    
-										// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
-										// 10 = address switch between 2 banks  bank[0] selection bits [8].    
-										// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
-					(1<<12)		|	//bit 12. ddr1 rank size.  0, 1, one rank.  2 : 2 ranks.
-					(CONFIG_DDR3_ROW_SIZE<<10) | //bit 11:10. ddr1 row size.  2'b01 : A0~A12. 2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
-					(CONFIG_DDR3_COL_SIZE<<8) | //bit 9:8. ddr1 col size. 2'b01 : A0~A8, 2'b10 : A0~A9.
-					(0<<7)		|	//bit 7. ddr channel 0 mode.  0: 32bits mode. 1 : 16bits mode.
-					(CONFIG_DDR_AMBM_SET<<5) | 
-									//bit 6:5.     ddr0 address map bank mode
-										// 00 = address switch between 2 banks  bank[0] selection bits [12].    
-										// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
-										// 10 = address switch between 2 banks  bank[0] selection bits [8].    
-										// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
-					(1<<4)		|	//bit 4. ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.
-					(CONFIG_DDR3_ROW_SIZE<<2) | //bit 3:2. ddr0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-					(CONFIG_DDR3_COL_SIZE<<0),//bit 1:0. ddr0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
-/*					(CONFIG_DDR_AMBM_SET<<13) |	  //[B13]: ddr1 address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.	 
-					(0<<12) |	 //[B12]: ddr1 rank size.  0, 1, one rank.  2 : 2 ranks. 
-					(CONFIG_DDR3_ROW_SIZE<<10) |  //[B11,B10]: ddr1 row size.  2'b01 : A0~A12.	2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-					(CONFIG_DDR3_COL_SIZE<<8)	| //[B9,B8]: ddr1 col size.	2'b01 : A0~A8,	  2'b10 : A0~A9.  
-					(0<<6)  |    //[B7,B6]: undefined
-					(CONFIG_DDR_AMBM_SET<<5)  |    //[B5]: ddr0 address map bank mode	1 =  address switch between 4 banks. 0 = address switch between 2 banks.	
-					(0<<4)  |	 //[B4]: ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.	 
-					(CONFIG_DDR3_ROW_SIZE<<2)  |   //[B3,B2]: ddr0 row size.	2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.	2'b00 : A0~A15. 
-					(CONFIG_DDR3_COL_SIZE<<0), 	   //[B1,B0]: ddr0 col size.	2'b01 : A0~A8,  2'b10 : A0~A9.  
-*/
+	.t_mmc_ddr_ctrl=(1<<16)	| //bit 16. bank page policy.	
+					(CONFIG_M8B_DDR_BIT_MODE_SET<<15) | //bit 15. rank1 bit mode.  0 : 32bits mode. 1: 16bits mode.
+					(CONFIG_M8B_DDR_BANK_SET<<13)     | //bit 14:13. rank1 address map bank mode
+                                                        // 00 = address switch between 2 banks  bank[0] selection bits [12].    
+                                                        // 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
+                                                        // 10 = address switch between 2 banks  bank[0] selection bits [8].    
+                                                        // 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
+					(CONFIG_M8B_DDR_RANK_SET<<12) | //bit 12.  0: one rank.  1 : two ranks.
+					(CONFIG_DDR3_ROW_SIZE<<10)    | //bit 11:10. rank1 row size.  2'b01 : A0~A12. 2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+					(CONFIG_DDR3_COL_SIZE<<8)     | //bit 9:8. rank1 col size. 2'b01 : A0~A8, 2'b10 : A0~A9.
+					(CONFIG_M8B_DDR_BIT_MODE_SET<<7)| //bit 7. ddr rank0 bit mode.  0: 32bits mode. 1 : 16bits mode.
+					(CONFIG_M8B_DDR_BANK_SET<<5) | //bit 6:5.     rank0 address map bank mode
+                                                   // 00 = address switch between 2 banks  bank[0] selection bits [12].    
+                                                   // 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
+                                                   // 10 = address switch between 2 banks  bank[0] selection bits [8].    
+                                                   // 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
+					(CONFIG_M8B_DDR_RANK_SET<<4)  | //bit 4.  0: one rank.  1 : two ranks.
+					(CONFIG_DDR3_ROW_SIZE<<2)     | //bit 3:2. rank0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
+					(CONFIG_DDR3_COL_SIZE<<0),      //bit 1:0. rank0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
 	//All following t_mmc_ddr_timmingx unit is half of DDR timming setting
 	//e.g t_mmc_ddr_timming0.tCWL = (CFG_DDR_CWL+1)/2-1;
 	.t_mmc_ddr_timming0 = (((CFG_DDR_CWL+1)/2-1) << 28 )| // DDR timing register is used for ddr command filter to generate better performace

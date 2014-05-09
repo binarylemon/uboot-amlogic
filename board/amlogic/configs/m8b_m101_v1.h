@@ -341,6 +341,18 @@
 //#define CFG_DDR_MODE   CFG_DDR_32BIT
 #define CFG_DDR_MODE   CFG_DDR_16BIT_LANE02
 
+//M8baby support 16bit and 32bit mode
+//#define CONFIG_M8B_DDR_BIT_MODE_32BIT  (0)
+//#define CONFIG_M8B_DDR_BIT_MODE_16BIT  (1)
+#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_16BIT) 
+
+//M8baby support 4 mode to abstract bank from address
+//#define CONFIG_M8B_DDR_BANK_SET_S12	    (0)
+//#define CONFIG_M8B_DDR_BANK_SET_S13_S12	(1)
+//#define CONFIG_M8B_DDR_BANK_SET_S8      (2)
+//#define CONFIG_M8B_DDR_BANK_SET_S9_S8   (3)
+#define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12)
+
 //On board DDR capactiy
 #if !(defined(CONFIG_DDR3_512MB) || defined(CONFIG_DDR3_1GB) \
 	|| defined(CONFIG_DDR3_2GB))

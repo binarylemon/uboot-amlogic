@@ -259,8 +259,6 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_DDR_AMBM_SET    (CONFIG_DDR_ADDR_MAP_BANK_MODE_4_BNK)
-
 //For DDR PUB training not check the VT done flag
 #define CONFIG_NO_DDR_PUB_VT_CHECK 1
 

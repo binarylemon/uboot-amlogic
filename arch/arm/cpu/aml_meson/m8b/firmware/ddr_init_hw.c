@@ -5,13 +5,8 @@ void init_dmc(struct ddr_set * timing_set)
 	writel(0xffffffff, P_DMC_SOFT_RST1);
 	writel(0x20109a27, P_DMC_REFR_CTRL2);
 	writel(0x80389d, P_DMC_REFR_CTRL1);
-	//serial_put_hex(timing_set->t_mmc_ddr_ctrl, 32);
-	//serial_puts("\n");
-	//writel(timing_set->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);
-if(cfg_ddr_mode == CFG_DDR_32BIT)
-	writel(0x0013e3e, P_DMC_DDR_CTRL);
-else
-	writel(0xc01bebe, P_DMC_DDR_CTRL);
+
+	writel(timing_set->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);		
 
 	writel(0xffff0000, DMC_SEC_RANGE0_CTRL);
 	writel(0xffffffff, DMC_SEC_RANGE1_CTRL);
@@ -92,6 +87,10 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	else
 		serial_puts("1T mode\n");
 #endif
+
+	serial_puts("\naml log : dmc_ddr_ctrl is ");
+	serial_put_hex(timing_set->t_mmc_ddr_ctrl,32);
+	serial_puts("\n");
 	
 	return 0;
 }
