@@ -220,7 +220,7 @@ static struct ddr_set __ddr_setting={
 	                          	   // 2:tFAW=6*tRRD - mcfg1.tfaw_cfg_offset
 	          (1 << 17) |    //[B17]pd_exit_mode: 0: slow exit; 1: fast exit. power down exit						
 	          (0 << 16) |    //[B16]pd_type: 0: precharge power down, 1 active power down
-		      (0 << 8)    //[B15-B8]pd_idle: power-down idle in n_clk cycles. 15 cycles empty will entry power down mode.
+		      (0x2f << 8)    //[B15-B8]pd_idle: power-down idle in n_clk cycles. 15 cycles empty will entry power down mode.
 		      ,
 	.t_pctl_mcfg1 = (1<<31)| //[B31]hw_exit_idle_en
 			  (((CFG_DDR_FAW%CFG_DDR_RRD)?(CFG_DDR_RRD-(CFG_DDR_FAW%CFG_DDR_RRD)):0)&0x7)<<8 //[B10,B9,B8] tfaw_cfg_offset:
