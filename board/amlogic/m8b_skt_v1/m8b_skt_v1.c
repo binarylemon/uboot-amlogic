@@ -32,6 +32,7 @@ static void setup_net_chip(void)
 #ifdef RMII_PHY_INTERFACE
 	/* setup ethernet pinmux use gpioz(5-14) */
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,0xff7f);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_7,0xf00000);
 	eth_reg0.d32 = 0;
 	eth_reg0.b.phy_intf_sel = 0;
 	eth_reg0.b.data_endian = 0;
@@ -53,6 +54,7 @@ static void setup_net_chip(void)
 	eth_reg0.b.rgmii_rx_reuse = 0;
 	eth_reg0.b.eth_urgent = 0;
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32 );//1          //rmii mode
+	WRITE_CBUS_REG(0x2050,0x1000);//1          //rmii mode
 #elif RGMII_PHY_INTERFACE
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0xffff);
 	eth_reg0.d32 = 0;
