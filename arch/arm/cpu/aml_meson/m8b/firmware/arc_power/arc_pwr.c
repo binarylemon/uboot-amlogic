@@ -253,7 +253,7 @@ void enter_power_down()
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
 
-//	switch_24M_to_32K();
+	switch_24M_to_32K();
 
 	if(p_arc_pwr_op->power_off_at_32K_1)
 		p_arc_pwr_op->power_off_at_32K_1();
@@ -297,7 +297,7 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_32K_1();
 
 
-//	switch_32K_to_24M();
+	switch_32K_to_24M();
 
 
 	// power on even more domains

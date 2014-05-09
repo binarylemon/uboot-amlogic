@@ -380,7 +380,7 @@ int appf_setup_translation_tables(void)
     for (i = 0; i < 4096; ++i)
     {
     	if(i == 0x04f)
-			attr = 0xc0e;
+			attr = 0xc02;
     	else if(i <=0x3FF)
     		attr = 0x10c02;
     	else if( i < 0x40F)
@@ -417,7 +417,7 @@ int appf_setup_translation_tables(void)
     	}
     	else if(i == 0xc4F)
     	{
-      	((unsigned*)tab1_pa) [i] = 0x402|(0x04F<<20);//0xc0e
+        ((unsigned*)tab1_pa) [i] = 0xc0e|(0x04F<<20);//0xc0e
     	}
     	else if(i == 0xCFF)
     	{

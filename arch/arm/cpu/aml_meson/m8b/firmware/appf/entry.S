@@ -239,6 +239,9 @@ next_label
 	
 	adr	r7, appf_runtime_call_flat_mapped
 	ldr	r7, [r7]
+	dmb ; add data barria just for a5 unknow blx fail issue.
+	dsb
+	isb
 	blx	r7
       
 appf_return_to_os

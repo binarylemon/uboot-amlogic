@@ -47,7 +47,7 @@ OBJECTS= $(OUTDIR)/os_api.o \
          $(OUTDIR)/platform/$(PLATFORM)/reset.o \
          $(OUTDIR)/serial.o
         
-CPU=cortex-a9
+CPU=cortex-a5
 GCC= TRUE
 ifeq "$(GCC)" "TRUE"
 CC=arm-none-eabi-gcc
@@ -57,7 +57,7 @@ fromelf=arm-none-eabi-objcopy
 MAPFILE=appf.gls
 CFLAGS= -g -O2 -fpie -fpic -mcpu=$(CPU) -I. -DNO_PCU -I$(EXTINCDIR) -I$(EXTINCDIR2) -I$(EXTINCDIR3) 
 # -DUSE_REALVIEW_EB_RESETS
-ASFLAGS= -g -mcpu=$(CPU) -mfpu=vfpv3 -c
+ASFLAGS= -g -mcpu=$(CPU) -mfpu=vfpv4 -c
 LDFLAGS= -g -nostartfiles -pie -fpic -static -e $(ENTRY_POINT) --verbose -T $(MAPFILE) -M
 
 $(OUTDIR)/%.o : $(OUTDIR)/%.S	# Remove make's implicit rule for .S files
