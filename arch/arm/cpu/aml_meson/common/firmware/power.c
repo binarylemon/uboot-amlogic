@@ -64,6 +64,77 @@ static void print_voltage_info(char *voltage_prefix, int voltage_idx, uint32_t v
     serial_puts("\n");
 }
 
+#define PWM_PRE_DIV 0
+struct vcck_pwm {
+    int          vcck_voltage;
+    unsigned int pwm_value;
+};
+
+static struct vcck_pwm vcck_pwm_table[] = {
+    {1401, 0x0000001c},  
+    {1384, 0x0001001b},  
+    {1367, 0x0002001a},  
+    {1350, 0x00030019},  
+    {1333, 0x00040018},  
+    {1316, 0x00050017},  
+    {1299, 0x00060016},  
+    {1282, 0x00070015},  
+    {1265, 0x00080014},  
+    {1248, 0x00090013},  
+    {1232, 0x000a0012},  
+    {1215, 0x000b0011},  
+    {1198, 0x000c0010},  
+    {1181, 0x000d000f},  
+    {1164, 0x000e000e},  
+    {1147, 0x000f000d},  
+    {1130, 0x0010000c},  
+    {1113, 0x0011000b},  
+    {1096, 0x0012000a},  
+    {1079, 0x00130009},  
+    {1062, 0x00140008},  
+    {1045, 0x00150007},  
+    {1028, 0x00160006},  
+    {1011, 0x00170005},  
+    { 994, 0x00180004},  
+    { 977, 0x00190003},  
+    { 960, 0x001a0002},  
+    { 943, 0x001b0001},  
+    { 926, 0x001c0000}
+};
+
+static int vcck_set_default_voltage(int voltage)
+{
+    int i = 0;
+    unsigned int misc_cd;
+
+    // set PWM_C pinmux 
+    setbits_le32(P_PERIPHS_PIN_MUX_2, (1 << 2));
+    clrbits_le32(P_PERIPHS_PIN_MUX_1, (1 << 29));
+    misc_cd = readl(P_PWM_MISC_REG_CD);
+
+    if (voltage > vcck_pwm_table[0].vcck_voltage) {
+        serial_puts("vcck voltage too large:");
+        serial_puts(format_dec_value(voltage));
+        return -1;    
+    }
+    for (i = 0; i < ARRAY_SIZE(vcck_pwm_table) - 1; i++) {
+        if (vcck_pwm_table[i].vcck_voltage     >= voltage && 
+            vcck_pwm_table[i + 1].vcck_voltage <  voltage) {
+            break;    
+        }
+    }
+    serial_puts("set vcck voltage to "); 
+    serial_puts(format_dec_value(voltage));
+    serial_puts(", pwm_value from 0x");
+    serial_put_hex(readl(P_PWM_PWM_C), 32);
+    serial_puts(" to 0x");
+    serial_put_hex(vcck_pwm_table[i].pwm_value, 32);
+    serial_puts("\n");
+    writel(vcck_pwm_table[i].pwm_value, P_PWM_PWM_C);
+    writel(((misc_cd & ~(0x7f << 8)) | ((1 << 15) | (PWM_PRE_DIV << 8) | (1 << 0))), P_PWM_MISC_REG_CD);
+    return 0;
+}
+
 #ifdef CONFIG_AW_AXP20
 void axp20_set_bits(uint32_t add, uint8_t bits, uint8_t mask)
 {
@@ -173,6 +244,10 @@ static void axp20_ldo_voltage(int ldo, int voltage)
 static void axp20_power_init(int init_mode)
 {
     hard_i2c_write8(DEVID, 0x80, 0xe4);
+#ifdef CONFIG_VCCK_VOLTAGE
+    vcck_set_default_voltage(CONFIG_VCCK_VOLTAGE);
+#endif
+
 #ifdef CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT
     axp20_set_bits(0x81, 0x00, 0x04); 
 #endif
@@ -280,6 +355,9 @@ void aml_pmu_set_voltage(int dcdc, int voltage)
 
 static void aml1212_power_init(int init_mode)
 {
+#ifdef CONFIG_VCCK_VOLTAGE
+    vcck_set_default_voltage(CONFIG_VCCK_VOLTAGE);
+#endif
 #ifdef CONFIG_VDDAO_VOLTAGE
     aml_pmu_set_voltage(AML_PMU_DCDC1, CONFIG_VDDAO_VOLTAGE);
 #endif

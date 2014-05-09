@@ -339,7 +339,7 @@ static inline void mmu_setup(void)
 	 * disable MMU stuff and caches
 	 */
 	asm volatile("mrc	p15, 0, r0, c1, c0, 0");//
-	asm volatile("bic	r0, r0, #0x00002000");//	@ clear bits 13 (--V-)
+	asm volatile("bic	r0, r0, #0x00003000");//	@ clear bits 13,12(--VI--)
 	asm volatile("bic	r0, r0, #0x00000007");//	@ clear bits 2:0 (-CAM)
 	asm volatile("orr	r0, r0, #0x00000002");//	@ set bit 1 (--A-) Align
 	asm volatile("orr	r0, r0, #0x00000800");//	@ set bit 12 (Z---) BTB

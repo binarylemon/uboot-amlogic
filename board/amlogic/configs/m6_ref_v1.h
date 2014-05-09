@@ -28,6 +28,7 @@
 #define CONFIG_POWER_SPL                            // init power for all domians, must have
 #define CONFIG_CONST_PWM_FOR_DCDC                   // DCDC2 ~ 3 work for PWM mode
 #define CONFIG_DISABLE_LDO3_UNDER_VOLTAGE_PROTECT   // disable LDO3 uv protect
+#define CONFIG_VCCK_VOLTAGE             1320        // default voltage for VCCK
 #define CONFIG_VDDAO_VOLTAGE            1200        // VDDAO voltage when boot, DCDC3
 #define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, DCDC2
 #define CONFIG_VDDIO_AO                 3000        // VDDIO_AO voltage, ldo2
