@@ -5,6 +5,7 @@ unsigned char GCLK_ref[GCLK_IDX_MAX];
 
 void gate_init(void)
 {
+#if 0
 	/* close spi */
 	CLK_GATE_OFF(SPICC);
 	CLK_GATE_OFF(SPI);
@@ -108,4 +109,5 @@ void gate_init(void)
     CLK_GATE_OFF(RANDOM_NUM_GEN1);                  // CBUS[0x1054], gate off RANDOM_NUM_GEN1
     CLK_GATE_OFF(VCLK2_ENCT);                       // CBUS[0x1054], gate off VCLK2_ENCT
     CLK_GATE_OFF(VCLK2_OTHER1);                     // CBUS[0x1054], gate off VCLK2_OTHER1
+#endif
 }
