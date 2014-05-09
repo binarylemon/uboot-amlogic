@@ -3,9 +3,84 @@
 
 #define IR_POWER_KEY    0xe51afb04
 #define IR_POWER_KEY_MASK 0xffffffff
-
+unsigned int kk[] = {
+        0xe51afb04,
+};
 #define IR_CONTROL_HOLD_LAST_KEY   (1<<6)
+typedef struct reg_remote
+{
+        int reg;
+        unsigned int val;
+}reg_remote;
 
+typedef enum
+{
+        DECODEMODE_NEC = 0,
+        DECODEMODE_DUOKAN = 1,
+        DECODEMODE_RCMM ,
+        DECODEMODE_SONYSIRC,
+        DECODEMODE_SKIPLEADER ,
+        DECODEMODE_MITSUBISHI,
+        DECODEMODE_THOMSON,
+        DECODEMODE_TOSHIBA,
+        DECODEMODE_RC5,
+        DECODEMODE_RC6,
+        DECODEMODE_COMCAST,
+        DECODEMODE_SANYO,
+        DECODEMODE_MAX
+}ddmode_t;
+#define CONFIG_END 0xffffffff
+/*
+  bit0 = 1120/31.25 = 36 
+  bit1 = 2240 /31.25 = 72
+  2500 /31.25  = 80 
+  ldr_idle = 4500  /31.25 =144
+  ldr active = 9000 /31.25 = 288 
+*/
+static const reg_remote RDECODEMODE_NEC[] ={
+        {P_AO_MF_IR_DEC_LDR_ACTIVE,320<<16 |260<<0},
+        {P_AO_MF_IR_DEC_LDR_IDLE, 200<<16 | 120<<0}, 
+        {P_AO_MF_IR_DEC_LDR_REPEAT,100<<16 |70<<0},
+        {P_AO_MF_IR_DEC_BIT_0,50<<16|20<<0 },
+        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)}, 
+        {P_AO_MF_IR_DEC_STATUS,(100<<20)|(45<<10)},
+        {P_AO_MF_IR_DEC_REG1,0x600fdf00},
+        {P_AO_MF_IR_DEC_REG2,0x0},
+        {P_AO_MF_IR_DEC_DURATN2,0},
+        {P_AO_MF_IR_DEC_DURATN3,0},
+        {CONFIG_END,            0 }
+};
+static const reg_remote RDECODEMODE_DUOKAN[] =
+{
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,477<<16 | 400<<0}, // NEC leader 9500us,max 477: (477* timebase = 31.25) = 9540 ;min 400 = 8000us
+	{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0}, // leader idle
+	{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16|110<<0},  // leader repeat
+	{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 }, // logic '0' or '00'
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},  // sys clock boby time.base time = 20 body frame 108ms
+	{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},  // logic '1' or '01'
+	{P_AO_MF_IR_DEC_REG1,0x9f40}, // boby long decode (8-13)
+	{P_AO_MF_IR_DEC_REG2,0x0},  // hard decode mode
+	{P_AO_MF_IR_DEC_DURATN2,0},
+	{P_AO_MF_IR_DEC_DURATN3,0},
+	{CONFIG_END,            0      }
+};
+
+static const reg_remote *remoteregsTab[] =
+{
+	RDECODEMODE_NEC,
+	RDECODEMODE_DUOKAN,
+};
+void setremotereg(const reg_remote *r)
+{
+	writel(r->val, r->reg);
+}
+int set_remote_mode(int mode){
+	const reg_remote *reg;
+	reg = remoteregsTab[mode];
+	while(CONFIG_END != reg->reg)
+		setremotereg(reg++);
+	return 0;
+}
 unsigned backup_AO_RTI_PIN_MUX_REG;
 unsigned backup_AO_IR_DEC_REG0;
 unsigned backup_AO_IR_DEC_REG1;
@@ -48,41 +123,10 @@ void resume_remote_register(void)
 
 static int ir_remote_init_32k_mode(void)
 {
-    unsigned int control_value,status,data_value;
-    int i;
-
+    unsigned int status,data_value;
     int val = readl(P_AO_RTI_PIN_MUX_REG);
-		writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
-		
-	control_value = 0x600fdf00;
-		//control_value = 0x600ffe40;
-    writel( control_value,P_AO_MF_IR_DEC_REG1 );
-    
-    control_value = (0xa3f << 12) | 0;
-
-    writel(control_value,P_AO_MF_IR_DEC_REG0);
-	
-		// no filter
-     writel((readl(P_AO_MF_IR_DEC_REG0)& ~(0x7 << 28)) | (0 << 28),P_AO_MF_IR_DEC_REG0);
-    
-    //writel((readl(P_AO_IR_DEC_STATUS)& ~(0x3ffffc << 10)) | (0x57 << 20) | (0x38 << 10) | (0x1 <<30),P_AO_IR_DEC_STATUS);
-    // SCALE LEADER ACTIVE
-    writel((readl(P_AO_MF_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 16)) | ((unsigned)(294*1.1) << 16),P_AO_MF_IR_DEC_LDR_ACTIVE);
-    writel((readl(P_AO_MF_IR_DEC_LDR_ACTIVE)& ~(0x3FF << 0)) | ((unsigned)(294*0.9) << 0),P_AO_MF_IR_DEC_LDR_ACTIVE);
-
-    // SCALE LEADER IDLE
-    writel((readl(P_AO_MF_IR_DEC_LDR_IDLE)& ~(0x3FF << 16)) | ((unsigned)(147*1.1) << 16),P_AO_MF_IR_DEC_LDR_IDLE);
-    writel((readl(P_AO_MF_IR_DEC_LDR_IDLE)& ~(0x3FF << 0)) | ((unsigned)(147*0.9) << 16),P_AO_MF_IR_DEC_LDR_IDLE);
-	
-	//writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | ((unsigned)(77*1.2) << 16),P_AO_IR_DEC_LDR_REPEAT);
-    //writel((readl(P_AO_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | ((unsigned)(77*0.8) << 0),P_AO_IR_DEC_LDR_REPEAT);
-	writel((readl(P_AO_MF_IR_DEC_LDR_REPEAT)& ~(0x3FF << 16)) | (0x4f << 16),P_AO_MF_IR_DEC_LDR_REPEAT);
-    writel((readl(P_AO_MF_IR_DEC_LDR_REPEAT)& ~(0x3FF << 0))  | (0x42 << 0),P_AO_MF_IR_DEC_LDR_REPEAT);
-    // SCALE BIT 0 (1.11mS)
-    writel((readl(P_AO_MF_IR_DEC_BIT_0)& ~(0x3FF << 16)) | ((unsigned)(36*1.1) << 16),P_AO_MF_IR_DEC_BIT_0);
-    writel((readl(P_AO_MF_IR_DEC_BIT_0)& ~(0x3FF << 0))  | ((unsigned)(36*0.9) << 0),P_AO_MF_IR_DEC_BIT_0);
-
-
+    writel((val  | (1<<0)), P_AO_RTI_PIN_MUX_REG);
+    set_remote_mode(DECODEMODE_NEC);
     status = readl(P_AO_MF_IR_DEC_STATUS);
     data_value = readl(P_AO_MF_IR_DEC_FRAME);
 
@@ -95,13 +139,12 @@ void init_custom_trigger(void)
 	ir_remote_init_32k_mode();
 }
 
-int remote_detect_key()
-{
+int remote_detect_key(){
     unsigned power_key;
     if(((readl(P_AO_MF_IR_DEC_STATUS))>>3) & 0x1){
-    	power_key = readl(P_AO_MF_IR_DEC_FRAME);
-    	if((power_key&IR_POWER_KEY_MASK) == IR_POWER_KEY){	
-		    return 1;
+	power_key = readl(P_AO_MF_IR_DEC_FRAME);
+	if((power_key&IR_POWER_KEY_MASK) == kk[DECODEMODE_NEC]){
+	    return 1;
         }
     }
     return 0;

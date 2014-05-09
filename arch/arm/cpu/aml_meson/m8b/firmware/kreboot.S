@@ -46,7 +46,7 @@ pwr_restart:
 
 	dmb
 	isb
-	mov sp,#0x4000
+	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
 #if 0
 	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
 	mov	r10, #11
@@ -160,11 +160,7 @@ end_ch_store:
 //    ldr r0,[r1]
 
 	adr r1,reset_addr
-	   ldr r0,[r1]
-
-	ldr r3, [r0]
-	ldr r2, =0xc8100008
-	str r3, [r2]
+	ldr r0,[r1]
 
 //dbg_loop__:
 //	b dbg_loop__

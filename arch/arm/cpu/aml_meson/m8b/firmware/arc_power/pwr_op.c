@@ -26,10 +26,18 @@
 #define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
 #define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
 
+/*
+ * use globle virable to fast i2c speed
+ */
+static unsigned char exit_reason = 0;
+
+#ifdef CONFIG_RN5T618
 #define I2C_RN5T618_ADDR   (0x32 << 1)
 #define i2c_pmu_write_b(reg, val)       i2c_pmu_write(reg, val)
 #define i2c_pmu_read_b(reg)             (unsigned  char)i2c_pmu_read_12(reg, 1)
 #define i2c_pmu_read_w(reg)             (unsigned short)i2c_pmu_read_12(reg, 2)
+#endif
+
 static unsigned char vbus_status;
 
 static int gpio_sel0;
@@ -58,6 +66,7 @@ void printf_arc(const char *str)
 #define  I2C_DATA_LAST         0x5
 #define  I2C_STOP              0x6
 
+#ifdef CONFIG_RN5T618
 unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
 {    
     // Set the I2C Address
@@ -151,6 +160,7 @@ unsigned short i2c_pmu_read_12(unsigned int reg, int size)
     }
     return val;
 }
+#endif
 
 extern void delay_ms(int ms);
 
@@ -163,9 +173,12 @@ void init_I2C()
 	gpio_sel0 = readl(0xc8100084);
 	gpio_mask = readl(0xc8100080);
 
-	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
-	writel(readl(0xc8100080) | (1<<8),0xc8100080);
-	writel(1<<8,0xc810008c); //clear intr
+	if(!(readl(0xc8100080) & (1<<8)))//kernel enable gpio interrupt already?
+	{
+		writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
+		writel(readl(0xc8100080) | (1<<8),0xc8100080);
+		writel(1<<8,0xc810008c); //clear intr
+	}
 
 	f_serial_puts("i2c init\n");
 
@@ -189,6 +202,7 @@ void init_I2C()
 //	delay_ms(1);
 	udelay__(1000);
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
     v = i2c_pmu_read_b(0x0000);                 // read version
     if (v == 0x00 || v == 0xff)
 	{
@@ -200,7 +214,14 @@ void init_I2C()
 		serial_put_hex(v, 8);
 		f_serial_puts("Success.\n");
 	}
+#endif
 }
+
+#ifdef CONFIG_RN5T618
+static unsigned char reg_ldo     = 0;
+static unsigned char reg_ldo_rtc = 0;
+static unsigned char dcdc1_ctrl  = 0;
+static unsigned char charge_timeout = 0;
 
 void rn5t618_set_bits(unsigned char addr, unsigned char bit, unsigned char mask)
 {
@@ -242,9 +263,13 @@ inline void power_on_ddr15()
 
 int get_charging_state()
 {
+#ifdef CONFIG_ALWAYS_POWER_ON
+    return 1;
+#else
     unsigned char status;
     status = i2c_pmu_read_b(0x00bd);
     return (status & 0xc0) ? 1 : 0;
+#endif
 }
 
 void rn5t618_shut_down()
@@ -335,6 +360,9 @@ void rn5t618_get_gpio(int gpio, unsigned char *val)
     *val = (value & (1 << gpio)) ? 1 : 0;
 }
 
+#endif
+
+#ifdef CONFIG_RN5T618
 int pmu_get_battery_voltage(void)
 {
     unsigned char val[2];
@@ -356,15 +384,6 @@ void pmu_feed_watchdog(unsigned int flags)
 }
 #endif /* CONFIG_ENABLE_PMU_WATCHDOG */
 
-/*
- * use globle virable to fast i2c speed
- */
-static unsigned char reg_ldo     = 0;
-static unsigned char reg_ldo_rtc = 0;
-static unsigned char dcdc1_ctrl  = 0;
-static unsigned char charge_timeout = 0;
-static unsigned char exit_reason = 0;
-
 void rn5t618_power_off_at_24M()
 {
     i2c_pmu_write_b(0x66, 0x29);                                        // select vbat channel
@@ -374,7 +393,7 @@ void rn5t618_power_off_at_24M()
     //  rn5t618_set_gpio(1, 1);                                         // close boost
     }
 #endif
-	rn5t618_set_gpio(1, 1);                                             // close vccx2
+	//rn5t618_set_gpio(1, 1);                                             // close vccx2
     rn5t618_set_gpio(0, 1);                                             // close vccx3
     udelay__(500);
 
@@ -444,7 +463,6 @@ void rn5t618_power_on_at_24M()                                          // need 
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);
 #endif
 #endif
-	rn5t618_set_gpio(0, 0);                                     // need to open this in LCD driver?
 	rn5t618_set_gpio(1, 0);                                     // close vccx2
 #if 0
     if (!vbus_status) {
@@ -517,9 +535,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
     int power_status;
     int prev_status;
     int battery_voltage;
-    int ret = 0;
-//    int gpio_sel0;
-//    int gpio_mask;
+    int ret = FLAG_WAKEUP_PWRKEY;
     int low_bat_cnt = 0;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
@@ -543,14 +559,16 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	prev_status = get_charging_state();
     do {
         /*
-         * when extern power status has changed, we need break 
+         * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
 	    power_status = get_charging_state();
+        if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
+            ret = FLAG_WAKEUP_PWROFF;
+            exit_reason = -1;
+            break;
+        }
         if (power_status ^ prev_status) {
-            if (flags == 0x87654321) {      // suspend from uboot
-                ret = 1;
-            }
             exit_reason = 1;
             break;
         }
@@ -596,16 +614,36 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
-        if(remote_detect_key()){
-            exit_reason = 6;
-        	break;
-        }
+		if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){
+			break;
+		}
+		if(remote_detect_key()){
+			exit_reason = 6;
+			break;
+		}
 #endif
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
             exit_reason = 7;
-		    break;
+			ret = FLAG_WAKEUP_ALARM;
+            break;
         }
+
+#ifdef CONFIG_BT_WAKEUP
+        if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<16)){
+			exit_reason = 8;
+            ret = FLAG_WAKEUP_BT;
+			break;
+		}
+#endif
+#ifdef CONFIG_WIFI_WAKEUP
+			if ((flags != 0x87654321) &&(readl(P_AO_GPIO_O_EN_N)&(0x1<<22)))
+			if(readl(P_PREG_PAD_GPIO0_I)&(0x1<<21)){
+				exit_reason = 9;
+				ret = FLAG_WAKEUP_WIFI;
+				break;
+			}
+#endif
 
     } while (!(readl(0xc8100088) & (1<<8))/* && (readl(P_AO_GPIO_I)&(1<<3))*/);            // power key
 
@@ -619,10 +657,12 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
     return ret;
 }
+#endif
 
 void arc_pwr_register(struct arc_pwr_op *pwr_op)
 {
 //    printf_arc("%s\n", __func__);
+#ifdef CONFIG_RN5T618
 	pwr_op->power_off_at_24M    = 0;//rn5t618_power_off_at_24M;
 	pwr_op->power_on_at_24M     = 0;//rn5t618_power_on_at_24M;
 
@@ -637,6 +677,7 @@ void arc_pwr_register(struct arc_pwr_op *pwr_op)
 	pwr_op->shut_down           = 0;//rn5t618_shut_down;
 
 	pwr_op->detect_key          = 0;//rn5t618_detect_key;
+#endif
 }
 
 

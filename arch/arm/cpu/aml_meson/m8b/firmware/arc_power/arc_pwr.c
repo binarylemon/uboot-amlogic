@@ -225,7 +225,7 @@ void enter_power_down()
 {
 	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
-	unsigned char vcin_state = 0;
+	unsigned int vcin_state = 0;
 
     int voltage   = 0;
     int axp_ocv = 0;
@@ -314,38 +314,40 @@ void enter_power_down()
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
 
+    if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
+        /*
+         * power off system before ARM is restarted
+         */
+        f_serial_puts("no extern power shutdown\n");
+	    wait_uart_empty();
+        p_arc_pwr_op->shut_down();
+        do{
+            udelay__(2000 * 100);
+            f_serial_puts("wait shutdown...\n");
+            wait_uart_empty();
+        }while(1);
+    }
+
+	writel(vcin_state,P_AO_RTI_STATUS_REG2);
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
 	restart_arm();
 
-	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
-	{
-		if(vcin_state)//plug out ACIN
-		{
-			f_serial_puts("no extern power shutdown\n");
-			p_arc_pwr_op->shut_down();
-			do{
-				udelay__(2000);
-				f_serial_puts("wait shutdown...\n");
-				wait_uart_empty();
-			}while(1);
-		}
-		else
-		{
-			writel(0,P_AO_RTI_STATUS_REG2);
-			writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
-			clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-		//	writel(10,0xc1109904);
-			writel(1<<19|1<<24|10,0xc1109900);
-
-		    do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
-		}
-	}
-
+    if (uboot_cmd_flag == 0x87654321) {
+        writel(0,P_AO_RTI_STATUS_REG2);
+        writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
+        clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+        //writel(10,0xc1109904);
+        writel(1<<19|1<<24|10,0xc1109900);
+        
+        do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
+    }
 }
 
 
 //#define ART_CORE_TEST
+
+struct ARC_PARAM *arc_param=ARC_PARAM_ADDR;//
 
 #define _UART_DEBUG_COMMUNICATION_
 
@@ -481,20 +483,20 @@ void store_restore_plls(int flag)
 		return;
     }    
     
-#define PLL_ENTER_RESET(pll) \
+#define M8_PLL_ENTER_RESET(pll) \
 	writel((1<<29), pll);
 
-#define PLL_RELEASE_RESET(pll) \
+#define M8_PLL_RELEASE_RESET(pll) \
 	writel(readl(pll)&(~(1<<29)),pll);
 
 //M8 PLL enable: bit 30 ; 1-> enable;0-> disable
-#define PLL_SETUP(set, pll) \
+#define M8_PLL_SETUP(set, pll) \
 	writel((set) |(1<<29) |(1<<30), pll);\
 	udelay__(1000); //wait 1ms for PLL lock
 
 //wait for pll lock
 //must wait first (100us+) then polling lock bit to check
-#define PLL_WAIT_FOR_LOCK(pll) \
+#define M8_PLL_WAIT_FOR_LOCK(pll) \
 	do{\
 		udelay__(1000);\
 			f_serial_puts(" Lock mpll\n");	\
@@ -527,43 +529,53 @@ void store_restore_plls(int flag)
 		writel_reg_bits(P_HHI_MPLL_CNTL6,1,26,1);
 		udelay__(1000); //1ms for bandgap bootup
 
-		PLL_ENTER_RESET(P_HHI_SYS_PLL_CNTL);
+		M8_PLL_ENTER_RESET(P_HHI_SYS_PLL_CNTL);
 		writel(pll_settings[1],P_HHI_SYS_PLL_CNTL2);
 		writel(pll_settings[2],P_HHI_SYS_PLL_CNTL3);
 		writel(pll_settings[3],P_HHI_SYS_PLL_CNTL4);
 		writel(pll_settings[4],P_HHI_SYS_PLL_CNTL5);
 
-		PLL_SETUP(pll_settings[0], P_HHI_SYS_PLL_CNTL);
-		PLL_RELEASE_RESET(P_HHI_SYS_PLL_CNTL);
+		M8_PLL_SETUP(pll_settings[0], P_HHI_SYS_PLL_CNTL);
+		M8_PLL_RELEASE_RESET(P_HHI_SYS_PLL_CNTL);
 
-	f_serial_puts(" Lock sys pll\n");
-				wait_uart_empty();
+		if(arc_param->serial_disable)
+			udelay__(1000);
+		else
+		{
+			f_serial_puts(" Lock sys pll\n");
+			wait_uart_empty();
+		}
 
 	}while((readl(P_HHI_SYS_PLL_CNTL)&(1<<31))==0);
 
 
 	//MPLL init
 	//FIXED PLL/Multi-phase PLL, fixed to 2.55GHz
-	PLL_ENTER_RESET(P_HHI_MPLL_CNTL);	//set reset bit to 1
+	M8_PLL_ENTER_RESET(P_HHI_MPLL_CNTL);	//set reset bit to 1
 
 	for(i=1;i<10;i++)
 		writel(mpll_settings[i],P_HHI_MPLL_CNTL+4*i);
 
-	PLL_SETUP(mpll_settings[0], P_HHI_MPLL_CNTL);	//2.55G, FIXED
-	PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);	//set reset bit to 0
+	M8_PLL_SETUP(mpll_settings[0], P_HHI_MPLL_CNTL);	//2.55G, FIXED
+	M8_PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);	//set reset bit to 0
 
-//	PLL_WAIT_FOR_LOCK(P_HHI_MPLL_CNTL); //need bandgap reset?
+//	M8_PLL_WAIT_FOR_LOCK(P_HHI_MPLL_CNTL); //need bandgap reset?
 
 	do{
-		udelay__(500);
-		f_serial_puts(" Lock mpll~\n");
-		wait_uart_empty();
-		//PLL_LOCK_CHECK(n_pll_try_times,5);
+		if(arc_param->serial_disable)
+			udelay__(1000);
+		else
+		{
+			udelay__(500);
+			f_serial_puts(" Lock mpll~\n");
+			wait_uart_empty();
+		}
+		//M8_PLL_LOCK_CHECK(n_pll_try_times,5);
 		if((readl(P_HHI_MPLL_CNTL)&(1<<31))!=0)
 			break;
 		writel(readl(P_HHI_MPLL_CNTL) | (1<<29), P_HHI_MPLL_CNTL);
 		udelay__(500);
-		PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);
+		M8_PLL_RELEASE_RESET(P_HHI_MPLL_CNTL);
 		udelay__(500);
 	}while((readl(P_HHI_MPLL_CNTL)&(1<<31))==0);
 
