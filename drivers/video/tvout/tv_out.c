@@ -178,17 +178,40 @@ static void enable_vsync_interrupt(void)
 
 #if CONFIG_AML_MESON_8
 static unsigned int vdac_cfg_valid = 0, vdac_cfg_value = 0;
+static unsigned int cvbs_get_trimming_version(unsigned int flag)
+{
+	unsigned int version = 0xff;
+	
+	if( (flag&0xf0) == 0xa0 )
+		version = 5;
+	else if( (flag&0xf0) == 0x40 )
+		version = 2;
+	else if( (flag&0xc0) == 0x80 )
+		version = 1;
+	else if( (flag&0xc0) == 0x00 )
+		version = 0;
+
+	return version;
+}
+
 void cvbs_config_vdac(unsigned int flag, unsigned int cfg)
 {
+	unsigned char version = 0;
+	
 	vdac_cfg_value = cfg&0x7;
 
+	version = cvbs_get_trimming_version(flag);
+
 	// flag 1/0 for validity of vdac config
-	if( (flag&0xc0) == 0x80 )
+	if( (version==1) || (version==2) || (version==5) )
 		vdac_cfg_valid = 1;
 	else
 		vdac_cfg_valid = 0;
 
+	printf("cvbs trimming.%d.v%d: 0x%x, 0x%x\n", vdac_cfg_valid, version, flag, cfg);
+
 	return ;
+
 }
 static void cvbs_cntl_output(unsigned int open)
 {
@@ -198,6 +221,7 @@ static void cvbs_cntl_output(unsigned int open)
 	{
 		cntl0 = 0;
 		cntl1 = 8;
+
 		WRITE_MPEG_REG(HHI_VDAC_CNTL0, cntl0);
 		WRITE_MPEG_REG(HHI_VDAC_CNTL1, cntl1);
 	}
@@ -205,6 +229,9 @@ static void cvbs_cntl_output(unsigned int open)
 	{
 		cntl0 = 0x1;
 		cntl1 = (vdac_cfg_valid==0)?0:vdac_cfg_value;
+
+		printf("vdac open.%d = 0x%x, 0x%x\n", vdac_cfg_valid, cntl0, cntl1);
+
 		WRITE_MPEG_REG(HHI_VDAC_CNTL1, cntl1);
 		WRITE_MPEG_REG(HHI_VDAC_CNTL0, cntl0);
 	}
@@ -222,10 +249,10 @@ void cvbs_trimming(void)
 	int fake;
 
 	ret = efuse_read_intlItem("cvbs_trimming", cvbs_buf, 2);
-	printf("cvbs trimming: 0x%x, 0x%x\n", cvbs_buf[0], cvbs_buf[1]);
+
 	cvbs_config_vdac(cvbs_buf[1], cvbs_buf[0]);
 
-	sprintf(cvbs_value, "0x%x", (cvbs_buf[0]<<8)|cvbs_buf[1] );
+	sprintf(cvbs_value, "0x%x", (cvbs_buf[1]<<8)|cvbs_buf[0] );
 	setenv("vdac_config",cvbs_value);
 
 	return ;
