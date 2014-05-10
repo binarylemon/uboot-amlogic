@@ -992,8 +992,9 @@ m8_ddr_vlsi_emulator_done:
 	    }
 	    else
 	    {
-	        serial_puts("\nAml log : DDR0 - init pass with\n  PGSR0 : 0x");		
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	        hx_serial_puts("\nAml log : DDR0 - init pass with\n  PGSR0 : 0x");		
+			hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			hx_serial_puts("\n");
 			//serial_puts("\n  PGSR1 : 0x");
 			//serial_put_hex(readl(P_DDR0_PUB_PGSR1),32);
 			//serial_puts("\n");
@@ -1017,15 +1018,14 @@ m8_ddr_vlsi_emulator_done:
 	    }
 	    else
 	    {
-	        serial_puts("\nAml log : DDR1 - init pass with\n  PGSR0 : 0x");		
-			serial_put_hex(readl(P_DDR1_PUB_PGSR0),32);
+	        hx_serial_puts("\nAml log : DDR1 - init pass with\n  PGSR0 : 0x");		
+			hx_serial_put_hex(readl(P_DDR1_PUB_PGSR0),32);
+			hx_serial_puts("\n");
 			//serial_puts("\n  PGSR1 : 0x");
 			//serial_put_hex(readl(P_DDR1_PUB_PGSR1),32);
 			//serial_puts("\n");
 	    }
 	}
-
-	serial_puts("\n");
 
 #if defined(CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE)
 	writel((readl(P_DDR0_PUB_PGCR0) & (~0x3F)),P_DDR0_PUB_PGCR0);

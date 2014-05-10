@@ -523,9 +523,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
     }
     else
     {
-        serial_puts("Aml log : DDR0 - init pass with  PGSR0 : 0x");
-		serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-		serial_puts("\n");
+        hx_serial_puts("Aml log : DDR0 - init pass with  PGSR0 : 0x");
+		hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+		hx_serial_puts("\n");
 		//serial_puts("\n  PGSR1 : 0x");
 		//serial_put_hex(readl(P_DDR0_PUB_PGSR1),32);
 		//serial_puts("\n");

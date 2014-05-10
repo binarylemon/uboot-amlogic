@@ -40,6 +40,7 @@ arch/arm/cpu/aml_meson/m6/power_firmware.dat
 arch/arm/cpu/aml_meson/m6tv/power_firmware.dat
 arch/arm/cpu/aml_meson/m8/power_firmware.dat
 arch/arm/cpu/aml_meson/m8/firmware/m8_smp.dat
+arch/arm/cpu/aml_meson/m8b/power_firmware.dat
 
 #
 # Generated files
