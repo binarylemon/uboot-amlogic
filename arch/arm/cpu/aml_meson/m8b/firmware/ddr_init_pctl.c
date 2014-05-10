@@ -550,6 +550,13 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 
 	__udelay(1);
 
+#ifdef CONFIG_M8B_SKT_V0
+	writel(0x02020202,P_DDR0_PUB_DX3BDLR0);  //jiaxing just debug for socket board
+	writel(0x02020202,P_DDR0_PUB_DX3BDLR1); //jiaxing just debug for socket board
+	writel(0x02020202,P_DDR0_PUB_DX3BDLR2); //jiaxingjust debug for socket board
+	__udelay(1);
+#endif
+
 	writel(readl(P_DDR0_CLK_CTRL) & (~1),
 		P_DDR0_CLK_CTRL);
 
