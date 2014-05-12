@@ -46,19 +46,19 @@ static int do_key_get(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     rcode = key_drv_init();
     if(rcode){
         errorP("fail in key_drv_init\n");
-        return -__LINE__;
+        return __LINE__;
     }
 
     keyValBuf = (char*)malloc(keyValMaxLen);
     if(!keyValBuf){
         errorP("malloc failed\n");
-        return -__LINE__;
+        return __LINE__;
     }
     rcode = v2_key_read(keyName, (u8*)keyValBuf, keyValMaxLen/2, keyValBuf + keyValMaxLen/2, &reallen);
     if(rcode < 0 || !reallen){
-        errorP("failed to read key [%s], rc=%d, reallen=%d\n", keyName, rcode, reallen);
+        debugP("failed to read key [%s], rc=%d, reallen=%d\n", keyName, rcode, reallen);
         free(keyValBuf);
-        return -__LINE__;
+        return __LINE__;
     }
 
     keyValBuf[reallen] = 0;
