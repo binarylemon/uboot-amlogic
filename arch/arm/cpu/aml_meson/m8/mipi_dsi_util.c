@@ -335,20 +335,31 @@ static unsigned int generic_read_packet_0_para(unsigned char data_type, unsigned
 // ----------------------------------------------------------------------------
 //                           Function: generic_write_short_packet
 // Generic Write Short Packet with Generic Interface
-// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
-//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_GEN_SHORT_WR_1, DT_GEN_SHORT_WR_2,
 // ----------------------------------------------------------------------------
 static void dsi_generic_write_short_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
 {
-    unsigned int d_command, d_para;
+    unsigned int d_para[2];
 
     vc_id &= 0x3;
-    data_type &= 0x3f;
-    d_command = ((unsigned int)payload[1]) & 0xff;
-    d_para = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+    switch (data_type) {
+        case DT_GEN_SHORT_WR_0:
+            d_para[0] = 0;
+            d_para[1] = 0;
+            break;
+        case DT_GEN_SHORT_WR_1:
+            d_para[0] = ((unsigned int)payload[1]) & 0xff;
+            d_para[1] = 0;
+            break;
+        case DT_GEN_SHORT_WR_2:
+        default:
+            d_para[0] = ((unsigned int)payload[1]) & 0xff;
+            d_para[1] = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+            break;
+    }
 
-    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para << BIT_GEN_WC_MSBYTE)       |
-                                            (d_command << BIT_GEN_WC_LSBYTE)     |
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para[1] << BIT_GEN_WC_MSBYTE)      |
+                                            (d_para[0] << BIT_GEN_WC_LSBYTE)      |
                                             (((unsigned int)vc_id) << BIT_GEN_VC) |
                                             (((unsigned int)data_type) << BIT_GEN_DT)));
     if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
@@ -360,11 +371,36 @@ static void dsi_generic_write_short_packet(unsigned char data_type, unsigned cha
 }
 
 // ----------------------------------------------------------------------------
-//                           Function: generic_long_write_packet
-// Generic Long Write Packet with Generic Interface
+//                           Function: dcs_write_short_packet
+// DCS Write Short Packet with Generic Interface
+// Supported Data Type: DT_DCS_SHORT_WR_0, DT_DCS_SHORT_WR_1,
+// ----------------------------------------------------------------------------
+static void dsi_dcs_write_short_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
+{
+    unsigned int d_command, d_para;
+
+    vc_id &= 0x3;
+    d_command = ((unsigned int)payload[1]) & 0xff;
+    d_para = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para << BIT_GEN_WC_MSBYTE)         |
+                                            (d_command << BIT_GEN_WC_LSBYTE)      |
+                                            (((unsigned int)vc_id) << BIT_GEN_VC) |
+                                            (((unsigned int)data_type) << BIT_GEN_DT)));
+    if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
+        wait_bta_ack();
+    }
+    else if( req_ack == MIPI_DSI_DCS_NO_ACK ) {
+        wait_cmd_fifo_empty();
+    }
+}
+
+// ----------------------------------------------------------------------------
+//                           Function: dsi_write_long_packet
+// Write Long Packet with Generic Interface
 // Supported Data Type: DT_GEN_LONG_WR, DT_DCS_LONG_WR
 // ----------------------------------------------------------------------------
-static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
+static void dsi_write_long_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
 {
     unsigned int d_command, payload_data=0, header_data;
     unsigned int cmd_status;
@@ -372,7 +408,6 @@ static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char
     int j;
 
     vc_id &= 0x3;
-    data_type &= 0x3f;
     d_command = ((unsigned int)payload[1]) & 0xff;
     pld_count = (pld_count + 1) & 0xffff;//include command
     d_start_index = 3;//payload[3] start (payload[0]: data_type, payload[1]: command, payload[2]: para_num)
@@ -426,14 +461,14 @@ static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char
 }
 
 // ----------------------------------------------------------------------------
-//                           Function: dsi_generic_write_cmd
+//                           Function: dsi_write_cmd
 // Generic Write Command
-// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
-//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_GEN_SHORT_WR_1, DT_GEN_SHORT_WR_2,
+//                      DT_DCS_SHORT_WR_0, DT_DCS_SHORT_WR_1,
 //                      DT_GEN_LONG_WR, DT_DCS_LONG_WR,
 //                      DT_SET_MAX_RPS
 // ----------------------------------------------------------------------------
-void dsi_generic_write_cmd(unsigned char* payload)
+void dsi_write_cmd(unsigned char* payload)
 {
     int i=0, j=0;
     unsigned char vc_id = MIPI_DSI_VIRTUAL_CHAN_ID;
@@ -454,17 +489,18 @@ void dsi_generic_write_cmd(unsigned char* payload)
         else {
             j = 3 + payload[i+2]; //payload[i+2] is parameter num
             switch (payload[i]) {//analysis data_type
-                case DT_DCS_SHORT_WR_0:
                 case DT_GEN_SHORT_WR_0:
-                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 0, req_ack);
-                    break;
-                case DT_DCS_SHORT_WR_1:
                 case DT_GEN_SHORT_WR_1:
-                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 1, req_ack);
+                case DT_GEN_SHORT_WR_2:
+                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
+                    break;
+                case DT_DCS_SHORT_WR_0:
+                case DT_DCS_SHORT_WR_1:
+                    dsi_dcs_write_short_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
                     break;
                 case DT_DCS_LONG_WR:
                 case DT_GEN_LONG_WR:
-                    dsi_generic_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
+                    dsi_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
                     break;
                 case DT_SET_MAX_RPS:
                     printf("to do data_type: 0x%2x\n", payload[i]);
@@ -848,7 +884,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_on_cmd_8) {
-                dsi_generic_write_cmd(lcd_extern_driver->init_on_cmd_8);
+                dsi_write_cmd(lcd_extern_driver->init_on_cmd_8);
                 printf("[extern]%s dsi init on\n", lcd_extern_driver->name);
             }
             init_flag++;
@@ -857,13 +893,13 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
     }
 
     if (pConf->lcd_control.mipi_config->dsi_init_on) {
-        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
+        dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
         init_flag++;
         DPRINT("dsi init on\n");
     }
 
     if (init_flag == 0) {
-        dsi_generic_write_cmd(dsi_init_on_table_dft);
+        dsi_write_cmd(dsi_init_on_table_dft);
         printf("[warning]: not init for mipi-dsi, use default command\n");
     }
 
@@ -887,7 +923,7 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
 #endif
 
     if (pConf->lcd_control.mipi_config->dsi_init_off) {
-        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
+        dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
         DPRINT("dsi init off\n");
     }
 
@@ -899,7 +935,7 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_off_cmd_8) {
-                dsi_generic_write_cmd(lcd_extern_driver->init_off_cmd_8);
+                dsi_write_cmd(lcd_extern_driver->init_off_cmd_8);
                 printf("[extern]%s dsi init off\n", lcd_extern_driver->name);
             }
         }
