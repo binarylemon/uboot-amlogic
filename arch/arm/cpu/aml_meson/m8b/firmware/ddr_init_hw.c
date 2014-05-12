@@ -73,8 +73,6 @@ int ddr_init_hw(struct ddr_set * timing_set)
 #endif
 
 #ifdef CONFIG_DUMP_DDR_INFO
-	//enable clk
-	writel(readl(P_DDR0_CLK_CTRL) | 0x1, P_DDR0_CLK_CTRL);
 	int nPLL = readl(AM_DDR_PLL_CNTL);
 	int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
 	serial_puts("\nDDR clock is ");
@@ -83,12 +81,10 @@ int ddr_init_hw(struct ddr_set * timing_set)
 #ifdef CONFIG_DDR_LOW_POWER
 	serial_puts("Low Power & ");
 #endif
-	if(readl(P_DDR0_PCTL_MCFG)& (1<<3)) //DDR0, DDR1 same setting?
+	if((timing_set->t_pctl_mcfg) & (1<<3)) //DDR0, DDR1 same setting?
 		serial_puts("2T mode\n");
 	else
 		serial_puts("1T mode\n");
-	//disable clk
-	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);
 #endif
 
 	return 0;
