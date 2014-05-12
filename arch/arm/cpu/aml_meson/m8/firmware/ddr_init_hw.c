@@ -80,7 +80,7 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	writel(dmc_sec_ctrl_value, DMC_SEC_CTRL);
 	while( readl(DMC_SEC_CTRL) & 0x80000000 ) {}
 
-#ifdef CONFIG_M8_DUMP_DDR_INFO
+#ifdef CONFIG_DUMP_DDR_INFO
 	serial_put_dword(ddr_key);
 	dmc_sec_ctrl_value = readl(DMC_SEC_CTRL);
 	if(dmc_sec_ctrl_value & (1<<0)){
@@ -89,7 +89,7 @@ int ddr_init_hw(struct ddr_set * timing_set)
 #endif
 #endif
 
-#ifdef CONFIG_M8_DUMP_DDR_INFO
+#ifdef CONFIG_DUMP_DDR_INFO
 	int nPLL = readl(AM_DDR_PLL_CNTL);
 	int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
 	serial_puts("\nDDR clock is ");

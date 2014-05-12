@@ -506,7 +506,7 @@
 	#error "Please set DDR3 capacity first in file m8_k160_v1.h\n"
 #endif
 
-#define CONFIG_M8_DUMP_DDR_INFO 1
+#define CONFIG_DUMP_DDR_INFO 1
 
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
