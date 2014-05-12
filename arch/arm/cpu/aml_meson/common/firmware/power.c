@@ -1383,6 +1383,8 @@ void power_init(int init_mode)
     aml1216_power_init(init_mode);
 #elif defined CONFIG_AML1218
     aml1218_power_init(init_mode);
+#elif defined (CONFIG_PWM_DEFAULT_VCCK_VOLTAGE) && defined (CONFIG_VCCK_VOLTAGE)
+    vcck_set_default_voltage(CONFIG_VCCK_VOLTAGE);
 #endif
     __udelay(1000);
 }
