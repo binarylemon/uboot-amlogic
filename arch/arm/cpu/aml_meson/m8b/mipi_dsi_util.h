@@ -1,21 +1,8 @@
 #ifndef MIPI_DSI_UTIL_H
 #define MIPI_DSI_UTIL_H
 
-#if 0
-#include <mach/register.h>
-#include <asm/arch-m8/mipi_dsi_reg.h>
-#include <linux/amlogic/vout/lcdoutc.h>
-#else
 #include <asm/arch/lcdoutc.h>
 #include <asm/arch/register.h>
-#endif
-
-//#define PRINT_DEBUG_INFO
-#ifdef PRINT_DEBUG_INFO
-#define DPRINT(...)		printf(__VA_ARGS__)
-#else
-#define DPRINT(...)
-#endif
 
 // --------------------------------------------------------
 // MIPI DSI Data Type/ MIPI DCS Command Type Definitions
@@ -238,61 +225,61 @@ typedef enum {DT_VSS                 = 0x01,
 #define BIT_TEAR_FX_EN              0
 
 // For MIPI_DSI_DWC_CMD_PKT_STATUS_OS
-#define BIT_DBI_RD_CMD_BUSY        14                                          // For DBI no usefull 
-#define BIT_DBI_PLD_R_FULL         13                                          // For DBI no usefull 
-#define BIT_DBI_PLD_R_EMPTY        12                                          // For DBI no usefull 
-#define BIT_DBI_PLD_W_FULL         11                                          // For DBI no usefull 
-#define BIT_DBI_PLD_W_EMPTY        10                                          // For DBI no usefull 
-#define BIT_DBI_CMD_FULL            9                                          // For DBI no usefull 
-#define BIT_DBI_CMD_EMPTY           8                                          // For DBI no usefull 
+#define BIT_DBI_RD_CMD_BUSY        14    // For DBI no usefull 
+#define BIT_DBI_PLD_R_FULL         13    // For DBI no usefull 
+#define BIT_DBI_PLD_R_EMPTY        12    // For DBI no usefull 
+#define BIT_DBI_PLD_W_FULL         11    // For DBI no usefull 
+#define BIT_DBI_PLD_W_EMPTY        10    // For DBI no usefull 
+#define BIT_DBI_CMD_FULL            9    // For DBI no usefull 
+#define BIT_DBI_CMD_EMPTY           8    // For DBI no usefull 
 
-#define BIT_GEN_RD_CMD_BUSY         6                                          // For Generic interface 
-#define BIT_GEN_PLD_R_FULL          5                                          // For Generic interface               
-#define BIT_GEN_PLD_R_EMPTY         4                                          // For Generic interface    
-#define BIT_GEN_PLD_W_FULL          3                                          // For Generic interface 
-#define BIT_GEN_PLD_W_EMPTY         2                                          // For Generic interface 
-#define BIT_GEN_CMD_FULL            1                                          // For Generic interface 
-#define BIT_GEN_CMD_EMPTY           0                                          // For Generic interface 
+#define BIT_GEN_RD_CMD_BUSY         6    // For Generic interface 
+#define BIT_GEN_PLD_R_FULL          5    // For Generic interface               
+#define BIT_GEN_PLD_R_EMPTY         4    // For Generic interface    
+#define BIT_GEN_PLD_W_FULL          3    // For Generic interface 
+#define BIT_GEN_PLD_W_EMPTY         2    // For Generic interface 
+#define BIT_GEN_CMD_FULL            1    // For Generic interface 
+#define BIT_GEN_CMD_EMPTY           0    // For Generic interface 
 
 // For MIPI_DSI_TOP_MEAS_CNTL
-#define BIT_CNTL_MEAS_VSYNC        10                                          // measure vsync control
-#define BIT_EDPITE_MEAS_EN          9                                          // tear measure enable
-#define BIT_EDPITE_ACCUM_MEAS_EN    8                                          // not clear the counter
-#define BIT_EDPITE_VSYNC_SPAN       0                                          // 
+#define BIT_CNTL_MEAS_VSYNC        10    // measure vsync control
+#define BIT_EDPITE_MEAS_EN          9    // tear measure enable
+#define BIT_EDPITE_ACCUM_MEAS_EN    8    // not clear the counter
+#define BIT_EDPITE_VSYNC_SPAN       0    // 
 
 // For MIPI_DSI_TOP_STAT
-#define BIT_STAT_EDPIHALT          31                                          // signal from halt
-#define BIT_STAT_TE_LINE           16                                          // line number when edpite pulse
-#define BIT_STAT_TE_PIXEL           0                                          // pixel number when edpite pulse
+#define BIT_STAT_EDPIHALT          31    // signal from halt
+#define BIT_STAT_TE_LINE           16    // line number when edpite pulse
+#define BIT_STAT_TE_PIXEL           0    // pixel number when edpite pulse
 
 // For MIPI_DSI_TOP_INTR_CNTL_STAT
-#define BIT_STAT_CLR_DWC_PIC_EOF   21                                          // State/Clear for pic_eof
-#define BIT_STAT_CLR_DWC_DE_FALL   20                                          // State/Clear for de_fall
-#define BIT_STAT_CLR_DWC_DE_RISE   19                                          // State/Clear for de_rise
-#define BIT_STAT_CLR_DWC_VS_FALL   18                                          // State/Clear for vs_fall
-#define BIT_STAT_CLR_DWC_VS_RISE   17                                          // State/Clear for vs_rise
-#define BIT_STAT_CLR_DWC_EDPITE    16                                          // State/Clear for edpite
-#define BIT_PIC_EOF                 5                                          // end of picture
-#define BIT_DE_FALL                 4                                          // data enable fall
-#define BIT_DE_RISE                 3                                          // data enable rise
-#define BIT_VS_FALL                 2                                          // vsync fall
-#define BIT_VS_RISE                 1                                          // vsync rise
-#define BIT_EDPITE_INT_EN           0                                          // edpite int enable
+#define BIT_STAT_CLR_DWC_PIC_EOF   21    // State/Clear for pic_eof
+#define BIT_STAT_CLR_DWC_DE_FALL   20    // State/Clear for de_fall
+#define BIT_STAT_CLR_DWC_DE_RISE   19    // State/Clear for de_rise
+#define BIT_STAT_CLR_DWC_VS_FALL   18    // State/Clear for vs_fall
+#define BIT_STAT_CLR_DWC_VS_RISE   17    // State/Clear for vs_rise
+#define BIT_STAT_CLR_DWC_EDPITE    16    // State/Clear for edpite
+#define BIT_PIC_EOF                 5    // end of picture
+#define BIT_DE_FALL                 4    // data enable fall
+#define BIT_DE_RISE                 3    // data enable rise
+#define BIT_VS_FALL                 2    // vsync fall
+#define BIT_VS_RISE                 1    // vsync rise
+#define BIT_EDPITE_INT_EN           0    // edpite int enable
 
 // For MIPI_DSI_TOP_MEAS_CNTL
-#define BIT_VSYNC_MEAS_EN          19                                          // vsync measure enable
-#define BIT_VSYNC_ACCUM_MEAS_EN    18                                          // vsync accumulate measure
-#define BIT_VSYNC_SPAN             10                                          // vsync span
-#define BIT_TE_MEAS_EN              9                                          // tearing measure enable
-#define BIT_TE_ACCUM_MEAS_EN        8                                          // tearing accumulate measure
-#define BIT_TE_SPAN                 0                                          // tearing span
+#define BIT_VSYNC_MEAS_EN          19    // vsync measure enable
+#define BIT_VSYNC_ACCUM_MEAS_EN    18    // vsync accumulate measure
+#define BIT_VSYNC_SPAN             10    // vsync span
+#define BIT_TE_MEAS_EN              9    // tearing measure enable
+#define BIT_TE_ACCUM_MEAS_EN        8    // tearing accumulate measure
+#define BIT_TE_SPAN                 0    // tearing span
 
 // For MIPI_DSI_DWC_INT_ST0_OS
-#define BIT_DPHY_ERR_4             20                                          // LP1 contention error from lane0
-#define BIT_DPHY_ERR_3             19                                          // LP0 contention error from lane0
-#define BIT_DPHY_ERR_2             18                                          // ErrControl error from lane0
-#define BIT_DPHY_ERR_1             17                                          // ErrSyncEsc error from lane0
-#define BIT_DPHY_ERR_0             16                                          // ErrEsc escape error lane0
+#define BIT_DPHY_ERR_4             20    // LP1 contention error from lane0
+#define BIT_DPHY_ERR_3             19    // LP0 contention error from lane0
+#define BIT_DPHY_ERR_2             18    // ErrControl error from lane0
+#define BIT_DPHY_ERR_1             17    // ErrSyncEsc error from lane0
+#define BIT_DPHY_ERR_0             16    // ErrEsc escape error lane0
 #define BIT_ACK_ERR_15             15
 #define BIT_ACK_ERR_14             14
 #define BIT_ACK_ERR_13             13
@@ -310,9 +297,9 @@ typedef enum {DT_VSS                 = 0x01,
 #define BIT_ACK_ERR_1               1
 #define BIT_ACK_ERR_0               0
 
-// Transfer mode parameters
-#define TRANS_VIDEO_MODE            0
-#define TRANS_COMMAND_MODE          1
+// Operation mode parameters
+#define OPERATION_VIDEO_MODE        0
+#define OPERATION_COMMAND_MODE      1
 
 // Command transfer type in command mode
 #define DCS_TRANS_HS                0
@@ -321,175 +308,6 @@ typedef enum {DT_VSS                 = 0x01,
 #define MIPI_DSI_DCS_NO_ACK         0
 #define MIPI_DSI_DCS_REQ_ACK        1
 
-// Video mode video timing parameters
-#define SCLK_PERIOD                   40                                       // ns
-
-#define MIPI_DSI_REFRESH_RATE_50HZ    50
-#define MIPI_DSI_REFRESH_RATE_40HZ    40
-#define MIPI_DSI_REFRESH_RATE_30HZ    30
-#define MIPI_DSI_REFRESH_RATE_24HZ    24
-
-#define MIPI_DSI_REFRESH_RATE         MIPI_DSI_REFRESH_RATE_40HZ
-
-#define PCLK_PERIOD_BIG_50HZ          (4467/1000)    // 50Hz
-#define PCLK_PERIOD_BIG_45HZ          (4964/1000)    // 45Hz
-#define PCLK_PERIOD_BIG_40HZ          (5598/1000)    // 40Hz
-#define PCLK_PERIOD_BIG_35HZ          (6382/1000)    // 35Hz
-#define PCLK_PERIOD_BIG_30HZ          (75/10)      // 30Hz
-
-#define PCLK_PERIOD_SMALL             16
-#define BYTELANECLK_PERIOD_SMALL      8
-
-#define PCLK_PERIOD_BIG               (                                                                               \
-                (MIPI_DSI_REFRESH_RATE == MIPI_DSI_REFRESH_RATE_50HZ) ? PCLK_PERIOD_BIG_50HZ : \
-                (MIPI_DSI_REFRESH_RATE == MIPI_DSI_REFRESH_RATE_40HZ) ? PCLK_PERIOD_BIG_40HZ : \
-                (MIPI_DSI_REFRESH_RATE == MIPI_DSI_REFRESH_RATE_30HZ) ? PCLK_PERIOD_BIG_30HZ : \
-                PCLK_PERIOD_BIG_30HZ   \
-                )
-#define BYTELANECLK_PERIOD_BIG        (9952/1000)
-
-#define PCLK_PERIOD_1920X1200         (6488/1000)    // 60Hz
-#define BYTELANECLK_PERIOD_1920X1200  (8651/1000)   //
-
-// Different Resolution Settings
-// Only 24bit color format will use the real clock setting and be overriden outside
-
-#define MAX_PIXCNT_240X160            367
-#define MAX_LNCNT_240X160             187
-#define HFP_240X160                   (MAX_PIXCNT_240X160-HSA_240X160-HBP_240X160-HACT_240X160+1)    // 91
-#define HSA_240X160                   (31-15)                                                        // 16
-#define HBP_240X160                   (50-31+2)   // 21 add 2 because: data path is 2 clks later than sync
-#define HACT_240X160                  (239+50-50+1)  // 240
-#define VFP_240X160                   (MAX_LNCNT_240X160-VSA_240X160-VBP_240X160-VACT_240X160) 
-#define VSA_240X160                   (12-10)
-#define VBP_240X160                   (20-12)
-#define VACT_240X160                  (159+20-20+1)
-#define MIPI_HLINE_240X160            ((HFP_240X160+HSA_240X160+HBP_240X160+HACT_240X160)*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HSA_240X160              (HSA_240X160*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HBP_240X160              (HBP_240X160*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-
-#define MAX_PIXCNT_240X160_dsi        (400-1)
-#define MAX_LNCNT_240X160_dsi         (195-1)
-#define HFP_240X160_dsi               48
-#define HSA_240X160_dsi               32
-#define HBP_240X160_dsi               80
-#define HACT_240X160_dsi              240
-#define VFP_240X160_dsi               3
-#define VSA_240X160_dsi               6
-#define VBP_240X160_dsi               26
-#define VACT_240X160_dsi              160
-#define MIPI_HLINE_240X160_dsi        ((HFP_240X160_dsi+HSA_240X160_dsi+HBP_240X160_dsi+HACT_240X160_dsi)*3/4)
-#define MIPI_HSA_240X160_dsi          (HSA_240X160_dsi*3/4)
-#define MIPI_HBP_240X160_dsi          (HBP_240X160_dsi*3/4)
-
-#define MAX_PIXCNT_240X160_slow        (400-1)
-#define MAX_LNCNT_240X160_slow         (195-1)
-#define HFP_240X160_slow               48
-#define HSA_240X160_slow               32
-#define HBP_240X160_slow               80
-#define HACT_240X160_slow              240
-#define VFP_240X160_slow               3
-#define VSA_240X160_slow               6
-#define VBP_240X160_slow               26
-#define VACT_240X160_slow              160
-#define MIPI_HLINE_240X160_slow        ((HFP_240X160_slow+HSA_240X160_slow+HBP_240X160_slow+HACT_240X160_slow)*200/160)
-#define MIPI_HSA_240X160_slow          (HSA_240X160_slow*200/160)
-#define MIPI_HBP_240X160_slow          (HBP_240X160_slow*200/160)
-
-#define MAX_PIXCNT_480X234            607     
-#define MAX_LNCNT_480X234             261     
-#define HFP_480X234                   (MAX_PIXCNT_480X234-HSA_480X234-HBP_480X234-HACT_480X234+1)
-#define HSA_480X234                   (31-15)
-#define HBP_480X234                   (50-31+2)                                  // add 2 because: data path is 2 clks later than sync
-#define HACT_480X234                  (479+50-50+1)
-#define VFP_480X234                   (MAX_LNCNT_480X234-VSA_480X234-VBP_480X234-VACT_480X234) 
-#define VSA_480X234                   (12-10)
-#define VBP_480X234                   (20-12)
-#define VACT_480X234                  (233+20-20+1)
-#define MIPI_HLINE_480X234            ((HFP_480X234+HSA_480X234+HBP_480X234+HACT_480X234)*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HSA_480X234              (HSA_480X234*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HBP_480X234              (HBP_480X234*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-
-#define MAX_PIXCNT_720X480            857
-#define MAX_LNCNT_720X480             524     
-#define HFP_720X480                   (MAX_PIXCNT_720X480-HSA_720X480-HBP_720X480-HACT_720X480+1)
-#define HSA_720X480                   (31-15)
-#define HBP_720X480                   (50-31+2)                                  // add 2 because: data path is 2 clks later than sync
-#define HACT_720X480                  (479+50-50+1)
-#define VFP_720X480                   (MAX_LNCNT_720X480-VSA_720X480-VBP_720X480-VACT_720X480) 
-#define VSA_720X480                   (12-10)
-#define VBP_720X480                   (20-12)
-#define VACT_720X480                  (233+20-20+1)
-#define MIPI_HLINE_720X480            ((HFP_720X480+HSA_720X480+HBP_720X480+HACT_720X480)*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HSA_720X480              (HSA_720X480*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HBP_720X480              (HBP_720X480*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-
-#define MAX_PIXCNT_720X576            863
-#define MAX_LNCNT_720X576             624
-#define HFP_720X576                   (MAX_PIXCNT_720X576-HSA_720X576-HBP_720X576-HACT_720X576+1)
-#define HSA_720X573                   (5-3)
-#define HBP_720X576                   (124-5+2)                                  // add 2 because: data path is 2 clks later than sync
-#define HACT_720X576                  (843-124+1)
-#define VFP_720X576                   (MAX_LNCNT_720X576-VSA_720X576-VBP_720X576-VACT_720X576) 
-#define VSA_720X576                   (16-11)
-#define VBP_720X576                   (44-16)
-#define VACT_720X576                  (624-44+1)
-#define MIPI_HLINE_720X576            ((HFP_720X576+HSA_720X576+HBP_720X576+HACT_720X576)*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HSA_720X576              (HSA_720X576*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-#define MIPI_HBP_720X576              (HBP_720X576*PCLK_PERIOD_SMALL/BYTELANECLK_PERIOD_SMALL)
-
-#define MAX_PIXCNT_1920x1200p         (2080-1)
-#define MAX_LNCNT_1920x1200p          (1235-1)
-#define HFP_1920x1200p                48
-#define HSA_1920x1200p                32
-#define HBP_1920x1200p                80
-#define HACT_1920x1200p               1920
-#define VFP_1920x1200p                3
-#define VSA_1920x1200p                6
-#define VBP_1920x1200p                26
-#define VACT_1920x1200p               1200
-#define MIPI_HLINE_1920x1200p         ((HFP_1920x1200p+HSA_1920x1200p+HBP_1920x1200p+HACT_1920x1200p)*3/4)
-#define MIPI_HSA_1920x1200p           (HSA_1920x1200p*3/4)
-#define MIPI_HBP_1920x1200p           (HBP_1920x1200p*3/4)
-
-#define HFP_768X1024                60
-#define HSA_768X1024                64
-#define HBP_768X1024                56
-#define HACT_768X1024               768
-#define HLINE_768X1024              (HFP_768X1024+HSA_768X1024+HBP_768X1024+HACT_768X1024)
-#define VFP_768X1024                36
-#define VSA_768X1024                50
-#define VBP_768X1024                30
-#define VACT_768X1024               1024
-
-#define MAX_PIXCNT_2560X1600          2719
-#define MAX_LNCNT_2560X1600           1645    
-#define HFP_2560X1600                 (MAX_PIXCNT_2560X1600-HSA_2560X1600-HBP_2560X1600-HACT_2560X1600+1)
-#define HSA_2560X1600                 (59-27)
-#define HBP_2560X1600                 (139-59+2)                                  // add 2 because: data path is 2 clks later than sync
-#define HACT_2560X1600                (2559+139-139+1)
-#define VFP_2560X1600                 (MAX_LNCNT_2560X1600-VSA_2560X1600-VBP_2560X1600-VACT_2560X1600) 
-#define VSA_2560X1600                 (7-1)
-#define VBP_2560X1600                 (43-7)
-#define VACT_2560X1600                (1599+43-43+1)
-#define MIPI_HLINE_2560X1600          ((HFP_2560X1600+HSA_2560X1600+HBP_2560X1600+HACT_2560X1600)*PCLK_PERIOD_BIG/BYTELANECLK_PERIOD_BIG)
-#define MIPI_HSA_2560X1600            (HSA_2560X1600*PCLK_PERIOD_BIG/BYTELANECLK_PERIOD_BIG)
-#define MIPI_HBP_2560X1600            (HBP_2560X1600*PCLK_PERIOD_BIG/BYTELANECLK_PERIOD_BIG)
-
-#define MAX_PIXCNT_1920X1200          2079
-#define MAX_LNCNT_1920X1200           1234  
-#define HFP_1920X1200                 48 // (MAX_PIXCNT_1920X1200-HSA_1920X1200-HBP_1920X1200-HACT_1920X1200+1)
-#define HSA_1920X1200                 32 // (59-27)
-#define HBP_1920X1200                 80 // (148-59+2)                                  // add 2 because: data path is 2 clks later than sync
-#define HACT_1920X1200                1920 // (2067-148+1)
-#define VFP_1920X1200                 (MAX_LNCNT_1920X1200-VSA_1920X1200-VBP_1920X1200-VACT_1920X1200) 
-#define VSA_1920X1200                 (7-1)
-#define VBP_1920X1200                 (31-7)
-#define VACT_1920X1200                (1230-31+1)
-#define MIPI_HLINE_1920X1200          ((HFP_1920X1200+HSA_1920X1200+HBP_1920X1200+HACT_1920X1200)*PCLK_PERIOD_1920X1200/BYTELANECLK_PERIOD_1920X1200)
-#define MIPI_HSA_1920X1200            (HSA_1920X1200*PCLK_PERIOD_1920X1200/BYTELANECLK_PERIOD_1920X1200)
-#define MIPI_HBP_1920X1200            (HBP_1920X1200*PCLK_PERIOD_1920X1200/BYTELANECLK_PERIOD_1920X1200)
-
 // DSI Tear Defines
 #define MIPI_DCS_SET_TEAR_ON_MODE_0   0
 #define MIPI_DCS_SET_TEAR_ON_MODE_1   1
@@ -497,7 +315,7 @@ typedef enum {DT_VSS                 = 0x01,
 #define MIPI_DCS_DISABLE_TEAR         0
 
 // Pixel FIFO Depth
-#define PIXEL_FIFO_DEPTH            1440
+#define PIXEL_FIFO_DEPTH              1440
 
 #define BYTE_PER_PIXEL_COLOR_16BIT_CFG_1  2
 #define BYTE_PER_PIXEL_COLOR_16BIT_CFG_2  2
@@ -510,27 +328,10 @@ typedef enum {DT_VSS                 = 0x01,
 #define BYTE_PER_PIXEL_COLOR_16BIT_YCBCR  2
 #define BYTE_PER_PIXEL_COLOR_30BIT        4
 #define BYTE_PER_PIXEL_COLOR_36BIT        5
-#define BYTE_PER_PIXEL_COLOR_12BIT        3                                    // in fact it should be 1.5(12bit)
+#define BYTE_PER_PIXEL_COLOR_12BIT        3    // in fact it should be 1.5(12bit)
 
 // Tearing Interrupt Bit
 #define INT_TEARING                       6
-
-typedef enum tv_enc_type_e{
-        TV_ENC_480i = 0,
-        TV_ENC_576i,
-        TV_ENC_480p,
-        TV_ENCP_480p,
-        TV_ENC_576p,
-        TV_ENC_1080i, 
-        TV_ENC_720p, 
-        TV_ENC_1080p, 
-        TV_ENC_2205p,
-        TV_ENC_2440p, 
-        TV_ENC_3840x2160p_vic01, 
-        TV_ENC_3840x2160p_vic03, 
-        TV_ENC_4096x2160p_vic04, 
-        TV_ENC_TYPE_MAX
-} tv_enc_type_t;   /* tv encoder output format */
 
 typedef enum tv_enc_lcd_type_e{
         TV_ENC_LCD480x234 = 0,
@@ -563,113 +364,34 @@ typedef enum tv_enc_lcd_type_e{
         TV_ENC_LCD_TYPE_MAX
 } tv_enc_lcd_type_t;   /* tv encoder output format */
 
-int set_lcd_clk(unsigned int display_w, unsigned int display_h,
-                unsigned int color_code, unsigned int lane_num,
-                unsigned int refresh_rate);
-void init_mipi_dsi_phy(Lcd_Config_t *pConf);
-
-void start_mipi_dsi_host(void);                                             // close the default reset
-
-void powerup_mipi_dsi_dphy(void);                                           // power up mipi_dsi and dphy
-void powerdown_mipi_dsi_dphy(void);                                         // power down mipi_dsi and dphy
-
-void set_mipi_int(void);                                                    // configure mipi interrupt registers
-void set_mipi_dcs(int trans_type,                                       // 0: high speed, 1: low power
-                int ack_req,                                          // 1: request ack, 0: do not need ack
-                int tear_en                                           // 1: enable tear ack, 0: disable tear ack
-                );                                                     // configure command mode relative registers
-
-void set_mipi_edpi(unsigned int edpi_allowed_cmd_size,                  // allowed command size for edpi
-                unsigned int vcid,                                   // virtual id for DBI
-                unsigned short start_col,                            // start column address
-                unsigned short end_col,                              // end column address
-                unsigned short start_page,                           // start page address
-                unsigned short end_page,                             // end page address
-                unsigned int pixel2byte,                             // pixel-to-byte format
-                unsigned int req_ack,                                // if need check ack for bta
-                unsigned int color_code                              // color code
-                );
-
-extern void check_phy_st(void);                                                    // Check the status of the dphy: phylock and stopstateclklane
-
-extern void delay_us(int us);
-extern void config_video_para(Lcd_Config_t    *pConf); // Configure video parameter such HFP/HSA/HBP/HACT...
-                
-
-extern void wait_bta_ack(void);                                                    // wait ack from bta
-extern void wait_cmd_fifo_empty(void);                                             // wait generic fifo empty
-extern unsigned int wait_for_generic_read_response(void);                          // wait read response
-
-extern unsigned int generic_if_wr(unsigned int address, unsigned int data_in); // Generic Interface Write
-extern unsigned int generic_if_rd(unsigned int address);                       // Generic Interface Read
-
-extern void DCS_write_short_packet_0_para(unsigned int data_type,              // DSI data type, such as DCS Short Write Packet 1 Parameter
-                unsigned int vc_id,                  // Virtual Channel ID
-                unsigned int dcs_command,            // DCS Command, such as enter_idle_mode
-                unsigned int req_ack                 // request ack for bta
-                );
-
-extern void DCS_write_short_packet_1_para(unsigned int data_type,              // DSI data type, such as DCS Short Write Packet 1 Parameter
-                unsigned int vc_id,                  // Virtual Channel ID
-                unsigned int dcs_command,            // DCS Command, such as set_address_mode
-                unsigned int para,                   // Parameter
-                unsigned int req_ack                 // request ack for bta
-                );
-
-extern unsigned int  DCS_read_packet_no_para(unsigned int data_type,           // DSI data type, such as DCS Read Packet no Parameter
-                unsigned int vc_id,               // Virtual Channel ID
-                unsigned int dcs_command          // DCS Command, such as get_address_mode
-                );
-
-extern void DCS_long_write_packet(unsigned int data_type,                      // DSI data type, such as DCS Long Write Packet
-                unsigned int vc_id,                          // Virtual Channel ID
-                unsigned int dcs_command,                    // DCS Command, such as set_column_address/set_page_address
-                unsigned char* payload,                       // Payload include: dcs_command+payload
-                unsigned int pld_size,                       // Payload size, from LSB to MSB
-                unsigned int req_ack                         // if need check ack for bta
-                );
-
-
-extern void check_mipi_dsi_color_config (unsigned int venc_color_type, unsigned int dpi_color_type);
-
-void startup_mipi_dsi_host(void);
-
-extern void auo_panel_init(void);
-
 // DCS COMMAND LIST
 #define DCS_CMD_CODE_ENTER_IDLE_MODE      0x0
-#define DCS_CMD_CODE_ENTER_INVERT_MODE    0x1  
-#define DCS_CMD_CODE_ENTER_NORMAL_MODE    0x2  
-#define DCS_CMD_CODE_ENTER_PARTIAL_MODE   0x3  
-#define DCS_CMD_CODE_ENTER_SLEEP_MODE     0x4  
-#define DCS_CMD_CODE_EXIT_IDLE_MODE       0x5  
-#define DCS_CMD_CODE_EXIT_INVERT_MODE     0x6  
-#define DCS_CMD_CODE_EXIT_SLEEP_MODE      0x7  
-#define DCS_CMD_CODE_NOP                  0x8 
-#define DCS_CMD_CODE_SET_DISPLAY_OFF      0x9 
-#define DCS_CMD_CODE_SET_DISPLAY_ON       0xa 
-#define DCS_CMD_CODE_SET_TEAR_OFF         0xb 
+#define DCS_CMD_CODE_ENTER_INVERT_MODE    0x1
+#define DCS_CMD_CODE_ENTER_NORMAL_MODE    0x2
+#define DCS_CMD_CODE_ENTER_PARTIAL_MODE   0x3
+#define DCS_CMD_CODE_ENTER_SLEEP_MODE     0x4
+#define DCS_CMD_CODE_EXIT_IDLE_MODE       0x5
+#define DCS_CMD_CODE_EXIT_INVERT_MODE     0x6
+#define DCS_CMD_CODE_EXIT_SLEEP_MODE      0x7
+#define DCS_CMD_CODE_NOP                  0x8
+#define DCS_CMD_CODE_SET_DISPLAY_OFF      0x9
+#define DCS_CMD_CODE_SET_DISPLAY_ON       0xa
+#define DCS_CMD_CODE_SET_TEAR_OFF         0xb
 #define DCS_CMD_CODE_SOFT_RESET           0xc
 
-void set_pll_mipi(Lcd_Config_t *p);
-void set_venc_mipi(Lcd_Config_t *pConf);
-void set_control_mipi(Lcd_Config_t *p);
-void init_phy_mipi(Lcd_Config_t *pConf);
-void set_tcon_mipi(Lcd_Config_t *p);
-void lcd_ports_ctrl_mipi(Lcd_Config_t *p, Bool_t status);
+extern unsigned char *get_dsi_init_table(int flag);
 
-//****************************************************************************************************/
-//      from test_prm.h
-//****************************************************************************************************/
-#define MIPI_DSI_VIRTUAL_CHAN_ID        0                       // Range [0,3]
-/////pConf->dsi_cfg->trans_mode;
-#define MIPI_DSI_TRANS_MODE             TRANS_VIDEO_MODE        // Define DSI communication mode: video mode or command_mode.
-#define MIPI_DSI_CMD_TRANS_TYPE         DCS_TRANS_HS            // Define DSI command transfer type: high speed or low power
-#define MIPI_DSI_DCS_ACK_TYPE           MIPI_DSI_DCS_REQ_ACK    // Define if DSI command need ack: req_ack or no_ack
-#define MIPI_DSI_TRANS_VIDEO_MODE       BURST_MODE              // Applicable only to video mode. Define picture data transfer method: non-burst sync pulse; non-burst sync event; or burst.
-#define MIPI_DSI_TEAR_SWITCH            MIPI_DCS_DISABLE_TEAR
-//****************************************************************************************************/
-//      from test_prm.h
-//****************************************************************************************************/
+#define DSI_CMD_SIZE_MAX		2000
+//payload struct:
+//data_type, command, para_num, parameters...
+//data_type=0xff, command=0xff, means ending flag
+//data_type=0xff, command<0xff, means delay time(unit ms)
+extern void dsi_generic_write_cmd(unsigned char* payload);
+
+extern void set_mipi_dsi_control_config(Lcd_Config_t *pConf);
+extern void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf);
+extern void mipi_dsi_link_off(Lcd_Config_t *pConf);
+extern void set_mipi_dsi_control(Lcd_Config_t *pConf);
+extern void mipi_dsi_off(void);
 
 #endif

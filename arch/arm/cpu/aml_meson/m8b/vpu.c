@@ -118,13 +118,31 @@ static int set_vpu_clk(unsigned int vclk)
 static void vpu_driver_init(void)
 {	
 	set_vpu_clk(vpu_config.clk_level);
-	
+	aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x3<<8))); // [8] power on
 	//VPU MEM_PD, need to modify
 	writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
     writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
 
     writel(0x00000000, P_VPU_MEM_PD_REG0);
     writel(0x00000000, P_VPU_MEM_PD_REG1);
+    
+
+// Powerup VPU_HDMI
+    
+
+
+    aml_write_reg32_op(P_RESET0_MASK, aml_read_reg32_op(P_RESET0_MASK) & (~((0x1 << 5) | (0x1<<10))));
+    aml_write_reg32_op(P_RESET4_MASK, aml_read_reg32_op(P_RESET4_MASK) & (~((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13))));
+    aml_write_reg32_op(P_RESET2_MASK, aml_read_reg32_op(P_RESET2_MASK) & (~((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15))));
+    aml_write_reg32_op(P_RESET2_REGISTER, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+    //aml_write_reg32_op(P_RESET4_REGISTER, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));    // reset this will cause VBUS reg to 0
+    aml_write_reg32_op(P_RESET0_REGISTER, ((0x1 << 5) | (0x1<<10)));
+    //aml_write_reg32_op(P_RESET4_REGISTER, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    aml_write_reg32_op(P_RESET2_REGISTER, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+    aml_write_reg32_op(P_RESET0_MASK, aml_read_reg32_op(P_RESET0_MASK) | ((0x1 << 5) | (0x1<<10)));
+    aml_write_reg32_op(P_RESET4_MASK, aml_read_reg32_op(P_RESET4_MASK) | ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    aml_write_reg32_op(P_RESET2_MASK, aml_read_reg32_op(P_RESET2_MASK) | ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+
 }
 
 static void vpu_driver_disable(void)

@@ -22,7 +22,7 @@ COBJS-$(CONFIG_AML_RTC)+=aml_rtc_setting.o
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 
 COBJS += vpu.o
-
+COBJS-$(CONFIG_VIDEO_AMLLCD) += aml_lcd_gpio.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += edp_drv.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += mipi_dsi_util.o

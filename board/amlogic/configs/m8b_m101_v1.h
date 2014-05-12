@@ -23,9 +23,10 @@
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
-//#define CONFIG_VIDEO_AMLLCD
-//#define LCD_BPP LCD_COLOR16
-
+#define CONFIG_VIDEO_AMLLCD
+#define LCD_BPP LCD_COLOR16
+#define CONFIG_AML_BL_EXTERN
+#define CONFIG_AML_BL_EXTERN_PMU_AML1218
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
 #define CONFIG_DDR_SIZE_IND_ADDR 0xD9000000	//pass memory size, spl->uboot
@@ -200,8 +201,8 @@
 	"initrd_high=60000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"video_dev=panel\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"display_width=1024\0" \
+	"display_height=600\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
