@@ -238,7 +238,10 @@ void enter_power_down()
 
 	store_restore_plls(0);
 
-//	ddr_self_refresh();
+	f_serial_puts("ddr self-refresh\n");
+	wait_uart_empty();
+
+	ddr_self_refresh();
 
  	f_serial_puts("CPU off...\n");
  	wait_uart_empty();
@@ -308,7 +311,7 @@ void enter_power_down()
 
 	f_serial_puts("step 8: ddr resume\n");
 	wait_uart_empty();
-//	ddr_resume();
+	ddr_resume();
 
 	f_serial_puts("restore pll\n");
 	wait_uart_empty();
