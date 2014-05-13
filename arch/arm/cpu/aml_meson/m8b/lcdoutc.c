@@ -282,7 +282,6 @@ static void lcd_ports_ctrl_edp(Bool_t status)
 }
 static unsigned pinmux_data_set[][2]={
     {PERIPHS_PIN_MUX_0,0x03c00000},//RGB[7:2]
-    {PERIPHS_PIN_MUX_8,0x00070000},//RGB[1:0]
 };
 static unsigned pinmux_data_clr[][2]={
     {PERIPHS_PIN_MUX_6,0x0000077f},//RGB[7:2]
