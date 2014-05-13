@@ -85,8 +85,8 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts("\n");	
 
 #if 0
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
-	load_m8_smp_code();
+#if defined(CONFIG_AML_SMP)
+	load_smp_code();
 #endif
 
 #ifdef  CONFIG_AML_SPL_L1_CACHE_ON
