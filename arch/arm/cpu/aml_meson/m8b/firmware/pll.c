@@ -172,12 +172,6 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		
 		__udelay(1000); //1ms for bandgap bootup
 
-		//Enable Ext LDO for VID_PLL, VID2_PLL
-		Wr_reg_bits(HHI_VID2_PLL_CNTL2,0,16,1);
-		__udelay(10);
-		Wr_reg_bits(HHI_VID2_PLL_CNTL2,1,16,1);
-		__udelay(1000);
-
 		PLL_ENTER_RESET(HHI_VID_PLL_CNTL);
 		Wr_cbus(HHI_VID_PLL_CNTL2,CFG_VID_PLL_CNTL_2);
 		Wr_cbus(HHI_VID_PLL_CNTL3,CFG_VID_PLL_CNTL_3);

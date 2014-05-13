@@ -78,8 +78,8 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	MMC_Wr(AM_DDR_CLK_CNTL, 0x90004040);
 	//M8 still need keep MMC in reset mode for power saving?
 	//relese MMC from reset mode
-	writel(0xffffffff, P_MMC_SOFT_RST);
-	writel(0xffffffff, P_MMC_SOFT_RST1);
+	writel(0xffffffff, P_DMC_SOFT_RST);
+	writel(0xffffffff, P_DMC_SOFT_RST1);
 	//delay_us(100);//No delay need.
 }
 

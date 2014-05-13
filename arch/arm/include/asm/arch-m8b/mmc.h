@@ -1308,6 +1308,7 @@
 #ifndef DMC_REG_DEFINE
 #define DMC_REG_DEFINE
 #define DMC_REG_BASE       0xc8006000
+
 #define P_DMC_REQ_CTRL         DMC_REG_BASE + (0x00 << 2) 
   //bit 11.  enable dmc request of chan 11. Audio
   //bit 10.  enable dmc request of chan 10. Device.
@@ -1329,41 +1330,37 @@
    //read only default = 1.
 
 #define P_DMC_DDR_CTRL         DMC_REG_BASE + (0x10  << 2)
-  //bit 27:24.   ddr chanel selection.
-                 //bit 27: 26 : 
-                     //2'b00 : address switch between 2 ddr channel using address bit 12. 
-                            //bit12 = 0 : ddr channel 0.  bit 12 = 1 : ddr channel 1.
-                            //if 2 ddr channel size is different, only switch the lower parts.     
-                     //2'b01 : address switch between 2 ddr channel using address bit 8. 
-                           //bit8 = 0 : ddr channel 0.  bit 8 = 1 : ddr channel 1.
-                           //if 2 ddr channel size is different, only switch the lower parts.     
-                    // 2'b10 : no switch between the 2 channels. use bit 24 as selection which one put lower address. 
-                              //bit 24 = 0:   channel 0 put to the lower address.
-                              //bit 24 = 1:   channel 1 put to the lower address.
-                    // 2'b11 :  all address goes to one DDR channel. use bit 24 to select which one. 
-                              //bit 24 = 0:   use channel 0;
-                              //bit 24 = 1:   use channel 1;
-  //bit 16.       bank page policy. 
-  //bit 13.       ddr1 address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.    
-  //bit 12        ddr1 rank size.  0, 1, one rank.  2 : 2 ranks.   
-  //bit 11:10      ddr1 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-  //bit 9:8      ddr1 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.  
-  
-  //bit 5.       ddr0 address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.    
-  //bit 4        ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.   
-  //bit 3:2      ddr0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-  //bit 1:0      ddr0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.  
+	//bit 16. bank page policy.	
+	//bit 15. rank1 bit mode.  0 : 32bits mode. 1: 16bits mode.
+	//bit 14:13. rank1 address map bank mode
+		// 00 = address switch between 2 banks  bank[0] selection bits [12].    
+		// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
+		// 10 = address switch between 2 banks  bank[0] selection bits [8].    
+		// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
+	//bit 12.  0: one rank.  1 : two ranks.
+	//bit 11:10. rank1 row size.  2'b01 : A0~A12. 2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+	//bit 9:8. rank1 col size. 2'b01 : A0~A8, 2'b10 : A0~A9.
+	//bit 7. ddr rank0 bit mode.  0: 32bits mode. 1 : 16bits mode.
+	//bit 6:5.     rank0 address map bank mode
+		// 00 = address switch between 2 banks  bank[0] selection bits [12].    
+		// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
+		// 10 = address switch between 2 banks  bank[0] selection bits [8].    
+		// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
+	//bit 4.  0: one rank.  1 : two ranks.
+	//bit 3:2. rank0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
+	//bit 1:0. rank0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
+
 #define P_DMC_DDR_CTRL1         DMC_REG_BASE + (0x11 << 2) 
 
-#define DC_CAV_LUT_DATAL           DMC_REG_BASE + (0x12 << 2)
+#define P_DC_CAV_LUT_DATAL           DMC_REG_BASE + (0x12 << 2)
   //low 32 bits of canvas data which need to be configured to canvas memory. 
-#define DC_CAV_LUT_DATAH           DMC_REG_BASE + (0x13 << 2)
+#define P_DC_CAV_LUT_DATAH           DMC_REG_BASE + (0x13 << 2)
   //high 32bits of cavnas data which need to be configured to canvas memory.
-#define DC_CAV_LUT_ADDR            DMC_REG_BASE + (0x14 << 2)
+#define P_DC_CAV_LUT_ADDR            DMC_REG_BASE + (0x14 << 2)
   //bit 9:8.   write 9:8 2'b10. the canvas data will saved in canvas memory with addres 7:0.
   //bit 7:0.   canvas address.
-#define DC_CAV_LUT_RDATAL           DMC_REG_BASE + (0x15 << 2)
-#define DC_CAV_LUT_RDATAH           DMC_REG_BASE + (0x16 << 2)
+#define P_DC_CAV_LUT_RDATAL           DMC_REG_BASE + (0x15 << 2)
+#define P_DC_CAV_LUT_RDATAH           DMC_REG_BASE + (0x16 << 2)
 #define P_DMC_2ARB_CTRL       DMC_REG_BASE + (0x20 << 2)
 
 #define P_DMC_REFR_CTRL1             DMC_REG_BASE + (0x23 << 2)

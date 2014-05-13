@@ -290,11 +290,11 @@
 
 #define CONFIG_DUMP_DDR_INFO 1
 #define CONFIG_ENABLE_WRITE_LEVELING 1
-#define PHYS_MEMORY_START        (0x00000000) // ???
 
 //DDR row/col size
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
+#define PHYS_MEMORY_START        (0x00000000) // ???
 #if   defined(CONFIG_DDR3_512MB)
 	#define CONFIG_DDR3_ROW_SIZE (3)
 	#define CONFIG_DDR3_COL_SIZE (2)

@@ -146,10 +146,10 @@ mmc_init_all:
 		return nRet;		
 	
 	//MMC/DMC reset
-	writel(0, P_MMC_SOFT_RST);	
-	writel(0, P_MMC_SOFT_RST1);
-	writel(~0, P_MMC_SOFT_RST);
-	writel(~0, P_MMC_SOFT_RST1);
+	writel(0, P_DMC_SOFT_RST);
+	writel(0, P_DMC_SOFT_RST1);
+	writel(~0, P_DMC_SOFT_RST);
+	writel(~0, P_DMC_SOFT_RST1);
 
 	unsigned int nMMC_DDR_set = timing_set->t_mmc_ddr_ctrl;
 	int nM8_DDR_CHN_SET = (nMMC_DDR_set >> 24 ) & 3;

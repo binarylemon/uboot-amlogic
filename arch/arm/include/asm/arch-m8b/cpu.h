@@ -12,6 +12,13 @@
 #endif
 //U boot code control
 
+//DDR mode
+#define CFG_DDR_32BIT			0
+#define CFG_DDR_16BIT_LANE02	1	//DDR lane0+lane2
+#define CFG_DDR_16BIT_LANE01	2	//DDR lane0+lane1
+#define CFG_DDR_MODE_STO_ADDR	0	//2 //2 bits, store in efuse etc..
+#define CFG_DDR_MODE_STO_OFFSET	0	//6	//offset of these 2 bits
+
 #if !defined(CONFIG_DDR_COL_BITS)
 	#define CONFIG_DDR_COL_BITS  (10)
 #endif //CONFIG_DDR_COL_BITS
@@ -56,7 +63,13 @@
 #endif
 
 #if !defined(CONFIG_M8B_DDR_BANK_SET)
-  #define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12 )
+  #define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12)
+#endif
+
+#if (CFG_DDR_MODE)	//not 32bit mode
+	#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_16BIT)
+#else
+	#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_32BIT)
 #endif
 
 #if !defined(CONFIG_M8B_DDR_BIT_MODE_SET)
@@ -79,87 +92,34 @@
 #define CONFIG_DDR0_DTAR_DTROW   M8BABY_DDR_DTAR_DTROW_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,CONFIG_M8B_DDR_BIT_MODE_SET)
 #define CONFIG_DDR0_DTAR_DTCOL   M8BABY_DDR_DTAR_DTCOL_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,CONFIG_M8B_DDR_BIT_MODE_SET)
 
-
-//DDR mode
-#define CFG_DDR_32BIT			1
-#define CFG_DDR_16BIT_LANE02	2	//DDR lane0+lane2
-#define CFG_DDR_16BIT_LANE01	3	//DDR lane0+lane1
-#define CFG_DDR_MODE_STO_ADDR	0	//2 //2 bits, store in efuse etc..
-#define CFG_DDR_MODE_STO_OFFSET	0	//6	//offset of these 2 bits
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //NOTE: IMPORTANT! DO NOT TRY TO MODIFY FOLLOWING CODE!
-//           It is used to get DDR0/1 training address from PUB_DTAR0. The DDR training address is just the 
-//           start address and it will occupy 128bytes for each channel.
+//           It is used to get DDR0 training address from PUB_DTAR0.
 //          
 //How to fetch the DDR training address for M8:
 //           1. enable PCTL clock before access
-//           2. load MMC DDR setting from P_MMC_DDR_CTRL  (#define P_MMC_DDR_CTRL        0xc8006000 + (0x00 << 2 ) )
-//           3. load the DTAR0 value from DDR0/DDR1 PUB register according to the channel setting from MMC_DDR_CTRL
+//           2. load DMC DDR setting from P_DMC_DDR_CTRL
+//           3. load the DTAR0 value from DDR0 PUB register according to the channel setting from DMC_DDR_CTRL
 //           4. disable PCTL clock for power saving
 //
 //Demo code: 
 /*          
 	//enable clock
 	writel(readl(P_DDR0_CLK_CTRL)|(1), P_DDR0_CLK_CTRL);
-	writel(readl(P_DDR1_CLK_CTRL)|(1), P_DDR1_CLK_CTRL);
 
-	unsigned int nDDR0_BaseAddr,nDDR1_BaseAddr;
-	unsigned int nMMC_DDR_SET  = readl(0xc8006000);
-	unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
-	unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
-	serial_puts("\nAml log : nMMC_DDR_SET is 0x");
-	serial_put_hex(nMMC_DDR_SET,32);
-	serial_puts("\nAml log : nPUB0_DTAR0 is 0x");
-	serial_put_hex(nPUB0_DTAR0,32);
-	serial_puts("\nAml log : nPUB1_DTAR0 is 0x");
-	serial_put_hex(nPUB1_DTAR0,32);
-	
-	switch( ((nMMC_DDR_SET >> 24) & 3))
-	{
-	case CONFIG_DDR1_ONLY: 
-		{ 
-			nDDR1_BaseAddr = CFG_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);	
-			serial_puts("\nAml log : DDR1 DTAR is 0x");
-			serial_put_hex(nDDR1_BaseAddr,32);			
-			serial_puts("\n");
-
-		}break;
-	default: 
-		{
-			nDDR0_BaseAddr = CFG_GET_DDR0_TA_FROM_DTAR0(nPUB0_DTAR0,nMMC_DDR_SET);
-			nDDR1_BaseAddr = CFG_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-
-			serial_puts("\nAml log : DDR0 DTAR is 0x");
-			serial_put_hex(nDDR0_BaseAddr,32);
-			
-			serial_puts("\nAml log : DDR1 DTAR is 0x");
-			serial_put_hex(nDDR1_BaseAddr,32);
-			serial_puts("\n");
-
-		}break;
-	}
+	printf("training address: %x\n", M8BABY_GET_DT_ADDR(readl(P_DDR0_PUB_DTAR0), readl(P_DMC_DDR_CTRL)));
 
 	//disable clock
 	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);  
-	writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL);
-
 */
 
-#define CFG_GET_DDR0_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | \
-(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-	((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-		((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-		((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
-
-#define CFG_GET_DDR1_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | (1<<((((mmc_ddr_set) >> 24) & 0x3) ? \
- (((((mmc_ddr_set) >> 24) & 0x3) == 2 ? 30 : 32)) : (12))) | \
-	(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-		((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-			((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-			((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
-
+#define M8BABY_GET_DT_ADDR(dtar, dmc) \
+	((((dtar >> 28) & 0x7) & ((((dmc >> 5) & 0x3)&1)?3:1)) << (((((dmc >> 5) & 0x3)&2) ? 6 : ((dmc & 0x3) + 8))+(2-((dmc >> 7) & 0x1)))) | \
+	((((((dtar >> 28) & 0x7) >> ((((dmc >> 5) & 0x3) & 1)+1))) & ((((dmc >> 5) & 0x3)&1) ? 1 : 3)) << ((((dmc >> 2) & 0x3) ? (((dmc >> 2) & 0x3)+12) : (16))+((dmc & 0x3) + 8)+(3-((dmc >> 7) & 0x1))+(((dmc >> 5) & 0x3)&1))) | \
+	((((dtar) & 0xfff) & ((1<< (((((dmc >> 5) & 0x3)) & 2) ? 6 : (((dmc & 0x3) + 8))))-1)) << (2-((dmc >> 7) & 0x1))) | \
+	(((((dmc >> 5) & 0x3)) & 2) ? (((((dtar) & 0xfff) >> 6) & ((1<<((((dmc & 0x3) + 8))-6))-1)) << (((((dmc >> 5) & 0x3)) & 1)+(9-((dmc >> 7) & 0x1)))):(0)) | \
+	(((dtar >> 12) & 0xffff) << (((dmc & 0x3) + 8)+((((dmc >> 5) & 0x3)&1)+(3-((dmc >> 7) & 0x1)))))
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

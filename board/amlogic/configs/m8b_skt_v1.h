@@ -273,12 +273,13 @@
 
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_DDR_CLK    636 //696 //768  //792// (636)
+#define CFG_DDR_CLK    696 //696 //768  //792// (636)
 
 //#define CFG_DDR_AUTO_DETECT
 #define CFG_DDR_MODE   CFG_DDR_32BIT
 
 //On board DDR capactiy
+//CFG_DDR3_512MB
 #define CFG_DDR3_1GB
 //#define CFG_DDR3_2GB
 //#define CFG_DDR3_4GB
@@ -289,39 +290,30 @@
 //DDR row/col size
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
-#if   defined(CFG_DDR3_1GB)
+#define PHYS_MEMORY_START        (0x00000000) // ???
+#if   defined(CFG_DDR3_512MB)
+	#define CONFIG_DDR3_ROW_SIZE (3)
+	#define CONFIG_DDR3_COL_SIZE (2)
+	#define CONFIG_DDR_ROW_BITS  (15)
+	#define PHYS_MEMORY_SIZE     (0x20000000)
+#elif defined(CFG_DDR3_1GB)
 	//2Gb(X16) x 4pcs
 	#define CONFIG_DDR3_ROW_SIZE (3)
 	#define CONFIG_DDR3_COL_SIZE (2)
 	#define CONFIG_DDR_ROW_BITS  (15)
+	#define PHYS_MEMORY_SIZE     (0x40000000)
 #elif defined(CFG_DDR3_2GB)
 	//4Gb(X16) x 4pcs
 	#define CONFIG_DDR3_ROW_SIZE (3)
 	#define CONFIG_DDR3_COL_SIZE (2)
 	#define CONFIG_DDR_ROW_BITS  (15)
-#elif defined(CFG_DDR3_4GB)
-	//8Gb(X16) x 4pcs
-	#define CONFIG_DDR3_ROW_SIZE (0)
-	#define CONFIG_DDR3_COL_SIZE (2)
-	#define CONFIG_DDR_ROW_BITS  (16)
-#elif !defined(CFG_DDR3_1GB) && !defined(CFG_DDR3_2GB) && !defined(CFG_DDR3_4GB)
-	#error "Please set DDR3 capacity first in file m8_skt_v1.h\n"
+	#define PHYS_MEMORY_SIZE     (0x80000000)
+#elif !defined(CFG_DDR3_1GB) && !defined(CFG_DDR3_2GB) && !defined(CFG_DDR3_512MB)
+	#error "Please set DDR3 capacity first in file m8_skt_v0.h\n"
 #endif
 
 #define CONFIG_DUMP_DDR_INFO 1
-
 #define CONFIG_ENABLE_WRITE_LEVELING 1
-
-#define PHYS_MEMORY_START        (0x00000000) // ???
-#if defined(CFG_DDR3_1GB)
-	#define PHYS_MEMORY_SIZE     (0x40000000) // 1GB
-#elif defined(CFG_DDR3_2GB)
-	#define PHYS_MEMORY_SIZE     (0x80000000) // 2GB
-#elif defined(CFG_DDR3_4GB)
-	#define PHYS_MEMORY_SIZE     (0x100000000) // 4GB ??
-#else
-	#error "Please define DDR3 memory capacity in file m8_skt_v1.h\n"
-#endif
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
 #define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
