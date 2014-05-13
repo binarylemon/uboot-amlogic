@@ -124,23 +124,19 @@ extern void platform_reset_handler(void);
 #define AO_CPU_CNTL ((0x00 << 10) | (0x0E << 2)) 	///../ucode/c_always_on_pointer.h:33
 #define P_AO_CPU_CNTL 		AOBUS_REG_ADDR(AO_CPU_CNTL)
 
-#define P_DDR0_CLK_CTRL    0xc8000800
-#define P_DDR1_CLK_CTRL    0xc8002800
+#define P_DDR0_CLK_CTRL		0xc8000800
+#define P_DDR0_PUB_DTAR0	0xc8001000 + (0x2D << 2)
+#define P_DMC_DDR_CTRL		0xc8006000 + (0x10 << 2)
+
 
 #define CONFIG_M8_DDR1_ONLY  (1)
 
-#define CFG_M8_GET_DDR0_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | \
-(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-	((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-		((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-		((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
-
-#define CFG_M8_GET_DDR1_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | (1<<((((mmc_ddr_set) >> 24) & 0x3) ? \
- (((((mmc_ddr_set) >> 24) & 0x3) == 2 ? 30 : 32)) : (12))) | \
-	(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-		((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-			((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-			((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
+#define M8BABY_GET_DT_ADDR(dtar, dmc) \
+	((((dtar >> 28) & 0x7) & ((((dmc >> 5) & 0x3)&1)?3:1)) << (((((dmc >> 5) & 0x3)&2) ? 6 : ((dmc & 0x3) + 8))+(2-((dmc >> 7) & 0x1)))) | \
+	((((((dtar >> 28) & 0x7) >> ((((dmc >> 5) & 0x3) & 1)+1))) & ((((dmc >> 5) & 0x3)&1) ? 1 : 3)) << ((((dmc >> 2) & 0x3) ? (((dmc >> 2) & 0x3)+12) : (16))+((dmc & 0x3) + 8)+(3-((dmc >> 7) & 0x1))+(((dmc >> 5) & 0x3)&1))) | \
+	((((dtar) & 0xfff) & ((1<< (((((dmc >> 5) & 0x3)) & 2) ? 6 : (((dmc & 0x3) + 8))))-1)) << (2-((dmc >> 7) & 0x1))) | \
+	(((((dmc >> 5) & 0x3)) & 2) ? (((((dtar) & 0xfff) >> 6) & ((1<<((((dmc & 0x3) + 8))-6))-1)) << (((((dmc >> 5) & 0x3)) & 1)+(9-((dmc >> 7) & 0x1)))):(0)) | \
+	(((dtar >> 12) & 0xffff) << (((dmc & 0x3) + 8)+((((dmc >> 5) & 0x3)&1)+(3-((dmc >> 7) & 0x1)))))
 
 
 void run_arc_program()
@@ -148,8 +144,7 @@ void run_arc_program()
 	char cmd;
 	int i;
 	unsigned vaddr1,vaddr2,v;
-	unsigned address0 = 0xffffffff;
-	unsigned address1 = 0xffffffff;
+	unsigned address0;
 	unsigned* pbuffer;
 	unsigned* pbuffer1;
 	vaddr1 = 0xd9010000; //store ddr trainning original data
@@ -175,68 +170,25 @@ void run_arc_program()
 	**********From 3rd of vaddr1 address, store two target trainning 
 	**********original data. ********************************************
 	********************************************************************/
-/*
+
 	writel(readl(P_DDR0_CLK_CTRL)|(1), P_DDR0_CLK_CTRL);
-	writel(readl(P_DDR1_CLK_CTRL)|(1), P_DDR1_CLK_CTRL);
-
-	unsigned int nMMC_DDR_SET  = readl(0xc8006000);
-	unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
-	unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
-	dbg_print("\nAml log : nMMC_DDR_SET is 0x",nMMC_DDR_SET);
-	dbg_print("\nAml log : nPUB0_DTAR0 is 0x",nPUB0_DTAR0);
-	dbg_print("\nAml log : nPUB1_DTAR0 is 0x",nPUB1_DTAR0);
-
-	switch( ((nMMC_DDR_SET >> 24) & 3))
-	{
-		case CONFIG_M8_DDR1_ONLY: 
-		{ 
-			address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-			dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
-		}break;
-
-		default: 
-		{
-			address0 = CFG_M8_GET_DDR0_TA_FROM_DTAR0(nPUB0_DTAR0,nMMC_DDR_SET);
-			address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-
-			dbg_print("\nAml log : DDR0 DTAR is 0x",address0);
-			dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
-		}break;
-	}
-
+	address0 = M8BABY_GET_DT_ADDR(readl(P_DDR0_PUB_DTAR0), readl(P_DMC_DDR_CTRL));
+	dbg_print("training addr=0x",address0);
 	//disable clock
 	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);  
-	writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL);
 
-	
 	pbuffer = (unsigned*)vaddr1;
 	*pbuffer = address0;
 	pbuffer ++;
-	*pbuffer = address1;	
-	pbuffer ++;
 
-	if(address0 != 0xffffffff)
-	{
-		pbuffer1 = (unsigned*)address0;
+	pbuffer1 = (unsigned*)address0;
 
-		for(i = 0; i < 32; i++){
-			*pbuffer = *pbuffer1;
-			pbuffer++;
-			pbuffer1++;
-		}
+	for(i = 0; i < 32; i++){
+		*pbuffer = *pbuffer1;
+		pbuffer++;
+		pbuffer1++;
 	}
 
-	if(address1 != 0xffffffff)
-	{
-		pbuffer1 = (unsigned*)address1;
-
-		for(i = 0; i < 32; i++){
-			*pbuffer = *pbuffer1;
-			pbuffer++;
-			pbuffer1++;
-		}
-	}
-*/	
 	clean_dcache_v7_l1();
 
 	//**********************//

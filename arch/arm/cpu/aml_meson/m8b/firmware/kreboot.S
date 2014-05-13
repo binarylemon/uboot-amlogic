@@ -108,11 +108,11 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	   DMB
 	   ISB
 
-#if 0
+#if 1
 		//enable all channel
-		ldr r1,=0xFFF
-		ldr r0,=0xc8006204
-		str r1,[r0]
+//		ldr r1,=0xFFF
+//		ldr r0,=0xc8006204
+//		str r1,[r0]
 
 
 	//send debug status to ARC
@@ -126,9 +126,9 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	ldr r1, [r0]
 	ldr r2, [r0,#4]!
 
-	ldr r5, =0xffffffff
-	cmp r1, r5
-	beq store_ch2
+//	ldr r5, =0xffffffff
+//	cmp r1, r5
+//	beq store_ch2
 
 	mov r4, #32 //trainning len
 store_loop1:
@@ -138,17 +138,6 @@ store_loop1:
 	cmp r4, #0
 	bne store_loop1
 
-store_ch2:
-	cmp r2, r5
-	beq end_ch_store
-	mov r4, #32 //trainning len
-store_loop2:
-	ldr r3, [r0, #4]!
-	str r3, [r2], #4
-	sub r4, r4, #1
-	cmp r4, #0
-	bne store_loop2
-end_ch_store:
 #endif
 /* for debug */
 //    adr r1,reset_addr
