@@ -47,49 +47,44 @@ pwr_restart:
 	dmb
 	isb
 	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
-#if 0
+#if 1
 	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
 	mov	r10, #11
 	str	 r10, [r9]
 	dsb
-
+	
 	//restore MMC Security setting.
-	ldr r0,=0xda002000
-	ldr r1,=0x0
-	str r1,[r0]      /*DMC_SEC_RANGE0_ST*/
+	ldr r0,=0xda002000 //DMC_SEC_RANGE0_CTRL
+	ldr r1,=0xffff0000
+	str r1,[r0]
+	
+	ldr r1,=0xffffffff
+	str r1,[r0,#4]	/*DMC_SEC_RANGE1_CTRL*/
 
-	ldr r1,=0xffff
-	str r1,[r0,#4]   /*DMC_SEC_RANGE0_END*/
+	str r1,[r0,#8]	/*DMC_SEC_RANGE2_CTRL*/
+	str r1,[r0,#12]  /*DMC_SEC_RANGE3_CTRL*/
+	str r1,[r0,#16]  /*DMC_SEC_AXI_PORT_CTRL*/
+	str r1,[r0,#20]  /*DMC_SEC_AM_PORT_CTRL*/
 
-	ldr r0,=0xda002040
-	str r1,[r0]   /*DMC_SEC_PORT0_RANGE0*/
-	str r1,[r0,#4]  /*DMC_SEC_PORT1_RANGE0*/
-	str r1,[r0,#8]  /*DMC_SEC_PORT2_RANGE0*/
-	str r1,[r0,#12]  /*DMC_SEC_PORT3_RANGE0*/
-	str r1,[r0,#16]  /*DMC_SEC_PORT4_RANGE0*/
-	str r1,[r0,#20]  /*DMC_SEC_PORT5_RANGE0*/
-	str r1,[r0,#24]  /*DMC_SEC_PORT6_RANGE0*/
-	str r1,[r0,#28]  /*DMC_SEC_PORT7_RANGE0*/
-	str r1,[r0,#32]  /*DMC_SEC_PORT8_RANGE0*/
-	str r1,[r0,#36]  /*DMC_SEC_PORT9_RANGE0*/
-	str r1,[r0,#40]  /*DMC_SEC_PORT10_RANGE0*/
-	str r1,[r0,#44]  /*DMC_SEC_PORT11_RANGE0*/
+	ldr r0, =0xda002024
+	str r1,[r0]
+	str r1,[r0,#4]
+
+	ldr r0, =0xda002018
 	ldr r1,=0x80000000
-	ldr r0,=0xda002144
-	str r1,[r0] /*DMC_SEC_CTRL*/
+	str r1,[r0]
 
-	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
-	mov	r10, #6
-	str	 r10, [r9]
-	dsb
+	ldr r0, =0xc8006000//#P_DMC_REQ_CTRL
+	ldr r1,=0xffff
+	str r1,[r0]
 
-
+/*
 wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	ldr r2, [r0]
 	and r2, r2, r1
 	cmp r2, #0
 	bne wait_dmc_sec_ctrl
-
+*/
 #endif
        LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
        mov  r1, #12

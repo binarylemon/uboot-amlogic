@@ -66,7 +66,7 @@ endef
 
 
 #CSRCS = $(wildcard *.c lib/*.c)
-CSRCS = i2c.c arc_pwr.c  lib/*.c
+CSRCS = i2c.c arc_pwr.c mmc.c lib/*.c
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
 #all : clean $(obj)code_elf.out 
