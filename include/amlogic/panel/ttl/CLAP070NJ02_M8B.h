@@ -21,7 +21,7 @@
 #define	LCD_CLK				42700000	/** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
 #define CLK_POL				0	/** clk_polarity(only valid for TTL) */
 #define HS_WIDTH			20	/** hsync_width */
-#define HS_BACK_PORCH		170	/** hsync_backporch(include hsync_width) */
+#define HS_BACK_PORCH		175	/** hsync_backporch(include hsync_width) */
 #define HS_POL				0	/** hsync_polarity(0=negative, 1=positive) */
 #define VS_WIDTH			3	/** vsync_width */
 #define VS_BACK_PORCH		23	/** vsync_backporch(include vsync_width) */

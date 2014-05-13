@@ -1369,7 +1369,7 @@ static void vclk_set_lcd(int lcd_type, int vclk_sel, unsigned long pll_reg, unsi
 //	 WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL5,  0x430a800);	
 //	 WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL, pll_reg);
 	
-	WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL2, 0x69c88000);
+	WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL2, (0x69c88000|pll_frac));
     WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL3, 0xca563823);
     WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL4, (0x23b100|(od_fb<<24)));
     WRITE_LCD_CBUS_REG(HHI_VID_PLL_CNTL5, 0x00012385);
@@ -2199,7 +2199,7 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
                                 fout_pll = div_pre_out * div_pre;
 								DBG_PRINT("pre_div_sel=%d, div_pre=%d, fout_pll=%d\n", pre_div_sel, div_pre, fout_pll);
                                 if (fout_pll <= DIV_PRE_MAX_CLK_IN) {
-                                    for (od_sel = OD_SEL_MAX; od_sel > 0; od_sel--) {
+                                    for (od_sel = 3; od_sel > 0; od_sel--) {
                                         od = od_table[od_sel - 1];
                                         pll_vco = fout_pll * od;
                                         DBG_PRINT("od_sel=%d, od=%d, pll_vco=%d\n", od_sel, od, pll_vco);
