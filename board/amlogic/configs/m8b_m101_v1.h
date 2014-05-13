@@ -340,11 +340,6 @@
 //#define CFG_DDR_MODE   CFG_DDR_32BIT
 #define CFG_DDR_MODE   CFG_DDR_16BIT_LANE02
 
-//M8baby support 16bit and 32bit mode
-//#define CONFIG_M8B_DDR_BIT_MODE_32BIT  (0)
-//#define CONFIG_M8B_DDR_BIT_MODE_16BIT  (1)
-#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_16BIT) 
-
 //M8baby support 4 mode to abstract bank from address
 //#define CONFIG_M8B_DDR_BANK_SET_S12	    (0)
 //#define CONFIG_M8B_DDR_BANK_SET_S13_S12	(1)
@@ -363,11 +358,11 @@
 
 #define CONFIG_DUMP_DDR_INFO 1
 #define CONFIG_ENABLE_WRITE_LEVELING 1
-#define PHYS_MEMORY_START        (0x00000000) // ???
 
 //DDR row/col size
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
+#define PHYS_MEMORY_START        (0x00000000) // ???
 #if   defined(CONFIG_DDR3_512MB)
 	#define CONFIG_DDR3_ROW_SIZE (3)
 	#define CONFIG_DDR3_COL_SIZE (2)

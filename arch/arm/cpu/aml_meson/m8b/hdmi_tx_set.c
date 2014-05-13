@@ -308,9 +308,17 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     hdmi_wr_reg(TX_SYS5_TX_SOFT_RESET_1, 0x00); // Final release reset on tmds_clk domain
 }
 
-// Enable nessary hdmi related clock gate
+// Enable nessary hdmi related clock gate & power control
 static void hdmi_tx_gate(HDMI_Video_Codes_t vic)
 {
+    aml_set_reg32_bits_op(P_HHI_VPU_MEM_PD_REG1, 0x0, 20, 2);
+// Powerup VPU_HDMI
+    aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x1<<8))); // [8] power on
+    aml_write_reg32_op(P_HHI_MEM_PD_REG0, aml_read_reg32_op(P_HHI_MEM_PD_REG0) & (~(0xff << 8))); // HDMI MEM-PD
+
+    // Remove VPU_HDMI ISO
+    aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x1<<9))); // [9] VPU_HDMI
+
     aml_set_reg32_bits_op(P_HHI_GCLK_MPEG2, 1, 4, 1); //enable HDMI PCLK
     aml_set_reg32_bits_op(P_HHI_GCLK_MPEG2, 1, 3, 1); //enable HDMI Int Sync
     aml_write_reg32_op(P_HHI_HDMI_CLK_CNTL,  ((0 << 9)  |   // select XTAL
@@ -327,7 +335,7 @@ static void hdmi_tx_gate(HDMI_Video_Codes_t vic)
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 4, 1); //enable VCLK2_VENCP
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 9, 1); //enable VCLK2_ENC
     }
-    
+
     aml_set_reg32_bits_op(P_PERIPHS_PIN_MUX_1, 0x7, 24, 3);  //HPD SCL pinmux
 }
 
