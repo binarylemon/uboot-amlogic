@@ -125,8 +125,8 @@ extern void platform_reset_handler(void);
 #define P_AO_CPU_CNTL 		AOBUS_REG_ADDR(AO_CPU_CNTL)
 
 #define P_DDR0_CLK_CTRL		0xc8000800
-#define P_DDR0_PUB_DTAR0	0xc8001000 + (0x2D << 2)
-#define P_DMC_DDR_CTRL		0xc8006000 + (0x10 << 2)
+#define P_DDR0_PUB_DTAR0	0xc80010b4
+#define P_DMC_DDR_CTRL		0xc8006040
 
 
 #define CONFIG_M8_DDR1_ONLY  (1)
