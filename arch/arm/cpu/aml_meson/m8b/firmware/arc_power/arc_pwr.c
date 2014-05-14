@@ -273,7 +273,7 @@ void enter_power_down()
 			p_arc_pwr_op->power_off_ddr15();
 	}
 
-#if 0
+#if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
 	for(i=0;i<10;i++)
