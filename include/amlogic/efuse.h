@@ -33,17 +33,9 @@ int efuse_getinfo(char *title, efuseinfo_item_t *info);
 int efuse_read_usr(char *buf, size_t count, loff_t *ppos);
 int efuse_write_usr(char* buf, size_t count, loff_t* ppos);
 
-
-#if defined(CONFIG_M6) || defined (CONFIG_M6TV) || defined(CONFIG_M8) || defined(CONFIG_M8B)
 // for m6 and after efuse length
 #define EFUSE_BYTES				512   //(EFUSE_BITS/8)
 #define EFUSE_DWORDS		128   //(EFUSE_BITS/32)
-#elif defined(CONFIG_M3) || defined(CONFIG_M1) 
-// for M1, M2, M3, A3 efuse length 
-#define EFUSE_BYTES            384  //(EFUSE_BITS/8)
-#define EFUSE_DWORDS            96  //(EFUSE_BITS/32)
-#endif
-
 
 #ifdef CONFIG_MESON_TRUSTZONE
 // efuse HAL_API arg

@@ -85,7 +85,7 @@
  //bit 15:8.  Low Power enter latency.when the logic check the PCTL send LP_REQ and ACKed by PUB. after this regsiter bits cycles, we'll gated the PCTL clock and PUB clock if the pub and pctl auto clock gating enabled.
  //bit 7:0.   DMC active latency.  latency to enter LOW POWER state after the the DMC is not actived. 
 
-#define P_MMC_DDR_CTRL        0xc8006000 + (0x00 << 2 ) 
+#define P_MMC_DDR_CTRL        0xc8006000 + (0x10 << 2 )
   //bit 25:24.   ddr chanel selection. 2'b00 : address bit 12.   
                                      // 2'b01 : all address goes to ddr1. ddr0 is not used.
                                      // 2'b10 : address bit 30.
@@ -100,21 +100,21 @@
   //bit 4        ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.   
   //bit 3:2      ddr0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
   //bit 1:0      ddr0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.  
-#define P_MMC_DDR_CTRL1        0xc8006000 + (0x01 << 2 ) 
+#define P_MMC_DDR_CTRL1        0xc8006000 + (0x11 << 2 )
   //bit 5:4.   disalbed the DDR1 related  data fifos (sram) power. defaults 2'b00 =  enabled.
   //bit 3:2.   disalbed the DDR0 related  data fifos (sram) power. defaults 2'b00 =  enabled.
   //bit 1:0.   disalbed the canvas lut sram power. defaults 2'b00 =  enabled.
 
-#define P_DC_CAV_LUT_DATAL          0xc8006000 + (0x08 << 2 )
+#define P_DC_CAV_LUT_DATAL          0xc8006000 + (0x12 << 2 )
   //low 32 bits of canvas data which need to be configured to canvas memory. 
-#define P_DC_CAV_LUT_DATAH          0xc8006000 + (0x09 << 2 )
+#define P_DC_CAV_LUT_DATAH          0xc8006000 + (0x13 << 2 )
   //high 32bits of cavnas data which need to be configured to canvas memory.
-#define P_DC_CAV_LUT_ADDR           0xc8006000 + (0x0a << 2 )
+#define P_DC_CAV_LUT_ADDR           0xc8006000 + (0x14 << 2 )
   //bit 9:8.   write 9:8 2'b10. the canvas data will saved in canvas memory with addres 7:0.
   //bit 7:0.   canvas address.
-#define P_DC_CAV_LUT_RDATAL          0xc8006000 + (0x0b << 2 )
+#define P_DC_CAV_LUT_RDATAL          0xc8006000 + (0x15 << 2 )
   //low 32bits of register read LUT table value.
-#define P_DC_CAV_LUT_RDATAH          0xc8006000 + (0x0c << 2 )
+#define P_DC_CAV_LUT_RDATAH          0xc8006000 + (0x16 << 2 )
   //high 32bits of register read LUT table value.
   
 
