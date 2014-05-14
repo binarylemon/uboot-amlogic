@@ -24,7 +24,7 @@
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-//#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR24
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -50,7 +50,8 @@
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
-#define CONFIG_AML_HDMI_TX 1
+#define CONFIG_AML_HDMI_TX  1
+#define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -86,6 +87,66 @@
 	#define CONFIG_NETMASK         255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
 
+//I2C definitions
+#define CONFIG_AML_I2C			1
+#ifdef CONFIG_AML_I2C
+#define CONFIG_CMD_I2C			1
+#define HAS_AO_MODULE
+#define CONFIG_SYS_I2C_SPEED	400000
+#endif	//#ifdef CONFIG_AML_I2C
+
+#define CONFIG_CMD_AML
+/*
+ * PMU definitions, all PMU devices must be include involved
+ * in CONFIG_PLATFORM_HAS_PMU
+ */
+#define CONFIG_PLATFORM_HAS_PMU
+#ifdef CONFIG_PLATFORM_HAS_PMU
+
+#define CONFIG_AML1218
+
+#ifdef CONFIG_AML1218
+#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
+#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts 
+
+#define CONFIG_ENABLE_PMU_WATCHDOG
+//#define CONFIG_RESET_TO_SYSTEM
+
+/*
+ * under some cases default voltage of PMU output is 
+ * not suitable for application, so you should take care
+ * of the following macros which defined initial voltage
+ * of each power domain when in SPL stage of uboot.
+ */
+#define CONFIG_POWER_SPL                            // init power for all domians, must have
+#define CONFIG_VCCK_VOLTAGE             1050        // CPU core voltage when boot, must have
+#define CONFIG_VDDAO_VOLTAGE            1100        // VDDAO voltage when boot, must have
+#define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
+
+#define CONFIG_IOREF_1V8                1800        // IOREV_1.8v voltage when boot, option
+#define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
+#define CONFIG_DVDD_1V8                 1800        // DVDD18 voltage when boot, option
+#define CONFIG_VCC2V5                   2500        // VCC2.5v voltage when boot, option
+#define CONFIG_VCC_CAM                  1500        // voltage for camera when boot, option
+#define CONFIG_VDDIO_AO28               2850        // VDDIO_AO28 voltage when boot, option
+
+#define CONFIG_VCC3V3                 	3150        // VCC3.3v voltage when boot, option
+
+/*
+ * set to 1 if you want decrease voltage of VDDAO when suspend
+ */
+#define CONFIG_VDDAO_VOLTAGE_CHANGE     1
+#ifdef CONFIG_VDDAO_VOLTAGE_CHANGE
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    825         // voltage of VDDAO when suspend
+#endif /* CONFIG_VDDAO_VOLTAGE_CHANGE */
+
+/*
+ * DCDC mode switch when suspend 
+ */
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1
+#endif /* CONFIG_AML1218 */
+
+#endif /* CONFIG_PLATFORM_HAS_PMU */
 
 #define CONFIG_SDIO_B1   1
 #define CONFIG_SDIO_A    1
@@ -130,6 +191,7 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x12000000\0" \
+	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
@@ -138,16 +200,22 @@
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
+	"hdmimode=1080p\0" \
+	"cvbsmode=576cvbs\0" \
+	"outputmode=1080p\0" \
+	"vdac_config=0x10\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
-	"video_dev=panel\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
-	"display_bpp=16\0" \
-	"display_color_format_index=16\0" \
+	"video_dev=tvout\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
+	"display_bpp=24\0" \
+	"display_color_format_index=24\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x6100000\0" \
+	"fb_width=1280\0"\
+	"fb_height=720\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -156,32 +224,64 @@
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
 	"preboot="\
-		"echo preboot...;" \	
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
+        "if itest ${upgrade_step} == 1; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+        "fi; "\
+        "run prepare;"\
+        "run storeargs;"\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run switch_bootmode\0" \
     \
    	"update="\
-   		"echo update...; "\
+        /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+        "run usb_burning; "\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
+            "if fatexist mmc 0 ${sdcburncfg}; then "\
+                "run sdc_burning; "\
+            "else "\
+                "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+                "run recovery;"\
+            "fi;"\
+        "else "\
+            "run recovery;"\
+        "fi;\0"\
+    \
+   	"storeargs="\
+        "setenv bootargs ${bootargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
-		"echo switch_bootmode...;" \	
-		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
-            "\0"\
+        "if test ${reboot_mode} = factory_reset; then "\
+			"run recovery;"\
+        "else if test ${reboot_mode} = update; then "\
+        	"run update;"\
+        "else if test ${reboot_mode} = usb_burning; then "\
+        	"run usb_burning;"\
+        "else " \
+        	"  "\
+        "fi;fi;fi\0" \
     \
+    "prepare="\
+        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
+        "imgread res logo ${loadaddr_logo}; "\
+        "unpackimg ${loadaddr_logo}; "\
+        "logo source ${outputmode}; bmp display ${bootup_offset}; bmp scale;"\
+        "\0"\
+	\
 	"storeboot="\
         "echo Booting...; "\
+        "if unifykey get usid; then  "\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
@@ -189,13 +289,19 @@
 	"recovery="\
         "echo enter recovery;"\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm;fi;"\
         "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
+	      "if imgread kernel recovery ${loadaddr}; then "\
+	        "setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+				"else "\
+					"echo no recovery in flash; "\
+				"fi;\0" \
+    \
+	"usb_burning=update 1000\0" \
+    "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 
-#define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"
+#define CONFIG_BOOTCOMMAND   "run storeboot"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
@@ -323,6 +429,8 @@
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
+#define CONFIG_CMD_IMGPACK 1
+
 //M8 security boot
 //#define CONFIG_SECU_BOOT	1
 
@@ -339,6 +447,7 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+#define CONFIG_CMD_LOGO
 
 /*
 * CPU switch test for uboot
