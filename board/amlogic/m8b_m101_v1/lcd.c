@@ -33,23 +33,23 @@
 //**** define backlight control method ***//
 #define BL_POWER_ON_DELAY	200	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_EXTERN	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
-#define BL_GPIO				1//GPIOD_1		/** backlight control gpio port */
+#define BL_GPIO				GPIODV_28		/** backlight control gpio port */
 
 //**** define backlight GPIO control ***//
 #define	BL_DIM_MAX			0x4	/** brightness diming level_max, negative logic */
 #define	BL_DIM_MIN			0xf	/** brightness diming level_min, negative logic */
 
 //**** define backlight PWM control ***//
-#define BL_PWM_PORT			BL_PWM_D	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-#define BL_PWM_USE_GPIO		0			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
+#define BL_PWM_PORT			BL_PWM_C	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
+#define BL_PWM_USE_GPIO		1			/** pwm gpio used(0=use pwm_port only, 1=use bl_gpio_port to control on/off) */
 
 #define	BL_PWM_FREQ			400		/** backlight control pwm frequency(unit: Hz) */
 #define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
 #define BL_PWM_MIN         	10		/** brightness diminig duty_min(unit: %, positive logic) */
 
 //**** backlight PWM pinmux setting ***//
-const static unsigned bl_pwm_pinmux_set[][2] = {{2, 0x8},};
-const static unsigned bl_pwm_pinmux_clr[][2] = {{1, 0x10000000}};
+const static unsigned bl_pwm_pinmux_set[][2] = {{3,0x01000000},};
+const static unsigned bl_pwm_pinmux_clr[][2] = {{0,0x00000048}, {7,0x10000200},};
 //*********************************************//
 
 //**********************************************//
@@ -96,11 +96,11 @@ static unsigned short gamma_table[256] = {
 };
 
 //**** default settings, don't modify them unless there is display problem ***//
-#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
+#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=1.5%, 4=2%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
-#define PLL_CTRL				0x10220		/** only valid when CLK_AUTO_GENERATION=0 */
-#define DIV_CTRL				0x18803		/** only valid when CLK_AUTO_GENERATION=0 */
-#define CLK_CTRL				0x101		/** only valid when CLK_AUTO_GENERATION=0 */
+#define PLL_CTRL				0x20438		/** only valid when CLK_AUTO_GENERATION=0 */
+#define DIV_CTRL				0x18833		/** only valid when CLK_AUTO_GENERATION=0 */
+#define CLK_CTRL				0x0eee1102		/** only valid when CLK_AUTO_GENERATION=0 */
 
 #define RGB_BASE				0xf0	/** rgb base control */
 #define RGB_COEFF				0x74a	/** rgb coeff control */
@@ -109,6 +109,21 @@ static unsigned short gamma_table[256] = {
 #define VIDEO_ON_LINE			32
 
 //**** lcd interface control configs ***//
+static DSI_Config_t lcd_mipi_config = {
+#ifdef LCD_MIPI_DSI_CONFIG
+    .lane_num = LANE_NUM,
+    .bit_rate_min = LANE_BIT_RATE_MIN,
+    .bit_rate_max = LANE_BIT_RATE_MAX,
+    .factor_numerator   = 0,
+    .factor_denominator = 10,
+    .operation_mode = ((MIPI_MODE_INIT << BIT_OPERATION_MODE_INIT) | (MIPI_MODE_DISP << BIT_OPERATION_MODE_DISP)),
+    .transfer_ctrl  = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH)),
+    .dsi_init_on  = &mipi_init_on_table[0],
+    .dsi_init_off = &mipi_init_off_table[0],
+    .lcd_extern_init = LCD_EXTERN_INIT,
+#endif
+};
+
 static LVDS_Config_t lcd_lvds_config = {
 	.lvds_vswing = 1,	/** lvds_vswing_level(default level=1, support level 0,1,2,3,4) */
 	.lvds_repack_user = 0,	/** 0=auto setting, 1=user define repack*/
@@ -134,13 +149,13 @@ static TTL_Config_t lcd_ttl_config = {
 //delay: unit in ms
 
 //**** spcial control only for uboot ***//
-static Lcd_Power_Config_t lcd_power_on_uboot = {.type = LCD_POWER_TYPE_PMU, .gpio = LCD_POWER_PMU_GPIO1, .value = LCD_POWER_GPIO_OUTPUT_LOW};
-static Lcd_Power_Config_t lcd_power_off_uboot = {.type = LCD_POWER_TYPE_PMU, .gpio = LCD_POWER_PMU_GPIO1, .value = LCD_POWER_GPIO_INPUT};
+static Lcd_Power_Config_t lcd_power_on_uboot = {.type = LCD_POWER_TYPE_NULL, .gpio = 0, .value = 0};
+static Lcd_Power_Config_t lcd_power_off_uboot = {.type = LCD_POWER_TYPE_NULL, .gpio = 0, .value = 0};
 
 //**** power control settings, must follow panel on/off sequence ***//
 static Lcd_Power_Config_t lcd_power_on_config[] = {
 	{//step 1
-		.type = 0, 
+		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
 		.value = 0,
 		.delay = 50,
@@ -245,6 +260,7 @@ Lcd_Config_t lcd_config_dft = {
 		.gamma_b_coeff = GAMMA_B_COEFF,
 	},
 	.lcd_control = {
+		.mipi_config = &lcd_mipi_config,
 		.lvds_config = &lcd_lvds_config,
 		.ttl_config = &lcd_ttl_config,
 	},
@@ -277,7 +293,6 @@ void lcd_default_config_init(Lcd_Config_t *pConf)
 	
 	for (i=0; i<pConf->lcd_power_ctrl.power_on_step; i++) {
 		pConf->lcd_power_ctrl.power_on_config[i].type = lcd_power_on_config[i].type;
-		printf("tpye11111=%d\n",pConf->lcd_power_ctrl.power_on_config[i].type);
 		pConf->lcd_power_ctrl.power_on_config[i].gpio = lcd_power_on_config[i].gpio;
 		pConf->lcd_power_ctrl.power_on_config[i].value = lcd_power_on_config[i].value;
 		pConf->lcd_power_ctrl.power_on_config[i].delay = lcd_power_on_config[i].delay;

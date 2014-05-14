@@ -31,6 +31,7 @@
 #define BL_LEVEL_MIN			10	/** brightness level min, must match the rootfs setting*/
 
 //**** define backlight control method ***//
+#define BL_POWER_ON_DELAY	200	/** delay time before backlight power on(unit: ms) */
 #define BL_CTL				BL_CTL_PWM_NEGATIVE	/** backlight control method(BL_CTL_GPIO, BL_CTL_PWM_NEGATIVE, BL_CTL_PWM_POSITIVE) */
 #define BL_GPIO				GPIODV_28	/** backlight control gpio port */
 
@@ -47,8 +48,8 @@
 #define BL_PWM_MIN         	25		/** brightness diminig duty_min(unit: %, positive logic) */
 
 //**** backlight PWM pinmux setting ***//
-const static unsigned bl_pwm_pinmux_set[][2] = {{3, 0x1000000},};
-const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
+const static unsigned bl_pwm_pinmux_set[][2] = {{3,0x01000000},};
+const static unsigned bl_pwm_pinmux_clr[][2] = {{0,0x00000048}, {7,0x10000200},};
 //*********************************************//
 
 //**********************************************//
@@ -63,9 +64,9 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 #define VALID_HVSYNC		1	/** 0=disable signal, 1=enable signal */
 #define VALID_DE			1	/** 0=disable signal, 1=enable signal */
 
-#define H_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define H_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define H_OFFSET			0	/** horizontal display offset */
-#define V_OFFSET_SIGN		1	/** 0=negative, 1=positive */
+#define V_OFFSET_SIGN		0	/** 0=positive, 1=negative */
 #define V_OFFSET			0	/** vertical display offset */
 
 #define DITHER_USER			0		/** 0=auto setting, 1=user define */
@@ -95,11 +96,11 @@ static unsigned short gamma_table[256] = {
 };
 
 //**** default settings, don't modify them unless there is display problem ***//
-#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=2%, 4=3%, 5=4%, 6=5%) */
+#define CLK_SPREAD_SPECTRUM		0	/** ss_level(0=disable, 1=0.5%, 2=1%, 3=1.5%, 4=2%) */
 #define CLK_AUTO_GENERATION		1	/** 0=using customer clock parameters, as pll_ctrl, div_ctrl, clk_ctrl defined, 1=auto generate clock parameters by lcd_clock */
-#define PLL_CTRL				0x1000232	/** only valid when CLK_AUTO_GENERATION=0 */
+#define PLL_CTRL				0x20445		/** only valid when CLK_AUTO_GENERATION=0 */
 #define DIV_CTRL				0x18803		/** only valid when CLK_AUTO_GENERATION=0 */
-#define CLK_CTRL				0x101		/** only valid when CLK_AUTO_GENERATION=0 */
+#define CLK_CTRL				0x02ee1101		/** only valid when CLK_AUTO_GENERATION=0 */
 
 #define RGB_BASE				0xf0	/** rgb base control */
 #define RGB_COEFF				0x74a	/** rgb coeff control */
@@ -109,7 +110,18 @@ static unsigned short gamma_table[256] = {
 
 //**** lcd interface control configs ***//
 static DSI_Config_t lcd_mipi_config = {
-	//to do
+#ifdef LCD_MIPI_DSI_CONFIG
+    .lane_num = LANE_NUM,
+    .bit_rate_min = LANE_BIT_RATE_MIN,
+    .bit_rate_max = LANE_BIT_RATE_MAX,
+    .factor_numerator   = 0,
+    .factor_denominator = 10,
+    .operation_mode = ((MIPI_MODE_INIT << BIT_OPERATION_MODE_INIT) | (MIPI_MODE_DISP << BIT_OPERATION_MODE_DISP)),
+    .transfer_ctrl  = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH)),
+    .dsi_init_on  = &mipi_init_on_table[0],
+    .dsi_init_off = &mipi_init_off_table[0],
+    .lcd_extern_init = LCD_EXTERN_INIT,
+#endif
 };
 
 static LVDS_Config_t lcd_lvds_config = {
@@ -117,15 +129,6 @@ static LVDS_Config_t lcd_lvds_config = {
 	.lvds_repack_user = 0,	/** 0=auto setting, 1=user define repack*/
 	.lvds_repack = 1,	/** user defined repack(0=JEIDA data mapping, 1=VESA data mapping. only valid when lvds_repack_user=1) */
 	.pn_swap = 0,		/** 0=normal, 1=swap */
-};
-
-static EDP_Config_t lcd_edp_config = {
-	.link_user = 1,		/** 0=auto setting, 1=user define link config */
-	.link_rate = 1,		/** 0=1.62G, 1=2.7G, only valid when link_user=1 */
-	.lane_count = 4,	/** 1,2,4, only valid when edp_user=1 */
-	.link_adaptive = 0,	/** 0=fixed user defined vswing, 1=auto setting vswing by training */
-	.vswing = 0,		/** support level 0,1,2,3, user defined vswing, only valid when adaptive=0 */
-	.preemphasis = 0,	/** fixed vaule */
 };
 
 static TTL_Config_t lcd_ttl_config = {
@@ -139,10 +142,10 @@ static TTL_Config_t lcd_ttl_config = {
 // lcd power control 
 //*********************************************//
 //**** power contrl support define ***//
-//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL
+//type: LCD_POWER_TYPE_CPU, LCD_POWER_TYPE_PMU, LCD_POWER_TYPE_SIGNAL, LCD_POWER_TYPE_INITIAL
 //cpu_gpio: gpio name such as GPIODV_29...
 //pmu_gpio: LCD_POWER_PMU_GPIO0, LCD_POWER_PMU_GPIO1, LCD_POWER_PMU_GPIO2, LCD_POWER_PMU_GPIO3, LCD_POWER_PMU_GPIO4
-//value: LCD_POWER_GPIO_OUTPUT_LOW, LCD_POWER_GPIO_OUTPUT_HIGH, LCD_POWER_GPIO_INPUT
+//value: 0=LCD_POWER_GPIO_OUTPUT_LOW, 1=LCD_POWER_GPIO_OUTPUT_HIGH, 2=LCD_POWER_GPIO_INPUT
 //delay: unit in ms
 
 //**** spcial control only for uboot ***//
@@ -154,13 +157,13 @@ static Lcd_Power_Config_t lcd_power_on_config[] = {
 	{//step 1
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 20,
 	},
 	{//step 2
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
-		.value = LCD_POWER_GPIO_OUTPUT_LOW,
+		.value = 0,
 		.delay = 20,
 	},
 	{//step 3
@@ -181,13 +184,13 @@ static Lcd_Power_Config_t lcd_power_off_config[] = {
 	{//step 2
 		.type = LCD_POWER_TYPE_PMU, 
 		.gpio = LCD_POWER_PMU_GPIO0, 
-		.value = LCD_POWER_GPIO_INPUT,
+		.value = 2,
 		.delay = 20,
 	},
 	{//step 3
 		.type = LCD_POWER_TYPE_CPU, 
 		.gpio = GPIODV_29, 
-		.value = LCD_POWER_GPIO_OUTPUT_HIGH,
+		.value = 1,
 		.delay = 100,
 	},
 };
@@ -202,6 +205,7 @@ Lcd_Bl_Config_t bl_config_dft = {
 	.level_mid_mapping = BL_LEVEL_MID_MAPPING,
 	.level_min = BL_LEVEL_MIN,
 	.level_max = BL_LEVEL_MAX,
+	.power_on_delay = BL_POWER_ON_DELAY,
 	.method = BL_CTL,
 	.gpio = BL_GPIO,
 	.dim_max = BL_DIM_MAX,
@@ -248,8 +252,8 @@ Lcd_Config_t lcd_config_dft = {
 		.de_valid = VALID_DE,
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
-		
-        .pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
+		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST << 0),
+		.pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
 		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
 		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
 	},
@@ -258,6 +262,7 @@ Lcd_Config_t lcd_config_dft = {
 		.rgb_base_addr = RGB_BASE,
 		.rgb_coeff_addr = RGB_COEFF,
 		.dith_user = DITHER_USER,
+		.dith_cntl_addr = DITHER_CTRL,
 		.vadj_brightness = VADJ_BRIGHTNESS,
 		.vadj_contrast = VADJ_CONTRAST,
 		.vadj_saturation = VADJ_SATURATION,
@@ -269,7 +274,6 @@ Lcd_Config_t lcd_config_dft = {
 	.lcd_control = {
 		.mipi_config = &lcd_mipi_config,
 		.lvds_config = &lcd_lvds_config,
-		.edp_config = &lcd_edp_config,
 		.ttl_config = &lcd_ttl_config,
 	},
 };
