@@ -1,3 +1,4 @@
+#include <common.h>
 #include <amlogic/aml_tv.h>
 #include <amlogic/enc_clk_config.h>
 #include <asm/arch-m8/reg_addr.h>
@@ -23,50 +24,72 @@
             break;\
     }
 
+#define h_delay()       \
+    do {                \
+        int i = 1000;   \
+        while(i--);     \
+    }while(0)
+
 static void set_hpll_clk_out(unsigned clk)
 {
     printf("config HPLL\n");
-    aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c88000);
-    aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xca563823);
-    aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x00238100);
-    aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012286);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x69c88000);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0xca563823);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x40238100);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00012286);
+    aml_write_reg32(P_HHI_VID2_PLL_CNTL2, 0x430a800);       // internal LDO share with HPLL & VIID PLL
+    aml_write_reg32(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
     switch(clk){
-        case 2970:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x59c84e00);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xce59c822);   // optimise HPLL VCO 2.97GHz performance
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x0123b100);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012385);
-            
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
-            while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
-                ;
-            }
-            break;
         case 1488:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
-            while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
+            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x69c8ce00);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x40238100);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x12385);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x6000043d);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x4000043d);
+            while(!(aml_read_reg32(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
                 ;
             }
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c8ce00);
+            udelay(100);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x69c80e00);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0x0e79c822);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x400121ef);
             break;
         case 1080:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000042d);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000042d);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x6000042d);
+    aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x4000042d);
             break;
         case 1066:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL, 0x42a);
+            WRITE_CBUS_REG(HHI_VID_PLL_CNTL, 0x42a);
             break;
         case 1058:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL, 0x422);
+            WRITE_CBUS_REG(HHI_VID_PLL_CNTL, 0x422);
             break;
         case 1086:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL, 0x43e);
+            WRITE_CBUS_REG(HHI_VID_PLL_CNTL, 0x43e);
+            break;
+        case 1296:
+            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x59c88000);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0xca49b022);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x0023b100);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00012385);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x600c0436);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x400c0436);
+            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00016385);
             break;
         default:
             break;
     }
+    // P_HHI_HDMI_PHY_CNTL1     bit[1]: enable clock    bit[0]: soft reset
+#define RESET_HDMI_PHY()                        \
+    aml_write_reg32(P_HHI_HDMI_PHY_CNTL1, 3);   \
+    h_delay();                                  \
+    aml_write_reg32(P_HHI_HDMI_PHY_CNTL1, 2);   \
+    h_delay()
+
+    RESET_HDMI_PHY();
+    RESET_HDMI_PHY();
+    RESET_HDMI_PHY();
+    printf("config HPLL done\n");
 }
 
 static void set_hpll_hdmi_od(unsigned div)
