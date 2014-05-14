@@ -567,7 +567,6 @@ firmware:$(obj)firmware.bin
 libucl:
 	$(MAKE) -C lib/ucl
 
-ifeq ($(CONFIG_M3),y)
 ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 #	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
@@ -576,54 +575,7 @@ else #NOT CONFIG_IMPROVE_UCL_DEC
 $(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
 	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
 endif #END CONFIG_IMPROVE_UCL_DEC
-else #NOT CONFIG_M3
-ifeq ($(CONFIG_M6),y)
-ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
-else #NOT CONFIG_IMPROVE_UCL_DEC
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif #END CONFIG_IMPROVE_UCL_DEC
-else #NOT CONFIG_M6
-ifeq ($(CONFIG_M6TV),y)
-ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
-else #NOT CONFIG_IMPROVE_UCL_DEC
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif #END CONFIG_IMPROVE_UCL_DEC
-else #NOT CONFIG_M6TV
-ifeq ($(CONFIG_M8),y)
-ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
-else #NOT CONFIG_IMPROVE_UCL_DEC
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif #END CONFIG_IMPROVE_UCL_DEC
-else #NOT CONFIG_M8
-ifeq ($(CONFIG_M8B),y)
-ifeq ($(CONFIG_IMPROVE_UCL_DEC),y)
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-#	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
-else #NOT CONFIG_IMPROVE_UCL_DEC
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk libucl
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@ UCL_BOOTLIBS=$(obj)lib/ucl/libucl.o
-endif #END CONFIG_IMPROVE_UCL_DEC
-else #NOT CONFIG_M8B
-$(obj)firmware.bin: $(TIMESTAMP_FILE) $(VERSION_FILE) tools $(obj)include/autoconf.mk
-	$(MAKE) -C $(TOPDIR)/$(CPUDIR)/common/firmware all FIRMWARE=$@
-endif #END CONFIG_M8B
-endif #END CONFIG_M8
-endif #END CONFIG_M6TV
-endif #END CONFIG_M6
-endif #END CONFIG_M3
+
 endif #END CONFIG_AML_MESON
 
 $(obj)u-boot.ldr:	$(obj)u-boot
