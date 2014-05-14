@@ -72,10 +72,10 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 	//serial_puts("DDR Clock initial...\n");
 	writel(0, P_DDR0_SOFT_RESET);
 	writel(0, P_DDR1_SOFT_RESET);
-	MMC_Wr(AM_DDR_CLK_CNTL, 0x80004040);   // enable DDR PLL CLOCK.
-	MMC_Wr(AM_DDR_CLK_CNTL, 0x90004040);   // come out of reset.
-	MMC_Wr(AM_DDR_CLK_CNTL, 0xb0004040);
-	MMC_Wr(AM_DDR_CLK_CNTL, 0x90004040);
+	MMC_Wr(P_DDR_CLK_CNTL, 0x80004040);   // enable DDR PLL CLOCK.
+	MMC_Wr(P_DDR_CLK_CNTL, 0x90004040);   // come out of reset.
+	MMC_Wr(P_DDR_CLK_CNTL, 0xb0004040);
+	MMC_Wr(P_DDR_CLK_CNTL, 0x90004040);
 	//M8 still need keep MMC in reset mode for power saving?
 	//relese MMC from reset mode
 	writel(0xffffffff, P_DMC_SOFT_RST);

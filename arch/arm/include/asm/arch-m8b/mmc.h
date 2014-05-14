@@ -9,32 +9,14 @@
 //#define writel(v,c) *(volatile unsigned long *) (c) = v
 //#define readl(c)    *(volatile unsigned long *) (c)
 
-#define AM_DDR_PLL_CNTL  0xc8000400
-#define AM_DDR_PLL_CNTL1 0xc8000404
-#define AM_DDR_PLL_CNTL2 0xc8000408
-#define AM_DDR_PLL_CNTL3 0xc800040c
-#define AM_DDR_PLL_CNTL4 0xc8000410
-#define AM_DDR_PLL_STS   0xc8000414
-
-#define AM_DDR_CLK_CNTL  0xc8000418
-   //the AM_PLL clock will go through 2 clock dividers. then it will drive DMC, DDR_IP and A9_pwoer AXI_bridge. 
-   //bit 31.  DDR PLL clock main enable. 
-   //bit 30.  DDR PLL clock production test/debug clock enable. divided/8 then connected to a GPIO.
-   //bit 29.  clk register update.  after register setting changed. toggle this bit to make the new setting  works. 
-  //bit 28.  soft reset_n.   SOFT RESET the whole PCTL and PUB modules.
-  //bit 15:8. the second clock divider control. can be divided by 1, 2, 4. 
-  //bit 15.   second clock divider clock output selection. 0 = directly from the first divider.  1 = (/2 or /4). 
-  //bit 14.   direct output clock enable.
-  //bit 13.   divider clock counter enable.
-  //bit 12.   divider clock output enable.
-  //bit 11.   4xclk enable.  works in DDR PHY PLL bypass mode for lower freqeuncy( < 200Mhz) LPDDR2/LPDDR3.  
-  //bit 8.    divider. 1 : /4. 0 : /2. 
-  //bit 7:0.  the first clock divider control.
-  //bit 7.    the first clock divider output clock selection.  0  from the PLL directly. 1 = from divider. 
-  //bit 6.    the PLL pass through clock output enable.
-  //bit 3.    divider clock counter enable.
-  //bit 2.    divider clock output enable.
-  //bit 1:0.  divider  00: /2. 01: /4. 10: /8  11: /16.
+#define AM_DDR_PLL_CNTL     0xc8000400
+#define AM_DDR_PLL_CNTL1    0xc8000404
+#define AM_DDR_PLL_CNTL2    0xc8000408
+#define AM_DDR_PLL_CNTL3    0xc800040c
+#define AM_DDR_PLL_CNTL4    0xc8000410
+#define AM_DDR_PLL_STS      0xc8000414
+  //bit 31. DDR_PLL lock.
+  // bit 6:0.  DDR_PLL analog output for test. 
 
 #define P_DDR_CLK_CNTL     0xc8000418
   //bit 31     ddr_pll_clk enable. enable the clock from DDR_PLL to clock generateion. 
@@ -58,422 +40,27 @@
   
 #define P_DDR_CLK_STS      0xc800041c
   //not used.
-
-#define P_DDR0_CLK_CTRL    0xc8000800
- //DDR0 clock control.
- //bit 9.   DDR0 PHY RF mode.  we can invert the clock to DDR PHY by setting this bit to 1.
- //bit 8.   DDR0 PHY ctl_clk enable.  
- //bit 7.   NOT used.  
- //bit 6.   DDR0 PUB n_clk disable.
- //bit 5.   DDR0 PUB n_clk auto clock gating enable.  (may not be work).
- //bit 4.   DDR0 PCTL n_clk disable.
- //bit 3.   DDR0 PCTL n_clk auto clock gating enable.
- //bit 2.   Disable DDR0 PUB PCLK clock.
- //bit 1.   DDR0 PUB PCLK auto clock gating enable.
- //bit 0.   DDR0 PCTL PCLK enable.   before access PCTL regsiter, we need enable PCTL PCLK 24 cycles early.
-             //after access PCTL regsiter, we can disable PCTL PCTLK 24 cycles later.
- 
-#define P_DDR0_SOFT_RESET  0xc8000804
- //bit 3.  SOFT RESET  DDR0 PUB n_clk domain.  0 = reset.
- //bit 2.  SOFT RESET  DDR0 PUB p_clk domain.  0 = reset.
- //bit 1.  SOFT RESET  DDR0 PCTL n_clk domain.  0 = reset.
- //bit 0.  SOFT RESET  DDR0 PCTL p_clk domain.  0 = reset.
-
-#define P_DDR0_APD_CTRL    0xc8000808
- //bit 17:16.  DDR mode to genreated the refresh ack signal and prcharge signal to DMC for dmc refresh control.
-              // 2'b00: DDR3  2'b01.  LPDDR2/3. 2'b10, 2'b11: no refresh ack and precharge signals generated.  
- //bit 15:8.  Low Power enter latency.when the logic check the PCTL send LP_REQ and ACKed by PUB. after this regsiter bits cycles, we'll gated the PCTL clock and PUB clock if the pub and pctl auto clock gating enabled.
- //bit 7:0.   DMC active latency.  latency to enter LOW POWER state after the the DMC is not actived. 
-
-#define P_MMC_DDR_CTRL        0xc8006000 + (0x10 << 2 )
-  //bit 25:24.   ddr chanel selection. 2'b00 : address bit 12.   
-                                     // 2'b01 : all address goes to ddr1. ddr0 is not used.
-                                     // 2'b10 : address bit 30.
-                                     // 2'b11 :  all address goes to ddr0. ddr1 is not used.
-  //bit 16.       bank page policy. 
-  //bit 13.       ddr1 address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.    
-  //bit 12        ddr1 rank size.  0, 1, one rank.  2 : 2 ranks.   
-  //bit 11:10      ddr1 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-  //bit 9:8      ddr1 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.  
-  
-  //bit 5.       ddr0 address map bank mode  1 =  address switch between 4 banks. 0 = address switch between 2 banks.    
-  //bit 4        ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.   
-  //bit 3:2      ddr0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-  //bit 1:0      ddr0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.  
-#define P_MMC_DDR_CTRL1        0xc8006000 + (0x11 << 2 )
-  //bit 5:4.   disalbed the DDR1 related  data fifos (sram) power. defaults 2'b00 =  enabled.
-  //bit 3:2.   disalbed the DDR0 related  data fifos (sram) power. defaults 2'b00 =  enabled.
-  //bit 1:0.   disalbed the canvas lut sram power. defaults 2'b00 =  enabled.
-
-#define P_DC_CAV_LUT_DATAL          0xc8006000 + (0x12 << 2 )
-  //low 32 bits of canvas data which need to be configured to canvas memory. 
-#define P_DC_CAV_LUT_DATAH          0xc8006000 + (0x13 << 2 )
-  //high 32bits of cavnas data which need to be configured to canvas memory.
-#define P_DC_CAV_LUT_ADDR           0xc8006000 + (0x14 << 2 )
-  //bit 9:8.   write 9:8 2'b10. the canvas data will saved in canvas memory with addres 7:0.
-  //bit 7:0.   canvas address.
-#define P_DC_CAV_LUT_RDATAL          0xc8006000 + (0x15 << 2 )
-  //low 32bits of register read LUT table value.
-#define P_DC_CAV_LUT_RDATAH          0xc8006000 + (0x16 << 2 )
-  //high 32bits of register read LUT table value.
   
 
-#define P_MMC_QOS0_CTRL0  0xc8006000 + (0x10 << 2 )
-   //channel 0 qos control register 0
-   //bit 31   enable  channel qos control
-   //bit 30   enable the function that increase current request urgent level when inc_ugt_limit meet. 
-   //bit 29   enable the function that decrease current request urgent level when dec_ugt_limit meet. 
-   //bit 28   enable the function that increase the whole channel request urgent level 
-             //when bandwidth requirement is not met and the difference of bandwidth requrement and real bandwidth granted  is larger than inc_qos_limit.
-   //bit 27   enable the function that decrease the whole channel request urgent level 
-             //when the bandwidth requirement is met and the difference of bandwidth requirement and read bankwidth granged is larger than dec_qos_limit.
-   //bit 26   force all requests of this channel to be super urgent request.
-   //bit 25   force all requests of this channel increase ungent level. 
-   //bit 24   1 : qos control use Vsync and hsync as timing reference.
-            //0 : qos control use regular timer as timing reference.
-   //bit 23   when FIQ asserted, force this channel to be super urgent request.
-   //bit 22   when FIQ asserted, force this channel to be urgent request. 
-   //bit 21   when IRQ asserted, force this channel to be super urgent request.
-   //bit 20   when IRQ asserted, force this channel to be  urgent requst. 
-   //bit 19   ARM FIQ interrupt level.  1 = low active. 0 = high active.
-   //bit 18.  ARM IRQ interrupt level.  1 = low active. 0 = high active. 
-   //bit 17    to clean QOS timers. 
-   //bit 15:0.  min_ticker  minimum timer ticker to control if we need increase the current request based on inc_ugt_limit.
-              // if timer = min_ticker and granted data < inc_ugt_limit, then current requests of this channels  urgent level + 1 
-              // if timer = min_ticker and granted data > dec_ugt_limit, then current requests of this channels  urgent level - 1; 
-#define P_MMC_QOS0_CTRL1 0xc8006000 + (0x11 << 2 )
-  //31:16     dec_ugt_limit.
-  //15:0      inc_ugt_limit.
-#define P_MMC_QOS0_CTRL2 0xc8006000 + (0x12 << 2 )
-  //31:16    use any ports(upto 16) of this channel as the bandwidth control. 1 = use. 0 = not use. 
-  //15:8     bd_ticker.
-  //7:0      qos_ticker.  the bandwidth requirement =  bd_ticker/qos_ticker  * 100%.
-#define P_MMC_QOS0_CTRL3 0xc8006000 + (0x13 << 2 )
-  //inc_qos_limit.
-#define P_MMC_QOS0_CTRL4 0xc8006000 + (0x14 << 2 )
-  //dec_qos_limit.
-#define P_MMC_QOS0_CTRL5 0xc8006000 + (0x15 << 2 )
-  //bit 24. enable qos disable request function.
-  //bit 23:16   disable request how hong.
-  //bit 15:0    when min_ticker time, if the ack number is larger than this number, then disable this request for 23:16 long period.   
-
-#define P_MMC_QOS1_CTRL0 0xc8006000 + (0x16 << 2 )
-#define P_MMC_QOS1_CTRL1 0xc8006000 + (0x17 << 2 )
-#define P_MMC_QOS1_CTRL2 0xc8006000 + (0x18 << 2 )
-#define P_MMC_QOS1_CTRL3 0xc8006000 + (0x19 << 2 )
-#define P_MMC_QOS1_CTRL4 0xc8006000 + (0x1a << 2 )
-#define P_MMC_QOS1_CTRL5 0xc8006000 + (0x1b << 2 )
-#define P_MMC_QOS2_CTRL0 0xc8006000 + (0x1c << 2 )
-#define P_MMC_QOS2_CTRL1 0xc8006000 + (0x1d << 2 )
-#define P_MMC_QOS2_CTRL2 0xc8006000 + (0x1e << 2 )
-#define P_MMC_QOS2_CTRL3 0xc8006000 + (0x1f << 2 )
-#define P_MMC_QOS2_CTRL4 0xc8006000 + (0x20 << 2 )
-#define P_MMC_QOS2_CTRL5 0xc8006000 + (0x21 << 2 )
-#define P_MMC_QOS3_CTRL0 0xc8006000 + (0x22 << 2 )
-#define P_MMC_QOS3_CTRL1 0xc8006000 + (0x23 << 2 )
-#define P_MMC_QOS3_CTRL2 0xc8006000 + (0x24 << 2 )
-#define P_MMC_QOS3_CTRL3 0xc8006000 + (0x25 << 2 )
-#define P_MMC_QOS3_CTRL4 0xc8006000 + (0x26 << 2 )
-#define P_MMC_QOS3_CTRL5 0xc8006000 + (0x27 << 2 )
-#define P_MMC_QOS4_CTRL0 0xc8006000 + (0x28 << 2 )
-#define P_MMC_QOS4_CTRL1 0xc8006000 + (0x29 << 2 )
-#define P_MMC_QOS4_CTRL2 0xc8006000 + (0x2a << 2 )
-#define P_MMC_QOS4_CTRL3 0xc8006000 + (0x2b << 2 )
-#define P_MMC_QOS4_CTRL4 0xc8006000 + (0x2c << 2 )
-#define P_MMC_QOS4_CTRL5 0xc8006000 + (0x2d << 2 )
-#define P_MMC_QOS5_CTRL0 0xc8006000 + (0x2e << 2 )
-#define P_MMC_QOS5_CTRL1 0xc8006000 + (0x2f << 2 )
-#define P_MMC_QOS5_CTRL2 0xc8006000 + (0x30 << 2 )
-#define P_MMC_QOS5_CTRL3 0xc8006000 + (0x31 << 2 )
-#define P_MMC_QOS5_CTRL4 0xc8006000 + (0x32 << 2 )
-#define P_MMC_QOS5_CTRL5 0xc8006000 + (0x33 << 2 )
-#define P_MMC_QOS6_CTRL0 0xc8006000 + (0x34 << 2 )
-#define P_MMC_QOS6_CTRL1 0xc8006000 + (0x35 << 2 )
-#define P_MMC_QOS6_CTRL2 0xc8006000 + (0x36 << 2 )
-#define P_MMC_QOS6_CTRL3 0xc8006000 + (0x37 << 2 )
-#define P_MMC_QOS6_CTRL4 0xc8006000 + (0x38 << 2 )
-#define P_MMC_QOS6_CTRL5 0xc8006000 + (0x39 << 2 )
-#define P_MMC_QOS7_CTRL0 0xc8006000 + (0x3a << 2 )
-#define P_MMC_QOS7_CTRL1 0xc8006000 + (0x3b << 2 )
-#define P_MMC_QOS7_CTRL2 0xc8006000 + (0x3c << 2 )
-#define P_MMC_QOS7_CTRL3 0xc8006000 + (0x3d << 2 )
-#define P_MMC_QOS7_CTRL4 0xc8006000 + (0x3e << 2 )
-#define P_MMC_QOS7_CTRL5 0xc8006000 + (0x3f << 2 )
-#define P_MMC_QOS8_CTRL0 0xc8006000 + (0x40 << 2 )
-#define P_MMC_QOS8_CTRL1 0xc8006000 + (0x41 << 2 )
-#define P_MMC_QOS8_CTRL2 0xc8006000 + (0x42 << 2 )
-#define P_MMC_QOS8_CTRL3 0xc8006000 + (0x43 << 2 )
-#define P_MMC_QOS8_CTRL4 0xc8006000 + (0x44 << 2 )
-#define P_MMC_QOS8_CTRL5 0xc8006000 + (0x45 << 2 )
-#define P_MMC_QOS9_CTRL0 0xc8006000 + (0x46 << 2 )
-#define P_MMC_QOS9_CTRL1 0xc8006000 + (0x47 << 2 )
-#define P_MMC_QOS9_CTRL2 0xc8006000 + (0x48 << 2 )
-#define P_MMC_QOS9_CTRL3 0xc8006000 + (0x49 << 2 )
-#define P_MMC_QOS9_CTRL4 0xc8006000 + (0x4a << 2 )
-#define P_MMC_QOS9_CTRL5 0xc8006000 + (0x4b << 2 )
-#define P_MMC_QOS10_CTRL0 0xc8006000 + (0x4c << 2 )
-#define P_MMC_QOS10_CTRL1 0xc8006000 + (0x4d << 2 )
-#define P_MMC_QOS10_CTRL2 0xc8006000 + (0x4e << 2 )
-#define P_MMC_QOS10_CTRL3 0xc8006000 + (0x4f << 2 )
-#define P_MMC_QOS10_CTRL4 0xc8006000 + (0x50 << 2 )
-#define P_MMC_QOS10_CTRL5 0xc8006000 + (0x51 << 2 )
-#define P_MMC_QOS11_CTRL0 0xc8006000 + (0x52 << 2 )
-#define P_MMC_QOS11_CTRL1 0xc8006000 + (0x53 << 2 )
-#define P_MMC_QOS11_CTRL2 0xc8006000 + (0x54 << 2 )
-#define P_MMC_QOS11_CTRL3 0xc8006000 + (0x55 << 2 )
-#define P_MMC_QOS11_CTRL4 0xc8006000 + (0x56 << 2 )
-#define P_MMC_QOS11_CTRL5 0xc8006000 + (0x57 << 2 )
-
-#define P_MMC_VDMODE_CTRL  0xc8006000 + (0x58 << 2 )
-//bit 31:8 vd_sel.
-//bit 7:0.  hold_line.
-
-#define P_MMC_VDMODE_CTRL1 0xc8006000 + (0x59 << 2 )
-//bit 27:16  end line.
-//bit 11:0   start line.
-
-
-#define P_MMC_CHAN_CTRL0            0xc8006000 + (0x60 << 2 )
- //bit 31:28.     channel 7 arbiter weight.
- //bit 27:24.     channel 6 arbiter weight.
- //bit 23:20.     channel 5 arbiter weight.
- //bit 19:16.     channel 4 arbiter weight.
- //bit 15:12.     channel 3 arbiter weight.
- //bit 11:8.      channel 2 arbiter weight.
- //bit 7:4.       channel 1 arbiter weight.
- //bit 3:0.       channel 0 arbiter weight.
-#define P_MMC_CHAN_CTRL1            0xc8006000 + (0x61 << 2 )
- //bit 19:16.     canvas arb weight. Chan 4~11 will go canvas first then to the arb with 0~3
- //bit 15:12.     channel 11 arbiter weight.
- //bit 11:8.      channel 10 arbiter weight.
- //bit 7:4.       channel 9 arbiter weight.
- //bit 3:0.       channel 8 arbiter weight.
- 
-#define P_MMC_CHAN_CTRL2            0xc8006000 + (0x62 << 2 )
- //bit 29:20   sugt rd access age limit.
- //bit 19:10   ugt  rd access age limit.
- //bit 9:10    sugt rd access age limit.
-
-#define P_MMC_DDR_TIMING0           0xc8006000 + (0x63 << 2 ) 
-  // DDR timing register is used for ddr command filter to generate better performace. 
-  // In M6TV we only support HDR mode, that means this timing counnter is half of the real DDR clock cycles.
-  // bit 31:28.  tCWL.
-  // bit 27:24.  tRP.
-  // bit 23:20.  tRTP.
-  // bit 19:16.  tRTW.
-  // bit 15:12.  tCCD.
-  // bit 11:8.   tRCD.
-  // bit 7:4.    tCL.
-  // bit 3:0.    Burst length.   
-#define P_MMC_DDR_TIMING1           0xc8006000 + (0x64 << 2 ) 
-  //bit 31:24.  tMISS. the waiting clock cycles for a miss page access ( the same bank different page is actived. = tCL + tRCD + tRP).
-  //bit 23:20.  cmd hold number for read command. 
-  //bit 19:16.  cmd hold number for write command. 
-  //bit 15:8.   tRFC.  refresh to other command time.
-  //bit 7:4.    tWTR.
-  //bit 3:0.    tWR.
-#define P_MMC_DDR_TIMING2           0xc8006000 + (0x65 << 2 ) 
-  //bit 31:24   tZQCI
-  //bit 23:16   tPVTI
-  //bit 15:8    tREFI
-  //bit 7:0     t100ns
-#define P_MMC_AREFR_CTRL            0xc8006000 + (0x66 << 2 )
-  //bit 9      hold dmc command after refresh cmd sent to DDR3 SDRAM.
-  //bit 8.     hold dmc command when dmc need to send refresh command to PCTL.
-  //bit 7      dmc to control auto_refresh enable
-  //bit 6:4    refresh number per refresh cycle..
-  //bit 3      pvt enable
-  //bit 2      zqc enable
-  //bit 1      ddr1 auto refresh dmc control select.
-  //bit 0      ddr0 auto refresh dmc control select.
-
-#define P_MMC_PARB_CTRL             0xc8006000 + (0x67 << 2 ) 
-  //bit 19.     default port1(MALI AXI port) urgent bit.
-  //bit 18.     default port1(MALI AXI port) urgent bit.
-  //bit 17.     default port1(MALI AXI port) urgent bit.
-  //bit 16      default port0(A9 AXI port ) urgent bit.
-
-#define P_MMC_CHAN4_CTRL             0xc8006000 + (0x68 << 2 )
-  //if chan4 have more than (write command hold number) write pending transactions or
-  // if chan4 have more than ( read command hold number) read pending transactions, 
-  // DMC will stop to answer chan4 request, until the pending read trasactions less than read command release number and pending write transactions less than write command release number.  
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-
-#define P_MMC_CHAN5_CTRL             0xc8006000 + (0x69 << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN6_CTRL             0xc8006000 + (0x6a << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN7_CTRL             0xc8006000 + (0x6b << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN8_CTRL             0xc8006000 + (0x6c << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN9_CTRL             0xc8006000 + (0x6d << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN10_CTRL             0xc8006000 + (0x6e << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_CHAN11_CTRL             0xc8006000 + (0x6f << 2 )
-  //31:24      write command hold number
-  //23:16      write command release number
-  //15:8      read command hold number
-  //7:0       read command release number
-#define P_MMC_MON_CTRL2             0xc8006000 + (0x72 << 2 )
-   //bit 31.   qos_mon_en.    write 1 to trigger the enable. polling this bit 0, means finished.  or use interrupt to check finish. 
-   //bit 30.   qos_mon interrupt clear.  clear the qos monitor result.  read 1 = qos mon finish interrupt.
-   //bit 20.   qos_mon_trig_sel.  1 = vsync.  0 = timer. 
-   //bit 19:16.  qos monitor channel select.   select one at one time only.
-   //bit 15:0.   port select for the selected channel.
-#define P_MMC_MON_CTRL3             0xc8006000 + (0x73 << 2 )
-  // qos_mon_clk_timer.   How long to measure the bandwidth.
-
-
-#define P_MMC_MON_ALL_REQ_CNT       0xc8006000 + (0x74 << 2 )
-  // at the test period,  the whole MMC request time.
-#define P_MMC_MON_ALL_GRANT_CNT     0xc8006000 + (0x75 << 2 )
-  // at the test period,  the whole MMC granted data cycles. 64bits unit. 
-#define P_MMC_MON_ONE_GRANT_CNT     0xc8006000 + (0x76 << 2 )
-  // at the test period,  the granted data cycles for the selected channel and ports.
-#define P_MMC_CLKG_CTRL0      0xc8006000 + (0x77 << 2 )
-  //bit 28.  enalbe auto clock gating for qos monitor control. 
-  //bit 27.  enalbe auto clock gating for qos control. 
-  //bit 26.  enalbe auto clock gating for ddr1 write rsp generation. 
-  //bit 25.  enalbe auto clock gating for ddr0 write rsp generation. 
-  //bit 24.  enalbe auto clock gating for read rsp generation. 
-  //bit 23.  enalbe auto clock gating for ddr1 read back data buffer. 
-  //bit 22.  enalbe auto clock gating for ddr0 read back data buffer. 
-  //bit 21.  enalbe auto clock gating for ddr1 command filter. 
-  //bit 20.  enalbe auto clock gating for ddr0 command filter. 
-  //bit 19.  enalbe auto clock gating for ddr1 write reorder buffer. 
-  //bit 18.  enalbe auto clock gating for ddr0 write reorder buffer. 
-  //bit 17.  enalbe auto clock gating for ddr1 write data buffer. 
-  //bit 16.  enalbe auto clock gating for ddr0 write data buffer. 
-  //bit 15.  enalbe auto clock gating for ddr1 read reorder buffer. 
-  //bit 14.  enalbe auto clock gating for ddr0 read reorder buffer. 
-  //bit 13.  enalbe auto clock gating for read canvas. 
-  //bit 12.  enalbe auto clock gating for write canvas. 
-  //bit 11.  enalbe auto clock gating for chan 11.
-  //bit 10.  enalbe auto clock gating for chan 11.
-  //bit 9.   enalbe auto clock gating for chan 11.
-  //bit 8.   enalbe auto clock gating for chan 11.
-  //bit 7.   enalbe auto clock gating for chan 11.
-  //bit 6.   enalbe auto clock gating for chan 11.
-  //bit 5.   enalbe auto clock gating for chan 11.
-  //bit 4.   enalbe auto clock gating for chan 11.
-  //bit 3.   enalbe auto clock gating for chan 11.
-  //bit 2.   enalbe auto clock gating for chan 11.
-  //bit 1.   enalbe auto clock gating for chan 11.
-  //bit 0.   enalbe auto clock gating for chan 11.
-#define P_MMC_CLKG_CTRL1      0xc8006000 + (0x78 << 2 )
-  //bit 28.  force to disalbe the clock of qos monitor control. 
-  //bit 27.  force to disalbe the clock of qos control. 
-  //bit 26.  force to disalbe the clock of ddr1 write rsp generation. 
-  //bit 25.  force to disalbe the clock of ddr0 write rsp generation. 
-  //bit 24.  force to disalbe the clock of read rsp generation. 
-  //bit 23.  force to disalbe the clock of ddr1 read back data buffer. 
-  //bit 22.  force to disalbe the clock of ddr0 read back data buffer. 
-  //bit 21.  force to disalbe the clock of ddr1 command filter. 
-  //bit 20.  force to disalbe the clock of ddr0 command filter. 
-  //bit 19.  force to disalbe the clock of ddr1 write reorder buffer. 
-  //bit 18.  force to disalbe the clock of ddr0 write reorder buffer. 
-  //bit 17.  force to disalbe the clock of ddr1 write data buffer. 
-  //bit 16.  force to disalbe the clock of ddr0 write data buffer. 
-  //bit 15.  force to disalbe the clock of ddr1 read reorder buffer. 
-  //bit 14.  force to disalbe the clock of ddr0 read reorder buffer. 
-  //bit 13.  force to disalbe the clock of read canvas. 
-  //bit 12.  force to disalbe the clock of write canvas. 
-  //bit 11.  force to disalbe the clock of chan 11.
-  //bit 10.  force to disalbe the clock of chan 11.
-  //bit 9.   force to disalbe the clock of chan 11.
-  //bit 8.   force to disalbe the clock of chan 11.
-  //bit 7.   force to disalbe the clock of chan 11.
-  //bit 6.   force to disalbe the clock of chan 11.
-  //bit 5.   force to disalbe the clock of chan 11.
-  //bit 4.   force to disalbe the clock of chan 11.
-  //bit 3.   force to disalbe the clock of chan 11.
-  //bit 2.   force to disalbe the clock of chan 11.
-  //bit 1.   force to disalbe the clock of chan 11.
-  //bit 0.   force to disalbe the clock of chan 11.
-
-#define P_MMC_CHAN_CTRL3            0xc8006000 + (0x79 << 2 )
- //bit 23:20.  for read/write age limit change, how many minmum access request would be serviced before read/write bus stage change. 
- //bit 19:10.   nugt request age limit.  If nugt request stay in command buffer, not get serviced over this time limit, it would change to super urgent requent.
- //bit 9:0.     ugt request age limit.   If ugt request stay in command buffer, not get serviced over this time limit, it would change to super urgent requent. 
-
-#define P_MMC_CHAN_STS            0xc8006000 + (0x7a << 2 )
-//bit 11:0.  12 channel status.  1 = idle. 0 = busy.
-#define P_MMC_CHAN_CTRL4            0xc8006000 + (0x7b << 2 )
- //bit 29:20   sugt wd access age limit.
- //bit 19:10   ugt  wd access age limit.
- //bit 9:10    sugt wd access age limit.
-
-#define P_MMC_REQ_CTRL        0xc8006000 + (0x81 << 2 ) 
-  //bit 11.  enable dmc request of chan 11. Audio
-  //bit 10.  enable dmc request of chan 10. Device.
-  //bit 9.   enable dmc request of chan 9.  VDEC2
-  //bit 8.   enable dmc request of chan 8.  HCODEC
-  //bit 7.   enable dmc request of chan 7.  VDEC
-  //bit 6.   enable dmc request of chan 6.  VDIN
-  //bit 5.   enable dmc request of chan 5.  VDISP2
-  //bit 4.   enable dmc request of chan 4.  VDISP
-  //bit 3.   enable dmc request of chan 3.  Mali
-  //bit 2.   enable dmc request of chan 2.  Mali
-  //bit 1.   enable dmc request of chan 1.  Mali
-  //bit 0.   enable dmc request of chan 0.  A9
-#define P_MMC_SOFT_RST        0xc8006000 + (0x82 << 2 )
-  //bit 28.   reset dmc low power control logic  0 = reset 1 = deassert reset.
-  //bit 27.   reset qos control logic.  0 = reset. 1 = deassert reset.
-  //bit 26.   reset dmc_reg logic.  0 = reset. 1 = deassert reset.
-  //bit 25.   reset canvas control logic.  0 = reset. 1 = deassert reset.
-  //bit 24.   reset dmc cmd filter control logic.  0 = reset. 1 = deassert reset.
-  //bit 23.   reset chan11 n_clk domain clock.     0 = reset. 1= deassert reset.
-  //bit 22.   reset chan10 n_clk domain clock.     0 = reset. 1= deassert reset.
-  //bit 21.   reset chan9 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 20.   reset chan8 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 19.   reset chan7 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 18.   reset chan6 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 17.   reset chan5 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 16.   reset chan4 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 15.   reset chan3 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 14.   reset chan2 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 13.   reset chan1 n_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 12.   reset chan0 n_clk domain clock.   0 = reset. 1= deassert reset.
-#define P_MMC_SOFT_RST1       0xc8006000 + (0x83 << 2 )
-  //bit 11.   reset chan11 s_clk domain clock.     0 = reset. 1= deassert reset.
-  //bit 10.   reset chan10 s_clk domain clock.     0 = reset. 1= deassert reset.
-  //bit 9.   reset chan9 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 8.   reset chan8 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 7.   reset chan7 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 6.   reset chan6 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 5.   reset chan5 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 4.   reset chan4 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 3.   reset chan3 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 2.   reset chan2 s_clk domain clock.   0 = reset. 1= deassert reset.
-  //bit 1.   reset chan1 s_clk domain clock.   0 = reset. 1= deassert reset.
-#define P_MMC_RST_STS         0xc8006000 + (0x84 << 2 )
-  //status of MMC_SOFT_RST register.
-#define P_MMC_RST_STS1        0xc8006000 + (0x85 << 2 )
-  //status of MMC_SOFT_RST1 register.
-
+#define  P_DDR0_CLK_CTRL    0xc8000800
+//bit 9. invert the DDR PHY n_clk.   ( RF mode).
+//bit 8. disable the DDR PHY n_clk.
+//bit 7. not used. 
+//bit 6. force to disable PUB n_clk. 
+//bit 5. PUB auto clock gating enable. when the IP detected PCTL enter power down mode, use this bit to gating PUB n_clk.
+//bit 4. force to disable PCTL n_clk.
+//bit 3.  PCTL n_clk auto clock gating enable.  when the IP detected PCTL enter power down mode, use this bit to gating pctl n_clk.
+//bit 2. force to disable PUB PCLK. 
+//bit 1. PUB pclk auto clock gating enable.  when the IP detected PCTL enter power down mode,  use this bit to gating pub pclk. 
+//bit 0   PCTL PCLK enable.   When never configure PCTL register, we need to enable the APB clock 24 cycles earlier. after finished configure PCTL, 24 cycles later, we should disable this bit to save power.
+#define  P_DDR0_SOFT_RESET  0xc8000804
+//bit 3. pub n_clk domain soft reset.  1 active.
+//bit 2. pub p_clk domain soft reset.
+//bit 1. pctl n_clk domain soft reset.
+//bit 0. pctl p_clk domain soft reset.
+#define  P_DDR0_APD_CTRL    0xc8000808
+//bit 15:8.   power down enter latency. when IP checked the dfi_lp_req && dfi_lp_ack,  give PCTL and pub additional latency let them settle down, then gating the clock.
+//bit 7:0.  no active latency.  after c_active_in become to low, wait additional latency to check the pctl low power state.  
 
 #define  P_DDR0_PCTL_SCFG           0xc8000000
 #define  P_DDR0_PCTL_SCTL           0xc8000004
@@ -1309,6 +896,11 @@
 #define DMC_REG_DEFINE
 #define DMC_REG_BASE       0xc8006000
 
+#define MMC_Wr(addr,data) *(volatile unsigned long *) (addr ) = data
+#define MMC_Rd(addr) *(volatile unsigned long *) (addr )
+#define writel(v,c) *(volatile unsigned long *) (c ) = v
+#define readl(c)    *(volatile unsigned long *) (c )
+
 #define P_DMC_REQ_CTRL         DMC_REG_BASE + (0x00 << 2) 
   //bit 11.  enable dmc request of chan 11. Audio
   //bit 10.  enable dmc request of chan 10. Device.
@@ -1330,25 +922,43 @@
    //read only default = 1.
 
 #define P_DMC_DDR_CTRL         DMC_REG_BASE + (0x10  << 2)
-	//bit 16. bank page policy.	
-	//bit 15. rank1 bit mode.  0 : 32bits mode. 1: 16bits mode.
-	//bit 14:13. rank1 address map bank mode
-		// 00 = address switch between 2 banks  bank[0] selection bits [12].    
-		// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
-		// 10 = address switch between 2 banks  bank[0] selection bits [8].    
-		// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
-	//bit 12.  0: one rank.  1 : two ranks.
-	//bit 11:10. rank1 row size.  2'b01 : A0~A12. 2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
-	//bit 9:8. rank1 col size. 2'b01 : A0~A8, 2'b10 : A0~A9.
-	//bit 7. ddr rank0 bit mode.  0: 32bits mode. 1 : 16bits mode.
-	//bit 6:5.     rank0 address map bank mode
-		// 00 = address switch between 2 banks  bank[0] selection bits [12].    
-		// 01 = address switch between 4 banks  bank[1:0] selection bits [13:12]. 
-		// 10 = address switch between 2 banks  bank[0] selection bits [8].    
-		// 11 = address switch between 4 banks  bank[1:0] selection bits [9:8]. 
-	//bit 4.  0: one rank.  1 : two ranks.
-	//bit 3:2. rank0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15. 
-	//bit 1:0. rank0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
+// in M8baby chip, There's only one DDR Channel.  So we used ddr channel 1 control bits for DDR       second rank control.
+  // But since they shared same PCTL/PHY. they have to be either 32bits or 16bits but not mixed.
+  //bit 27:24.   ddr chanel selection.
+                 //bit 27: 26 :
+                     //2'b00 : address switch between 2 ddr channel using address bit 12.
+                            //bit12 = 0 : ddr channel 0.  bit 12 = 1 : ddr channel 1.
+                            //if 2 ddr channel size is different, only switch the lower parts.
+                     //2'b01 : address switch between 2 ddr channel using address bit 8.
+                           //bit8 = 0 : ddr channel 0.  bit 8 = 1 : ddr channel 1.
+                           //if 2 ddr channel size is different, only switch the lower parts.
+                    // 2'b10 : no switch between the 2 channels. use bit 24 as selection which one put  lower address.
+                              //bit 24 = 0:   channel 0 put to the lower address.
+                              //bit 24 = 1:   channel 1 put to the lower address.
+                    // 2'b11 :  all address goes to one DDR channel. use bit 24 to select which one.
+                              //bit 24 = 0:   use channel 0;
+                              //bit 24 = 1:   use channel 1;
+//fake  //bit 18.       ddr channel 1 PCTL/PHY physical bits.  0 = 32bits. 1 = 16bits.
+//fake  //bit 17.       ddr channel 0 PCTL/PHY physical bits.  0 = 32bits. 1 = 16bits.
+  //bit 16.       bank page policy.
+  //bit 15.       ddr1 channel 1 is in 16bits mode.  0 : 32bits mode. 1: 16bits mode.
+  //bit 14:13.    ddr1 address map bank mode
+                    // 00 = address switch between 2 banks  bank[0] selection bits [12].
+                    // 01 = address switch between 4 banks  bank[1:0] selection bits [13:12].
+                    // 10 = address switch between 2 banks  bank[0] selection bits [8].
+                    // 11 = address switch between 4 banks  bank[1:0] selection bits [9:8].
+  //bit 12        ddr1 rank size.  0, 1, one rank.  2 : 2 ranks.
+  //bit 11:10      ddr1 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+  //bit 9:8      ddr1 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
+  //bit 7        ddr channel 0  is in 16bits mode.  0: 32bits mode. 1 : 16bits mode.
+  //bit 6:5.     ddr0 address map bank mode
+                    // 00 = address switch between 2 banks  bank[0] selection bits [12].
+                    // 01 = address switch between 4 banks  bank[1:0] selection bits [13:12].
+                    // 10 = address switch between 2 banks  bank[0] selection bits [8].
+                    // 11 = address switch between 4 banks  bank[1:0] selection bits [9:8].
+  //bit 4        ddr0 rank size.  0, 1, one rank.  2 : 2 ranks.
+  //bit 3:2      ddr0 row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
+  //bit 1:0      ddr0 col size.  2'b01 : A0~A8,    2'b10 : A0~A9.
 
 #define P_DMC_DDR_CTRL1         DMC_REG_BASE + (0x11 << 2) 
 
