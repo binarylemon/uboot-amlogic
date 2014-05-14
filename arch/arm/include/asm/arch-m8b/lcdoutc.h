@@ -137,10 +137,12 @@
 	#define PLL_CTRL_LOCK			31
 	#define PLL_CTRL_EN				30
 	#define PLL_CTRL_RST			29
-	#define PLL_CTRL_OD				16	//[17:16]
-	#define PLL_CTRL_N				10	//[14:10]
+	#define PLL_CTRL_OD				9	//[10:9]
+	#define PLL_CTRL_N				24	//[28:24]
 	#define PLL_CTRL_M				0	//[8:0]
 
+	#define DIV_CTRL_EDP_DIV1		24	//[26:24]
+	#define DIV_CTRL_EDP_DIV0		20	//[23:20]
 	#define DIV_CTRL_DIV_POST		12	//[14:12]
 	#define DIV_CTRL_LVDS_CLK_EN	11
 	#define DIV_CTRL_PHY_CLK_DIV2	10
@@ -183,16 +185,21 @@
 	/* lcd interface video clk */
 	#define MIPI_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
 	#define LVDS_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
+	#define EDP_MAX_VID_CLK_IN		(235 * 1000)
 	#define TTL_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
 	/* clk max error */
 	#define MAX_ERROR				(2 * 1000)
 
 #define CRT_VID_DIV_MAX				15
-#define OD_SEL_MAX					3
+#define OD_SEL_MAX					4
 #define DIV_PRE_SEL_MAX				6
+#define EDP_DIV0_SEL_MAX			15
+#define EDP_DIV1_SEL_MAX			8
 
 static const unsigned od_table[OD_SEL_MAX] = {1,2,4,8};
 static const unsigned div_pre_table[DIV_PRE_SEL_MAX] = {1,2,3,4,5,6};
+static const unsigned edp_div0_table[EDP_DIV0_SEL_MAX]={1,2,3,4,5,7,8,9,11,13,17,19,23,29,31};
+static const unsigned edp_div1_table[EDP_DIV1_SEL_MAX]={1,2,4,5,6,7,9,13};
 //********************************************//
 	
 /* for lcd power on/off config */
@@ -241,7 +248,7 @@ typedef enum
 {
 	LCD_DIGITAL_MIPI = 0,
 	LCD_DIGITAL_LVDS = 1,
-	//LCD_DIGITAL_EDP = 2,
+	LCD_DIGITAL_EDP = 2,
 	LCD_DIGITAL_TTL = 3,
 	//LCD_DIGITAL_MINILVDS = 4,
 	LCD_TYPE_MAX,
@@ -252,7 +259,7 @@ static const char* lcd_type_table[]={
 	"LVDS",
 	"eDP",
 	"TTL",
-	"miniLVDS",
+	//"miniLVDS",
 	"invalid",
 };
 
@@ -261,7 +268,7 @@ static const char* lcd_type_table_match[]={
 	"lvds",
 	"edp",
 	"ttl",
-	"minilvds",
+	//"minilvds",
 	"invalid",
 };
 
@@ -407,6 +414,16 @@ typedef struct DSI_Config_s{
 }DSI_Config_t;
 
 typedef struct {
+	unsigned char link_user;
+	unsigned char lane_count;
+	unsigned char link_rate;
+	unsigned char link_adaptive;
+	unsigned char vswing;
+	unsigned char preemphasis;
+	unsigned int bit_rate;
+} EDP_Config_t;
+
+typedef struct {
 	unsigned lvds_vswing;
 	unsigned lvds_repack_user;
 	unsigned lvds_repack;
@@ -421,6 +438,7 @@ typedef struct {
 typedef struct {
 	DSI_Config_t *mipi_config;
 	LVDS_Config_t *lvds_config;
+	EDP_Config_t *edp_config;
 	TTL_Config_t *ttl_config;
 } Lcd_Control_Config_t;
 

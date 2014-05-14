@@ -1575,7 +1575,6 @@
 #define HHI_WIFI_PLL_CNTL2                         0x1062
 #define HHI_WIFI_PLL_CNTL3                         0x1063
 #define HHI_AUD_CLK_CNTL2                          0x1064
-#define HHI_VID_CLK_CNTL2                          0x1065
 #define HHI_VID_DIVIDER_CNTL                       0x1066
 #define HHI_SYS_CPU_CLK_CNTL                       0x1067
 #define HHI_A9_CLK_CNTL                            (HHI_SYS_CPU_CLK_CNTL)

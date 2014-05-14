@@ -23,13 +23,8 @@
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
-#define CONFIG_VIDEO_AMLLCD
-#define LCD_BPP LCD_COLOR16
-
-#define CONFIG_AML_BL_EXTERN
-#ifdef CONFIG_AML_BL_EXTERN
-#define CONFIG_AML_BL_EXTERN_PMU_AML1218
-#endif
+//#define CONFIG_VIDEO_AMLLCD
+//#define LCD_BPP LCD_COLOR16
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -204,10 +199,9 @@
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
 	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
-	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=panel\0" \
-	"display_width=768\0" \
-	"display_height=1024\0" \
+	"display_width=2048\0" \
+	"display_height=1536\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
@@ -386,7 +380,6 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
-#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
