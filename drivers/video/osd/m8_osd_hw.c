@@ -1926,7 +1926,7 @@ void osd_init_hw(void)
 	setbits_le32(P_VPP_MISC,VPP_OUT_SATURATE);
 
 	data32 = readl(P_VPP_OFIFO_SIZE);
-	#ifdef CONFIG_M8
+	#ifdef CONFIG_AML_MESON_8
         data32 &= 0xffffe000; //0~13bit
         #else
         data32 = 0xfffff000;  //0~12bit
