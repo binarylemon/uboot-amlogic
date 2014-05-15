@@ -191,8 +191,8 @@
 #define OD_SEL_MAX					3
 #define DIV_PRE_SEL_MAX				6
 
-static const unsigned od_table[OD_SEL_MAX] = {1,2,4,8};
-static const unsigned div_pre_table[DIV_PRE_SEL_MAX] = {1,2,3,4,5,6};
+static const unsigned od_table[4] = {1,2,4,8};
+static const unsigned div_pre_table[6] = {1,2,3,4,5,6};
 //********************************************//
 	
 /* for lcd power on/off config */
@@ -407,6 +407,16 @@ typedef struct DSI_Config_s{
 }DSI_Config_t;
 
 typedef struct {
+	unsigned char link_user;
+	unsigned char lane_count;
+	unsigned char link_rate;
+	unsigned char link_adaptive;
+	unsigned char vswing;
+	unsigned char preemphasis;
+	unsigned int bit_rate;
+} EDP_Config_t;
+
+typedef struct {
 	unsigned lvds_vswing;
 	unsigned lvds_repack_user;
 	unsigned lvds_repack;
@@ -421,6 +431,7 @@ typedef struct {
 typedef struct {
 	DSI_Config_t *mipi_config;
 	LVDS_Config_t *lvds_config;
+	EDP_Config_t *edp_config;
 	TTL_Config_t *ttl_config;
 } Lcd_Control_Config_t;
 

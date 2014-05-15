@@ -551,7 +551,6 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 				}
 				break;
 			case BL_CTL_EXTERN:
-				printf("10101010\n");
 #ifdef CONFIG_AML_BL_EXTERN
 				bl_extern_driver = aml_bl_extern_get_driver();
 				if (bl_extern_driver == NULL) {
@@ -569,7 +568,6 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					}
 				}
 #endif
-				printf("10101010\n");
 				break;
 			default:
 				printf("Wrong backlight control method\n");
@@ -1172,7 +1170,11 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 	
 	WRITE_LCD_REG(L_STV1_HS_ADDR,    tcon_adr->stv1_hs_addr);
 	WRITE_LCD_REG(L_STV1_HE_ADDR,    tcon_adr->stv1_he_addr);
-		//DE signal
+	
+	//WRITE_LCD_REG(L_POL_CNTL_ADDR,   ((1 << LCD_TCON_DE_SEL) | (1 << LCD_TCON_VS_SEL) | (1 << LCD_TCON_HS_SEL))); //enable tcon DE, Hsync, Vsync 
+	//WRITE_LCD_REG(L_POL_CNTL_ADDR,   (READ_LCD_REG(L_POL_CNTL_ADDR) | ((0 << LCD_DE_POL) | ((vs_pol ? 0 : 1) << LCD_VS_POL) | ((hs_pol ? 0 : 1) << LCD_HS_POL))));	//adjust hvsync pol
+	
+	//DE signal
 	WRITE_LCD_REG(L_DE_HS_ADDR,		tcon_adr->oeh_hs_addr);
 	WRITE_LCD_REG(L_DE_HE_ADDR,		tcon_adr->oeh_he_addr);
 	WRITE_LCD_REG(L_DE_VS_ADDR,		tcon_adr->oeh_vs_addr);
@@ -1338,7 +1340,7 @@ static void vclk_set_lcd(int lcd_type, int vclk_sel, unsigned long pll_reg, unsi
 		WRITE_LCD_CBUS_REG_BITS(HHI_VID_CLK_DIV, 1, 16, 2); // release vclk_div_reset and enable vclk_div
 	}
 	udelay(2);
-	WRITE_LCD_CBUS_REG(0x1065,0xffffffff);
+	
 	if(vclk_sel) {
 		WRITE_LCD_CBUS_REG_BITS(HHI_VIID_CLK_CNTL, 1, 0, 1);	//enable v2_clk_div1
 		WRITE_LCD_CBUS_REG_BITS(HHI_VIID_CLK_CNTL, 1, 15, 1);	//soft reset
@@ -3334,56 +3336,59 @@ static inline int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	DBG_PRINT("bl pwm_combo low freq=%uHz, duty_max=%u\%, duty_min=%u\%\n", pwm_freq, bl_para[1], bl_para[2]);
 	
 	//get backlight pinmux for pwm
-	if (bl_conf->method == BL_CTL_PWM_COMBO) {
-		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight_combo");
-		if(nodeoffset < 0) {
-			printf("backlight init: not find /pinmux/lcd_backlight_combo node %s.\n",fdt_strerror(nodeoffset));
+	len = 0;
+	switch (bl_conf->method) {
+		case BL_CTL_PWM_NEGATIVE:
+		case BL_CTL_PWM_POSITIVE:
+			nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
+			if(nodeoffset < 0)
+				printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
+			else
+				len = 1;
+			break;
+		case BL_CTL_PWM_COMBO:
+			nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight_combo");
+			if(nodeoffset < 0)
+				printf("backlight init: not find /pinmux/lcd_backlight_combo node %s.\n",fdt_strerror(nodeoffset));
+			else
+				len = 1;
+			break;
+		default:
+			break;
+	}
+	if (len > 0) {
+		propdata = fdt_getprop(dt_addr, nodeoffset, "amlogic,setmask", &len);
+		if(propdata == NULL){
+			printf("faild to get amlogic,setmask\n");
 			bl_conf->pinmux_set_num = 0;
-			bl_conf->pinmux_clr_num = 0;
-			return ret;
 		}
-	}
-	else {
-		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
-		if(nodeoffset < 0) {
-			printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
-			bl_conf->pinmux_set_num = 0;
-			bl_conf->pinmux_clr_num = 0;
-			return ret;
+		else {
+			bl_conf->pinmux_set_num = len / 8;
+			for (i=0; i<bl_conf->pinmux_set_num; i++) {
+				bl_conf->pinmux_set[i][0] = be32_to_cpup((((u32*)propdata)+2*i));
+				bl_conf->pinmux_set[i][1] = be32_to_cpup((((u32*)propdata)+2*i+1));
+			}
 		}
-	}
-	propdata = fdt_getprop(dt_addr, nodeoffset, "amlogic,setmask", &len);
-	if(propdata == NULL){
-		printf("faild to get amlogic,setmask\n");
-		bl_conf->pinmux_set_num = 0;
-	}
-	else {
-		bl_conf->pinmux_set_num = len / 8;
+		propdata = fdt_getprop(dt_addr, nodeoffset, "amlogic,clrmask", &len);
+		if(propdata == NULL){
+			printf("faild to get amlogic,clrmask\n");
+			bl_conf->pinmux_clr_num = 0;
+		}
+		else {
+			bl_conf->pinmux_clr_num = len / 8;
+			for (i=0; i<bl_conf->pinmux_clr_num; i++) {
+				bl_conf->pinmux_clr[i][0] = be32_to_cpup((((u32*)propdata)+2*i));
+				bl_conf->pinmux_clr[i][1] = be32_to_cpup((((u32*)propdata)+2*i+1));
+			}
+		}
+		
 		for (i=0; i<bl_conf->pinmux_set_num; i++) {
-			bl_conf->pinmux_set[i][0] = be32_to_cpup((((u32*)propdata)+2*i));
-			bl_conf->pinmux_set[i][1] = be32_to_cpup((((u32*)propdata)+2*i+1));
+			DBG_PRINT("backlight pinmux set %d: mux_num = %d, mux_mask = 0x%x\n", i+1, bl_conf->pinmux_set[i][0], bl_conf->pinmux_set[i][1]);
 		}
-	}
-	propdata = fdt_getprop(dt_addr, nodeoffset, "amlogic,clrmask", &len);
-	if(propdata == NULL){
-		printf("faild to get amlogic,clrmask\n");
-		bl_conf->pinmux_clr_num = 0;
-	}
-	else {
-		bl_conf->pinmux_clr_num = len / 8;
 		for (i=0; i<bl_conf->pinmux_clr_num; i++) {
-			bl_conf->pinmux_clr[i][0] = be32_to_cpup((((u32*)propdata)+2*i));
-			bl_conf->pinmux_clr[i][1] = be32_to_cpup((((u32*)propdata)+2*i+1));
+			DBG_PRINT("backlight pinmux clr %d: mux_num = %d, mux_mask = 0x%x\n", i+1, bl_conf->pinmux_clr[i][0], bl_conf->pinmux_clr[i][1]);
 		}
 	}
-	
-	for (i=0; i<bl_conf->pinmux_set_num; i++) {
-		DBG_PRINT("backlight pinmux set %d: mux_num = %d, mux_mask = 0x%x\n", i+1, bl_conf->pinmux_set[i][0], bl_conf->pinmux_set[i][1]);
-	}
-	for (i=0; i<bl_conf->pinmux_clr_num; i++) {
-		DBG_PRINT("backlight pinmux clr %d: mux_num = %d, mux_mask = 0x%x\n", i+1, bl_conf->pinmux_clr[i][0], bl_conf->pinmux_clr[i][1]);
-	}
-	
 	return ret;
 }
 #endif
@@ -3430,7 +3435,7 @@ int lcd_probe(void)
 	}
 #endif
 #endif
-	dts_ready = 0;
+	
 	if(dts_ready == 0) {
 		pDev->pConf = &lcd_config_dft;
 		pDev->bl_config = &bl_config_dft;

@@ -118,7 +118,7 @@ static int set_vpu_clk(unsigned int vclk)
 static void vpu_driver_init(void)
 {	
 	set_vpu_clk(vpu_config.clk_level);
-	aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x3<<8))); // [8] power on
+	clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x3<<8)); // [8] power on
 	//VPU MEM_PD, need to modify
 	writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
     writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
@@ -128,20 +128,17 @@ static void vpu_driver_init(void)
     
 
 // Powerup VPU_HDMI
-    
-
-
-    aml_write_reg32_op(P_RESET0_MASK, aml_read_reg32_op(P_RESET0_MASK) & (~((0x1 << 5) | (0x1<<10))));
-    aml_write_reg32_op(P_RESET4_MASK, aml_read_reg32_op(P_RESET4_MASK) & (~((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13))));
-    aml_write_reg32_op(P_RESET2_MASK, aml_read_reg32_op(P_RESET2_MASK) & (~((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15))));
-    aml_write_reg32_op(P_RESET2_REGISTER, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
-    //aml_write_reg32_op(P_RESET4_REGISTER, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));    // reset this will cause VBUS reg to 0
-    aml_write_reg32_op(P_RESET0_REGISTER, ((0x1 << 5) | (0x1<<10)));
-    //aml_write_reg32_op(P_RESET4_REGISTER, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
-    aml_write_reg32_op(P_RESET2_REGISTER, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
-    aml_write_reg32_op(P_RESET0_MASK, aml_read_reg32_op(P_RESET0_MASK) | ((0x1 << 5) | (0x1<<10)));
-    aml_write_reg32_op(P_RESET4_MASK, aml_read_reg32_op(P_RESET4_MASK) | ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
-    aml_write_reg32_op(P_RESET2_MASK, aml_read_reg32_op(P_RESET2_MASK) | ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+    clrbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+    clrbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    clrbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+    //writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
+    writel(((0x1 << 5) | (0x1<<10)), P_RESET0_REGISTER);
+    //writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
+    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+    setbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+    setbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
 
 }
 
@@ -189,29 +186,25 @@ static int get_vpu_config(void)
 }
 
 int vpu_probe(void)
-{	
-#ifdef CONFIG_OF_LIBFDT
-#ifdef CONFIG_DT_PRELOAD
+{
 	int ret;
 
+	dts_ready = 0;
+#ifdef CONFIG_OF_LIBFDT
+#ifdef CONFIG_DT_PRELOAD
 #ifdef CONFIG_DTB_LOAD_ADDR
-		dt_addr = CONFIG_DTB_LOAD_ADDR;
+	dt_addr = CONFIG_DTB_LOAD_ADDR;
 #else
-		dt_addr = 0x0f000000;
+	dt_addr = 0x0f000000;
 #endif
 	ret = fdt_check_header(dt_addr);
 	if(ret < 0) {
-		dts_ready = 0;
-		printf("check dts: %s, load default lcd parameters\n", fdt_strerror(ret));
+		printf("check dts: %s, load default vpu parameters\n", fdt_strerror(ret));
 	}
 	else {
 		dts_ready = 1;
 	}
-#else
-	dts_ready = 0;
 #endif
-#else
-	dts_ready = 0;
 #endif
 	
 	get_vpu_config();
