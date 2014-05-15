@@ -406,24 +406,6 @@ void hx_ddr_power_down_enter()
 
 	//DDR setting save
 	hx_ddr_setting_save(); 
-	
-	serial_puts("\nAml log : P_DDR0_PUB_ACIOCR3 = ");
-   	serial_put_hex(readl(P_DDR0_PUB_ACIOCR3),32);
-   	serial_puts("\n");
-   	//serial_puts("Aml log : P_DDR1_PUB_ACIOCR3 = ");
-   	//serial_put_hex(readl(P_DDR1_PUB_ACIOCR3),32);
-   	//serial_puts("\n");
-   	
-			
-	writel(readl(P_DDR0_PUB_ACIOCR3)|0xAA,P_DDR0_PUB_ACIOCR3);
-	//writel(readl(P_DDR1_PUB_ACIOCR3)|0xAA,P_DDR1_PUB_ACIOCR3);
-	
-	serial_puts("\nAfter change : \nAml log : P_DDR0_PUB_ACIOCR3 = ");
-   	serial_put_hex(readl(P_DDR0_PUB_ACIOCR3),32);
-   	serial_puts("\n");
-   	//serial_puts("Aml log : P_DDR1_PUB_ACIOCR3 = ");
-   	//serial_put_hex(readl(P_DDR1_PUB_ACIOCR3),32);
-   	//serial_puts("\n");
 
 	//DDR pctl sleep
 	hx_pctl_sleep();
