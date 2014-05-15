@@ -2243,7 +2243,7 @@ static void _lcd_module_enable(void)
 	BUG_ON(pDev==NULL);
 	_init_lcd_driver(pDev->pConf);
 	lcd_power_ctrl(ON);
-	_enable_backlight();
+	//_enable_backlight();
 	_enable_vsync_interrupt();
 }
 
