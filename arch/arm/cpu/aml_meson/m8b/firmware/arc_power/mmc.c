@@ -410,6 +410,8 @@ void hx_ddr_power_down_enter()
 	//DDR pctl sleep
 	hx_pctl_sleep();
 
+	writel(readl(P_DDR0_PUB_ACIOCR3)|0x2,P_DDR0_PUB_ACIOCR3);
+
 	//Clear PGCR3 CKEN to 00
 	//or you can try 11?
 	writel(readl(P_DDR0_PUB_PGCR3)&(~(0xFF<<16)),P_DDR0_PUB_PGCR3);

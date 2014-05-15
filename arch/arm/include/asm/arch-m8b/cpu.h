@@ -25,7 +25,7 @@
 
 //DDR training address, DO NOT modify
 //DDR0: 0x0F00 - 0x0F7F (128Bytes)
-#define CONFIG_M8B_RANK0_DTAR_ADDR (0xf00)
+#define CONFIG_M8B_RANK0_DTAR_ADDR (0xf0000)
 
 //M8baby support 16bit and 32bit mode
 //#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_32BIT) //m8b_xxx_xxx.h
