@@ -8,39 +8,39 @@
 
 int v2_usbburning(unsigned timeout)
 {
-	int cfg = EXT_CLOCK;
+        int cfg = EXT_CLOCK;
 
-    printf("Enter v2 usbburning mode\n");
-	set_usb_phy_config(cfg);
+        printf("Enter v2 usbburning mode\n");
+        set_usb_phy_config(cfg);
 
-	usb_parameter_init(timeout);
-		
-	if(usb_pcd_init()) {
-        printf("!!!!Fail in usb_pcd_init\n");
-        return __LINE__;
-    }
+        usb_parameter_init(timeout);
 
-#ifdef CONFIG_M8
-	writel(0, P_WATCHDOG_TC);//disable watch dog
-#endif//#ifdef CONFIG_M8
+        if(usb_pcd_init()) {
+                printf("!!!!Fail in usb_pcd_init\n");
+                return __LINE__;
+        }
 
-	while(1)
-	{
-		//watchdog_clear();		//Elvis Fool
-		if(usb_pcd_irq())
-			break;
-	}
-	return 0;
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+        AML_WATCH_DOG_DISABLE(); //disable watchdog
+#endif// #if defined(CONFIG_M8) || defined(CONFIG_M8B)
+
+        while(1)
+        {
+                //watchdog_clear();		//Elvis Fool
+                if(usb_pcd_irq())
+                        break;
+        }
+        return 0;
 }
 
 int do_v2_usbtool (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     int rc = 0;
-    unsigned timeout = simple_strtoul(argv[1], NULL, 0);
+    unsigned timeout = (2 <= argc) ? simple_strtoul(argv[1], NULL, 0) : 0;
 
     optimus_work_mode_set(OPTIMUS_WORK_MODE_USB_UPDATE);
 
-	rc = v2_usbburning(timeout);
+    rc = v2_usbburning(timeout);
     close_usb_phy_clock(0);
 
     return rc;

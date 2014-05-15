@@ -25,4 +25,6 @@ typedef enum ep0_state {
 } ep0state_e;
 
 extern int dwc_common_irq(void);
+
+extern int cb_4_dis_connect_intr(void);
 #endif

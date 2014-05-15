@@ -9,7 +9,12 @@
 #include <pll.c>
 #include <hardi2c_lite.c>
 #include <power.c>
+
+#ifndef CONFIG_DUMP_DDR_INFO
+#define CONFIG_DUMP_DDR_INFO
+#endif// #ifndef CONFIG_DUMP_DDR_INFO
 #include <ddr.c>
+
 #include <mtddevices.c>
 #include <sdio.c>
 #include <debug_rom.c>
@@ -128,7 +133,7 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
-#if defined(CONFIG_M8)
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
@@ -250,14 +255,35 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     BinRunInfoHead_t*       binRunInfoHead      = (BinRunInfoHead_t*)(RAM_START + 64 * 1024);//D9010000
     int ret = 0;
     const unsigned paraMagic = binRunInfoHead->magic;
+    const unsigned ChipId    = readl(CBUS_REG_ADDR(0x1f53));
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 	//enable watchdog, then when bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
-#endif// #ifdef CONFIG_M8
+#endif// #if defined(CONFIG_M8) || defined(CONFIG_M8B)
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
-    serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
-    serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
+    //serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
+    //serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
+#if defined(CONFIG_M6)//Asset m6 platform
+    if(22 != ChipId){
+            binRunInfoHead->retVal = ChipId + (22<<16);//Error value for pc
+            return __LINE__;
+    }
+    else{
+            const unsigned encryptReg           = readl(0xD9018A80);
+            const unsigned* dataEncryptedByTool = (unsigned*)(CONFIG_DDR_INIT_ADDR + 0x20);
+
+            if(encryptReg & (1U<<7)){//RSA key already burned
+                    int i = 0;
+                    for(i=0; i < 4; ++i){
+                            if(0xc003 != *dataEncryptedByTool++){
+                                    binRunInfoHead->retVal = 0xc003 + i;//Error value for pc
+                                    return __LINE__;
+                            }
+                    }
+            }
+    }
+#endif//
 
 #if 1
     if(BIN_RUN_INFO_MAGIC_PARA != paraMagic)//default to run ddr_init.bin, Attention that sram area will not clear if not poweroff!
@@ -274,7 +300,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     }
 #else
     binRunInfoHead->runType = BIN_RUN_TYPE_UCL_DECOMPRESS;
-    ((UclDecompressInfo_t*)binRunInfoHead)->srcDataAddr = (unsigned char*)(2U<<20);
+    ((UclDecompressInfo_t*)binRunInfoHead)->srcDataAddr = (unsigned char*)(4U<<20);
 
 	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);
 #endif//#if 1

@@ -394,7 +394,7 @@ int optimus_working (const char *cmd, char* buff)
     }
     else if(strcmp(optCmd, "disk_initial") == 0)
 	{
-        unsigned  erase = simple_strtoul(argv[1], NULL, 0);
+        unsigned  erase = argc > 1 ? simple_strtoul(argv[1], NULL, 0) : 0;
 
         ret = optimus_storage_init(erase);
 	}

@@ -122,10 +122,11 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
     const struct acs_setting* acsSettingInSram  = NULL;
     const struct partitions*  partsTabInSram    = NULL;
 
-    DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
+    DWN_MSG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
     acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
+    DWN_MSG("acsSettingInBin=0x%x\n", acsSettingInBin);
     
-    if( !(acsSettingInBin < uboot_bin + 64*1024) ){//acs not in the spl
+    if( acsSettingInBin >= uboot_bin + 64*1024 || acsSettingInBin <= uboot_bin){//acs not in the spl
         DWN_MSG("Acs not in the spl of uboot_bin\n");
         return 0;
     }

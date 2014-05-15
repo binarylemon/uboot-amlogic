@@ -108,7 +108,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	loff_t off=0, size=0;	
 	char *cmd, *s, *area;
 	char	str[128];
-    unsigned char *tmp_buf= NULL;
+        unsigned char *tmp_buf= NULL;
     
 	if (argc < 2)
 		goto usage;
@@ -524,12 +524,12 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	}
 	else if(strcmp(cmd, "init") == 0){
 		
-		init_flag = (int)simple_strtoul(argv[2], NULL, 16);
+		init_flag = (argc > 2) ? (int)simple_strtoul(argv[2], NULL, 16) : 0;
 		store_dbg("init_flag %d",init_flag);
 		if(POR_NAND_BOOT()){	
 			sprintf(str, "amlnf  init  %d ",init_flag);
 			printf("command:	%s\n", str);
-            device_boot_flag = NAND_BOOT_FLAG;		
+                        device_boot_flag = NAND_BOOT_FLAG;		
 			ret = run_command(str, 0);
 			if(ret != 0){
 				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
@@ -630,7 +630,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			}
 			
 			return ret;
-		}
+        }
 		else if(POR_EMMC_BOOT()){
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
             device_boot_flag = EMMC_BOOT_FLAG;		

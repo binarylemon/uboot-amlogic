@@ -20,6 +20,7 @@ void amlnf_get_chip_size(uint64_t *size)
 	struct nand_flash *flash = &(aml_chip->flash);	
 	uint64_t chipsize=0;
 	
+        if(!aml_chip)return;
 	chipsize=((uint64_t)(flash->chipsize*controller->chip_num))<<20;
 	*size = chipsize;
 	

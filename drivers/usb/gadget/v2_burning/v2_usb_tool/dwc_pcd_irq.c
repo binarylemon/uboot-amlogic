@@ -1214,7 +1214,7 @@ int dwc_common_irq(void)
 	}
 	if(gotgint.b.sesenddet){
 		ERR("Session End Detected, Line Disconected\n");
-        cb_4_dis_connect_intr();
+                cb_4_dis_connect_intr();
 	}
 	
 	dwc_write_reg32(DWC_REG_GOTGINT,gotgint.d32); // clear intr
