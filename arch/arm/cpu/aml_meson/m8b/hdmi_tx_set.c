@@ -1249,6 +1249,10 @@ static void hdmi_tx_set_vend_spec_infofram(HDMI_Video_Codes_t vic)
 
 void hdmi_tx_set(HDMI_Video_Codes_t vic) 
 {
+    if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
+        printf("Not supported HDMI mode: %d\n", vic);
+        return;
+    }
     hdmi_tx_gate(vic);
     hdmi_tx_clk(vic);
     hdmi_tx_misc(vic);
