@@ -43,19 +43,14 @@
 
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
-#ifdef CONFIG_ACS
-#define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
-#else
-#define CONFIG_TPL_BOOT_ID_ADDR       		(&reboot_mode)//pass boot_id, spl->uboot
-#endif// #ifdef CONFIG_ACS
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #endif// #if CONFIG_AML_V2_USBTOOL
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
-#define CONFIG_VIDEO_AMLTVOUT 1
-#define CONFIG_AML_HDMI_TX 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -196,14 +191,16 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x12000000\0" \
 	"testaddr=0x12400000\0" \
+	"loadaddr_misc=0x13000000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
 	"bootm_size=0x80000000\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
+	"upgrade_step=0\0" \
 	"initrd_high=60000000\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
+	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend logo=osd1,loaded,panel,debug\0" \
 	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=panel\0" \
 	"display_width=768\0" \
@@ -214,6 +211,9 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"batlow_threshold=3\0" \
+	"batfull_threshold=100\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -229,29 +229,124 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"magic_key_status=none\0" \
+	"usb_burning=update 1000\0"\
 	"preboot="\
-		"echo preboot...;" \	
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
-        "run switch_bootmode\0" \
-    \
-   	"update="\
-   		"echo update...; "\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
-    \
-	"switch_bootmode="\
-		"echo switch_bootmode...;" \	
-		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
-            "\0"\
-    \
+		"echo preboot...;" \
+                "run upgrade_check;"\
+		"get_rebootmode; clear_rebootmode; magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status};" \
+		"usbbc; run batlow_or_not; setenv sleep_count 0; "\
+                "run switch_bootmode" \
+                "\0"\
+   	"upgrade_check="\
+                "if itest ${upgrade_step} == 3; then run update; fi; "\
+                "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; saveenv; fi; "\
+                "\0"\
+        "prepare="\
+                "video open; video clear; video dev bl_on;"\
+                "imgread res logo ${loadaddr_misc};"\
+                "unpackimg ${loadaddr_misc};"\
+                "\0"\
+        "switch_bootmode="\
+		"if test ${reboot_mode} = normal; then "\
+			"run prepare; bmp display ${poweron_offset}; "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"run recovery; "\
+		"else if test ${reboot_mode} = update; then "\
+			"run update; "\
+		"else if test ${reboot_mode} = usb_burning; then "\
+			"run usb_burning; "\
+		"else if test ${magic_key_status} = update; then "\
+			"run update; "\
+		"else if test ${magic_key_status} = poweron; then "\
+			"run prepare; bmp display ${poweron_offset}; run bootcmd; "\
+		"else "\
+			"run charging_or_not; "\
+		"fi; fi; fi; fi; fi; fi;" \
+                "\0"\
 	"storeboot="\
-        "echo Booting...; "\
-        "imgread kernel boot ${loadaddr};"\
-        "bootm;"\
-        "run recovery\0" \
-    \
+                "echo Booting...; "\
+                "imgread kernel boot ${loadaddr};"\
+                "bootm;"\
+                "run update" \
+                 "\0"\
+        "charging_or_not="\
+		"if ac_online; then "\
+			"run prepare; run charging; "\
+		"else if getkey; then "\
+			"echo power on; run prepare; bmp display ${poweron_offset}; run bootcmd; "\
+		"else "\
+			"echo poweroff; video dev disable; poweroff; "\
+		"fi; fi;" \
+                 "\0"\
+        "charging="\
+		"video clear;"\
+		"while itest 1 == 1; do "\
+			"get_batcap; "\
+			"if itest ${battery_cap} >= ${batfull_threshold}; then "\
+				"bmp display ${batteryfull_offset}; run custom_delay; "\
+			"else "\
+				"bmp display ${battery0_offset}; run custom_delay; bmp display ${battery1_offset}; run custom_delay; "\
+				"bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; "\
+			"fi; "\
+                "done\0" \
+	"custom_delay="\
+		"setenv msleep_count 0; "\
+		"while itest ${msleep_count} < 800; do "\
+			"run aconline_or_not; run updatekey_or_not; run powerkey_or_not; "\
+			"msleep 1; calc ${msleep_count} + 1 msleep_count; "\
+                "done; "\
+                 "\0"\
+        "batlow_or_not="\
+		"if ac_online; then; "\
+		"else "\
+			"get_batcap; "\
+			"if itest ${battery_cap} < ${batlow_threshold}; "\
+				"then run prepare; run batlow_warning; video dev disable; poweroff; "\
+			"fi; "\
+		"fi;" \
+                 "\0"\
+        "batlow_warning="\
+		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
+		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
+		"bmp display ${batterylow_offset}; msleep 1000;"\
+                "\0"\
+	"aconline_or_not="\
+		"if ac_online; then; else video dev disable; poweroff; fi\0" \
+		\
+        "updatekey_or_not="\
+		"if saradc get_in_range 0x95 0x150; then "\
+                        "echo saradc ok; "\
+			"msleep 50; " \
+			"if getkey; then "\
+                                "echo getkey ok;"\
+				"if saradc get_in_range 0x95 0x150; then "\
+					"run update; "\
+				"fi; "\
+			"fi; "\
+		"fi;"\
+                "\0"\
+        "powerkey_or_not="\
+		"if getkey; then "\
+			"msleep 50; "\
+			"if getkey; then "\
+				"video clear; bmp display ${poweron_offset};run bootcmd; "\
+			"fi; "\
+		"fi;" \
+		"\0"\
+        "update="\
+   		"echo update...; "\
+		"run prepare; bmp display ${upgrade_logo_offset}; "\
+                "run usb_burning; "\
+                "if mmcinfo; then "\
+			"if fatexist mmc 0 ${sdcburncfg}; then "\
+				"sdc_burn ${sdcburncfg}; "\
+			"else "\
+				"if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+			"fi;"\
+		"fi;"\
+                "run recovery" \
+                "\0"\
 	"recovery="\
         "echo enter recovery;"\
         "if mmcinfo; then "\
@@ -261,7 +356,7 @@
         "bootm\0" \
 
 
-#define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"
+#define CONFIG_BOOTCOMMAND   "run storeboot"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
@@ -389,6 +484,12 @@
 #define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
+#define CONFIG_CMD_MATH         1
+
+#define CONFIG_CMD_IMGPACK 1
+#define CONFIG_CMD_AML_MAGIC
+#define CONFIG_CMD_SARADC
+#define CONFIG_SARADC 1 //drivers/adc
 
 //M8 security boot
 //#define CONFIG_SECU_BOOT	1

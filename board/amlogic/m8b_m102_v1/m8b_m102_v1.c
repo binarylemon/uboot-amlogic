@@ -564,7 +564,7 @@ int board_init(void)
     nand_init();
     
 #endif    
-    
+  run_command("magic_checkstatus", 0);
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
