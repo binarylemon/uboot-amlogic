@@ -204,7 +204,7 @@
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
+	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend storage=2\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
