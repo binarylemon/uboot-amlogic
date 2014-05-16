@@ -230,7 +230,8 @@ static struct ddr_set __ddr_setting={
 	.t_pub_zq0pr = 0x19,
 	.t_pub_dxccr = 4|(0xf7<<5)|(3<<19),
 
-	.t_pub_acbdlr0 = 0,
+	//.t_pub_acbdlr0 = 0,
+	.t_pub_acbdlr0 = 0x14,
 	
 	.t_pub_dcr = 0x8b,
 
