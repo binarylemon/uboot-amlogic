@@ -281,7 +281,7 @@ static const reg_t tvregs_480cvbs[] = {
     {HHI_VID_CLK_CNTL,           0x0,       },
     {HHI_VID_PLL_CNTL,           0x2001042d,},
     {HHI_VID_PLL_CNTL2,          0x814d3928,},
-    {HHI_VID_PLL_CNTL3,          0x6b425012,    },
+    {HHI_VID_PLL_CNTL3,          0x6b42503a,    },
     {HHI_VID_PLL_CNTL4,          0x110},
     {HHI_VID_PLL_CNTL,           0x0001042d,},
 
@@ -476,7 +476,7 @@ static const reg_t tvregs_576cvbs[] = {
     {HHI_VID_CLK_CNTL,           0x0,       },
     {HHI_VID_PLL_CNTL,           0x2001042d,},
     {HHI_VID_PLL_CNTL2,          0x814d3928,},
-    {HHI_VID_PLL_CNTL3,          0x6b425012,    },
+    {HHI_VID_PLL_CNTL3,          0x6b42503a,    },
     {HHI_VID_PLL_CNTL4,          0x110},
     {HHI_VID_PLL_CNTL,           0x0001042d,},
 
