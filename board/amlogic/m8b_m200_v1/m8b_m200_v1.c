@@ -447,6 +447,10 @@ static void board_pmu_init(void)
     if (driver && driver->pmu_init) {
         driver->pmu_init(); 
     }
+    if (driver && driver->pmu_reg_write) {
+        printf("%s, increase DCIN_OV_ADJ\n", __func__);
+        driver->pmu_reg_write(0x0030, 0x18);    
+    }
 }
 #endif
 
