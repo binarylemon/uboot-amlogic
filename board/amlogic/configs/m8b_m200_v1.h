@@ -204,7 +204,7 @@
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend storage=2\0" \
+	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend storage=2\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -257,7 +257,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${bootargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\
@@ -280,7 +280,7 @@
 	"storeboot="\
         "echo Booting...; "\
         "if unifykey get usid; then  "\
-            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+            "setenv bootargs ${initargs} androidboot.serialno=${usid};"\
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
@@ -289,10 +289,10 @@
 	"recovery="\
         "echo enter recovery;"\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm;fi;"\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${initargs} a9_clk_max=800000000; bootm;fi;"\
         "fi; "\
 	      "if imgread kernel recovery ${loadaddr}; then "\
-	        "setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+	        "setenv bootargs ${initargs} a9_clk_max=800000000; bootm; "\
 				"else "\
 					"echo no recovery in flash; "\
 				"fi;\0" \
