@@ -47,6 +47,8 @@
 #define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #endif// #if CONFIG_AML_V2_USBTOOL
 
+#define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
+
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
@@ -333,6 +335,7 @@
                 "\0"\
 	"recovery="\
                 "echo enter recovery;"\
+		"run prepare; bmp display ${poweron_offset}; "\
                 "if mmcinfo; then "\
                     "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
                 "fi; "\
