@@ -210,7 +210,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x06900000\0" \
 	"batlow_threshold=3\0" \
 	"batfull_threshold=100\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
