@@ -513,39 +513,25 @@ void magic_checkstatus(int saveEnvFlag)
         unsigned delay = 0;
         int update_key_num = 0;
 
-        for(update_key_num = 0;_saradc_key_pressed() && update_key_num < 2;)
+        for(update_key_num = 0;_saradc_key_pressed() && update_key_num < 3;)
         {
-                int pwrkeypressed = 0;
-                int pwrkeyReleasedAfterPress = 0;
+                int pwrkeyreleased = 0;
                 start = get_timer(0);
-                delay = 1000;//wait powerkey at most one second
+                delay = 600;//600*3 at most 2Seconds
 
                 while(get_timer(start) < delay){
                         if(ctrlc())return;
-                        if( 0 == run_command("getkey", 0)){
-                                pwrkeypressed = 1;
+                        if( 0 < run_command("getkey", 0)){
+                                pwrkeyreleased = 1;
                                 break;
                         }
                 }
-                if(pwrkeypressed){
-                        ulong start = get_timer(0);
-                        delay = 500;//wait powerkey 'released' at most 500ms
-
-                        while(get_timer(start) < delay){
-                                if(ctrlc())return;
-                                if(run_command("getkey", 0) > 0){//powerkey released
-                                        pwrkeyReleasedAfterPress = 1;
-                                        break;
-                                }
-                        }
-                }
                 
-                if(pwrkeypressed && pwrkeyReleasedAfterPress){
-                        ++update_key_num;
-                }
+                if(pwrkeyRelease)break;//quit as user release the powerkey
+                ++update_key_num;
         }
 
-        if(update_key_num >= 2){
+        if(update_key_num >= 3){
                 if(saveEnvFlag)setenv("magic_key_status", "update");
                 /*printf("magic_key_status update\n");*/
                 return;
