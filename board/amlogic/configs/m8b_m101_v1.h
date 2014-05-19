@@ -226,7 +226,6 @@
 	"bootpath=u-boot.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
-	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
 	"magic_key_status=none\0" \
@@ -293,7 +292,7 @@
 	"custom_delay="\
 		"setenv msleep_count 0; "\
 		"while itest ${msleep_count} < 800; do "\
-			"run aconline_or_not; run updatekey_or_not; run powerkey_or_not; "\
+			"run aconline_or_not; run user_key_check; "\
 			"msleep 1; calc ${msleep_count} + 1 msleep_count; "\
                 "done; "\
                  "\0"\
@@ -314,26 +313,11 @@
 	"aconline_or_not="\
 		"if ac_online; then; else video dev disable; poweroff; fi\0" \
 		\
-        "updatekey_or_not="\
-		"if saradc get_in_range 0x95 0x150; then "\
-                        "echo saradc ok; "\
-			"msleep 50; " \
-			"if getkey; then "\
-                                "echo getkey ok;"\
-				"if saradc get_in_range 0x95 0x150; then "\
-					"run update; "\
-				"fi; "\
-			"fi; "\
-		"fi;"\
+        "user_key_check="\
+                "magic_checkstatus 1;"\
+                "if test ${magic_key_status} = update; then run update; fi;"\
+		"if test ${magic_key_status} = poweron; then run prepare; bmp display ${poweron_offset}; run bootcmd; fi;"\
                 "\0"\
-        "powerkey_or_not="\
-		"if getkey; then "\
-			"msleep 50; "\
-			"if getkey; then "\
-				"video clear; bmp display ${poweron_offset};run bootcmd; "\
-			"fi; "\
-		"fi;" \
-		"\0"\
         "update="\
    		"echo update...; "\
 		"run prepare; bmp display ${upgrade_logo_offset}; "\

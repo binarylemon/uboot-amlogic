@@ -495,37 +495,81 @@ inline int get_key(void)
     return (readl(P_AO_GPIO_I) & (1 << 3)) ? 0 : 1;
 }
 
-int power_key_num = 0;
-int update_key_num = 0;
+static int _saradc_key_pressed(void)
+{
+        static int adc_init = 0;
 
-void magic_checkstatus(int saveEnvFlag){
-	static int adc_init = 0;
+        if(!adc_init){
+                run_command("saradc open 0", 0);
+                adc_init = 1;
+        }
 
-	if(!adc_init){
-		run_command("saradc open 0", 0);
-		adc_init = 1;
-	}
-	
-	if( 0 == run_command("getkey", 0)){
-		power_key_num++;
-	}
-	if( 0 == run_command("saradc get_in_range 0x95 0x150 1", 0)){
-		update_key_num++;
-	}
+        return  (0 == run_command("saradc get_in_range 0x95 0x150 1", 0));
+}
 
-	printf("magic_checkstatus power(%d) adc(%d)\n", power_key_num, update_key_num);
+void magic_checkstatus(int saveEnvFlag)
+{
+        ulong start = 0;
+        unsigned delay = 0;
+        int update_key_num = 0;
 
-	if(saveEnvFlag){
-		if(power_key_num >= 2 && update_key_num >= 2){
-			setenv("magic_key_status", "update");
-			return;
-		}
+        for(update_key_num = 0;_saradc_key_pressed() && update_key_num < 2;)
+        {
+                int pwrkeypressed = 0;
+                int pwrkeyReleasedAfterPress = 0;
+                start = get_timer(0);
+                delay = 1000;//wait powerkey at most one second
 
-		if(power_key_num >= 2){
-			setenv("magic_key_status", "poweron");
-			return;
-		}
-	}
+                while(get_timer(start) < delay){
+                        if(ctrlc())return;
+                        if( 0 == run_command("getkey", 0)){
+                                pwrkeypressed = 1;
+                                break;
+                        }
+                }
+                if(pwrkeypressed){
+                        ulong start = get_timer(0);
+                        delay = 500;//wait powerkey 'released' at most 500ms
+
+                        while(get_timer(start) < delay){
+                                if(ctrlc())return;
+                                if(run_command("getkey", 0) > 0){//powerkey released
+                                        pwrkeyReleasedAfterPress = 1;
+                                        break;
+                                }
+                        }
+                }
+                
+                if(pwrkeypressed && pwrkeyReleasedAfterPress){
+                        ++update_key_num;
+                }
+        }
+
+        if(update_key_num >= 2){
+                if(saveEnvFlag)setenv("magic_key_status", "update");
+                /*printf("magic_key_status update\n");*/
+                return;
+        }
+
+
+        if( 0 == run_command("getkey", 0)){//Power key pressed
+                int pwrkeyRelease = 0;
+                start = get_timer(0);
+                delay = 1000;//wait powerkey at most one second
+
+                while(get_timer(start) < delay){
+                        if(ctrlc())return;
+                        if(run_command("getkey", 0) > 0){//power key released
+                                pwrkeyRelease = 1;
+                                break;
+                        }
+                }
+                if(!pwrkeyRelease){//power key pressed at one second
+                        if(saveEnvFlag)setenv("magic_key_status", "poweron");
+                        /*printf("magic_checkstatus poweron\n");*/
+                        return;
+                }
+        }
 }
 
 
