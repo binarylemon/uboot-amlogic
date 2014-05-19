@@ -1,4 +1,4 @@
-#ifdef CFG_DDR_AUTO_DETECT
+#ifdef CFG_DDR_MODE_AUTO_DETECT
 #include "efuse_basic.c"
 unsigned ddr_init(int arg);
 

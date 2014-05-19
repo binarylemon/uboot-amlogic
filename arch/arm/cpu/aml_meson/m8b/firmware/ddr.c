@@ -15,7 +15,7 @@ int cfg_ddr_mode = CFG_DDR_MODE;
 
 #include "ddr_init_hw.c"
 #include "ddr_init_pctl.c"
-#ifdef CFG_DDR_AUTO_DETECT
+#ifdef CFG_DDR_MODE_AUTO_DETECT
 #include "ddr_auto_detect.c"
 #endif
 
@@ -234,7 +234,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 	int ddr_test_mode = DDR_TEST_BASEIC;
 #endif
 
-#ifdef CFG_DDR_AUTO_DETECT
+#ifdef CFG_DDR_MODE_AUTO_DETECT
 	ddr_auto_switch(ddr_test_mode);
 #else
 	if(ddr_init(ddr_test_mode))
