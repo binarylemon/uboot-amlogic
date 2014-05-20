@@ -108,7 +108,7 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	   STR r0, [r1]
 	   
 	   LDR r1, =0xc4200c00
-	   LDR r0, =0x04f00001
+	   LDR r0, =0x01000001
 	   STR r0, [r1]
 	   
 	   NOP
@@ -146,8 +146,6 @@ __wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
     NOP
     DMB
     ISB
-    
-    
 
 	//send debug status to ARC
 	LDR  r0, =0xc8100004
