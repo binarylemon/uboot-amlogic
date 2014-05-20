@@ -24,7 +24,16 @@
 
 void hard_i2c_init(void)
 {
-    (*I2C_CONTROL_REG) = ((*I2C_CONTROL_REG) & ~(0x3FF << 12)) | (60 << 12);
+	extern unsigned long   clk_util_clk_msr(unsigned long   clk_mux);
+
+	unsigned int nCLK81 = clk_util_clk_msr(7);
+
+	if(nCLK81 > 24)
+		nCLK81 = ((nCLK81 * 5) >> 1);
+	else
+		nCLK81 = 60; //24 000 000/400 000=60
+
+    (*I2C_CONTROL_REG) = ((*I2C_CONTROL_REG) & ~(0x3FF << 12)) | (nCLK81 << 12);
     
     setbits_le32(P_AO_RTI_PIN_MUX_REG, 3 << 5);
 }
