@@ -34,16 +34,12 @@
 #ifdef CONFIG_NEXT_NAND
 #define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 #define CONFIG_AML_V2_USBTOOL 1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SHA1
 #endif//#ifdef CONFIG_NEXT_NAND
 
-#if CONFIG_AML_V2_USBTOOL
-#define CONFIG_SHA1
-#ifdef CONFIG_ACS
-#define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
-#else
-#define CONFIG_TPL_BOOT_ID_ADDR       		(&reboot_mode)//pass boot_id, spl->uboot
-#endif// #ifdef CONFIG_ACS
-#endif// #if CONFIG_AML_V2_USBTOOL
+#define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
+#define CONFIG_CMD_PWM  1
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1

@@ -122,7 +122,7 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
     const struct acs_setting* acsSettingInSram  = NULL;
     const struct partitions*  partsTabInSram    = NULL;
 
-    DWN_MSG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
+    DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
     acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
     DWN_MSG("acsSettingInBin=0x%x\n", acsSettingInBin);
     
@@ -1105,8 +1105,10 @@ int optimus_set_burn_complete_flag(void)
         set_default_env("## save_setting ##\n");//use new env directly if uboot is new !!!
         setenv("store", str_store);
         setenv("firstboot", "1");
-        rc = run_command("setenv bootargs ${bootargs} storage=${store}", 0);
-        DWN_MSG("bootargs=%s\n", getenv("bootargs"));
+        if(!strstr(getenv("bootargs"), "storage")){//user not configure storage in 'bootargs' of default env
+                rc = run_command("setenv bootargs ${bootargs} storage=${store}", 0);
+                DWN_MSG("bootargs=%s\n", getenv("bootargs"));
+        }
     }
 
     DWN_MSG("Set upgrade_step to %s\n", upgrade_step);

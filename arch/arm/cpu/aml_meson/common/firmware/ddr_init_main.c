@@ -3,6 +3,7 @@
 #include <timming.c>
 #include <uartpin.c>
 #include <serial.c>
+#include <serial_uart_a.c>
 #include <pinmux.c>
 #include <sdpinmux.c>
 #include <memtest.c>
@@ -36,6 +37,12 @@
 extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
 #endif
 #endif// #if CONFIG_UCL
+
+#if defined(CONFIG_M8)
+#define _CHIP_ID        (0x19)
+#elif defined(CONFIG_M8B)
+#define _CHIP_ID        (0x1b)
+#endif//
 
 #define BIN_RUN_INFO_MAGIC_PARA      (0X3412CDABU)
 #define BIN_RUN_INFO_VERSION    (0x0100)
@@ -187,14 +194,14 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     unsigned int nTEBegin = TIMERE_GET();
     serial_put_dec(nTEBegin);
     serial_puts("\nBT : ");
-	//Note: Following code is used to show current uboot build time
-	//         For some fail cases which in SPL stage we can not target
-	//         the uboot version quickly. It will cost about 5ms.
-	//         Please DO NOT remove it! 
-	serial_puts(__TIME__);
-	serial_puts(" ");
-	serial_puts(__DATE__);
-	serial_puts("\n");	
+    //Note: Following code is used to show current uboot build time
+    //         For some fail cases which in SPL stage we can not target
+    //         the uboot version quickly. It will cost about 5ms.
+    //         Please DO NOT remove it! 
+    serial_puts(__TIME__);
+    serial_puts(" ");
+    serial_puts(__DATE__);
+    serial_puts("\n");	
 
 
 #ifdef CONFIG_POWER_SPL
@@ -205,20 +212,18 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     pll_init(&__plls);
 
 	serial_init(__plls.uart);
+    #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+       serial_init_uart_a(__plls.uart);
+    #endif
 
-#ifdef ENTRY_DEBUG_ROM
-    __udelay(100000);//wait for a uart input
-#else
     __udelay(100);//wait for a uart input
-#endif
-	
 
-	//TEMP add 
-	unsigned int nPLL = readl(P_HHI_SYS_PLL_CNTL);
-	unsigned int nA9CLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
-	serial_puts("\nCPU clock is ");
-	serial_put_dec(nA9CLK);
-	serial_puts("MHz\n");
+    //TEMP add 
+    unsigned int nPLL = readl(P_HHI_SYS_PLL_CNTL);
+    unsigned int nA9CLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+    serial_puts("\nCPU clock is ");
+    serial_put_dec(nA9CLK);
+    serial_puts("MHz\n");
 
 
     nTEBegin = TIMERE_GET();
