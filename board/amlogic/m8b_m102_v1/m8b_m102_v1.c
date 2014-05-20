@@ -527,7 +527,7 @@ void magic_checkstatus(int saveEnvFlag)
                         }
                 }
                 
-                if(pwrkeyRelease)break;//quit as user release the powerkey
+                if(pwrkeyReleased) break;//quit as user release the powerkey
                 ++update_key_num;
         }
 

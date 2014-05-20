@@ -527,7 +527,7 @@ void magic_checkstatus(int saveEnvFlag)
                         }
                 }
                 
-                if(pwrkeyRelease)break;//quit as user release the powerkey
+                if(pwrkeyreleased) break;//quit as user release the powerkey
                 ++update_key_num;
         }
 
@@ -686,7 +686,7 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	//printf("\n");
 	for(;((nIndex < 64) && nCounter);nCounter--,nIndex++)
-		printf("MSR clock[%d] = %dMHz\n",nIndex,clk_util_clk_msr(nIndex));
+		;//printf("MSR clock[%d] = %dMHz\n",nIndex,clk_util_clk_msr(nIndex));
 
 	return 0;
 	
