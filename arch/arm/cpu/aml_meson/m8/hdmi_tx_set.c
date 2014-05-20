@@ -1260,6 +1260,82 @@ static void hdmi_tx_set_vend_spec_infofram(HDMI_Video_Codes_t vic)
     hdmitx_set_packet(HDMI_PACKET_VEND, VEN_DB, VEN_HB);
 }
 
+// When have below format output, we shall manually configure
+// bolow register to get stable Video Timing.
+static void hdmi_reconfig_packet_setting(HDMI_Video_Codes_t vic)
+{
+    switch(vic) {
+    case HDMI_1080p50:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x12);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x10);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0xb6);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x11);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    case HDMI_4k2k_30:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x0f);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x3a);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0x60);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x52);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    case HDMI_4k2k_25:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x12);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x44);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0xda);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x52);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    case HDMI_4k2k_24:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x12);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x47);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0xf8);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x52);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    case HDMI_4k2k_smpte:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x12);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x47);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0xf8);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x52);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    default:
+        break;
+    }
+    printf("reconfig packet setting done\n");
+}
+
 void hdmi_tx_set(HDMI_Video_Codes_t vic) 
 {
     hdmi_tx_gate(vic);
@@ -1267,5 +1343,6 @@ void hdmi_tx_set(HDMI_Video_Codes_t vic)
     hdmi_tx_misc(vic);
     hdmi_tx_enc(vic);
     hdmi_tx_set_vend_spec_infofram(vic);
+    hdmi_reconfig_packet_setting(vic);
     hdmi_tx_phy(vic);
 }
