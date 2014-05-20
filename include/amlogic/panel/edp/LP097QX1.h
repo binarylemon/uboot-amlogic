@@ -22,12 +22,12 @@
 #define CLK_POL				0			/** clk_polarity(only valid for TTL) */
 #define HS_WIDTH			5	/** hsync_width */
 #define HS_BACK_PORCH		120	/** hsync_backporch(include hsync_width) */
-#define HS_POL				0	/** hsync_polarity(0=negative, 1=positive) */
+#define HS_POL				1	/** hsync_polarity(0=negative, 1=positive) */
 #define VS_WIDTH			1	/** vsync_width */
 #define VS_BACK_PORCH		22	/** vsync_backporch(include vsync_width) */
-#define VS_POL				0	/** vsync_polarity(0=negative, 1=positive) */
+#define VS_POL				1	/** vsync_polarity(0=negative, 1=positive) */
 #define VSYNC_H_ADJUST_SIGN 0 /** 0=positive,1=negative */
-#define VSYNC_H_ADJUST  0  /** vertical_hbegin_adjust */
+#define VSYNC_H_ADJUST      0  /** vertical_hbegin_adjust */
 //************************************************
 
 #endif

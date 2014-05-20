@@ -735,8 +735,8 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // 2.3   Configure Signal polarity
     WRITE_LCD_REG( MIPI_DSI_DWC_DPI_CFG_POL_OS, (0x0 << BIT_COLORM_ACTIVE_LOW) |
                         (0x0 << BIT_SHUTD_ACTIVE_LOW)  |
-                        (0x0 << BIT_HSYNC_ACTIVE_LOW)  |
-                        (0x0 << BIT_VSYNC_ACTIVE_LOW)  |
+                        ((((p->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1) ? 0 : 1) << BIT_HSYNC_ACTIVE_LOW)  |
+                        ((((p->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1) ? 0 : 1) << BIT_VSYNC_ACTIVE_LOW)  |
                         (0x0 << BIT_DATAEN_ACTIVE_LOW));
 
     if (operation_mode == OPERATION_VIDEO_MODE) {
