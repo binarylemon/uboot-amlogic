@@ -1023,7 +1023,8 @@ int aml1216_init(void)
   //aml1216_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1216_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1216_set_bits(0x002c, 0x24, 0x24);       // David Li
-    aml1216_set_bits(0x012b, 0x20, 0x20);       // David Li
+    aml1216_set_bits(0x001c, 0x40, 0x40);       // David Li, mask ov fault of charger
+    aml1216_set_bits(0x012b, 0xe0, 0xe0);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x0c);
     aml1216_write(0x012a, 0x0f);                // David Li
@@ -1040,6 +1041,7 @@ int aml1216_init(void)
     udelay(1000);
     aml1216_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
+    aml1216_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
     dump_pmu_register();
 
     return 0;

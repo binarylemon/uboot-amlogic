@@ -512,6 +512,7 @@ int aml1218_set_dcdc_voltage(int dcdc, int voltage)
 
 void aml1218_power_off_at_24M()
 {
+    aml1218_set_bits(0x012f, 0x00, 0x10);                               // power off hdmi 5v 
     otg_status = i2c_pmu_read_b(0x0019);
     i2c_pmu_write_b(0x0019, 0x10);                                      // cut usb output
     power_off_vcc50();
@@ -580,6 +581,7 @@ void aml1218_power_on_at_24M()
     aml1218_set_bits(0x1A, 0x06, 0x06);
     i2c_pmu_write_b(0x0019, otg_status);
 
+    aml1218_set_bits(0x012f, 0x10, 0x10);                               // power off hdmi 5v 
     aml1218_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
     aml1218_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
     aml1218_set_bits(0x0047, 0x04, 0x07);                               // set DCDC3
