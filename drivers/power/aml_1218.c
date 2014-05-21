@@ -1021,7 +1021,7 @@ int aml1218_init(void)
   //aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li
-    aml1218_set_bits(0x001c, 0x40, 0x40);       // David Li, mask ov fault of charger
+    aml1218_set_bits(0x001c, 0x00, 0x40);       // David Li, mask ov fault of charger
     aml1218_set_bits(0x012b, 0xe0, 0xe0);       // David Li
     aml1218_set_bits(0x0128, 0x0e, 0x0e);
     aml1218_write(0x0129, 0x0c);

@@ -457,8 +457,9 @@ static void board_pmu_init(void)
 inline void key_init(void)
 {
     setbits_le32(P_AO_GPIO_O_EN_N, (1 << 3));                           // GPIOAO_3 as power key input
-    clrbits_le32(P_AO_RTI_PIN_MUX_REG, (1 << 9));                       // clear pinmux as gpio function 
-    setbits_le32(P_AO_RTI_PULL_UP_REG, ((1 << 3) | (1 << 19)));         // enable pull up/down of gpio3
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1 << 7)|(1 << 9)|(1 << 22)));  // clear pinmux as gpio function 
+    clrbits_le32(P_AO_RTI_PULL_UP_REG, (1 << 19));                      // disable pull up/down of gpio3, set to high-z
+    setbits_le32(P_AO_RTI_PULL_UP_REG, 0x00070007);                     // pull up for gpio[0 - 2]
 }
 
 inline int get_key(void)
@@ -516,6 +517,7 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
+    key_init();
 	return 0;
 }
 
