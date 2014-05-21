@@ -1225,6 +1225,7 @@ int optimus_burn_complete(const int choice)
             break;
 
         case OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT:
+            DWN_MSG("Pls un-plug USB line to poweroff\n");
             _isBurnComplete = 0xefe;
             break;
         case OPTIMUS_BURN_COMPLETE__QUERY:

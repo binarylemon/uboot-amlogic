@@ -371,116 +371,116 @@ int cb_4_dis_connect_intr(void)
 
 int optimus_working (const char *cmd, char* buff)
 {
-    static char cmdBuf[CMD_BUFF_SIZE] = {0};
-	int ret = 0;
-	int argc = 33;
-	char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
-	/*printf("reboot_mode [%8x, %8x]\n", P_AO_RTI_STATUS_REG1);*/
-    const char* optCmd = NULL;
+        static char cmdBuf[CMD_BUFF_SIZE] = {0};
+        int ret = 0;
+        int argc = 33;
+        char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
+        /*printf("reboot_mode [%8x, %8x]\n", P_AO_RTI_STATUS_REG1);*/
+        const char* optCmd = NULL;
 
-    memset(buff, 0, CMD_BUFF_SIZE);
-    memcpy(cmdBuf, cmd, CMD_BUFF_SIZE);
-	if ((argc = parse_line (cmdBuf, argv)) == 0)
-	{
-		strcpy(buff, "failed:no command at all");
-		printf("no command at all\n");
-		return -1;	/* no command at all */
-	}
-    optCmd = argv[0];
-	
-    if(!strcmp("low_power", optCmd))
-    {
-        ret = set_low_power_for_usb_burn(1, buff);
-    }
-    else if(strcmp(optCmd, "disk_initial") == 0)
-	{
-        unsigned  erase = argc > 1 ? simple_strtoul(argv[1], NULL, 0) : 0;
-
-        ret = optimus_storage_init(erase);
-	}
-    else if(!strcmp(optCmd, "bootloader_is_old"))
-    {
-        ret = is_tpl_loaded_from_usb();
-		if(ret)sprintf(buff, "Failed, bootloader is new\n");
-    }
-    else if(!strcmp(optCmd, "erase_bootloader"))
-    {
-        ret = optimus_erase_bootloader(buff);
-
-        if(ret)sprintf(buff, "Failed to erase bootloader\n");
-    }
-	else if(strcmp(optCmd, "write_raw_img") == 0)
-	{
-		ret = opimus_func_write_raw_img(argc, argv, buff);
-	}
-	else if(strcmp(optCmd, "read_raw_img") == 0)
-	{
-		ret = opimus_func_read_raw_img(argc, argv, buff);
-	}
-	else if(strcmp(optCmd, "simg2part") == 0)
-	{
-		ret = optimus_simg2part(argc, argv, buff);
-	}
-	else if(strcmp(optCmd, "reset") == 0)
-	{
-        close_usb_phy_clock(0);
-		optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL);
-	}
-	else if(strcmp(optCmd, "poweroff") == 0)
-	{
-		optimus_poweroff();
-	}
-	else if(strncmp(optCmd, "md", 2) == 0)
-	{
-		ret = optimus_mem_md(argc, argv, buff);
-	}
-	else if(!strcmp(optCmd, "download") || !strcmp("upload", optCmd))
-    {
-        ret = optimus_parse_download_cmd(argc, argv);
-    }
-    else if(!strcmp("key", optCmd))
-    {
-        ret = v2_key_command(argc, argv, buff);
-    }
-    else if(!strcmp("verify", optCmd))
-    {
-        ret = optimus_media_download_verify(argc, argv, buff);
-    }
-    else if(!strcmp("save_setting", optCmd))
-    {
-        ret = optimus_set_burn_complete_flag();
-    }
-    else if(!strcmp("burn_complete", optCmd))
-    {
-        unsigned choice = simple_strtoul(argv[1], NULL, 0);//0 is poweroff, 1 is reset system
-
-        if(OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT != choice) {//disconnect except OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT
-            close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
+        memset(buff, 0, CMD_BUFF_SIZE);
+        memcpy(cmdBuf, cmd, CMD_BUFF_SIZE);
+        if ((argc = parse_line (cmdBuf, argv)) == 0)
+        {
+                strcpy(buff, "failed:no command at all");
+                printf("no command at all\n");
+                return -1;	/* no command at all */
         }
-        ret = optimus_burn_complete(choice);
-    }
-	else if(strncmp(cmd,"sha1sum",(sizeof("sha1sum")-1)) == 0)
-	{
-		ret = optimus_sha1sum(argc, argv, buff);		
-	}
-	else
-	{
-        int flag = 0;
-		ret = run_command(cmd, flag);
-        DWN_MSG("ret = %d\n", ret);
-        ret = ret < 0 ? ret : 0;
-	}
+        optCmd = argv[0];
 
-    if(ret)
-    {
-        memcpy(buff, "failed:", strlen("failed:"));//use memcpy but not strcpy to not overwrite storage/key info
-    }
-    else
-    {
-        memcpy(buff, "success", strlen("success"));//use memcpy but not strcpy to not overwrite storage/key info
-    }
+        if(!strcmp("low_power", optCmd))
+        {
+                ret = set_low_power_for_usb_burn(1, buff);
+        }
+        else if(strcmp(optCmd, "disk_initial") == 0)
+        {
+                unsigned  erase = argc > 1 ? simple_strtoul(argv[1], NULL, 0) : 0;
 
-	printf("[info]%s\n",buff);
-	return ret;
+                ret = optimus_storage_init(erase);
+        }
+        else if(!strcmp(optCmd, "bootloader_is_old"))
+        {
+                ret = is_tpl_loaded_from_usb();
+                if(ret)sprintf(buff, "Failed, bootloader is new\n");
+        }
+        else if(!strcmp(optCmd, "erase_bootloader"))
+        {
+                ret = optimus_erase_bootloader(buff);
+
+                if(ret)sprintf(buff, "Failed to erase bootloader\n");
+        }
+        else if(strcmp(optCmd, "write_raw_img") == 0)
+        {
+                ret = opimus_func_write_raw_img(argc, argv, buff);
+        }
+        else if(strcmp(optCmd, "read_raw_img") == 0)
+        {
+                ret = opimus_func_read_raw_img(argc, argv, buff);
+        }
+        else if(strcmp(optCmd, "simg2part") == 0)
+        {
+                ret = optimus_simg2part(argc, argv, buff);
+        }
+        else if(strcmp(optCmd, "reset") == 0)
+        {
+                close_usb_phy_clock(0);
+                optimus_reset(OPTIMUS_BURN_COMPLETE__REBOOT_NORMAL);
+        }
+        else if(strcmp(optCmd, "poweroff") == 0)
+        {
+                optimus_poweroff();
+        }
+        else if(strncmp(optCmd, "md", 2) == 0)
+        {
+                ret = optimus_mem_md(argc, argv, buff);
+        }
+        else if(!strcmp(optCmd, "download") || !strcmp("upload", optCmd))
+        {
+                ret = optimus_parse_download_cmd(argc, argv);
+        }
+        else if(!strcmp("key", optCmd))
+        {
+                ret = v2_key_command(argc, argv, buff);
+        }
+        else if(!strcmp("verify", optCmd))
+        {
+                ret = optimus_media_download_verify(argc, argv, buff);
+        }
+        else if(!strcmp("save_setting", optCmd))
+        {
+                ret = optimus_set_burn_complete_flag();
+        }
+        else if(!strcmp("burn_complete", optCmd))
+        {
+                unsigned choice = simple_strtoul(argv[1], NULL, 0);//0 is poweroff, 1 is reset system
+
+                if(OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT != choice) {//disconnect except OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_DISCONNECT
+                        close_usb_phy_clock(0);//some platform can't poweroff but dis-connect needed by pc
+                }
+                ret = optimus_burn_complete(choice);
+        }
+        else if(strncmp(cmd,"sha1sum",(sizeof("sha1sum")-1)) == 0)
+        {
+                ret = optimus_sha1sum(argc, argv, buff);		
+        }
+        else
+        {
+                int flag = 0;
+                ret = run_command(cmd, flag);
+                DWN_MSG("ret = %d\n", ret);
+                ret = ret < 0 ? ret : 0;
+        }
+
+        if(ret)
+        {
+                memcpy(buff, "failed:", strlen("failed:"));//use memcpy but not strcpy to not overwrite storage/key info
+        }
+        else
+        {
+                memcpy(buff, "success", strlen("success"));//use memcpy but not strcpy to not overwrite storage/key info
+        }
+
+        printf("[info]%s\n",buff);
+        return ret;
 }
 

@@ -268,6 +268,7 @@
 	"storeboot="\
                 "echo Booting...; "\
                 "imgread kernel boot ${loadaddr};"\
+                "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
                 "bootm;"\
                 "run update" \
                  "\0"\
