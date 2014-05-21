@@ -56,7 +56,7 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0,0x00000048}, {7,0x10000200},}
 // lcd config 
 //*********************************************//
 //**** lcd typical timing, select by include header file ***//
-#include <amlogic/panel/ttl/CLAP070NJ02_M8B.h>
+#include <amlogic/panel/ttl/CLAP070NJ02.h>
 
 #define LCD_BITS_USER		6	/** user defined lcd bits(6 or 8, desided by hardware design; only valid when lcd_bits_option=1) */
 

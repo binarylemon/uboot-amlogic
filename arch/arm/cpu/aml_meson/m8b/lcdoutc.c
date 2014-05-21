@@ -1170,28 +1170,6 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 	
 	WRITE_LCD_REG(L_STV1_HS_ADDR,    tcon_adr->stv1_hs_addr);
 	WRITE_LCD_REG(L_STV1_HE_ADDR,    tcon_adr->stv1_he_addr);
-	
-	//WRITE_LCD_REG(L_POL_CNTL_ADDR,   ((1 << LCD_TCON_DE_SEL) | (1 << LCD_TCON_VS_SEL) | (1 << LCD_TCON_HS_SEL))); //enable tcon DE, Hsync, Vsync 
-	//WRITE_LCD_REG(L_POL_CNTL_ADDR,   (READ_LCD_REG(L_POL_CNTL_ADDR) | ((0 << LCD_DE_POL) | ((vs_pol ? 0 : 1) << LCD_VS_POL) | ((hs_pol ? 0 : 1) << LCD_HS_POL))));	//adjust hvsync pol
-	
-	//DE signal
-	WRITE_LCD_REG(L_DE_HS_ADDR,		tcon_adr->oeh_hs_addr);
-	WRITE_LCD_REG(L_DE_HE_ADDR,		tcon_adr->oeh_he_addr);
-	WRITE_LCD_REG(L_DE_VS_ADDR,		tcon_adr->oeh_vs_addr);
-	WRITE_LCD_REG(L_DE_VE_ADDR,		tcon_adr->oeh_ve_addr);
-	
-	//Hsync signal
-	WRITE_LCD_REG(L_HSYNC_HS_ADDR,	tcon_adr->sth1_hs_addr);
-	WRITE_LCD_REG(L_HSYNC_HE_ADDR,	tcon_adr->sth1_he_addr);
-	WRITE_LCD_REG(L_HSYNC_VS_ADDR,	tcon_adr->sth1_vs_addr);
-	WRITE_LCD_REG(L_HSYNC_VE_ADDR,	tcon_adr->sth1_ve_addr);
-	
-	//Vsync signal
-	WRITE_LCD_REG(L_VSYNC_HS_ADDR,	tcon_adr->stv1_hs_addr);
-	WRITE_LCD_REG(L_VSYNC_HE_ADDR,	tcon_adr->stv1_he_addr);
-	WRITE_LCD_REG(L_VSYNC_VS_ADDR,	tcon_adr->stv1_vs_addr);
-	WRITE_LCD_REG(L_VSYNC_VE_ADDR,	tcon_adr->stv1_ve_addr);
-	
 	if (vs_pol) {
 		WRITE_LCD_REG(L_STV1_VS_ADDR,    tcon_adr->stv1_vs_addr);
 		WRITE_LCD_REG(L_STV1_VE_ADDR,    tcon_adr->stv1_ve_addr);
@@ -1200,9 +1178,35 @@ static void set_tcon_ttl(Lcd_Config_t *pConf)
 		WRITE_LCD_REG(L_STV1_VS_ADDR,    tcon_adr->stv1_ve_addr);
 		WRITE_LCD_REG(L_STV1_VE_ADDR,    tcon_adr->stv1_vs_addr);
 	}
-
-    WRITE_LCD_REG(L_INV_CNT_ADDR,    tcon_adr->inv_cnt_addr);
-    WRITE_LCD_REG(L_TCON_MISC_SEL_ADDR, 	tcon_adr->tcon_misc_sel_addr);
+	
+	WRITE_LCD_REG(L_POL_CNTL_ADDR,   ((1 << LCD_TCON_DE_SEL) | (1 << LCD_TCON_VS_SEL) | (1 << LCD_TCON_HS_SEL))); //enable tcon DE, Hsync, Vsync 
+	WRITE_LCD_REG(L_POL_CNTL_ADDR,   (READ_LCD_REG(L_POL_CNTL_ADDR) | ((0 << LCD_DE_POL) | ((vs_pol ? 0 : 1) << LCD_VS_POL) | ((hs_pol ? 0 : 1) << LCD_HS_POL))));	//adjust hvsync pol
+	
+	//DE signal
+	WRITE_LCD_REG(L_DE_HS_ADDR,    tcon_adr->oeh_hs_addr);
+	WRITE_LCD_REG(L_DE_HE_ADDR,    tcon_adr->oeh_he_addr);
+	WRITE_LCD_REG(L_DE_VS_ADDR,    tcon_adr->oeh_vs_addr);
+	WRITE_LCD_REG(L_DE_VE_ADDR,    tcon_adr->oeh_ve_addr);
+	
+	WRITE_LCD_REG(L_OEV1_HS_ADDR,  tcon_adr->oeh_hs_addr);
+	WRITE_LCD_REG(L_OEV1_HE_ADDR,  tcon_adr->oeh_he_addr);
+	WRITE_LCD_REG(L_OEV1_VS_ADDR,  tcon_adr->oeh_vs_addr);
+	WRITE_LCD_REG(L_OEV1_VE_ADDR,  tcon_adr->oeh_ve_addr);
+	
+	//Hsync signal
+	WRITE_LCD_REG(L_HSYNC_HS_ADDR, tcon_adr->sth1_hs_addr);
+	WRITE_LCD_REG(L_HSYNC_HE_ADDR, tcon_adr->sth1_he_addr);
+	WRITE_LCD_REG(L_HSYNC_VS_ADDR, tcon_adr->sth1_vs_addr);
+	WRITE_LCD_REG(L_HSYNC_VE_ADDR, tcon_adr->sth1_ve_addr);
+	
+	//Vsync signal
+	WRITE_LCD_REG(L_VSYNC_HS_ADDR, tcon_adr->stv1_hs_addr);
+	WRITE_LCD_REG(L_VSYNC_HE_ADDR, tcon_adr->stv1_he_addr);
+	WRITE_LCD_REG(L_VSYNC_VS_ADDR, tcon_adr->stv1_vs_addr);
+	WRITE_LCD_REG(L_VSYNC_VE_ADDR, tcon_adr->stv1_ve_addr);
+	
+    WRITE_LCD_REG(L_INV_CNT_ADDR,       tcon_adr->inv_cnt_addr);
+    WRITE_LCD_REG(L_TCON_MISC_SEL_ADDR, tcon_adr->tcon_misc_sel_addr);
     //WRITE_LCD_REG(DUAL_PORT_CNTL_ADDR, tcon_adr->dual_port_cntl_addr);
 
     WRITE_LCD_REG(VPP_MISC, READ_LCD_REG(VPP_MISC) & ~(VPP_OUT_SATURATE));
@@ -1604,6 +1608,7 @@ static void init_phy_mipi(Lcd_Config_t *pConf)
 {
     DBG_PRINT("%s\n", __FUNCTION__);
 
+    WRITE_LCD_CBUS_REG_BITS(HHI_DSI_LVDS_EDP_CNTL1, 1, 4, 1);//swap mipi channels
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x8);//DIF_REF_CTL0
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, (0x3e << 16) | (0xa5b8 << 0));//DIF_REF_CTL2:31-16bit, DIF_REF_CTL1:15-0bit
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, (0x26e0 << 16) | (0x459 << 0));//DIF_TX_CTL1:31-16bit, DIF_TX_CTL0:15-0bit
