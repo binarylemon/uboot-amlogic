@@ -350,7 +350,8 @@
 
 #if defined(CONFIG_VLSI_EMULATOR)
    //#undef CFG_DDR3_2GB
-
+   #undef CFG_DDR_CLK
+   #define CFG_DDR_CLK    792
    #undef CONFIG_BOOTCOMMAND
    #define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
 
