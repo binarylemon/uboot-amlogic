@@ -287,9 +287,9 @@ m8_tpl_ucl_dec:
 #endif
 
 
+m8_tpl_ucl_dec:
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
-m8_tpl_ucl_dec:
 
 	//unsigned len;
     if(!rc){

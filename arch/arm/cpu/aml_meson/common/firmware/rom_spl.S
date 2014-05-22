@@ -126,7 +126,7 @@ __TEXT_BASE:
     .word TEXT_BASE
 #ifdef CONFIG_IMPROVE_UCL_DEC        
 __TEXT_BASE_UCL_DEC:
-    .word TEXT_BASE - 0x800000
+    .word UCL_TEXT_BASE
 #endif    
 __TEXT_SIZE:
 #ifdef CONFIG_BOARD_SIZE_LIMIT
