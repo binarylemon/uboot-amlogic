@@ -211,12 +211,13 @@
 		"bmp scale ${bootup_offset} ${loadaddr};"\
 		"bmp display ${loadaddr}\0"\
 	"preboot="\
+		"run upgrade_check;" \
 		"run prepare;"\
 		"run detect_storage;get_rebootmode; clear_rebootmode;"\
 		"echo reboot_mode=${reboot_mode}; run factoryreset_wipe_data;"\
 		"if test ${reboot_mode} = usb_burning;"\
 			"then tiny_usbtool 20000; fi;"\
-		"run nand_key_burning; run upgrade_check; run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
+		"run nand_key_burning; run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
 	"nandargs="\
 	        "run cvbscheck;"\
 	        "run vdacswitchconfig;"\
