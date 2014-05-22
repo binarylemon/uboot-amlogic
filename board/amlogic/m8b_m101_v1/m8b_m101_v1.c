@@ -176,7 +176,7 @@ static int  sdio_detect(unsigned port)
             setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
             ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
             	
-			if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){ //sd_d3 low, debug board in
+			if((readl(P_PERIPHS_PIN_MUX_8)&(3<<9))){ //if uart pinmux set, debug board in
 				if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<22))){
 					printf("sdio debug board detected, sd card with 1bit mode\n");
 		 			sdio_debug_1bit_flag = 1;
