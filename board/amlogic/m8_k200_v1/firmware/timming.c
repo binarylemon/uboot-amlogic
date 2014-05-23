@@ -417,6 +417,10 @@ static struct ddr_set __ddr_setting={
 	#define	M8_SYS_PLL_N  (1)
 	#define	M8_SYS_PLL_M  (50)
 	#define M8_SYS_PLL_OD (0)
+#elif (1440 == CONFIG_SYS_CPU_CLK)
+	#define	M8_SYS_PLL_N  (1)
+	#define	M8_SYS_PLL_M  (60)
+	#define M8_SYS_PLL_OD (0)
 #else
 	#error "CONFIG_SYS_CPU_CLK is not set! Please set M8 CPU clock first!\n"
 #endif
