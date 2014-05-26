@@ -43,6 +43,7 @@ static const char *video_mode_type_table[] = {
     "un-support type",
 };
 
+static DSI_Phy_t dsi_phy_config;
 static DSI_Config_t *dsi_config = NULL;
 static unsigned char dsi_init_on_table[DSI_INIT_ON_MAX]={0xff,0xff};
 static unsigned char dsi_init_off_table[DSI_INIT_OFF_MAX]={0xff,0xff};
@@ -335,20 +336,31 @@ static unsigned int generic_read_packet_0_para(unsigned char data_type, unsigned
 // ----------------------------------------------------------------------------
 //                           Function: generic_write_short_packet
 // Generic Write Short Packet with Generic Interface
-// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
-//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_GEN_SHORT_WR_1, DT_GEN_SHORT_WR_2,
 // ----------------------------------------------------------------------------
 static void dsi_generic_write_short_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
 {
-    unsigned int d_command, d_para;
+    unsigned int d_para[2];
 
     vc_id &= 0x3;
-    data_type &= 0x3f;
-    d_command = ((unsigned int)payload[1]) & 0xff;
-    d_para = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+    switch (data_type) {
+        case DT_GEN_SHORT_WR_0:
+            d_para[0] = 0;
+            d_para[1] = 0;
+            break;
+        case DT_GEN_SHORT_WR_1:
+            d_para[0] = ((unsigned int)payload[1]) & 0xff;
+            d_para[1] = 0;
+            break;
+        case DT_GEN_SHORT_WR_2:
+        default:
+            d_para[0] = ((unsigned int)payload[1]) & 0xff;
+            d_para[1] = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+            break;
+    }
 
-    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para << BIT_GEN_WC_MSBYTE)       |
-                                            (d_command << BIT_GEN_WC_LSBYTE)     |
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para[1] << BIT_GEN_WC_MSBYTE)      |
+                                            (d_para[0] << BIT_GEN_WC_LSBYTE)      |
                                             (((unsigned int)vc_id) << BIT_GEN_VC) |
                                             (((unsigned int)data_type) << BIT_GEN_DT)));
     if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
@@ -360,11 +372,36 @@ static void dsi_generic_write_short_packet(unsigned char data_type, unsigned cha
 }
 
 // ----------------------------------------------------------------------------
-//                           Function: generic_long_write_packet
-// Generic Long Write Packet with Generic Interface
+//                           Function: dcs_write_short_packet
+// DCS Write Short Packet with Generic Interface
+// Supported Data Type: DT_DCS_SHORT_WR_0, DT_DCS_SHORT_WR_1,
+// ----------------------------------------------------------------------------
+static void dsi_dcs_write_short_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
+{
+    unsigned int d_command, d_para;
+
+    vc_id &= 0x3;
+    d_command = ((unsigned int)payload[1]) & 0xff;
+    d_para = (pld_count == 0) ? 0 : (((unsigned int)payload[3]) & 0xff);
+
+    generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((d_para << BIT_GEN_WC_MSBYTE)         |
+                                            (d_command << BIT_GEN_WC_LSBYTE)      |
+                                            (((unsigned int)vc_id) << BIT_GEN_VC) |
+                                            (((unsigned int)data_type) << BIT_GEN_DT)));
+    if( req_ack == MIPI_DSI_DCS_REQ_ACK ) {
+        wait_bta_ack();
+    }
+    else if( req_ack == MIPI_DSI_DCS_NO_ACK ) {
+        wait_cmd_fifo_empty();
+    }
+}
+
+// ----------------------------------------------------------------------------
+//                           Function: dsi_write_long_packet
+// Write Long Packet with Generic Interface
 // Supported Data Type: DT_GEN_LONG_WR, DT_DCS_LONG_WR
 // ----------------------------------------------------------------------------
-static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
+static void dsi_write_long_packet(unsigned char data_type, unsigned char vc_id, unsigned char* payload, unsigned short pld_count, unsigned int req_ack)
 {
     unsigned int d_command, payload_data=0, header_data;
     unsigned int cmd_status;
@@ -372,7 +409,6 @@ static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char
     int j;
 
     vc_id &= 0x3;
-    data_type &= 0x3f;
     d_command = ((unsigned int)payload[1]) & 0xff;
     pld_count = (pld_count + 1) & 0xffff;//include command
     d_start_index = 3;//payload[3] start (payload[0]: data_type, payload[1]: command, payload[2]: para_num)
@@ -426,14 +462,14 @@ static void dsi_generic_write_long_packet(unsigned char data_type, unsigned char
 }
 
 // ----------------------------------------------------------------------------
-//                           Function: dsi_generic_write_cmd
+//                           Function: dsi_write_cmd
 // Generic Write Command
-// Supported Data Type: DT_GEN_SHORT_WR_0, DT_DCS_SHORT_WR_0,
-//                      DT_GEN_SHORT_WR_1, DT_DCS_SHORT_WR_1,
+// Supported Data Type: DT_GEN_SHORT_WR_0, DT_GEN_SHORT_WR_1, DT_GEN_SHORT_WR_2,
+//                      DT_DCS_SHORT_WR_0, DT_DCS_SHORT_WR_1,
 //                      DT_GEN_LONG_WR, DT_DCS_LONG_WR,
 //                      DT_SET_MAX_RPS
 // ----------------------------------------------------------------------------
-void dsi_generic_write_cmd(unsigned char* payload)
+void dsi_write_cmd(unsigned char* payload)
 {
     int i=0, j=0;
     unsigned char vc_id = MIPI_DSI_VIRTUAL_CHAN_ID;
@@ -454,17 +490,18 @@ void dsi_generic_write_cmd(unsigned char* payload)
         else {
             j = 3 + payload[i+2]; //payload[i+2] is parameter num
             switch (payload[i]) {//analysis data_type
-                case DT_DCS_SHORT_WR_0:
                 case DT_GEN_SHORT_WR_0:
-                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 0, req_ack);
-                    break;
-                case DT_DCS_SHORT_WR_1:
                 case DT_GEN_SHORT_WR_1:
-                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], 1, req_ack);
+                case DT_GEN_SHORT_WR_2:
+                    dsi_generic_write_short_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
+                    break;
+                case DT_DCS_SHORT_WR_0:
+                case DT_DCS_SHORT_WR_1:
+                    dsi_dcs_write_short_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
                     break;
                 case DT_DCS_LONG_WR:
                 case DT_GEN_LONG_WR:
-                    dsi_generic_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
+                    dsi_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
                     break;
                 case DT_SET_MAX_RPS:
                     printf("to do data_type: 0x%2x\n", payload[i]);
@@ -487,7 +524,53 @@ void dsi_generic_write_cmd(unsigned char* payload)
     }
 }
 
-static void dsi_phy_init(unsigned char lane_num)
+static void set_dsi_phy_config(DSI_Phy_t *dphy, unsigned dsi_ui)
+{
+    unsigned t_lane_byte, t_ui;
+
+    t_ui = (1000000 * 100) / (dsi_ui / 1000); //0.01ns*100
+    t_lane_byte = t_ui * 8;
+
+    dphy->lp_tesc = ((DPHY_TIME_LP_TESC(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_lpx = ((DPHY_TIME_LP_LPX(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_sure = ((DPHY_TIME_LP_TA_SURE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_go = ((DPHY_TIME_LP_TA_GO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_get = ((DPHY_TIME_LP_TA_GETX(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_exit = ((DPHY_TIME_HS_EXIT(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_trail = ((DPHY_TIME_HS_TRAIL(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_prepare = ((DPHY_TIME_HS_PREPARE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_zero = ((DPHY_TIME_HS_ZERO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_trail = ((DPHY_TIME_CLK_TRAIL(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_post = ((DPHY_TIME_CLK_POST(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_prepare = ((DPHY_TIME_CLK_PREPARE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_zero = ((DPHY_TIME_CLK_ZERO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_pre = ((DPHY_TIME_CLK_PRE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->init = (DPHY_TIME_INIT(t_ui) + t_lane_byte - 1) / t_lane_byte;
+    dphy->wakeup = (DPHY_TIME_WAKEUP(t_ui) + t_lane_byte - 1) / t_lane_byte;
+
+    DPRINT("lp_tesc = 0x%02x\n"
+            "lp_lpx = 0x%02x\n"
+            "lp_ta_sure = 0x%02x\n"
+            "lp_ta_go = 0x%02x\n"
+            "lp_ta_get = 0x%02x\n"
+            "hs_exit = 0x%02x\n"
+            "hs_trail = 0x%02x\n"
+            "hs_zero = 0x%02x\n"
+            "hs_prepare = 0x%02x\n"
+            "clk_trail = 0x%02x\n"
+            "clk_post = 0x%02x\n"
+            "clk_zero = 0x%02x\n"
+            "clk_prepare = 0x%02x\n"
+            "clk_pre = 0x%02x\n"
+            "init = 0x%02x\n"
+            "wakeup = 0x%02x\n",
+            dphy->lp_tesc, dphy->lp_lpx, dphy->lp_ta_sure, dphy->lp_ta_go, dphy->lp_ta_get,
+            dphy->hs_exit, dphy->hs_trail, dphy->hs_zero, dphy->hs_prepare,
+            dphy->clk_trail, dphy->clk_post, dphy->clk_zero, dphy->clk_prepare, dphy->clk_pre,
+            dphy->init, dphy->wakeup);
+}
+
+static void dsi_phy_init(DSI_Phy_t *dphy, unsigned char lane_num)
 {
     // enable phy clock.
     WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1);          //enable DSI top clock.
@@ -498,33 +581,18 @@ static void dsi_phy_init(unsigned char lane_num)
                     (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
                     (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
                     (0 << 12));    //enable the byte clock generateion.
-
-    WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1 |          //enable DSI top clock.
-                    (1 << 7 )  |   //enable pll clock which connected to  DDR clock path
-                    (1 << 8 )  |   //enable the clock divider counter
-                    (1 << 9 )  |   //enable the divider clock out
-                    (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
-                    (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
-                    (0 << 12));    //enable the byte clock generateion.
-
-    WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1 |          //enable DSI top clock.
-                    (1 << 7 )  |   //enable pll clock which connected to  DDR clock path
-                    (1 << 8 )  |   //enable the clock divider counter
-                    (1 << 9 )  |   //enable the divider clock out
-                    (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
-                    (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
-                    (1 << 12));    //enable the byte clock generateion.
-
+    WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 9, 1); //enable the divider clock out
+    WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 12, 1); //enable the byte clock generateion.
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 31, 1);
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  0, 31, 1);
 
-    WRITE_DSI_REG(MIPI_DSI_CLK_TIM,  0x05210f08);//0x03211c08
-    WRITE_DSI_REG(MIPI_DSI_CLK_TIM1, 0x8);//??
-    WRITE_DSI_REG(MIPI_DSI_HS_TIM, 0x060f090d);//0x050f090d
-    WRITE_DSI_REG(MIPI_DSI_LP_TIM, 0x4a370e0e);
+    WRITE_DSI_REG(MIPI_DSI_CLK_TIM,  (dphy->clk_trail | (dphy->clk_post << 8) | (dphy->clk_zero << 16) | (dphy->clk_prepare << 24)));//0x05210f08);//0x03211c08
+    WRITE_DSI_REG(MIPI_DSI_CLK_TIM1, dphy->clk_pre);//??
+    WRITE_DSI_REG(MIPI_DSI_HS_TIM, (dphy->hs_exit | (dphy->hs_trail << 8) | (dphy->hs_zero << 16) | (dphy->hs_prepare << 24)));//0x050f090d
+    WRITE_DSI_REG(MIPI_DSI_LP_TIM, (dphy->lp_lpx | (dphy->lp_ta_sure << 8) | (dphy->lp_ta_go << 16) | (dphy->lp_ta_get << 24)));//0x4a370e0e
     WRITE_DSI_REG(MIPI_DSI_ANA_UP_TIM, 0x0100); //?? //some number to reduce sim time.
-    WRITE_DSI_REG(MIPI_DSI_INIT_TIM, 0x00d4); //0xe20   //30d4 -> d4 to reduce sim time.
-    WRITE_DSI_REG(MIPI_DSI_WAKEUP_TIM, 0x48); //0x8d40  //1E848-> 48 to reduct sim time.
+    WRITE_DSI_REG(MIPI_DSI_INIT_TIM, dphy->init); //0xe20   //30d4 -> d4 to reduce sim time.
+    WRITE_DSI_REG(MIPI_DSI_WAKEUP_TIM, dphy->wakeup); //0x8d40  //1E848-> 48 to reduct sim time.
     WRITE_DSI_REG(MIPI_DSI_LPOK_TIM,  0x7C);   //wait for the LP analog ready.
     WRITE_DSI_REG(MIPI_DSI_ULPS_CHECK,  0x927C);   //1/3 of the tWAKEUP.
     WRITE_DSI_REG(MIPI_DSI_LP_WCHDOG,  0x1000);   // phy TURN watch dog.
@@ -567,7 +635,7 @@ static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
     WRITE_LCD_REG(MIPI_DSI_DWC_PHY_RSTZ_OS, 0xf);
 
     //Analog
-    dsi_phy_init(pConf->lcd_control.mipi_config->lane_num);
+    dsi_phy_init(&dsi_phy_config, pConf->lcd_control.mipi_config->lane_num);
 
     // Check the phylock/stopstateclklane to decide if the DPHY is ready
     check_phy_status();
@@ -699,8 +767,8 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // 2.3   Configure Signal polarity
     WRITE_LCD_REG( MIPI_DSI_DWC_DPI_CFG_POL_OS, (0x0 << BIT_COLORM_ACTIVE_LOW) |
                         (0x0 << BIT_SHUTD_ACTIVE_LOW)  |
-                        (0x0 << BIT_HSYNC_ACTIVE_LOW)  |
-                        (0x0 << BIT_VSYNC_ACTIVE_LOW)  |
+                        ((((p->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1) ? 0 : 1) << BIT_HSYNC_ACTIVE_LOW) |
+                        ((((p->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1) ? 0 : 1) << BIT_VSYNC_ACTIVE_LOW) |
                         (0x0 << BIT_DATAEN_ACTIVE_LOW));
 
     if (operation_mode == OPERATION_VIDEO_MODE) {
@@ -754,7 +822,7 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // -----------------------------------------------------
 
     // Inner clock divider settings
-    WRITE_LCD_REG( MIPI_DSI_DWC_CLKMGR_CFG_OS, (0x1 << BIT_TO_CLK_DIV) | (0x1e << BIT_TX_ESC_CLK_DIV) );
+    WRITE_LCD_REG( MIPI_DSI_DWC_CLKMGR_CFG_OS, (0x1 << BIT_TO_CLK_DIV) | (dsi_phy_config.lp_tesc << BIT_TX_ESC_CLK_DIV) );
     // Packet header settings
     WRITE_LCD_REG( MIPI_DSI_DWC_PCKHDL_CFG_OS, (1 << BIT_CRC_RX_EN) |
                         (1 << BIT_ECC_RX_EN) |
@@ -848,7 +916,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_on_cmd_8) {
-                dsi_generic_write_cmd(lcd_extern_driver->init_on_cmd_8);
+                dsi_write_cmd(lcd_extern_driver->init_on_cmd_8);
                 printf("[extern]%s dsi init on\n", lcd_extern_driver->name);
             }
             init_flag++;
@@ -857,13 +925,13 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
     }
 
     if (pConf->lcd_control.mipi_config->dsi_init_on) {
-        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
+        dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
         init_flag++;
         DPRINT("dsi init on\n");
     }
 
     if (init_flag == 0) {
-        dsi_generic_write_cmd(dsi_init_on_table_dft);
+        dsi_write_cmd(dsi_init_on_table_dft);
         printf("[warning]: not init for mipi-dsi, use default command\n");
     }
 
@@ -887,7 +955,7 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
 #endif
 
     if (pConf->lcd_control.mipi_config->dsi_init_off) {
-        dsi_generic_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
+        dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
         DPRINT("dsi init off\n");
     }
 
@@ -899,7 +967,7 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
         }
         else {
             if (lcd_extern_driver->init_off_cmd_8) {
-                dsi_generic_write_cmd(lcd_extern_driver->init_off_cmd_8);
+                dsi_write_cmd(lcd_extern_driver->init_off_cmd_8);
                 printf("[extern]%s dsi init off\n", lcd_extern_driver->name);
             }
         }
@@ -923,10 +991,12 @@ void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
         cfg->bit_rate_min *= 1000;
         cfg->bit_rate_max *= 1000;
     }
-    // if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
-        // cfg->bit_rate_max = MIPI_PHY_MAX_CLK_IN;
-        // printf("mipi dsi bit_rate_max is out of support, adjust to %dMHz\n", (MIPI_PHY_MAX_CLK_IN / 1000));
-    // }
+    if (cfg->bit_rate_max < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) {
+        printf("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
+    }
+    if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
+        printf("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
+    }
 
     cfg->video_mode_type = MIPI_DSI_VIDEO_MODE_TYPE;
     if(pConf->lcd_basic.lcd_bits == 6){
@@ -988,6 +1058,8 @@ void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
     cfg->vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
     cfg->vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
     cfg->vact = pConf->lcd_basic.v_active;
+
+    set_dsi_phy_config(&dsi_phy_config, cfg->bit_rate);
 }
 
 void set_mipi_dsi_control(Lcd_Config_t *pConf)
