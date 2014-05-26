@@ -25,14 +25,24 @@ static void delay_us(unsigned long us)
 	#define hx_serial_put_hex 
 #endif
 
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT
+	#define pctl_serial_puts
+	#define pctl_serial_put_hex
+	#define pctl_serial_put_dec
+#else
+	#define pctl_serial_puts serial_puts
+	#define pctl_serial_put_hex serial_put_hex
+	#define pctl_serial_put_dec serial_put_dec
+#endif
+
 #define DDR_INIT_WHILE_LOOP_MAX 1000	//all while loop share this number
 #define DDR_INIT_WHILE_LOOP(counter) \
 		__udelay(1);	\
 		counter++; \
 		if(counter > DDR_INIT_WHILE_LOOP_MAX){ \
-			serial_puts("While loop "); \
-			serial_put_dec(DDR_INIT_WHILE_LOOP_MAX); \
-			serial_puts("times, error...\n"); \
+			pctl_serial_puts("While loop "); \
+			pctl_serial_put_dec(DDR_INIT_WHILE_LOOP_MAX); \
+			pctl_serial_puts("times, error...\n"); \
 			counter = 0;	\
 			return -2;	\
 		}	\
@@ -44,9 +54,9 @@ static void delay_us(unsigned long us)
 		__udelay(1);	\
 		counter++; \
 		if(counter > DDR_INIT_ERR_LOOP_MAX){ \
-			serial_puts("Error loop "); \
-			serial_put_dec(DDR_INIT_ERR_LOOP_MAX); \
-			serial_puts("times, error...\n"); \
+			pctl_serial_puts("Error loop "); \
+			pctl_serial_put_dec(DDR_INIT_ERR_LOOP_MAX); \
+			pctl_serial_puts("times, error...\n"); \
 			counter = 0;	\
 			return -1;	\
 		}
@@ -379,9 +389,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 		ddr_udelay(10);		
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_ZCERR)
 		{
-			serial_puts("Aml log : DDR0 - PUB_PGSR0_ZCERR with [");
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-			serial_puts("] retry...\n");
+			pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_ZCERR with [");
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
 			DDR_INIT_ERROR_LOOP(loop_err_count);
 			goto pub_init_ddr0;
 		}
@@ -418,9 +428,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 		//ddr_udelay(10);		
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_WLERR)
 		{
-			serial_puts("Aml log : DDR0 - PUB_PGSR0_WLERR with [");
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-			serial_puts("] retry...\n");
+			pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_WLERR with [");
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
 			DDR_INIT_ERROR_LOOP(loop_err_count);
 			goto pub_init_ddr0;
 		}
@@ -446,9 +456,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 		//ddr_udelay(10);		
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_QSGERR)
 		{
-			serial_puts("Aml log : DDR0 - PUB_PGSR0_QSGERR with [");	
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-			serial_puts("] retry...\n");
+			pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_QSGERR with [");	
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
 			DDR_INIT_ERROR_LOOP(loop_err_count);
 			goto pub_init_ddr0;
 		}
@@ -469,9 +479,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 		//ddr_udelay(10);		
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_WLAERR)
 		{
-			serial_puts("Aml log : DDR0 - PUB_PGSR0_WLAERR with [");	
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-			serial_puts("] retry...\n");
+			pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_WLAERR with [");	
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
 			DDR_INIT_ERROR_LOOP(loop_err_count);
 			goto pub_init_ddr0;
 		}
@@ -491,9 +501,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 		ddr_udelay(1);		
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_DTERR)
 		{		
-		    serial_puts("Aml log : DDR0 - PUB_PGSR0_DTERR with [");	
-			serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
-			serial_puts("] retry...\n");
+		    pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_DTERR with [");	
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
 		    goto pub_init_ddr0;
 		}
 		DDR_INIT_WHILE_LOOP(loop_whi_count);
@@ -515,9 +525,9 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 	if (( (nTempVal >> 20) & 0xfff ) != 0xC00 )
 #endif
     {
-		serial_puts("Aml log : DDR0 - PUB init fail with PGSR0 : 0x");
-		serial_put_hex(nTempVal,32);
-		serial_puts("Aml log : Try again with MMC reset...\n\n");
+		pctl_serial_puts("Aml log : DDR0 - PUB init fail with PGSR0 : 0x");
+		pctl_serial_put_hex(nTempVal,32);
+		pctl_serial_puts("Aml log : Try again with MMC reset...\n\n");
 		DDR_INIT_ERROR_LOOP(loop_err_count);
 		goto mmc_init_all;
     }

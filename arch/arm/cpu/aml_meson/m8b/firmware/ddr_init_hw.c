@@ -6,7 +6,32 @@ void init_dmc(struct ddr_set * timing_set)
 	writel(0x20109a27, P_DMC_REFR_CTRL2);
 	writel(0x80389d, P_DMC_REFR_CTRL1);
 
-	writel(timing_set->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);		
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT
+	//enable pctl clock
+	writel(readl(P_DDR0_CLK_CTRL) | 0x1, P_DDR0_CLK_CTRL);
+	__udelay(10);
+	//re-init DMC reg
+	if(cfg_ddr_mode > CFG_DDR_32BIT)
+		timing_set->t_mmc_ddr_ctrl = (timing_set->t_mmc_ddr_ctrl & (~(0x8080))) | (1<<15) | (1<<7);
+	else
+		timing_set->t_mmc_ddr_ctrl = (timing_set->t_mmc_ddr_ctrl & (~(0x8080))) | (0<<15) | (0<<7);
+	writel(timing_set->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);
+	//re-init DT address
+	int mem_mode = (cfg_ddr_mode > CFG_DDR_32BIT) ? (1) : (0);
+	timing_set->t_pub0_dtar	= ((0x0 + (M8BABY_DDR_DTAR_DTCOL_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,mem_mode)))|\
+		((M8BABY_DDR_DTAR_DTROW_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,mem_mode)) << 12)|\
+		((M8BABY_DDR_DTAR_BANK_GET(CONFIG_M8B_RANK0_DTAR_ADDR,CONFIG_DDR_ROW_BITS,CONFIG_DDR_COL_BITS,CONFIG_M8B_DDR_BANK_SET,mem_mode)) << 28));
+	writel((0x0  + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR0);
+	writel((0x08 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR1);
+	writel((0x10 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR2);
+	writel((0x18 + timing_set->t_pub0_dtar), P_DDR0_PUB_DTAR3);
+	__udelay(10);
+	//disable pctl clock
+	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);
+	__udelay(1);
+#else
+	writel(timing_set->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);
+#endif
 
 	writel(0xffff0000, DMC_SEC_RANGE0_CTRL);
 	writel(0xffffffff, DMC_SEC_RANGE1_CTRL);
@@ -37,7 +62,7 @@ int ddr_init_hw(struct ddr_set * timing_set)
 
 	if(ret)
 	{
-#ifdef CFG_DDR_MODE_AUTO_DETECT
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT
 		serial_puts("PUB init fail!\n");
 		return -1;
 #else

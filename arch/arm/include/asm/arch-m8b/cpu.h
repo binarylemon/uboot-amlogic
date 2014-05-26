@@ -12,10 +12,11 @@
 #endif
 //U boot code control
 
-//DDR mode
-#define CFG_DDR_32BIT			0
-#define CFG_DDR_16BIT_LANE02	1	//DDR lane0+lane2
-#define CFG_DDR_16BIT_LANE01	2	//DDR lane0+lane1
+//DDR mode. Once considering this value stored in efuse, 0=NotSet is necessary
+#define CFG_DDR_NOT_SET			0
+#define CFG_DDR_32BIT			1
+#define CFG_DDR_16BIT_LANE02	2	//DDR lane0+lane2
+#define CFG_DDR_16BIT_LANE01	3	//DDR lane0+lane1
 #define CFG_DDR_MODE_STO_ADDR	0	//2 //2 bits, store in efuse etc..
 #define CFG_DDR_MODE_STO_OFFSET	0	//6	//offset of these 2 bits
 
@@ -66,7 +67,7 @@
   #define CONFIG_M8B_DDR_BANK_SET (CONFIG_M8B_DDR_BANK_SET_S12)
 #endif
 
-#if (CFG_DDR_MODE)	//not 32bit mode
+#if (CFG_DDR_MODE > CFG_DDR_32BIT)	//not 32bit mode
 	#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_16BIT)
 #else
 	#define CONFIG_M8B_DDR_BIT_MODE_SET (CONFIG_M8B_DDR_BIT_MODE_32BIT)
@@ -115,11 +116,11 @@
 */
 
 #define M8BABY_GET_DT_ADDR(dtar, dmc) \
-	((((dtar >> 28) & 0x7) & ((((dmc >> 5) & 0x3)&1)?3:1)) << (((((dmc >> 5) & 0x3)&2) ? 6 : ((dmc & 0x3) + 8))+(2-((dmc >> 7) & 0x1)))) | \
-	((((((dtar >> 28) & 0x7) >> ((((dmc >> 5) & 0x3) & 1)+1))) & ((((dmc >> 5) & 0x3)&1) ? 1 : 3)) << ((((dmc >> 2) & 0x3) ? (((dmc >> 2) & 0x3)+12) : (16))+((dmc & 0x3) + 8)+(3-((dmc >> 7) & 0x1))+(((dmc >> 5) & 0x3)&1))) | \
-	((((dtar) & 0xfff) & ((1<< (((((dmc >> 5) & 0x3)) & 2) ? 6 : (((dmc & 0x3) + 8))))-1)) << (2-((dmc >> 7) & 0x1))) | \
-	(((((dmc >> 5) & 0x3)) & 2) ? (((((dtar) & 0xfff) >> 6) & ((1<<((((dmc & 0x3) + 8))-6))-1)) << (((((dmc >> 5) & 0x3)) & 1)+(9-((dmc >> 7) & 0x1)))):(0)) | \
-	(((dtar >> 12) & 0xffff) << (((dmc & 0x3) + 8)+((((dmc >> 5) & 0x3)&1)+(3-((dmc >> 7) & 0x1)))))
+	(((((dtar) >> 28) & 0x7) & (((((dmc) >> 5) & 0x3)&1)?3:1)) << ((((((dmc) >> 5) & 0x3)&2) ? 6 : (((dmc) & 0x3) + 8))+(2-(((dmc) >> 7) & 0x1)))) | \
+	(((((((dtar) >> 28) & 0x7) >> (((((dmc) >> 5) & 0x3) & 1)+1))) & (((((dmc) >> 5) & 0x3)&1) ? 1 : 3)) << (((((dmc) >> 2) & 0x3) ? ((((dmc) >> 2) & 0x3)+12) : (16))+(((dmc) & 0x3) + 8)+(3-(((dmc) >> 7) & 0x1))+((((dmc) >> 5) & 0x3)&1))) | \
+	(((((dtar)) & 0xfff) & ((1<< ((((((dmc) >> 5) & 0x3)) & 2) ? 6 : ((((dmc) & 0x3) + 8))))-1)) << (2-(((dmc) >> 7) & 0x1))) | \
+	((((((dmc) >> 5) & 0x3)) & 2) ? ((((((dtar)) & 0xfff) >> 6) & ((1<<(((((dmc) & 0x3) + 8))-6))-1)) << ((((((dmc) >> 5) & 0x3)) & 1)+(9-(((dmc) >> 7) & 0x1)))):(0)) | \
+	((((dtar) >> 12) & 0xffff) << ((((dmc) & 0x3) + 8)+(((((dmc) >> 5) & 0x3)&1)+(3-(((dmc) >> 7) & 0x1)))))
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
