@@ -415,8 +415,8 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 name = argv[2];
                 dev = find_dev_num_by_partition_name (name);
                 addr = (void *)simple_strtoul(argv[3], NULL, 16);
-                size = simple_strtoul(argv[5], NULL, 16);
-                offset  = simple_strtoul(argv[4], NULL, 16);
+                size = simple_strtoull(argv[5], NULL, 16);
+                offset  = simple_strtoull(argv[4], NULL, 16);
                 // printf("offset %llx size %llx\n",offset,size);
                 flag = 1;
                 if((strcmp(argv[2], "card") == 0)){
@@ -425,8 +425,8 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             }else{
                 dev = simple_strtoul(argv[2], NULL, 10);
                 addr = (void *)simple_strtoul(argv[3], NULL, 16);
-                cnt = simple_strtoul(argv[5], NULL, 16);
-                blk = simple_strtoul(argv[4], NULL, 16);
+                cnt = simple_strtoull(argv[5], NULL, 16);
+                blk = simple_strtoull(argv[4], NULL, 16);
             }
             if(dev < 0){
 				printf("Cannot find dev.\n");
@@ -505,8 +505,8 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				name = argv[2];
 				dev = find_dev_num_by_partition_name (name);
 				addr = (void *)simple_strtoul(argv[3], NULL, 16);
-				offset  = simple_strtoul(argv[4], NULL, 16);
-				size = simple_strtoul(argv[5], NULL, 16);
+				offset  = simple_strtoull(argv[4], NULL, 16);
+				size = simple_strtoull(argv[5], NULL, 16);
 				flag = 1;
 				if((strcmp(argv[2], "card") == 0)){
 					flag = 2;
@@ -514,8 +514,8 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			}else{
 				dev = simple_strtoul(argv[2], NULL, 10);
 				addr = (void *)simple_strtoul(argv[3], NULL, 16);
-				blk = simple_strtoul(argv[4], NULL, 16);
-				cnt = simple_strtoul(argv[5], NULL, 16);	
+				blk = simple_strtoull(argv[4], NULL, 16);
+				cnt = simple_strtoull(argv[5], NULL, 16);	
 			}
 			if(dev < 0){
 				printf("Cannot find dev.\n");
@@ -591,16 +591,16 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			if(isstring(argv[2])){
 				name = argv[2];
 				dev = find_dev_num_by_partition_name (name);				
-				offset_addr = simple_strtoul(argv[3], NULL, 16);
-				size = simple_strtoul(argv[4], NULL, 16);				
+				offset_addr = simple_strtoull(argv[3], NULL, 16);
+				size = simple_strtoull(argv[4], NULL, 16);				
 				flag = 1;
 				if((strcmp(argv[2], "card") == 0)){
 					flag = 2;
 				}
 			}else if(isdigit(argv[2][0])){
 				dev = simple_strtoul(argv[2], NULL, 10);
-				blk = simple_strtoul(argv[3], NULL, 16);
-				cnt = simple_strtoul(argv[4], NULL, 16);
+				blk = simple_strtoull(argv[3], NULL, 16);
+				cnt = simple_strtoull(argv[4], NULL, 16);
 			}
 			
 			if(dev < 0){
