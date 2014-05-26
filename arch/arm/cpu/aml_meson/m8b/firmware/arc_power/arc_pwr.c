@@ -158,10 +158,13 @@ static void cpu_off()
 	writel(readl(P_AO_RTI_PWR_A9_MEM_PD1) | 0xf, P_AO_RTI_PWR_A9_MEM_PD1);
 	PWR_A9_MEM_PD[0] = readl(P_AO_RTI_PWR_A9_MEM_PD0);
 	writel(readl(P_AO_RTI_PWR_A9_MEM_PD0) | (0x3ffff << 0), P_AO_RTI_PWR_A9_MEM_PD0);
+
+	writel(readl(P_AO_RTI_PWR_A9_CNTL1) | (0x3 << 2),P_AO_RTI_PWR_A9_CNTL1);
 }
 
 void restart_arm()
 {
+	writel(readl(P_AO_RTI_PWR_A9_CNTL1) & (~(0x3 << 2)),P_AO_RTI_PWR_A9_CNTL1);
 
 	writel(PWR_A9_MEM_PD[0], P_AO_RTI_PWR_A9_MEM_PD0);
 	writel(PWR_A9_MEM_PD[1], P_AO_RTI_PWR_A9_MEM_PD1);
