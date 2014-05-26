@@ -15,9 +15,7 @@ int cfg_ddr_mode = CFG_DDR_MODE;
 
 #include "ddr_init_hw.c"
 #include "ddr_init_pctl.c"
-#ifdef CFG_DDR_MODE_AUTO_DETECT
 #include "ddr_auto_detect.c"
-#endif
 
 void set_ddr_clock(struct ddr_set * timing_reg)
 {
@@ -117,7 +115,7 @@ addr_start:
 
 #define PL310_ST_ADDR	 (volatile unsigned *)0xc4200c00
 #define PL310_END_ADDR	(volatile unsigned *)0xc4200c04
-static inline unsigned lowlevel_ddr(unsigned tag,struct ddr_set * timing_reg)
+static inline unsigned ddr_init(struct ddr_set * timing_reg)
 {
 	int result;
 
@@ -178,7 +176,6 @@ static inline unsigned lowlevel_mem_test_addr(unsigned tag,struct ddr_set * timi
 }
 
 static unsigned ( * mem_test[])(unsigned tag,struct ddr_set * timing_reg)={
-	lowlevel_ddr,
 	lowlevel_mem_test_addr,
 	lowlevel_mem_test_data,
 #ifdef CONFIG_ENABLE_MEM_DEVICE_TEST
@@ -188,7 +185,7 @@ static unsigned ( * mem_test[])(unsigned tag,struct ddr_set * timing_reg)={
 
 #define MEM_DEVICE_TEST_ITEMS_BASE (sizeof(mem_test)/sizeof(mem_test[0]))
 
-unsigned ddr_init(int arg)
+unsigned ddr_test(int arg)
 {
 	int i; //,j;
 	unsigned por_cfg=1;
@@ -216,34 +213,40 @@ unsigned ddr_init(int arg)
 
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
 {
-#define DDR_INIT_START  (1)
-#define DDR_TEST_ADDR   (1<<1)
-#define DDR_TEST_DATA   (1<<2)
-#define DDR_TEST_DEVICE (1<<3)
-
+#define DDR_INIT_START  (0)
+#define DDR_TEST_ADDR   (1<<0)
+#define DDR_TEST_DATA   (1<<1)
+#define DDR_TEST_DEVICE (1<<2)
 
 //normal DDR init setting
 #define DDR_TEST_BASEIC (DDR_INIT_START|DDR_TEST_ADDR|DDR_TEST_DATA)
-
 //complete DDR init setting with a full memory test
 #define DDR_TEST_ALL	(DDR_TEST_BASEIC|DDR_TEST_DEVICE)
 
-#ifdef CONFIG_ACS
-	int ddr_test_mode = __ddr_setting.ddr_test;
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT
+	ddr_mode_auto_detect(&__ddr_setting);
 #else
-	int ddr_test_mode = DDR_TEST_BASEIC;
-#endif
-
-#ifdef CFG_DDR_MODE_AUTO_DETECT
-	ddr_auto_switch(ddr_test_mode);
-#else
-	if(ddr_init(ddr_test_mode))
+	if(ddr_init(&__ddr_setting))
 	{
 		serial_puts("\nDDR init test fail! Reset...\n");
 		__udelay(10000);
 		AML_WATCH_DOG_START();
 	}
 #endif
+
+#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
+	ddr_size_auto_detect(&__ddr_setting);
+#endif
+
+int ddr_test_mode = 0;
+#ifdef CONFIG_ACS
+	ddr_test_mode = __ddr_setting.ddr_test;
+#else
+	ddr_test_mode = DDR_TEST_BASEIC;
+#endif
+	ddr_test(ddr_test_mode);
+
+	ddr_info_dump(&__ddr_setting);
 
 #ifdef CONFIG_ACS
 	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);

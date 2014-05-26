@@ -172,7 +172,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 
 
 static struct ddr_set __ddr_setting={
-	.ddr_test		= 0x7,	//full define in ddr.c DDR_TEST_BASEIC = 0x7, DDR_TEST_ALL = 0xf
+	.ddr_test		= 0x3,	//full define in ddr.c DDR_TEST_BASEIC = 0x3, DDR_TEST_ALL = 0x7
 	.phy_memory_start	= PHYS_MEMORY_START,
 	.phy_memory_size	= PHYS_MEMORY_SIZE,
 	.t_pub0_dtar	= ((0x0 + CONFIG_DDR0_DTAR_DTCOL)|(CONFIG_DDR0_DTAR_DTROW <<12)|(CONFIG_DDR0_DTAR_DTBANK << 28)),

@@ -33,11 +33,6 @@ void init_dmc(struct ddr_set * timing_set)
 int ddr_init_hw(struct ddr_set * timing_set)
 {
 	int ret = 0;
-#ifdef DDR_SCRAMBE_ENABLE
-	unsigned int dmc_sec_ctrl_value;
-	unsigned int ddr_key;
-#endif
-
 	ret = timing_set->init_pctl(timing_set);
 
 	if(ret)
@@ -56,7 +51,15 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	//while(init_dmc(timing_set);){}
 	init_dmc(timing_set);
 
+	return 0;
+}
+
+void ddr_info_dump(struct ddr_set * timing_set)
+{
 #ifdef DDR_SCRAMBE_ENABLE
+	unsigned int dmc_sec_ctrl_value;
+	unsigned int ddr_key;
+
 	ddr_key = readl(P_RAND64_ADDR0);
 	dmc_sec_ctrl_value = 0x80000000 | (1<<0);
 	writel(dmc_sec_ctrl_value, DMC_SEC_CTRL);
@@ -86,6 +89,4 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	else
 		serial_puts("1T mode\n");
 #endif
-
-	return 0;
 }
