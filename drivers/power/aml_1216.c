@@ -252,11 +252,17 @@ int aml1216_get_charge_status(int print)
      */
     if (vsys_voltage >= 4350)
     {
+        aml1216_set_bits(0x0035, 0x00, 0x07);
+        aml1216_set_bits(0x003e, 0x00, 0x07);
+        aml1216_set_bits(0x0047, 0x00, 0x07);
         aml1216_set_bits(0x004f, 0x08, 0x08);
     }
     else
     {
         aml1216_set_bits(0x004f, 0x00, 0x08);
+        aml1216_set_bits(0x0035, 0x04, 0x07);
+        aml1216_set_bits(0x003e, 0x04, 0x07);
+        aml1216_set_bits(0x0047, 0x04, 0x07);
     }   
     //aml1216_set_bits(0x004f, (val & 0x01) << 3, 0x08);
     if (val & 0x18) {
@@ -990,6 +996,7 @@ int aml1216_set_recharge_voltage(void)
 
 int aml1216_init(void)
 {
+    uint8_t val;
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1216_get_charge_status(0);
@@ -1026,7 +1033,7 @@ int aml1216_init(void)
     aml1216_set_bits(0x001c, 0x00, 0x40);       // David Li, mask ov fault of charger
     aml1216_set_bits(0x012b, 0xe0, 0xe0);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
-    aml1216_write(0x0129, 0x0c);
+    aml1216_write(0x0129, 0x1c);
     aml1216_write(0x012a, 0x0f);                // David Li
     aml1216_write(0x012c, 0x20);
 
@@ -1034,7 +1041,14 @@ int aml1216_init(void)
     aml1216_set_gpio(3, 0);                     // close ldo 1.2v
     aml1216_set_bits(0x001A, 0x00, 0x06);
     aml1216_set_bits(0x0023, 0x00, 0x0e);
-    aml1216_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
+
+    aml1216_set_bits(0x0020, 0x00, 0x02);       // according harry
+    aml1216_write(0x0130, 0x45);                // according harry
+    aml1216_read(0x00d6, &val);
+    if (val & 0x01) {
+        printf("find boost fault:%x\n", val);
+        aml1216_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
+    }
     udelay(1000 * 500);
     printf("%s, open boost\n", __func__);
     aml1216_write16(0x0082, 0x0001);            // software boost up

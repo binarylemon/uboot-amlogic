@@ -847,7 +847,6 @@ void aml1216_check_vbat(int init)
 
 void aml1216_power_init(int init_mode)
 {
-    aml1216_set_bits(0x0047, 0x00, 0x07);                           // David Wang, set DCDC3 current to 1.5A
     aml1216_set_bits(0x001b, 0x06, 0x06);                           // Enable DCDC1 fault
 //    aml1216_set_bits(0x004f, 0x08, 0x08);                           // David Wang, DCDC limit
     aml1216_set_bits(0x001c, 0x06, 0x06);
@@ -856,6 +855,7 @@ void aml1216_power_init(int init_mode)
     aml1216_set_bits(0x0121, 0x04, 0x04);
     aml1216_set_bits(0x011f, 0x04, 0x04);
     aml1216_set_bits(0x011d, 0x04, 0x04);
+    aml1216_set_bits(0x003c, 0x00, 0x02);                           // open LDO8 for RTC power
 
     aml1216_check_vbat(1);
     if (init_mode == POWER_INIT_MODE_NORMAL) {
@@ -1284,7 +1284,6 @@ void aml1218_power_init(int init_mode)
     aml1218_set_bits(0x0142, 0x08, 0x1f);                           // enable ramp control, 10us/step
 
     aml1218_set_bits(0x0033, 0x00, 0x70);                           // test
-    aml1218_set_bits(0x0047, 0x00, 0x07);                           // David Wang, set DCDC3 current to 1.5A
     aml1218_set_bits(0x001b, 0x06, 0x46);                           // Enable DCDC1 & 2 fault
     aml1218_set_bits(0x001c, 0x06, 0x06);
     aml1218_set_bits(0x0045, 0x08, 0x08);
@@ -1293,6 +1292,7 @@ void aml1218_power_init(int init_mode)
     hard_i2c_write168(DEVID, 0x004d, 0x00);
     aml1218_set_bits(0x011f, 0x04, 0x04);
     aml1218_set_bits(0x011d, 0x04, 0x04);
+    aml1218_set_bits(0x003c, 0x00, 0x02);                           // open LDO8 for RTC power
     aml1218_check_vbat(1);
     if (init_mode == POWER_INIT_MODE_NORMAL) {
 #ifdef CONFIG_VCCK_VOLTAGE

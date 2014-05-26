@@ -543,6 +543,7 @@ void aml1218_power_off_at_24M()
 
 void aml1218_power_on_at_24M()
 {
+    unsigned char val;
     printf_arc("enter 24MHz. reason:");
     aml1218_set_gpio(2, 0);                                     // open vccx2
 
@@ -571,7 +572,13 @@ void aml1218_power_on_at_24M()
 
     //aml1218_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
     aml1218_set_bits(0x001A, 0x00, 0x06);
-    power_off_vcc50();
+    val = i2c_pmu_read_b(0x00d6);
+    if (val & 0x01) {
+        printf_arc("I saw boost fault:");
+        serial_put_hex(val, 8);
+        printf_arc("\n");
+        power_off_vcc50();
+    }
     udelay__(50 * 1000);
     printf_arc("open boost\n");
     power_on_vcc50();
@@ -579,9 +586,20 @@ void aml1218_power_on_at_24M()
     aml1218_set_bits(0x1A, 0x06, 0x06);
     i2c_pmu_write_b(0x0019, otg_status);
 
-    aml1218_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
-    aml1218_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
-    aml1218_set_bits(0x0047, 0x04, 0x07);                               // set DCDC3
+    val = i2c_pmu_read_b(0x00E1);
+    if (val & 0x02) {
+        printf_arc("extern power plugged, set dcdc current limit to 1.5A\n");
+        aml1218_set_bits(0x0035, 0x00, 0x07);
+        aml1218_set_bits(0x003e, 0x00, 0x07);
+        aml1218_set_bits(0x0047, 0x00, 0x07);
+        aml1218_set_bits(0x004f, 0x08, 0x08);
+    } else {
+        printf_arc("extern power unpluged, set dcdc current limit to 2A\n");
+        aml1218_set_bits(0x004f, 0x00, 0x08);
+        aml1218_set_bits(0x0035, 0x04, 0x07);
+        aml1218_set_bits(0x003e, 0x04, 0x07);
+        aml1218_set_bits(0x0047, 0x04, 0x07);
+    }
 }
 
 void aml1218_power_off_at_32K_1()

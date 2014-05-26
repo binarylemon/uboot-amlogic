@@ -491,9 +491,28 @@ void aml_pmu_power_ctrl(int on, int bit_mask)
 #define power_off_vcck12()          aml_pmu_power_ctrl(0, 1 << AML1216_POWER_EXT_DCDC_VCCK_BIT)
 #define power_on_vcck12()           aml_pmu_power_ctrl(1, 1 << AML1216_POWER_EXT_DCDC_VCCK_BIT)
 
+int aml1216_get_vsys_voltage(void)
+{
+    unsigned short val; 
+    int     result;
+
+    i2c_pmu_write_b(0x00AA, 0xC3);                            // select VBUS channel
+    i2c_pmu_write_b(0x009A, 0x28);
+    udelay(100);
+    val = i2c_pmu_read_w(0x00B1);
+    result = ((val & 0x1f00) + (val & 0xff));
+    if (result & 0x1000) {                                  // complement code
+        result = 0;                                         // avoid ADC offset 
+    } else {
+        result = result * 6400 / 4096;
+    }
+
+    return result;
+}
 
 void aml1216_power_off_at_24M()
 {
+    unsigned char val;
     otg_status = i2c_pmu_read_b(0x0019);
     i2c_pmu_write_b(0x0019, 0x10);                                      // cut usb output
     power_off_vcc50();
@@ -521,11 +540,15 @@ void aml1216_power_off_at_24M()
     power_off_vcc_cam();                                                // close LDO6
     power_off_vcc28();                                                  // close LDO5
     power_off_vcck();                                                   // close DCDC1, vcck
-    printf_arc("enter 32K\n");
+    val = i2c_pmu_read_b(0x0034);
+    printf_arc("enter 32K, vcck:");
+    serial_put_hex(val, 8);
+    printf_arc("\n");
 }
 
 void aml1216_power_on_at_24M()
 {
+    unsigned char val;
     printf_arc("enter 24MHz. reason:");
     aml1216_set_gpio(2, 0);                                     // open vccx2
 
@@ -540,6 +563,10 @@ void aml1216_power_on_at_24M()
     power_on_vcc28();                                                   // open LDO5, VCC2.8
     power_on_vcc_cam();
     
+    val = i2c_pmu_read_b(0x0034);
+    printf_arc("vcck val:");
+    serial_put_hex(val, 8);
+    printf_arc("\n");
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
     aml1216_set_pfm(2, 0);
@@ -554,7 +581,13 @@ void aml1216_power_on_at_24M()
 
     aml1216_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
     aml1216_set_bits(0x001A, 0x00, 0x06);
-    power_off_vcc50();
+    val = i2c_pmu_read_b(0x00d6);
+    if (val & 0x01) {
+        printf_arc("I saw boost fault:");
+        serial_put_hex(val, 8);
+        printf_arc("\n");
+        power_off_vcc50();
+    }
     udelay__(50 * 1000);
     printf_arc("open boost\n");
     power_on_vcc50();
@@ -562,9 +595,19 @@ void aml1216_power_on_at_24M()
     aml1216_set_bits(0x1A, 0x06, 0x06);
     i2c_pmu_write_b(0x0019, otg_status);
 
-    aml1216_set_bits(0x0035, 0x04, 0x07);                               // set DCDC OCP to 2A
-    aml1216_set_bits(0x003e, 0x04, 0x07);                               // set DCDC OCP to 2A
-    aml1216_set_bits(0x0047, 0x04, 0x07);                               // set DCDC3
+    if (aml1216_get_vsys_voltage() >= 4350) {
+        printf_arc("extern power plugged, set dcdc current limit to 1.5A\n");
+        aml1216_set_bits(0x0035, 0x00, 0x07);
+        aml1216_set_bits(0x003e, 0x00, 0x07);
+        aml1216_set_bits(0x0047, 0x00, 0x07);
+        aml1216_set_bits(0x004f, 0x08, 0x08);
+    } else {
+        printf_arc("extern power unpluged, set dcdc current limit to 2A\n");
+        aml1216_set_bits(0x004f, 0x00, 0x08);
+        aml1216_set_bits(0x0035, 0x04, 0x07);
+        aml1216_set_bits(0x003e, 0x04, 0x07);
+        aml1216_set_bits(0x0047, 0x04, 0x07);
+    }   
 }
 
 void aml1216_power_off_at_32K_1()
