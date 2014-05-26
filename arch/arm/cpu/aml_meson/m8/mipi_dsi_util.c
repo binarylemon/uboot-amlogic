@@ -43,6 +43,7 @@ static const char *video_mode_type_table[] = {
     "un-support type",
 };
 
+static DSI_Phy_t dsi_phy_config;
 static DSI_Config_t *dsi_config = NULL;
 static unsigned char dsi_init_on_table[DSI_INIT_ON_MAX]={0xff,0xff};
 static unsigned char dsi_init_off_table[DSI_INIT_OFF_MAX]={0xff,0xff};
@@ -523,7 +524,53 @@ void dsi_write_cmd(unsigned char* payload)
     }
 }
 
-static void dsi_phy_init(unsigned char lane_num)
+static void set_dsi_phy_config(DSI_Phy_t *dphy, unsigned dsi_ui)
+{
+    unsigned t_lane_byte, t_ui;
+
+    t_ui = (1000000 * 100) / (dsi_ui / 1000); //0.01ns*100
+    t_lane_byte = t_ui * 8;
+
+    dphy->lp_tesc = ((DPHY_TIME_LP_TESC(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_lpx = ((DPHY_TIME_LP_LPX(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_sure = ((DPHY_TIME_LP_TA_SURE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_go = ((DPHY_TIME_LP_TA_GO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->lp_ta_get = ((DPHY_TIME_LP_TA_GETX(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_exit = ((DPHY_TIME_HS_EXIT(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_trail = ((DPHY_TIME_HS_TRAIL(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_prepare = ((DPHY_TIME_HS_PREPARE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->hs_zero = ((DPHY_TIME_HS_ZERO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_trail = ((DPHY_TIME_CLK_TRAIL(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_post = ((DPHY_TIME_CLK_POST(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_prepare = ((DPHY_TIME_CLK_PREPARE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_zero = ((DPHY_TIME_CLK_ZERO(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->clk_pre = ((DPHY_TIME_CLK_PRE(t_ui) + t_lane_byte - 1) / t_lane_byte) & 0xff;
+    dphy->init = (DPHY_TIME_INIT(t_ui) + t_lane_byte - 1) / t_lane_byte;
+    dphy->wakeup = (DPHY_TIME_WAKEUP(t_ui) + t_lane_byte - 1) / t_lane_byte;
+
+    DPRINT("lp_tesc = 0x%02x\n"
+            "lp_lpx = 0x%02x\n"
+            "lp_ta_sure = 0x%02x\n"
+            "lp_ta_go = 0x%02x\n"
+            "lp_ta_get = 0x%02x\n"
+            "hs_exit = 0x%02x\n"
+            "hs_trail = 0x%02x\n"
+            "hs_zero = 0x%02x\n"
+            "hs_prepare = 0x%02x\n"
+            "clk_trail = 0x%02x\n"
+            "clk_post = 0x%02x\n"
+            "clk_zero = 0x%02x\n"
+            "clk_prepare = 0x%02x\n"
+            "clk_pre = 0x%02x\n"
+            "init = 0x%02x\n"
+            "wakeup = 0x%02x\n",
+            dphy->lp_tesc, dphy->lp_lpx, dphy->lp_ta_sure, dphy->lp_ta_go, dphy->lp_ta_get,
+            dphy->hs_exit, dphy->hs_trail, dphy->hs_zero, dphy->hs_prepare,
+            dphy->clk_trail, dphy->clk_post, dphy->clk_zero, dphy->clk_prepare, dphy->clk_pre,
+            dphy->init, dphy->wakeup);
+}
+
+static void dsi_phy_init(DSI_Phy_t *dphy, unsigned char lane_num)
 {
     // enable phy clock.
     WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1);          //enable DSI top clock.
@@ -534,33 +581,18 @@ static void dsi_phy_init(unsigned char lane_num)
                     (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
                     (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
                     (0 << 12));    //enable the byte clock generateion.
-
-    WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1 |          //enable DSI top clock.
-                    (1 << 7 )  |   //enable pll clock which connected to  DDR clock path
-                    (1 << 8 )  |   //enable the clock divider counter
-                    (1 << 9 )  |   //enable the divider clock out
-                    (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
-                    (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
-                    (0 << 12));    //enable the byte clock generateion.
-
-    WRITE_DSI_REG(MIPI_DSI_PHY_CTRL,  0x1 |          //enable DSI top clock.
-                    (1 << 7 )  |   //enable pll clock which connected to  DDR clock path
-                    (1 << 8 )  |   //enable the clock divider counter
-                    (1 << 9 )  |   //enable the divider clock out
-                    (0 << 10 ) |   //clock divider. 1: freq/4, 0: freq/2
-                    (0 << 11 ) |   //1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock
-                    (1 << 12));    //enable the byte clock generateion.
-
+    WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 9, 1); //enable the divider clock out
+    WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 12, 1); //enable the byte clock generateion.
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  1, 31, 1);
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL,  0, 31, 1);
 
-    WRITE_DSI_REG(MIPI_DSI_CLK_TIM,  0x05210f08);//0x03211c08
-    WRITE_DSI_REG(MIPI_DSI_CLK_TIM1, 0x8);//??
-    WRITE_DSI_REG(MIPI_DSI_HS_TIM, 0x060f090d);//0x050f090d
-    WRITE_DSI_REG(MIPI_DSI_LP_TIM, 0x4a370e0e);
+    WRITE_DSI_REG(MIPI_DSI_CLK_TIM,  (dphy->clk_trail | (dphy->clk_post << 8) | (dphy->clk_zero << 16) | (dphy->clk_prepare << 24)));//0x05210f08);//0x03211c08
+    WRITE_DSI_REG(MIPI_DSI_CLK_TIM1, dphy->clk_pre);//??
+    WRITE_DSI_REG(MIPI_DSI_HS_TIM, (dphy->hs_exit | (dphy->hs_trail << 8) | (dphy->hs_zero << 16) | (dphy->hs_prepare << 24)));//0x050f090d
+    WRITE_DSI_REG(MIPI_DSI_LP_TIM, (dphy->lp_lpx | (dphy->lp_ta_sure << 8) | (dphy->lp_ta_go << 16) | (dphy->lp_ta_get << 24)));//0x4a370e0e
     WRITE_DSI_REG(MIPI_DSI_ANA_UP_TIM, 0x0100); //?? //some number to reduce sim time.
-    WRITE_DSI_REG(MIPI_DSI_INIT_TIM, 0x00d4); //0xe20   //30d4 -> d4 to reduce sim time.
-    WRITE_DSI_REG(MIPI_DSI_WAKEUP_TIM, 0x48); //0x8d40  //1E848-> 48 to reduct sim time.
+    WRITE_DSI_REG(MIPI_DSI_INIT_TIM, dphy->init); //0xe20   //30d4 -> d4 to reduce sim time.
+    WRITE_DSI_REG(MIPI_DSI_WAKEUP_TIM, dphy->wakeup); //0x8d40  //1E848-> 48 to reduct sim time.
     WRITE_DSI_REG(MIPI_DSI_LPOK_TIM,  0x7C);   //wait for the LP analog ready.
     WRITE_DSI_REG(MIPI_DSI_ULPS_CHECK,  0x927C);   //1/3 of the tWAKEUP.
     WRITE_DSI_REG(MIPI_DSI_LP_WCHDOG,  0x1000);   // phy TURN watch dog.
@@ -603,7 +635,7 @@ static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
     WRITE_LCD_REG(MIPI_DSI_DWC_PHY_RSTZ_OS, 0xf);
 
     //Analog
-    dsi_phy_init(pConf->lcd_control.mipi_config->lane_num);
+    dsi_phy_init(&dsi_phy_config, pConf->lcd_control.mipi_config->lane_num);
 
     // Check the phylock/stopstateclklane to decide if the DPHY is ready
     check_phy_status();
@@ -790,7 +822,7 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // -----------------------------------------------------
 
     // Inner clock divider settings
-    WRITE_LCD_REG( MIPI_DSI_DWC_CLKMGR_CFG_OS, (0x1 << BIT_TO_CLK_DIV) | (0x1e << BIT_TX_ESC_CLK_DIV) );
+    WRITE_LCD_REG( MIPI_DSI_DWC_CLKMGR_CFG_OS, (0x1 << BIT_TO_CLK_DIV) | (dsi_phy_config.lp_tesc << BIT_TX_ESC_CLK_DIV) );
     // Packet header settings
     WRITE_LCD_REG( MIPI_DSI_DWC_PCKHDL_CFG_OS, (1 << BIT_CRC_RX_EN) |
                         (1 << BIT_ECC_RX_EN) |
@@ -959,10 +991,12 @@ void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
         cfg->bit_rate_min *= 1000;
         cfg->bit_rate_max *= 1000;
     }
-    // if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
-        // cfg->bit_rate_max = MIPI_PHY_MAX_CLK_IN;
-        // printf("mipi dsi bit_rate_max is out of support, adjust to %dMHz\n", (MIPI_PHY_MAX_CLK_IN / 1000));
-    // }
+    if (cfg->bit_rate_max < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) {
+        printf("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
+    }
+    if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
+        printf("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
+    }
 
     cfg->video_mode_type = MIPI_DSI_VIDEO_MODE_TYPE;
     if(pConf->lcd_basic.lcd_bits == 6){
@@ -1024,6 +1058,8 @@ void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
     cfg->vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
     cfg->vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
     cfg->vact = pConf->lcd_basic.v_active;
+
+    set_dsi_phy_config(&dsi_phy_config, cfg->bit_rate);
 }
 
 void set_mipi_dsi_control(Lcd_Config_t *pConf)

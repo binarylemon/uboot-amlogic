@@ -53,7 +53,7 @@
 
 #define PANEL_NAME		"panel"
 #define DRV_TYPE		"c8"
-#define DRIVER_DATE		"20140429"
+#define DRIVER_DATE		"20140522"
 
 #define VPP_OUT_SATURATE            (1 << 0)
 
