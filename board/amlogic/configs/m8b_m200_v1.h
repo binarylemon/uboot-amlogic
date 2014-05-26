@@ -24,7 +24,7 @@
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-#define LCD_BPP LCD_COLOR24
+#define LCD_BPP LCD_COLOR16
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -204,12 +204,12 @@
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
-	"display_bpp=24\0" \
-	"display_color_format_index=24\0" \
+	"display_bpp=16\0" \
+	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x6100000\0" \
+	"fb_addr=0x7900000\0" \
 	"fb_width=1280\0"\
 	"fb_height=720\0"\
 	"partnum=2\0" \
@@ -253,7 +253,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\
@@ -270,7 +270,7 @@
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
         "imgread res logo ${loadaddr_logo}; "\
         "unpackimg ${loadaddr_logo}; "\
-        "logo source ${outputmode}; bmp display ${bootup_offset}; bmp scale;"\
+        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\
