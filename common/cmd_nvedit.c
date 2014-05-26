@@ -1073,13 +1073,47 @@ int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		s = getenv("store");
 		store = simple_strtoul(s,NULL,16);
 		//memset(env_bootargs, 0, 128);
-		args =  getenv("bootargs");
+		args =  getenv("initargs");
+        if(args){
 		if(!strstr(args, "storage")){ // no storage in bootargs
 			//printf("####set bootargs of the storage value\n");
 
-			sprintf(env_bootargs, "%s storage=%d", getenv("bootargs"), store);
-			setenv("bootargs", env_bootargs);
+			sprintf(env_bootargs, "%s storage=%d", getenv("initargs"), store);
+			setenv("initargs", env_bootargs);
 			saveenv();
+
+			//printf("####put_storage : bootargs %s\n",getenv("bootargs"));
+		}else{ // check storage value in bootargs
+
+		//	printf("@put_storage : set bootargs of the storage value\n");
+			p1 = strstr(args, "storage");
+			if(p1 == NULL){
+				printf("@put_storage: no storage in initargs: failed\n");
+				return -1;
+			}
+			p2 = p1+strlen("storage")+1;
+			
+			tmp = simple_strtoul(p2 ,NULL,16);
+		//	printf("@put_storage: tmp %d store %d\n",tmp,store);
+			if(tmp!= store){
+				sprintf(rep,"storage=%d",store);
+				memcpy(p1, rep, strlen(rep));
+				saveenv();
+			//	printf("@put_storage : bootargs %s\n",getenv("bootargs"));
+			}else{
+				printf("@put_storage : initargs %s\n",getenv("initargs"));
+			}
+		}
+	   }
+       else{
+        printf("no initargs,put storage to bootargs\n");
+        args =  getenv("bootargs");
+		if(!strstr(args, "storage")){ // no storage in bootargs
+		//printf("####set bootargs of the storage value\n");
+
+		sprintf(env_bootargs, "%s storage=%d", getenv("bootargs"), store);
+		setenv("bootargs", env_bootargs);
+		saveenv();
 
 			//printf("####put_storage : bootargs %s\n",getenv("bootargs"));
 		}else{ // check storage value in bootargs
@@ -1102,8 +1136,8 @@ int put_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			}else{
 				printf("@put_storage : bootargs %s\n",getenv("bootargs"));
 			}
-			
 		}
+       }
 	}else if(!strcmp(cmd,"store")){
 		set_storage_device_flag();
 	}else{
