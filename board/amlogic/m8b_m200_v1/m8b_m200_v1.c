@@ -86,11 +86,12 @@ static void setup_net_chip(void)
 	eth_reg0.b.eth_urgent = 0;
 	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32 );//1          //rmii mode
 #elif RGMII_PHY_INTERFACE
-	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0xffff);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0x3f4f);
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_7, 0xf00000);
 	eth_reg0.d32 = 0;
 	eth_reg0.b.phy_intf_sel = 1;
 	eth_reg0.b.data_endian = 0;
-	eth_reg0.b.desc_endian = 1;
+	eth_reg0.b.desc_endian = 0;
 	eth_reg0.b.rx_clk_rmii_invert = 0;
 	eth_reg0.b.rgmii_tx_clk_src = 0;
 	eth_reg0.b.rgmii_tx_clk_phase = 0;
@@ -107,7 +108,11 @@ static void setup_net_chip(void)
 	eth_reg0.b.cali_sel = 0;
 	eth_reg0.b.rgmii_rx_reuse = 0;
 	eth_reg0.b.eth_urgent = 0;
-WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);// rgmii mode
+	WRITE_CBUS_REG(0x2050, eth_reg0.d32);// rgmii mode
+	SET_CBUS_REG_MASK(0x10a5,1<<27);
+	WRITE_CBUS_REG(0x2050,0xac27d21);// rgmii mode
+	SET_CBUS_REG_MASK(0x108a,0xb803);
+	SET_CBUS_REG_MASK(HHI_MPLL_CNTL9,(1638<<0)| (0<<14)|(1<<15) | (1<<14) | (5<<16) | (0<<25) | (0<<26) |(0<<30) | (0<<31));
 #endif
 	/* setup ethernet mode */
 	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));

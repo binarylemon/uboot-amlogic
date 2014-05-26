@@ -65,7 +65,7 @@ static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_IC_IP101ALF         0x02430c54
 #define PHY_MICREL_8091         0x221560
 #define PHY_INTERNAL            0x79898963
-#define PHY_RTL_8211F         0x001cc915
+#define PHY_RTL_8211F         0x001cc916
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
 #define MAC_MODE_RGMII                   2
@@ -387,10 +387,11 @@ static void netdev_chk(void)
 				gS->linked = rint2 & (1 << 10);
 				break;
 			case PHY_RTL_8211F:
-				rint2 = phy_reg_rd(id, 17);
-				speed = (rint2 & (3 << 14)) >> 14;
-				full = ((rint2) & (1 << 13));
-				gS->linked = rint2 & (1 << 10);
+				rint2 = phy_reg_rd(id, 26);
+				speed = (rint2 & (3 << 4)) >> 4;
+				full = ((rint2) & (1 << 3));
+				rint2 = phy_reg_rd(id,1);
+				gS->linked = rint2&(1<<2);
 				break;	
 			case PHY_IC_IP101ALF:
 				rint2 = phy_reg_rd(id,1);
@@ -473,7 +474,8 @@ static void netdev_chk(void)
 			printf("1000m\n");
 			if(get_cpuid() >= 0x1B){
 
-				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII, ETH_MAC_0_Configuration);	// program mac
+				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII|(1<<13), ETH_MAC_0_Configuration);	// program mac
+			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
 			}
 		}
 
@@ -1442,25 +1444,32 @@ static int do_eth_cali(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	unsigned int reg, value;
 	int rise=0;
 	int sel=0;
+	int i;
 	char *cmd = NULL;
 
 
-	if (argc < 3) {
+	if (argc < 2) {
 		return cmd_usage(cmdtp);
 	}
 	rise = simple_strtoul(argv[1], NULL, 10);
 	sel = simple_strtoul(argv[2], NULL, 10);
 	eth_aml_reg0_t eth_reg0;
-	eth_reg0.d32 = READ_CBUS_REG(PREG_ETHERNET_ADDR0);
+	eth_reg0.d32 = READ_CBUS_REG(0x2050);
 	eth_reg0.b.cali_start = 1;
 	eth_reg0.b.cali_rise = rise;
 	eth_reg0.b.cali_sel = sel;
-	WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);
-	printf("0x%x\n",  READ_CBUS_REG(PREG_ETHERNET_ADDR0));
+	WRITE_CBUS_REG(0x2050, eth_reg0.d32);
+	printf("0x%x\n",  READ_CBUS_REG(0x2050));
+	for(i=0;i<10000;i++){
+	 	value = READ_CBUS_REG(0x2051);
+		if((value>>15)&0x1)
+			printf("value == %x,  cali_len == %d, cali_idx == %d,  cali_sel =%d,  cali_rise = %d\n",value,(value>>5)&0x1f,(value&0x1f),(value>>11)&0x7,(value>>14)&0x1);
+	}
+	
 	return 0;
 }
 U_BOOT_CMD(
-		cali, 2, 1, do_eth_cali,
+		cali, 3, 1, do_eth_cali,
 		"configure clock phare",
 		"             - phare mac clock.\n"
 	  );

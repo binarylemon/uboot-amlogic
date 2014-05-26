@@ -67,7 +67,7 @@
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
-	#define RMII_PHY_INTERFACE    1
+	#define RGMII_PHY_INTERFACE    1
 	#define CONFIG_NET_MULTI 1
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
