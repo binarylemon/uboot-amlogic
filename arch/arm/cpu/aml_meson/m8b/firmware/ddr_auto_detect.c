@@ -1,3 +1,35 @@
+void print_ddr_size(unsigned int size)
+{
+	serial_puts("DDR size: ");
+	unsigned int mem_size = size >> 20; //MB
+	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10):serial_put_dec(mem_size);
+	(mem_size) >= 1024 ? serial_puts("GB"):serial_puts("MB");
+#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
+	serial_puts(" (auto)\n");
+#else
+	serial_puts("\n");
+#endif
+}
+
+void print_ddr_mode(void){
+	serial_puts("DDR mode: ");
+	switch(cfg_ddr_mode){
+		case CFG_DDR_NOT_SET:
+			serial_puts("Not Set"); break;
+		case CFG_DDR_32BIT:
+			serial_puts("32 bit mode"); break;
+		case CFG_DDR_16BIT_LANE02:
+			serial_puts("16 bit mode lane0+2"); break;
+		case CFG_DDR_16BIT_LANE01:
+			serial_puts("16 bit mode lane0+1"); break;
+	}
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT
+	serial_puts(" (auto)\n");
+#else
+	serial_puts("\n");
+#endif
+}
+
 /*Following code is for DDR MODE AUTO DETECT*/
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT
 #include "efuse_basic.c"
@@ -13,19 +45,6 @@ int write_ddr_mode(void){
 	return 0;
 }
 
-int print_ddr_mode(void){
-	switch(cfg_ddr_mode){
-		case CFG_DDR_NOT_SET:
-			serial_puts("Not Set. "); break;
-		case CFG_DDR_32BIT:
-			serial_puts("32 bit mode. "); break;
-		case CFG_DDR_16BIT_LANE02:
-			serial_puts("16 bit mode lane0+2. "); break;
-		case CFG_DDR_16BIT_LANE01:
-			serial_puts("16 bit mode lane0+1. "); break;
-	}
-}
-
 int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 	int ret = 0;
 	int tmp_mode = read_ddr_mode();
@@ -34,11 +53,9 @@ int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 		cfg_ddr_mode = try_times;
 		//if(tmp_mode == cfg_ddr_mode) /*skip preset mode*/
 			//continue;
-		serial_puts("Try ddr mode : ");
-		print_ddr_mode();
 		ret = ddr_init(timing_reg);
 		if(!ret){
-			serial_puts("Pass!!\n");
+			print_ddr_mode();
 			if(tmp_mode == CFG_DDR_NOT_SET) /*first init, store ddr mode*/
 				write_ddr_mode();
 			return 0;
@@ -130,11 +147,7 @@ void ddr_size_auto_detect(struct ddr_set * timing_reg){
 			break;
 		}
 	}
-	serial_puts("Detect ");
-	(cur_mem_size) >= 1024 ? serial_put_dec(cur_mem_size >> 10):serial_put_dec(cur_mem_size);
-	(cur_mem_size) >= 1024 ? serial_puts("GB : "):serial_puts("MB : ");
-	//high address bit masked
-	serial_puts("MATCH!\n");
+	print_ddr_size(cur_mem_size);
 
 	/*Get corresponding row_bits setting and write back to DMC reg*/
 	unsigned int cur_row_bits = MEMORY_ROW_BITS((cur_mem_size<<20), mem_mode);

@@ -206,7 +206,7 @@ unsigned ddr_test(int arg)
 			return por_cfg;
 		}
 	}
-	serial_puts("\nDDR check pass!\n");
+	serial_puts("DDR check: Pass!\n");
 	//AML_WATCH_DOG_DISABLE();
 	return por_cfg;
 }
@@ -232,10 +232,17 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 		__udelay(10000);
 		AML_WATCH_DOG_START();
 	}
+	print_ddr_mode();
 #endif
 
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
 	ddr_size_auto_detect(&__ddr_setting);
+#else
+#ifdef CONFIG_ACS
+	print_ddr_size(__ddr_setting.phy_memory_size);
+#else
+	print_ddr_size(PHYS_MEMORY_SIZE);
+#endif
 #endif
 
 int ddr_test_mode = 0;

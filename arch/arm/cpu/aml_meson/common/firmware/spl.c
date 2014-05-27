@@ -157,8 +157,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned int nA9CLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
 	serial_puts("\nCPU clock is ");
 	serial_put_dec(nA9CLK);
-	serial_puts("MHz\n");
-
+	serial_puts("MHz\n\n");
 
     nTEBegin = TIMERE_GET();
 

@@ -63,7 +63,7 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	if(ret)
 	{
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT
-		serial_puts("PUB init fail!\n");
+		//serial_puts("PUB init fail!\n");
 		return -1;
 #else
 		serial_puts("\nPUB init fail! Reset...\n");
@@ -103,7 +103,7 @@ void ddr_info_dump(struct ddr_set * timing_set)
 #ifdef CONFIG_DUMP_DDR_INFO
 	int nPLL = readl(AM_DDR_PLL_CNTL);
 	int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
-	serial_puts("\nDDR clock is ");
+	serial_puts("DDR clock: ");
 	serial_put_dec(nDDRCLK);
 	serial_puts("MHz with ");
 #ifdef CONFIG_DDR_LOW_POWER
