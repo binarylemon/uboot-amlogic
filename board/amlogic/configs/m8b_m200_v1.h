@@ -376,9 +376,12 @@
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_DDR_CLK    636 //696 //768  //792// (636)
-
-//#define CFG_DDR_MODE_AUTO_DETECT
 #define CFG_DDR_MODE   CFG_DDR_32BIT
+
+#ifdef CONFIG_ACS
+//#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
+//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
+#endif
 
 //On board DDR capactiy
 #if !(defined(CONFIG_DDR3_512MB) || defined(CONFIG_DDR3_1GB) \

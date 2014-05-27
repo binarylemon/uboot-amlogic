@@ -424,10 +424,12 @@
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_DDR_CLK    636 //696 //768  //792// (636)
-
-//#define CFG_DDR_MODE_AUTO_DETECT
-//#define CFG_DDR_MODE   CFG_DDR_32BIT
 #define CFG_DDR_MODE   CFG_DDR_16BIT_LANE02
+
+#ifdef CONFIG_ACS
+//#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
+//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
+#endif
 
 //M8baby support 4 mode to abstract bank from address
 //#define CONFIG_M8B_DDR_BANK_SET_S12	    (0)
