@@ -273,14 +273,26 @@ static __inline__ int abortboot(int bootdelay)
     }
 #endif
 
-    char *s_ms = getenv ("enablemsdelay");
-    int delay_ms = s_ms ? (int)simple_strtol(s_ms, NULL, 10) : 0;
+    char *s_us = getenv ("us_delay_step");
+    int delay_us = s_us ? (int)simple_strtol(s_us, NULL, 10) : 0;
     //printf("\n ----- delay ms : %d \n",delay_ms);
 
     if (abort == 1) {
          //Disable Watchdog
         writel(0, 0xc1109900);
     }
+
+#if defined(CONFIG_VLSI_EMULATOR)
+	#define BOOT_DELAY_UNIT_US (100)
+#else
+	#define BOOT_DELAY_UNIT_US (10000)
+#endif //CONFIG_VLSI_EMULATOR
+
+	if((!delay_us) ||(delay_us > BOOT_DELAY_UNIT_US))
+		delay_us = BOOT_DELAY_UNIT_US;
+
+#undef BOOT_DELAY_UNIT_US
+
     unsigned int sect = get_timer(0);// 1---> 20ms
    // printf("get_timer0 = %d \n",t1);
 
@@ -316,12 +328,9 @@ static __inline__ int abortboot(int bootdelay)
 	                break;
 	            }
 			}
-			//printf("%2d\n",i);
-#if defined(CONFIG_VLSI_EMULATOR)
-			udelay(100);//Victor, From 10000 to 10
-#else
-			udelay(10000);//10000us x 100 = 1s
-#endif //CONFIG_VLSI_EMULATOR
+
+			udelay(delay_us); ///100 X 10000us = 1S
+
 		}
 
 		if(!abort)
