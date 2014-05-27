@@ -953,12 +953,12 @@ int aml1216_set_charge_end_rate(int rate)
     int val;
     switch (rate) {
     case 10: val = 0x00; break;
-    case 20: val = 0x08; break;
+    case 20: val = 0x10; break;
     default:
          printf("%s, wrong charge end rate:%d\n", __func__, rate);    
          return -1;
     }
-    return aml1216_set_bits(0x002d, val, 0x08);
+    return aml1216_set_bits(0x0129, val, 0x10);
 }
 
 int aml1216_set_trickle_time(int min)
