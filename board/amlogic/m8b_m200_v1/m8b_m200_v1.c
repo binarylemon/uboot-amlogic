@@ -110,7 +110,7 @@ static void setup_net_chip(void)
 	eth_reg0.b.eth_urgent = 0;
 	WRITE_CBUS_REG(0x2050, eth_reg0.d32);// rgmii mode
 	SET_CBUS_REG_MASK(0x10a5,1<<27);
-	WRITE_CBUS_REG(0x2050,0xac27d21);// rgmii mode
+	WRITE_CBUS_REG(0x2050,0x7d21);// rgmii mode
 	SET_CBUS_REG_MASK(0x108a,0xb803);
 	SET_CBUS_REG_MASK(HHI_MPLL_CNTL9,(1638<<0)| (0<<14)|(1<<15) | (1<<14) | (5<<16) | (0<<25) | (0<<26) |(0<<30) | (0<<31));
 #endif
