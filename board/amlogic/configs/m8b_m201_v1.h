@@ -210,7 +210,7 @@
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
         "imgread res logo ${loadaddr_logo}; "\
         "unpackimg ${loadaddr_logo}; "\
-        "logo source ${outputmode}; bmp display ${bootup_offset}; bmp scale;"\
+        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\
@@ -225,10 +225,10 @@
 	"recovery="\
         "echo enter recovery;"\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then setenv bootargs ${bootargs} a9_clk_max=800000000; bootm;fi;"\
+            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
 	      "if imgread kernel recovery ${loadaddr}; then "\
-	        "setenv bootargs ${bootargs} a9_clk_max=800000000; bootm; "\
+	        "bootm; "\
 				"else "\
 					"echo no recovery in flash; "\
 				"fi;\0" \
