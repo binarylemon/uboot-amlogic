@@ -24,6 +24,7 @@ static int aml1218_curr_dir = 0;
 static int aml1218_battery_test = 0;
 static int charger_sign_bit = 0;
 
+int aml1218_set_charge_enable(int enable);
 int aml1218_write(int add, uint8_t val)
 {
     int ret;
@@ -239,6 +240,18 @@ int aml1218_get_charge_status(int print)
 {
     uint8_t val;
     uint32_t reg_all;
+    int  vsys_voltage;
+    int  vbat_voltage;
+    vsys_voltage = aml1218_get_vsys_voltage();
+    vbat_voltage = aml1218_get_battery_voltage();
+
+    if ((vsys_voltage > vbat_voltage) && (vsys_voltage - vbat_voltage < 500)) {
+        printf("%s, vsys is not large, disable charge, vsys:%d, vbat:%d\n", 
+               __func__, vsys_voltage, vbat_voltage); 
+        aml1218_set_charge_enable(0);
+    } else {
+        aml1218_set_charge_enable(1);
+    }
     /*
      * work around for charge status register can't update problem
      */
@@ -991,6 +1004,7 @@ int aml1218_init(void)
     aml1218_check_fault();
     check_boot_up_source();
 
+    aml1218_write(0x2f, 0x22);                      // David Li, increase vsys 120mv
     aml1218_write(0x0139, 0x1e);                    // by Anny.Zhao
 
     aml1218_set_bits(0x000f, 0xf0, 0xf0);           // GPIO2 power off last
@@ -1023,7 +1037,7 @@ int aml1218_init(void)
   //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
   //aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li
     aml1218_set_bits(0x001c, 0x00, 0x40);       // David Li, mask ov fault of charger
-    aml1218_set_bits(0x012b, 0xf0, 0xf0);       // David Li
+    aml1218_set_bits(0x012b, 0xe0, 0xf0);       // David Li
     aml1218_set_bits(0x0128, 0x0e, 0x0e);
     aml1218_write(0x0129, 0x1c);
     aml1218_write(0x012a, 0x0f);                // David Li
@@ -1055,6 +1069,7 @@ int aml1218_init(void)
 
 int aml1218_init_para(struct battery_parameter *battery)
 {
+    int vbat, vsys;
     if (battery) {
         aml1218_set_full_charge_voltage(battery->pmu_init_chgvol);
         aml1218_set_charge_end_rate    (battery->pmu_init_chgend_rate);
@@ -1063,7 +1078,14 @@ int aml1218_init_para(struct battery_parameter *battery)
         aml1218_set_charging_current   (battery->pmu_init_chgcur);
         aml1218_set_long_press         (battery->pmu_pekoff_time);
         aml1218_set_recharge_voltage   ();
-        aml1218_set_charge_enable      (battery->pmu_init_chg_enabled);
+        vbat = aml1218_get_battery_voltage();
+        vsys = aml1218_get_vsys_voltage();
+        if ((vsys > vbat) && (vsys - vbat < 500)) {
+            printf("%s, vsys is not large, disable charger, vsys:%d, vbat:%d\n", __func__, vsys, vbat);
+            aml1218_set_charge_enable(0);
+        } else {
+            aml1218_set_charge_enable      (battery->pmu_init_chg_enabled);
+        }
         return 0;
     } else {
         return -1;    
