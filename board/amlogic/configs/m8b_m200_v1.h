@@ -201,7 +201,7 @@
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
-	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend storage=2\0" \
+	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -210,7 +210,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x7900000\0" \
+	"fb_addr=0x6c00000\0" \
 	"fb_width=1280\0"\
 	"fb_height=720\0"\
 	"partnum=2\0" \

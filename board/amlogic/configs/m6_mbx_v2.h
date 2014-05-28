@@ -236,7 +236,7 @@
 	"nandboot="\
         "echo Booting ...;"\
         "run nandargs;"\
-        "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
+        "setenv bootargs ${initargs} androidboot.firstboot=${firstboot}; "\
         "imgread kernel boot ${loadaddr};"\
         "hdcp prefetch nand;"\
         "bootm;run recovery\0" \
@@ -247,7 +247,7 @@
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
         "imgread kernel recovery ${loadaddr}; bootm\0" \
-	"bootargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
+	"initargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
 	"storage=null\0" \
 	"factoryreset_wipe_data="\
         "echo ---wipe_data=${wipe_data}; "\
