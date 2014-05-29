@@ -30,7 +30,7 @@ endif
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-all:	power_firmware $(obj).depend $(LIB)
+all:	$(obj).depend $(LIB)
 
 $(LIB):	$(OBJS)	
 	$(call cmd_link_o_target, $(OBJS))	
@@ -38,9 +38,13 @@ $(LIB):	$(OBJS)
 ifdef CONFIG_AML_SUSPEND
 FIRMWARE_AUTO_UPDATE=y
 export FIRMWARE_AUTO_UPDATE
-power_firmware:
-		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
+$(OBJS): power_firmware.dat
+power_firmware.dat: arc_code
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
+
+arc_code:
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
+
 ifdef CONFIG_CMD_RUNARC
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
 endif

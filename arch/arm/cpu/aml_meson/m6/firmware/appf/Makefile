@@ -103,11 +103,8 @@ $(OUTDIR)/appf.axf: $(OBJECTS) $(MAPFILE) Makefile
 
 $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	$(fromelf) -O binary $<  $@
-	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
-
-ifeq "$(FIRMWARE_AUTO_UPDATE)" "y"
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m6/power_firmware.dat
-endif
+	./bin2code power_firmware_code $@ $(EXTINCDIR)/power_firmware.dat
+#	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m8/power_firmware.dat
 
 $(OUTDIR)/appf_srec.txt: $(OUTDIR)/appf.axf
 	$(fromelf) --gap-fill 0xff -O srec $< $@

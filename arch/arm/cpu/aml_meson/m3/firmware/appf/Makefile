@@ -100,10 +100,10 @@ $(OUTDIR)/appf.axf: $(OBJECTS) $(MAPFILE) Makefile
 
 $(OUTDIR)/appf.bin: $(OUTDIR)/appf.axf
 	$(fromelf) -O binary $<  $@
-	./bin2code power_firmware_code $@ $(OUTDIR)/power_firmware.dat
+	./bin2code power_firmware_code $@ $(EXTINCDIR)/power_firmware.dat
 
 ifeq "$(FIRMWARE_AUTO_UPDATE)" "y"
-	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m3/power_firmware.dat
+#	cp -f $(OUTDIR)/power_firmware.dat $(SRCTREE)/arch/arm/cpu/aml_meson/m3/power_firmware.dat
 #	./bin2code power_firmware_code $@ $(SRCTREE)/arch/arm/cpu/aml_meson/m3/power_firmware.dat
 endif
 

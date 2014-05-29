@@ -46,7 +46,7 @@ endif
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-all:	power_firmware dsp_firmware $(obj).depend $(LIB) 
+all:	dsp_firmware $(obj).depend $(LIB) 
 
 $(LIB):	$(OBJS)	
 	$(call cmd_link_o_target, $(OBJS))	
@@ -56,21 +56,16 @@ ifndef CONFIG_MESON_TRUSTZONE
 ifdef CONFIG_AML_SUSPEND
 FIRMWARE_AUTO_UPDATE=y
 export FIRMWARE_AUTO_UPDATE
-power_firmware:
-		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
+$(OBJS): power_firmware.dat
+power_firmware.dat: arc_code
 		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/appf
-ifdef CONFIG_CMD_RUNARC
-#		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
-endif
-else
-power_firmware:
-ifdef CONFIG_CMD_RUNARC
-#		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_testpd
-endif
+
+arc_code:
+		make -C $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power
+
 endif
 
-else
-power_firmware:
+
 endif
 
 
