@@ -26,7 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
  * add board battery parameters, this is a backup option if uboot process 
  * battery parameters failed, each board shoud use your own battery parameters
  */
-int config_battery_rdc = 135;
+int config_battery_rdc = 89;
 struct battery_curve config_battery_curve[] = { 
     /* ocv, charge, discharge */
     {3132,     0,      0},  
@@ -34,16 +34,16 @@ struct battery_curve config_battery_curve[] = {
     {3414,     0,      0},  
     {3555,     0,      0},  
     {3625,     1,      2},  
-    {3660,     2,      3},
-    {3696,     3,     12},
-    {3731,    10,     18},
-    {3766,    15,     31},
-    {3801,    22,     45},
-    {3836,    40,     55},
-    {3872,    55,     62},
-    {3942,    68,     73},
-    {4012,    79,     83},
-    {4083,    88,     90},
+    {3660,     2,      6},
+    {3696,     3,     13},
+    {3731,     9,     19},
+    {3766,    15,     35},
+    {3801,    21,     48},
+    {3836,    39,     57},
+    {3872,    50,     63},
+    {3942,    62,     73},
+    {4012,    74,     83},
+    {4083,    85,     92},
     {4153,   100,    100},
 };
 #endif
