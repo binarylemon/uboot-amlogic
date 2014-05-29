@@ -58,7 +58,8 @@
 #endif /*CONFIG_CMD_SF*/
 
 //Amlogic SARADC support
-//#define CONFIG_SARADC 1
+#define CONFIG_SARADC 1
+#define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
@@ -237,7 +238,15 @@
         "run prepare;"\
         "run storeargs;"\
         "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run update_key; " \
         "run switch_bootmode\0" \
+    \
+    "update_key="\
+        "saradc open 0; " \
+        "if saradc get_in_range 0 0x50; then " \
+            "msleep 50; " \
+            "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
+        "fi\0" \
     \
    	"update="\
         /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
