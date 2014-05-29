@@ -1105,9 +1105,13 @@ int optimus_set_burn_complete_flag(void)
         set_default_env("## save_setting ##\n");//use new env directly if uboot is new !!!
         setenv("store", str_store);
         setenv("firstboot", "1");
-        if(!strstr(getenv("bootargs"), "storage")){//user not configure storage in 'bootargs' of default env
+        if(!strstr(getenv("initargs"), "storage") && getenv("initargs")){
+                rc = run_command("setenv initargs ${initargs} storage=${store}", 0);
+                DWN_MSG("[initargs=%s]\n", getenv("initargs"));
+        }
+        else if(!strstr(getenv("bootargs"), "storage") && getenv("bootargs")){//user not configure storage in 'bootargs' of default env
                 rc = run_command("setenv bootargs ${bootargs} storage=${store}", 0);
-                DWN_MSG("bootargs=%s\n", getenv("bootargs"));
+                DWN_MSG("[bootargs=%s]\n", getenv("bootargs"));
         }
     }
 
