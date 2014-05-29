@@ -430,8 +430,9 @@ static void board_pmu_init(void)
 inline void key_init(void)
 {
     setbits_le32(P_AO_GPIO_O_EN_N, (1 << 3));                           // GPIOAO_3 as power key input
-    clrbits_le32(P_AO_RTI_PIN_MUX_REG, (1 << 9));                       // clear pinmux as gpio function 
-    setbits_le32(P_AO_RTI_PULL_UP_REG, ((1 << 3) | (1 << 19)));         // enable pull up/down of gpio3
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, (1 << 7) | (1 << 9) | (1 << 22));                       // clear pinmux as gpio function 
+    //setbits_le32(P_AO_RTI_PULL_UP_REG, ((1 << 3) | (1 << 19)));         // enable pull up/down of gpio3
+    clrbits_le32(P_AO_RTI_PULL_UP_REG, (1 << 19));         // enable pull up/down of gpio3
 }
 
 inline int get_key(void)
@@ -501,6 +502,7 @@ int board_init(void)
 #ifdef CONFIG_NET_WIFI
 	wifi_power_init();
 #endif
+        key_init();
 	return 0;
 }
 
