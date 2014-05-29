@@ -1009,6 +1009,7 @@ int aml1216_init(void)
 {
     uint8_t val;
     printf("Call %s, %d\n", __func__, __LINE__);
+    printf("AML_PMU driver version:0.10\n");
 
     aml1216_get_charge_status(0);
     aml1216_check_fault();
@@ -1046,7 +1047,7 @@ int aml1216_init(void)
     aml1216_set_bits(0x012b, 0xe0, 0xf0);       // David Li
     aml1216_set_bits(0x0128, 0x06, 0x06);
     aml1216_write(0x0129, 0x1c);
-    aml1216_write(0x012a, 0x0f);                // David Li
+    aml1216_write(0x012a, 0x8f);                // David Li
     aml1216_write(0x012c, 0x20);
 
     aml1216_set_gpio(2, 0);                     // open VCCX2
@@ -1054,6 +1055,7 @@ int aml1216_init(void)
     aml1216_set_bits(0x001A, 0x00, 0x06);
     aml1216_set_bits(0x0023, 0x00, 0x0e);
 
+    aml1216_write(0x0019, 0x10);
     aml1216_set_bits(0x0020, 0x00, 0x02);       // according harry
     aml1216_write(0x0130, 0x45);                // according harry
     aml1216_read(0x00d6, &val);

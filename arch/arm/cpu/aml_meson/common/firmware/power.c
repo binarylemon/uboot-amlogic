@@ -973,7 +973,7 @@ int aml1218_set_vddEE_voltage(int voltage)
 
     current = idx_to*5; 
 
-    print_voltage_info("VDDEE", -1, voltage, idx_cur, idx_to, addr);
+    print_voltage_info("VCCK", -1, voltage, idx_cur, idx_to, addr);
     
     val &= ~0x7c;
     val |= (idx_to << 2);
@@ -1066,7 +1066,11 @@ int aml1218_set_dcdc_voltage(int dcdc, int voltage)
     }
     idx_cur  = hard_i2c_read168(DEVID, addr);
     idx_to   = find_idx(start, voltage, step, range);
-    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
+    if (dcdc == 1) {
+        print_voltage_info("VDDEE", dcdc, voltage, idx_cur, idx_to << 1, addr);
+    } else {
+        print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
+    }
     val = idx_cur;
     idx_cur = (idx_cur & 0x7e) >> 1;
 
