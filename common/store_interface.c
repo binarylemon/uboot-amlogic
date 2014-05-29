@@ -519,7 +519,21 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					return -1;
 				}
 			}
-		}
+		}else if(POR_EMMC_BOOT()){
+			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
+            device_boot_flag = EMMC_BOOT_FLAG;		
+			ret = run_command("mmcinfo 1", 0);
+			if(ret != 0){
+				store_msg("mmc cmd %s failed \n",cmd);
+				return -1;
+			}
+            if(_info_disprotect_back_before_mmcinfo1 & DISPROTECT_KEY){
+                MsgP("mmc key\n");
+                run_command("mmc key", 0);
+            }
+            MsgP("mmc erase 1");
+			ret = run_command("mmc erase 1", 0);
+        }
 		return ret;
 	}
 	else if(strcmp(cmd, "init") == 0){
