@@ -92,6 +92,14 @@ static int do_imls (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 static void fixup_silent_linux (void);
 #endif
 
+#ifdef CONFIG_AUTO_SET_BOOTARGS_MEM
+void mem_size_arg_process(void);
+#endif
+
+#ifdef CONFIG_AUTO_SET_MULTI_DT_ID
+extern void board_dt_id_process(void);
+#endif
+
 static image_header_t *image_get_kernel (ulong img_addr, int verify);
 #if defined(CONFIG_FIT)
 static int fit_check_kernel (const void *fit, int os_noffset, int verify);
@@ -851,6 +859,14 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	AML_LOG_TE("cmd_bootm");
 
+#ifdef CONFIG_AUTO_SET_BOOTARGS_MEM
+	mem_size_arg_process();
+#endif
+
+#ifdef CONFIG_AUTO_SET_MULTI_DT_ID
+	board_dt_id_process();
+#endif
+
 	boot_fn = boot_os[images.os.os];
 
 	if (boot_fn == NULL) {
@@ -1403,6 +1419,82 @@ U_BOOT_CMD(
 	"    - Prints information about all images found at sector\n"
 	"      boundaries in flash."
 );
+#endif
+
+#define MEM_PROCESS_DEBUG_INFO 1
+#if MEM_PROCESS_DEBUG_INFO
+#define debug_print printf
+#else
+#define debug_print
+#endif
+#ifdef CONFIG_AUTO_SET_BOOTARGS_MEM
+void mem_size_arg_process(void)
+{
+	/*debug switcher. setenv ddr_auto_size=0, then will skip this function*/
+	char *ddr_auto = getenv("ddr_auto_size");
+	if(ddr_auto){
+		if(!strcmp(ddr_auto, "0")){
+			debug_print("\nddr_auto_size=0, skip process mem arg.\n\n");
+			return;
+		}
+		else{
+			debug_print("\nddr_auto_size!=0, process mem arg.\n\n");
+		}
+	}
+	else{
+		debug_print("\nddr_auto_size not set, process mem arg.\n\n");
+	}
+
+/*replace "mem=XX" argu with real ddr size*/
+	char buf[256] = {0};
+	char *start, *end;
+	start = 0; end = 0;
+	char buf_end[256] = {0};
+	char *cmdline = getenv ("bootargs");
+	unsigned int mem_size = 0;
+	int i;
+	for(i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
+		mem_size += gd->bd->bi_dram[i].size;
+	}
+	/*generate mem=XX setting*/
+	char mem_str[16] = {0};
+	char mem_size_str[8] = {0};
+	mem_size = mem_size >> 20;	//MB
+	sprintf(mem_size_str, "%d", mem_size);
+	strcat(mem_str, "mem=");
+	strcat(mem_str, mem_size_str);
+	strcat(mem_str, "M");
+
+	unsigned int mem_str_length = strlen(mem_str);
+	unsigned int start_addr = 0;
+	printf("\nbefore ddr size arg process: %s\n", cmdline);
+	if(cmdline){
+		if((start = strstr(cmdline, "mem=")) != NULL) {
+			/*have mem= setting, replace it*/
+			start_addr = ((int)start) - ((int)cmdline);
+			memcpy(buf_end, start, (strlen(cmdline) - start_addr));
+			//strncpy(buf_end, strlen(start));
+			buf_end[(strlen(cmdline) - start_addr)] = '\0';
+			end = strchr(buf_end, ' ');
+			strncpy(buf, cmdline, start_addr);
+			strcat(buf, mem_str);
+			if(end)
+				/*more settings after mem=, add them*/
+				strcat(buf, end);
+			else
+				/*mem= is the end*/
+				strcat(buf, "\0");
+		}
+		else{
+			/*have no mem= setting, add it directly*/
+			strcpy(buf, cmdline);
+			strcat(buf, " ");
+			strcat(buf, mem_str);
+		}
+	}
+	debug_print("after ddr size arg process: %s\n\n", buf);
+	setenv("bootargs", buf);
+}
 #endif
 
 /*******************************************************************/
