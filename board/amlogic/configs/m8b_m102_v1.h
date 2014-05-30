@@ -231,6 +231,7 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"magic_key_status=none\0" \
+	"sleep_threshold=20\0" \
 	"usb_burning=update 1000\0"\
 	"preboot="\
 		"echo preboot...;" \
@@ -292,13 +293,21 @@
 				"bmp display ${battery2_offset}; run custom_delay; bmp display ${battery3_offset}; run custom_delay; "\
 			"fi; "\
                 "done\0" \
-	"custom_delay="\
-		"setenv msleep_count 0; "\
-		"while itest ${msleep_count} < 800; do "\
-			"run aconline_or_not; run user_key_check; "\
-			"msleep 1; calc ${msleep_count} + 1 msleep_count; "\
+        "custom_delay="\
+                "setenv msleep_count 0; "\
+                "while itest ${msleep_count} < 800; do "\
+                        "run aconline_or_not; run user_key_check; "\
+                        "msleep 1; calc ${msleep_count} + 1 msleep_count; "\
                 "done; "\
+                "run sleep_or_not;"\
                  "\0"\
+        "sleep_or_not="\
+                "if itest ${sleep_count} > ${sleep_threshold}; then "\
+                        "setenv sleep_count 0; suspend; "\
+                "else "\
+                        "calc ${sleep_count} + 1 sleep_count; "\
+                "fi"\
+                "\0"\
         "batlow_or_not="\
 		"if ac_online; then; "\
 		"else "\
