@@ -12,9 +12,11 @@
 
 
 declare -a cfg_file=[]
+declare filter="$1"
 
 if [ "$1" == "all" ]
 then
+  filter=""
   if [ -f "customer/board/boards.cfg" ]
   then
     cfg_file[0]="board/amlogic/boards.cfg"
@@ -26,6 +28,7 @@ then
 else
   if [ "$1" == "cus" ]
   then
+    filter=""
     cfg_file[0]="customer/board/boards.cfg"
   else
     cfg_file[0]="board/amlogic/boards.cfg"
@@ -70,8 +73,14 @@ do
         #store each configs
         ind=`expr index "$line" ' '`
         sub=`expr substr "$line" 1 "$ind"`
-        ARRAY[$TOTAL]=$sub
-        TOTAL=$TOTAL+1
+        #echo $sub $filter
+        #echo `expr match "$sub" ".*$filter" - length "$filter"`
+        if [ `expr match "$sub" ".*$filter" - length "$filter"` -ge 0 ]
+        then
+          #filter string process
+          ARRAY[$TOTAL]=$sub
+          TOTAL=$TOTAL+1
+        fi
       else
         #blank line process
         if [ -z "$line" ]

@@ -323,6 +323,13 @@
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
+#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
+#define CONFIG_AUTO_SET_MULTI_DT_ID    //if wanna pass mem=xx to kernel, pls disable this config
+#ifndef CONFIG_AUTO_SET_MULTI_DT_ID
+#define CONFIG_AUTO_SET_BOOTARGS_MEM
+#endif
+#endif
+
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
