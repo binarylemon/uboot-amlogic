@@ -20,6 +20,16 @@
 #define CFG_DDR_MODE_STO_ADDR	0	//2 //2 bits, store in efuse etc..
 #define CFG_DDR_MODE_STO_OFFSET	0	//6	//offset of these 2 bits
 
+//low power ddr defines
+#ifdef CONFIG_LPDDR2
+#undef CONFIG_LPDDR3
+#define LPDDR2
+#endif
+#ifdef CONFIG_LPDDR3
+#undef CONFIG_LPDDR2
+#define LPDDR3
+#endif
+
 #if !defined(CONFIG_DDR_COL_BITS)
 	#define CONFIG_DDR_COL_BITS  (10)
 #endif //CONFIG_DDR_COL_BITS

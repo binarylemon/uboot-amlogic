@@ -63,6 +63,10 @@ struct ddr_set{
 	unsigned short t_pctl_txpdll; //PCTL TXPDLL 3..63
 	unsigned short t_pctl_tzqcsi; //PCTL TZQCSI 0..4294967295
 	unsigned short t_pctl_scfg;   //PCTL 
+	#if defined (LPDDR2)||defined (LPDDR3)
+	unsigned short t_pctl_tckesr;   //
+	unsigned short t_pctl_tdpd;   //
+	#endif
 	
 	unsigned       t_mmc_ddr_ctrl;
 	unsigned       t_ddr_pll_cntl;
