@@ -41,7 +41,6 @@ include/configs/customer
 #
 
 *boot_code.dat
-*power_firmware.dat
 *smp.dat
 
 *.depend

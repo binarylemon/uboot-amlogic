@@ -2,7 +2,7 @@
 #include <asm/io.h>
 #include <asm/cache.h>
 #include <asm/arch/io.h>
-#include "power_firmware.dat"
+#include <power_firmware.dat>
 //#include <../appf/power_firmware.dat>
 
 void init_suspend_firmware(void)
