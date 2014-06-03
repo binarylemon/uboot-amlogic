@@ -228,7 +228,7 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #else
 	if(ddr_init(&__ddr_setting))
 	{
-		serial_puts("\nDDR init test fail! Reset...\n");
+		serial_puts("\nDDR init fail! Reset...\n");
 		__udelay(10000);
 		AML_WATCH_DOG_START();
 	}
@@ -251,7 +251,12 @@ int ddr_test_mode = 0;
 #else
 	ddr_test_mode = DDR_TEST_BASEIC;
 #endif
-	ddr_test(ddr_test_mode);
+
+	if(ddr_test(ddr_test_mode)){
+		serial_puts("\nDDR test failed! Reset...\n");
+		__udelay(10000);
+		AML_WATCH_DOG_START();
+	}
 
 	ddr_info_dump(&__ddr_setting);
 

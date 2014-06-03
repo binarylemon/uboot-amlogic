@@ -147,7 +147,7 @@ void ddr_size_auto_detect(struct ddr_set * timing_reg){
 			break;
 		}
 	}
-	print_ddr_size(cur_mem_size);
+	print_ddr_size(cur_mem_size << 20);
 
 	/*Get corresponding row_bits setting and write back to DMC reg*/
 	unsigned int cur_row_bits = MEMORY_ROW_BITS((cur_mem_size<<20), mem_mode);
