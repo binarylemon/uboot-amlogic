@@ -1,5 +1,5 @@
 /*
- * Driver for the amlogic pin controller
+ * Driver for the amlogic vpu controller
  *
  *
  */
@@ -7,7 +7,7 @@
 #include <asm/arch/io.h> 
 #include <asm/arch/clock.h>
 
-#define VPU_VERION	"v01"
+#define VPU_VERION	"v02"
 
 typedef struct {
 	unsigned int h_res;
@@ -19,8 +19,12 @@ typedef struct {
 static char * dt_addr;
 static int dts_ready = 0;
 
-#define CLK_LEVEL_DFT		7
-#define CLK_LEVEL_MAX		8	//limit max clk to 364M
+//************************************************
+// VPU is not supposed to run at 364MHz.  It was designed to max out around 225MHz in BABY.
+// Please lower it to 364/2 = 182MHz.  This is super urgent.
+//************************************************
+#define CLK_LEVEL_DFT		3
+#define CLK_LEVEL_MAX		5	//limit max clk to 212M
 static unsigned int vpu_clk_setting[][3] = {
 	//frequency		clk_mux		div
 	{106250000,		1,			7},	//0
