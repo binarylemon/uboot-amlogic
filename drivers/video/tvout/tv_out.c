@@ -282,7 +282,10 @@ int tv_out_open(int mode)
 
 #if CONFIG_AML_MESON_8
 		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )
+		{
+			WRITE_MPEG_REG(HHI_GCLK_OTHER, READ_MPEG_REG(HHI_GCLK_OTHER) | (0x1<<10) | (0x1<<8)); //enable CVBS GATE, DAC_CLK:bit[10] = 1;VCLK2_ENCI:bit[8] = 1;
 			cvbs_cntl_output(1);
+		}
 #endif
 
 //	tvoutc_setclk(mode);
