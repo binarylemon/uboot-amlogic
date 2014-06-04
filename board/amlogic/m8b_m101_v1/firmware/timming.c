@@ -38,132 +38,132 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 //Following setting for DDR NT5CB(C)256M8FN
 #ifdef DDR3_7_7_7
 	//DTPR0
-	#define CFG_DDR_RTP (7)
-	#define CFG_DDR_WTR (7)
-	#define CFG_DDR_RP  (7)
-	#define CFG_DDR_RCD (7)
-	#define CFG_DDR_RAS (37)
-	#define CFG_DDR_RRD (7)
-	#define CFG_DDR_RC  (50)
+	#define CFG_DDR_RTP (6) 
+	#define CFG_DDR_WTR (6) 
+	#define CFG_DDR_RP  (7) 
+	#define CFG_DDR_RCD (7) 
+	#define CFG_DDR_RAS (4)
+	#define CFG_DDR_RRD (6) 
+	#define CFG_DDR_RC  (27)
 
 	//DTPR1
-	#define CFG_DDR_MRD (4)
-	#define CFG_DDR_MOD (22)
-	#define CFG_DDR_FAW (20)
-	#define CFG_DDR_RFC (160)
-	#define CFG_DDR_WLMRD (40)
-	#define CFG_DDR_WLO (6)
+	#define CFG_DDR_MRD    (4) 
+	#define CFG_DDR_MOD    (12)
+	#define CFG_DDR_FAW    (20)
+	#define CFG_DDR_RFC    (160)
+	#define CFG_DDR_WLMRD  (40)
+	#define CFG_DDR_WLO    (6) 
 
 	//DTPR2
-	#define CFG_DDR_XS   (180)
-	#define CFG_DDR_XP   (7)
-	#define CFG_DDR_CKE  (6)
-	#define CFG_DDR_DLLK (512)
-	#define CFG_DDR_RTODT (0)
-	#define CFG_DDR_RTW   (4)
+	#define CFG_DDR_XS   (512) 
+	#define CFG_DDR_XP   (5)   
+	#define CFG_DDR_CKE  (4)   
+	#define CFG_DDR_DLLK (512) 
+	#define CFG_DDR_RTODT (0)  
+	#define CFG_DDR_RTW   (4)  
 
 	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
 
-	#define CFG_DDR_CL    (7)
-	#define CFG_DDR_WR    (15)
-	#define CFG_DDR_CWL   (6)
-	#define CFG_DDR_AL    (0)
-	#define CFG_DDR_EXSR  (512)
-	#define CFG_DDR_DQS   (4)
-	#define CFG_DDR_CKSRE (10)
-	#define CFG_DDR_CKSRX (10)
-	#define CFG_DDR_ZQCS  (120)
-	#define CFG_DDR_ZQCL  (512)
-	#define CFG_DDR_XPDLL (24)
+	#define CFG_DDR_CL    (7)   
+	#define CFG_DDR_WR    (12)  
+	#define CFG_DDR_CWL   (8)   
+	#define CFG_DDR_AL    (0)   
+	#define CFG_DDR_EXSR  (512) 
+	#define CFG_DDR_DQS   (4)   
+	#define CFG_DDR_CKSRE (8)   
+	#define CFG_DDR_CKSRX (8)   
+	#define CFG_DDR_ZQCS  (64)  
+	#define CFG_DDR_ZQCL  (136) 
+	#define CFG_DDR_XPDLL (20)  
 	#define CFG_DDR_ZQCSI (1000)
 #endif
 
 #ifdef DDR3_9_9_9
 	//DTPR0
-	#define CFG_DDR_RTP (7)
-	#define CFG_DDR_WTR (7)
-	#define CFG_DDR_RP  (9)
-	#define CFG_DDR_RCD (9)
-	#define CFG_DDR_RAS (36)
-	#define CFG_DDR_RRD (6)
-	#define CFG_DDR_RC  (49)
+	#define CFG_DDR_RTP (6) 
+	#define CFG_DDR_WTR (6) 
+	#define CFG_DDR_RP  (9) 
+	#define CFG_DDR_RCD (9) 
+	#define CFG_DDR_RAS (24)
+	#define CFG_DDR_RRD (4) 
+	#define CFG_DDR_RC  (33)
 
 	//DTPR1
-	#define CFG_DDR_MRD (4)
-	#define CFG_DDR_MOD (18)
-	#define CFG_DDR_FAW (20)
-	#define CFG_DDR_RFC (160)
-	#define CFG_DDR_WLMRD (40)
-	#define CFG_DDR_WLO (6)
+	#define CFG_DDR_MRD (4)    
+	#define CFG_DDR_MOD (12)   
+	#define CFG_DDR_FAW (20)   
+	#define CFG_DDR_RFC (174)  
+	#define CFG_DDR_WLMRD (40) 
+	#define CFG_DDR_WLO (6)    
 
 	//DTPR2
-	#define CFG_DDR_XS   (180)
-	#define CFG_DDR_XP   (6)
-	#define CFG_DDR_CKE  (6)
-	#define CFG_DDR_DLLK (512)
-	#define CFG_DDR_RTODT (0)
-	#define CFG_DDR_RTW   (4)
+	#define CFG_DDR_XS   (512)  
+	#define CFG_DDR_XP   (5)    
+	#define CFG_DDR_CKE  (4)    
+	#define CFG_DDR_DLLK (512)  
+	#define CFG_DDR_RTODT (0)   
+	#define CFG_DDR_RTW   (4)   
 
 	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
 		
-	#define CFG_DDR_CL    (9)
-	#define CFG_DDR_WR    (15)
-	#define CFG_DDR_CWL   (7)
-	#define CFG_DDR_AL    (0)
-	#define CFG_DDR_EXSR  (512)
-	#define CFG_DDR_DQS   (4)
-	#define CFG_DDR_CKSRE (10)
-	#define CFG_DDR_CKSRX (10)
-	#define CFG_DDR_ZQCS  (96)
-	#define CFG_DDR_ZQCL  (136)
-	#define CFG_DDR_XPDLL (24)
-	#define CFG_DDR_ZQCSI (1000)
+	#define CFG_DDR_CL    (9)    
+	#define CFG_DDR_WR    (12)   
+	#define CFG_DDR_CWL   (8)    
+	#define CFG_DDR_AL    (0)    
+	#define CFG_DDR_EXSR  (512)  
+	#define CFG_DDR_DQS   (4)    
+	#define CFG_DDR_CKSRE (8)    
+	#define CFG_DDR_CKSRX (8)    
+	#define CFG_DDR_ZQCS  (64)   
+	#define CFG_DDR_ZQCL  (136)  
+	#define CFG_DDR_XPDLL (20)   
+	#define CFG_DDR_ZQCSI (1000) 
 
 #endif
 
 #ifdef DDR3_11_11_11
 	//DTPR0
-	#define CFG_DDR_RTP (7)
-	#define CFG_DDR_WTR (7)
-	#define CFG_DDR_RP  (11)
-	#define CFG_DDR_RCD (11)
-	#define CFG_DDR_RAS (35)
-	#define CFG_DDR_RRD (6)
-	#define CFG_DDR_RC  (48)
-
-	//DTPR1
-	#define CFG_DDR_MRD (4)
-	#define CFG_DDR_MOD (15)
-	#define CFG_DDR_FAW (24)
-	#define CFG_DDR_RFC  160 //(128)
-	#define CFG_DDR_WLMRD (40)
+	#define CFG_DDR_RTP (6)                     
+	#define CFG_DDR_WTR (6)                     
+	#define CFG_DDR_RP  (11)                    
+	#define CFG_DDR_RCD (11)                    
+	#define CFG_DDR_RAS (28)                    
+	#define CFG_DDR_RRD (5)                     
+	#define CFG_DDR_RC  (39)                    
+                                                
+	//DTPR1                                     
+	#define CFG_DDR_MRD (4)                     
+	#define CFG_DDR_MOD (12)                    
+	#define CFG_DDR_FAW (24)                    
+	#define CFG_DDR_RFC  208 //(128)            
+	#define CFG_DDR_WLMRD (40)                  
 	#define CFG_DDR_WLO  7 // (6)  //jiaxing add
-
-	//DTPR2
-	#define CFG_DDR_XS   (180)
-	#define CFG_DDR_XP   (6)
-	#define CFG_DDR_CKE  (5)
-	#define CFG_DDR_DLLK (512)
-	#define CFG_DDR_RTODT (0)
-	#define CFG_DDR_RTW   (4)
-
-	#define CFG_DDR_REFI  (78)
-	#define CFG_DDR_REFI_MDDR3  (4)
-		
-	#define CFG_DDR_CL    (11)
-	#define CFG_DDR_WR    (15)
-	#define CFG_DDR_CWL   (8)
-	#define CFG_DDR_AL    (0)
-	#define CFG_DDR_EXSR  (512)
-	#define CFG_DDR_DQS   (4)
-	#define CFG_DDR_CKSRE (10)
-	#define CFG_DDR_CKSRX (10)
-	#define CFG_DDR_ZQCS  (80)
-	#define CFG_DDR_ZQCL  (512)  //jiaxing add
-	#define CFG_DDR_XPDLL (24)
-	#define CFG_DDR_ZQCSI (1000)
+                                                
+	//DTPR2                                     
+	#define CFG_DDR_XS   (512)                  
+	#define CFG_DDR_XP   (5)                    
+	#define CFG_DDR_CKE  (4)                    
+	#define CFG_DDR_DLLK (512)                  
+	#define CFG_DDR_RTODT (0)                   
+	#define CFG_DDR_RTW   (4)                   
+                                                
+	#define CFG_DDR_REFI  (78)                  
+	#define CFG_DDR_REFI_MDDR3  (4)             
+		                                        
+	#define CFG_DDR_CL    (11)                  
+	#define CFG_DDR_WR    (12)                  
+	#define CFG_DDR_CWL   (8)                   
+	#define CFG_DDR_AL    (0)                   
+	#define CFG_DDR_EXSR  (512)                 
+	#define CFG_DDR_DQS   (4)                   
+	#define CFG_DDR_CKSRE (8)                   
+	#define CFG_DDR_CKSRX (8)                   
+	#define CFG_DDR_ZQCS  (64)                  
+	#define CFG_DDR_ZQCL  (512)  //jiaxing add  
+	#define CFG_DDR_XPDLL (20)                  
+	#define CFG_DDR_ZQCSI (1000)                
 
 #endif
 
@@ -212,7 +212,7 @@ static struct ddr_set __ddr_setting={
 			  (0 << 2) |	//[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
 			  				// and is ignored for mDDR/LPDDR2 and DDR3
 	          (1 << 5) |    //[B5] ddr3en: 1: ddr3 protocal; 0 : ddr2 protocal
-	          (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
+	  //        (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
 	          (((((CFG_DDR_FAW+CFG_DDR_RRD-1)/CFG_DDR_RRD)-4)&0x3)<<18) | //[B19,B18] tfaw_cfg
 	                          	   //tFAW= (4 + MCFG.tfaw_cfg)*tRRD - MCFG1.tfaw_cfg_offset
 	                          	   // 0:tFAW=4*tRRD - mcfg1.tfaw_cfg_offset 
@@ -246,7 +246,7 @@ static struct ddr_set __ddr_setting={
 			(0 << 3 ) |   //[B3]burst type,  0:sequential; 1:Interleave.
 			(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
 				                    						      
-       	[1]=(0 << 9)|(0<< 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+       	[1]=(0 << 9)|(1<< 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
            	(0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 		#ifdef CONFIG_ENABLE_WRITE_LEVELING
 	            (1 << 7)|     // Write leveling enable
@@ -257,7 +257,7 @@ static struct ddr_set __ddr_setting={
 		//#ifdef CONFIG_ENABLE_WRITE_LEVELING //jiaxing delete
 	   	//[2]=0,
 		//#else
-	   	[2]=(0 << 10)|(1 <<9)|//[B10,B9]TRRWR: 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
+	   	[2]=(0 << 10)|(0 <<9)|//[B10,B9]TRRWR: 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
 	   		(((CFG_DDR_CWL-5)&0x7)<<3), //[B5,B4,B3] CWL: 
 					//000 = 5 (tCK ? 2.5ns)
 	        		//001 = 6 (2.5ns > tCK * 1.875ns)
@@ -280,7 +280,7 @@ static struct ddr_set __ddr_setting={
 				(CFG_DDR_RRD << 22 )|       //tRRD       //7500ps
 				(CFG_DDR_RC  << 26)),
 		
-		[1] =  ((CFG_DDR_MRD << 0 ) |		//tMRD      //4 TCK
+		[1] =  ((CFG_DDR_MRD -4<< 0 ) |		//tMRD      //4 TCK
 				((CFG_DDR_MOD - 12) << 2 ) | //tMOD      //0: 12 TCK
 				(CFG_DDR_FAW  << 5 )  |      //tFAW      //40000ps
 				(CFG_DDR_RFC  << 11)  |      //tRFC      //160000~70312500

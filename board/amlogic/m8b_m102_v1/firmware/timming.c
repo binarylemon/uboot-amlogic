@@ -212,7 +212,7 @@ static struct ddr_set __ddr_setting={
 			  (0 << 2) |	//[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
 			  				// and is ignored for mDDR/LPDDR2 and DDR3
 	          (1 << 5) |    //[B5] ddr3en: 1: ddr3 protocal; 0 : ddr2 protocal
-	          (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
+	  //        (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
 	          (((((CFG_DDR_FAW+CFG_DDR_RRD-1)/CFG_DDR_RRD)-4)&0x3)<<18) | //[B19,B18] tfaw_cfg
 	                          	   //tFAW= (4 + MCFG.tfaw_cfg)*tRRD - MCFG1.tfaw_cfg_offset
 	                          	   // 0:tFAW=4*tRRD - mcfg1.tfaw_cfg_offset 
@@ -246,7 +246,7 @@ static struct ddr_set __ddr_setting={
 			(0 << 3 ) |   //[B3]burst type,  0:sequential; 1:Interleave.
 			(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
 				                    						      
-       	[1]=(0 << 9)|(0<< 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+       	[1]=(0 << 9)|(1<< 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
            	(0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 		#ifdef CONFIG_ENABLE_WRITE_LEVELING
 	            (1 << 7)|     // Write leveling enable
@@ -257,7 +257,7 @@ static struct ddr_set __ddr_setting={
 		//#ifdef CONFIG_ENABLE_WRITE_LEVELING //jiaxing delete
 	   	//[2]=0,
 		//#else
-	   	[2]=(0 << 10)|(1 <<9)|//[B10,B9]TRRWR: 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
+	   	[2]=(0 << 10)|(0 <<9)|//[B10,B9]TRRWR: 00:Dynamic ODT off , 01:Rzq/4, 10:Rzq/2								
 	   		(((CFG_DDR_CWL-5)&0x7)<<3), //[B5,B4,B3] CWL: 
 					//000 = 5 (tCK ? 2.5ns)
 	        		//001 = 6 (2.5ns > tCK * 1.875ns)
@@ -280,7 +280,7 @@ static struct ddr_set __ddr_setting={
 				(CFG_DDR_RRD << 22 )|       //tRRD       //7500ps
 				(CFG_DDR_RC  << 26)),
 		
-		[1] =  ((CFG_DDR_MRD << 0 ) |		//tMRD      //4 TCK
+		[1] =  ((CFG_DDR_MRD -4<< 0 ) |		//tMRD      //4 TCK
 				((CFG_DDR_MOD - 12) << 2 ) | //tMOD      //0: 12 TCK
 				(CFG_DDR_FAW  << 5 )  |      //tFAW      //40000ps
 				(CFG_DDR_RFC  << 11)  |      //tRFC      //160000~70312500
