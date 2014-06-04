@@ -541,7 +541,9 @@ struct aml_nand_bch_desc{
 #define    SANDISK_19NM			50
 #define     SANDISK_24NM			51
 #define     SANDISK_A19NM		52
+#define     SANDISK_A19NM_4G	53
 
+#define   INTEL_20NM			60
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -557,7 +559,9 @@ struct aml_nand_bch_desc{
 #define	NAND_CMD_SANDISK_INIT_ONE				0x3B
 #define	NAND_CMD_SANDISK_INIT_TWO				0xB9
 
+#define	NAND_CMD_SANDISK_DSP_OFF				0x25
 #define	NAND_CMD_SANDISK_DSP_ON					0x26
+
 #define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
 #define	NAND_CMD_SANDISK_LOAD_VALUE_ONE			0x53
 #define	NAND_CMD_SANDISK_LOAD_VALUE_TWO			0x54
