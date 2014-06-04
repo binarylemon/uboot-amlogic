@@ -168,6 +168,12 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_put_dec(get_utimer(nTEBegin));
     serial_puts(" us\n");
 
+#if defined(CONFIG_M8B) && defined(CONFIG_AML_SECU_BOOT_V2) && \
+    defined(CONFIG_AML_SPL_L1_CACHE_ON)
+    asm volatile ("ldr	sp, =(0x12000000)");
+    //serial_puts("aml log : set SP to 0x12000000\n");
+#endif
+
 	//asm volatile ("wfi");
 	    
     // load uboot
@@ -215,6 +221,26 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//temp added
 	writel(0,0xc8100000);
 #endif
+
+#if defined(CONFIG_M8B) && defined(CONFIG_AML_SECU_BOOT_V2) && \
+    defined(CONFIG_AML_SPL_L1_CACHE_ON)
+
+    unsigned int fpAddr = CONFIG_SYS_TEXT_BASE;
+
+#ifdef CONFIG_IMPROVE_UCL_DEC
+    fpAddr = CONFIG_SYS_TEXT_BASE+0x800000;
+#endif
+
+#ifdef CONFIG_MESON_TRUSTZONE
+    fpAddr = SECURE_OS_DECOMPRESS_ADDR;
+#endif
+
+    typedef  void (*t_func_v1)(void);
+    t_func_v1 fp_program = (t_func_v1)fpAddr;
+    //here need check ?
+    fp_program();
+#endif
+
 
 #ifdef CONFIG_MESON_TRUSTZONE		
     return ovFlag;
