@@ -261,14 +261,43 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     // AVI frame
     //hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x00, 0x46);              // PB0: Checksum
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x01, 0x5e);              // PB1 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+    switch(vic) {
+    case HDMI_640x480p60:
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_1440x480p60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x58);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
+        break;
+    }
+    switch(vic) {
+    case HDMI_480p60:
+    case HDMI_480i60:
+    case HDMI_576p50:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x03);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x13);              // PB3 (Note: the value should be meaningful but is not!)
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, vic);               // PB4: [7]    Rsrv
     if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, 0);             // if mode is 4k, then set vic = 0 and set to VSDB
     }
-    hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv
-                                                                        //      [3:0]  PixelRepeat
+    switch(vic) {
+    case HDMI_480i60:
+    case HDMI_576i50:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 1); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    default:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 0); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
+        break;
+    }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1C, 0x82);              // HB0: packet type=0x82
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1D, 0x02);              // HB1: packet version =0x02
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1E, 0x0D);              // HB2: payload bytes=13
@@ -284,19 +313,11 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
 
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x1F, 0xFF);              // Enable AVI packet generation
 
-    tmp_add_data = 0xa; // time_divider[7:0] for DDC I2C bus clock
+    tmp_add_data = 0x18 - 1; // time_divider[7:0] for DDC I2C bus clock
     hdmi_wr_reg(TX_HDCP_CONFIG3, tmp_add_data);
+    hdmi_wr_reg(TX_HDCP_CONFIG0, 0x3<<3);
     
-    tmp_add_data  = 0;
-    tmp_add_data |= 1   << 7; // [7] cp_desired 
-    tmp_add_data |= 1   << 6; // [6] ess_config 
-    tmp_add_data |= 0   << 5; // [5] set_avmute 
-    tmp_add_data |= 0   << 4; // [4] clear_avmute 
-    tmp_add_data |= 1   << 3; // [3] hdcp_1_1 
-    tmp_add_data |= 0   << 2; // [2] forced_polarity 
-    tmp_add_data |= 0   << 1; // [1] forced_vsync_polarity 
-    tmp_add_data |= 0   << 0; // [0] forced_hsync_polarity
-    hdmi_wr_reg(TX_HDCP_MODE, tmp_add_data);
+    hdmi_wr_reg(TX_HDCP_MODE, 0x40);
     
     // --------------------------------------------------------
     // Release TX out of reset
@@ -335,7 +356,7 @@ static void hdmi_tx_gate(HDMI_Video_Codes_t vic)
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 4, 1); //enable VCLK2_VENCP
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 9, 1); //enable VCLK2_ENC
     }
-
+    
     aml_set_reg32_bits_op(P_PERIPHS_PIN_MUX_1, 0x7, 24, 3);  //HPD SCL pinmux
 }
 
@@ -434,7 +455,7 @@ static void hdmi_tvenc480i_set(HDMI_Video_Codes_t vic)
         vs_adjust   = 1;
     } else {
         hs_begin    = de_h_end + front_porch_venc; // 1675 + 38 = 1713
-        vs_adjust   = 0;
+        vs_adjust   = 1;
     }
     hs_end  = modulo(hs_begin + hsync_pixels_venc,   total_pixels_venc); // (1713 + 124) % 1716 = 121
     aml_write_reg32_op(P_ENCI_DVI_HSO_BEGIN,  hs_begin);  // 1713
@@ -1150,7 +1171,7 @@ static void hdmi_tx_phy(HDMI_Video_Codes_t vic)
         aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c34d0b);
         break;
     default:
-        aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c38d0b);
+        aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
     }
     aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 0);
     aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 1);       // Soft Reset HDMI PHY
@@ -1247,6 +1268,30 @@ static void hdmi_tx_set_vend_spec_infofram(HDMI_Video_Codes_t vic)
     hdmitx_set_packet(HDMI_PACKET_VEND, VEN_DB, VEN_HB);
 }
 
+// When have below format output, we shall manually configure
+// bolow register to get stable Video Timing.
+static void hdmi_reconfig_packet_setting(HDMI_Video_Codes_t vic)
+{
+    switch(vic) {
+    case HDMI_1080p50:
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0x3a);         //0x7e
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_1, 0x01);    //0x78
+        hdmi_wr_reg(TX_PACKET_ALLOC_ACTIVE_2, 0x12);    //0x79
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_1, 0x10);       //0x7a
+        hdmi_wr_reg(TX_PACKET_ALLOC_EOF_2, 0x12);       //0x7b
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_0, 0x01);       //0x81
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_1, 0x00);       //0x82
+        hdmi_wr_reg(TX_CORE_ALLOC_VSYNC_2, 0x0a);       //0x83
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_1, 0xb6);       //0x7c
+        hdmi_wr_reg(TX_PACKET_ALLOC_SOF_2, 0x11);       //0x7d
+        hdmi_wr_reg(TX_PACKET_CONTROL_1, 0xba);         //0x7e
+        break;
+    default:
+        break;
+    }
+    printf("reconfig packet setting done\n");
+}
+
 void hdmi_tx_set(HDMI_Video_Codes_t vic) 
 {
     if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
@@ -1258,5 +1303,6 @@ void hdmi_tx_set(HDMI_Video_Codes_t vic)
     hdmi_tx_misc(vic);
     hdmi_tx_enc(vic);
     hdmi_tx_set_vend_spec_infofram(vic);
+    hdmi_reconfig_packet_setting(vic);
     hdmi_tx_phy(vic);
 }
