@@ -126,7 +126,7 @@
 #define CONFIG_DVDD_1V8                 1700        // DVDD18 voltage when boot, option
 #define CONFIG_VCC2V5                   2500        // VCC2.5v voltage when boot, option
 #define CONFIG_VCC_CAM                  1500        // voltage for camera when boot, option
-#define CONFIG_VDDIO_AO28               2850        // VDDIO_AO28 voltage when boot, option
+#define CONFIG_VDDIO_AO28               3150        // VDDIO_AO28 voltage when boot, option
 
 #define CONFIG_VCC3V3                 	3150        // VCC3.3v voltage when boot, option
 
