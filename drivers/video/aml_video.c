@@ -151,6 +151,7 @@ void video_set_lut (
 	return;
 }
 
+
 int video_display_bitmap(ulong bmp_image, int x, int y)
 {
     vidinfo_t * info = NULL;
@@ -293,7 +294,12 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 #endif
 
 #ifdef CONFIG_OSD_SCALE_ENABLE
-	osd_enable_hw(0, osd_index);
+        if(getenv("bmp_osd_control")) {
+                osd_enable_hw(simple_strtoul(getenv("bmp_osd_control"), NULL, 10), osd_index);
+        }
+        else{
+                osd_enable_hw(0, osd_index);//default to close osd in 'bmp display'
+        }
 #endif
 	bmap = (uchar *)bmp + le32_to_cpu (bmp->header.data_offset);
 	fb   = (uchar *) (info->vd_base +

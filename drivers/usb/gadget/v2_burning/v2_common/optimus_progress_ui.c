@@ -14,21 +14,23 @@
 #include <lcd.h>
 #include <video_font.h>
 
+#ifdef CONFIG_VIDEO_AMLLCD
 extern int lcd_drawchars (ushort x, ushort y, uchar *str, int count);
+#else
+#define lcd_drawchars(x, y, str, count) 
+#define lcd_printf(fmt...)      
+#endif// #ifdef CONFIG_VIDEO_AMLLCD
 
-//default env for display UI
-const char* env_video_prepare_for_upgrade = "echo video prepare for upgrade; "\
-                            "video open; "\
-                            "video clear; "\
-                            "video dev bl_on; "\
-                            /* twice clear */ "video clear; ";
-
-const char* env_ui_report_burning = "bmp display ${upgrade_upgrading_offset}";
+#ifdef CONFIG_VIDEO_AMLTVOUT
+#define _VIDEO_DEV_OPEN "video dev open ${outputmode};"
+#else
+#define _VIDEO_DEV_OPEN "video dev bl_on;"
+#endif// #ifdef CONFIG_VIDEO_AMLTVOUT
 
 //if env upgrade_logo_offset exist, use bmp resources existed in memory
 int video_res_prepare_for_upgrade(HIMAGE hImg)
 {
-    char* env_name  = NULL;
+    const char* env_name  = NULL;
     int ret = 0;
     const char* UpgradeLogoAddr = (const char*)OPTIMUS_DOWNLOAD_DISPLAY_BUF;
     char env_buf[32];
@@ -63,44 +65,37 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
     }
 
     //video prepare to show upgrade bmp
-    {
 
 #ifdef CONFIG_VIDEO_AMLLCD
-        if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get())
-        {
+    if(OPTIMUS_WORK_MODE_SDC_PRODUCE == optimus_work_mode_get())
+    {
             DWN_MSG("LCD Initialize for upgrade:\n");
             aml_lcd_init();
-        }
+    }
 #endif// #ifdef CONFIG_VIDEO_AMLLCD
 
-        env_name = "burn_logo_prepare";
-        if(setenv(env_name, (char*)env_video_prepare_for_upgrade)){
-            DWN_ERR("Fail to set env(%s=%s)\n", env_name, env_video_prepare_for_upgrade);
-            return __LINE__;
-        }
-        sprintf(env_buf, "run %s", env_name);
-        ret = run_command(env_buf, 0);
-        if(ret){
-            DWN_ERR("Fail in run_command[%s]\n", env_buf);
-            return __LINE__;
-        }
-    }
+    DWN_MSG("echo video prepare for upgrade\n");
+#ifdef CONFIG_CMD_LOGO
+    DWN_MSG("outputmode=%s\n", getenv("outputmode"));
+    env_name = "logo size ${outputmode}";
+    ret = run_command(env_name, 0);
+    if(ret)goto _fail;
+#endif// #ifdef CONFIG_CMD_LOGO
+    env_name = "video open; video clear;";
+    ret = run_command(env_name, 0);
+    if(ret)goto _fail;
+
+    env_name = _VIDEO_DEV_OPEN;
+    ret = run_command(env_name, 0);
+    if(ret)goto _fail;
+
+    ret = run_command("video clear", 0);//twice clear it
 
     return 0;
-}
 
-//Display logo to report platform is in burning state
-int show_logo_to_report_burning(void)
-{
-    int ret = 0;
-
-    ret = run_command(env_ui_report_burning, 0);
-    if(ret){
-        DWN_ERR("Fail in display burning logo\n");
-        return __LINE__;
-    }
-
-    return 0;
+_fail:
+    DWN_ERR("Fail in run_command[%s]\n", env_name);
+    return ret;
 }
 
 static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report burning result is failed
@@ -121,15 +116,24 @@ static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report b
         }
         bmpAddrEnv = getenv((char*)bmpOffsetName);
     }
-    sprintf(bmpCmd, "bmp display %s", bmpAddrEnv);
+    sprintf(bmpCmd, "bmp display %s ", bmpAddrEnv);
 
     ret = run_command(bmpCmd, 0);
     if(ret){
-        DWN_ERR("Fail in run[%s]\n", bmpCmd);
+        DWN_ERR("Fail in run[%s], bmpOffsetName=%s\n", bmpCmd, bmpOffsetName);
         return __LINE__;
     }
+#ifdef CONFIG_OSD_SCALE_ENABLE
+    run_command("bmp scale", 0);
+#endif// #ifdef CONFIG_OSD_SCALE_ENABLE
 
     return 0;
+}
+
+//Display logo to report platform is in burning state
+int show_logo_to_report_burning(void)
+{
+    return _show_burn_logo("upgrade_upgrading_offset");
 }
 
 int show_logo_to_report_burn_success(void)
@@ -282,7 +286,7 @@ int optimus_progress_ui_set_unfocus_bkg(__hdle hUiProgress, unsigned unfocusBmpA
     {
         char cmd[64];
 
-        sprintf(cmd, "bmp display %x %d %d", unfocusBmpAddr, progressBarX, progressBarY);
+        sprintf(cmd, "bmp display 0x%x %d %d 1", unfocusBmpAddr, progressBarX, progressBarY);
         if(run_command(cmd, 0)){
             DWN_ERR("Fail to in cmd[%s]\n", cmd);
             show_logo_report_burn_ui_error(); 
@@ -291,6 +295,10 @@ int optimus_progress_ui_set_unfocus_bkg(__hdle hUiProgress, unsigned unfocusBmpA
        
         progressBarX += bkgWidth;
     }
+
+#ifdef CONFIG_OSD_SCALE_ENABLE
+    run_command("bmp scale", 0);
+#endif// #ifdef CONFIG_OSD_SCALE_ENABLE
 
     return 0;
 }
@@ -354,7 +362,7 @@ int optimus_progress_ui_direct_update_progress(__hdle hUiProgress, const int per
         const unsigned bmpAddr          = pUiProgress->bmpAddr_f;
         char cmd[64];
 
-        sprintf(cmd, "bmp display %x %d %d", bmpAddr, progressBarX, progressBarY);
+        sprintf(cmd, "bmp display %x %d %d 1", bmpAddr, progressBarX, progressBarY);
         if(run_command(cmd, 0)){
             DWN_ERR("Fail to in cmd[%s]\n", cmd);
             show_logo_report_burn_ui_error(); 
@@ -363,6 +371,9 @@ int optimus_progress_ui_direct_update_progress(__hdle hUiProgress, const int per
        
         pUiProgress->nextProgressBarX += pUiProgress->progressBarWidth_f;
     }
+#ifdef CONFIG_OSD_SCALE_ENABLE
+    run_command("bmp scale", 0);
+#endif// #ifdef CONFIG_OSD_SCALE_ENABLE
 
     pUiProgress->curPercent                 = percents;
 
@@ -449,6 +460,7 @@ __hdle optimus_progress_ui_request_for_sdc_burn(void)
                 "upgrade_unfocus_offset", getenv("upgrade_unfocus_offset")); 
         show_logo_report_burn_ui_error(); return NULL;
     }
+    DWN_DBG("upgrade_unfocus_offset=%s\n", getenv("upgrade_unfocus_offset"));
 
     DWN_MSG("dw,dh[%u, %u]\n", display_width, display_height);
     hUiProgress = optimus_progress_ui_request(100, 0,barAddr, display_width, barYCor);

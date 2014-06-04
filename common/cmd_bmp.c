@@ -127,6 +127,8 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 		x = -1;
 		y = -1;
 		break;
+
+        case 5://Added by Sam, to control whether disable OSD in 'bmp display'
 	case 4:
 		addr = simple_strtoul(argv[1], NULL, 16);
 	        x = simple_strtoul(argv[2], NULL, 10);
@@ -135,6 +137,10 @@ static int do_bmp_display(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 	default:
 		return cmd_usage(cmdtp);
 	}
+
+#ifdef CONFIG_OSD_SCALE_ENABLE
+        setenv("bmp_osd_control", argc > 4 ? argv[4] : "");//Added by Sam, to control whether disable OSD in 'bmp display'
+#endif//#ifdef CONFIG_OSD_SCALE_ENABLE
 
 	 return (bmp_display(addr, x, y));
 }
@@ -165,7 +171,7 @@ static int do_bmp_scale(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 
 static cmd_tbl_t cmd_bmp_sub[] = {
 	U_BOOT_CMD_MKENT(info, 3, 0, do_bmp_info, "", ""),
-	U_BOOT_CMD_MKENT(display, 5, 0, do_bmp_display, "", ""),
+	U_BOOT_CMD_MKENT(display, 6, 0, do_bmp_display, "", ""),
 	U_BOOT_CMD_MKENT(scale, 4, 0, do_bmp_scale, "", ""),
 };
 
@@ -202,7 +208,7 @@ static int do_bmp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 
 U_BOOT_CMD(
-	bmp,	5,	1,	do_bmp,
+	bmp,	6,	1,	do_bmp,
 	"manipulate BMP image data",
 	"info <imageAddr>          - display image info\n"
 	"bmp display <imageAddr> [x y] - display image at x,y\n"
