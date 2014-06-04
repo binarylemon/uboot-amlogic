@@ -24,6 +24,8 @@ static int aml1218_curr_dir = 0;
 static int aml1218_battery_test = 0;
 static int charger_sign_bit = 0;
 
+static int pmu_init_chgvol = 0;
+static int battery_rdc = 0;
 int aml1218_set_charge_enable(int enable);
 int aml1218_write(int add, uint8_t val)
 {
@@ -242,15 +244,17 @@ int aml1218_get_charge_status(int print)
     uint32_t reg_all;
     int  vsys_voltage;
     int  vbat_voltage;
-    vsys_voltage = aml1218_get_vsys_voltage();
-    vbat_voltage = aml1218_get_battery_voltage();
 
-    if ((vsys_voltage > vbat_voltage) && (vsys_voltage - vbat_voltage < 500)) {
-        printf("%s, vsys is not large, disable charge, vsys:%d, vbat:%d\n", 
-               __func__, vsys_voltage, vbat_voltage); 
-        aml1218_set_charge_enable(0);
-    } else {
-        aml1218_set_charge_enable(1);
+    if (print) {
+        vsys_voltage = aml1218_get_vsys_voltage();
+        vbat_voltage = aml1218_get_battery_voltage();
+        if ((vsys_voltage > vbat_voltage) && (vsys_voltage - vbat_voltage < 500)) {
+            printf("%s, vsys is not large, disable charge, vsys:%d, vbat:%d\n", 
+                   __func__, vsys_voltage, vbat_voltage); 
+            aml1218_set_charge_enable(0);
+        } else {
+            aml1218_set_charge_enable(1);
+        }
     }
     /*
      * work around for charge status register can't update problem
@@ -395,10 +399,81 @@ int aml1218_get_gpio(int pin, int *val)
     
 }
 
+int aml1218_get_otp_version()
+{
+    uint8_t val = 0; 
+    int  otp_version = 0;
+
+    aml1218_read(0x007e, &val);
+    otp_version = (val & 0x60) >> 5;
+
+    printf("OTP version:%d\n", otp_version);
+    return otp_version;
+}
+
+static int aml1218_cal_ocv(void)
+{
+    int para_flag;
+    int vbat;
+    int ibat;
+    int ocv;
+    int charge_status;
+
+    if (!battery_rdc) {
+        para_flag = get_battery_para_flag();
+        if (para_flag == PARA_UNPARSED || para_flag == PARA_PARSE_SUCCESS) {
+            if (para_flag == PARA_UNPARSED) {
+                if (parse_battery_parameters() > 0) {
+                    set_battery_para_flag(PARA_PARSE_SUCCESS);
+                    para_flag = PARA_PARSE_SUCCESS;
+                } else {
+                    set_battery_para_flag(PARA_PARSE_FAILED);
+                }
+            }
+            if (para_flag == PARA_PARSE_SUCCESS) {
+                battery_rdc = board_battery_para.pmu_battery_rdc;
+                printf("%s, use dts rdc:%d\n", __func__, battery_rdc);
+            }
+        } else {
+            extern int config_battery_rdc;
+            battery_rdc = config_battery_rdc;
+            printf("%s, use config rdc:%d\n", __func__, battery_rdc);
+        }
+    }
+    vbat = aml1218_get_battery_voltage();
+    ibat = aml1218_get_battery_current();
+    charge_status = aml1218_get_charge_status(0);
+    if (charge_status == 1) {
+        ocv = vbat - (ibat * battery_rdc) / 1000;
+    } else if (charge_status == 2) {
+        ocv = vbat - (ibat * battery_rdc) / 1000;    
+    } else {
+        ocv = vbat;    
+    }   
+    return ocv;
+}
+
 int aml1218_set_charge_enable(int enable)
 {
     uint8_t val = 0; 
+    uint8_t val_t = 0;
+    int otp_version = 0;
+    int charge_status = 0;
+    int ocv = 0;
 
+    if (enable) {
+        otp_version = aml1218_get_otp_version();
+        if (otp_version == 0) {   
+            aml1218_set_full_charge_voltage(4050000);
+            ocv = aml1218_cal_ocv();
+            if (ocv > 4050) {   
+                printf("%s, ocv = %d, do not open charger.\n", __func__, ocv);
+                return aml1218_set_bits(0x0017, 0x00, 0x01);
+            }
+        } else if(otp_version >= 1) {
+            aml1218_set_full_charge_voltage(pmu_init_chgvol);
+        }
+    }
     return aml1218_set_bits(0x0017, ((enable & 0x01)), 0x01);
 }
 
@@ -477,7 +552,6 @@ int aml1218_get_charging_percent()
     int para_flag;
     static int ocv_full  = 0;
     static int ocv_empty = 0;
-    static int battery_rdc;
     static struct battery_curve *battery_curve;
 
     para_flag = get_battery_para_flag();
@@ -935,7 +1009,7 @@ static void dump_pmu_register(void)
 {
     uint8_t val[16];
     int     i;
-    int     addr_table[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 
+    int     addr_table[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
                             17, 18, 19, 20, 21, 22, 23, 24, 34, 35, 36, 37};
 
     printf("[aml1218] DUMP ALL REGISTERS\n");
@@ -999,7 +1073,7 @@ int aml1218_init(void)
 {
     uint8_t val;
     printf("Call %s, %d\n", __func__, __LINE__);
-    printf("AML_PMU driver version:0.10\n");
+    printf("AML_PMU driver version:0.30\n");
 
     aml1218_get_charge_status(0);
     aml1218_check_fault();
@@ -1036,7 +1110,7 @@ int aml1218_init(void)
      */
   //aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
-  //aml1218_set_bits(0x002c, 0x24, 0x24);       // David Li
+    aml1218_set_bits(0x002c, 0x20, 0x20);       // David Li
     aml1218_set_bits(0x001c, 0x00, 0x40);       // David Li, mask ov fault of charger
     aml1218_set_bits(0x012b, 0xe0, 0xf0);       // David Li
     aml1218_set_bits(0x0128, 0x0e, 0x0e);
@@ -1073,7 +1147,10 @@ int aml1218_init_para(struct battery_parameter *battery)
 {
     int vbat, vsys;
     if (battery) {
-        aml1218_set_full_charge_voltage(battery->pmu_init_chgvol);
+        battery_rdc = battery->pmu_battery_rdc;
+        pmu_init_chgvol = battery->pmu_init_chgvol;
+        aml1218_set_charge_enable(0); 
+      //aml1218_set_full_charge_voltage(battery->pmu_init_chgvol);
         aml1218_set_charge_end_rate    (battery->pmu_init_chgend_rate);
         aml1218_set_trickle_time       (battery->pmu_init_chg_pretime);
         aml1218_set_rapid_time         (battery->pmu_init_chg_csttime);
@@ -1086,7 +1163,7 @@ int aml1218_init_para(struct battery_parameter *battery)
             printf("%s, vsys is not large, disable charger, vsys:%d, vbat:%d\n", __func__, vsys, vbat);
             aml1218_set_charge_enable(0);
         } else {
-            aml1218_set_charge_enable      (battery->pmu_init_chg_enabled);
+            aml1218_set_charge_enable(battery->pmu_init_chg_enabled);
         }
         return 0;
     } else {
