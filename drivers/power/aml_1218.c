@@ -6,6 +6,9 @@
 #include <aml_i2c.h>
 #include <amlogic/aml_lcd.h>
 #include <amlogic/aml1218_pmu.h>
+#ifdef CONFIG_USB_DWC_OTG_HCD
+#include <asm/arch/usb.h>
+#endif
 
 #include <amlogic/aml_pmu_common.h>
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
@@ -453,6 +456,18 @@ static int aml1218_cal_ocv(void)
     return ocv;
 }
 
+#ifdef CONFIG_USB_DWC_OTG_HCD
+static int curr_usb_mode = 0;
+int aml1218_usb_bc_process(int mode)
+{
+    curr_usb_mode = mode; 
+    if ((aml1218_get_otp_version() == 0) && (mode == BC_MODE_SDP)) {
+        aml1218_set_charge_enable(0);
+    }
+    return 0;
+}
+#endif
+
 int aml1218_set_charge_enable(int enable)
 {
     uint8_t val = 0; 
@@ -465,6 +480,12 @@ int aml1218_set_charge_enable(int enable)
         otp_version = aml1218_get_otp_version();
         if (otp_version == 0) {   
             aml1218_set_full_charge_voltage(4050000);
+        #ifdef CONFIG_USB_DWC_OTG_HCD
+            if (curr_usb_mode == BC_MODE_SDP) {
+                printf("pc connected, disable charger\n");
+                return aml1218_set_bits(0x0017, 0x00, 0x01);
+            } 
+        #endif
             ocv = aml1218_cal_ocv();
             if (ocv > 4050) {   
                 printf("%s, ocv = %d, do not open charger.\n", __func__, ocv);
@@ -1073,7 +1094,7 @@ int aml1218_init(void)
 {
     uint8_t val;
     printf("Call %s, %d\n", __func__, __LINE__);
-    printf("AML_PMU driver version:0.30\n");
+    printf("AML_PMU driver version:0.40\n");
 
     aml1218_get_charge_status(0);
     aml1218_check_fault();
@@ -1111,7 +1132,7 @@ int aml1218_init(void)
   //aml1218_set_bits(0x002b, 0x80, 0x80);       // David Li, disable usb current limit
   //aml1218_set_bits(0x002e, 0x80, 0x80);       // David Li, disable dcin current limit
     aml1218_set_bits(0x002c, 0x20, 0x20);       // David Li
-    aml1218_set_bits(0x001c, 0x00, 0x40);       // David Li, mask ov fault of charger
+    aml1218_set_bits(0x001c, 0x00, 0x60);       // David Li, mask ov fault of charger
     aml1218_set_bits(0x012b, 0xe0, 0xf0);       // David Li
     aml1218_set_bits(0x0128, 0x0e, 0x0e);
     aml1218_write(0x0129, 0x1c);
@@ -1184,6 +1205,9 @@ static struct aml_pmu_driver g_aml_pmu_driver = {
     .pmu_set_bits                = aml1218_set_bits,
     .pmu_set_usb_current_limit   = aml1218_set_usb_current_limit,
     .pmu_set_charge_current      = aml1218_set_charging_current,
+#ifdef CONFIG_USB_DWC_OTG_HCD
+    .pmu_usb_bc_process          = aml1218_usb_bc_process,
+#endif
     .pmu_power_off               = aml1218_power_off,
     .pmu_init_para               = aml1218_init_para,
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST

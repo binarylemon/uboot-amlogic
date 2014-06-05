@@ -359,9 +359,7 @@ static int usb_charging_detect_call_back(char bc_mode)
         #endif
 			break;
 
-		case BC_MODE_UNKNOWN:
 		case BC_MODE_SDP:
-		default:
 			//Limit chargging current <= 500mA
 			//Or detet dec-charger
         #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -373,6 +371,9 @@ static int usb_charging_detect_call_back(char bc_mode)
              * to 500mA as default
              */
             battery = get_battery_para();
+            if (driver && driver->pmu_usb_bc_process) {
+                driver->pmu_usb_bc_process(bc_mode);
+            }
             if (driver && battery && driver->pmu_set_usb_current_limit) {
                 if (battery->pmu_usbcur_limit) {
                     driver->pmu_set_usb_current_limit(battery->pmu_usbcur);
@@ -384,6 +385,9 @@ static int usb_charging_detect_call_back(char bc_mode)
             }
         #endif
 			break;
+		case BC_MODE_UNKNOWN:
+        default:
+            break;
 	}
 	return 0;
 }

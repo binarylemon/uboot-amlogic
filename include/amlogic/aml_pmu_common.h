@@ -26,6 +26,9 @@ struct aml_pmu_driver {
     int  (*pmu_set_usb_current_limit)(int curr);                                // set usb current limit
     int  (*pmu_set_charge_current)(int curr);                                   // set charge current
     int  (*pmu_init_para)(struct battery_parameter *battery);                   // init pmu by battery parameter
+#ifdef CONFIG_USB_DWC_OTG_HCD
+    int  (*pmu_usb_bc_process)(int mode);                                       // special process for usb bc  
+#endif
     void (*pmu_power_off)(void);                                                // power off system
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
     void (*pmu_do_battery_calibrate)(void);                                     // calibrate battery curve
