@@ -302,11 +302,13 @@ LIBS := $(addprefix $(obj),$(sort $(LIBS)))
 .PHONY : $(LIBS) $(TIMESTAMP_FILE) $(VERSION_FILE)
 
 ifdef CONFIG_SUPPORT_CUSOTMER_BOARD
+AML_BOARD_PATH = ./customer/board/$(BOARD)/
 LIBBOARD = customer/board/$(BOARD)/lib$(BOARD).o
 ifdef CONFIG_AML_CRYPTO_UBOOT
 BOOT_KEY_PATH = ./customer/board/$(BOARD)
 endif #CONFIG_AML_CRYPTO_UBOOT
 else  #CONFIG_SUPPORT_CUSOTMER_BOARD
+AML_BOARD_PATH = ./board/$(BOARDDIR)/
 LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).o
 ifdef CONFIG_AML_CRYPTO_UBOOT
 BOOT_KEY_PATH = ./board/$(BOARDDIR)
@@ -476,6 +478,13 @@ $(obj)u-boot.bin:	$(obj)u-boot-orig.bin $(obj)firmware.bin
 endif
 ifndef CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@
+
+ifdef CONFIG_AML_EXT_PGM
+	@$(obj)tools/uclpack $(AML_BOARD_PATH)code_raw.bin $(obj)code_raw_ucl.bin 
+	@$(obj)tools/convert --soc $(SOC)  -s $(obj)ft_firmware.bin -i $(obj)code_raw_ucl.bin -o $(obj)ft-u-boot.bin
+	@rm -fr $(obj)code_raw_ucl.bin
+endif
+
 ifdef CONFIG_AML_SECU_BOOT_V2
 	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp
 	@./tools/secu_boot/encrypto3 $@

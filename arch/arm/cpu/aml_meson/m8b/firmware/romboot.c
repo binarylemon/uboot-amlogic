@@ -30,9 +30,11 @@ short check_sum(unsigned * addr,unsigned short check_sum,unsigned size);
 #else
 STATIC_PREFIX short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
 {    
-    serial_put_dword(addr[15]);
+	serial_put_dword(addr[15]);
+#if !defined(CONFIG_AML_EXT_PGM)
     if(addr[15]!=CONFIG_AML_UBOOT_MAGIC)
         return -1;
+#endif
 #if 0
 	int i;   
 	unsigned short * p=(unsigned short *)addr;

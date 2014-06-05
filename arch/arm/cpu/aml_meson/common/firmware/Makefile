@@ -14,6 +14,11 @@ ifdef CONFIG_AML_SMP
 endif
 	$(MAKE) -f Makefile.$(targetComplier)
 	$(MAKE) -f Makefile.ddr_init
+
+ifdef CONFIG_AML_EXT_PGM
+	$(MAKE) -f Makefile.ft
+endif
+
 ifdef CONFIG_AML_SECU_BOOT_V2
 	$(MAKE) -f Makefile.usb
 endif
