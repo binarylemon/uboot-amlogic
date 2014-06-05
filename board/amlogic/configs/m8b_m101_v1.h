@@ -126,7 +126,7 @@
 
 #define CONFIG_IOREF_1V8                1800        // IOREV_1.8v voltage when boot, option
 #define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
-#define CONFIG_DVDD_1V8                 1700        // DVDD18 voltage when boot, option
+#define CONFIG_DVDD_1V8                 1800        // DVDD18 voltage when boot, option
 #define CONFIG_VCC2V5                   2500        // VCC2.5v voltage when boot, option
 #define CONFIG_VCC_CAM                  1500        // voltage for camera when boot, option
 //#define CONFIG_VDDIO_AO28             2850        // VDDIO_AO28 voltage when boot, option
