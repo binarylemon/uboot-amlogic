@@ -723,6 +723,10 @@ unsigned int before_nand_init =  get_utimer(0);
 
 	AML_LOG_TE("board");
 
+	if ((s = getenv ("aml_dt")) != NULL) {
+		run_command(s, 0);
+	}
+
 #ifdef CONFIG_VPU_PRESET
 	vpu_probe();
 #endif
