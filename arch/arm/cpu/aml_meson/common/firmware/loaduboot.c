@@ -98,11 +98,6 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//dcache_flush();
 #endif	//CONFIG_AML_SPL_L1_CACHE_ON
 
-#if defined(CONFIG_AML_EXT_PGM)
-    //need fine tune...
-    memcpy(0,__TEXT_BASE,size);
-#endif
-
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
 	if(!rc&&check_sum((unsigned*)__TEXT_BASE,0,0)==0)
 	{
