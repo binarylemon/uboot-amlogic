@@ -37,6 +37,7 @@
 #define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
 #define CONFIG_SHA1
 #define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #endif//#ifdef CONFIG_NEXT_NAND
 
 #define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
