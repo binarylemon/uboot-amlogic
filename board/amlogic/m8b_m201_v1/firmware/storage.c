@@ -35,7 +35,7 @@ struct partitions partition_table[MAX_PART_NUM]={
 		},
 		{
 			.name = "cache",
-			.size = 256*SZ_1M,
+			.size = 512*SZ_1M,
 			.mask_flags = STORE_CACHE,
 		},
 		{
