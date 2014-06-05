@@ -595,7 +595,7 @@ int board_init(void)
     nand_init();
     
 #endif    
-  run_command("magic_checkstatus", 0);
+  /*run_command("magic_checkstatus", 0);*/
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -793,3 +793,4 @@ void board_dt_id_process(void)
 	debug_print("aml_dt: %s\n", getenv("aml_dt"));
 }
 #endif
+
