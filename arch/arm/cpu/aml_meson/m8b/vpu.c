@@ -120,41 +120,48 @@ static int set_vpu_clk(unsigned int vclk)
 }
 
 static void vpu_driver_init(void)
-{	
-	set_vpu_clk(vpu_config.clk_level);
-	clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x3<<8)); // [8] power on
-	//VPU MEM_PD, need to modify
-	writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
+{
+    set_vpu_clk(vpu_config.clk_level);
+
+    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<8)); // [8] power on
+    writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
     writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
+    clrbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); // MEM-PD
 
     writel(0x00000000, P_VPU_MEM_PD_REG0);
     writel(0x00000000, P_VPU_MEM_PD_REG1);
     
-
-// Powerup VPU_HDMI
+    // Powerup VPU_HDMI
     clrbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
     clrbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
     clrbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
     writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
-    //writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
+    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
     writel(((0x1 << 5) | (0x1<<10)), P_RESET0_REGISTER);
-    //writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
+    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
     writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
     setbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
     setbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
     setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
 
+    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<9)); // [9] VPU_HDMI
 }
 
 static void vpu_driver_disable(void)
 {
+    // Power down VPU_HDMI
+    // Enable Isolation
+    setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 9)); //ISO
     writel(0xffffffff, P_VPU_MEM_PD_REG0);
     writel(0xffffffff, P_VPU_MEM_PD_REG1);
-	
-	writel(0xffffffff, P_HHI_VPU_MEM_PD_REG0);
+    setbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); //HDMI MEM-PD
+
+    writel(0xffffffff, P_HHI_VPU_MEM_PD_REG0);
     writel(0xffffffff, P_HHI_VPU_MEM_PD_REG1);
-	
-	clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
+
+    // Power down VPU domain
+    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 8)); //PDN
+    clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
 }
 
 static int get_vpu_config(void)
