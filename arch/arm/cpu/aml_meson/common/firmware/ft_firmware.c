@@ -42,30 +42,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
-	writel(readl(0xc8100014)|0x4000,0xc8100014);
-	
-	//detect sdio debug board
-	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
-	
-	// clear sdio pinmux
-	setbits_le32(P_PREG_PAD_GPIO0_O,0x3f<<22);
-	setbits_le32(P_PREG_PAD_GPIO0_EN_N,0x3f<<22);
-	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);  //clear sd d1~d3 pinmux
-	
-	if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){  //sd_d3 low, debug board in
-		serial_puts("\nsdio debug board detected ");
-		clrbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);   //clear AO uart pinmux
-		setbits_le32(P_PERIPHS_PIN_MUX_8,3<<9);
-		
-		if((readl(P_PREG_PAD_GPIO0_I)&(1<<22)))
-			writel(0x220,P_AO_SECURE_REG1);  //enable sdio jtag
-	}
-	else{
-		serial_puts("\nno sdio debug board detected ");
-		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
-	}
+	writel(readl(0xc8100014)|0x4000,0xc8100014);	
 #endif 
 
+#if !defined(CONFIG_AML_EXT_PGM_SILENT)
 	//Note: Following msg is used to calculate romcode boot time
 	//         Please DO NOT remove it!
     serial_puts("\nTE : ");
@@ -76,22 +56,19 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//         For some fail cases which in SPL stage we can not target
 	//         the uboot version quickly. It will cost about 5ms.
 	//         Please DO NOT remove it! 
+
 	serial_puts(__TIME__);
 	serial_puts(" ");
 	serial_puts(__DATE__);
 	serial_puts("\n");	
+#endif
 
-#if !defined(CONFIG_VLSI_EMULATOR)
     // initial pll
     pll_init(&__plls);
 	serial_init(__plls.uart);
-#else
-	serial_init(readl(P_UART_CONTROL(UART_PORT_CONS))|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);
-	serial_puts("\n\nAmlogic log: UART OK for emulator!\n");
-#endif //#if !defined(CONFIG_VLSI_EMULATOR)
 
 
-	//TEMP add 
+#if !defined(CONFIG_AML_EXT_PGM_SILENT)
 	unsigned int nPLL = readl(P_HHI_SYS_PLL_CNTL);
 	unsigned int nA9CLK = ((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
 	serial_puts("\nCPU clock is ");
@@ -99,15 +76,18 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts("MHz\n\n");
 
     nTEBegin = TIMERE_GET();
+#endif 
 
     // initial ddr
 	ddr_init_test();
 
-	asm volatile ("ldr	sp, =(0x12000000)");
+	//asm volatile ("ldr	sp, =(0x12000000)");
 
+#if !defined(CONFIG_AML_EXT_PGM_SILENT)
     serial_puts("\nDDR init use : ");
     serial_put_dec(get_utimer(nTEBegin));
     serial_puts(" us\n");
+#endif
 
 	//asm volatile ("wfi");
 

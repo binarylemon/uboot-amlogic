@@ -1,3 +1,10 @@
+
+#if defined(CONFIG_AML_EXT_PGM)
+
+void print_ddr_size(unsigned int size){}
+void print_ddr_mode(void){}
+
+#else
 void print_ddr_size(unsigned int size)
 {
 	serial_puts("DDR size: ");
@@ -29,6 +36,7 @@ void print_ddr_mode(void){
 	serial_puts("\n");
 #endif
 }
+#endif
 
 /*Following code is for DDR MODE AUTO DETECT*/
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT

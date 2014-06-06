@@ -30,8 +30,8 @@ short check_sum(unsigned * addr,unsigned short check_sum,unsigned size);
 #else
 STATIC_PREFIX short check_sum(unsigned * addr,unsigned short check_sum,unsigned size)
 {    
-	serial_put_dword(addr[15]);
 #if !defined(CONFIG_AML_EXT_PGM)
+	serial_put_dword(addr[15]);
     if(addr[15]!=CONFIG_AML_UBOOT_MAGIC)
         return -1;
 #endif
@@ -160,7 +160,10 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
                 return rc;
             }
 #endif
+
+            #if !defined(CONFIG_AML_EXT_PGM)
             serial_puts("Boot From SPI\n");
+            #endif
             //memcpy((unsigned*)temp_addr,mem,size);
 			ipl_memcpy((unsigned char*)temp_addr,(unsigned char*)mem,size);
             break;
@@ -207,9 +210,13 @@ m8_tpl_ucl_dec:
 #ifndef CONFIG_IMPROVE_UCL_DEC
 	//unsigned len;    
     if(rc==0){
+		#if !defined(CONFIG_AML_EXT_PGM)
         serial_puts("ucl decompress...");
+		#endif
         rc=uclDecompress((char*)target,&len,(char*)temp_addr);
+		#if !defined(CONFIG_AML_EXT_PGM)
         serial_puts(rc?"fail\n":"pass\n");
+		#endif
     }
 #endif    
 #endif        

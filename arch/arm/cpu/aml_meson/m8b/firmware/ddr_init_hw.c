@@ -79,6 +79,9 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	return 0;
 }
 
+#if defined(CONFIG_AML_EXT_PGM)
+void ddr_info_dump(struct ddr_set * timing_set){}
+#else
 void ddr_info_dump(struct ddr_set * timing_set)
 {
 #ifdef DDR_SCRAMBE_ENABLE
@@ -115,3 +118,4 @@ void ddr_info_dump(struct ddr_set * timing_set)
 		serial_puts("1T mode\n");
 #endif
 }
+#endif 

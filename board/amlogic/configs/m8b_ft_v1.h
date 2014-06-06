@@ -13,6 +13,8 @@ remark:
 
 #define CONFIG_AML_EXT_PGM 
 
+#define CONFIG_AML_EXT_PGM_SILENT
+
 #define CONFIG_AML_EXT_PGM_ENTRY 0x10000000
 
 #define CONFIG_MACH_MESON8_SKT  // generate M8 SKT machid number

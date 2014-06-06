@@ -206,7 +206,9 @@ unsigned ddr_test(int arg)
 			return por_cfg;
 		}
 	}
+#if !defined(CONFIG_AML_EXT_PGM)
 	serial_puts("DDR check: Pass!\n");
+#endif
 	//AML_WATCH_DOG_DISABLE();
 	return por_cfg;
 }

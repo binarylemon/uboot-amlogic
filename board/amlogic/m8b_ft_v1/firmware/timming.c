@@ -471,7 +471,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
 #if defined (CONFIG_VLSI_EMULATOR)
     .spi_setting=0xeb949, //it need fine tune?
 #else	
-    .spi_setting=0xea949, //it need fine tune?
+    .spi_setting=0xea101, //it need fine tune?
 #endif    
     .nfc_cfg=(((0)&0xf)<<10) | (0<<9) | (0<<5) | 5,
     .sdio_cmd_clk_divide=5,
