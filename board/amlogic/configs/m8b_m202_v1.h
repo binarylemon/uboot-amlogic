@@ -67,6 +67,7 @@
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
 //#define CONFIG_IR_REMOTE 1
+#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
 #define CONFIG_CMD_NET   1
@@ -181,6 +182,7 @@
         "run storeargs;"\
         "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run update_key; " \
+	"run update_ir; " \
         "run switch_bootmode\0" \
     \
     "update_key="\
@@ -190,6 +192,9 @@
             "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
         "fi\0" \
     \
+	"update_ir="\
+        "if irdetect; then run update; fi\0" \
+	\
    	"update="\
         /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
         "run usb_burning; "\
