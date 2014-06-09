@@ -131,6 +131,7 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	//MPLL init
 	//FIXED PLL/Multi-phase PLL, fixed to 2.55GHz
 	PLL_ENTER_RESET(HHI_MPLL_CNTL);	//set reset bit to 1
+	Wr_cbus(HHI_DPLL_TOP_0, 0x100);
 	Wr_cbus(HHI_MPLL_CNTL2, CFG_MPLL_CNTL_2 );
 	Wr_cbus(HHI_MPLL_CNTL3, CFG_MPLL_CNTL_3 );
 	Wr_cbus(HHI_MPLL_CNTL4, CFG_MPLL_CNTL_4 );
