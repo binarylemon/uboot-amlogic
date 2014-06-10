@@ -312,6 +312,8 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
+#define CONFIG_DDR3_512MB 1
+
 //For DDR PUB training not check the VT done flag
 #define CONFIG_NO_DDR_PUB_VT_CHECK 1
 
