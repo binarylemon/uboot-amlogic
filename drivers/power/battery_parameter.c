@@ -706,11 +706,23 @@ int get_battery_para_form_dtb(char *addr, struct battery_parameter *b)
 {
     int ret;
     int offset;
+    void *data;
     
     ret = fdt_check_header(addr);
     if (ret) {
         printf("check dts: %s, ", fdt_strerror(ret));
         return -1;
+    }
+    offset = fdt_path_offset(addr, "/pmu");
+    if (offset < 0) {
+        printf("Not find /pmu");    
+    } else {
+        data = fdt_getprop(addr, offset, "driver_version", NULL);
+        if (!data) {
+            printf("get driver_version failed\n");    
+        } else {
+            printf("---> PMU driver version:%s\n", data); 
+        }
     }
     offset = fdt_path_offset(addr, "/battery_parameter");
     if (offset < 0) {
