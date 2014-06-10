@@ -151,7 +151,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x6c00000\0" \
+	"fb_addr=0x7900000\0" \
 	"fb_width=1280\0"\
 	"fb_height=720\0"\
 	"partnum=2\0" \
