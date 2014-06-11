@@ -165,16 +165,6 @@ pub_init_ddr1:
 	writel(0x0, P_DDR1_SOFT_RESET);
 	writel(0xf, P_DDR1_SOFT_RESET);
 
-	/*tuned by jiaxing, add internal ref voltage setting*/
-	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET){ //ddr0 in use
-		writel(0x49494949, P_DDR0_PUB_IOVCR0);
-		writel(0x49494949, P_DDR0_PUB_IOVCR1);
-	}
-	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET){ //ddr1 in use
-		writel(0x49494949, P_DDR1_PUB_IOVCR0);
-		writel(0x49494949, P_DDR1_PUB_IOVCR1);
-	}
-
 #if defined(CONFIG_M8_DDR_LOW_POWER_DISABLE)
 	writel((timing_set->t_ddr_apd_ctrl & (~0xFF)), P_DDR1_APD_CTRL);
 #else
@@ -182,6 +172,16 @@ pub_init_ddr1:
 #endif
 
 	writel(timing_set->t_ddr_clk_ctrl, P_DDR1_CLK_CTRL);
+
+	/*tuned by jiaxing, add internal ref voltage setting*/
+	if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET){	//ddr0 in use
+		writel(0x49494949, P_DDR0_PUB_IOVCR0);
+		writel(0x49494949, P_DDR0_PUB_IOVCR1);
+	}
+	if(CONFIG_M8_DDR0_ONLY != nM8_DDR_CHN_SET){	//ddr1 in use
+		writel(0x49494949, P_DDR1_PUB_IOVCR0);
+		writel(0x49494949, P_DDR1_PUB_IOVCR1);
+	}
 
 	//DDR0  timing registers	
 #if !defined(M8_DDR_CHN_OPEN_CLOSE)

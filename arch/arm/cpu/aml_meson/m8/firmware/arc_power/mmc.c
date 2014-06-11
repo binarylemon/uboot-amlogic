@@ -154,7 +154,7 @@ typedef enum {
 
 	_DDR_PLL_CNTL        , _DDR_PLL_CNTL1       , _DDR_PLL_CNTL2 	    , _DDR_PLL_CNTL3	    , _DDR_PLL_CNTL4,	//91
 	
-	_PUB_PLLCR,_PUB_PGCR0,
+	_PUB_PLLCR,_PUB_PGCR0,_PUB_IOVCR0,_PUB_IOVCR1,
 	
 } back_reg_index;
 
@@ -180,6 +180,8 @@ static void hx_ddr_setting_save()
 	DDR_SUSPEND_SAVE( _SOFT_RESET);	       
 	DDR_SUSPEND_SAVE( _APD_CTRL);
 	DDR_SUSPEND_SAVE( _CLK_CTRL);
+	DDR_SUSPEND_SAVE(_PUB_IOVCR0);
+	DDR_SUSPEND_SAVE(_PUB_IOVCR1);
 	
 	DDR_SUSPEND_SAVE( _PUB_PLLCR);
 
@@ -792,6 +794,8 @@ pub_init_ddr1:
 		DDR0_SUSPEND_LOAD(_SOFT_RESET);
 		DDR0_SUSPEND_LOAD(_APD_CTRL);
 		DDR0_SUSPEND_LOAD(_CLK_CTRL);				
+		DDR0_SUSPEND_LOAD(_PUB_IOVCR0);
+		DDR0_SUSPEND_LOAD(_PUB_IOVCR1);
 		//writel(g_ddr_settings[_CLK_CTRL]|1,P_DDR0_CLK_CTRL);
 		hx_serial_puts("Aml log : DDR0 - APD,CLK set done\n");
     }
@@ -803,6 +807,8 @@ pub_init_ddr1:
 		DDR1_SUSPEND_LOAD(_SOFT_RESET);
 		DDR1_SUSPEND_LOAD(_APD_CTRL);
 		DDR1_SUSPEND_LOAD(_CLK_CTRL);				
+		DDR1_SUSPEND_LOAD(_PUB_IOVCR0);
+		DDR1_SUSPEND_LOAD(_PUB_IOVCR1);
 		//writel(g_ddr_settings[_CLK_CTRL]|1,P_DDR1_CLK_CTRL);
 		hx_serial_puts("Aml log : DDR1 - APD,CLK set done\n");
     }	
