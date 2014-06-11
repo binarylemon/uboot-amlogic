@@ -661,6 +661,13 @@ unsigned char* __aml_get_kernel_crypto_addr(const char* straddr)
     if(straddr)
     {
         unsigned useraddr = simple_strtoul(straddr, NULL, 16);
+
+#ifdef CONFIG_AML_SECU_BOOT_V2
+		extern int g_nIMGReadFlag;
+		if(_loadaddr != useraddr)
+			g_nIMGReadFlag = 0;
+#endif //#ifdef CONFIG_AML_SECU_BOOT_V2
+
         _loadaddr = useraddr ? useraddr : _loadaddr;
     }
     _loadaddr += 0x800;//shift 0x800 Android format head
@@ -693,7 +700,7 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong		iflag;
 	ulong		load_end = 0;
-	int		ret;
+	int		    ret = 0;
 	boot_os_fn	*boot_fn;
 
 	AML_LOG_INIT("cmd_bootm");
