@@ -183,9 +183,10 @@ pub_init_ddr0:
 
 #if (defined LPDDR2) || (defined LPDDR3)
 	writel(0x12b,P_DDR0_CLK_CTRL);
+#endif
+
 	writel(0x49494949,P_DDR0_PUB_IOVCR0);
 	writel(0x49494949,P_DDR0_PUB_IOVCR1);
-#endif
 
 	//DDR0  timing registers	
 	writel(timing_set->t_pctl_1us_pck,   P_DDR0_PCTL_TOGCNT1U);	   //1us = nn cycles.
