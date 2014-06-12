@@ -620,7 +620,7 @@ void aml1218_power_off_at_32K_1()
     writel(reg,P_AO_I2C_M_0_CONTROL_REG);
     udelay__(10);
 
-    power_off_vcc18();
+//  power_off_vcc18();                                  // close LDO4, vcc1.8v
 //  power_off_vcc33();                                  // close DCDC3, VCC3.3v
 }
 
@@ -628,8 +628,8 @@ void aml1218_power_on_at_32K_1()
 {
     unsigned int    reg;
 
-//  power_on_vcc33();                                // open ext DCDC 3.3v
-    power_on_vcc18();
+//  power_on_vcc33();                                   // open ext DCDC 3.3v
+//  power_on_vcc18();                                   // open LDO4, vcc1.8v
 
     reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
     reg &= 0xFFC00FFF;
