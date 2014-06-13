@@ -449,12 +449,12 @@ struct aml_i2c_platform g_aml_i2c_plat = {
 static void board_pmu_init(void)
 {
     struct aml_pmu_driver *driver = aml_pmu_get_driver();
-    if (driver && driver->pmu_init) {
-        driver->pmu_init(); 
-    }
     if (driver && driver->pmu_reg_write) {
         printf("%s, increase DCIN_OV_ADJ\n", __func__);
         driver->pmu_reg_write(0x0030, 0x18);    
+    }
+    if (driver && driver->pmu_init) {
+        driver->pmu_init(); 
     }
 }
 #endif
