@@ -2,6 +2,9 @@
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
 #include <malloc.h>
+#ifdef CONFIG_UART_A_FUNCTION_ADD
+#include <asm/arch/uart.h>
+#endif
 
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
@@ -560,6 +563,19 @@ void wifi_power_init()
 
 int board_init(void)
 {
+#ifdef CONFIG_UART_A_FUNCTION_ADD
+	unsigned a_uart = (159375000/(115200*4) -1)
+        | UART_STP_BIT 
+        | UART_PRTY_BIT
+        | UART_CHAR_LEN 
+        | UART_CNTL_MASK_TX_EN
+        | UART_CNTL_MASK_RX_EN
+        | UART_CNTL_MASK_RST_TX
+        | UART_CNTL_MASK_RST_RX
+        | UART_CNTL_MASK_CLR_ERR ;
+  serial_init_uart_a(a_uart);
+#endif
+
 #if KSZ8091
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_EN_N, 1 << 31);
 	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);

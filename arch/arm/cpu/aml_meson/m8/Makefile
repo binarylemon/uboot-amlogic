@@ -20,8 +20,11 @@ COBJS-$(CONFIG_AML_ETHERNET) += aml_eth_clk_set.o aml_eth_pinmux.o
 COBJS-$(CONFIG_AML_RTC)+=aml_rtc_setting.o
 
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
-
 COBJS += vpu.o
+
+ifdef CONFIG_UART_A_FUNCTION_ADD
+COBJS += serial_uart_a.o
+endif
 
 COBJS-$(CONFIG_VIDEO_AMLLCD) += aml_lcd_gpio.o
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/lcd_config.o

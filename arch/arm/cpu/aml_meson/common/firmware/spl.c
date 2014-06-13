@@ -3,7 +3,6 @@
 #include <timming.c>
 #include <uartpin.c>
 #include <serial.c>
-#include <serial_uart_a.c>
 #include <pinmux.c>
 #include <sdpinmux.c>
 #include <memtest.c>
@@ -145,9 +144,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     // initial pll
     pll_init(&__plls);
 	serial_init(__plls.uart);
-    #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
-       serial_init_uart_a(__plls.uart);
-    #endif
 #else
 	serial_init(readl(P_UART_CONTROL(UART_PORT_CONS))|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);
 	serial_puts("\n\nAmlogic log: UART OK for emulator!\n");
