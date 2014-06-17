@@ -311,5 +311,41 @@ int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
 	
 	return 0;
 }
+int  amlnf_markbad_reserved_ops(uint32_t start_blk)
+{
+	struct amlnand_chip *aml_chip = aml_nand_chip;
+	struct hw_controller *controller = &(aml_chip->controller);	
+	struct chip_operation *operation = &(aml_chip->operation);	
+	struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+	struct nand_flash *flash = &(aml_chip->flash);
+
+	unsigned erase_shift, write_shift, pages_per_blk;
+	int ret = 0;
+
+
+	erase_shift = ffs(flash->blocksize) - 1;
+	write_shift =  ffs(flash->pagesize) - 1;
+	pages_per_blk = (1 << (erase_shift -write_shift));
+
+	memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));			
+	ops_para->page_addr =(((start_blk - start_blk % controller->chip_num) /controller->chip_num)) * pages_per_blk;
+	ops_para->chipnr = start_blk % controller->chip_num;
+	controller->select_chip(controller, ops_para->chipnr );
+#ifdef AML_NAND_UBOOT
+	nand_get_chip();
+#else
+	nand_get_chip(aml_chip);
+#endif	
+    aml_nand_msg("ops_para->page_addr=%d\n",ops_para->page_addr);
+	ret = operation->block_markbad(aml_chip);	
+#ifdef AML_NAND_UBOOT
+	nand_release_chip();
+#else
+	nand_release_chip(aml_chip);
+#endif				
+
+	
+	return 0;
+}
 
 

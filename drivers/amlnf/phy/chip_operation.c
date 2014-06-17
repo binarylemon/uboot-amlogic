@@ -961,7 +961,7 @@ static int write_page(struct amlnand_chip *aml_chip)
 	unsigned char i, bch_mode, plane_num, chip_num, chipnr, user_byte_num; 
 	unsigned char slc_mode, status, st_cnt;
 	int ret = 0;
-	
+    
 	if(!buf){
 		aml_nand_msg("buf should never be NULL");
 		ret = -NAND_ARGUMENT_FAILURE;
@@ -1262,14 +1262,14 @@ error_exit0:
 	return ret;	
 }
 
-static int set_blcok_status(struct amlnand_chip *aml_chip, unsigned char chipnr, unsigned addr)
+static int set_blcok_status(struct amlnand_chip *aml_chip, unsigned char chipnr, unsigned addr,int value)
 {
 	struct hw_controller *controller = &aml_chip->controller;
 	struct nand_flash *flash = &aml_chip->flash;
 	unsigned blk_addr = addr;
 	unsigned short *tmp_status = &aml_chip->block_status->blk_status[chipnr][0];
 	
-	tmp_status[blk_addr] = NAND_BLOCK_USED_BAD;
+	tmp_status[blk_addr] = value;
 	aml_nand_msg(" NAND bbt set Bad block at %d \n", blk_addr);
 
 	return 0;	
@@ -1479,14 +1479,14 @@ static int block_markbad(struct amlnand_chip *aml_chip)
 			if((ops_para->option  & DEV_MULTI_PLANE_MODE) && (!(ops_para->option & DEV_MULTI_CHIP_MODE))){
 				blk_addr <<= 1;
 				if((blk_addr % 2) == 0){ // plane 0 is good , set plane 1
-					ret = set_blcok_status(aml_chip, chipnr, (blk_addr));
-					ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1));
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr), NAND_BLOCK_USED_BAD);
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1), NAND_BLOCK_USED_BAD);
 					aml_nand_dbg("set blk bad at chip %d blk %d", chipnr, blk_addr);
 					aml_nand_dbg("set blk bad at chip %d blk %d", chipnr, (blk_addr+1));
 				}
 				else {			// plane 1 is good, set plane 0
-					ret = set_blcok_status(aml_chip, chipnr, (blk_addr));
-					ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1));					
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr), NAND_BLOCK_USED_BAD);
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1), NAND_BLOCK_USED_BAD);					
 					aml_nand_dbg("set blk bad at chip %d blk %d",  chipnr, blk_addr);
 					aml_nand_dbg("set blk bad at chip %d blk %d", chipnr, (blk_addr-1));
 					}
@@ -1494,7 +1494,7 @@ static int block_markbad(struct amlnand_chip *aml_chip)
 			else if ((!(ops_para->option  & DEV_MULTI_PLANE_MODE)) && ((ops_para->option & DEV_MULTI_CHIP_MODE))){
 
 				for(chipnr=0; chipnr < controller->chip_num; chipnr++){  //multi_chip 
-					ret = set_blcok_status(aml_chip, chipnr, blk_addr);
+					ret = set_blcok_status(aml_chip, chipnr, blk_addr, NAND_BLOCK_USED_BAD);
 					aml_nand_dbg(" set blk bad at chip %d blk %d",  chipnr, blk_addr);
 				}
 			}
@@ -1502,20 +1502,20 @@ static int block_markbad(struct amlnand_chip *aml_chip)
 				blk_addr <<= 1;
 				for(chipnr=0; chipnr < controller->chip_num; chipnr++){  	
 					if((blk_addr % 2) == 0){ 	// plane 0 is good , set plane 1
-						ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1));						
+						ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1), NAND_BLOCK_USED_BAD);						
 						aml_nand_dbg("set blk bad at chip %d blk %d", chipnr, (blk_addr+1));
 					}
 					else {			// plane 1 is good, set plane 0
-						ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1));
+						ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1), NAND_BLOCK_USED_BAD);
 						aml_nand_dbg(" set blk bad at chip %d blk %d", chipnr, (blk_addr-1));
 					}
 									//multi_chip , set every chip_blk
-						ret = set_blcok_status(aml_chip, chipnr, blk_addr);
+						ret = set_blcok_status(aml_chip, chipnr, blk_addr, NAND_BLOCK_USED_BAD);
 						aml_nand_dbg(" set blk bad at chip %d blk %d",chipnr, blk_addr);
 					}
 			}
 			else{
-				ret = set_blcok_status(aml_chip, chipnr, blk_addr);			
+				ret = set_blcok_status(aml_chip, chipnr, blk_addr, NAND_BLOCK_USED_BAD);			
 				aml_nand_dbg(" set blk bad at chip %d blk %d",chipnr, blk_addr);
 			}
 			
@@ -1723,6 +1723,447 @@ ESTATUS_TRY:
 error_exit0:
 	return ret;
 }
+/************************************************************
+ * test_block, all parameters saved in aml_chip->ops_para.
+ * for opteration mode, contains multi-plane/multi-chip
+ * supposed chip bbt has been installed
+ * something wrong, don't work well!!! Do not use it.
+ *************************************************************/
+static int test_block(struct amlnand_chip *aml_chip)
+{
+	struct hw_controller *controller = &aml_chip->controller;
+	struct chip_operation *operation = & aml_chip->operation;
+	struct chip_ops_para  *ops_para = &aml_chip->ops_para; 
+	struct nand_flash *flash = &aml_chip->flash;
+	struct en_slc_info *slc_info = &(controller->slc_info);
+	
+	unsigned char phys_erase_shift, phys_page_shift, nand_boot;  
+	unsigned i, offset,pages_per_blk, pages_read, amount_loaded =0,blk_addr = 0;
+	unsigned char  oob_buf[8];
+	unsigned short total_blk;
+	int  ret = 0, len,t=0;
+
+	unsigned char *dat_buf =NULL;
+    blk_addr = ops_para->page_addr;
+	dat_buf  = aml_nand_malloc(flash->pagesize);
+	if(!dat_buf){
+		aml_nand_msg("test_block: malloc failed");
+		ret =  -1;
+		goto exit;
+	}
+	memset(dat_buf, 0xa5, flash->pagesize);
+	
+
+	phys_erase_shift = ffs(flash->blocksize) - 1;
+	phys_page_shift =  ffs(flash->pagesize) - 1;
+	pages_per_blk = (1 << (phys_erase_shift -phys_page_shift)); 
+
+	pages_read = pages_per_blk;
+
+//#ifdef AML_NAND_UBOOT
+//	nand_get_chip();
+//#else
+//	nand_get_chip(aml_chip);
+//#endif	
+    //erase
+    aml_nand_msg("erase addr = %ld",ops_para->page_addr);
+
+	ret = erase_block(aml_chip); 	
+	if(ret < 0){
+		aml_nand_msg("nand blk erase failed");
+		ret =  -1;
+		goto exit;
+	}
+    aml_nand_msg("nand blk %ld erase OK",blk_addr);
+    #if 1
+    //read
+    memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+    ops_para->page_addr = blk_addr;
+	for(t = 0; t < pages_read; t++){
+		memset(aml_chip->user_page_buf, 0x0, flash->pagesize);
+        ops_para->page_addr += t;
+		ops_para->data_buf = aml_chip->user_page_buf;
+		ops_para->oob_buf = aml_chip->user_oob_buf;
+		ops_para->ooblen = sizeof(oob_buf);
+
+		ret = read_page(aml_chip);
+		if(ret < 0){
+			aml_nand_msg("nand read %ld failed",blk_addr);
+			ret =  -1;
+			goto exit;
+		}
+		//aml_nand_dbg("aml_chip->user_page_buf: ");
+		//show_data_buf(aml_chip->user_page_buf);
+		//aml_nand_dbg("dat_buf: ");
+		//show_data_buf(dat_buf);
+	}
+    aml_nand_msg("nand blk read OK");
+    
+    //write
+    memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+    ops_para->page_addr = blk_addr;
+    for(t = 0; t < pages_read; t++){
+        memset( aml_chip->user_page_buf, 0xa5, flash->pagesize);
+        ops_para->page_addr += t;
+        ops_para->data_buf = aml_chip->user_page_buf;
+        ops_para->oob_buf = aml_chip->user_oob_buf;
+        ops_para->ooblen = sizeof(oob_buf);
+
+        ret = write_page(aml_chip);
+        if(ret < 0){
+            aml_nand_msg("nand write failed");
+            ret =  -1;
+            goto exit;
+        }
+    }
+    aml_nand_msg("nand blk %d write OK",blk_addr);
+    //read
+	memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+    ops_para->page_addr = blk_addr;
+	for(t = 0; t < pages_read; t++){
+		memset(aml_chip->user_page_buf, 0x0, flash->pagesize);
+        ops_para->page_addr += t;
+		ops_para->data_buf = aml_chip->user_page_buf;
+		ops_para->oob_buf = aml_chip->user_oob_buf;
+		ops_para->ooblen = sizeof(oob_buf);
+
+		ret = read_page(aml_chip);
+		if(ret < 0){
+			aml_nand_msg("nand read failed");
+			ret =  -1;
+			goto exit;
+		}
+		//aml_nand_dbg("aml_chip->user_page_buf: ");
+		//show_data_buf(aml_chip->user_page_buf);
+		//aml_nand_dbg("dat_buf: ");
+		//show_data_buf(dat_buf);
+	}
+    aml_nand_msg("nand blk %d read OK",blk_addr);
+    //erase
+    ops_para->page_addr = blk_addr;
+	ret = erase_block(aml_chip); 	
+	if(ret < 0){
+		aml_nand_msg("nand blk erase failed");
+		ret =  -1;
+		goto exit;
+	}
+    aml_nand_msg("nand blk %d erase OK",blk_addr);
+    #endif
+exit:
+//#ifdef AML_NAND_UBOOT
+//        nand_release_chip();
+//#else
+//        nand_release_chip(aml_chip);
+//#endif
+
+        if(dat_buf){
+            aml_nand_free(dat_buf);
+            dat_buf=NULL;
+        }
+    
+        if(!ret){
+            aml_nand_msg("blk test OK");
+        }
+        
+        return ret;
+}
+
+/************************************************************
+ * test_block, all parameters saved in aml_chip->ops_para.
+ * for opteration mode, contains multi-plane/multi-chip
+ * supposed chip bbt has been installed
+ *
+ *************************************************************/
+static int test_block_reserved(struct amlnand_chip *aml_chip, int tst_blk)
+{
+	struct hw_controller *controller = &aml_chip->controller;
+	struct chip_operation *operation = & aml_chip->operation;
+	struct chip_ops_para  *ops_para = &aml_chip->ops_para; 
+	struct nand_flash *flash = &aml_chip->flash;
+	struct en_slc_info *slc_info = &(controller->slc_info);
+	
+	unsigned char phys_erase_shift, phys_page_shift, nand_boot;  
+	unsigned i, offset,pages_per_blk, pages_read, amount_loaded =0;
+	unsigned char  oob_buf[8];
+	unsigned short total_blk, tmp_blk;
+	int  ret = 0, len,t=0;
+
+	unsigned char *dat_buf =NULL;
+
+	dat_buf  = aml_nand_malloc(flash->pagesize);
+	if(!dat_buf){
+		aml_nand_msg("test_block: malloc failed");
+		ret =  -1;
+		goto exit;
+	}
+	memset(dat_buf, 0xa5, flash->pagesize);
+	
+	nand_boot = 1;
+
+	if (nand_boot)
+		offset = (1024 * flash->pagesize);
+	else {
+		offset = 0;
+	}
+
+	phys_erase_shift = ffs(flash->blocksize) - 1;
+	phys_page_shift =  ffs(flash->pagesize) - 1;
+	pages_per_blk = (1 << (phys_erase_shift -phys_page_shift)); 
+
+	tmp_blk = (offset >> phys_erase_shift); 
+
+	if((flash->new_type) &&((flash->new_type < 10)||(flash->new_type == SANDISK_19NM)))
+		ops_para->option |= DEV_SLC_MODE;
+	
+	if(ops_para->option & DEV_SLC_MODE){
+		pages_read = pages_per_blk >> 1;
+	}else{
+		pages_read = pages_per_blk;
+	}
+
+#ifdef AML_NAND_UBOOT
+	nand_get_chip();
+#else
+	nand_get_chip(aml_chip);
+#endif	
+    //erase
+	ops_para->page_addr =(((tst_blk - tst_blk % controller->chip_num) /controller->chip_num) + tmp_blk -tmp_blk/controller->chip_num) * pages_per_blk;
+	ops_para->chipnr = tst_blk % controller->chip_num;
+	controller->select_chip(controller, ops_para->chipnr );
+	ret = erase_block(aml_chip); 	
+	if(ret < 0){
+		aml_nand_msg("nand blk %d erase failed", tst_blk);
+		ret =  -1;
+		goto exit;
+	}
+    //write
+    for(t = 0; t < pages_read; t++){
+        memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+        if((flash->new_type) &&((flash->new_type < 10)||(flash->new_type == SANDISK_19NM)))
+            ops_para->option |= DEV_SLC_MODE;
+        ops_para->page_addr =(t+(((tst_blk - tst_blk % controller->chip_num) /controller->chip_num) + tmp_blk -tmp_blk/controller->chip_num) * pages_per_blk);
+        ops_para->chipnr = tst_blk % controller->chip_num;    
+        controller->select_chip(controller, ops_para->chipnr );
+
+        if((ops_para->option & DEV_SLC_MODE)) {
+            if((flash->new_type > 0) && (flash->new_type <10))
+                ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1))) |(slc_info->pagelist[ops_para->page_addr % 256]);
+            if (flash->new_type == SANDISK_19NM) 
+                ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1))) |((ops_para->page_addr % pages_per_blk) << 1);
+        }
+
+        memset( aml_chip->user_page_buf, 0xa5, flash->pagesize);
+        ops_para->data_buf = aml_chip->user_page_buf;
+        ops_para->oob_buf = aml_chip->user_oob_buf;
+        ops_para->ooblen = sizeof(oob_buf);
+
+        ret = write_page(aml_chip);
+        if(ret < 0){
+            aml_nand_msg("nand write failed");
+            ret =  -1;
+            goto exit;
+        }
+    }
+    //read
+	for(t = 0; t < pages_read; t++){
+		memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+		if((flash->new_type) &&((flash->new_type < 10)||(flash->new_type == SANDISK_19NM)))
+			ops_para->option |= DEV_SLC_MODE;
+		ops_para->page_addr =(t+(((tst_blk - tst_blk % controller->chip_num) /controller->chip_num) + tmp_blk -tmp_blk/controller->chip_num) * pages_per_blk);
+		ops_para->chipnr = tst_blk % controller->chip_num;	
+		controller->select_chip(controller, ops_para->chipnr );
+
+		if((ops_para->option & DEV_SLC_MODE)) {
+			if((flash->new_type > 0) && (flash->new_type <10))
+				ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1))) |(slc_info->pagelist[ops_para->page_addr % 256]);
+			if (flash->new_type == SANDISK_19NM) 
+				ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1))) |((ops_para->page_addr % pages_per_blk) << 1);
+		}
+
+		
+		memset(aml_chip->user_page_buf, 0x0, flash->pagesize);
+		ops_para->data_buf = aml_chip->user_page_buf;
+		ops_para->oob_buf = aml_chip->user_oob_buf;
+		ops_para->ooblen = sizeof(oob_buf);
+
+		ret = read_page(aml_chip);
+		if(ret < 0){
+			aml_nand_msg("nand read failed");
+			ret =  -1;
+			goto exit;
+		}
+		//aml_nand_dbg("tst_blk %d aml_chip->user_page_buf: ",tst_blk);
+		//show_data_buf(aml_chip->user_page_buf);
+		//aml_nand_dbg("tst_blk %d dat_buf: ",tst_blk);
+		//show_data_buf(dat_buf);
+		if(memcmp(aml_chip->user_page_buf,dat_buf,flash->pagesize)){
+			ret =  -1;
+			aml_nand_msg("blk  %d,  page %d : test failed",tst_blk, t);
+			goto exit;
+		}
+	}
+    //erase
+	ops_para->page_addr =(((tst_blk - tst_blk % controller->chip_num) /controller->chip_num) + tmp_blk -tmp_blk/controller->chip_num) * pages_per_blk;
+	ops_para->chipnr = tst_blk % controller->chip_num;
+	controller->select_chip(controller, ops_para->chipnr );
+	ret = erase_block(aml_chip); 	
+	if(ret < 0){
+		aml_nand_msg("nand blk %d erase failed", tst_blk);
+		ret =  -1;
+		goto exit;
+	}
+
+exit:
+#ifdef AML_NAND_UBOOT
+        nand_release_chip();
+#else
+        nand_release_chip(aml_chip);
+#endif
+    
+        if(dat_buf){
+            aml_nand_free(dat_buf);
+            dat_buf=NULL;
+        }
+    
+        if(!ret){
+            aml_nand_msg("blk %d test OK",tst_blk);
+        }
+        
+        return ret;
+}
+/************************************************************
+ * all parameters saved in aml_chip->ops_para.
+ * for opteration mode, contains multi-plane/multi-chip
+ * supposed chip bbt has been installed
+ *
+ *************************************************************/
+static int blk_modify_bbt_chip_op(struct amlnand_chip *aml_chip,int value)
+{
+	struct hw_controller *controller = &aml_chip->controller;
+	struct nand_flash *flash = &aml_chip->flash;
+	struct chip_ops_para *ops_para = &aml_chip->ops_para;	
+	struct chip_operation *operation = & aml_chip->operation;
+
+	unsigned blk_addr, page_per_blk_shift;
+	unsigned char chip_num = 1, chipnr;
+	unsigned char  oob_buf[8];
+	int ret = 0;
+
+	if(ops_para->option & DEV_MULTI_CHIP_MODE){
+		chip_num = controller->chip_num;		
+		//aml_nand_dbg(" chip_num =%d ",chip_num);
+	}
+
+	page_per_blk_shift = ffs(flash->blocksize) -ffs(flash->pagesize);
+	blk_addr = ops_para->page_addr >> page_per_blk_shift;
+	chipnr = ops_para->chipnr;
+	if(unlikely(controller->page_addr >= controller->internal_page_nums)) {
+		controller->page_addr -= controller->internal_page_nums;
+		controller->page_addr |= controller->internal_page_nums *aml_chip->flash.internal_chipnr;
+	}
+		
+		if((ops_para->option  & DEV_MULTI_PLANE_MODE) && (!(ops_para->option & DEV_MULTI_CHIP_MODE))){
+	
+			blk_addr <<= 1;
+			//aml_nand_dbg(" DEV_MULTI_PLANE_MODE  &&  !DEV_MULTI_CHIP_MODE");
+			ret = set_blcok_status(aml_chip, chipnr, blk_addr,value); 
+			if(ret == 0 ){
+				if((blk_addr % 2) == 0){ 	// plane 0 is good , check plane 1
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1),value);
+				}
+				else {				// plane 1 is good, check plane 0
+					ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1),value);
+					}
+				}
+		}
+		else if((!(ops_para->option  & DEV_MULTI_PLANE_MODE)) && ((ops_para->option & value))){
+			
+			//aml_nand_dbg(" !DEV_MULTI_PLANE_MODE  &&  DEV_MULTI_CHIP_MODE");
+			for(chipnr=0; chipnr < controller->chip_num; chipnr++){  //multi_chip 
+				ret = set_blcok_status(aml_chip, chipnr, blk_addr,value);
+				if(ret != 0){
+					break;
+				}
+			}
+		}
+		else if ((ops_para->option  & DEV_MULTI_PLANE_MODE) && (ops_para->option & DEV_MULTI_CHIP_MODE)){
+			
+			//aml_nand_dbg(" DEV_MULTI_PLANE_MODE  &&  DEV_MULTI_CHIP_MODE");
+			blk_addr <<= 1;
+			ret = set_blcok_status(aml_chip, chipnr, blk_addr,value);
+			if(ret == 0 ){
+				for(chipnr=0; chipnr < controller->chip_num; chipnr++){  	
+					ret = set_blcok_status(aml_chip, chipnr, blk_addr,value);
+					if(ret != 0)
+						break;
+					if((blk_addr % 2) == 0){ // plane 0 is good , check plane 1
+						ret = set_blcok_status(aml_chip, chipnr, (blk_addr+1),value);
+						if(ret != 0)
+							break;
+					}
+					else {			// plane 1 is good, check plane 0
+						ret = set_blcok_status(aml_chip, chipnr, (blk_addr -1),value);
+						if(ret != 0)
+							break;
+					}
+				}
+			}			
+		}
+		else{	
+			ret = set_blcok_status(aml_chip, chipnr, blk_addr,value);
+		}	
+	
+
+
+	return ret;
+	
+exit_error0:
+
+	return ret;
+}
+
+
+/************************************************************
+ *  all parameters saved in aml_chip->ops_para.
+ * for opteration mode, contains multi-plane/multi-chip
+ * supposed chip bbt has been installed
+ *
+ *************************************************************/
+static int update_bbt_chip_op(struct amlnand_chip *aml_chip)
+{
+	struct hw_controller *controller = &aml_chip->controller;
+	struct nand_flash *flash = &aml_chip->flash;
+	struct chip_ops_para *ops_para = &aml_chip->ops_para;	
+	struct chip_operation *operation = & aml_chip->operation;
+
+	unsigned blk_addr, pages_per_blk_shift;
+	unsigned char chip_num = 1, chipnr;
+	unsigned short * tmp_status;
+	int ret;
+
+	if(ops_para->option & DEV_MULTI_CHIP_MODE){
+		chip_num = controller->chip_num;		
+	}
+	
+	pages_per_blk_shift = ffs(flash->blocksize) -ffs(flash->pagesize);
+	blk_addr = ops_para->page_addr >> pages_per_blk_shift;
+	chipnr = ops_para->chipnr;
+	if(unlikely(controller->page_addr >= controller->internal_page_nums)) {
+		controller->page_addr -= controller->internal_page_nums;
+		controller->page_addr |= controller->internal_page_nums *aml_chip->flash.internal_chipnr;
+	}
+	
+	aml_nand_msg("###nand update start!!!!\n");
+
+		
+	ret = amlnand_update_bbt(aml_chip);
+	if(ret < 0){		
+		aml_nand_msg("nand update bbt failed");
+	}
+		
+
+	return ret;
+}
 
 
 /************************************************************
@@ -1889,7 +2330,13 @@ int amlnand_init_operation(struct amlnand_chip *aml_chip)
 
 	if(!operation->erase_block)
 		operation->erase_block = erase_block;
-	
+    
+	if(!operation->test_block)
+		operation->test_block = test_block; 
+    
+	if(!operation->test_block_reserved)
+		operation->test_block_reserved = test_block_reserved; 
+    
 	if(!operation->block_isbad)
 		operation->block_isbad = block_isbad;
 	
@@ -1901,6 +2348,12 @@ int amlnand_init_operation(struct amlnand_chip *aml_chip)
 	
 	if(!operation->write_page)
 		operation->write_page = write_page;	
+    
+	if(!operation->blk_modify_bbt_chip_op)
+		operation->blk_modify_bbt_chip_op = blk_modify_bbt_chip_op;
+
+	if(!operation->update_bbt_chip_op)
+		operation->update_bbt_chip_op = update_bbt_chip_op;
 
 	return NAND_SUCCESS;
 	

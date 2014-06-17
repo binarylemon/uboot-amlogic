@@ -230,6 +230,7 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	unsigned char read, devread, nfread_flag;
 	int  dev, start_secor, length,  ret = 0;
 	char *cmd,*protect_name, *dev_name;
+    uint32_t *markbad_reserved_addr = NULL;
 
 	/* at least two arguments please */
 	if (argc < 1)
@@ -319,6 +320,7 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 			goto usage;
 		}
 
+		nftl_dev =NULL;
 		dev_name = argv[2];
 		nftl_dev =NULL;
 		nftl_dev = aml_nftl_get_dev(dev_name);
@@ -743,7 +745,92 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		
 		return ret;
 	}
+    if(strcmp(cmd, "markbad") == 0){
 
+		if(argc < 4){
+			goto usage;
+		}
+		
+		dev_name = argv[2];
+		if(strcmp(dev_name, "boot") == 0){
+			dev_name = NAND_BOOT_NAME;
+		}
+		else if(strcmp(dev_name, "code") == 0){
+			dev_name = NAND_CODE_NAME;
+		}else if(strcmp(dev_name, "cache") == 0){
+			dev_name = NAND_CACHE_NAME;
+		}else if(strcmp(dev_name, "data") == 0){
+			dev_name = NAND_DATA_NAME;
+		}else{
+			aml_nand_msg("input wrong name!! %s",dev_name);
+			goto usage;
+		}		
+		phydev = aml_phy_get_dev(dev_name);
+		if(!phydev){
+			aml_nand_msg("phydev be NULL");
+			return -1;
+		}
+	
+		devops = &(phydev->ops);
+
+		if ((arg_off_size(argc - 3, argv + 3, phydev->size, &off, &size) != 0)){
+			goto usage;
+		}
+		aml_nand_dbg("off:0x%llx size:%llx.\n", off, size);
+		erase_addr =erase_off= off;
+		erase_len = size;
+
+		
+		aml_nand_dbg("erase_len = %llx",erase_len);		
+		aml_nand_dbg("erase_off = %llx",erase_off);
+		
+		if (erase_len < phydev->erasesize){				
+			printf("Warning: markbad size 0x%08x smaller than one "	\
+				   "block 0x%08x\n",erase_len, phydev->erasesize);
+			printf("		 markbad 0x%08x instead\n", phydev->erasesize);
+			erase_len = phydev->erasesize;
+		}
+
+        for (; erase_addr <erase_off + erase_len; erase_addr +=  phydev->erasesize) {
+            memset(devops, 0x0, sizeof(struct phydev_ops));
+            devops->addr = erase_addr;
+            devops->len = phydev->erasesize;            
+            devops->mode = NAND_HW_ECC;
+            
+             ret = phydev->block_isbad(phydev);
+            if (ret > 0) {
+                printf("\rSkipping bad block at 0x%08llx\n", erase_addr);
+                continue;
+
+            } else if (ret < 0) {
+                printf("\n:AMLNAND get bad block failed: ret=%d at addr=%llx\n",ret, erase_addr);
+                return -1;
+            }
+            
+            ret = phydev->block_markbad(phydev);
+            if (ret < 0)
+                printf("AMLNAND bad block mark failed: %llx\n", erase_addr);    
+
+        }
+		printf("NAND %s %s\n", "MARKBAD", (ret <0) ? "ERROR" : "OK");
+		return 0;
+	}
+    if(strcmp(cmd, "markbad_reserved") == 0){
+
+		if(argc < 3){
+			goto usage;
+		}
+		
+		if (!(str2long(argv[2], (unsigned long*)markbad_reserved_addr))) {
+			aml_nand_dbg("'%s' is not a number", argv[2]);
+			goto usage;
+		}
+		printf("mark_reserved block:%d\n",*markbad_reserved_addr);
+        ret = amlnf_markbad_reserved_ops(*markbad_reserved_addr);
+
+		printf("NAND %s %s\n", "MARKBAD", (ret <0) ? "ERROR" : "OK");
+		return 0;
+	}
 usage:
 	cmd_usage(cmdtp);
 	return 1;
@@ -774,6 +861,7 @@ U_BOOT_CMD(amlnf, CONFIG_SYS_MAXARGS, 1, do_amlnfphy,
 	"deverase [whole] [off size] - erase 'size' bytes from\n"
 	"    offset 'off' (entire device if not specified) in device[dev]\n"  
 	"markbad addr -mark block bad at addr\n"
+	"mark_reserved reserved_blk_NO -mark reserved_blk_NO bad \n"
 	"device name -get nftl device by name\n"
 );
 

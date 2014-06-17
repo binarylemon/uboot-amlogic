@@ -45,7 +45,7 @@ int amlnf_env_save(unsigned char *buf,int len)
 	unsigned char *env_buf = NULL;
 	int ret=0, i=0;
 	aml_nand_msg("uboot env amlnf_env_save : ####");
-
+	
 	if(aml_chip_env == NULL){
 		return 0;
 	}

@@ -294,6 +294,9 @@ struct amlnand_phydev{
 	int (*block_isbad) (struct amlnand_phydev *phydev);
 	int (*block_markbad) (struct amlnand_phydev *phydev);
 
+	int (*block_modifybbt) (struct amlnand_phydev *phydev,int value);
+	int (*update_bbt) (struct amlnand_phydev *phydev);
+    int (*test_block) (struct amlnand_phydev *phydev);
 	//struct notifier_block reboot_notifier;  /* default mode before reboot */	 			
 };
 

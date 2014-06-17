@@ -15,6 +15,10 @@
 #define	AML_NAND_DBG_M8
 #define AML_NAND_NEW_OOB
 
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8B
+#define	AML_NAND_M8B
+#endif
+
 /**************LOGIC****************/
 #define  PRINT aml_nftl_dbg
 
@@ -39,6 +43,7 @@
 #define GC_THRESHOLD_RATIO_DENOMINATOR            3
 
 #define MAX_CACHE_WRITE_NUM  				      16
+
 
 //#define CONFIG_NAND_AML_M8
 

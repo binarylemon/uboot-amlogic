@@ -544,13 +544,17 @@ struct chip_operation{
 	 * to be called before writing to the block.
 	 */
 	int (*erase_block) (struct amlnand_chip *aml_chip);	
-	
+    int (*test_block) (struct amlnand_chip *aml_chip);
+	int (*test_block_reserved) (struct amlnand_chip *aml_chip, int tst_blk);
 	/***basic data operation and included oob data****/
 	int (*read_page) (struct amlnand_chip *aml_chip);
 	int (*write_page) (struct amlnand_chip *aml_chip);
 	
 	int (*block_isbad) (struct amlnand_chip *aml_chip);
 	int (*block_markbad) (struct amlnand_chip *aml_chip);
+    
+	int (*blk_modify_bbt_chip_op) (struct amlnand_chip *aml_chip,int value);
+	int (*update_bbt_chip_op) (struct amlnand_chip *aml_chip);
 };
 
 /*** basic nand flash information  ***/

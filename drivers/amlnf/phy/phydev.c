@@ -466,6 +466,215 @@ static int nand_block_markbad(struct amlnand_phydev *phydev)
 
 	return ret;
 }
+static int block_modifybbt(struct amlnand_phydev *phydev,int value)
+{
+	struct amlnand_chip *aml_chip = (struct amlnand_chip *)phydev->priv;	
+	struct phydev_ops *devops = &(phydev->ops);
+	struct hw_controller *controller = &(aml_chip->controller);	
+	struct chip_operation *operation = &(aml_chip->operation);
+	struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+	uint64_t addr = 0;
+	int ret = 0;
+
+	if(devops->addr >  phydev->size){
+		aml_nand_msg("out of space and addr:%llx phydev->offset:%llx phydev->size:%llx",\
+						devops->addr, phydev->offset, phydev->size);
+		return -NAND_ARGUMENT_FAILURE;
+	}
+	amlnand_get_device(phydev, CHIP_READING);
+	
+	//clear ops_para here
+	memset(ops_para, 0, sizeof(struct chip_ops_para));
+	
+	addr = phydev->offset + devops->addr;
+    aml_nand_msg("addr = %lld",addr);
+	ops_para->option = phydev->option;	
+
+	//ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+
+	if(ops_para->option & DEV_SLC_MODE){
+		ops_para->page_addr = amlnand_slc_addr_trs(phydev);
+	}else{
+		ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+	}
+	
+	if(ops_para->option & DEV_SERIAL_CHIP_MODE){		
+		ops_para->chipnr = (addr>>phydev->erasesize)%controller->chip_num;		
+		controller->select_chip(controller, ops_para->chipnr );
+	}
+
+	ret = operation->blk_modify_bbt_chip_op(aml_chip,value);
+	if(ret<0){
+		aml_nand_msg("nand mark bad failed at page %d",ops_para->page_addr);
+	}
+		
+	amlnand_release_device(phydev);
+
+	return ret;
+}
+
+static int update_bbt(struct amlnand_phydev *phydev)
+{
+	struct amlnand_chip *aml_chip = (struct amlnand_chip *)phydev->priv;	
+	struct phydev_ops *devops = &(phydev->ops);
+	struct hw_controller *controller = &(aml_chip->controller);	
+	struct chip_operation *operation = &(aml_chip->operation);
+	struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+	uint64_t addr = 0;
+	int ret = 0;
+
+	if(devops->addr >  phydev->size){
+		aml_nand_msg("out of space and addr:%llx phydev->offset:%llx phydev->size:%llx",\
+						devops->addr, phydev->offset, phydev->size);
+		return -NAND_ARGUMENT_FAILURE;
+	}
+	amlnand_get_device(phydev, CHIP_READING);
+	
+	//clear ops_para here
+	memset(ops_para, 0, sizeof(struct chip_ops_para));
+	
+	addr = phydev->offset + devops->addr;
+	ops_para->option = phydev->option;	
+
+	//ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+
+	if(ops_para->option & DEV_SLC_MODE){
+		ops_para->page_addr = amlnand_slc_addr_trs(phydev);
+	}else{
+		ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+	}
+	
+	if(ops_para->option & DEV_SERIAL_CHIP_MODE){		
+		ops_para->chipnr = (addr>>phydev->erasesize)%controller->chip_num;		
+		controller->select_chip(controller, ops_para->chipnr );
+	}
+
+	ret = operation->update_bbt_chip_op(aml_chip);
+	if(ret<0){
+		aml_nand_msg("nand mark bad failed at page %d",ops_para->page_addr);
+	}
+		
+	amlnand_release_device(phydev);
+
+	return ret;
+}
+static int nand_test_block(struct amlnand_phydev *phydev)
+{
+    struct amlnand_chip *aml_chip = (struct amlnand_chip *)phydev->priv;    
+    struct phydev_ops *devops = &(phydev->ops);
+    struct hw_controller *controller = &(aml_chip->controller); 
+    struct chip_operation *operation = &(aml_chip->operation);
+    struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+    uint64_t addr = 0;
+    int ret = 0;
+    unsigned tmp_addr = 0;
+
+    if(devops->addr >  phydev->size){
+        aml_nand_msg("out of space and addr:%llx phydev->offset:%llx phydev->size:%llx",\
+                        devops->addr, phydev->offset, phydev->size);
+        return -NAND_ARGUMENT_FAILURE;
+    }
+#ifndef AML_NAND_UBOOT	
+    if(phydev->option & NAND_SHUT_DOWN){
+        aml_nand_msg("nand is in shut dowm protect mod");
+        return NAND_SUCCESS;
+    }
+#endif
+    amlnand_get_device(phydev, CHIP_READING);
+    
+    //clear ops_para here
+    memset(ops_para, 0, sizeof(struct chip_ops_para));
+    
+    addr = phydev->offset + devops->addr;
+    aml_nand_msg("addr = %lld",addr);
+    ops_para->option = phydev->option;  
+
+    //ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+
+    if(ops_para->option & DEV_SLC_MODE){
+        ops_para->page_addr = amlnand_slc_addr_trs(phydev);
+    }else{
+        ops_para->page_addr = (int)(addr >> phydev->writesize_shift);
+    }
+    
+    if(ops_para->option & DEV_SERIAL_CHIP_MODE){        
+        ops_para->chipnr = (addr>>phydev->erasesize)%controller->chip_num;      
+        controller->select_chip(controller, ops_para->chipnr );
+    }
+    tmp_addr = ops_para->page_addr;
+    ops_para->data_buf = devops->datbuf;
+    ret = operation->erase_block(aml_chip);
+    if(ret<0){
+        aml_nand_msg("nand erase_block failed at page %d",ops_para->page_addr);
+        goto exit;
+    }
+    
+    ops_para->page_addr = tmp_addr;
+    do{
+    ret = operation->write_page(aml_chip);
+    if(ret<0){
+        aml_nand_msg("nand erase_block failed at page %d",ops_para->page_addr);
+        goto exit;
+    }
+    ops_para->page_addr += phydev->writesize;
+    }while(ops_para->page_addr>=devops->len);
+
+    ops_para->page_addr = tmp_addr;
+    do{
+    ret = operation->read_page(aml_chip);
+    if( (ops_para->ecc_err) || (ret<0)){            
+        aml_nand_msg("nand phy read failed at devops->addr : %llx", devops->addr);          
+        goto exit;
+    }
+    ops_para->page_addr += phydev->writesize;
+    }while(ops_para->page_addr>=devops->len);
+
+    ops_para->page_addr = tmp_addr;
+    ret = operation->erase_block(aml_chip);
+    if(ret<0){
+        aml_nand_msg("nand erase_block failed at page %d",ops_para->page_addr);
+        goto exit;
+    }
+    aml_nand_msg("nand test OK ");
+exit:        
+    amlnand_release_device(phydev);
+
+    return ret;
+
+}
+static int aml_repair_bbt(struct amlnand_phydev *phydev,uint64_t *bad_blk_addr,int cnt)
+{
+	int i;
+	int error = 0;
+	int flag = 0;
+	struct phydev_ops *devops = &(phydev->ops);
+	unsigned char * buffer = NULL;
+	buffer = aml_nand_malloc(2 * phydev->writesize);
+	if(!buffer){
+		aml_nand_msg("nand malloc failed");
+		return -1;
+	}
+    memset(buffer, 0xff, 2*phydev->writesize);
+    
+    memset(devops, 0x0, sizeof(struct phydev_ops));
+    devops->len = phydev->erasesize;
+    devops->datbuf = buffer;
+    devops->oobbuf = NULL;
+    devops->mode = NAND_HW_ECC;
+	for(i = 0; i < cnt;i++) {
+        devops->addr = bad_blk_addr[i];
+        aml_nand_msg("devops->addr = %lld,bad_blk_addr[i]=%lld",devops->addr,bad_blk_addr[i]);
+		block_modifybbt(phydev,0);
+		error = nand_test_block(phydev);
+		if(error) {
+            devops->addr = bad_blk_addr[i];
+			block_modifybbt(phydev,1);
+		}
+	}
+	
+
+	return update_bbt(phydev);	
+}
 
 int phydev_init_erase(struct amlnand_chip *aml_chip)
 {
@@ -894,6 +1103,7 @@ extern struct list_head nphy_dev_list;
 int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 {
 	struct amlnand_phydev *phydev = NULL, *phydev_pre = NULL;	
+    struct phydev_ops *devops = &(phydev->ops);
 	struct nand_flash *flash = &(aml_chip->flash);
 	struct hw_controller *controller = &(aml_chip->controller);
 	struct chip_operation *operation = &(aml_chip->operation);	
@@ -902,11 +1112,12 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 	struct dev_para *dev_para = NULL;
 	struct amlnf_partition *partition = NULL;
 	
-	uint64_t  offset = 0, dev_size = 0, chip_size =0, phydev_pre_size =0;
-	unsigned start_blk, total_blk, tmp_write_shift, tmp_erase_shift, tmp_offset=0, tmp_blk = 0, pages_per_blk;
+	uint64_t  offset = 0,relative_offset = 0, dev_size = 0, chip_size =0, phydev_pre_size =0;
+	unsigned start_blk, total_blk, tmp_write_shift, tmp_erase_shift, tmp_offset=0, tmp_blk = 0, pages_per_blk,bad_blk_cnt =0;
 	unsigned char boot_flag = 0, plane_num = 1;
 	int i, j, k, ret = 0;	
-
+    uint64_t bad_blk[128];
+    memset(bad_blk,0,128*sizeof(uint64_t));
 	if(flash->option & NAND_MULTI_PLANE_MODE){
 		plane_num = 2;
 	}
@@ -953,7 +1164,11 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 
 		phydev->block_isbad = nand_block_isbad;
 		phydev->block_markbad = nand_block_markbad;
-			
+
+		phydev->block_modifybbt = block_modifybbt;
+		phydev->update_bbt = update_bbt;
+        phydev->test_block = nand_test_block;
+        
 		//set partitions and caulate dev size
 		if(dev_para->nr_partitions){
 			phydev->nr_partitions = dev_para->nr_partitions;
@@ -1106,7 +1321,11 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 						total_blk = dev_size  >> tmp_erase_shift;
 					}else{
 						total_blk = dev_size  >> phydev->erasesize_shift;
+						#ifdef AML_NAND_M8B
+						total_blk = total_blk + (total_blk + ADJUST_PART_SIZE - 1) /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+						#else
 						total_blk = total_blk + total_blk /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+						#endif
 					}
 
 					memset(ops_para, 0, sizeof(struct chip_ops_para));
@@ -1183,6 +1402,48 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 	}
 
 	show_phydev_info();
+
+#if 1
+    phydev = NULL;
+	list_for_each_entry(phydev,&nphy_dev_list,list){
+		if(phydev!=NULL){
+            aml_nand_dbg("----------------------------------------------------------------------------------------------------\n");
+        	aml_nand_dbg("name:%s, offset:%llx, size:%llx, option:%x", \
+		phydev->name, phydev->offset, phydev->size, phydev->option);
+            aml_nand_dbg("erasesize:%x, writesize:%x, oobavail:%x, erasesize_shift:%x, writesize_shift:%d", \
+		phydev->erasesize, phydev->writesize, phydev->oobavail, phydev->erasesize_shift, phydev->writesize_shift);
+            aml_nand_dbg(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+            relative_offset = 0;
+            bad_blk_cnt = 0;
+            devops = &(phydev->ops);
+            memset(bad_blk,0,128*sizeof(uint64_t));
+            do{
+                memset(devops, 0x0, sizeof(struct phydev_ops));
+                memset(devops, 0x0, sizeof(struct phydev_ops));
+                devops->addr = relative_offset;
+                devops->len = phydev->erasesize;
+                devops->datbuf = NULL;
+                devops->oobbuf = NULL;
+                devops->mode = NAND_HW_ECC;
+                //aml_nand_msg("relative_offset = %x, devops->addr = %x, shoule be equal",relative_offset,devops->addr);
+                ret = nand_block_isbad(phydev);
+                if (ret == NAND_BLOCK_USED_BAD){
+                    if(bad_blk_cnt < 128){
+                      bad_blk[bad_blk_cnt] = relative_offset;
+                      bad_blk_cnt++;
+                    }
+                }
+                relative_offset += phydev->erasesize;
+            }while(relative_offset < phydev->size);
+            aml_nand_msg("bad block count = %d\n",bad_blk_cnt);
+        	if((bad_blk_cnt *32 > (phydev->size >> phydev->erasesize_shift))||(bad_blk_cnt>10)){
+                aml_nand_dbg("Too many new bad blocks,try to repair...\n");
+        		ret = aml_repair_bbt(phydev,bad_blk,bad_blk_cnt);		
+        	}
+    	}
+	}
+
+#endif
 
 	if(aml_chip->init_flag == NAND_BOOT_ERASE_PROTECT_CACHE){
 		ret = phydev_init_erase(aml_chip);
