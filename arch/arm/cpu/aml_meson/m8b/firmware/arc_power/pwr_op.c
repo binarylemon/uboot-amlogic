@@ -592,12 +592,22 @@ void aml1218_power_on_at_24M()
     val = i2c_pmu_read_b(0x00E1);
     if (val & 0x02) {
         printf_arc("extern power plugged, set dcdc current limit to 1.5A\n");
+        aml1218_set_bits(0x003b, 0x00, 0x40);
+        aml1218_set_bits(0x0044, 0x00, 0x40);
+        i2c_pmu_write_b(0x011d, 0x02);
+        i2c_pmu_write_b(0x011f, 0x02);
+
         aml1218_set_bits(0x0035, 0x00, 0x07);
         aml1218_set_bits(0x003e, 0x00, 0x07);
         aml1218_set_bits(0x0047, 0x00, 0x07);
         aml1218_set_bits(0x004f, 0x08, 0x08);
     } else {
         printf_arc("extern power unpluged, set dcdc current limit to 2A\n");
+        aml1218_set_bits(0x003b, 0x40, 0x40);
+        aml1218_set_bits(0x0044, 0x40, 0x40);
+        i2c_pmu_write_b(0x011d, 0x00);
+        i2c_pmu_write_b(0x011f, 0x00);
+
         aml1218_set_bits(0x004f, 0x00, 0x08);
         aml1218_set_bits(0x0035, 0x04, 0x07);
         aml1218_set_bits(0x003e, 0x04, 0x07);
