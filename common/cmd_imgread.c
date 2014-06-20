@@ -18,6 +18,7 @@
 #define MsgP(fmt...)   printf("[imgread]"fmt)
 
 #define IMG_PRELOAD_SZ  (1U<<20) //Total read 1M at first to read the image header
+#define PIC_PRELOAD_SZ  (8U<<10) //Total read 4k at first to read the image header
 #define RES_OLD_FMT_READ_SZ (8U<<20)
 
 #ifdef CONFIG_OF_LIBFDT
@@ -398,7 +399,8 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 }
 #endif//#ifndef CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2
 
-#define AML_RES_IMG_VERSION         0x01
+#define AML_RES_IMG_VERSION_V1      (0x01)
+#define AML_RES_IMG_VERSION_V2      (0x02)
 #define AML_RES_IMG_V1_MAGIC_LEN    8
 #define AML_RES_IMG_V1_MAGIC        "AML_RES!"//8 chars
 #define AML_RES_IMG_ITEM_ALIGN_SZ   16
@@ -474,10 +476,100 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
     return 0;
 }
 
+#define IH_MAGIC	0x27051956	/* Image Magic Number		*/
+#define IH_NMLEN		32	/* Image Name Length		*/
+
+#pragma pack(push, 1)
+typedef struct pack_header{
+	unsigned int 	magic;	/* Image Header Magic Number	*/
+	unsigned int 	hcrc;	/* Image Header CRC Checksum	*/
+	unsigned int	size;	/* Image Data Size		*/
+	unsigned int	start;	/* item data offset in the image*/
+	unsigned int	end;		/* Entry Point Address		*/
+	unsigned int	next;	/* Next item head offset in the image*/
+	unsigned int	dcrc;	/* Image Data CRC Checksum	*/
+	unsigned char	index;		/* Operating System		*/
+	unsigned char	nums;	/* CPU architecture		*/
+	unsigned char   type;	/* Image Type			*/
+	unsigned char 	comp;	/* Compression Type		*/
+	char 	name[IH_NMLEN];	/* Image Name		*/
+}AmlResItemHead_t;
+#pragma pack(pop)
+
+//[imgread pic] logo bootup $loadaddr_misc
+static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    const char* const partName = argv[1];
+    unsigned char* loadaddr = 0;
+    int rc = 0;
+    const AmlResImgHead_t* pResImgHead = NULL;
+    unsigned totalSz    = 0;
+    uint64_t flashReadOff = 0;
+    const unsigned PreloadSz = PIC_PRELOAD_SZ;//preload 8k, 124-1 pic header, If you need pack more than 123 items,  fix this
+    unsigned itemIndex = 0;
+    const AmlResItemHead_t* pItem = NULL;
+    const char* picName = argv[2];
+
+    loadaddr = (unsigned char*)simple_strtoul(argc > 3 ? argv[3] : getenv("loadaddr_misc"), NULL, 16);
+
+    pResImgHead = (AmlResImgHead_t*)loadaddr;
+
+    rc = store_read_ops((unsigned char*)partName, loadaddr, flashReadOff, PreloadSz);
+    if(rc){
+        errorP("Fail to read 0x%xB from part[%s] at offset 0\n", PreloadSz, partName);
+        return __LINE__;
+    }
+    flashReadOff = PreloadSz;
+
+    rc = memcmp(pResImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
+    if(rc) {
+        errorP("head magic error\n");
+        return __LINE__;
+    }
+    if(AML_RES_IMG_VERSION_V2 != pResImgHead->version){
+            errorP("res version 0x%x != 0x%x\n", pResImgHead->version, AML_RES_IMG_VERSION_V2);
+            return __LINE__;
+    }
+
+    pItem = (AmlResItemHead_t*)(pResImgHead + 1);
+    for(itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem)
+    {
+            if(IH_MAGIC != pItem->magic){
+                    errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
+                    return __LINE__;
+            }
+            if(!strcmp(picName, pItem->name))
+            {
+                    char env_name[IH_NMLEN*2];
+                    char env_data[IH_NMLEN*2];
+                    char* picLoadAddr = loadaddr + pItem->start;
+
+                    rc = store_read_ops((unsigned char*)partName, picLoadAddr, pItem->start, pItem->size);
+                    if(rc){
+                            errorP("Fail to read pic at offset 0x%x\n", pItem->start);
+                            return __LINE__;
+                    }
+
+                    sprintf(env_name, "%s_offset", pItem->name);
+                    sprintf(env_data, "0x%p", picLoadAddr);
+                    setenv(env_name, env_data);
+
+                    sprintf(env_name, "%s_size", pItem->name);
+                    sprintf(env_data, "0x%x", pItem->size);
+                    setenv(env_name, env_data);
+
+                    return 0;//success
+            }
+    }
+
+    return __LINE__;//fail
+}
+
 static cmd_tbl_t cmd_imgread_sub[] = {
 	U_BOOT_CMD_MKENT(dtb,    4, 0, do_image_read_dtb, "", ""),
 	U_BOOT_CMD_MKENT(kernel, 3, 0, do_image_read_kernel, "", ""),
 	U_BOOT_CMD_MKENT(res,    3, 0, do_image_read_res, "", ""),
+	U_BOOT_CMD_MKENT(pic,    4, 0, do_image_read_pic, "", ""),
 };
 
 static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -507,12 +599,14 @@ U_BOOT_CMD(
    "    argv: <imageType> <part_name> <loadaddr> \n"   //usage
    "    - <image_type> Current support is kernel/res(ource).\n"
    "imgread kernel  --- Read image in fomart IMAGE_FORMAT_ANDROID\n"
-   "imgread kernel  --- Load dtb from image boot.img or recovery.img\n"
-   "imgread resouce --- Read image packed by 'Amlogic resource packer'\n"
+   "imgread dtb     --- Load dtb from image boot.img or recovery.img\n"
+   "imgread res     --- Read image packed by 'Amlogic resource packer'\n"
+   "imgread picture --- Read one picture from Amlogic logo"
    "    - e.g. \n"
    "        to read boot.img     from part boot     from flash: <imgread kernel boot loadaddr> \n"   //usage
    "        to read dtb          from part boot     from flash: <imgread dtb boot loadaddr [destAddr]> \n"   //usage
    "        to read recovery.img from part recovery from flash: <imgread kernel recovery loadaddr> \n"   //usage
    "        to read logo.img     from part logo     from flash: <imgread res    logo loadaddr> \n"   //usage
+   "        to read one picture named 'bootup' from logo.img    from logo: <imgread pic logo bootup loadaddr> \n"   //usage
 );
 

@@ -10,9 +10,14 @@
 #include <command.h>
 #include <asm/types.h>
 
+#define errorP(fmt...) printf("Err imgPack(L%d):", __LINE__),printf(fmt)
+#define MsgP(fmt...)   printf("[ImgPck]"fmt)
+
 #define IH_MAGIC	0x27051956	/* Image Magic Number		*/
 #define IH_NMLEN		32	/* Image Name Length		*/
 
+#define AML_RES_IMG_VERSION_V1      (0x01)
+#define AML_RES_IMG_VERSION_V2      (0x02)
 #define AML_RES_IMG_ITEM_ALIGN_SZ   16
 #define AML_RES_IMG_VERSION         0x01
 #define AML_RES_IMG_V1_MAGIC_LEN    8
@@ -56,61 +61,80 @@ typedef struct {
 #define IH_MAGIC	0x27051956	/* Image Magic Number		*/
 #define IH_NMLEN		32	/* Image Name Length		*/
 
+static int _img_unpack_check_img_header(const AmlResImgHead_t* pImgHead, int* imgVersion, unsigned* imgHeadSz)
+{
+        int rc = 0;
+
+        rc = memcmp(pImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
+        if(rc) {
+                const AmlResItemHead_t* pItemHead = (AmlResItemHead_t*)pImgHead;
+                if(IH_MAGIC != pItemHead->magic){
+                        errorP("magic of oldest img not item header!\n");
+                        return __LINE__;
+                }
+                *imgVersion = 0;
+                *imgHeadSz = 0;
+        }
+        else {
+                if(AML_RES_IMG_VERSION_V2 < pImgHead->version){
+                        errorP("res-img ver %d not supported\n", pImgHead->version);
+                        return __LINE__;
+                }
+                *imgVersion = pImgHead->version;
+                *imgHeadSz      = sizeof(AmlResImgHead_t);
+                /*
+                 *if(AML_RES_IMG_VERSION_V2 == pImgHead->version){
+                 *        *imgHeadSz += pImgHead->imgItemNum * sizeof(AmlResItemHead_t);
+                 *}
+                 */
+        }
+
+        return 0;
+}
 
 static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	void *addr;
-	__u32 pos = 0;
-	AmlResItemHead_t *pack_header_p = NULL;
-	char env_name[IH_NMLEN*2];
-	char env_data[IH_NMLEN*2];
-    AmlResImgHead_t* pImgHead = NULL;
-    int rc = 0;
-	
-	if (argc < 2) {
-		cmd_usage(cmdtp);
-		return -1;
-	}
-	addr = (void *)simple_strtoul (argv[1], NULL, 16);
+        void *addr;
+        __u32 pos = 0;
+        const AmlResItemHead_t *pack_header_p = NULL;
+        char env_name[IH_NMLEN*2];
+        char env_data[IH_NMLEN*2];
+        AmlResImgHead_t* pImgHead = NULL;
+        int rc = 0;
+        int imgVersion = -1;
 
-    pImgHead = (AmlResImgHead_t*)addr;
-    rc = memcmp(pImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
-    if(rc)
-    {
-        printf("unpackimg:Magic error, use old format\n");
-        pos = 0;
-    }
-    else
-    {//new format
-        pos = AML_RES_IMG_HEAD_SZ;
-    }
+        if (argc < 2) {
+                cmd_usage(cmdtp);
+                return __LINE__;
+        }
+        addr = (void *)simple_strtoul (argv[1], NULL, 16);
 
-	while(1)
-	{
-		pack_header_p = (AmlResItemHead_t *)(addr + pos);
-		if(pack_header_p->magic != IH_MAGIC)
-		{
-			printf("unpackimg wrong!\n");
-			return -1;
-		}
+        pImgHead = (AmlResImgHead_t*)addr;
+        rc = _img_unpack_check_img_header(pImgHead, &imgVersion, &pos);
+        if(rc){
+                errorP("Err res header.\n");
+                return __LINE__;
+        }
+        MsgP("ver=%d\n", imgVersion);
 
-		sprintf(env_name, "%s_offset", pack_header_p->name);
-		sprintf(env_data, "0x%x", (unsigned int)(addr+pack_header_p->start));
-		setenv(env_name, env_data);
-		
-		sprintf(env_name, "%s_size", pack_header_p->name);
-		sprintf(env_data, "0x%x", pack_header_p->size);
-		setenv(env_name, env_data);
-		if(pack_header_p->next == 0)
-		{
-			break;
-		}
-		else
-		{
-			pos = pack_header_p->next;
-		}
-	}
-	return 0;
+        do{
+                pack_header_p = (AmlResItemHead_t*)(addr + pos);
+                if(IH_MAGIC != pack_header_p->magic){
+                        errorP("Item magic error.\n");
+                        return __LINE__;
+                }
+
+                sprintf(env_name, "%s_offset", pack_header_p->name);
+                sprintf(env_data, "0x%x", (unsigned int)(addr+pack_header_p->start));
+                setenv(env_name, env_data);
+
+                sprintf(env_name, "%s_size", pack_header_p->name);
+                sprintf(env_data, "0x%x", pack_header_p->size);
+                setenv(env_name, env_data);
+
+        }while(pos = pack_header_p->next);
+
+        return 0;
 }
 
 U_BOOT_CMD(
@@ -133,7 +157,7 @@ static int do_get_img_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 		return -1;
 	}
 	//printf("############ do_get_img_size #############\n");
-	addr = simple_strtoul (argv[1], NULL, 16);
+	addr = (void*)simple_strtoul (argv[1], NULL, 16);
 	pos = 0;
 	while(1)
 	{
