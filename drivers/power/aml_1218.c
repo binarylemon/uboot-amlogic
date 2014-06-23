@@ -267,7 +267,7 @@ int aml1218_get_charge_status(int print)
     aml1218_write(0x011f, (reg_all & 0x02000000) ? 0x02 : 0x00);
 
     aml1218_set_bits(0x0035, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
-    aml1218_set_bits(0x003e, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
+    //aml1218_set_bits(0x003e, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
     aml1218_set_bits(0x0047, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
     aml1218_set_bits(0x004f, (reg_all & 0x02000000) >> 22, 0x08);
     if (val & 0x18) {
@@ -1095,7 +1095,7 @@ int aml1218_init(void)
 {
     uint8_t val;
     
-    printf("---> PMU driver version:v0.80\n");
+    printf("---> PMU driver version:v0.90\n");
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1218_get_charge_status(0);
@@ -1109,7 +1109,7 @@ int aml1218_init(void)
     aml1218_set_bits(0x0009, 0x01, 0x0f);           // boost power off first
 
     aml1218_set_bits(0x0035, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
-    aml1218_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
+    //aml1218_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
 
     aml1218_set_bits(0x0011, 0x03, 0x03);
     aml1218_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement

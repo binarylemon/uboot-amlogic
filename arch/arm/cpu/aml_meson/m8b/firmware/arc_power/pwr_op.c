@@ -534,7 +534,7 @@ void aml1218_power_off_at_24M()
 #endif
 
     aml1218_set_bits(0x0035, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
-    aml1218_set_bits(0x003e, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
+    //aml1218_set_bits(0x003e, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
     aml1218_set_bits(0x0047, 0x03, 0x07);                               // set DCDC3
 
     power_off_vcc_cam();                                                // close LDO6
@@ -598,7 +598,7 @@ void aml1218_power_on_at_24M()
         i2c_pmu_write_b(0x011f, 0x02);
 
         aml1218_set_bits(0x0035, 0x00, 0x07);
-        aml1218_set_bits(0x003e, 0x00, 0x07);
+        //aml1218_set_bits(0x003e, 0x00, 0x07);
         aml1218_set_bits(0x0047, 0x00, 0x07);
         aml1218_set_bits(0x004f, 0x08, 0x08);
     } else {
@@ -610,7 +610,7 @@ void aml1218_power_on_at_24M()
 
         aml1218_set_bits(0x004f, 0x00, 0x08);
         aml1218_set_bits(0x0035, 0x04, 0x07);
-        aml1218_set_bits(0x003e, 0x04, 0x07);
+        //aml1218_set_bits(0x003e, 0x04, 0x07);
         aml1218_set_bits(0x0047, 0x04, 0x07);
     }
 }
