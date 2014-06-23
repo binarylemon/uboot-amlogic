@@ -211,8 +211,7 @@
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
-        "imgread res logo ${loadaddr_logo}; "\
-        "unpackimg ${loadaddr_logo}; "\
+        "imgread pic logo bootup ${loadaddr_logo}; "\
         "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
