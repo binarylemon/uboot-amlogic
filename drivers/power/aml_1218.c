@@ -1094,6 +1094,8 @@ int aml1218_set_recharge_voltage(void)
 int aml1218_init(void)
 {
     uint8_t val;
+    
+    printf("---> PMU driver version:v0.80\n");
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1218_get_charge_status(0);

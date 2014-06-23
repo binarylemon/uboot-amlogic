@@ -528,8 +528,8 @@ void aml1218_power_off_at_24M()
 #endif
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
-    aml1218_set_pfm(2, 1);
-    printf_arc("dc2 set to PFM\n");
+  //aml1218_set_pfm(2, 1);
+  //printf_arc("dc2 set to PFM\n");
 #endif
 #endif
 
@@ -562,8 +562,8 @@ void aml1218_power_on_at_24M()
     
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
-    aml1218_set_pfm(2, 0);
-    printf_arc("dc2 set to pwm\n");
+  //aml1218_set_pfm(2, 0);
+  //printf_arc("dc2 set to pwm\n");
 #endif
 #endif
 #if defined(CONFIG_VDDAO_VOLTAGE_CHANGE)

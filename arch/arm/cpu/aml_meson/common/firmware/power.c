@@ -1280,6 +1280,19 @@ void aml1218_check_vbat(int init)
 
 void aml1218_power_init(int init_mode)
 {
+    aml1218_set_pfm(1, 0);                                      // DC1 ~ 3 to fix PWM
+    aml1218_set_pfm(2, 0);
+    aml1218_set_pfm(3, 0);
+
+    // According David Wang
+    aml1218_set_bits(0x0038, 0x08, 0x08);                       // DCDC ov threshold adjust
+    aml1218_set_bits(0x0041, 0x08, 0x08);
+    aml1218_set_bits(0x004b, 0x40, 0x40);
+
+    aml1218_set_bits(0x0037, 0x08, 0x08);                       // ya xie zhendang
+    aml1218_set_bits(0x0039, 0x02, 0x02);
+    aml1218_set_bits(0x0042, 0x02, 0x02);
+
     hard_i2c_write168(DEVID, 0x0220, 0xff);                         // reset audio 
     hard_i2c_write168(DEVID, 0x0221, 0xff);
 
@@ -1358,9 +1371,6 @@ void aml1218_power_init(int init_mode)
         aml1218_set_dcdc_voltage(1, 900);                       // set cpu voltage                      
         aml1218_set_vddEE_voltage(950);                         // set VDDEE voltage
     }
-    aml1218_set_pfm(1, 0);                                      // DC1 ~ 3 to fix PWM
-    aml1218_set_pfm(2, 0);
-    aml1218_set_pfm(3, 0);
     aml1218_check_vbat(0);
 }
 #endif
