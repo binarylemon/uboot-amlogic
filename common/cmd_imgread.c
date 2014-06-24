@@ -542,16 +542,18 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
             {
                     char env_name[IH_NMLEN*2];
                     char env_data[IH_NMLEN*2];
-                    char* picLoadAddr = loadaddr + pItem->start;
+                    unsigned picLoadAddr = loadaddr + pItem->start;
 
-                    rc = store_read_ops((unsigned char*)partName, picLoadAddr, pItem->start, pItem->size);
+                    //emmc read can't support offset not align 512
+                    rc = store_read_ops((unsigned char*)partName, (char*)((picLoadAddr>>9)<<9), 
+                                    ((pItem->start>>9)<<9), pItem->size + (picLoadAddr & 0x1ff));
                     if(rc){
                             errorP("Fail to read pic at offset 0x%x\n", pItem->start);
                             return __LINE__;
                     }
 
                     sprintf(env_name, "%s_offset", pItem->name);
-                    sprintf(env_data, "0x%p", picLoadAddr);
+                    sprintf(env_data, "0x%x", picLoadAddr);
                     setenv(env_name, env_data);
 
                     sprintf(env_name, "%s_size", pItem->name);
