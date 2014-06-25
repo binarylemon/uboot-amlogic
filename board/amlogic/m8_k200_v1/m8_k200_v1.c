@@ -19,7 +19,7 @@
 #endif
 
 #ifdef CONFIG_MESON_TRUSTZONE
-#include <trustzone.c>
+#include <asm/arch/trustzone.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
