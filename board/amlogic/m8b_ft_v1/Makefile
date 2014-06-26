@@ -26,6 +26,8 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)lib$(BOARD).o
 
 CSRCS	:= $(wildcard *.c */*.c)
+CSRCS	:= $(subst firmware/ddr.c,,$(CSRCS))
+CSRCS	:= $(subst firmware/gpio.c,,$(CSRCS))
 COBJS	:= $(CSRCS:%.c=%.o)
 
 SRCS	:= $(COBJS:.o=.c)

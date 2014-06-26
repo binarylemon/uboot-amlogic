@@ -11,6 +11,8 @@ remark:
          2.2.2 code_raw.bin entry point is CONFIG_AML_EXT_PGM_ENTRY
 */
 
+#define FT_DDR_TEST   // for FT DDR test
+
 #define CONFIG_AML_EXT_PGM 
 
 #define CONFIG_AML_EXT_PGM_SILENT
@@ -125,10 +127,10 @@ remark:
 #define CONFIG_NO_DDR_PUB_VT_CHECK 1
 
 //For M8 DDR clock gating disable
-//#define CONFIG_GATEACDDRCLK_DISABLE 1
+#define CONFIG_GATEACDDRCLK_DISABLE 1        // DDR PHY model don't support
 
 //For M8 DDR low power feature disable
-//#define CONFIG_DDR_LOW_POWER_DISABLE 1
+#define CONFIG_DDR_LOW_POWER_DISABLE 1       // DDR PHY model don't support
 
 //For M8 DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
 //#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
@@ -136,7 +138,7 @@ remark:
 //Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_DDR_CLK    696 //696 //768  //792// (636)
-#define CFG_DDR_MODE   CFG_DDR_32BIT
+#define CFG_DDR_MODE   CFG_DDR_32BIT   // CFG_DDR_16BIT_LANE01
 
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
