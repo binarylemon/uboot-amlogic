@@ -232,7 +232,7 @@ void enter_power_down()
 
     int voltage   = 0;
     int axp_ocv = 0;
-
+	int wdt_flag;
 	// First, we disable all memory accesses.
 
 	f_serial_puts("step 1\n");
@@ -275,7 +275,9 @@ void enter_power_down()
 		if(p_arc_pwr_op->power_off_ddr15)
 			p_arc_pwr_op->power_off_ddr15();
 	}
-
+	wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
+	if(wdt_flag)
+		writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
 #if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
@@ -291,7 +293,8 @@ void enter_power_down()
 		if(p_arc_pwr_op->power_on_ddr15)
 			p_arc_pwr_op->power_on_ddr15();
 	}
-
+	if(wdt_flag)
+		writel((6*7812|((1<<16)-1))|(1<<19),P_WATCHDOG_TC);
 
 // gate on:  bit0: REMOTE;   bit3: UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);

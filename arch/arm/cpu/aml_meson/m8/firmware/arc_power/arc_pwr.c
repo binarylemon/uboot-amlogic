@@ -216,7 +216,7 @@ void enter_power_down()
 	int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned int vcin_state = 0;
-
+	int wdt_flag;
     int voltage   = 0;
     int axp_ocv = 0;
 
@@ -242,7 +242,6 @@ void enter_power_down()
 
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
-
 	switch_24M_to_32K();
 
 	if(p_arc_pwr_op->power_off_at_32K_1)
@@ -260,6 +259,9 @@ void enter_power_down()
 			p_arc_pwr_op->power_off_ddr15();
 	}
 
+	wdt_flag=readl(P_WATCHDOG_TC)&(1<<22);
+	if(wdt_flag)
+		writel(readl(P_WATCHDOG_TC)&(~(1<<22)),P_WATCHDOG_TC);
 #if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
@@ -269,13 +271,15 @@ void enter_power_down()
 		//udelay(1000);
 	}
 #endif
-
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
 		if(p_arc_pwr_op->power_on_ddr15)
 			p_arc_pwr_op->power_on_ddr15();
 	}
-
+	
+	if(wdt_flag){	
+		writel((6*0x186a0|((1<<22)-1))|(1<<22),P_WATCHDOG_TC);
+	}
 
 // gate on:  bit0: REMOTE;   bit3: UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);
@@ -295,7 +299,6 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_24M();
 
  	uart_reset();
-
 	f_serial_puts("step 8: ddr resume\n");
 	wait_uart_empty();
 	ddr_resume();
