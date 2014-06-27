@@ -40,32 +40,20 @@ void print_ddr_mode(void){
 
 /*Following code is for DDR MODE AUTO DETECT*/
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT
-#include "efuse_basic.c"
 static inline unsigned ddr_init(struct ddr_set * timing_reg);
-
-int read_ddr_mode(void){
-	return ((efuse_read_byte(CFG_DDR_MODE_STO_ADDR) >> CFG_DDR_MODE_STO_OFFSET) & 0x3);
-}
-
-int write_ddr_mode(void){
-	//serial_puts("write ddr mode\n");
-	//efuse_write_byte(CFG_DDR_MODE_STO_ADDR, ((cfg_ddr_mode & 0x3) << CFG_DDR_MODE_STO_OFFSET));
-	return 0;
-}
 
 int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 	int ret = 0;
-	int tmp_mode = read_ddr_mode();
-	int try_times = 0;
-	for(try_times = 1; try_times <= 3; try_times++){
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT_SKIP_32BIT
+	int try_times = 2;
+#else
+	int try_times = 1;
+#endif
+	for(; try_times <= 3; try_times++){
 		cfg_ddr_mode = try_times;
-		//if(tmp_mode == cfg_ddr_mode) /*skip preset mode*/
-			//continue;
 		ret = ddr_init(timing_reg);
 		if(!ret){
 			print_ddr_mode();
-			if(tmp_mode == CFG_DDR_NOT_SET) /*first init, store ddr mode*/
-				write_ddr_mode();
 			return 0;
 		}
 	}
