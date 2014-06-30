@@ -1375,8 +1375,72 @@ void aml1218_power_init(int init_mode)
 }
 #endif
 
+
+#ifdef CONFIG_PWM_VDDEE_VOLTAGE
+
+static int vcck_pwm_on(void)
+{
+    //aml_set_reg32_bits(P_PREG_PAD_GPIO2_EN_N, 0, 29, 1);
+    //set GPIODV 28 to PWM D
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3, 1, 26, 1);
+    
+    /* set  pwm_d regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 16, 7);  //pwm_d_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 6, 2);  //pwm_d_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 23, 1);  //pwm_d_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 1, 1);  //enable pwm_d
+    
+    return 0;
+}
+static int vcck_pwm_off(void)
+{
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 1, 1);  //disable pwm_d
+    return 0;
+}
+
+static int pwm_duty_cycle_set(int duty_high,int duty_total)
+{
+    int pwm_reg=0;
+
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 16, 7);  //pwm_d_clk_div
+    if(duty_high > duty_total){
+        serial_puts("error: duty_high larger than duty_toral !!!\n");
+        return -1; 
+    }
+    aml_write_reg32(P_PWM_PWM_D, (duty_high << 16) | (duty_total-duty_high));
+    __udelay(100000);
+    pwm_reg = aml_read_reg32(P_PWM_PWM_D);
+    //serial_puts("##### P_PWM_PWM_D value = ");
+    //serial_put_hex(pwm_reg, 32);
+    //serial_puts("\n");
+
+    return 0;
+}
+
+int m8b_pwm_set_vddEE_voltage(int voltage)
+{
+
+    vcck_pwm_on();
+
+
+    if(voltage == 1000)
+    {
+        pwm_duty_cycle_set(14,28);//1.0V
+    }
+    else if(voltage == 1050)
+    {
+        pwm_duty_cycle_set(8,28);//1.06->1.053V
+    }
+    else if(voltage == 1100)
+    {
+        pwm_duty_cycle_set(4,28);//1.1V
+    }
+}
+#endif
+
 void power_init(int init_mode)
 {
+
     hard_i2c_init();
     
     __udelay(1000);
@@ -1399,6 +1463,8 @@ void power_init(int init_mode)
     aml1218_power_init(init_mode);
 #elif defined (CONFIG_PWM_DEFAULT_VCCK_VOLTAGE) && defined (CONFIG_VCCK_VOLTAGE)
     vcck_set_default_voltage(CONFIG_VCCK_VOLTAGE);
+#elif defined CONFIG_PWM_VDDEE_VOLTAGE
+    m8b_pwm_set_vddEE_voltage(1050);
 #endif
     __udelay(1000);
 }

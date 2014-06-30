@@ -3,6 +3,8 @@
 
 #define CONFIG_MACH_MESON8_M201  // generate M8 M201 machid number
 
+#define CONFIG_POWER_SPL
+#define CONFIG_PWM_VDDEE_VOLTAGE  1050
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
