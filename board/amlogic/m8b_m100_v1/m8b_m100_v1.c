@@ -14,7 +14,39 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_PLATFORM_HAS_PMU
+#include <amlogic/aml_pmu_common.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
+
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+#include <amlogic/battery_parameter.h>
+/*
+ * add board battery parameters, this is a backup option if uboot process 
+ * battery parameters failed, each board shoud use your own battery parameters
+ */
+int config_battery_rdc = 101;
+struct battery_curve config_battery_curve[] = { 
+    /* ocv, charge, discharge */
+    {3132,     0,      0},  
+    {3273,     0,      0},  
+    {3414,     0,      0},  
+    {3555,     0,      0},  
+    {3625,     1,      1},  
+    {3660,     1,      3},
+    {3696,     2,     11},
+    {3731,     6,     17},
+    {3766,    12,     30},
+    {3801,    18,     45},
+    {3836,    31,     55},
+    {3872,    57,     61},
+    {3935,    68,     71},
+    {3998,    79,     81},
+    {4062,    88,     89},
+    {4153,   100,    100},
+};
+#endif
 
 #if defined(CONFIG_CMD_NET)
 /*************************************************
@@ -308,18 +340,54 @@ void hdmi_tx_power_init(void)
 #include <asm/arch/gpio.h>
 static int usb_charging_detect_call_back(char bc_mode)
 {
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    struct aml_pmu_driver    *driver = aml_pmu_get_driver();
+    struct battery_parameter *battery;
+#endif
 	switch(bc_mode){
 		case BC_MODE_DCP:
 		case BC_MODE_CDP:
 			//Pull up chargging current > 500mA
+        #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * Policy:
+             * for charger and PC + charger, don't limit usb current
+             */
+            if (driver && driver->pmu_set_usb_current_limit) {
+                driver->pmu_set_usb_current_limit(-1);                  // -1 means do not limit usb current
+            }
+        #endif
 			break;
 
-		case BC_MODE_UNKNOWN:
 		case BC_MODE_SDP:
-		default:
 			//Limit chargging current <= 500mA
 			//Or detet dec-charger
+        #ifdef CONFIG_PLATFORM_HAS_PMU
+            /*
+             * for PC:
+             * If pmu_usbcur_limit is 1 in dts, then set usb current by 
+             * value pmu_usbcur set in dts. If pmu_usbcur_limit is 0, then don't 
+             * limit  usb current. If not find battery parameters, set usb current
+             * to 500mA as default
+             */
+            battery = get_battery_para();
+            if (driver && driver->pmu_usb_bc_process) {
+                driver->pmu_usb_bc_process(bc_mode);
+            }
+            if (driver && battery && driver->pmu_set_usb_current_limit) {
+                if (battery->pmu_usbcur_limit) {
+                    driver->pmu_set_usb_current_limit(battery->pmu_usbcur);
+                } else {
+                    driver->pmu_set_usb_current_limit(-1);
+                }
+            } else {
+                driver->pmu_set_usb_current_limit(500);
+            }
+        #endif
 			break;
+		case BC_MODE_UNKNOWN:
+        default:
+            break;
 	}
 	return 0;
 }
@@ -366,6 +434,163 @@ void board_ir_init(void)
 
 }
 #endif
+#ifdef CONFIG_AML_I2C 
+/*I2C module is board depend*/
+static void board_i2c_set_pinmux(void){
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+    /*********************************************/
+    /*                | I2C_Master_AO        |I2C_Slave            |       */
+    /*********************************************/
+    /*                | I2C_SCK                | I2C_SCK_SLAVE  |      */
+    /* GPIOAO_4  | [AO_PIN_MUX: 6]     | [AO_PIN_MUX: 2]   |     */
+    /*********************************************/
+    /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
+    /* GPIOAO_5  | [AO_PIN_MUX: 5]     | [AO_PIN_MUX: 1]   |     */
+    /*********************************************/	
+
+	//disable all other pins which share with I2C_SDA_AO & I2C_SCK_AO
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1<<2)|(1<<24)|(1<<1)|(1<<23)));
+    //enable I2C MASTER AO pins
+	setbits_le32(P_AO_RTI_PIN_MUX_REG,
+	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
+	
+    udelay(10000);
+	
+};
+
+struct aml_i2c_platform g_aml_i2c_plat = {
+    .wait_count         = 1000000,
+    .wait_ack_interval  = 5,
+    .wait_read_interval = 5,
+    .wait_xfer_interval = 5,
+    .master_no          = AML_I2C_MASTER_AO,
+    .use_pio            = 0,
+    .master_i2c_speed   = AML_I2C_SPPED_400K,
+    .master_ao_pinmux = {
+        .scl_reg    = MESON_I2C_MASTER_AO_GPIOAO_4_REG,
+        .scl_bit    = MESON_I2C_MASTER_AO_GPIOAO_4_BIT,
+        .sda_reg    = MESON_I2C_MASTER_AO_GPIOAO_5_REG,
+        .sda_bit    = MESON_I2C_MASTER_AO_GPIOAO_5_BIT,
+    }
+};
+#endif
+
+#ifdef CONFIG_PLATFORM_HAS_PMU
+static void board_pmu_init(void)
+{
+    struct aml_pmu_driver *driver = aml_pmu_get_driver();
+    if (driver && driver->pmu_init) {
+        driver->pmu_init(); 
+    }
+}
+#endif
+
+inline void key_init(void)
+{
+    setbits_le32(P_AO_GPIO_O_EN_N, (1 << 3));                           // GPIOAO_3 as power key input
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1 << 7)|(1 << 9)|(1 << 22)));  // clear pinmux as gpio function 
+    clrbits_le32(P_AO_RTI_PULL_UP_REG, (1 << 19));                      // disable pull up/down of gpio3, set to high-z
+    setbits_le32(P_AO_RTI_PULL_UP_REG, 0x00070007);                     // pull up for gpio[0 - 2]
+}
+
+inline int get_key(void)
+{
+    return (readl(P_AO_GPIO_I) & (1 << 3)) ? 0 : 1;
+}
+
+static int _saradc_key_pressed(void)
+{
+        static int adc_init = 0;
+
+        if(!adc_init){
+                run_command("saradc open 0", 0);
+                adc_init = 1;
+        }
+
+        return  (0 == run_command("saradc get_in_range 0x95 0x190 1", 0));
+}
+
+void magic_checkstatus(int saveEnvFlag)
+{
+        ulong start = 0;
+        unsigned delay = 0;
+        int update_key_num = 0;
+
+        for(update_key_num = 0;_saradc_key_pressed() && update_key_num < 3;)
+        {
+                int pwrkeyreleased = 0;
+                start = get_timer(0);
+                delay = 600;//600*3 at most 2Seconds
+
+                while(get_timer(start) < delay){
+                        if(ctrlc())return;
+                        if( 0 < run_command("getkey", 0)){
+                                pwrkeyreleased = 1;
+                                break;
+                        }
+                }
+                
+                if(pwrkeyreleased) break;//quit as user release the powerkey
+                ++update_key_num;
+        }
+
+        if(update_key_num >= 3){
+                if(saveEnvFlag)setenv("magic_key_status", "update");
+                /*printf("magic_key_status update\n");*/
+                return;
+        }
+
+
+        if( 0 == run_command("getkey", 0)){//Power key pressed
+                int pwrkeyRelease = 0;
+                start = get_timer(0);
+                delay = 1000;//wait powerkey at most one second
+
+                while(get_timer(start) < delay){
+                        if(ctrlc())return;
+                        if(run_command("getkey", 0) > 0){//power key released
+                                pwrkeyRelease = 1;
+                                break;
+                        }
+                }
+                if(!pwrkeyRelease){//power key pressed at one second
+                        if(saveEnvFlag)setenv("magic_key_status", "poweron");
+                        /*printf("magic_checkstatus poweron\n");*/
+                        return;
+                }
+        }
+}
+
+
+static void board_i2c_init(void)
+{		
+	//set I2C pinmux with PCB board layout
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+	board_i2c_set_pinmux();
+
+	//Amlogic I2C controller initialized
+	//note: it must be call before any I2C operation
+	aml_i2c_init();
+
+	//must call aml_i2c_init(); before any I2C operation	
+	/*M6 board*/
+	//udelay(10000);	
+
+	udelay(10000);
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int before_pmu_init =  get_utimer(0);
+#endif
+
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    board_pmu_init();
+#endif
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int after_pmu_init =  get_utimer(0);
+	printf("\nPMU init time %d\n", after_pmu_init-before_pmu_init);
+#endif
+}
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
@@ -374,7 +599,7 @@ int board_init(void)
     nand_init();
     
 #endif    
-    
+  /*run_command("magic_checkstatus", 0);*/
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -385,6 +610,7 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_b,BOARD_USB_MODE_HOST);
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+    key_init();
 
 	return 0;
 }
