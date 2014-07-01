@@ -248,7 +248,7 @@ int aml1218_get_charge_status(int print)
     uint32_t reg_all;
 
     if (print) {
-        if (aml1218_get_otp_version() == 0) {
+        if (aml1218_get_pmu_version() == 0) {
             aml1218_set_charge_enable(pmu_init_chg_enabled);    
         }
     }
@@ -401,16 +401,18 @@ int aml1218_get_gpio(int pin, int *val)
     
 }
 
-int aml1218_get_otp_version()
+int  pmu__version = -1;
+int aml1218_get_pmu_version()
 {
     uint8_t val = 0; 
-    int  otp_version = 0;
 
-    aml1218_read(0x007e, &val);
-    otp_version = (val & 0x60) >> 5;
+    if (pmu__version == -1) {
+        aml1218_read(0x007e, &val);
+        pmu__version = (val & 0x60) >> 5;
+        printf("PMU version:%d\n", pmu__version);
+    }
 
-    printf("OTP version:%d\n", otp_version);
-    return otp_version;
+    return pmu__version;
 }
 
 static int aml1218_cal_ocv(void)
@@ -460,7 +462,7 @@ static int curr_usb_mode = 0;
 int aml1218_usb_bc_process(int mode)
 {
     curr_usb_mode = mode; 
-    if ((aml1218_get_otp_version() == 0) && (mode == BC_MODE_SDP)) {
+    if ((aml1218_get_pmu_version() == 0) && (mode == BC_MODE_SDP)) {
         aml1218_set_charge_enable(0);
     }
     return 0;
@@ -471,14 +473,17 @@ int aml1218_set_charge_enable(int enable)
 {
     uint8_t val = 0; 
     uint8_t val_t = 0;
-    int otp_version = 0;
+    int pmu_version = 0;
     int charge_status = 0;
     int ocv = 0;
     int vsys, vbat;
 
+    vsys = aml1218_get_vsys_voltage();
+    vbat = aml1218_get_battery_voltage();
+    printf("aml1218_set_charge_enable, vsys:%d, vbat:%d", vsys, vbat);
     if (enable) {
-        otp_version = aml1218_get_otp_version();
-        if (otp_version == 0) {   
+        pmu_version = aml1218_get_pmu_version();
+        if (pmu_version == 0) {   
             aml1218_set_full_charge_voltage(4050000);
         #ifdef CONFIG_USB_DWC_OTG_HCD
             if (curr_usb_mode == BC_MODE_SDP) {
@@ -486,13 +491,11 @@ int aml1218_set_charge_enable(int enable)
                 return aml1218_set_bits(0x0017, 0x00, 0x01);
             } 
         #endif
-            vsys = aml1218_get_vsys_voltage();
-            vbat = aml1218_get_battery_voltage();
             if ((vbat > 3950) || ((vsys > vbat) && (vsys - vbat < 500))) {   
                 printf("%s, vbat:%d, vsys:%d, do not open charger.\n", __func__, vbat, vsys);
                 return aml1218_set_bits(0x0017, 0x00, 0x01);
             }
-        } else if(otp_version >= 1) {
+        } else if(pmu_version >= 1) {
             aml1218_set_full_charge_voltage(pmu_init_chgvol);
         }
     }
@@ -679,14 +682,12 @@ int aml1218_set_charging_current(int current)
     } else {                                    // input is charge ratio
         current = (current * board_battery_para.pmu_battery_cap) / 100 + 100; 
     } 
-#if 0
-    if (current < 750) {                        // for charge current stable issue@4.7uH
-        current = 750;    
-    }
-#endif
 
     aml1218_read(0x012b, &cur_val);
     idx_to = (current-300) / 150;
+    if (current % 150) {                        // round up
+        idx_to += 1;
+    }
     if (!aml1218_battery_test) {                // do not print when test
         printf("%s to %dmA, idx_to:%x, idx_cur:%x\n", __func__, idx_to * 150 + 300, idx_to, cur_val);
     }
@@ -1095,14 +1096,16 @@ int aml1218_init(void)
 {
     uint8_t val;
     
-    printf("---> PMU driver version:v0.90\n");
+    printf("---> PMU driver version:v0.91_A\n");
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1218_get_charge_status(0);
     aml1218_check_fault();
     check_boot_up_source();
 
-    aml1218_write(0x2f, 0x22);                      // David Li, increase vsys 120mv
+    if (aml1218_get_pmu_version() == 0) {
+        aml1218_write(0x2f, 0x22);                  // David Li, increase vsys 120mv, only change for REVB
+    }
     aml1218_write(0x0139, 0x1e);                    // by Anny.Zhao
 
     aml1218_set_bits(0x000f, 0xf0, 0xf0);           // GPIO2 power off last
