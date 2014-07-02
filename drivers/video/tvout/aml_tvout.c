@@ -127,7 +127,8 @@ static int tvout_open(int argc, char *argv[])
 		return 1;
 	}
 #if CONFIG_AML_MESON_6
-	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I){
+	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I||
+		mode == TVOUT_480CVBS ||mode == TVOUT_576CVBS){
 		#ifdef CONFIG_DSP_VSYNC_INTERRUPT
 		start_dsp();
 		#endif
