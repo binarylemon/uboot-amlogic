@@ -839,6 +839,9 @@ static  inline void  osd2_update_color_mode(void)
 	data32 |=  osd_hw.color_info[OSD2]->hw_blkmode<< 8; /* osd_blk_mode */
     _debug("---VIU_OSD2_BLK0_CFG_W0 = %d(0x%08x)\n", data32, data32);
 	writel(data32, P_VIU_OSD2_BLK0_CFG_W0);
+	writel(data32, P_VIU_OSD2_BLK1_CFG_W0);
+	writel(data32, P_VIU_OSD2_BLK2_CFG_W0);
+	writel(data32, P_VIU_OSD2_BLK3_CFG_W0);
 	remove_from_update_list(OSD2, OSD_COLOR_MODE);
 }
 
