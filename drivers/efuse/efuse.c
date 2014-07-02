@@ -458,7 +458,7 @@ int efuse_chk_written(loff_t pos, size_t count)
 		for (i = 0; i < enc_len; i++) {
 			if (buf[i]) {
 				printf("pos %d value is %d", (size_t)(pos + i), buf[i]);
-				return 0;
+				return 1;
 			}
 		}
 	}	
