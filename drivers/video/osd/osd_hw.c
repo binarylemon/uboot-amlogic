@@ -1282,6 +1282,8 @@ void osd_init_hw(void)
 	writel(data32, P_VIU_OSD1_FIFO_CTRL_STAT);
 	writel(data32, P_VIU_OSD2_FIFO_CTRL_STAT);
 
+	setbits_le32(P_VPP_MISC,VPP_OUT_SATURATE);
+	
 	setbits_le32(P_VPP_MISC,VPP_POSTBLEND_EN);
 	clrbits_le32(P_VPP_MISC, VPP_PREBLEND_EN);  
 	clrbits_le32(P_VPP_MISC,VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND );
