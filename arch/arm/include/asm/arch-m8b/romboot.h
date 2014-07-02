@@ -43,10 +43,10 @@
 #define POR_1ST_NAND                                7
 #define POR_1ST_NAND_TOG                            6 
 #define POR_1ST_SPI                                 5
-#define POR_1ST_SPI_RESERVED                        4
-#define POR_1ST_SDIO_C                              3
-#define POR_1ST_SDIO_B                              2
-#define POR_1ST_SDIO_A                              1
+#define POR_1ST_tSD_SDIO_A                          4
+#define POR_1ST_eMMC_SDIO_C                         3
+#define POR_1ST_eMMC_SDIO_A                         2
+#define POR_1ST_tSD_SDIO_C                          1
 #define POR_1ST_NEVER_CHECKED                       0
 
 #define POR_GET_2ND_CFG(a)    ((a>>2)&3)  //por[3:2]

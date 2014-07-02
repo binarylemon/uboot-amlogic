@@ -67,17 +67,17 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 	        		case POR_1ST_SPI:
 	        			serial_puts("1st SPI\n");
 	        		break;
-	        		case POR_1ST_SPI_RESERVED:
-	        			serial_puts("1st SPI RESERVED\n");
+	        		case POR_1ST_tSD_SDIO_A:
+	        			serial_puts("1st tSD/fSD on SDIO A\n");
 	        		break;
-	        		case POR_1ST_SDIO_C:
-	        			serial_puts("1st SDIO C\n");
+	        		case POR_1ST_eMMC_SDIO_C:
+	        			serial_puts("1st eMMC on SDIO C\n");
 	        		break;
-	        		case POR_1ST_SDIO_B:
-	        			serial_puts("1st SDIO B\n");
+	        		case POR_1ST_tSD_SDIO_C:
+	        			serial_puts("1st tSD/fSD on SDIO C\n");
 	        		break;
-	        		case POR_1ST_SDIO_A:
-	        			serial_puts("1ST SDIO A\n");
+	        		case POR_1ST_eMMC_SDIO_A:
+	        			serial_puts("1ST eMMC on SDIO A\n");
 	        		break;       				
 	        }
       }
@@ -113,7 +113,6 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     int rc=0;
 	unsigned len;
     unsigned temp_addr;
-
 #ifdef CONFIG_MESON_TRUSTZONE
 	unsigned secure_addr;
 	unsigned secure_size;
@@ -151,7 +150,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             rc=nf_read(temp_addr,size);            
             break;
         case POR_1ST_SPI :
-        case POR_1ST_SPI_RESERVED :
+        //case POR_1ST_SPI_RESERVED :
             mem=(unsigned *)(NOR_START_ADDR+READ_SIZE);
             spi_init();
 #if CONFIG_UCL==0
@@ -167,7 +166,8 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
             //memcpy((unsigned*)temp_addr,mem,size);
 			ipl_memcpy((unsigned char*)temp_addr,(unsigned char*)mem,size);
             break;
-        case POR_1ST_SDIO_C:
+        case POR_1ST_eMMC_SDIO_C:
+        case POR_1ST_tSD_SDIO_C:
         	serial_puts("Boot From SDIO C\n");
         	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_C<<2);
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -175,9 +175,10 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 	 sdio_secure_storage_get();
 #endif
         	break;
-        case POR_1ST_SDIO_B:
-        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<2);break;
-        case POR_1ST_SDIO_A:
+//        case POR_1ST_SDIO_B:
+//        	rc=sdio_read(temp_addr,size,POR_2ND_SDIO_B<<2);break;
+        case POR_1ST_eMMC_SDIO_A:
+        case POR_1ST_tSD_SDIO_A:
            rc=sdio_read(temp_addr,size,POR_2ND_SDIO_A<<2);break;
            break;
         default:
@@ -240,7 +241,6 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
     unsigned temp_addr;
 	unsigned len;
-
 #ifdef CONFIG_MESON_TRUSTZONE
 	unsigned secure_addr;
 	unsigned secure_size;
