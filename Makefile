@@ -318,8 +318,10 @@ endif #CONFIG_SUPPORT_CUSOTMER_BOARD
 ifdef CONFIG_AML_CRYPTO_UBOOT
 ifdef CONFIG_AML_RSA_2048
 RSA_KEY_EXT = k2a
+RSA_KEY_EXT_E = k2e
 else #CONFIG_AML_RSA_2048
 RSA_KEY_EXT = k1a
+RSA_KEY_EXT_E = k1e
 endif #CONFIG_AML_RSA_2048
 endif #CONFIG_AML_CRYPTO_UBOOT
 
@@ -463,7 +465,7 @@ $(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
 else	 # start aml compress
 ##################################################
 $(obj)u-boot-comp.bin:$(obj)u-boot-orig.bin
-	$(obj)/tools/uclpack $< $@
+	$(obj)tools/uclpack $< $@
 endif   # end CONFIG_UCL
 
 $(obj)u-boot-orig.bin:	$(obj)u-boot
@@ -487,7 +489,7 @@ endif
 
 ifdef CONFIG_AML_SECU_BOOT_V2
 	@$(obj)tools/convert --soc $(SOC)  -s $(obj)usb_firmware.bin -i $(obj)u-boot-comp.bin -o $(obj)$(AML_USB_UBOOT_NAME).temp
-	@./tools/secu_boot/encrypto3 $@
+	@./tools/secu_boot/encrypto3 $@ $@.aml $(AML_BOARD_PATH)aml-rsa-key.$(RSA_KEY_EXT_E)
 ifdef CONFIG_JOIN_UBOOT_SECUREOS
 		$(obj)tools/join_uboot_secureos $(obj)$(AML_USB_UBOOT_NAME).temp  $(SECURE_OS_BIN) $(obj)$(AML_USB_UBOOT_NAME).secure_os.bin
 	@cp -f $(obj)$(AML_USB_UBOOT_NAME).secure_os.bin $(obj)$(AML_USB_UBOOT_NAME).temp
@@ -502,7 +504,25 @@ ifdef CONFIG_AML_CRYPTO_UBOOT
 	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml \
 	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes
+ifdef CONFIG_AML_SECU_BOOT_V2_2RSA
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key-2x.$(RSA_KEY_EXT) \
+	$@.aml.encrypt $@.aml.encrypt.2x $@.aml.encrypt.2x.efuse $(BOOT_KEY_PATH)/aml-aes-key-2x.aes 
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml.encrypt \
+	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt.2x dummy $(BOOT_KEY_PATH)/aml-aes-key.aes
+endif #end CONFIG_AML_SECU_BOOT_V2_2RSA
 endif #CONFIG_AML_CRYPTO_UBOOT
+ifdef CONFIG_AML_CRYPTO_IMG
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(AML_BOARD_PATH)aml-rsa-key.$(RSA_KEY_EXT) \
+	$(AML_BOARD_PATH)$(SOC)boot.img $(obj)$(SOC)boot.img.encrypt $(AML_BOARD_PATH)aml-aes-key.aes
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(AML_BOARD_PATH)aml-rsa-key.$(RSA_KEY_EXT) \
+	$(AML_BOARD_PATH)$(SOC)recovery.img $(obj)$(SOC)recovery.img.encrypt $(AML_BOARD_PATH)aml-aes-key.aes
+ifdef CONFIG_AML_SECU_BOOT_V2_2RSA
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(AML_BOARD_PATH)aml-rsa-key-2x.$(RSA_KEY_EXT) \
+	$(obj)$(SOC)boot.img.encrypt $(obj)$(SOC)boot.img.encrypt.2x $(AML_BOARD_PATH)aml-aes-key-2x.aes
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(AML_BOARD_PATH)aml-rsa-key-2x.$(RSA_KEY_EXT) \
+	$(obj)$(SOC)recovery.img.encrypt $(obj)$(SOC)recovery.img.encrypt.2x $(AML_BOARD_PATH)aml-aes-key-2x.aes
+endif #CONFIG_AML_SECU_BOOT_V2_2RSA
+endif #CONFIG_AML_CRYPTO_IMG
 endif #CONFIG_AML_SECU_BOOT_V2
 else #CONFIG_M6_SECU_BOOT
 	$(obj)tools/convert --soc $(SOC)  -s $(obj)firmware.bin -i $< -o $@

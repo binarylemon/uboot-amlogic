@@ -361,15 +361,19 @@
 //M8 secure boot disable
 //#define CONFIG_AML_DISABLE_CRYPTO_UBOOT 1
 
+//M8 encrypt img
+//#define CONFIG_AML_CRYPTO_IMG	1
+
 //To use RSA2048 key aml-rsa-key.k2a
 //#define CONFIG_AML_RSA_2048 1
+
+//#define CONFIG_AML_SECU_BOOT_V2_2RSA 1
 
 /*-----------------------------------------------------------------------
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
-
 
 /*
 * CPU switch test for uboot

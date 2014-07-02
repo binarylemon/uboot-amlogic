@@ -18,6 +18,8 @@
  * Remark: 
  *			 1. 2013.12.10 v0.1 for decrypt only
  *			 2. 2014.04.10 v0.2 check secure boot flag before decrypt 
+ *			 3. 2014.06.26 v0.3 support image check
+ *			 4. 2014.06.26 v0.4 support 2-RSA
  *
  **************************************************************************************************************/
 
@@ -27,11 +29,15 @@
 //help info show config
 #define AML_SECURE_PROCESS_MSG_SHOW 1
 
+int g_nStep = 0;
+
 unsigned int g_action[3][16]={
 	{0xd904706c,0xd904a59c,0xd904038c,0xd904441c,0xd9047458,0xd9044518,
-	 0xd904455c,0xd904459c,0xd9046e44,0xd904d014,0xd904cf60,0xd904a4f4},
+	 0xd904455c,0xd904459c,0xd9046e44,0xd904d014,0xd904cf60,0xd904a4f4,
+	 0xd904d138,0xd9018050},
 	{0xd9046f90,0xd904a388,0xd904038c,0xd9044340,0xd904737c,0xd904443c,
-	 0xd9044480,0xd90444c0,0xd9046d68,0xd904cde0,0xd904cd2c,0xd904a2e0},
+	 0xd9044480,0xd90444c0,0xd9046d68,0xd904cde0,0xd904cd2c,0xd904a2e0,
+	 0xd904cfec,0xd9018050},
 	{0xd904716c,0xd904b364,0xd904038c,0xd934441c,0xd9047258,0xd9044578, 
 	 0xd904438c,0xd90444c4,0xd9046d98,0xd904cfe0,0xd904ce2c,0xd904a280},
 	 };
@@ -45,21 +51,24 @@ typedef  int  (*t_func_r1)( int a);
 typedef  int  (*t_func_r2)( int a, int b);
 typedef  int  (*t_func_r3)( int a, int b, int c);
 
-static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,unsigned char *pkey2,int nkey2Len)
+static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,
+		unsigned char *pkey2,int nkey2Len,unsigned int *pState)
 {	
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
-	#define AML_MSG_RSA_1024 ("Aml log : M8-RSA-1024\n")
-	#define AML_MSG_RSA_2048 ("Aml log : M8-RSA-2048\n")
+	char * pInfo1[2][2]={
+		{"Aml log : M8-R1024 ",   "Aml log : M8-R2048 "},
+		{"Aml log : M8-R1024-2X ","Aml log : M8-R2048-2X "},
+	};
 	
 #if defined(CONFIG_AMLROM_SPL)
-	#define AML_MSG_FAIL ("Aml log : ERROR! TPL secure check fail!\n")
-	#define AML_MSG_PASS ("Aml log : TPL secure check pass!\n")
+	#define AML_MSG_FAIL ("TPL fail!\n")
+	#define AML_MSG_PASS ("TPL pass!\n")
 	#define MSG_SHOW serial_puts	
 #else
-	#define AML_MSG_FAIL ("Aml log : ERROR! Image secure check fail!\n")
-	#define AML_MSG_PASS ("Aml log : Image secure check pass!\n")
+	#define AML_MSG_FAIL ("IMG fail!\n")
+	#define AML_MSG_PASS ("IMG pass!\n")
 	#define MSG_SHOW printf
 #endif
 
@@ -100,31 +109,36 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 	unsigned char szkey[32+16];	
 	unsigned int *ct32 = (unsigned int *)(pSRC);
 	unsigned char *pBuf = (unsigned char *)&chk_blk;
-	int nStep = 0;	
 	
+	g_nStep = 0;
+
 	switch(* (unsigned int *)0xd9040004)
 	{
 	case 0x25e2: break;
-	case 0x27ed: nStep = 1 ; break;
+	case 0x27ed: g_nStep = 1 ; break;
 	default: goto exit;break;
 	}
-		
-	t_func_v3 fp_00 = (t_func_v3)g_action[nStep][0]; //void rsa_init(1,2,3)
-	t_func_r3 fp_01 = (t_func_r3)g_action[nStep][1]; //int mpi_read_string(1,2,3)
-	t_func_v3 fp_02 = (t_func_v3)g_action[nStep][2]; //void efuse_read(1,2,3)
-	t_func_r2 fp_03 = (t_func_r2)g_action[nStep][3]; //int boot_rsa_read_puk(a,b)
-	t_func_r3 fp_04 = (t_func_r3)g_action[nStep][4]; //int rsa_public(1,2,3)
-	t_func_v2 fp_05 = (t_func_v2)g_action[nStep][5]; //void boot_aes_setkey_dec(1,2)
-	t_func_v1 fp_06 = (t_func_v1)g_action[nStep][6]; //void boot_aes_setiv_init(1)
-	t_func_v4 fp_07 = (t_func_v4)g_action[nStep][7]; //void boot_aes_crypt_cbc(1,2,3,4)
-	t_func_v4 fp_08 = (t_func_v4)g_action[nStep][8]; //void sha2(1,2,3,4)
-	t_func_r3 fp_09 = (t_func_r3)g_action[nStep][9]; //int memcpy(1,2,3)
-	t_func_r3 fp_10 = (t_func_r3)g_action[nStep][10];//int memcmp(1,2,3)
-	t_func_r1 fp_11 = (t_func_r1)g_action[nStep][11];//int mpi_msb(1)
+
+	t_func_v3 fp_00 = (t_func_v3)g_action[g_nStep][0]; //void rsa_init(1,2,3)
+	t_func_r3 fp_01 = (t_func_r3)g_action[g_nStep][1]; //int mpi_read_string(1,2,3)
+	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2]; //void efuse_read(1,2,3)
+	t_func_r2 fp_03 = (t_func_r2)g_action[g_nStep][3]; //int boot_rsa_read_puk(a,b)
+	t_func_r3 fp_04 = (t_func_r3)g_action[g_nStep][4]; //int rsa_public(1,2,3)
+	t_func_v2 fp_05 = (t_func_v2)g_action[g_nStep][5]; //void boot_aes_setkey_dec(1,2)
+	t_func_v1 fp_06 = (t_func_v1)g_action[g_nStep][6]; //void boot_aes_setiv_init(1)
+	t_func_v4 fp_07 = (t_func_v4)g_action[g_nStep][7]; //void boot_aes_crypt_cbc(1,2,3,4)
+	t_func_v4 fp_08 = (t_func_v4)g_action[g_nStep][8]; //void sha2(1,2,3,4)
+	t_func_r3 fp_09 = (t_func_r3)g_action[g_nStep][9]; //int memcpy(1,2,3)
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];//int memcmp(1,2,3)
+	t_func_r1 fp_11 = (t_func_r1)g_action[g_nStep][11];//int mpi_msb(1)
+	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];//void memset(1,2,3)
+
+	fp_12(g_action[g_nStep][13],0,4);
 
 	fp_00(&cb1_ctx,0,0);
+
 	if(pkey1 && pkey2)
-	{	
+	{
 		if(fp_01(cb1_ctx.szBuf1,pkey1,nkey1Len) ||	fp_01(cb1_ctx.szBuf2,pkey2,nkey2Len))
 			goto exit;
 		cb1_ctx.len = ( fp_11( cb1_ctx.szBuf1 ) + 7 ) >> 3;			
@@ -133,6 +147,8 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 	{
 		unsigned int nState  = 0;
 		fp_02(&nState,0,4);
+		if(pState)
+			*pState = nState;
 		if(!(nState & (1<<7)))
 		{
 			nRet = 0;
@@ -141,7 +157,7 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 		fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
 		cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
 	}
-	
+
 	fp_09((unsigned char*)&chk_blk,(unsigned char*)pSRC,sizeof(chk_blk));
 
 	for(i = 0;i< sizeof(chk_blk);i+=cb1_ctx.len)
@@ -165,12 +181,16 @@ static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nk
 			chk_blk.nLength2);
 
 	fp_09((void*)szkey,(void*)chk_blk.szkey2,sizeof(szkey));
+
 	fp_05( &cb2_ctx, szkey );
+
 	fp_06(&szkey[32]);
+
 	for (i=0; i<(chk_blk.nLength4)/16; i++)
 		fp_07 ( &cb2_ctx, &szkey[32], &ct32[i*4], &ct32[i*4] );
-	
+
 	fp_08( pSRC,chk_blk.nLength3, szkey, 0 );	
+
 	if(fp_10(szkey,chk_blk.szkey1,32))
 		goto exit;
 
@@ -180,25 +200,117 @@ exit:
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
-	if(0 != cb1_ctx.len)
+	if((0 != cb1_ctx.len) && !pkey1)
 	{
-		MSG_SHOW ((128 == cb1_ctx.len ) ? AML_MSG_RSA_1024 : AML_MSG_RSA_2048);
+		MSG_SHOW (pInfo1[(!pState )? 0 : ((*pState & (1<<31)) ? 1 : 0) ][(128 == cb1_ctx.len )?0:1]);
 		MSG_SHOW (nRet ? AML_MSG_FAIL : AML_MSG_PASS);
 	}
 	#undef AML_MSG_FAIL
 	#undef AML_MSG_PASS
 	#undef MSG_SHOW
-	
 #endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)	
 
 	return nRet;
 	
 }
 
-
 int aml_sec_boot_check(unsigned char *pSRC)
 {
-	return aml_m8_sec_boot_check(pSRC,0,0,0,0);
+
+#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+	#define AML_MSG_RSA_1024 ("Aml log : M8-R1024-1X ")
+	#define AML_MSG_RSA_2048 ("Aml log : M8-R2048-1X ")
+#if defined(CONFIG_AMLROM_SPL)
+	#define AML_MSG_FAIL ("TPL fail!\n")
+	#define AML_MSG_PASS ("TPL pass!\n")
+	#define MSG_SHOW serial_puts
+#else
+	#define AML_MSG_FAIL ("IMG fail!\n")
+	#define AML_MSG_PASS ("IMG pass!\n")
+	#define MSG_SHOW printf
+#endif
+#endif
+
+	int nRet = -1;
+	unsigned int nState = 0;
+	int nSPLLen = 32<<10;
+
+	nRet = aml_m8_sec_boot_check(pSRC,0,0,0,0,&nState);
+	if(nRet || !(nState & (1<<7)))
+		goto exit;
+
+	if(!(nState & (1<<31))) //2-rsa ?
+		goto exit;
+
+	if(nState & (1<<5)) //64KB SPL?
+		nSPLLen = (nSPLLen << 1);
+
+	typedef struct{
+		unsigned char sz1[260];
+		unsigned char sz2[256]; //rsa key N
+		unsigned char sz3[4];   //rsa key E
+		unsigned int  nSPLStartOffset; //spl length for hash
+		unsigned int  splLenght;//spl length for hash
+		unsigned char sz4[32];  //spl hash key
+	} aml_spl_blk;
+
+	aml_spl_blk *pblk = (aml_spl_blk *)(0xd9000000 + nSPLLen - 1152 );
+
+	t_func_v3 fp_2 = (t_func_v3)g_action[g_nStep][2];
+	t_func_v4 fp_8 = (t_func_v4)g_action[g_nStep][8];
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];
+
+	unsigned char szCheck[32];
+	unsigned char szHash[32];
+
+	fp_2(&szCheck,328,32);
+
+	fp_8(pblk->sz2,260,szHash, 0 );
+
+	nRet = fp_10(szCheck,szHash,32);
+
+	if(nRet)
+	{
+#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+		MSG_SHOW ((nState & (1<<30)) ? AML_MSG_RSA_2048  : AML_MSG_RSA_1024);
+		MSG_SHOW (AML_MSG_FAIL);
+#endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+		goto exit;
+	}
+
+	nRet = aml_m8_sec_boot_check(pSRC,pblk->sz2,((nState & (1<<30)) ? 256:128),pblk->sz3,4,0);
+
+	if(nRet)
+	{
+#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+		MSG_SHOW ((nState & (1<<30)) ? AML_MSG_RSA_2048  : AML_MSG_RSA_1024);
+		MSG_SHOW (AML_MSG_FAIL);
+#endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+		goto exit;
+	}
+
+	fp_8(0xd9000000+pblk->nSPLStartOffset,pblk->splLenght,szHash, 0 );
+
+	nRet = fp_10(pblk->sz4,szHash,32);
+
+	if(nRet)
+	{
+#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+		MSG_SHOW ((nState & (1<<30)) ? AML_MSG_RSA_2048  : AML_MSG_RSA_1024);
+		MSG_SHOW (AML_MSG_FAIL);
+#endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+
+		goto exit;
+	}
+
+#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+	MSG_SHOW ((nState & (1<<30)) ? AML_MSG_RSA_2048  : AML_MSG_RSA_1024);
+	MSG_SHOW (AML_MSG_PASS);
+#endif //#if defined(AML_SECURE_PROCESS_MSG_SHOW)
+
+exit:
+
+	return nRet;
 }
 
 #if !defined(CONFIG_AMLROM_SPL)
@@ -218,10 +330,126 @@ int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	unsigned char sz2[] = {
 	0x01,0x37,0x4B,};
 
-	return aml_m8_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2));
+	return aml_m8_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2),0);
 }
-#endif //
+int aml_img_key_check(unsigned char *pSRC,int nLen)
+{
+#define AMLOGIC_CHKBLK_ID  (0x434C4D41) //414D4C43 AMLC
+#define AMLOGIC_CHKBLK_VER (1)
+
+	typedef struct {
+		unsigned int	nSizeH; 	   ////4@0
+		unsigned int	nLength1;      ////4@4
+		unsigned int	nLength2;      ////4@8
+		unsigned int	nLength3;      ////4@12
+		unsigned int	nLength4;      ////4@16
+		unsigned char	szkey1[116];   ////116@20
+		unsigned char	szkey2[108];   ////108@136
+		unsigned int	nSizeT;        ////4@244
+		unsigned int	nVer;          ////4@248
+		unsigned int	unAMLID;       ////4@252
+	}st_aml_chk_blk; //256
+
+	typedef struct{
+		int ver; int len;
+		unsigned char szBuf1[12];
+		unsigned char szBuf2[188];
+	} st_crypto_blk1;
+
+	int i;
+	int nRet = -1;
+	st_crypto_blk1 cb1_ctx;
+	st_aml_chk_blk chk_blk;
+	unsigned char szkey[32+16];
+	unsigned char *pBuf = (unsigned char *)&chk_blk;
+	unsigned int nState  = 0;
+
+	if(nLen & 0xF)
+		goto exit;
+
+	g_nStep = 0;
+
+	switch(* (unsigned int *)0xd9040004)
+	{
+	case 0x25e2: break;
+	case 0x27ed: g_nStep = 1 ; break;
+	default: goto exit;break;
+	}
+
+	t_func_v3 fp_00 = (t_func_v3)g_action[g_nStep][0]; //void rsa_init(1,2,3)
+	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2]; //void efuse_read(1,2,3)
+	t_func_r2 fp_03 = (t_func_r2)g_action[g_nStep][3]; //int boot_rsa_read_puk(a,b)
+	t_func_r3 fp_04 = (t_func_r3)g_action[g_nStep][4]; //int rsa_public(1,2,3)
+	t_func_v4 fp_08 = (t_func_v4)g_action[g_nStep][8]; //void sha2(1,2,3,4)
+	t_func_r3 fp_09 = (t_func_r3)g_action[g_nStep][9]; //int memcpy(1,2,3)
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];//int memcmp(1,2,3)
+	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];//void memset(1,2,3)
+
+	fp_12(g_action[g_nStep][13],0,4);
+
+	fp_00(&cb1_ctx,0,0);
+
+	fp_02(&nState,0,4);
+	if(!(nState & (1<<7)))
+		goto exit;
+
+	fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
+
+	cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
+
+	fp_09((unsigned char*)&chk_blk,(unsigned char*)(pSRC+nLen-sizeof(chk_blk)),sizeof(chk_blk));
+
+	for(i = 0;i< sizeof(chk_blk);i+=cb1_ctx.len)
+		if(fp_04(&cb1_ctx, pBuf+i, pBuf+i ))
+			goto exit;
+
+	if(AMLOGIC_CHKBLK_ID != chk_blk.unAMLID ||
+		AMLOGIC_CHKBLK_VER < chk_blk.nVer)
+		goto exit;
+
+	if(sizeof(st_aml_chk_blk) != chk_blk.nSizeH ||
+		sizeof(st_aml_chk_blk) != chk_blk.nSizeT ||
+		chk_blk.nSizeT != chk_blk.nSizeH)
+		goto exit;
+
+	fp_08( pSRC,chk_blk.nLength3, szkey, 0 );
+
+	nRet = fp_10(szkey,chk_blk.szkey1,32);
+
+exit:
+
+	return nRet;
+}
+#endif
+
+int aml_is_secure_set()
+{
+	int nRet = 0;
+	int nState = 0;
+	g_nStep = 0;
+
+	switch(* (unsigned int *)0xd9040004)
+	{
+	case 0x25e2: break;
+	case 0x27ed: g_nStep = 1 ; break;
+	default: goto exit;break;
+	}
+
+	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2];
+	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];
+
+	fp_12(g_action[g_nStep][13],0,4);
+	fp_02(&nState,0,4);
+	if((nState & (1<<7)))
+	{
+		nRet = 1;
+		if((nState & (1<<31)))
+			nRet +=1;
+	}
+exit:
+
+	return nRet;
+}
 
 //here can add more feature like encrypt...
-
 #endif //__AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
