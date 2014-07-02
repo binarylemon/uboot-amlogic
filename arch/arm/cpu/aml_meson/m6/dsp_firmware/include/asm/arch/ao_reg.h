@@ -96,6 +96,11 @@
 #define P_VIU_OSD1_BLK2_CFG_W0         (0xc110688c)
 #define P_VIU_OSD1_BLK3_CFG_W0         (0xc110689c)
 
+#define P_VIU_OSD2_BLK0_CFG_W0         (0xc11068ec)
+#define P_VIU_OSD2_BLK1_CFG_W0         (0xc11068fc)
+#define P_VIU_OSD2_BLK2_CFG_W0         (0xc110690c)
+#define P_VIU_OSD2_BLK3_CFG_W0         (0xc110691c)
+
 #define P_ENCP_VIDEO_MODE              (0xc1106e34)
 #define P_VENC_INTFLAG                 	  (0xc1106dbc )
 

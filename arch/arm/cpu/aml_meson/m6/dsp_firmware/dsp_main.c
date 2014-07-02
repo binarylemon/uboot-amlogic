@@ -47,7 +47,7 @@ void dsp_vsync_int()
 	unsigned  int  scan_line_number = 0;
 	
 	fb0_cfg_w0=readl(P_VIU_OSD1_BLK0_CFG_W0);
-	fb1_cfg_w0=readl(P_VIU_OSD1_BLK0_CFG_W0+ REG_OFFSET);
+	fb1_cfg_w0=readl(P_VIU_OSD2_BLK0_CFG_W0);
 	
 #ifdef __M3__
 	if(readl(P_ENCP_VIDEO_MODE) & (1 << 12))
@@ -98,10 +98,10 @@ void dsp_vsync_int()
 	writel(fb0_cfg_w0, P_VIU_OSD1_BLK1_CFG_W0);
 	writel(fb0_cfg_w0, P_VIU_OSD1_BLK2_CFG_W0);
 	writel(fb0_cfg_w0, P_VIU_OSD1_BLK3_CFG_W0);
-	writel(fb1_cfg_w0, P_VIU_OSD1_BLK0_CFG_W0+ REG_OFFSET);
-	writel(fb1_cfg_w0, P_VIU_OSD1_BLK1_CFG_W0+ REG_OFFSET);
-	writel(fb1_cfg_w0, P_VIU_OSD1_BLK2_CFG_W0+ REG_OFFSET);
-	writel(fb1_cfg_w0, P_VIU_OSD1_BLK3_CFG_W0+ REG_OFFSET);
+	writel(fb1_cfg_w0, P_VIU_OSD2_BLK0_CFG_W0);
+	writel(fb1_cfg_w0, P_VIU_OSD2_BLK1_CFG_W0);
+	writel(fb1_cfg_w0, P_VIU_OSD2_BLK2_CFG_W0);
+	writel(fb1_cfg_w0, P_VIU_OSD2_BLK3_CFG_W0);
 
 }
 
