@@ -21,6 +21,7 @@
 
 //Ignore mbr since mmc driver already handled 
 //#define MMC_UBOOT_CLEAR_MBR
+#define MMC_BOOT_PARTITION_SUPPORT
 
 #ifdef MMC_UBOOT_CLEAR_MBR   
 static char _mbrFlag[4] ;
@@ -160,6 +161,46 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg("mmc cmd %s failed",cmd);
 					return -1;
 				}
+				
+#ifdef MMC_BOOT_PARTITION_SUPPORT	
+			
+			for(i=0; i<2; i++){	
+				//switch to boot partition here
+				sprintf(str, "mmc switch 1 boot%d", i);
+				store_dbg("command: %s\n", str);
+				ret = run_command(str, 0);
+				if(ret == -1){
+					//store_msg("mmc cmd %s failed \n",cmd);
+					return 0;
+				}
+				else if(ret != 0){
+					store_msg("mmc cmd %s failed",cmd);
+					//return -1;
+					goto E_SWITCH_BACK;
+				}
+				
+				//erase boot partition
+				sprintf(str, "mmc erase bootloader");
+				ret = run_command(str, 0);
+				if(ret != 0){
+					store_msg("mmc cmd %s failed",cmd);
+					//return -1;
+					goto E_SWITCH_BACK;
+				}	
+			}
+
+E_SWITCH_BACK:			
+			//switch back to urs partition 
+			sprintf(str, "mmc switch 1 user");
+			store_dbg("command: %s\n", str);
+			ret = run_command(str, 0);
+			if(ret != 0){
+				store_msg("mmc cmd %s failed \n",cmd);
+				return -1;
+			}			
+					
+#endif					
+				
 				return ret;
 			}else{			
 				store_dbg("CARD BOOT,erase uboot :  %s %d  off =%llx ,size=%llx",__func__,__LINE__,off,size);
@@ -408,6 +449,46 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				store_msg("mmc cmd %s failed \n",cmd);
 				return -1;
 			}
+#ifdef MMC_BOOT_PARTITION_SUPPORT	
+			
+			for(i=0; i<2; i++){	
+				//switch to boot partition here
+				sprintf(str, "mmc switch 1 boot%d", i);
+				store_dbg("command: %s\n", str);
+				ret = run_command(str, 0);
+				if(ret == -1){
+					//store_msg("mmc cmd %s failed \n",cmd);
+					ret = 0;
+					return ret;
+				}
+				else if(ret != 0){
+					store_msg("mmc cmd %s failed",cmd);
+					//return -1;
+					goto W_SWITCH_BACK;
+				}
+				
+				//write uboot to boot partition
+				sprintf(str, "mmc  write bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
+				store_dbg("command: %s\n", str);
+				ret = run_command(str, 0);
+				if(ret != 0){
+					store_msg("mmc cmd %s failed \n",cmd);
+					//return -1;
+					goto W_SWITCH_BACK;
+				}	
+			}
+
+W_SWITCH_BACK:			
+			//switch back to urs partition 
+			sprintf(str, "mmc switch 1 user");
+			store_dbg("command: %s\n", str);
+			ret = run_command(str, 0);
+			if(ret != 0){
+				store_msg("mmc cmd %s failed \n",cmd);
+				return -1;
+			}			
+					
+#endif						
 			return ret;
 		}else{
 			store_dbg("CARD BOOT, %s %d",__func__,__LINE__);
@@ -454,6 +535,45 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 				return -1;
 			}
 
+#ifdef MMC_BOOT_PARTITION_SUPPORT	
+			
+			for(i=0; i<2; i++){	
+				//switch to boot partition here
+				sprintf(str, "mmc switch 1 boot%d", i);
+				store_dbg("command: %s\n", str);
+				ret = run_command(str, 0);
+				if(ret == -1){
+					//store_msg("mmc cmd %s failed \n",cmd);
+					return 0;
+				}
+				else if(ret != 0){
+					store_msg("mmc cmd %s failed",cmd);
+					goto R_SWITCH_BACK;
+					//return -1;
+				}
+				
+				//write uboot to boot partition
+				sprintf(str, "mmc  read bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
+				store_dbg("command: %s\n", str);
+				ret = run_command(str, 0);
+				if(ret != 0){
+					store_msg("mmc cmd %s failed \n",cmd);
+					//return -1;
+					goto R_SWITCH_BACK;
+				}	
+			}
+
+R_SWITCH_BACK:			
+			//switch back to urs partition 
+			sprintf(str, "mmc switch 1 user");
+			store_dbg("command: %s\n", str);
+			ret = run_command(str, 0);
+			if(ret != 0){
+				store_msg("mmc cmd %s failed \n",cmd);
+				return -1;
+			}			
+					
+#endif	
 #ifndef CONFIG_AML_SECU_BOOT_V2
             #ifdef MMC_UBOOT_CLEAR_MBR
 		    tmp_buf[510]= _mbrFlag[0];

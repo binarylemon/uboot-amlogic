@@ -1163,6 +1163,14 @@ int mmc_switch_partition(struct mmc* mmc, unsigned int part)
     int err;
     struct mmc_cmd cmd;
     char* partname[3] = {"user", "boot0", "boot1"};
+	unsigned int timeout = 0;
+	uint *res = (uint*)(&(cmd.response[0]));
+    
+    if(!IS_SD(mmc) && (mmc->version < MMC_VERSION_4)){
+    	printf("mmc do not support boot partition mmc->version:%d \n", mmc->version);
+    	err = -1;
+    	return err;
+    }
 
     cmd.cmdidx = MMC_CMD_SWITCH;
     cmd.resp_type = MMC_RSP_R1b;
@@ -1172,8 +1180,33 @@ int mmc_switch_partition(struct mmc* mmc, unsigned int part)
     cmd.flags = 0;
 
     err = mmc_send_cmd(mmc, &cmd, NULL);
+    if(err){
+        printf("mmc switch part %s failed while sending switch cmd\n", partname[part]);
+        return err;
+    }    
+
+	do {		
+		cmd.cmdidx = MMC_CMD_SEND_STATUS;
+		cmd.cmdarg = mmc->rca << 16;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.flags = 0;
+		
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err) {
+			printf("error %d requesting status %#x\n", err, *res);
+			return -1;
+		}
+		
+		timeout ++;
+		if (timeout > 100){
+		    printf("mmc switch part timeout *res:0x%x\n", *res);
+			return -1;
+		}
+		mdelay(1);		
+	} while (R1_CURRENT_STATE(*res) == R1_STATE_PRG);
+	
     printf("mmc switch part %s %s\n", partname[part], err?"fail":"success");
-    return err;
+    return err;	    
 }
 
 int mmc_send_if_cond(struct mmc *mmc)

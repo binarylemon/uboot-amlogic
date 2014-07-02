@@ -348,12 +348,12 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             }
             mmc_init(mmc);
             if(strcmp(argv[3], "boot0")==0)
-                mmc_switch_partition(mmc, 1);
+                rc = mmc_switch_partition(mmc, 1);
             else if(strcmp(argv[3], "boot1")==0)
-                mmc_switch_partition(mmc, 2);
+                rc = mmc_switch_partition(mmc, 2);
             else if(strcmp(argv[3], "user")==0)
-                mmc_switch_partition(mmc, 0);
-            return 0;
+                rc = mmc_switch_partition(mmc, 0);
+            return rc;
         }
                 
         if(strcmp(argv[1], "size")==0){

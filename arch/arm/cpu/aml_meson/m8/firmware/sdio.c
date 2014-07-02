@@ -99,6 +99,7 @@
 #define ERROR_MAGIC_WORDS           15
 #define ERROR_CMD1                  16
 #define ERROR_MMC_SWITCH_BUS        17
+#define ERROR_MMC_SWITCH_PART       18
 
 //#define VOLTAGE_VALIDATION_RETRY    0x8000
 //#define APP55_RETRY                 3
@@ -265,7 +266,7 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
             serial_puts("\n");
             goto DATA_READ;
     	}	
-        __udelay(1000); 
+        __udelay(5000); 
             
     }
     else{                    
@@ -325,7 +326,7 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
                       
     WRITE_CBUS_REG(SDIO_MULT_CONFIG,SD_boot_type);
     bus_width = 1;	
-   __udelay(1000);                   	
+   __udelay(5000);                   	
         
 DATA_READ:   
    size=(size+511)&(~(511));
@@ -756,7 +757,7 @@ STATIC_PREFIX int sdio_read_off_size(unsigned  target,unsigned off, unsigned siz
 			serial_puts("\n");
 			goto DATA_READ;
 		}	
-		__udelay(1000); 
+		__udelay(5000); 
 			
 	}
 	else{					 
@@ -816,7 +817,7 @@ STATIC_PREFIX int sdio_read_off_size(unsigned  target,unsigned off, unsigned siz
 					  
 	WRITE_CBUS_REG(SDIO_MULT_CONFIG,SD_boot_type);
 	bus_width = 1;	
-   __udelay(1000);						
+   __udelay(5000);						
 		
 DATA_READ:	 
    size=(size+511)&(~(511));
@@ -926,6 +927,47 @@ static int check_magic(void * cmp, unsigned char * magic)
 	
 	return ret ;
 }
+
+STATIC_PREFIX int sdio_switch_partition(void)
+{
+   int error;
+   unsigned card_type=(romboot_info->ext>>4)&0xf;
+   
+    if(card_type != CARD_TYPE_EMMC){
+        serial_puts("No need switch partition for none emmc device\n");
+        return ERROR_NONE;
+    }
+
+	if (card_type == CARD_TYPE_EMMC){
+	    
+     	error=sdio_send_cmd((0 << check_busy_on_dat0_bit) | // RESPONSE is R1
+    	      (0 << repeat_package_times_bit) | // packet number
+    	      (1 << use_int_window_bit) | // will disable interrupt
+              (0 << response_crc7_from_8_bit) | // RESPONSE CRC7 is normal
+              (0 << response_do_not_have_crc7_bit) | // RESPONSE has CRC7
+              (0 << response_have_data_bit) | // RESPONSE has data receive
+              (45 << cmd_response_bits_bit) | // RESPONSE have 7(cmd)+32(respnse)+7(crc)-1 data
+              ((0x40+6) << cmd_command_bit)  
+    			,0x03b30000 //normal area
+    			,TIMEOUT_DATA
+    			,ERROR_MMC_SWITCH_PART);
+
+    	if(error){
+    	    serial_puts("###eMMC switch to usr partition failed error:0x");
+            serial_put_dec(error);
+            serial_puts("\n");
+            return error;
+    	}	
+    	
+    	serial_puts("###eMMC switch to usr partition sucess\n");
+    	
+        __udelay(10000);   //delay 10ms;        
+    }
+
+    return ERROR_NONE;
+}
+
+
 STATIC_PREFIX int sdio_secure_storage_get(void)
 {
 	struct mmc_storage_head_t  *part0_head = MMC_DATA_BUF1, *part1_head = MMC_DATA_BUF2;
@@ -934,6 +976,14 @@ STATIC_PREFIX int sdio_secure_storage_get(void)
 	unsigned valid_addr=0;
 	int ret = 0;
 
+	unsigned card_type=(romboot_info->ext>>4)&0xf;
+	
+	if(card_type == CARD_TYPE_EMMC){
+	    ret = sdio_switch_partition();
+	    if(ret){
+	        serial_puts("###eMMC switch to usr partition failed\n");
+	    }
+	}	
 	init_magic(&magic[0]);
 		
 	ret = sdio_read_off_size(MMC_DATA_BUF1,MMC_STORAGE_OFFSET,sizeof(struct mmc_storage_head_t),READ_PORT);
