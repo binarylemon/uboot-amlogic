@@ -27,21 +27,21 @@ DECLARE_GLOBAL_DATA_PTR;
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
 #include <amlogic/battery_parameter.h>
 /*
- * add board battery parameters, this is a backup option if uboot process 
+ * add board battery parameters, this is a backup option if uboot process
  * battery parameters failed, each board shoud use your own battery parameters
  */
 int config_battery_rdc = 87;
-struct battery_curve config_battery_curve[] = { 
-    {3132,      0,      0},  
-    {3273,      0,      0},  
-    {3414,      0,      0},  
-    {3555,      0,      0},  
-    {3625,      1,      3},  
-    {3660,      2,      8},  
-    {3696,      3,     16}, 
-    {3731,     10,     24}, 
-    {3766,     15,     38}, 
-    {3801,     26,     48}, 
+struct battery_curve config_battery_curve[] = {
+    {3132,      0,      0},
+    {3273,      0,      0},
+    {3414,      0,      0},
+    {3555,      0,      0},
+    {3625,      1,      3},
+    {3660,      2,      8},
+    {3696,      3,     16},
+    {3731,     10,     24},
+    {3766,     15,     38},
+    {3801,     26,     48},
     {3836,     42,     56},
     {3872,     52,     63},
     {3942,     66,     74},
@@ -54,7 +54,7 @@ struct battery_curve config_battery_curve[] = {
 #if defined(CONFIG_CMD_NET)
 /*************************************************
   * Amlogic Ethernet controller operation
-  * 
+  *
   * Note: The LAN chip LAN8720 need to be reset
   *
   *************************************************/
@@ -87,7 +87,7 @@ static void setup_net_chip(void)
 }
 
 int board_eth_init(bd_t *bis)
-{   	
+{
     setup_net_chip();
     udelay(1000);
 	extern int aml_eth_init(bd_t *bis);
@@ -98,7 +98,7 @@ int board_eth_init(bd_t *bis)
 
 u32 get_board_rev(void)
 {
- 
+
 	return 0x20;
 }
 
@@ -110,7 +110,7 @@ u32 get_board_rev(void)
 extern void hdmi_tx_power_init(void);
 void hdmi_tx_power_init(void)
 {
-    // 
+    //
 //    printf("hdmi tx power init\n");
 }
 #endif
@@ -125,10 +125,10 @@ static int  sdio_init(unsigned port)
         case SDIO_PORT_A:
             break;
         case SDIO_PORT_B:
-            //todo add card detect 	
+            //todo add card detect
             setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             //enable pull up
             clrbits_le32(P_PAD_PULL_UP_REG3, 0xff<<0);
             break;
@@ -148,7 +148,7 @@ static int  sdio_init(unsigned port)
 extern unsigned sdio_debug_1bit_flag;
 
 static int  sdio_detect(unsigned port)
-{	
+{
     int ret;
     switch(port)
     {
@@ -158,21 +158,21 @@ static int  sdio_detect(unsigned port)
             setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
             ret=readl(P_PREG_PAD_GPIO5_I)&(1<<29)?0:1;
             printf( " %s return %d\n",__func__,ret);
-            
+
 			if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<26))){ //sd_d3 low, debug board in
 				if(!(readl(P_PREG_PAD_GPIO0_I)&(1<<22))){
 					printf("sdio debug board detected, sd card with 1bit mode\n");
 		 			sdio_debug_1bit_flag = 1;
 		 		}
-		 		else{ 
+		 		else{
 		 			printf("sdio debug board detected, no sd card in\n");
 		 			sdio_debug_1bit_flag = 0;
 		 			return 1;
 		 		}
 		 	}
-		 	          
+
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             break;
         case SDIO_PORT_XC_A:
             break;
@@ -205,7 +205,7 @@ static void sdio_pwr_on(unsigned port)
             clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
 			/// @todo NOT FINISH
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             break;
         case SDIO_PORT_XC_A:
             break;
@@ -247,7 +247,7 @@ static void sdio_pwr_off(unsigned port)
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
-    
+
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
     if(aml_priv==NULL||mmc==NULL)
         return;
@@ -257,7 +257,7 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
-    
+
 // #ifdef CONFIG_TSD
     // // if(mmc->block_dev.dev > 0)//tsd
           // mmc->block_dev.if_type = IF_TYPE_SD;
@@ -268,7 +268,7 @@ static void board_mmc_register(unsigned port)
 
 	sdio_register(mmc, aml_priv);
 
-#if 0    
+#if 0
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
 	aml_priv->removed_flag = 1;
@@ -290,7 +290,7 @@ static void board_mmc_register(unsigned port)
 	mmc->f_min = 200000;
 	mmc->f_max = 50000000;
 	mmc_register(mmc);
-#endif	
+#endif
 }
 int board_mmc_init(bd_t	*bis)
 {
@@ -379,7 +379,7 @@ void board_ir_init(void)
 
 }
 #endif
-#ifdef CONFIG_AML_I2C 
+#ifdef CONFIG_AML_I2C
 /*I2C module is board depend*/
 static void board_i2c_set_pinmux(void){
 	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
@@ -392,16 +392,16 @@ static void board_i2c_set_pinmux(void){
     /*********************************************/
     /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
     /* GPIOAO_5  | [AO_PIN_MUX: 5]     | [AO_PIN_MUX: 1]   |     */
-    /*********************************************/	
+    /*********************************************/
 
 	//disable all other pins which share with I2C_SDA_AO & I2C_SCK_AO
     clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1<<2)|(1<<24)|(1<<1)|(1<<23)));
     //enable I2C MASTER AO pins
 	setbits_le32(P_AO_RTI_PIN_MUX_REG,
 	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
-	
+
     udelay(10000);
-	
+
 };
 
 struct aml_i2c_platform g_aml_i2c_plat = {
@@ -426,7 +426,7 @@ static void board_pmu_init(void)
 {
     struct aml_pmu_driver *driver = aml_pmu_get_driver();
     if (driver && driver->pmu_init) {
-        driver->pmu_init();    
+        driver->pmu_init();
     }
 }
 #endif
@@ -434,7 +434,7 @@ static void board_pmu_init(void)
 inline void key_init(void)
 {
     setbits_le32(P_AO_GPIO_O_EN_N, (1 << 3));                           // GPIOAO_3 as power key input
-    clrbits_le32(P_AO_RTI_PIN_MUX_REG, (1 << 7) | (1 << 9) | (1 << 22));                       // clear pinmux as gpio function 
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, (1 << 7) | (1 << 9) | (1 << 22));                       // clear pinmux as gpio function
     //setbits_le32(P_AO_RTI_PULL_UP_REG, ((1 << 3) | (1 << 19)));         // enable pull up/down of gpio3
     clrbits_le32(P_AO_RTI_PULL_UP_REG, (1 << 19));         // enable pull up/down of gpio3
 }
@@ -445,7 +445,7 @@ inline int get_key(void)
 }
 
 static void board_i2c_init(void)
-{		
+{
 	//set I2C pinmux with PCB board layout
 	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
 	/*@AL5631Q+3G_AUDIO_V1.pdf*/
@@ -455,9 +455,9 @@ static void board_i2c_init(void)
 	//note: it must be call before any I2C operation
 	aml_i2c_init();
 
-	//must call aml_i2c_init(); before any I2C operation	
+	//must call aml_i2c_init(); before any I2C operation
 	/*M6 board*/
-	//udelay(10000);	
+	//udelay(10000);
 
 	udelay(10000);
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -483,16 +483,16 @@ int board_init(void)
 #endif
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-#if CONFIG_JERRY_NAND_TEST //temp test	
+#if CONFIG_JERRY_NAND_TEST //temp test
     nand_init();
-    
-#endif    
+
+#endif
 
     // LED
-    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 15));     
-    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 31));       
+    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 15));
+    clrbits_le32(P_AO_GPIO_O_EN_N, (1 << 31));
 
-#ifdef CONFIG_AML_I2C  
+#ifdef CONFIG_AML_I2C
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 #ifdef CONFIG_IR_REMOTE
@@ -551,7 +551,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     }
-    
+
 };
 
 struct aml_nand_device aml_nand_mid_device = {
@@ -570,7 +570,7 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	int nIndex = 0;
 	int nCounter = 64;
-	
+
 	if( 2 == argc)
 	{
 		cmd = argv[1];
@@ -579,8 +579,8 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if(nIndex < 0 || nIndex > 63)
 			goto usage;
 		nCounter = 1;
-	}	
-	
+	}
+
 	extern unsigned long    clk_util_clk_msr(unsigned long clk_mux);
 
 	//printf("\n");
@@ -588,7 +588,7 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("MSR clock[%d] = %dMHz\n",nIndex,clk_util_clk_msr(nIndex));
 
 	return 0;
-	
+
 usage:
 	return cmd_usage(cmdtp);
 }
@@ -624,10 +624,10 @@ static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			break;
 		default:
 			printf("bad chip version!!!");
-			break;
+			return 1;
 	}
 
-  return 1;
+  return 0;
 }
 
 U_BOOT_CMD(

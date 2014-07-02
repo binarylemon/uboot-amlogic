@@ -158,7 +158,7 @@ static int init_baudrate (void)
 {
 	char tmp[64];	/* long enough for environment variables */
 	int i = getenv_f("baudrate", tmp, sizeof (tmp));
-	
+
 #if !defined (CONFIG_VLSI_EMULATOR)
 	gd->baudrate = (i > 0)
 			? (int) simple_strtoul (tmp, NULL, 10)
@@ -287,7 +287,7 @@ init_fnc_t *init_sequence[] = {
 #ifdef CONFIG_FSL_ESDHC
 	get_clocks,
 #endif
-	env_init,		/* initialize environment */
+	//env_init,		/* initialize environment */
 	init_baudrate,		/* initialze baudrate settings */
 #if !defined (CONFIG_VLSI_EMULATOR)
 	//serial_init,		/* serial communications setup */
@@ -322,7 +322,7 @@ init_fnc_t *init_sequence[] = {
 unsigned int spl_boot_end,lib_board_init_f_start,lib_board_init_f_end;
 unsigned int lib_board_init_r_start,main_loop_start;
 #endif
-extern ulong __mmu_table; 
+extern ulong __mmu_table;
 void board_init_f (ulong bootflag)
 {
 	bd_t *bd;
@@ -371,12 +371,12 @@ void board_init_f (ulong bootflag)
 //init_suspend_firmware() function (used in main.c) will use 0x9ff00000 buffer
 	if(addr > 0x9FF00000)
 		addr = 0x9FF00000;
-#endif	
+#endif
 #ifdef CONFIG_AML_SECURE
 //init_secure_firmware() function (used in main.c) will use 0x9fe00000 buffer
 	if(addr > 0x9FE00000)
 		addr = 0x9FE00000;
-#endif	
+#endif
 #ifdef CONFIG_LOGBUFFER
 #ifndef CONFIG_ALT_LB_ADDR
 	/* reserve kernel log buffer */
@@ -434,10 +434,10 @@ void board_init_f (ulong bootflag)
 	 */
 	addr -= gd->mon_len;
 	//addr &= ~(4096 - 1);
-	// relocate code include mmu table, mmu table start address need 14bits alignment 
-	// so relocate code start code align to 14bits to set correct mmu table start addr	
-	//addr &= ~(0x10000 - 1);  // round down to 64kB is ok	
-	addr -= ((__mmu_table + addr - _TEXT_BASE)&((1024 * 16 - 1)));	
+	// relocate code include mmu table, mmu table start address need 14bits alignment
+	// so relocate code start code align to 14bits to set correct mmu table start addr
+	//addr &= ~(0x10000 - 1);  // round down to 64kB is ok
+	addr -= ((__mmu_table + addr - _TEXT_BASE)&((1024 * 16 - 1)));
 
 	debug ("Reserving %ldk for U-Boot at: %08lx\n", gd->mon_len >> 10, addr);
 
@@ -481,7 +481,7 @@ void board_init_f (ulong bootflag)
 
 	debug ("New Stack Pointer is: %08lx\n", addr_sp);
 
-#ifdef CONFIG_POST		
+#ifdef CONFIG_POST
 	post_bootmode_init();
 	post_run (NULL, POST_ROM | post_bootmode_get(0));
 #endif
@@ -494,7 +494,7 @@ void board_init_f (ulong bootflag)
 	gd->relocaddr = addr;
 	gd->start_addr_sp = addr_sp;
 	gd->reloc_off = addr - _TEXT_BASE;
-	
+
 #if !(defined(CONFIG_ICACHE_OFF) && defined(CONFIG_DCACHE_OFF))
 	/* adjust mmu table address */
 	gd->tlb_addr = __mmu_table + gd->reloc_off;
@@ -536,9 +536,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	ulong flash_size;
 #endif
 
-	
+
 	//2013.07.16
-	//cache update after relocation	
+	//cache update after relocation
 	dcache_flush();
 	icache_invalid();
 	//end 2013.07.16
@@ -635,12 +635,12 @@ unsigned int before_nand_init =  get_utimer(0);
 	puts ("NAND:  ");
 #ifdef  CONFIG_NEXT_NAND
 #ifndef CONFIG_VLSI_EMULATOR
-	ret = amlnf_init(0x0);  
+	ret = amlnf_init(0x0);
 	init_ret = ret;
 #endif
 // flag = 0,indicate normal boot;
-//flag = 1, indicate update; 
-//flag = 2, indicate need erase 
+//flag = 1, indicate update;
+//flag = 2, indicate need erase
 #else
 	nand_init();	/* go init the NAND */
 #endif
@@ -707,11 +707,11 @@ unsigned int before_nand_init =  get_utimer(0);
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV) || defined(CONFIG_M6TVD)
  		//if not clear, uboot command reset will fail -> blocked
  		*((volatile unsigned long *)0xc8100000) = 0;
-#endif 
+#endif
 
 	AML_LOG_TE("board");
 
-	if ((s = getenv ("aml_dt")) != NULL) {
+	if ((s = getenv ("get_dt")) != NULL) {
 		run_command(s, 0);
 	}
 
@@ -722,10 +722,6 @@ unsigned int before_nand_init =  get_utimer(0);
 #endif
 
 	AML_LOG_TE("board");
-
-	if ((s = getenv ("aml_dt")) != NULL) {
-		run_command(s, 0);
-	}
 
 #ifdef CONFIG_VPU_PRESET
 	vpu_probe();
@@ -880,9 +876,9 @@ unsigned int before_lcd_init =  get_utimer(0);
 	 */
 	{
 		ulong pram;
-#ifndef CONFIG_POST_AML		
+#ifndef CONFIG_POST_AML
 		uchar memsz[32];
-#endif	
+#endif
 #ifdef CONFIG_PRAM
 		char *s;
 
@@ -903,7 +899,7 @@ unsigned int before_lcd_init =  get_utimer(0);
 #ifndef CONFIG_POST_AML
 		sprintf ((char *)memsz, "%ldk", (bd->bi_memsize / 1024) - pram);
 		setenv ("mem", (char *)memsz);
-#endif		
+#endif
 	}
 #endif
 
