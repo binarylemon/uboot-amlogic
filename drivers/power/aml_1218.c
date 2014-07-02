@@ -480,7 +480,7 @@ int aml1218_set_charge_enable(int enable)
 
     vsys = aml1218_get_vsys_voltage();
     vbat = aml1218_get_battery_voltage();
-    printf("aml1218_set_charge_enable, vsys:%d, vbat:%d", vsys, vbat);
+    printf("aml1218_set_charge_enable, vsys:%d, vbat:%d\n", vsys, vbat);
     if (enable) {
         pmu_version = aml1218_get_pmu_version();
         if (pmu_version == 0) {   
@@ -1096,7 +1096,7 @@ int aml1218_init(void)
 {
     uint8_t val;
     
-    printf("---> PMU driver version:v0.91_A\n");
+    printf("---> PMU driver version:v0.91_B\n");
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1218_get_charge_status(0);
@@ -1141,7 +1141,7 @@ int aml1218_init(void)
     aml1218_set_bits(0x012b, 0x20, 0xf0);       // David Li
     aml1218_set_bits(0x0128, 0x0e, 0x0e);
     aml1218_write(0x0129, 0x1c);
-    aml1218_write(0x012a, 0x8f);                // David Li
+    aml1218_write(0x012a, 0x0f);                // David Li, new
     aml1218_write(0x012c, 0x20);
 
     aml1218_set_gpio(2, 0);                     // open VCCX2
@@ -1184,6 +1184,10 @@ int aml1218_init_para(struct battery_parameter *battery)
         aml1218_set_long_press         (battery->pmu_pekoff_time);
         aml1218_set_recharge_voltage   ();
         aml1218_set_charge_enable(battery->pmu_init_chg_enabled);
+        udelay(100 * 1000);
+        printf("after init, vbat:%d, vsys:%d\n", 
+               aml1218_get_battery_voltage(),
+               aml1218_get_vsys_voltage());
         return 0;
     } else {
         return -1;    
