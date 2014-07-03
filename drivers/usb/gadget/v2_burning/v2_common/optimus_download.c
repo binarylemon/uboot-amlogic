@@ -20,6 +20,7 @@
 #endif//#if defined(CONFIG_ACS)
 
 extern unsigned int get_multi_dt_entry(unsigned int fdt_addr);
+static int is_optimus_storage_inited(void);
 
 #ifndef CONFIG_UNIFY_KEY_MANAGE
 int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen)
@@ -440,9 +441,24 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
                 char* dtbLoadAddr = (char*)CONFIG_DTB_LOAD_ADDR;
                 const int DtbMaxSz = (2U<<20);
                 unsigned fdtSz = 0;
-                unsigned char* destDtb = NULL;
+                unsigned char* destDtb = (unsigned char*)data;
 
-                destDtb = get_multi_dt_entry(data);
+                //Make sure flash already inited before 'run aml_dt'
+                //old tool will download dtb before 'disk_initial', but new tool will 'disk_initial' first
+                if(is_optimus_storage_inited() || 
+                                (OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get()))
+                {
+                        if(getenv("get_dt"))
+                        {
+                                rc = run_command("run get_dt", 0);
+                                if(rc){
+                                        sprintf(errInfo, "Fail to get aml_dt.\n");
+                                        DWN_ERR(errInfo);
+                                        return 0;
+                                }
+                                destDtb = get_multi_dt_entry(data);
+                        }
+                }
                 rc = fdt_check_header(destDtb);
                 if(rc){
                     sprintf(errInfo, "failed at fdt_check_header\n");
@@ -683,6 +699,11 @@ int optimus_parse_img_download_info(const char* partName, const u64 imgSz, const
 }
 
 static int _disk_intialed_ok = 0;
+
+static int is_optimus_storage_inited(void)
+{
+        return _disk_intialed_ok;
+}
 
 int optimus_storage_init(int toErase)
 {
