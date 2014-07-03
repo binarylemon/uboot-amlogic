@@ -335,15 +335,16 @@
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
-//M8 security boot
-//#define CONFIG_SECU_BOOT	1
-
-//M8 L1 cache enable for uboot decompress speed up
+//M8B L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
 
 //To use RSA2048 key aml-rsa-key.k2a
 #define CONFIG_AML_RSA_2048 1
 
+//M8B encrypt img
+//#define CONFIG_AML_CRYPTO_IMG	1
+
+//#define CONFIG_AML_SECU_BOOT_V2_2RSA 1
 
 /*-----------------------------------------------------------------------
  * power down
