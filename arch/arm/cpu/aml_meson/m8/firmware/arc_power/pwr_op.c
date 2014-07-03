@@ -273,6 +273,71 @@ int get_charging_state()
 
 void rn5t618_shut_down()
 {
+    unsigned char reg_coulomb[4];
+    unsigned char reg_save[4];
+    unsigned char flag;
+    int save_coulomb, curr_coulomb;
+
+    flag = i2c_pmu_read_b(0x0001);
+    if (flag > 0x06) {                                      // OTP version is larger than RN5T618F
+        /*
+         * save coulomb registers before shut down
+         */
+        reg_coulomb[0] = i2c_pmu_read_b(0x00f3);
+        reg_coulomb[1] = i2c_pmu_read_b(0x00f4);
+        reg_coulomb[2] = i2c_pmu_read_b(0x00f5);
+        reg_coulomb[3] = i2c_pmu_read_b(0x00f6);
+        flag = i2c_pmu_read_b(0x0007);
+        printf_arc("save flag:");
+        serial_put_hex(flag, 8);
+        printf_arc("\n");
+        i2c_pmu_write_b(0x00ff, 0x01);                      // change to register banck 1
+        printf_arc("curr coulomb:");
+        serial_put_hex(reg_coulomb[0], 8);
+        serial_put_hex(reg_coulomb[1], 8);
+        serial_put_hex(reg_coulomb[2], 8);
+        serial_put_hex(reg_coulomb[3], 8);
+        printf_arc("\n");
+        curr_coulomb = (reg_coulomb[3] <<  0) | 
+                       (reg_coulomb[2] <<  8) | 
+                       (reg_coulomb[1] << 16) | 
+                       (reg_coulomb[0] << 24);
+        if (flag & 0x40) {                                  // already saved
+            reg_save[0] = i2c_pmu_read_b(0x00bd);
+            reg_save[0] = i2c_pmu_read_b(0x00bf);
+            reg_save[0] = i2c_pmu_read_b(0x00c1);
+            reg_save[0] = i2c_pmu_read_b(0x00c3);
+            printf_arc("already saved coulomb:");
+            serial_put_hex(reg_save[0], 8);
+            serial_put_hex(reg_save[1], 8);
+            serial_put_hex(reg_save[2], 8);
+            serial_put_hex(reg_save[3], 8);
+            printf_arc("\n");
+            save_coulomb = (reg_save[3] <<  0) | 
+                           (reg_save[2] <<  8) | 
+                           (reg_save[1] << 16) | 
+                           (reg_save[0] << 24);
+            curr_coulomb += save_coulomb;
+        }
+        reg_coulomb[0] = (curr_coulomb >> 24) & 0xff;
+        reg_coulomb[1] = (curr_coulomb >> 16) & 0xff;
+        reg_coulomb[2] = (curr_coulomb >>  8) & 0xff;
+        reg_coulomb[3] = (curr_coulomb >>  0) & 0xff;
+        printf_arc("save coulomb:"); 
+        serial_put_hex(reg_coulomb[0], 8);
+        serial_put_hex(reg_coulomb[1], 8);
+        serial_put_hex(reg_coulomb[2], 8);
+        serial_put_hex(reg_coulomb[3], 8);
+        printf_arc("\n");
+        i2c_pmu_write_b(0x00bd, reg_coulomb[0]);
+        i2c_pmu_write_b(0x00bf, reg_coulomb[1]);
+        i2c_pmu_write_b(0x00c1, reg_coulomb[2]);
+        i2c_pmu_write_b(0x00c3, reg_coulomb[3]);
+        i2c_pmu_write_b(0x00ff, 0x00);                     // back to banck 0;
+        rn5t618_set_bits(0x0007, 0x40, 0x60);              // set flag
+        rn5t618_set_bits(0x00EF, 0x08, 0x08);              // clear coulomb 
+    }
+
 #ifdef CONFIG_RESET_TO_SYSTEM
     rn5t618_set_bits(0x0007, 0x00, 0x01);                   // clear flag
 #endif

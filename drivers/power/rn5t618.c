@@ -234,6 +234,54 @@ int rn5t618_get_gpio(int gpio, int *val)
 
 void rn5t618_power_off()
 {
+    uint8_t reg_coulomb[4];
+    uint8_t reg_save[4];
+    uint8_t flag;
+    int32_t save_coulomb, curr_coulomb;
+
+    /*
+     * save coulomb registers to PMU before power off
+     */
+    rn5t618_read(0x01, reg_coulomb);
+    if (reg_coulomb[0] > 0x06) {                               // OTP verion is more than RN5T618F
+        rn5t618_read(0x0007, &flag);
+        printf("---- save flag:%02x\n", flag);
+        rn5t618_reads(0x00F3, reg_coulomb, 4);
+        rn5t618_write(0x00ff, 0x01);                            // change to register banck 1
+        printf("curr coulomb:0x%02x %02x %02x %02x\n", 
+               reg_coulomb[0], reg_coulomb[1], reg_coulomb[2], reg_coulomb[3]);
+        curr_coulomb = (reg_coulomb[3] <<  0) | 
+                       (reg_coulomb[2] <<  8) | 
+                       (reg_coulomb[1] << 16) | 
+                       (reg_coulomb[0] << 24);
+        if (flag & 0x40) {
+            rn5t618_read(0x00bd, &reg_save[0]);
+            rn5t618_read(0x00bf, &reg_save[1]);
+            rn5t618_read(0x00c1, &reg_save[2]);
+            rn5t618_read(0x00c3, &reg_save[3]);
+            printf("---- already saved coulomb:0x%02x %02x %02x %02x\n",
+                   reg_save[0], reg_save[1], reg_save[2], reg_save[3]);
+            save_coulomb = (reg_save[3] <<  0) | 
+                           (reg_save[2] <<  8) | 
+                           (reg_save[1] << 16) | 
+                           (reg_save[0] << 24);
+            curr_coulomb += save_coulomb;
+        }
+        reg_coulomb[0] = (curr_coulomb >> 24) & 0xff;
+        reg_coulomb[1] = (curr_coulomb >> 16) & 0xff;
+        reg_coulomb[2] = (curr_coulomb >>  8) & 0xff;
+        reg_coulomb[3] = (curr_coulomb >>  0) & 0xff;
+        printf("save coulomb:0x%02x %02x %02x %02x\n", 
+               reg_coulomb[0], reg_coulomb[1], reg_coulomb[2], reg_coulomb[3]);
+        rn5t618_write(0x00bd, reg_coulomb[0]);
+        rn5t618_write(0x00bf, reg_coulomb[1]);
+        rn5t618_write(0x00c1, reg_coulomb[2]);
+        rn5t618_write(0x00c3, reg_coulomb[3]);
+        rn5t618_write(0x00ff, 0x00);                            // back to banck 0;
+        rn5t618_set_bits(0x0007, 0x40, 0x60);                   // set flag
+        rn5t618_set_bits(0x00EF, 0x08, 0x08);                   
+    }
+
 #ifdef CONFIG_RESET_TO_SYSTEM
     rn5t618_set_bits(0x0007, 0x00, 0x01);
 #endif
