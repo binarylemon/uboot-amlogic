@@ -106,7 +106,7 @@ static int do_get_batcap (cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 #else
 	percent = get_charging_percent();
 #endif
-	printf("Battery CAP: %d%%\r", percent);
+	printf("Battery CAP: %d%%\n", percent);
 	sprintf(percent_str, "%d", percent);
 	setenv("battery_cap", percent_str);
 	return 0;
