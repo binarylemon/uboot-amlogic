@@ -253,6 +253,83 @@ void cvbs_trimming(void)
 
 #endif
 
+#ifdef CONFIG_AML_MESON_6
+
+enum aml_vdac_switch_type {
+	VOUT_CVBS,
+	VOUT_COMPONENT,
+	VOUT_VGA,
+	VOUT_MAX
+};
+
+static void vdac_hw_switch(unsigned type)
+{
+	// the control logic is based on the g18 board.
+	switch( type )
+	{
+		case VOUT_CVBS:
+			// set YPBR_EN# to high
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<2)) == 0)
+				aml_set_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<2));
+
+			// set CVBS_EN# to high
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<3)) == 0)
+				aml_set_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<3));
+
+			break;
+		case VOUT_COMPONENT:
+			// set YPBR_EN# to low
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<2)) != 0)
+			    aml_clr_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<2));
+
+			// set CVBS_EN# to low
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<3)) != 0)
+			    aml_clr_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<3));
+
+			break;
+		case VOUT_VGA:
+			// set YPBR_EN# to high
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<2)) == 0)
+				aml_set_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<2));
+
+			// set CVBS_EN# to low
+			if((aml_read_reg32(P_PREG_PAD_GPIO2_O) & (1<<3)) != 0)
+			    aml_clr_reg32_mask(P_PREG_PAD_GPIO2_O,(1<<3));
+
+			break;
+		default:
+			break;
+	}
+
+    aml_clr_reg32_mask(P_PREG_PAD_GPIO2_EN_N,(1<<2));//GPIOC2
+    aml_clr_reg32_mask(P_PREG_PAD_GPIO2_EN_N,(1<<3));//GPIOC3
+
+	return ;
+}
+
+static void m6_enable_vdac_hw_switch(int mode)
+{
+	char *str;
+	int switch_mode = 0;
+
+	if( (mode!=VMODE_480CVBS) && (mode!=VMODE_576CVBS) )
+		return ;
+
+	str = strdup(getenv("vdacswitchmode"));
+	if( !strcmp(str, "cvbs") )
+		switch_mode = VOUT_CVBS;
+	else if( !strcmp(str, "component") )
+		switch_mode = VOUT_COMPONENT;
+	else if( !strcmp(str, "vga") )
+		switch_mode = VOUT_VGA;
+
+	vdac_hw_switch(switch_mode);
+
+	return ;
+}
+
+#endif // end of CONFIG_AML_MESON_6
+
 int tv_out_open(int mode)
 {
 #if CONFIG_AML_HDMI_TX
@@ -263,6 +340,10 @@ int tv_out_open(int mode)
     if (TVOUT_VALID(mode))
     {
         tvmode = mode;
+
+#if CONFIG_AML_MESON_6
+		m6_enable_vdac_hw_switch(mode);
+#endif
 
 #if CONFIG_AML_MESON_8
 		cvbs_cntl_output(0);
