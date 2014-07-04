@@ -287,7 +287,7 @@ init_fnc_t *init_sequence[] = {
 #ifdef CONFIG_FSL_ESDHC
 	get_clocks,
 #endif
-	//env_init,		/* initialize environment */
+	env_init,		/* initialize environment */
 	init_baudrate,		/* initialze baudrate settings */
 #if !defined (CONFIG_VLSI_EMULATOR)
 	//serial_init,		/* serial communications setup */
