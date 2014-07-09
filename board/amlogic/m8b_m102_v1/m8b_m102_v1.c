@@ -18,6 +18,8 @@
 #include <amlogic/aml_pmu_common.h>
 #endif
 
+#include <amlogic/gpio.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
@@ -591,6 +593,13 @@ static void board_i2c_init(void)
 	printf("\nPMU init time %d\n", after_pmu_init-before_pmu_init);
 #endif
 }
+
+void wifi_power_init()
+{
+	printf("-- set usb wifi power off in uboot --\n");
+	amlogic_gpio_direction_output(GPIOX_11,1);
+}
+
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
@@ -611,6 +620,8 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
     key_init();
+    
+    wifi_power_init();
 
 	return 0;
 }
