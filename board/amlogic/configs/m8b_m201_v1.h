@@ -175,6 +175,7 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"preboot="\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
@@ -226,7 +227,7 @@
 	"storeboot="\
         "echo Booting...; "\
         "if unifykey get usid; then  "\
-            "setenv bootargs ${initargs} androidboot.serialno=${usid};"\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
@@ -382,6 +383,7 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
