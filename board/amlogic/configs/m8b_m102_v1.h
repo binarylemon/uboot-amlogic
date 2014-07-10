@@ -245,7 +245,7 @@
                 "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; saveenv; fi; "\
                 "\0"\
         "prepare="\
-                "video open; video clear; video dev bl_on;"\
+                "video clear; video open; video dev bl_on;"\
                 "imgread res logo ${loadaddr_misc};"\
                 "unpackimg ${loadaddr_misc};"\
                 "\0"\
