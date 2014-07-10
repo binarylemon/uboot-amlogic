@@ -419,6 +419,10 @@ int appf_setup_translation_tables(void)
     	{
         ((unsigned*)tab1_pa) [i] = 0xc0e|(0x04F<<20);//0xc0e
     	}
+        else if(i == 0xc4D)
+        {
+        ((unsigned*)tab1_pa) [i] = 0x402|(0x04F<<20);//0xc0e
+        }
     	else if(i == 0xCFF)
     	{
       	((unsigned*)tab1_pa) [i] = 0xc0e|(0xFF<<20);

@@ -320,6 +320,6 @@
 
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8B
 #define CONFIG_AML_MESON_8		1
-#define CONFIG_AML_SMP
+//#define CONFIG_AML_SMP
 
 #endif /* _CPU_H */

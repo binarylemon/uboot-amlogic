@@ -85,10 +85,93 @@ static void setup_net_chip(void)
 	udelay(10000);
 	SET_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
 }
+static void setup_new_net_chip(void)
+{
+        eth_aml_reg0_t eth_reg0;
+         //setup ethernet clk need calibrate to configre
+#ifdef RMII_PHY_INTERFACE
+        /* setup ethernet pinmux use gpioz(5-14) */
+        SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, (1 << 14) | (1 << 13) | (1 << 12) |
+        (1 << 11) | (1 << 8 ) | (1 << 7 ) | (1 << 10 ) | (1 << 6 ) | (1 << 5 ));
+        eth_reg0.d32 = 0;
+        eth_reg0.b.phy_intf_sel = 0;
+        eth_reg0.b.data_endian = 0;
+        eth_reg0.b.desc_endian = 0;
+        eth_reg0.b.rx_clk_rmii_invert = 0;
+        eth_reg0.b.rgmii_tx_clk_src = 0;
+        eth_reg0.b.rgmii_tx_clk_phase = 0;
+        eth_reg0.b.rgmii_tx_clk_ratio = 1;
+        eth_reg0.b.phy_ref_clk_enable = 1;
+        eth_reg0.b.clk_rmii_i_invert = 1;
+        eth_reg0.b.clk_en = 1;
+        eth_reg0.b.adj_enable = 1;
+        eth_reg0.b.adj_setup = 0;
+        eth_reg0.b.adj_delay = 18;
+        eth_reg0.b.adj_skew = 0;
+        eth_reg0.b.cali_start = 0;
+        eth_reg0.b.cali_rise = 0;
+        eth_reg0.b.cali_sel = 0;
+        eth_reg0.b.rgmii_rx_reuse = 0;
+        eth_reg0.b.eth_urgent = 0;
+        WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32 );//1          //rmii mode
+        WRITE_CBUS_REG(0x2050,0x1000);//1          //rmii mode
+#elif RGMII_PHY_INTERFACE
+        SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6, 0xffef);
+        eth_reg0.d32 = 0;
+        eth_reg0.b.phy_intf_sel = 1;
+        eth_reg0.b.data_endian = 0;
+        eth_reg0.b.desc_endian = 0;
+        eth_reg0.b.rx_clk_rmii_invert = 0;
+        eth_reg0.b.rgmii_tx_clk_src = 0;
+        eth_reg0.b.rgmii_tx_clk_phase = 0;
+        eth_reg0.b.rgmii_tx_clk_ratio = 2;
+        eth_reg0.b.phy_ref_clk_enable = 1;
+        eth_reg0.b.clk_rmii_i_invert = 1;
+        eth_reg0.b.clk_en = 1;
+        eth_reg0.b.adj_enable = 1;
+        eth_reg0.b.adj_setup = 1;
+        eth_reg0.b.adj_delay = 4;
+        eth_reg0.b.adj_skew = 0xc;
+        eth_reg0.b.cali_start = 0;
+        eth_reg0.b.cali_rise = 0;
+        eth_reg0.b.cali_sel = 0;
+        eth_reg0.b.rgmii_rx_reuse = 0;
+        eth_reg0.b.eth_urgent = 0;
+        WRITE_CBUS_REG(0x2050, eth_reg0.d32);// rgmii mode
+        SET_CBUS_REG_MASK(0x10a5,1<<27);
+        WRITE_CBUS_REG(0x2050,0x7d21);// rgmii mode
+        SET_CBUS_REG_MASK(0x108a,0xb803);
+        SET_CBUS_REG_MASK(HHI_MPLL_CNTL9,(1638<<0)| (0<<14)|(1<<15) | (1<<14) | (5<<16) | (0<<25) | (0<<26) |(0<<30) | (0<<31));
+#endif
 
+#ifdef RGMII_PHY_INTERFACE
+        /* setup ethernet mode */
+        CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
+        /* hardware reset ethernet phy : gpioz14 connect phyreset pin*/
+        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO2_EN_N, 1 << 28);
+        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO2_O, 1 << 28);
+        udelay(10000);
+        SET_CBUS_REG_MASK(PREG_PAD_GPIO2_O, 1 << 28);
+#else
+        /* setup ethernet mode */
+        CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
+        /* hardware reset ethernet phy : gpioz14 connect phyreset pin*/
+        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_EN_N, 1 << 31);
+        CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+        udelay(10000);
+        SET_CBUS_REG_MASK(PREG_PAD_GPIO1_O, 1 << 31);
+#endif
+}
 int board_eth_init(bd_t *bis)
 {
-    setup_net_chip();
+	if(IS_MESON_M8M2_CPU){//m8m2
+        //printf("m8m2 ethernet\n");
+        setup_new_net_chip();
+	}
+	else{//m8
+        //printf("m8 ethernet\n");
+		setup_net_chip();
+	}
     udelay(1000);
 	extern int aml_eth_init(bd_t *bis);
     aml_eth_init(bis);

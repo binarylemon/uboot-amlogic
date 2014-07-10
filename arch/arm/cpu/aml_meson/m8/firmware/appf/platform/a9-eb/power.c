@@ -127,9 +127,12 @@ extern void platform_reset_handler(void);
 #define P_DDR0_CLK_CTRL    0xc8000800
 #define P_DDR1_CLK_CTRL    0xc8002800
 
-#define DMC_SEC_CTRL                0xda002144
+#define M8_DMC_SEC_CTRL                0xda002144
 #define DMC_SEC_KEY0                0xda002148
 #define DMC_SEC_KEY1                0xda00214c
+
+#define M8M2_DMC_SEC_CTRL           0xda002018
+#define DMC_SEC_KEY                 0xda00201c
 
 #define CONFIG_M8_DDR1_ONLY  (1)
 
@@ -146,6 +149,36 @@ extern void platform_reset_handler(void);
 			((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
 			((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
 
+#define GET_32BIT_DT_ADDR_BANK1(dtar, dmc, channel) (((((dtar)>>28)&0x7)&(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(0x3):(0x1)))<<((2)+((((((dmc)>>(channel?(13):(5)))&0x3)>>1)&0x1)?(6):(10+(((((dmc)>>26)&0x3)>0)?0:1)))))
+/*bank2*/
+#define GET_32BIT_DT_ADDR_BANK2(dtar, dmc, channel) ((((((dtar)>>28)&0x7)>>(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(2):(1)))&(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(0x1):(0x3)))<<((2)+(((((dmc)>>(channel?(10):(2)))&0x3)>0)?((((dmc)>>(channel?(10):(2)))&0x3)+12):(16))+((((dmc)>>(channel?(8):(0)))&0x3)+8)+(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(2):(1))+(((((dmc)>>26)&0x3)>0)?0:1)))
+/*row  */
+#define GET_32BIT_DT_ADDR_ROW(dtar, dmc, channel) (((((dtar)>>12)&0xffff)&((1<<((((dmc)>>(channel?(10):(2)))&0x3)?((((dmc)>>(channel?(10):(2)))&0x3)+12):(16)))-1))<<((2)+((((dmc)>>(channel?(8):(0)))&0x3)+8)+(((((dmc)>>26)&0x3)>0)?0:1)+(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(2):(1))))
+/*col  */
+#define GET_32BIT_DT_ADDR_COL(dtar, dmc, channel)   ((((((dmc)>>(channel?(13):(5)))&0x3)>>1)&0x1)?(((((dtar)&0xfff)&0x3f)<<(2))|(((((dmc)>>26)&0x3)>0)?(((((dtar)&0xfff)>>6)&0xf)<<(2+6+(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(2):(1)))):((((((dtar)&0xfff)>>6)&(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?0x3:0x7))<<(2+6+(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?(2):(1))))|(((((dtar)&0xfff)>>(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?8:9))&(((((dmc)>>(channel?(13):(5)))&0x3)&0x1)?0x3:0x1))<<(2+6+5))))):((((dtar)&0xfff)&0x3ff)<<(2)))
+/*ext_addr*/
+#define GET_32BIT_DT_ADDR_EXT(dtar, dmc, channel) (((((dmc)>>26)&0x3)==0x2)?((((dmc)>>24)&0x1)?(channel?(0):((1<<(((((dmc)>>(channel?(2):(10)))&0x3)?((((dmc)>>(channel?(2):(10)))&0x3)+12):(16))+((((dmc)>>(channel?(0):(8)))&0x3)+8)+5)))):(channel?((1<<(((((dmc)>>(channel?(2):(10)))&0x3)?((((dmc)>>(channel?(2):(10)))&0x3)+12):(16))+((((dmc)>>(channel?(0):(8)))&0x3)+8)+5))):(0))):(((((dmc)>>26)&0x3)==0x0)?(channel?(1<<12):(0)):(((((dmc)>>26)&0x3)==0x1)?(1<<8):(0))))
+#define GET_32BIT_DT_ADDR(dtar, dmc, channel) \
+			((GET_32BIT_DT_ADDR_BANK1(dtar, dmc, channel) | \
+			GET_32BIT_DT_ADDR_BANK2(dtar, dmc, channel) | \
+			GET_32BIT_DT_ADDR_ROW(dtar, dmc, channel) | \
+			GET_32BIT_DT_ADDR_COL(dtar, dmc, channel)) + \
+			GET_32BIT_DT_ADDR_EXT(dtar, dmc, channel))
+
+#define GET_16BIT_DT_ADDR_BANK1(dtar, dmc, channel) 0
+#define GET_16BIT_DT_ADDR_BANK2(dtar, dmc, channel) 0
+#define GET_16BIT_DT_ADDR_ROW(dtar, dmc, channel) 0
+#define GET_16BIT_DT_ADDR_COL(dtar, dmc, channel) 0
+#define GET_16BIT_DT_ADDR_EXT(dtar, dmc, channel) 0
+#define GET_16BIT_DT_ADDR(dtar, dmc, channel) \
+			((GET_16BIT_DT_ADDR_BANK1(dtar, dmc, channel) | \
+			GET_16BIT_DT_ADDR_BANK2(dtar, dmc, channel) | \
+			GET_16BIT_DT_ADDR_ROW(dtar, dmc, channel) | \
+			GET_16BIT_DT_ADDR_COL(dtar, dmc, channel)) + \
+			GET_16BIT_DT_ADDR_EXT(dtar, dmc, channel))
+
+#define GET_DT_ADDR(dtar, dmc, channel) \
+			(((dmc>>(channel?15:7))&0x1)?(GET_16BIT_DT_ADDR(dtar, dmc, channel)):(GET_32BIT_DT_ADDR(dtar, dmc, channel)))
 
 void run_arc_program()
 {
@@ -184,29 +217,56 @@ void run_arc_program()
 	writel(readl(P_DDR0_CLK_CTRL)|(1), P_DDR0_CLK_CTRL);
 	writel(readl(P_DDR1_CLK_CTRL)|(1), P_DDR1_CLK_CTRL);
 
-	unsigned int nMMC_DDR_SET  = readl(0xc8006000);
-	unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
-	unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
-	dbg_print("\nAml log : nMMC_DDR_SET is 0x",nMMC_DDR_SET);
-	dbg_print("\nAml log : nPUB0_DTAR0 is 0x",nPUB0_DTAR0);
-	dbg_print("\nAml log : nPUB1_DTAR0 is 0x",nPUB1_DTAR0);
-
-	switch( ((nMMC_DDR_SET >> 24) & 3))
-	{
-		case CONFIG_M8_DDR1_ONLY: 
-		{ 
-			address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-			dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
-		}break;
-
-		default: 
-		{
-			address0 = CFG_M8_GET_DDR0_TA_FROM_DTAR0(nPUB0_DTAR0,nMMC_DDR_SET);
-			address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-
+	unsigned int m8_chip_id = readl(0xc11081A8);
+	if(0x11111112 == m8_chip_id){
+		unsigned int nMMC_DDR_SET  = readl(0xc8006040);
+		unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
+		unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
+		dbg_print("\nAml log : nMMC_DDR_SET is 0x",nMMC_DDR_SET);
+		dbg_print("\nAml log : nPUB0_DTAR0 is 0x",nPUB0_DTAR0);
+		dbg_print("\nAml log : nPUB1_DTAR0 is 0x",nPUB1_DTAR0);
+		if(((nMMC_DDR_SET>>26)&0x3) == 0x2){/*one channel*/
+			if(((nMMC_DDR_SET >> 24) & 3)){
+				address1 = GET_DT_ADDR(nPUB1_DTAR0,nMMC_DDR_SET,1);
+				dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
+			}
+			else{
+				address0 = GET_DT_ADDR(nPUB0_DTAR0,nMMC_DDR_SET,0);
+				dbg_print("\nAml log : DDR0 DTAR is 0x",address0);
+			}
+		}
+		else{/*2 channels*/
+			address0 = GET_DT_ADDR(nPUB0_DTAR0,nMMC_DDR_SET,0);
+			address1 = GET_DT_ADDR(nPUB1_DTAR0,nMMC_DDR_SET,1);
 			dbg_print("\nAml log : DDR0 DTAR is 0x",address0);
 			dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
-		}break;
+		}
+	}
+	else{
+		unsigned int nMMC_DDR_SET  = readl(0xc8006000);
+		unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
+		unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
+		dbg_print("\nAml log : nMMC_DDR_SET is 0x",nMMC_DDR_SET);
+		dbg_print("\nAml log : nPUB0_DTAR0 is 0x",nPUB0_DTAR0);
+		dbg_print("\nAml log : nPUB1_DTAR0 is 0x",nPUB1_DTAR0);
+
+		switch( ((nMMC_DDR_SET >> 24) & 3))
+		{
+			case CONFIG_M8_DDR1_ONLY:
+			{
+				address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
+				dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
+			}break;
+
+			default:
+			{
+				address0 = CFG_M8_GET_DDR0_TA_FROM_DTAR0(nPUB0_DTAR0,nMMC_DDR_SET);
+				address1 = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
+
+				dbg_print("\nAml log : DDR0 DTAR is 0x",address0);
+				dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
+			}break;
+		}
 	}
 
 	//disable clock
@@ -243,12 +303,20 @@ void run_arc_program()
 	}
 
 	//save DMC_SEC_CTRL,DMC_SEC_KEY0,DMC_SEC_KEY1
-	dmc_sec_ctrl_addr = 0xd9010300;
-	dmc_sec_key0_addr = 0xd9010304;
-	dmc_sec_key1_addr = 0xd9010308;
-	*(unsigned int*)dmc_sec_ctrl_addr = readl(DMC_SEC_CTRL);
-	*(unsigned int*)dmc_sec_key0_addr = readl(DMC_SEC_KEY0);
-	*(unsigned int*)dmc_sec_key1_addr = readl(DMC_SEC_KEY1);
+	if(0x11111112 == m8_chip_id){/*m8m2*/
+		dmc_sec_ctrl_addr = 0xd9010300;
+		dmc_sec_key0_addr = 0xd9010304;
+		*(unsigned int*)dmc_sec_ctrl_addr = readl(M8M2_DMC_SEC_CTRL);
+		*(unsigned int*)dmc_sec_key0_addr = readl(DMC_SEC_KEY);
+	}
+	else{
+		dmc_sec_ctrl_addr = 0xd9010300;
+		dmc_sec_key0_addr = 0xd9010304;
+		dmc_sec_key1_addr = 0xd9010308;
+		*(unsigned int*)dmc_sec_ctrl_addr = readl(M8_DMC_SEC_CTRL);
+		*(unsigned int*)dmc_sec_key0_addr = readl(DMC_SEC_KEY0);
+		*(unsigned int*)dmc_sec_key1_addr = readl(DMC_SEC_KEY1);
+	}
 
 	clean_dcache_v7_l1();
 

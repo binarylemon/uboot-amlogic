@@ -26,6 +26,8 @@
 #include <amlogic/aml_pmu_common.h>
 #endif
 
+#include <asm/cpu_id.h>
+
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <secureboot.c>
 unsigned int ovFlag;
@@ -129,7 +131,14 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
         *psecureargs = 0;
 #ifdef CONFIG_MESON_SECUREARGS
-        *psecureargs = __secureargs;	
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
+	if(IS_MESON_M8M2_CPU)
+		*psecureargs = __secureargs_m8m2;
+	else
+		*psecureargs = __secureargs_m8;
+#else
+	*psecureargs = __secureargs;
+#endif		
 #endif// #ifdef CONFIG_MESON_SECUREARGS
     }
 #endif//#ifdef CONFIG_MESON_TRUSTZONE

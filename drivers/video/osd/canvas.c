@@ -48,21 +48,37 @@ void canvas_config(u32 index, ulong addr, u32 width,
     _debug("index=%d, addr=0x%08x width=%d, height=%d wrap=%d, blkmode=%d \n",
         index, addr, width, height, wrap, blkmode);
 
-    writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-					((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
-					, P_DC_CAV_LUT_DATAL);
-
-    writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
-					((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)	|
-					((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              |
-					((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              |
-					((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
-					, P_DC_CAV_LUT_DATAH);
-
-    writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
-
-	// read a cbus to make sure last write finish.
-    readl(P_DC_CAV_LUT_DATAH);
+#ifdef CONFIG_M8
+    if(IS_MESON_M8M2_CPU){
+        writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+    					((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+    					, M8M2_P_DC_CAV_LUT_DATAL);
+        writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+    					((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)	|
+    					((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              |
+    					((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              |
+    					((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+    					, M8M2_P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | index, M8M2_P_DC_CAV_LUT_ADDR);
+    	// read a cbus to make sure last write finish.
+        readl(M8M2_P_DC_CAV_LUT_DATAH);
+    }
+    else
+#endif
+    {
+        writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+                        ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+                        , P_DC_CAV_LUT_DATAL);
+        writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+                        ((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)    |
+                        ((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              |
+                        ((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              |
+                        ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+                        , P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
+        // read a cbus to make sure last write finish.
+        readl(P_DC_CAV_LUT_DATAH);
+    }
 	
 	canvasP->addr = addr;
 	canvasP->width = width;
@@ -92,22 +108,38 @@ void canvas_copy(u32 src, u32 dst)
     height = canvasPool[src].height;
     wrap = canvasPool[src].wrap;
     blkmode = canvasPool[src].blkmode;
-    
-    writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-        ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
-        , P_DC_CAV_LUT_DATAL);
 
-    writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
-        ((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)    |
-        ((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              | 
-        ((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              | 
-        ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
-        , P_DC_CAV_LUT_DATAH);
-
-    writel(CANVAS_LUT_WR_EN | dst, P_DC_CAV_LUT_ADDR);
-
-    // read a cbus to make sure last write finish.
-    readl(P_DC_CAV_LUT_DATAH);
+#ifdef CONFIG_M8 /*M8 series unify code*/
+    if(IS_MESON_M8M2_CPU){
+        writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+            ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+            , M8M2_P_DC_CAV_LUT_DATAL);
+        writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+            ((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)    |
+            ((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              | 
+            ((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              | 
+            ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+            , M8M2_P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | dst, M8M2_P_DC_CAV_LUT_ADDR);
+        // read a cbus to make sure last write finish.
+        readl(M8M2_P_DC_CAV_LUT_DATAH);
+    }
+    else
+#endif
+    {
+        writel((((addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+            ((((width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+            , P_DC_CAV_LUT_DATAL);
+        writel(((((width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+            ((height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)    |
+            ((wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)              | 
+            ((wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)              | 
+            ((blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+            , P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | dst, P_DC_CAV_LUT_ADDR);
+        // read a cbus to make sure last write finish.
+        readl(P_DC_CAV_LUT_DATAH);
+    }
     
     canvasPool[dst].addr = addr;
     canvasPool[dst].width = width;
@@ -127,21 +159,37 @@ void canvas_update_addr(u32 index, u32 addr)
 
     canvasPool[index].addr = addr;
 
-    writel((((canvasPool[index].addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
-        ((((canvasPool[index].width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
-        , P_DC_CAV_LUT_DATAL);
-
-    writel(((((canvasPool[index].width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
-        ((canvasPool[index].height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)   |
-        ((canvasPool[index].wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)             | 
-        ((canvasPool[index].wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)             | 
-        ((canvasPool[index].blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
-        , P_DC_CAV_LUT_DATAH);
-
-    writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
-
-    // read a cbus to make sure last write finish.
-    readl(P_DC_CAV_LUT_DATAH);
+#ifdef CONFIG_M8
+    if(IS_MESON_M8M2_CPU){
+        writel((((canvasPool[index].addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+            ((((canvasPool[index].width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+            , M8M2_P_DC_CAV_LUT_DATAL);
+        writel(((((canvasPool[index].width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+            ((canvasPool[index].height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)   |
+            ((canvasPool[index].wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)             | 
+            ((canvasPool[index].wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)             | 
+            ((canvasPool[index].blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+            , M8M2_P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | index, M8M2_P_DC_CAV_LUT_ADDR);
+        // read a cbus to make sure last write finish.
+        readl(M8M2_P_DC_CAV_LUT_DATAH);
+    }
+    else
+#endif
+    {
+        writel((((canvasPool[index].addr + 7) >> 3) & CANVAS_ADDR_LMASK) |
+            ((((canvasPool[index].width + 7) >> 3) & CANVAS_WIDTH_LMASK) << CANVAS_WIDTH_LBIT)
+            , P_DC_CAV_LUT_DATAL);
+        writel(((((canvasPool[index].width + 7) >> 3) >> CANVAS_WIDTH_LWID) << CANVAS_WIDTH_HBIT) |
+            ((canvasPool[index].height & CANVAS_HEIGHT_MASK) << CANVAS_HEIGHT_BIT)   |
+            ((canvasPool[index].wrap & CANVAS_XWRAP) ? CANVAS_XWRAP : 0)             | 
+            ((canvasPool[index].wrap & CANVAS_YWRAP) ? CANVAS_YWRAP : 0)             | 
+            ((canvasPool[index].blkmode & CANVAS_BLKMODE_MASK) << CANVAS_BLKMODE_BIT)
+            , P_DC_CAV_LUT_DATAH);
+        writel(CANVAS_LUT_WR_EN | index, P_DC_CAV_LUT_ADDR);
+        // read a cbus to make sure last write finish.
+        readl(P_DC_CAV_LUT_DATAH);
+    }
 
     return;
 }

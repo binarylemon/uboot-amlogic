@@ -83,7 +83,8 @@ struct pll_clk_settings{
 	unsigned mpeg_clk_cntl;
 	unsigned vid_pll_cntl;
 	unsigned vid2_pll_cntl;
-
+	unsigned gp_pll_cntl;
+	unsigned gp2_pll_cntl;
 	unsigned spi_setting;
 	unsigned nfc_cfg;
 	unsigned sdio_cmd_clk_divide;
@@ -94,20 +95,20 @@ struct pll_clk_settings{
 }__attribute__ ((packed));
 
 //M8 pll controler use bit 29 as reset bit
-#define M8_PLL_ENTER_RESET(pll) \
+#define PLL_ENTER_RESET(pll) \
 	Wr_cbus(pll,(1<<29));
 
-#define M8_PLL_RELEASE_RESET(pll) \
+#define PLL_RELEASE_RESET(pll) \
 	Wr_cbus(pll, Rd_cbus(pll)&(~(1<<29)));
 
 //M8 PLL enable: bit 30 ; 1-> enable;0-> disable
-#define M8_PLL_SETUP(pll,set) \
+#define PLL_SETUP(pll,set) \
 	Wr_cbus(pll,(set) |(1<<29) |(1<<30));\
 	__udelay(1000); //wait 1ms for PLL lock
 
 //wait for pll lock
 //must wait first (100us+) then polling lock bit to check
-#define M8_PLL_WAIT_FOR_LOCK(pll) \
+#define PLL_WAIT_FOR_LOCK(pll) \
 	do{\
 		__udelay(1000);\
 	}while((Rd_cbus(pll)&0x80000000)==0);
@@ -117,7 +118,7 @@ struct pll_clk_settings{
 
 //m8 pll init retry check, it will do watch reset 
 //after try MAX_PLL_TRY_TIMES times
-#define M8_PLL_LOCK_CHECK(counter,type) \
+#define PLL_LOCK_CHECK(counter,type) \
 	    __udelay(500); \
 		counter++; \
 		if(counter > 1){ \
@@ -137,74 +138,79 @@ struct pll_clk_settings{
 //M8 PLL control value 
 
 //DDR PLL > 1G
-#define M8_CFG_DDR_PLL_CNTL_2 (0x59C88000)
-#define M8_CFG_DDR_PLL_CNTL_3 (0xCA463823)
-#define M8_CFG_DDR_PLL_CNTL_4 (0x0286A027)
-#define M8_CFG_DDR_PLL_CNTL_5 (0x00003800)
+#define CFG_DDR_PLL_CNTL_2 (0x59C88000)
+#define CFG_DDR_PLL_CNTL_3 (0xCA463823)
+#define CFG_DDR_PLL_CNTL_4 (0x0286A027)
+#define CFG_DDR_PLL_CNTL_5 (0x00003800)
 
 //DDR PLL < 1G
-//#define M8_CFG_DDR_PLL_CNTL_2 (0x59C88000)
-//#define M8_CFG_DDR_PLL_CNTL_3 (0xCA45B823)
-//#define M8_CFG_DDR_PLL_CNTL_4 (0x0286A023)
-//#define M8_CFG_DDR_PLL_CNTL_5 (0x00003800)
+//#define CFG_DDR_PLL_CNTL_2 (0x59C88000)
+//#define CFG_DDR_PLL_CNTL_3 (0xCA45B823)
+//#define CFG_DDR_PLL_CNTL_4 (0x0286A023)
+//#define CFG_DDR_PLL_CNTL_5 (0x00003800)
 
 //SYS PLL	> 2g
-//#define M8_CFG_SYS_PLL_CNTL_2 (0x59C88000)
-//#define M8_CFG_SYS_PLL_CNTL_3 (0xCA463823)
-//#define M8_CFG_SYS_PLL_CNTL_4 (0x0001D407)
-//#define M8_CFG_SYS_PLL_CNTL_5 (0x00000870)
+//#define CFG_SYS_PLL_CNTL_2 (0x59C88000)
+//#define CFG_SYS_PLL_CNTL_3 (0xCA463823)
+//#define CFG_SYS_PLL_CNTL_4 (0x0001D407)
+//#define CFG_SYS_PLL_CNTL_5 (0x00000870)
 
 //SYS PLL	< 2g
-#define M8_CFG_SYS_PLL_CNTL_2 (0x5ac82000)
-#define M8_CFG_SYS_PLL_CNTL_3 (0x8e452015)
-#define M8_CFG_SYS_PLL_CNTL_4 (0x0001d40c)
-#define M8_CFG_SYS_PLL_CNTL_5 (0x00000870)
+#define CFG_SYS_PLL_CNTL_2 (0x5ac82000)
+#define CFG_SYS_PLL_CNTL_3 (0x8e452015)
+#define CFG_SYS_PLL_CNTL_4 (0x0001d40c)
+#define CFG_SYS_PLL_CNTL_5 (0x00000870)
 
 //VID PLL > 2.5g
-//#define M8_CFG_VID_PLL_CNTL_2 (0x59C8C000)
-//#define M8_CFG_VID_PLL_CNTL_3 (0xCE49C022)
-//#define M8_CFG_VID_PLL_CNTL_4 (0x0123B100)
-//#define M8_CFG_VID_PLL_CNTL_5 (0x00012385)
+//#define CFG_VID_PLL_CNTL_2 (0x59C8C000)
+//#define CFG_VID_PLL_CNTL_3 (0xCE49C022)
+//#define CFG_VID_PLL_CNTL_4 (0x0123B100)
+//#define CFG_VID_PLL_CNTL_5 (0x00012385)
 
 //VID PLL 1.7g < VID < 2.5g
-//#define M8_CFG_VID_PLL_CNTL_2 (0x59C8C000)
-//#define M8_CFG_VID_PLL_CNTL_3 (0xCA493822)
-//#define M8_CFG_VID_PLL_CNTL_4 (0x0123B100)
-//#define M8_CFG_VID_PLL_CNTL_5 (0x00012385)
+//#define CFG_VID_PLL_CNTL_2 (0x59C8C000)
+//#define CFG_VID_PLL_CNTL_3 (0xCA493822)
+//#define CFG_VID_PLL_CNTL_4 (0x0123B100)
+//#define CFG_VID_PLL_CNTL_5 (0x00012385)
 
 //VID PLL < 1.7g
-#define M8_CFG_VID_PLL_CNTL_2 (0x59C8C000)
-#define M8_CFG_VID_PLL_CNTL_3 (0xCA49B022)
-#define M8_CFG_VID_PLL_CNTL_4 (0x0023B100)
-#define M8_CFG_VID_PLL_CNTL_5 (0x00012385)
+#define CFG_VID_PLL_CNTL_2 (0x59C8C000)
+#define CFG_VID_PLL_CNTL_3 (0xCA49B022)
+#define CFG_VID_PLL_CNTL_4 (0x0023B100)
+#define CFG_VID_PLL_CNTL_5 (0x00012385)
 
 //VID2 PLL > 2.5G
-//#define M8_CFG_VID2_PLL_CNTL_2 (0x0431A000)
-//#define M8_CFG_VID2_PLL_CNTL_3 (0xCE49C022)
-//#define M8_CFG_VID2_PLL_CNTL_4 (0xD4000D67)
-//#define M8_CFG_VID2_PLL_CNTL_5 (0x01700101)
+//#define CFG_VID2_PLL_CNTL_2 (0x0431A000)
+//#define CFG_VID2_PLL_CNTL_3 (0xCE49C022)
+//#define CFG_VID2_PLL_CNTL_4 (0xD4000D67)
+//#define CFG_VID2_PLL_CNTL_5 (0x01700101)
 
 //VID2 PLL 1.7G < VID2 < 2.5G
-//#define M8_CFG_VID2_PLL_CNTL_2 (0x0431A800)
-//#define M8_CFG_VID2_PLL_CNTL_3 (0xCA49B823)
-//#define M8_CFG_VID2_PLL_CNTL_4 (0xD4000D67)
-//#define M8_CFG_VID2_PLL_CNTL_5 (0x01700101)
+//#define CFG_VID2_PLL_CNTL_2 (0x0431A800)
+//#define CFG_VID2_PLL_CNTL_3 (0xCA49B823)
+//#define CFG_VID2_PLL_CNTL_4 (0xD4000D67)
+//#define CFG_VID2_PLL_CNTL_5 (0x01700101)
 
 //VID2 PLL < 1.7G
-#define M8_CFG_VID2_PLL_CNTL_2 (0x0431A800)
-#define M8_CFG_VID2_PLL_CNTL_3 (0xCA45B823)
-#define M8_CFG_VID2_PLL_CNTL_4 (0xD4000D67)
-#define M8_CFG_VID2_PLL_CNTL_5 (0x01700001)
+#define CFG_VID2_PLL_CNTL_2 (0x0431A800)
+#define CFG_VID2_PLL_CNTL_3 (0xCA45B823)
+#define CFG_VID2_PLL_CNTL_4 (0xD4000D67)
+#define CFG_VID2_PLL_CNTL_5 (0x01700001)
 
 //FIXED PLL/Multi-phase PLL	= 2.55g(FIXED)
-#define M8_CFG_MPLL_CNTL_2 (0x59C80000)
-#define M8_CFG_MPLL_CNTL_3 (0xCA45B822)
-#define M8_CFG_MPLL_CNTL_4 (0x00014007)
-#define M8_CFG_MPLL_CNTL_5 (0xB5500E1A)
-#define M8_CFG_MPLL_CNTL_6 (0xF4454545)
-#define M8_CFG_MPLL_CNTL_7 (0)
-#define M8_CFG_MPLL_CNTL_8 (0)
-#define M8_CFG_MPLL_CNTL_9 (0)
+#define CFG_MPLL_CNTL_2 (0x59C80000)
+#define CFG_MPLL_CNTL_3 (0xCA45B822)
+#define CFG_MPLL_CNTL_4 (0x00014007)
+#define CFG_MPLL_CNTL_5 (0xB5500E1A)
+#define CFG_MPLL_CNTL_6 (0xF4454545)
+#define CFG_MPLL_CNTL_7 (0)
+#define CFG_MPLL_CNTL_8 (0)
+#define CFG_MPLL_CNTL_9 (0)
+
+#define CFG_GP_PLL_CNTL_2 (0x69c80236)
+#define CFG_GP_PLL_CNTL_3 (0x0a673aa2)
+#define CFG_GP_PLL_CNTL_4 (0x0023d00f)
+#define CFG_GP_PLL_CNTL_5 (0x00008500)
 
 #endif //__ASSEMBLY__
 #endif //__AML_BOOT_TIMING_H__

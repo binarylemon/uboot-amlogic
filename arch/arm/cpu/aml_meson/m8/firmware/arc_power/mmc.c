@@ -34,6 +34,9 @@
 #define CONFIG_M8_DDRX2_S30  (2)
 #define CONFIG_M8_DDR0_ONLY  (3)
 
+#define M8_CHIP_ID_M8M2 0x11111112
+
+unsigned int m8_chip_id;
 #ifdef hx_serial_puts
   #undef hx_serial_puts
   #undef hx_serial_put_hex
@@ -112,7 +115,7 @@ static int hx_serial_put_dec(unsigned int data)
 //uboot\arch\arm\cpu\aml_meson\m8\firmware\ddr_init_pctl.c 
 typedef enum {
 
-	  M8_DDR_CHANNEL_SET=0,   _MMC_DDR_CTRL, _SOFT_RESET , _APD_CTRL, _CLK_CTRL, // 5
+	  M8_DDR_CHANNEL_SET=0,   _MMC_DDR_CTRL, _DMC_DDR_CTRL, _SOFT_RESET , _APD_CTRL, _CLK_CTRL, // 5
 	
 	 _PCTL_TOGCNT1U , _PCTL_TOGCNT100N ,  _PCTL_TINIT ,  _PCTL_TRSTH ,  _PCTL_TRSTL, //10
 
@@ -154,7 +157,7 @@ typedef enum {
 
 	_DDR_PLL_CNTL        , _DDR_PLL_CNTL1       , _DDR_PLL_CNTL2 	    , _DDR_PLL_CNTL3	    , _DDR_PLL_CNTL4,	//91
 	
-	_PUB_PLLCR,_PUB_PGCR0,_PUB_IOVCR0,_PUB_IOVCR1,
+	_PUB_PLLCR,_PUB_PGCR0,_PUB_IOVCR0,_PUB_IOVCR1, _PUB_DX1GCR0, _PUB_DX2GCR0, _PUB_DX3GCR0, _PUB_DX4GCR0, _PUB_DX5GCR0,
 	
 } back_reg_index;
 
@@ -267,6 +270,11 @@ static void hx_ddr_setting_save()
 
 	
 	DDR_SUSPEND_SAVE( _PCTL_PPCFG);	
+	DDR_SUSPEND_SAVE( _PUB_DX1GCR0);
+	DDR_SUSPEND_SAVE( _PUB_DX2GCR0);
+	DDR_SUSPEND_SAVE( _PUB_DX3GCR0);
+	DDR_SUSPEND_SAVE( _PUB_DX4GCR0);
+	DDR_SUSPEND_SAVE( _PUB_DX5GCR0);
 	DDR_SUSPEND_SAVE( _PCTL_DFISTCFG0);	
 	DDR_SUSPEND_SAVE( _PCTL_DFISTCFG1);	
 	DDR_SUSPEND_SAVE( _PCTL_DFITCTRLDELAY);	
@@ -303,6 +311,9 @@ static void hx_ddr_setting_save()
 static void hx_mmc_req_set(int nFlagEnable)
 {	
 	int nSet = 0xfff;
+	if(M8_CHIP_ID_M8M2 == m8_chip_id){
+		nSet = 0xffff;
+	}
 	if(nFlagEnable)
 	{
 		hx_serial_puts("Aml log : hx_mmc_request_enable\n");
@@ -312,8 +323,10 @@ static void hx_mmc_req_set(int nFlagEnable)
 		nSet = 0;
 		hx_serial_puts("Aml log : hx_mmc_request_disable\n");	
 	}
-	
-	writel(nSet, P_MMC_REQ_CTRL);  	
+	if(M8_CHIP_ID_M8M2 == m8_chip_id)
+		writel(nSet, P_DMC_REQ_CTRL);
+	else
+		writel(nSet, P_MMC_REQ_CTRL);
 }
 
 
@@ -383,188 +396,6 @@ static void hx_pctl_sleep(void)
 	}
 }
 
-#if 0
-static void hx_dump_ddr_settings()
-{
-	hx_serial_puts("hx_dump_ddr_settings\n");
-#ifndef DDR_SUSPEND_DUMP
-	#define DDR_SUSPEND_DUMP(a)  do{ hx_serial_puts("\n[ 0x"); \
-		hx_serial_put_hex(P_DDR0##a,32); \
-		hx_serial_puts(" ] : 0x"); \
-		hx_serial_put_hex(readl(P_DDR0##a),32); \
-		hx_serial_puts(" -> "); \
-		hx_serial_put_hex(g_ddr_settings[a],32); \		
-		}while(0);
-#endif	
-
-	DDR_SUSPEND_DUMP( _SOFT_RESET);	       
-	DDR_SUSPEND_DUMP( _APD_CTRL);
-	DDR_SUSPEND_DUMP( _CLK_CTRL);
-	
-	DDR_SUSPEND_DUMP( _PCTL_TOGCNT1U);
-	DDR_SUSPEND_DUMP( _PCTL_TOGCNT100N);
-	DDR_SUSPEND_DUMP( _PCTL_TINIT);
-	DDR_SUSPEND_DUMP( _PCTL_TRSTH);
-	DDR_SUSPEND_DUMP( _PCTL_TRSTL);
-	
-
-		
-	DDR_SUSPEND_DUMP( _PCTL_MCFG);
-	DDR_SUSPEND_DUMP( _PCTL_MCFG1);
-	DDR_SUSPEND_DUMP( _PUB_DCR);
-
-	DDR_SUSPEND_DUMP( _PUB_MR0);
-	DDR_SUSPEND_DUMP( _PUB_MR1);
-	DDR_SUSPEND_DUMP( _PUB_MR2);
-	DDR_SUSPEND_DUMP( _PUB_MR3);
-	
-	DDR_SUSPEND_DUMP( _PUB_DTPR0);
-	DDR_SUSPEND_DUMP( _PUB_DTPR1);
-	DDR_SUSPEND_DUMP( _PUB_DTPR2);
-
-
-	DDR_SUSPEND_DUMP( _PUB_PGCR2);
-	DDR_SUSPEND_DUMP( _PUB_DTCR);	
-	DDR_SUSPEND_DUMP( _PUB_DXCCR);
-		
-	DDR_SUSPEND_DUMP( _PUB_PTR0);
-	DDR_SUSPEND_DUMP( _PUB_PTR1);
-	DDR_SUSPEND_DUMP( _PUB_PTR2);
-	DDR_SUSPEND_DUMP( _PUB_PTR3);
-	DDR_SUSPEND_DUMP( _PUB_PTR4);
-
-
-	DDR_SUSPEND_DUMP( _PUB_ACIOCR0);
-	DDR_SUSPEND_DUMP( _PUB_DSGCR);
-
-	//UPCTL timming
-	DDR_SUSPEND_DUMP( _PCTL_TREFI);
-	DDR_SUSPEND_DUMP( _PCTL_TREFI_MEM_DDR3);
-	DDR_SUSPEND_DUMP( _PCTL_TMRD);
-	DDR_SUSPEND_DUMP( _PCTL_TRFC);
-	DDR_SUSPEND_DUMP( _PCTL_TRP);	
-	DDR_SUSPEND_DUMP( _PCTL_TAL);
-	DDR_SUSPEND_DUMP( _PCTL_TCWL);
-	
-	DDR_SUSPEND_DUMP( _PCTL_TCL);
-	DDR_SUSPEND_DUMP( _PCTL_TRAS);
-	DDR_SUSPEND_DUMP( _PCTL_TRC);
-	DDR_SUSPEND_DUMP( _PCTL_TRCD);
-	DDR_SUSPEND_DUMP( _PCTL_TRRD);
-	DDR_SUSPEND_DUMP( _PCTL_TRTP);
-	DDR_SUSPEND_DUMP( _PCTL_TWR);
-
-	DDR_SUSPEND_DUMP( _PCTL_TWTR);
-	DDR_SUSPEND_DUMP( _PCTL_TEXSR);
-	DDR_SUSPEND_DUMP( _PCTL_TXP);
-
-	DDR_SUSPEND_DUMP( _PCTL_TDQS);
-	DDR_SUSPEND_DUMP( _PCTL_TRTW);
-	DDR_SUSPEND_DUMP( _PCTL_TCKSRE);
-	DDR_SUSPEND_DUMP( _PCTL_TCKSRX);
-	DDR_SUSPEND_DUMP( _PCTL_TMOD);
-	DDR_SUSPEND_DUMP( _PCTL_TCKE);
-	DDR_SUSPEND_DUMP( _PCTL_TZQCS);
-	DDR_SUSPEND_DUMP( _PCTL_TZQCL);
-	DDR_SUSPEND_DUMP( _PCTL_TXPDLL);
-	DDR_SUSPEND_DUMP( _PCTL_TZQCSI);
-	DDR_SUSPEND_DUMP( _PCTL_SCFG);  
-	
-	hx_serial_puts("\n\n");
-#undef 	DDR_SUSPEND_DUMP	
-
-}
-#endif
-
-#if 0
-
-static void hx_dump_pub_pctl_all()
-{
-	hx_serial_puts("hx_dump_pub_pctl_all\n");
-#ifndef DDR_SUSPEND_DUMP_ALL
-	#define DDR_SUSPEND_DUMP_ALL(id,a)  do{ hx_serial_puts("\n[ 0x"); \
-		hx_serial_put_hex(id|(a<<2),32); \
-		hx_serial_puts(" ] : 0x"); \
-		hx_serial_put_hex(readl(id|(a<<2)),32);}while(0);
-#endif	
-
-	int i,nMax,id,j;
-	
-	hx_serial_puts("\n============================================");
-	hx_serial_puts("\nPCTL dump : \n");
-	
-	for(j = 0;j< 2;j++)
-	for(i = 0,nMax=254,id = 0xc8000000 + (j*0x2000);i<nMax;++i)
-	{
-		//if(!((i+1)%20))
-		{
-		//	hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PCTL dump\n");
-		}
-		DDR_SUSPEND_DUMP_ALL(id,i);
-	}
-	
-	hx_serial_puts("\n============================================");
-	hx_serial_puts("\nPUB dump : \n");
-	
-	for(j = 0;j< 2;j++)
-	for(i = 0,nMax=434,id = 0xc8001000+(j*0x2000);i<nMax;++i)
-	{
-		//if(!((i+1)%20))
-		{
-		//	hx_serial_puts("\nDDR-"); hx_serial_put_hex(j,4);hx_serial_puts(" PUB dump\n");
-		}	
-		DDR_SUSPEND_DUMP_ALL(id,i);
-	}
-	
-	hx_serial_puts("\n============================================\n");
-
-#undef DDR_SUSPEND_DUMP_ALL 
-}
-
-
-
-static void hx_dump_mmc_dmc_all()
-{
-	hx_serial_puts("hx_dump_mmc_dmc_all\n");
-#ifndef DDR_SUSPEND_DUMP_ALL
-	#define DDR_SUSPEND_DUMP_ALL(id,a)  do{ hx_serial_puts("\n[ 0x"); \
-		hx_serial_put_hex(id|(a<<2),32); \
-		hx_serial_puts(" ] : 0x"); \
-		hx_serial_put_hex(readl(id|(a<<2)),32);}while(0);
-#endif	
-
-	int i,nMax,id,j;
-	
-	hx_serial_puts("\n============================================");
-	hx_serial_puts("\nAM DDR dump : \n");
-	for(i = 0,nMax=7,id = 0xc8000400;i<nMax;++i)
-	{
-		DDR_SUSPEND_DUMP_ALL(id,i);
-	}
-	
-	hx_serial_puts("\n============================================");
-	hx_serial_puts("\nDDR-0 DDR-1 dump : \n");
-	for(j = 0;j<2;++j)
-	for(i = 0,nMax=3,id = 0xc8000800+(j*0x2000);i<nMax;++i)
-	{
-		DDR_SUSPEND_DUMP_ALL(id,i);
-	}
-	
-	hx_serial_puts("\n============================================");
-	hx_serial_puts("\nMMC dump : \n");
-	
-	for(i = 0,nMax=0x86,id = 0xc8006000;i<nMax;++i)
-	{
-		DDR_SUSPEND_DUMP_ALL(id,i);
-	}
-	
-	hx_serial_puts("\n============================================\n");
-
-#undef DDR_SUSPEND_DUMP_ALL 
-}
-
-#endif
-
 static void hx_ddr_retention_set(int nFlagEnable)
 {
 	if(nFlagEnable)
@@ -619,8 +450,14 @@ void hx_ddr_power_down_enter()
 	//For M8 does shut down PCTL clock for power saving
 	//before access PCTL registers we must enable clock for PCTL
 
-	g_ddr_settings[_MMC_DDR_CTRL] = readl(P_MMC_DDR_CTRL);	
-	g_ddr_settings[M8_DDR_CHANNEL_SET] = (g_ddr_settings[_MMC_DDR_CTRL] >> 24 ) & 3;
+	if(M8_CHIP_ID_M8M2 == m8_chip_id){
+		g_ddr_settings[_DMC_DDR_CTRL] = readl(P_DMC_DDR_CTRL);
+		g_ddr_settings[M8_DDR_CHANNEL_SET] = ((((g_ddr_settings[_DMC_DDR_CTRL] >> 26)&0x3)==0x3)?(((g_ddr_settings[_DMC_DDR_CTRL]>>24)&0x1)?(CONFIG_M8_DDR1_ONLY):(CONFIG_M8_DDR0_ONLY)):(CONFIG_M8_DDRX2_S12));
+	}
+	else{
+		g_ddr_settings[_MMC_DDR_CTRL] = readl(P_MMC_DDR_CTRL);
+		g_ddr_settings[M8_DDR_CHANNEL_SET] = (g_ddr_settings[_MMC_DDR_CTRL] >> 24 ) & 3;
+	}
 
 	if(CONFIG_M8_DDR1_ONLY != g_ddr_settings[M8_DDR_CHANNEL_SET]) //channel 0 used
 	{
@@ -812,31 +649,6 @@ pub_init_ddr1:
 		//writel(g_ddr_settings[_CLK_CTRL]|1,P_DDR1_CLK_CTRL);
 		hx_serial_puts("Aml log : DDR1 - APD,CLK set done\n");
     }	
-
-#if 0
-	if(CONFIG_M8_DDR1_ONLY == nM8_DDR_CHN_SET)
-	{	
-		//power down PLL
-		writel((readl(P_DDR0_PUB_PLLCR))|0x60000000, P_DDR0_PUB_PLLCR);
-		//__udelay(1);
-		//Disable DDR0 clock
-		writel((1<<6)|(1<<4), P_DDR0_CLK_CTRL);
-		//__udelay(1);
-		//writel(0, P_DDR0_SOFT_RESET); //DDR 0
-	}
-
-	
-	if(CONFIG_M8_DDR0_ONLY == nM8_DDR_CHN_SET)
-	{
-		//power down PLL
-		writel((readl(P_DDR1_PUB_PLLCR))|0x60000000, P_DDR1_PUB_PLLCR);
-		//__udelay(1);
-		//Disable DDR1 clock
-		writel((1<<6)|(1<<4), P_DDR1_CLK_CTRL);
-		//__udelay(1);
-		//writel(0, P_DDR1_SOFT_RESET); //DDR 1
-	}
-#endif
 
 	/*DDR0*/
 	//if(CONFIG_M8_DDR1_ONLY != nM8_DDR_CHN_SET)
@@ -1094,6 +906,11 @@ pub_init_ddr1:
 	{
 		//DDR 0 DFI
 		DDR0_SUSPEND_LOAD(_PCTL_PPCFG);
+		DDR0_SUSPEND_LOAD(_PUB_DX1GCR0);
+		DDR0_SUSPEND_LOAD(_PUB_DX2GCR0);
+		DDR0_SUSPEND_LOAD(_PUB_DX3GCR0);
+		DDR0_SUSPEND_LOAD(_PUB_DX4GCR0);
+		DDR0_SUSPEND_LOAD(_PUB_DX5GCR0);
 		DDR0_SUSPEND_LOAD(_PCTL_DFISTCFG0);
 		DDR0_SUSPEND_LOAD(_PCTL_DFISTCFG1);
 		DDR0_SUSPEND_LOAD(_PCTL_DFITCTRLDELAY);
@@ -1125,6 +942,11 @@ pub_init_ddr1:
 	{
 		//DDR 1 DFI
 		DDR1_SUSPEND_LOAD(_PCTL_PPCFG);
+		DDR1_SUSPEND_LOAD(_PUB_DX1GCR0);
+		DDR1_SUSPEND_LOAD(_PUB_DX2GCR0);
+		DDR1_SUSPEND_LOAD(_PUB_DX3GCR0);
+		DDR1_SUSPEND_LOAD(_PUB_DX4GCR0);
+		DDR1_SUSPEND_LOAD(_PUB_DX5GCR0);
 		DDR1_SUSPEND_LOAD(_PCTL_DFISTCFG0);
 		DDR1_SUSPEND_LOAD(_PCTL_DFISTCFG1);
 		DDR1_SUSPEND_LOAD(_PCTL_DFITCTRLDELAY);
@@ -1529,8 +1351,11 @@ pub_init_ddr1:
 }
 
 static void hx_dmc_init()
-{	
-	writel(g_ddr_settings[_MMC_DDR_CTRL], P_MMC_DDR_CTRL);
+{
+	if(M8_CHIP_ID_M8M2 == m8_chip_id)
+		writel(g_ddr_settings[_DMC_DDR_CTRL], P_DMC_DDR_CTRL);
+	else
+		writel(g_ddr_settings[_MMC_DDR_CTRL], P_MMC_DDR_CTRL);
 /*
 	writel(0x00000000, DMC_SEC_RANGE0_ST);
 	writel(0xffffffff, DMC_SEC_RANGE0_END);
@@ -1690,221 +1515,12 @@ void hx_ddr_power_down_leave()
 	// initialize mmc and put it to sleep
 	hx_ddr_resume();
 }
-#if 0
-int hx_memory_check(unsigned char byCpyFlag)
-{
-
-#define DST_ADDR 		(0x12000000)
-#define DST_ADDR_END 	(0x5FFFFFFF)
-#define SRC_ADDR	 	(CONFIG_SYS_TEXT_BASE)
-		
-	int nRet = 0;
-	int nInfoLen = 0;
-	int nTstLen = 0x100000;
-	static int nCnt;	
-	int nIndex = 0;
-	unsigned char *pDST= DST_ADDR;
-	unsigned char *pSRC = SRC_ADDR;
-	int nOffset = 0;
-	
-	if(byCpyFlag)
-		nCnt = (DST_ADDR_END - DST_ADDR) / nTstLen;
-	
-	if(byCpyFlag)
-	{
-		serial_puts("\nLoad from [0x");
-		serial_put_hex(pSRC,32);
-		serial_puts(" - 0x");
-		serial_put_hex(pSRC+nTstLen,32);
-		serial_puts("] to [0x");
-		serial_put_hex( pDST,32);
-		serial_puts(" - 0x");
-		serial_put_hex( DST_ADDR_END,32);
-		serial_puts("]\n");
-	}
-	else
-	{
-		serial_puts("\nCheck [0x");
-		serial_put_hex(pDST,32);		
-		serial_puts(" - 0x");
-		serial_put_hex(pDST+(nCnt * nTstLen),32);
-		serial_puts("] with [0x");
-		serial_put_hex( pSRC,32);
-		serial_puts(" - 0x");
-		serial_put_hex( pSRC+nTstLen,32);
-		serial_puts("]\n");	
-	}
-		
-	
-		
-	serial_puts("\nTotal is ");
-	hx_serial_put_dec( (nCnt * nTstLen)>>20); 
-	serial_puts(" MB");
-
-	serial_puts(" with ");
-	hx_serial_put_dec(nCnt); 
-	serial_puts(" blocks(");
-	hx_serial_put_dec(nTstLen>>20); 
-	serial_puts("MB)\n\n");	
-
-	nInfoLen = hx_serial_put_dec(0);
-	
-	int nFlag = 0;
-	
-	for(nIndex = 0;nIndex < nCnt;++nIndex)
-	{
-		if(byCpyFlag)
-		{
-			hx_memcpy(pDST,pSRC,nTstLen);
-		}
-		else
-		{
-			nOffset = hx_memcmp(pDST,pSRC,nTstLen);
-			if(-1 != nOffset)
-			{
-				serial_puts("\nError!\n");
-				serial_puts("Diff value before is ");
-				serial_put_hex(pSRC[nOffset],32);
-				serial_puts(" after is ");
-				serial_put_hex(pDST[nOffset],32);
-				serial_puts(" Address is ");
-				serial_put_hex((pDST+nOffset),32);
-				serial_puts(" \n");
-				nFlag = 1;
-				break;
-			}
-		}
-		pDST += nTstLen;
-
-		//ouput info
-		while(nInfoLen--)
-		{
-			serial_puts("\b\b  \b");
-		}
-		nInfoLen = hx_serial_put_dec((nIndex+1));
-		
-		if (serial_tstc())
-		{	/* we got a key press	*/
-		    serial_getc();
-		    break;
-		}
-	}
-	
-	if(byCpyFlag && (nIndex != nCnt))
-	{
-		nCnt = nIndex+1;
-		if(nIndex < 30)
-			nRet = -1;
-	}
-	
-	if(byCpyFlag)
-		serial_puts(" blocks are duplicated!\n");
-	else
-	{
-		if(!nFlag)
-		{
-			serial_puts(" blocks verify OK with size ");
-			hx_serial_put_dec( (((nIndex != nCnt)? (nIndex+1):nCnt) * nTstLen)>>20); 
-			serial_puts(" MB\n ");
-		}
-	}
-		
-	if(nRet < 0)
-		serial_puts("DDR suspend test is cancelled by user!\n");
-	else
-		serial_puts("\n\n");
-		
-		
-	__udelay(10000);
-	
-	return nRet;
-
-}
-
-int hx_ddr_suspend_test()
-{
-	int abort = 0;
-
-	int bootdelay = 1;
-	int nLen = 0;
-	
-	//asm ("wfi");
-		
-	//preload to DDR
-	if(hx_memory_check(1) < 0)
-		return 1;
-	
-	//hx_dump_pub_pctl_all();
-	
-
-	//hx_dump_ddr_settings();
-
-	unsigned int nTEBegin = TIMERE_GET();
-   
-	//DDR suspend
-	hx_ddr_power_down_enter();	
-
-	serial_puts("\nAml log : enter power down used ");
-    serial_put_dec(get_utimer(nTEBegin));
-    serial_puts(" us\n");
-	
-	serial_puts("\n\nHit any key to stop power down: (second counting) ");
-	nLen = hx_serial_put_dec(bootdelay);
-	
-	//asm volatile ("wfi");	
-		
-	//while ((bootdelay > 0) && (!abort)) {
-	while ((!abort)) {
-		int i;
-
-		++bootdelay;
-		/* delay 100 * 10ms */
-		for (i=0; !abort && i<100; ++i) {
-			if (serial_tstc()) {	/* we got a key press	*/
-				abort  = 1;	    /* don't auto boot	*/
-				bootdelay = 0;	/* no more delay	*/
-                serial_getc();
-				break;
-			}
-			__udelay(10000);
-		}
-
-		if(abort)
-			break;
-		
-		while(nLen--)
-		{
-			serial_puts("\b\b  \b");
-		}
-		nLen = hx_serial_put_dec(bootdelay);
-	}
-
-
-	serial_puts("\n\n");
-	__udelay(100);
-
-
-	nTEBegin = TIMERE_GET();
-	
-	//DDR resume
-	hx_ddr_power_down_leave();
-
-	serial_puts("\nAml log : leave power down used ");
-    serial_put_dec(get_utimer(nTEBegin));
-    serial_puts(" us\n");
-	
-	//check the preload data in DDR
-	hx_memory_check(0);
-	
-	return abort;
-}
-
-#undef hx_serial_puts
-#undef hx_serial_put_hex
-#endif
 #endif //#define __M8_DDR_SUSPEND__
+
 void ddr_self_refresh(void)
 {
+	/*get chip id for dynamic identify*/
+	m8_chip_id = readl(0xc11081A8);
 	//DDR suspend
 	f_serial_puts("enter ddr_self_refresh\n");
 	hx_ddr_power_down_enter();	

@@ -20,8 +20,8 @@
 #include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/romboot.h>
-
 #include <asm/arch/trustzone.h>
+#include <asm/cpu_id.h>
 
 extern int uclDecompress(char* op, unsigned* o_len, char* ip);
 
@@ -32,9 +32,16 @@ int load_secureos(void)
 	unsigned *psecureargs = NULL;
 
 	psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
-	*psecureargs = NULL;
-#ifdef CONFIG_MESON_SECUREARGS
+	*psecureargs = NULL;	
+#ifdef CONFIG_MESON_SECUREARGS	
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
+	if(IS_MESON_M8M2_CPU)
+		*psecureargs = __secureargs_m8m2;
+	else
+		*psecureargs = __secureargs_m8;
+#else
 	*psecureargs = __secureargs;
+#endif		
 #endif
 
 	/* UCL decompress */

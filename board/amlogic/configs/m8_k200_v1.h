@@ -106,6 +106,7 @@
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
+	#define RMII_PHY_INTERFACE 1
 	//#define CONFIG_NET_RGMII
 	//#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
 	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
@@ -187,7 +188,7 @@
 
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
-//#define CONFIG_SYS_LONGHELP	1
+#define CONFIG_SYS_LONGHELP	1
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
@@ -409,80 +410,43 @@
 
 //-----------------------------------------------------------------------
 //DDR setting
-#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12)
-#define CONFIG_M8_DDR_AMBM_SET    (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK)
-
 //For DDR PUB training not check the VT done flag
-#define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
+#define CONFIG_NO_DDR_PUB_VT_CHECK 1
 
-//For M8 DDR clock gating disable
-#define CONFIG_M8_GATEACDDRCLK_DISABLE 1
+//For DDR clock gating disable
+#define CONFIG_GATEACDDRCLK_DISABLE 1
 
-//For M8 DDR low power feature disable
-//#define CONFIG_M8_DDR_LOW_POWER_DISABLE 1
+//For DDR low power feature disable
+//#define CONFIG_DDR_LOW_POWER_DISABLE 1
 
-//For M8 DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
-#define CONFIG_M8_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
+//For DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
+#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
-//Please just define m8 DDR clock here only
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CFG_M8_DDR_CLK    792 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK           792 //696 //768  //792// (636)
+#define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT //m8 doesn't support
+#define CONFIG_DDR_CHANNEL_SET   CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12
 
-//On board DDR capactiy
-#define CFG_M8_DDR3_1GB
-//#define CFG_M8_DDR3_2GB
-//#define CFG_M8_DDR3_4GB
-//above setting will affect following:
-//board/amlogic/m8_k200_v1/firmware/timming.c
-//arch/arm/cpu/aml_meson/m8/mmutable.s
+//On board DDR capacity
+/*DDR capactiy support 512MB, 1GB, 1.5GB, 2GB, 3GB*/
+#define CONFIG_DDR_SIZE          1024 //MB. Legal value: 512, 1024, 1536, 2048, 3072
 
-//DDR row/col size
-//row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
-//col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
-#if   defined(CFG_M8_DDR3_1GB)
-	//2Gb(X16) x 4pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (2)
-	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (14)
-#elif defined(CFG_M8_DDR3_2GB)
-	//4Gb(X16) x 4pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (3)
-	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (15)
-#elif defined(CFG_M8_DDR3_4GB)
-	//8Gb(X16) x 4pcs
-	#define CONFIG_M8_DDR3_ROW_SIZE (0)
-	#define CONFIG_M8_DDR3_COL_SIZE (2)
-	#define CONFIG_M8_DDR_ROW_BITS  (16)
-#elif !defined(CFG_M8_DDR3_1GB) && !defined(CFG_M8_DDR3_2GB) && !defined(CFG_M8_DDR3_4GB)
-	#error "Please set DDR3 capacity first in file m8_k200_v1.h\n"
+#ifdef CONFIG_ACS
+//#define CONFIG_DDR_CHANNEL_AUTO_DETECT	//ddr channel setting auto detect
+//#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection. m8 doesn't support.
+//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
 #endif
 
-
-/*if board need use ddr scramble function, please enable DDR_SCRAMBE_ENABLE
- * the function do testing below :
- * 1  performance test:   if enable the function, performance don't have obvious differenc
- * 2  ICE connect testing: ICE can connect board in uboot and kernel, when exception is occured, ICE can connect board in uboot and kernel also
- * 3  suspend test: if enable the function, suspend/resume is ok
- * 4  ddr scramble key is random
-**/
-//#define DDR_SCRAMBE_ENABLE  1
+#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
+#define CONFIG_AUTO_SET_MULTI_DT_ID    //if wanna pass mem=xx to kernel, pls disable this config
+#ifndef CONFIG_AUTO_SET_MULTI_DT_ID
+#define CONFIG_AUTO_SET_BOOTARGS_MEM
+#endif
+#endif
 
 #define CONFIG_DUMP_DDR_INFO 1
-
-
 #define CONFIG_ENABLE_WRITE_LEVELING 1
-
-#define PHYS_MEMORY_START        (0x00000000) // ???
-#if defined(CFG_M8_DDR3_1GB)
-	#define PHYS_MEMORY_SIZE     (0x40000000) // 1GB
-#elif defined(CFG_M8_DDR3_2GB)
-	#define PHYS_MEMORY_SIZE     (0x80000000) // 2GB
-#elif defined(CFG_M8_DDR3_4GB)
-	#define PHYS_MEMORY_SIZE     (0x100000000) // 4GB ??
-#else
-	#error "Please define DDR3 memory capacity in file m8_k200_v1.h\n"
-#endif
+//#define DDR_SCRAMBE_ENABLE  1
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
 #define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  

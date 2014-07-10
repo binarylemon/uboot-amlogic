@@ -110,15 +110,15 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		Wr_reg_bits(HHI_MPLL_CNTL6,1,26,1);
 		__udelay(1000); //1ms for bandgap bootup
 
-		M8_PLL_ENTER_RESET(HHI_SYS_PLL_CNTL);
-		Wr_cbus(HHI_SYS_PLL_CNTL2,M8_CFG_SYS_PLL_CNTL_2);
-		Wr_cbus(HHI_SYS_PLL_CNTL3,M8_CFG_SYS_PLL_CNTL_3);
-		Wr_cbus(HHI_SYS_PLL_CNTL4,M8_CFG_SYS_PLL_CNTL_4);
-		Wr_cbus(HHI_SYS_PLL_CNTL5,M8_CFG_SYS_PLL_CNTL_5);
-		M8_PLL_SETUP(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
-		M8_PLL_RELEASE_RESET(HHI_SYS_PLL_CNTL);
+		PLL_ENTER_RESET(HHI_SYS_PLL_CNTL);
+		Wr_cbus(HHI_SYS_PLL_CNTL2,CFG_SYS_PLL_CNTL_2);
+		Wr_cbus(HHI_SYS_PLL_CNTL3,CFG_SYS_PLL_CNTL_3);
+		Wr_cbus(HHI_SYS_PLL_CNTL4,CFG_SYS_PLL_CNTL_4);
+		Wr_cbus(HHI_SYS_PLL_CNTL5,CFG_SYS_PLL_CNTL_5);
+		PLL_SETUP(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
+		PLL_RELEASE_RESET(HHI_SYS_PLL_CNTL);
 
-		M8_PLL_LOCK_CHECK(n_pll_try_times,1);
+		PLL_LOCK_CHECK(n_pll_try_times,1);
 
 	}while((Rd_cbus(HHI_SYS_PLL_CNTL)&(1<<31))==0);
 
@@ -130,27 +130,28 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 
 	//MPLL init
 	//FIXED PLL/Multi-phase PLL, fixed to 2.55GHz
-	M8_PLL_ENTER_RESET(HHI_MPLL_CNTL);	//set reset bit to 1
-	Wr_cbus(HHI_MPLL_CNTL2, M8_CFG_MPLL_CNTL_2 );
-	Wr_cbus(HHI_MPLL_CNTL3, M8_CFG_MPLL_CNTL_3 );
-	Wr_cbus(HHI_MPLL_CNTL4, M8_CFG_MPLL_CNTL_4 );
-	Wr_cbus(HHI_MPLL_CNTL5, M8_CFG_MPLL_CNTL_5 );
-	Wr_cbus(HHI_MPLL_CNTL6, M8_CFG_MPLL_CNTL_6 );
-	Wr_cbus(HHI_MPLL_CNTL7, M8_CFG_MPLL_CNTL_7 );
-	Wr_cbus(HHI_MPLL_CNTL8, M8_CFG_MPLL_CNTL_8 );
-	Wr_cbus(HHI_MPLL_CNTL9, M8_CFG_MPLL_CNTL_9 );
-	M8_PLL_SETUP(HHI_MPLL_CNTL, plls->mpll_cntl);	//2.55G, FIXED
-	M8_PLL_RELEASE_RESET(HHI_MPLL_CNTL);	//set reset bit to 0
+	PLL_ENTER_RESET(HHI_MPLL_CNTL);	//set reset bit to 1
+	Wr_cbus(HHI_DPLL_TOP_0, 0x100);
+	Wr_cbus(HHI_MPLL_CNTL2, CFG_MPLL_CNTL_2 );
+	Wr_cbus(HHI_MPLL_CNTL3, CFG_MPLL_CNTL_3 );
+	Wr_cbus(HHI_MPLL_CNTL4, CFG_MPLL_CNTL_4 );
+	Wr_cbus(HHI_MPLL_CNTL5, CFG_MPLL_CNTL_5 );
+	Wr_cbus(HHI_MPLL_CNTL6, CFG_MPLL_CNTL_6 );
+	Wr_cbus(HHI_MPLL_CNTL7, CFG_MPLL_CNTL_7 );
+	Wr_cbus(HHI_MPLL_CNTL8, CFG_MPLL_CNTL_8 );
+	Wr_cbus(HHI_MPLL_CNTL9, CFG_MPLL_CNTL_9 );
+	PLL_SETUP(HHI_MPLL_CNTL, plls->mpll_cntl);	//2.55G, FIXED
+	PLL_RELEASE_RESET(HHI_MPLL_CNTL);	//set reset bit to 0
 
-	//M8_PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
+	//PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
 	n_pll_try_times=0;
 	do{
-		M8_PLL_LOCK_CHECK(n_pll_try_times,5);
+		PLL_LOCK_CHECK(n_pll_try_times,5);
 		if((Rd_cbus(HHI_MPLL_CNTL)&(1<<31))!=0)
 			break;
 		Wr_cbus(HHI_MPLL_CNTL,Rd_cbus(HHI_MPLL_CNTL) | (1<<29));
 		__udelay(1000);
-		M8_PLL_RELEASE_RESET(HHI_MPLL_CNTL);
+		PLL_RELEASE_RESET(HHI_MPLL_CNTL);
 		__udelay(1000);
 	}while((Rd_cbus(HHI_MPLL_CNTL)&(1<<31))==0);
 
@@ -172,42 +173,36 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 		
 		__udelay(1000); //1ms for bandgap bootup
 
-		//Enable Ext LDO for VID_PLL, VID2_PLL
-		Wr_reg_bits(HHI_VID2_PLL_CNTL2,0,16,1);
-		__udelay(10);
-		Wr_reg_bits(HHI_VID2_PLL_CNTL2,1,16,1);
-		__udelay(1000);
+		PLL_ENTER_RESET(HHI_VID_PLL_CNTL);
+		Wr_cbus(HHI_VID_PLL_CNTL2,CFG_VID_PLL_CNTL_2);
+		Wr_cbus(HHI_VID_PLL_CNTL3,CFG_VID_PLL_CNTL_3);
+		Wr_cbus(HHI_VID_PLL_CNTL4,CFG_VID_PLL_CNTL_4);
+		Wr_cbus(HHI_VID_PLL_CNTL5,CFG_VID_PLL_CNTL_5);
+		PLL_SETUP(HHI_VID_PLL_CNTL, plls->vid_pll_cntl);
+		PLL_RELEASE_RESET(HHI_VID_PLL_CNTL);
 
-		M8_PLL_ENTER_RESET(HHI_VID_PLL_CNTL);
-		Wr_cbus(HHI_VID_PLL_CNTL2,M8_CFG_VID_PLL_CNTL_2);
-		Wr_cbus(HHI_VID_PLL_CNTL3,M8_CFG_VID_PLL_CNTL_3);
-		Wr_cbus(HHI_VID_PLL_CNTL4,M8_CFG_VID_PLL_CNTL_4);
-		Wr_cbus(HHI_VID_PLL_CNTL5,M8_CFG_VID_PLL_CNTL_5);
-		M8_PLL_SETUP(HHI_VID_PLL_CNTL, plls->vid_pll_cntl);
-		M8_PLL_RELEASE_RESET(HHI_VID_PLL_CNTL);
-
-		M8_PLL_LOCK_CHECK(n_pll_try_times,2);
+		PLL_LOCK_CHECK(n_pll_try_times,2);
 
 	}while((Rd_cbus(HHI_VID_PLL_CNTL)&(1<<31))==0);
 
- 	__udelay(100);
-
 	n_pll_try_times=0;
 
-	//VID2 PLL init
-	do{
-		M8_PLL_ENTER_RESET(HHI_VID2_PLL_CNTL);
-		Wr_cbus(HHI_VID2_PLL_CNTL2,M8_CFG_VID2_PLL_CNTL_2);
-		Wr_cbus(HHI_VID2_PLL_CNTL3,M8_CFG_VID2_PLL_CNTL_3);
-		Wr_cbus(HHI_VID2_PLL_CNTL4,M8_CFG_VID2_PLL_CNTL_4);
-		Wr_cbus(HHI_VID2_PLL_CNTL5,M8_CFG_VID2_PLL_CNTL_5);
-		M8_PLL_SETUP(HHI_VID2_PLL_CNTL, plls->vid2_pll_cntl);
-		M8_PLL_RELEASE_RESET(HHI_VID2_PLL_CNTL);
-
-		M8_PLL_LOCK_CHECK(n_pll_try_times,4);
-
-	}while((Rd_cbus(HHI_VID2_PLL_CNTL)&(1<<31))==0);
-
+#ifdef CONFIG_VPU_PRESET
+	//GP PLL init
+	if(IS_MESON_M8M2_CPU){
+		do{
+			__udelay(10);
+			PLL_ENTER_RESET(HHI_GP_PLL_CNTL);
+			Wr_cbus(HHI_GP_PLL_CNTL2, CFG_GP_PLL_CNTL_2);
+			Wr_cbus(HHI_GP_PLL_CNTL3, CFG_GP_PLL_CNTL_3);
+			Wr_cbus(HHI_GP_PLL_CNTL4, CFG_GP_PLL_CNTL_4);
+			Wr_cbus(HHI_GP_PLL_CNTL5, CFG_GP_PLL_CNTL_5);
+			Wr_cbus(HHI_GP_PLL_CNTL, plls->gp_pll_cntl);
+			PLL_RELEASE_RESET(HHI_VID_PLL_CNTL);
+			PLL_LOCK_CHECK(n_pll_try_times,6);
+		}while((Rd_cbus(HHI_GP_PLL_CNTL)&(1<<31)) == 0);
+	}
+#endif
 	__udelay(100);
 }
 

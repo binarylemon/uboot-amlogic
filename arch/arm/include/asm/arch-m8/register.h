@@ -476,8 +476,8 @@
 // ---------------------------
 // SATA 
 // ----------------------------
-// `define PREG_SATA_REG0                      8'h50
-// `define PREG_SATA_REG1                      8'h51
+#define PREG_ETH_REG0                              0x2050
+#define PREG_ETH_REG1                              0x2051
 // `define PREG_SATA_REG2                      8'h52
 // `define PREG_SATA_REG3                      8'h53
 // `define PREG_SATA_REG4                      8'h54
@@ -780,6 +780,10 @@
 #define MSR_CLK_REG0                               0x21d7
 #define MSR_CLK_REG1                               0x21d8
 #define MSR_CLK_REG2                               0x21d9
+#define MSR_CLK_REG3                               0x21da
+#define MSR_CLK_REG4                               0x21db
+#define MSR_CLK_REG5                               0x21de
+/*only m8 enable start*/
 // ----------------------------
 // LED PWM
 // ----------------------------
@@ -800,6 +804,7 @@
 #define VGHL_PWM_REG4                              0x21e5
 #define VGHL_PWM_REG5                              0x21e6
 #define VGHL_PWM_REG6                              0x21e7
+/*only m8 enable end*/
 // ----------------------------
 // I2C Master
 // ----------------------------
@@ -860,6 +865,74 @@
 #define USB_ADDR29                                 0x221d
 #define USB_ADDR30                                 0x221e
 #define USB_ADDR31                                 0x221f
+// ----------------------------
+// SANA (Stream Analyzer)
+// ----------------------------
+// [31:16] - ddr_setting
+// [15]    - disable_stream_clock_gating
+// [14:13] - mem_pd_ctl_sana
+// [6:4]   - stream_fetch_endian 
+// [3]     - use_parser_vbuf_wp
+// [2]     - use_parser_vbuf2_wp
+// [1]     - stream_fetch_busy - Read Only
+// [0]     - stream_fetch_enable
+#define SANA_STREAM_CONTROL                        0x2220
+#define SANA_STREAM_START_ADDR                     0x2221
+#define SANA_STREAM_END_ADDR                       0x2222
+// SW stream_buffer_wr_ptr
+#define SANA_STREAM_WR_PTR                         0x2223
+#define SANA_STREAM_RD_PTR                         0x2224
+//[31:0] stream_buffer_level - read only
+#define SANA_STREAM_LEVEL                          0x2225
+// [31:29] stream_buffer_hole 256*(4^0) bytes
+// [28:23] stream_fifo_hole 
+// [22:16] stream_fifo_level
+// [15]    stream_fifo_wr_ptr_update_en
+// [14:8]  stream_fifo_wr_ptr 
+// [7]     stream_fifo_rd_ptr_update_en
+// [6:0]   stream_fifo_rd_ptr 
+#define SANA_STREAM_FIFO_CTL                       0x2226
+// [31:18] - Reserved
+// [17]    - sana_int_enable
+// [16]    - sana_int_level (default : 0(pulse))
+// [15]    - disable_shift_clock_gating
+// [14]    - startcode_protect -- TODO
+// [8:6]   - sft_valid_wr_position (default : 3 (at least 24 bits available))
+// [5:4]   - emulate_code_length_sub_1(Default : 2)
+// [3]     - emulation_auto_on_startcode(Default : 0)
+// [2:1]   - start_code_length_sub_1(Default : 2)
+// [0]     - stream_shift_enable(Default : 0)
+#define SANA_SHIFT_CONTROL                         0x2227
+// [31:0]  - max 4-bytes start code (Default : 0x00000100)
+#define SANA_SHIFT_STARTCODE                       0x2228
+// [31:0]  - max 4-bytes emulate code (Default : 0x00000300)
+#define SANA_SHIFT_EMULATECODE                     0x2229
+// [3]     - sana_int
+// [2]     - startcode_searching
+// [1]     - emulation_check_on
+// [0]     - startcode_check_on
+#define SANA_SHIFT_STATUS                          0x222a
+// [31:0] sana_shifted_data - read only
+#define SANA_SHIFTED_DATA                          0x222b
+// [31:0] shift_byte_count[31:0]
+#define SANA_SHIFT_BYTE_COUNT                      0x222c
+// [31:28] - shift_byte_count[35:32]
+// [27:20] - element_read_data[31:24]
+// [10]    - bytealign
+// [9]     - signed_element
+// [8]     - start_element_read
+// [7]     - shift_busy
+// [6:0]   - shift_bits
+#define SANA_SHIFT_COMMAND                         0x222d
+// 31:8    - element_read_data[23:0]
+//  7:2    - element_read_length
+//  1:0    - element_read_state
+#define SANA_ELEMENT_RESULT                        0x222e
+// support up to 8 masters, one bit per master
+// 23:16   - lock_release (Write 1 to release)
+// 15:8    - lock_req (write 1 to request)
+//  7:0    - lock_result (Read Only)
+#define ATOM_LOCK                                  0x222f
 // ----------------------------
 // BLKMV (9)
 // ----------------------------
@@ -1515,6 +1588,14 @@
 #define RESET6_MASK                                0x1116
 #define CRT_MASK                                   0x1117
 #define RESET7_MASK                                0x1118
+#define RESET0_LEVEL                               0x1120
+#define RESET1_LEVEL                               0x1121
+#define RESET2_LEVEL                               0x1122
+#define RESET3_LEVEL                               0x1123
+#define RESET4_LEVEL                               0x1124
+#define RESET5_LEVEL                               0x1125
+#define RESET6_LEVEL                               0x1126
+#define RESET7_LEVEL                               0x1127
 //======================================
 //  Reset Register Bits	
 //
@@ -1538,6 +1619,11 @@
 // -----------------------------------------------
 #define SCR_HIU                                    0x100b
 #define HPG_TIMER                                  0x100f
+#define HHI_GP_PLL_CNTL                            0x1010
+#define HHI_GP_PLL_CNTL2                           0x1011
+#define HHI_GP_PLL_CNTL3                           0x1012
+#define HHI_GP_PLL_CNTL4                           0x1013
+#define HHI_GP_PLL_CNTL5                           0x1014
 #define HARM_ASB_MB0                               0x1030
 #define HARM_ASB_MB1                               0x1031
 #define HARM_ASB_MB2                               0x1032
@@ -1575,6 +1661,7 @@
 #define HHI_WIFI_PLL_CNTL2                         0x1062
 #define HHI_WIFI_PLL_CNTL3                         0x1063
 #define HHI_AUD_CLK_CNTL2                          0x1064
+#define HHI_VID_CLK_CNTL2                          0x1065
 #define HHI_VID_DIVIDER_CNTL                       0x1066
 #define HHI_SYS_CPU_CLK_CNTL                       0x1067
 #define HHI_A9_CLK_CNTL                            (HHI_SYS_CPU_CLK_CNTL)
@@ -1595,7 +1682,8 @@
 #define HHI_CLK_DOUBLE_CNTL                        0x1077
 #define HHI_VDEC_CLK_CNTL                          0x1078
 #define HHI_VDEC2_CLK_CNTL                         0x1079
-#define HHI_EDP_APB_CLK_CNTL                       0x107b
+#define HHI_VDEC3_CLK_CNTL                         0x107a
+#define HHI_VDEC4_CLK_CNTL                         0x107b
 // `define HHI_SYS_CPU_AUTO_CLK0        8'h78   never used
 // `define HHI_SYS_CPU_AUTO_CLK1        8'h79   never used
 // `define HHI_MEDIA_CPU_AUTO_CLK0    8'h7a     never used
@@ -1606,6 +1694,9 @@
 #define HHI_HDMI_AFC_CNTL                          0x107f
 #define HHI_HDMIRX_CLK_CNTL                        0x1080
 #define HHI_HDMIRX_AUD_CLK_CNTL                    0x1081
+/*for m8*/
+//#define HHI_EDP_APB_CLK_CNTL                       0x107b
+#define HHI_EDP_APB_CLK_CNTL                       0x1082
 #define HHI_VID_PLL_MOD_CNTL0                      0x1084
 #define HHI_VID_PLL_MOD_LOW_TCNT                   0x1085
 #define HHI_VID_PLL_MOD_HIGH_TCNT                  0x1086
@@ -9224,6 +9315,9 @@
 #define VPU_MISC_CTRL                              0x2740
 #define VPU_ISP_GCLK_CTRL0                         0x2741
 #define VPU_ISP_GCLK_CTRL1                         0x2742
+#define VPU_VDIN_ASYNC_HOLD_CTRL                   0x2743
+#define VPU_VDISP_ASYNC_HOLD_CTRL                  0x2744
+#define VPU_VPUARB2_ASYNC_HOLD_CTRL                0x2745
 // Picture Rotate (PROT) module 1 (for OSD) registers:
 #define VPU_PROT1_CLK_GATE                         0x2750
 #define VPU_PROT1_GEN_CNTL                         0x2751

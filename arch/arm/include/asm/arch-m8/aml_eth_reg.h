@@ -505,6 +505,33 @@
 #define ETH_CLKSRC_SYS_PLL_DIV2_CLK (7)
 #define CLK_1M						(1000000)
 
+typedef union eth_aml_reg0 {
+    /** raw register data */
+    unsigned int d32;
+    /** register bits */
+	struct {
+        unsigned phy_intf_sel:1;
+        unsigned data_endian:1;
+        unsigned desc_endian:1;
+        unsigned rx_clk_rmii_invert:1;
+        unsigned rgmii_tx_clk_src:1;
+        unsigned rgmii_tx_clk_phase:2;
+        unsigned rgmii_tx_clk_ratio:3;
+        unsigned phy_ref_clk_enable:1;
+        unsigned clk_rmii_i_invert:1;
+        unsigned clk_en:1;
+        unsigned adj_enable:1;
+        unsigned adj_setup:1;
+        unsigned adj_delay:5;
+        unsigned adj_skew:5;
+        unsigned cali_start:1;
+        unsigned cali_rise:1;
+        unsigned cali_sel:3;
+        unsigned rgmii_rx_reuse:1;
+        unsigned eth_urgent:1;
+		} b;
+} eth_aml_reg0_t;
+
 #define ETH_VALIDE_CLKSRC(clk,out_clk) ((clk%out_clk)==0)
 
 int  eth_clk_set(int selectclk,unsigned long clk_freq,unsigned long out_clk);

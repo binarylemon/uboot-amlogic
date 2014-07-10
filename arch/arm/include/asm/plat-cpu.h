@@ -1,6 +1,8 @@
 #ifndef __ARCH_MESON_PLAT_CPU_H__
 #define __ARCH_MESON_PLAT_CPU_H__
 
+#include <asm/cpu_id.h>
+
 #define MESON_CPU_TYPE_MESON1		0x10
 #define MESON_CPU_TYPE_MESON2		0x20
 #define MESON_CPU_TYPE_MESON3		0x30

@@ -48,6 +48,13 @@ pwr_restart:
 	isb
 	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
 
+	ldr r0,=0xc11081a8
+	ldr r1,=0x11111112
+	ldr r0, [r0]
+	cmp r0,r1
+	beq m8m2_sec_dmc_handler
+
+m8_sec_dmc_handler:
 #if 1
 	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
 	mov	r10, #11
@@ -147,40 +154,140 @@ __wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
     DMB
     ISB
 
+
+b end_sec_dmc_handler
+
+
+m8m2_sec_dmc_handler:
+#if 1
+	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+	mov r10, #11
+	str  r10, [r9]
+	dsb
+
+	//restore MMC Security setting.
+	ldr r0,=0xda002000 //DMC_SEC_RANGE0_CTRL
+	ldr r1,=0xffff0000
+	str r1,[r0]
+
+	ldr r1,=0xffffffff
+	str r1,[r0,#4]	/*DMC_SEC_RANGE1_CTRL*/
+
+	str r1,[r0,#8]	/*DMC_SEC_RANGE2_CTRL*/
+	str r1,[r0,#12]  /*DMC_SEC_RANGE3_CTRL*/
+	str r1,[r0,#16]  /*DMC_SEC_AXI_PORT_CTRL*/
+	str r1,[r0,#20]  /*DMC_SEC_AM_PORT_CTRL*/
+
+	ldr r0, =0xda002024
+	str r1,[r0]
+	str r1,[r0,#4]
+
+	ldr r0, =0xda002028
+	str r1,[r0]
+	str r1,[r0,#4]
+
+	ldr r0, =0xda002018
+	ldr r1,=0x80000000
+	str r1,[r0]
+
+	/*changed for AXI and AMBUS arbiter weight control.*/
+	ldr r0, =0xc8006080 /*writel((0x1f | (0xf << 6)), P_DMC_2ARB_CTRL);*/
+	ldr r1,[r0]
+	ldr r2, =0x3df
+	orr r1, r2, r1
+	str r1, [r0]
+
+	/*enable the DMC auto refresh function*/
+	ldr r0, =0xc8006090
+	ldr r1, =0x20109a27
+	str r1, [r0]
+
+	ldr r0, =0xc800608c
+	ldr r1, =0x80389f
+	str r1, [r0]
+
+
+//	ldr r0, =0xc8006000//#P_DMC_REQ_CTRL
+//	ldr r1,=0xfff
+//	str r1,[r0]
+
+	LDR  r9, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+	mov r10, #13
+	str  r10, [r9]
+	dsb
+
+	ldr r0,=0xda002018
+	ldr r1,=0x80000000
+wait_m8m2_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
+	ldr r2, [r0]
+	and r2, r2, r1
+	cmp r2, #0
+	bne wait_m8m2_dmc_sec_ctrl
+
+#endif
+	   LDR	r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
+	   mov	r1, #12
+	   str	 r1, [r0]
+	   dsb
+
+
+	   NOP
+	   DMB
+	   ISB
+
+	   LDR r1, =0xc4200c04
+	   LDR r0, =0xbff00000
+	   STR r0, [r1]
+
+	   LDR r1, =0xc4200c00
+	   LDR r0, =0x01000001
+	   STR r0, [r1]
+
+	   NOP
+	   DMB
+	   ISB
+
+		//enable all channel
+		ldr r1,=0xFFFF
+		ldr r0,=0xc8006000
+		str r1,[r0]
+		 NOP
+	   DMB
+	   ISB
+
+//ddr scrable function
+	ldr r10,=0x10300
+	ldr r1,[r10,#4]   /*sram 0x10304 addr*/
+	ldr r9,=0xda00201c
+	str r1,[r9,#0]     /*DMC_SEC_KEY0*/
+
+	ldr r1,[r10,#0]   /*sram 0x10300 addr*/
+	ldr r10,=0x80000000
+	orr r1,r1,r10
+
+	ldr r0,=0xda002018
+	str r1,[r0] /*DMC_SEC_CTRL*/
+
+__wait_m8m2_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
+	ldr r2, [r0]
+	and r2, r2, r10
+	cmp r2, #0
+	bne __wait_m8m2_dmc_sec_ctrl
+    // ddr scramble end
+    dsb
+    NOP
+    DMB
+    ISB
+
+
+end_sec_dmc_handler:
+
 	//send debug status to ARC
 	LDR  r0, =0xc8100004
 	mov  r1, #2
 	str   r1, [r0]
 	dsb
 
-/*Retore ddr data which is rewrite by ddr trainning. See power.c for more info*/
-	ldr r0, =0x10000 //The sram address which save the data
-	ldr r1, [r0]
-	ldr r2, [r0,#4]!
-
-	ldr r5, =0xffffffff
-	cmp r1, r5
-	beq store_ch2
-
-	mov r4, #32 //trainning len
-store_loop1:
-	ldr r3, [r0, #4]!
-	str r3, [r1], #4
-	sub r4, r4, #1
-	cmp r4, #0
-	bne store_loop1
-
-store_ch2:
-	cmp r2, r5
-	beq end_ch_store
-	mov r4, #32 //trainning len
-store_loop2:
-	ldr r3, [r0, #4]!
-	str r3, [r2], #4
-	sub r4, r4, #1
-	cmp r4, #0
-	bne store_loop2
-end_ch_store:
 
 /* for debug */
 //    adr r1,reset_addr

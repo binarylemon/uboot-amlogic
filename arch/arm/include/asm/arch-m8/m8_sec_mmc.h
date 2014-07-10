@@ -71,7 +71,7 @@
 #define DMC_SEC_BAD_ACCESS  		0xda002140
 //9:0  SEC Vio group/channe.
 //10    read =  1  :  violation.  write 1 to clean. 
-#define DMC_SEC_CTRL     		    0xda002144
+#define M8_DMC_SEC_CTRL     		    0xda002144
 //bit 31.   update sec_req.
 // bit 30.  read only. the update_sec_req in n_clk clock domain.
 // bit 3.   secuity range 3 data scramble  enable.
@@ -84,7 +84,7 @@
 #define DMC_SEC_KEY1                0xda00214c
  // //sec obf key bit [31:16]
 
-#define DMC_SEC_VIO0  		        0xda002150 //DDR0 READ
+#define M8_DMC_SEC_VIO0  		        0xda002150 //DDR0 READ
 // DDR0 read Bad access request information.
 //  26.    WRITE.  1 = write. 
 //  25:23. *PROT. 
@@ -92,13 +92,13 @@
 //  20:18. *SIZE.
 //  17:14. *LEN.
 //  13:0   bad access ID.
-#define DMC_SEC_VIO1  		        0xda002154
+#define M8_DMC_SEC_VIO1  		        0xda002154
 // 32 bit address of bad access.    //32bit address after canvas translation.  we can't record the address before cavnas.
-#define DMC_SEC_VIO2  		        0xda002158 //DDR1 READ
-#define DMC_SEC_VIO3  		        0xda00215c
-#define DMC_SEC_VIO4  		        0xda002160 //DDR0 WRITE
-#define DMC_SEC_VIO5  		        0xda002164
-#define DMC_SEC_VIO6  		        0xda002168 //DDR1 WRITE
-#define DMC_SEC_VIO7  		        0xda00216c
+#define M8_DMC_SEC_VIO2  		        0xda002158 //DDR1 READ
+#define M8_DMC_SEC_VIO3  		        0xda00215c
+#define M8_DMC_SEC_VIO4  		        0xda002160 //DDR0 WRITE
+#define M8_DMC_SEC_VIO5  		        0xda002164
+#define M8_DMC_SEC_VIO6  		        0xda002168 //DDR1 WRITE
+#define M8_DMC_SEC_VIO7  		        0xda00216c
 
 #endif //__M8_SEC_MMC__

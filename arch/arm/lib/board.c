@@ -275,7 +275,6 @@ void dram_init_banksize(void)
 extern int efuse_aml_init_plus(void);
 #endif //CONFIG_AML_EFUSE_INIT_PLUS
 
-
 init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_ARCH_CPU_INIT)
 	arch_cpu_init,		/* basic arch cpu dependent setup */
@@ -710,10 +709,6 @@ unsigned int before_nand_init =  get_utimer(0);
 #endif
 
 	AML_LOG_TE("board");
-
-	if ((s = getenv ("get_dt")) != NULL) {
-		run_command(s, 0);
-	}
 
 #ifdef CONFIG_DT_PRELOAD
 	if ((s = getenv ("preloaddtb")) != NULL) {

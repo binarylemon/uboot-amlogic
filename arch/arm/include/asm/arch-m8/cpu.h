@@ -7,128 +7,11 @@
 #define _CPU_H
 #include <config.h>
 #include <asm/plat-cpu.h>
+#include <asm/arch/ddr.h>
 #if CONFIG_AML_MESON==0
 #error please define CONFIG_AML_MESON
 #endif
 //U boot code control
-
-//DDR training address, DO NOT modify
-//DDR0: 0x0F00 - 0x0F7F (128Bytes)
-#define CONFIG_M8_DDR0_DTAR_ADDR (0x3000000)
-
-//DDR1: 0x1000 - 0x107F (128Bytes) for all setting except CONFIG_M8_DDRX2_S30
-//DDR1: 0x40000000 - 0x4000007F (128Bytes) for CONFIG_M8_DDRX2_S30
-#define CONFIG_M8_DDR1_DTAR_ADDR (0x3000000 | ((CONFIG_M8_DDRX2_S30 == CONFIG_M8_DDR_CHANNEL_SET) ? (1<<30) : (1<<12)))
-
-
-//M8 DDR0/1 channel select
-#define CONFIG_M8_DDRX2_S12  (0)
-#define CONFIG_M8_DDR1_ONLY  (1)
-#define CONFIG_M8_DDRX2_S30  (2)
-#define CONFIG_M8_DDR0_ONLY  (3)
-//#define CONFIG_M8_DDR_CHANNEL_SET (CONFIG_M8_DDRX2_S12) //board.h
-
-//M8 DDR0/1 address map bank mode
-#define CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_2_BNK   (0)
-#define CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK   (1)
-//#define CONFIG_M8_DDR_AMBM_SET   (CONFIG_M8_DDR_ADDR_MAP_BANK_MODE_4_BNK) //board.h
-
-//M8 no need to define column bit length in board.h
-#if !defined(CONFIG_M8_DDR_COL_BITS)
-	#define CONFIG_M8_DDR_COL_BITS  (10)
-#endif //CONFIG_M8_DDR_COL_BITS
-
-#define M8_DDR_DTAR_BANK_GET(addr,bit_row,bit_col,ambm_set,chn_set)  ((((addr) >> ((bit_row)+(bit_col)+ (chn_set ? 2 : 3))) & (ambm_set ? 4 : 6)) | \
-																		(((addr) >> ((bit_col)+( chn_set ? 2 : 3))) & (ambm_set ? 3 : 1)))
-
-#define M8_DDR_DTAR_DTROW_GET(addr,bit_row,bit_col,ambm_set,chn_set) (( (addr) >> (( chn_set ? (ambm_set+1) : (ambm_set+2))+(bit_col)+2)) & ((1<< (bit_row))-1))
-#define M8_DDR_DTAR_DTCOL_GET(addr,bit_col)                 (( (addr) >> 2) & ((1<< (bit_col))-1))
-
-#define CONFIG_M8_DDR0_DTAR_DTBANK  M8_DDR_DTAR_BANK_GET(CONFIG_M8_DDR0_DTAR_ADDR,CONFIG_M8_DDR_ROW_BITS,CONFIG_M8_DDR_COL_BITS,CONFIG_M8_DDR_AMBM_SET,CONFIG_M8_DDR_CHANNEL_SET)
-#define CONFIG_M8_DDR0_DTAR_DTROW   M8_DDR_DTAR_DTROW_GET(CONFIG_M8_DDR0_DTAR_ADDR,CONFIG_M8_DDR_ROW_BITS,CONFIG_M8_DDR_COL_BITS,CONFIG_M8_DDR_AMBM_SET,CONFIG_M8_DDR_CHANNEL_SET)
-#define CONFIG_M8_DDR0_DTAR_DTCOL   M8_DDR_DTAR_DTCOL_GET(CONFIG_M8_DDR0_DTAR_ADDR,CONFIG_M8_DDR_COL_BITS)
-
-#define CONFIG_M8_DDR1_DTAR_DTBANK  M8_DDR_DTAR_BANK_GET(CONFIG_M8_DDR1_DTAR_ADDR,CONFIG_M8_DDR_ROW_BITS,CONFIG_M8_DDR_COL_BITS,CONFIG_M8_DDR_AMBM_SET,CONFIG_M8_DDR_CHANNEL_SET)
-#define CONFIG_M8_DDR1_DTAR_DTROW   M8_DDR_DTAR_DTROW_GET(CONFIG_M8_DDR1_DTAR_ADDR,CONFIG_M8_DDR_ROW_BITS,CONFIG_M8_DDR_COL_BITS,CONFIG_M8_DDR_AMBM_SET,CONFIG_M8_DDR_CHANNEL_SET)
-#define CONFIG_M8_DDR1_DTAR_DTCOL   M8_DDR_DTAR_DTCOL_GET(CONFIG_M8_DDR1_DTAR_ADDR,CONFIG_M8_DDR_COL_BITS)
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//NOTE: IMPORTANT! DO NOT TRY TO MODIFY FOLLOWING CODE!
-//           It is used to get DDR0/1 training address from PUB_DTAR0. The DDR training address is just the 
-//           start address and it will occupy 128bytes for each channel.
-//          
-//How to fetch the DDR training address for M8:
-//           1. enable PCTL clock before access
-//           2. load MMC DDR setting from P_MMC_DDR_CTRL  (#define P_MMC_DDR_CTRL        0xc8006000 + (0x00 << 2 ) )
-//           3. load the DTAR0 value from DDR0/DDR1 PUB register according to the channel setting from MMC_DDR_CTRL
-//           4. disable PCTL clock for power saving
-//
-//Demo code: 
-/*          
-	//enable clock
-	writel(readl(P_DDR0_CLK_CTRL)|(1), P_DDR0_CLK_CTRL);
-	writel(readl(P_DDR1_CLK_CTRL)|(1), P_DDR1_CLK_CTRL);
-
-	unsigned int nDDR0_BaseAddr,nDDR1_BaseAddr;
-	unsigned int nMMC_DDR_SET  = readl(0xc8006000);
-	unsigned int nPUB0_DTAR0   = readl(0xc80010b4);
-	unsigned int nPUB1_DTAR0   = readl(0xc80030b4);
-	serial_puts("\nAml log : nMMC_DDR_SET is 0x");
-	serial_put_hex(nMMC_DDR_SET,32);
-	serial_puts("\nAml log : nPUB0_DTAR0 is 0x");
-	serial_put_hex(nPUB0_DTAR0,32);
-	serial_puts("\nAml log : nPUB1_DTAR0 is 0x");
-	serial_put_hex(nPUB1_DTAR0,32);
-	
-	switch( ((nMMC_DDR_SET >> 24) & 3))
-	{
-	case CONFIG_M8_DDR1_ONLY: 
-		{ 
-			nDDR1_BaseAddr = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);	
-			serial_puts("\nAml log : DDR1 DTAR is 0x");
-			serial_put_hex(nDDR1_BaseAddr,32);			
-			serial_puts("\n");
-
-		}break;
-	default: 
-		{
-			nDDR0_BaseAddr = CFG_M8_GET_DDR0_TA_FROM_DTAR0(nPUB0_DTAR0,nMMC_DDR_SET);
-			nDDR1_BaseAddr = CFG_M8_GET_DDR1_TA_FROM_DTAR0(nPUB1_DTAR0,nMMC_DDR_SET);
-
-			serial_puts("\nAml log : DDR0 DTAR is 0x");
-			serial_put_hex(nDDR0_BaseAddr,32);
-			
-			serial_puts("\nAml log : DDR1 DTAR is 0x");
-			serial_put_hex(nDDR1_BaseAddr,32);
-			serial_puts("\n");
-
-		}break;
-	}
-
-	//disable clock
-	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);  
-	writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL);
-
-*/
-
-#define CFG_M8_GET_DDR0_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | \
-(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-	((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-		((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-		((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
-
-#define CFG_M8_GET_DDR1_TA_FROM_DTAR0(dtar0_set,mmc_ddr_set) ((((dtar0_set) & 0xFFF) << 2) | (1<<((((mmc_ddr_set) >> 24) & 0x3) ? \
- (((((mmc_ddr_set) >> 24) & 0x3) == 2 ? 30 : 32)) : (12))) | \
-	(((((dtar0_set)>>28)&7) & ((((mmc_ddr_set) >> 5) & 0x1)? 3 : 1))<<((((mmc_ddr_set)&3)+8)+((((mmc_ddr_set) >> 24) & 0x3)? 0 : 1)+2))| \
-		((((((dtar0_set)>>28)&7) >> ((((mmc_ddr_set) >> 5) & 0x1)+1)) & ((((mmc_ddr_set) >> 5) & 0x1)?1:3)) << ((((mmc_ddr_set)&3)+8)+\
-			((((mmc_ddr_set)>>2)&3) ? ((((mmc_ddr_set)>>2)&3)+12) : (16))+2+((((mmc_ddr_set) >> 24) & 0x3)?0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1)))|\
-			((((dtar0_set) >> 12 ) & 0xFFFF)<<((((mmc_ddr_set)&3)+8)+2+((((mmc_ddr_set) >> 24) & 0x3)? 0:1)+((((mmc_ddr_set) >> 5) & 0x1)+1))))
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 //timer
 #define CONFIG_SYS_HZ 1000
@@ -152,7 +35,7 @@
 #define CONFIG_SYS_SDRAM_BASE   0x00000000
 #define CONFIG_SYS_INIT_SP_ADDR (CONFIG_SYS_SDRAM_BASE+0xF00000)
 #define CONFIG_SYS_TEXT_BASE    0x10000000
-#define CONFIG_MMU_DDR_SIZE     ((PHYS_MEMORY_SIZE)>>20)
+#define CONFIG_MMU_DDR_SIZE     (CONFIG_DDR_SIZE)
 #define CONFIG_SYS_LOAD_ADDR    0x12000000
 #define CONFIG_DTB_LOAD_ADDR    0x0f000000
 #endif
@@ -232,7 +115,6 @@
 #define CONFIG_CMD_EXT2		/* EXT2 Support			*/
 #define CONFIG_CMD_FAT		/* FAT support			*/
 
-
 #define CONFIG_AML_ROMBOOT    1
 #define SPI_MEM_BASE                                0xcc000000
 #define AHB_SRAM_BASE                               0xd9000000  // AHB-SRAM-BASE
@@ -298,13 +180,23 @@
 #define CONFIG_CMD_CALINFO 1
 /*default command select end*/
 
+#define WATCHDOG_ENABLE_OFFSET_M8X		((0x11111112==readl(0xc11081A8))?(19):(22))
+#define WATCHDOG_TIME_SLICE_M8X			((0x11111112==readl(0xc11081A8))?(128):(10))
+
+/*m8*/
 //max watchdog timer: 41.943s
-#define AML_WATCHDOG_TIME_SLICE				10	//us
-#define AML_WATCHDOG_ENABLE_OFFSET			22
+#define AML_WATCHDOG_TIME_SLICE				WATCHDOG_TIME_SLICE_M8X	//us
+#define AML_WATCHDOG_ENABLE_OFFSET			WATCHDOG_ENABLE_OFFSET_M8X
 #define AML_WATCHDOG_CPU_RESET_CNTL			0xf
 #define AML_WATCHDOG_CPU_RESET_OFFSET		24
 
+/*m8m2 watchdog*/
+//max watchdog timer: 8.388s
+//#define AML_WATCHDOG_TIME_SLICE				128	//us
+//#define AML_WATCHDOG_ENABLE_OFFSET			19
+
 #define MESON_CPU_TYPE	MESON_CPU_TYPE_MESON8
+#define CONFIG_AML_MESON_8 1
 #define CONFIG_AML_SMP
 
 //support gpio cmd

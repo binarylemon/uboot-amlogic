@@ -1,8 +1,46 @@
-void print_ddr_size(unsigned int size)
-{
+
+#if defined(CONFIG_AML_EXT_PGM)
+
+void print_ddr_channel(void){}
+void print_ddr_size(unsigned int size){}
+void print_ddr_mode(void){}
+
+#else
+void print_ddr_channel(void){
+	serial_puts("DDR channel: ");
+	unsigned int channel_set = 0;
+	if(IS_MESON_M8M2_CPU){/*m8m2*/
+		channel_set = readl(P_DMC_DDR_CTRL);
+		if(0x3==((channel_set>>26)&0x3)){/*one channel*/
+			if(0x1==((channel_set>>24)&0x1))/*ddr 0 only*/
+				serial_puts("DDR 0 only");
+			else
+				serial_puts("DDR 1 only");
+		}
+		else
+			serial_puts("DDR 0 + DDR 1");
+	}
+	else{
+		channel_set = readl(P_MMC_DDR_CTRL);
+		if(0x3==(channel_set>>24)&0x3)/*ddr 0 only*/
+			serial_puts("DDR 0 only");
+		else if(0x1==(channel_set>>24)&0x3)/*ddr 1 only*/
+			serial_puts("DDR 1 only");
+		else /*others, 2 channels*/
+			serial_puts("DDR 0 + DDR 1");
+	}
+#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
+	serial_puts(" (auto)\n");
+#else
+	serial_puts("\n");
+#endif
+}
+
+void print_ddr_size(unsigned int size){
 	serial_puts("DDR size: ");
 	unsigned int mem_size = size >> 20; //MB
-	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10):serial_put_dec(mem_size);
+	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10) : serial_put_dec(mem_size);
+	(((mem_size>>9)&0x1)&&((mem_size)>=1024)) ? serial_puts(".5") : 0;
 	(mem_size) >= 1024 ? serial_puts("GB"):serial_puts("MB");
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
 	serial_puts(" (auto)\n");
@@ -13,14 +51,12 @@ void print_ddr_size(unsigned int size)
 
 void print_ddr_mode(void){
 	serial_puts("DDR mode: ");
-	switch(cfg_ddr_channel){
-		case 0:
+	switch(cfg_ddr_mode){
+		case CFG_DDR_BUS_WIDTH_NOT_SET:
 			serial_puts("Not Set"); break;
-		case 1:
+		case CFG_DDR_BUS_WIDTH_32BIT:
 			serial_puts("32 bit mode"); break;
-		case 2:
-			serial_puts("16 bit mode lane0+2"); break;
-		case 3:
+		case CFG_DDR_BUS_WIDTH_16BIT_LANE01:
 			serial_puts("16 bit mode lane0+1"); break;
 	}
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT
@@ -29,35 +65,24 @@ void print_ddr_mode(void){
 	serial_puts("\n");
 #endif
 }
+#endif
 
 /*Following code is for DDR MODE AUTO DETECT*/
 #ifdef CONFIG_DDR_MODE_AUTO_DETECT
-//#include "efuse_basic.c"
 static inline unsigned ddr_init(struct ddr_set * timing_reg);
-
-int read_ddr_mode(void){
-	return ((efuse_read_byte(CFG_DDR_MODE_STO_ADDR) >> CFG_DDR_MODE_STO_OFFSET) & 0x3);
-}
-
-int write_ddr_mode(void){
-	//serial_puts("write ddr mode\n");
-	//efuse_write_byte(CFG_DDR_MODE_STO_ADDR, ((cfg_ddr_mode & 0x3) << CFG_DDR_MODE_STO_OFFSET));
-	return 0;
-}
 
 int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 	int ret = 0;
-	int tmp_mode = read_ddr_mode();
-	int try_times = 0;
-	for(try_times = 1; try_times <= 3; try_times++){
-		cfg_ddr_channel = try_times;
-		//if(tmp_mode == cfg_ddr_mode) /*skip preset mode*/
-			//continue;
+#ifdef CONFIG_DDR_MODE_AUTO_DETECT_SKIP_32BIT
+	int try_times = 2;
+#else
+	int try_times = 1;
+#endif
+	for(; try_times <= 2; try_times++){
+		cfg_ddr_mode = try_times;
 		ret = ddr_init(timing_reg);
 		if(!ret){
 			print_ddr_mode();
-			if(tmp_mode == 0) /*first init, store ddr mode*/
-				write_ddr_mode();
 			return 0;
 		}
 	}
@@ -120,7 +145,7 @@ void ddr_size_auto_detect(struct ddr_set * timing_reg){
 	//row_size of 16bit and 32bit mode are different
 	unsigned int mem_mode = 0;
 	unsigned int row_mask_bit_offset = MEMORY_ROW_MASK_BIT_OFFSET_32BIT_MIN;
-	if(cfg_ddr_channel > CFG_DDR_32BIT){
+	if(cfg_ddr_mode > CFG_DDR_BUS_WIDTH_32BIT){
 		mem_mode = 1;
 		row_mask_bit_offset = MEMORY_ROW_MASK_BIT_OFFSET_16BIT_MIN;
 	}

@@ -194,13 +194,13 @@ appf_entry_point
         adr	r9, appf_ttbcr;
         ldr	r10, [r10]
         ldr	r9, [r9]
-        bfc r10,#29,#3
-       	orr r10,r10,#0x0<<28 ;table 0x04F00000;
-   			adr r12 ,next_label
-   			bfc r12,#29,#3
-   			orr r12,r12,#0x0<<28 ;switch to 0x04Fxxxxx
-				;bl dbg_wait	
-			  ; Get current TTBR0, TTBCR, DACR
+        bfc r10,#20,#12
+        orr r10,r10,#0x4f<<20 ;table 0x04F00000;
+		adr r12 ,next_label
+		bfc r12,#20,#12
+		orr r12,r12,#0x4f<<20 ;switch to 0x04Fxxxxx
+		;bl dbg_wait
+		; Get current TTBR0, TTBCR, DACR
         mrc	p15, 0, r8, c2, c0, 0	; read TTBR0
         mrc	p15, 0, r7, c2, c0, 2	; read TTBCR
         mrc	p15, 0, r6, c3, c0, 0	; read DACR
@@ -263,10 +263,10 @@ appf_return_to_os
 ;	bl dbg_wait
 	;switch to 0xDFFxxxxx kernel virtual address space.
 	adr r5 ,label_df
-	bfc r5,#28,#4
+	bfc r5,#20,#12
 	movw r9,#0
-	movt r9,#0xc400
-	orr r5,r5,r9
+	movt r9,#0xc4d0
+	add r5,r5,r9
 	mov pc,r5
 
 label_df

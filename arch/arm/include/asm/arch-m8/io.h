@@ -114,5 +114,6 @@
 #include "reg_addr.h"
 #include "m8_mmc.h"
 #include "m8_sec_mmc.h"
+#include "m8m2_sec_mmc.h"
 
 #endif

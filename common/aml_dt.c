@@ -31,6 +31,12 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		return fdt_addr;
 	}
 	if(dt_magic == AML_DT_HEADER_MAGIC){/*multi dtb*/
+		/*check and set aml_dt*/
+		char *s;
+		if ((s = getenv ("get_dt")) != NULL) {
+			run_command(s, 0);
+		}
+
 		/*version control, compatible with v1*/
 		dt_tool_version = readl(fdt_addr + AML_DT_VERSION_OFFSET);
 		unsigned int aml_each_id_length;
@@ -48,6 +54,8 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		/*fdt_addr + 0x8: num of dtbs*/
 		dt_total = readl(fdt_addr + AML_DT_TOTAL_DTB_OFFSET);
 		printf("      Multi dtb detected, support %d dtbs.\n", dt_total);
+
+		/*Get aml_dt and split to 3 strings*/
 		int i = 0;
 		unsigned char *aml_dt_buf;
 		aml_dt_buf = (unsigned char *)malloc(sizeof(unsigned char)*64);

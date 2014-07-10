@@ -235,7 +235,6 @@ void enter_power_down()
 	cpu_off();
 	f_serial_puts("CPU off done\n");
 	wait_uart_empty();
-
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
@@ -259,9 +258,16 @@ void enter_power_down()
 			p_arc_pwr_op->power_off_ddr15();
 	}
 
-	wdt_flag=readl(P_WATCHDOG_TC)&(1<<22);
-	if(wdt_flag)
-		writel(readl(P_WATCHDOG_TC)&(~(1<<22)),P_WATCHDOG_TC);
+	if(0x11111112 == readl(0xc11081A8)){
+		wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
+		if(wdt_flag)
+			writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
+	}
+	else{
+		wdt_flag=readl(P_WATCHDOG_TC)&(1<<22);
+		if(wdt_flag)
+			writel(readl(P_WATCHDOG_TC)&(~(1<<22)),P_WATCHDOG_TC);
+	}
 #if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
@@ -278,7 +284,10 @@ void enter_power_down()
 	}
 	
 	if(wdt_flag){	
-		writel((6*0x186a0|((1<<22)-1))|(1<<22),P_WATCHDOG_TC);
+		if(0x11111112 == readl(0xc11081A8))
+			writel((6*7812|((1<<16)-1))|(1<<29),P_WATCHDOG_TC);
+		else
+			writel((6*0x186a0|((1<<22)-1))|(1<<22),P_WATCHDOG_TC);
 	}
 
 // gate on:  bit0: REMOTE;   bit3: UART
@@ -331,7 +340,10 @@ void enter_power_down()
         writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
         clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
         writel(10,0xc1109904);
-        writel(1<<22|3<<24,0xc1109900);
+        if(0x11111112 == readl(0xc11081A8))
+            writel(1<<19|3<<24,0xc1109900);
+        else
+            writel(1<<22|3<<24,0xc1109900);
         
         do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
     }
@@ -353,6 +365,7 @@ int main(void)
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
 	writel(0,P_AO_RTI_STATUS_REG1);
 	f_serial_puts("sleep .......\n");
+	arc_param->serial_disable=0;
 
 	while(1){
 		
