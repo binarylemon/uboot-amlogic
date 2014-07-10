@@ -234,6 +234,8 @@ int aml_sec_boot_check(unsigned char *pSRC)
 	int nRet = -1;
 	unsigned int nState = 0;
 	int nSPLLen = 32<<10;
+	unsigned char szCheck[36];
+	unsigned char szHash[32];
 
 	nRet = aml_m8_sec_boot_check(pSRC,0,0,0,0,&nState);
 	if(nRet || !(nState & (1<<7)))
@@ -260,14 +262,11 @@ int aml_sec_boot_check(unsigned char *pSRC)
 	t_func_v4 fp_8 = (t_func_v4)g_action[g_nStep][8];
 	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];
 
-	unsigned char szCheck[32];
-	unsigned char szHash[32];
-
-	fp_2(&szCheck,328,32);
+	fp_2(szCheck,452,36);
 
 	fp_8(pblk->sz2,260,szHash, 0 );
 
-	nRet = fp_10(szCheck,szHash,32);
+	nRet = fp_10(szCheck+2,szHash,32);
 
 	if(nRet)
 	{
