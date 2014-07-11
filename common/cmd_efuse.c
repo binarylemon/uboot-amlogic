@@ -184,10 +184,19 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 		else
 			printf("%s written done.\n", info.title);					
 	}
-	else if ((EFUSE_SECURE_BOOT_SET == action) && (3 == argc))
+	else if ((EFUSE_SECURE_BOOT_SET == action))
 	{
-		s = argv[2];
-		unsigned int nAddr = simple_strtoul(s, &end, 16);
+		unsigned int nAddr = 0;
+		if(argc > 2)
+			s = argv[2];
+		else
+			s =getenv("loadaddr");
+
+		if(s)
+			nAddr = simple_strtoul(s, &end, 16);
+		else
+			return -1;
+
 	#ifdef CONFIG_MESON_TRUSTZONE
 		if(meson_trustzone_efuse_writepattern(nAddr, EFUSE_BYTES)){
 			printf("aml log : efuse pattern write fail!\n");
