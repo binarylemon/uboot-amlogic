@@ -51,7 +51,8 @@
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
-#define CONFIG_AML_HDMI_TX 1
+#define CONFIG_AML_HDMI_TX  1
+#define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -130,7 +131,9 @@
 #define CONFIG_BOOTFILE		boot.img
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"us_delay_step=1\0" \
 	"loadaddr=0x12000000\0" \
+	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
@@ -139,16 +142,22 @@
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
-	"bootargs=init=/init console=ttyS0,115200n8 no_console_suspend \0" \
-	"video_dev=panel\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"hdmimode=1080p\0" \
+	"cvbsmode=576cvbs\0" \
+	"outputmode=1080p\0" \
+	"vdac_config=0x10\0" \
+	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"video_dev=tvout\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"fb_width=1280\0"\
+	"fb_height=720\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -165,8 +174,9 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"preboot="\
-		"echo preboot...;" \	
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run prepare;"\
+        "run storeargs;"\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run switch_bootmode\0" \
     \
    	"update="\
@@ -176,11 +186,20 @@
         "fi;"\
         "run recovery\0" \
     \
+   	"storeargs="\
+        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+    \
 	"switch_bootmode="\
 		"echo switch_bootmode...;" \	
 		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
             "\0"\
     \
+	"prepare="\
+        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
+        "imgread pic logo bootup ${loadaddr_logo}; "\
+        "bmp display ${bootup_offset}; bmp scale;"\
+        "\0"\
+	\
 	"storeboot="\
         "echo Booting...; "\
         "imgread kernel boot ${loadaddr};"\
@@ -196,7 +215,8 @@
         "bootm\0" \
 
 
-#define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"
+
+#define CONFIG_BOOTCOMMAND   "run storeboot"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
@@ -336,6 +356,7 @@
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
+#define CONFIG_CMD_IMGPACK 1
 //M8 security boot
 //#define CONFIG_SECU_BOOT	1
 
@@ -352,6 +373,7 @@
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
 
+#define CONFIG_CMD_LOGO
 
 /*
 * CPU switch test for uboot
