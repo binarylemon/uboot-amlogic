@@ -111,20 +111,30 @@ int mmc_get_partition_table (struct mmc *mmc)
             emmc_partition_table, ARRAY_SIZE(emmc_partition_table), MMC_CACHE_NAME);
 
 	for (i=0; i < ARRAY_SIZE(emmc_partition_table); i++) {
+#if MESON_CPU_TYPE < MESON_CPU_TYPE_MESON8B	//force emmc boot     
         if((!strncmp(emmc_partition_table[i].name, MMC_BOOT_NAME, MAX_MMC_PART_NAME_LEN)) // eMMC boot partition
                 && (!POR_EMMC_BOOT())) { // not eMMC boot, skip
             printf("Not emmc boot, POR_BOOT_VALUE=%d\n", POR_BOOT_VALUE);
             continue;
         }
-
+#endif
 		strncpy(part_ptr[part_num].name, emmc_partition_table[i].name, MAX_MMC_PART_NAME_LEN);
 		part_ptr[part_num].size = emmc_partition_table[i].size;
 		part_ptr[part_num].mask_flags= emmc_partition_table[i].mask_flags;
+		
         if (part_num == 0) { // first partition
             part_ptr[part_num].offset = 0;
         } else {
             if (!strncmp(part_ptr[part_num-1].name, MMC_BOOT_NAME, MAX_MMC_PART_NAME_LEN)) { // eMMC boot partition
                 resv_size = MMC_BOOT_PARTITION_RESERVED;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8B                
+                if(!POR_EMMC_BOOT()){  //for spi boot case
+                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)] = "e";
+                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)+1] = "\0";
+
+                    printf("change MMC BOOT NAME into 'bootloadere' for none emmc boot case, POR_BOOT_VALUE=%d\n", POR_BOOT_VALUE);
+                }
+#endif                
             } else {
                 resv_size = PARTITION_RESERVED;
             }
