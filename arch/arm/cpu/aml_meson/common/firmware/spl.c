@@ -36,7 +36,7 @@ unsigned int ovFlag;
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
@@ -74,7 +74,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
@@ -217,7 +217,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//serial_put_dword((spl_boot_end));
 #endif
 
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_DISABLE(); //disable watchdog
 	//temp added

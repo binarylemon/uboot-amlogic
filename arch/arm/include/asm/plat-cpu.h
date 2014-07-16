@@ -9,6 +9,7 @@
 #define MESON_CPU_TYPE_MESON6TVD	0x75
 #define MESON_CPU_TYPE_MESON8		0x80
 #define MESON_CPU_TYPE_MESON8B		0x8B
+#define MESON_CPU_TYPE_MESON8M2		0x8C
 
 //set watchdog timer by ms
 #define AML_WATCH_DOG_SET(time) \

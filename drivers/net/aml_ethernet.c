@@ -66,6 +66,7 @@ static unsigned int  g_mdc_clock_range=ETH_MAC_4_GMII_Addr_CR_100_150;
 #define PHY_MICREL_8091         0x221560
 #define PHY_INTERNAL            0x79898963
 #define PHY_RTL_8211F         0x001cc916
+#define PHY_MICREL_KSZ9031    0x00221620
 #define MAC_MODE_RMII_CLK_EXTERNAL       0
 #define MAC_MODE_RMII_CLK_INTERNAL       1
 #define MAC_MODE_RGMII                   2
@@ -393,6 +394,13 @@ static void netdev_chk(void)
 				rint2 = phy_reg_rd(id,1);
 				gS->linked = rint2&(1<<2);
 				break;	
+			case PHY_MICREL_KSZ9031:
+				rint2 = phy_reg_rd(id, 31);
+				speed = (rint2 & (1 << 4))? 0:((rint2 &(1<<5))? 1:2);
+				full = ((rint2) & (1 << 3));
+				rint2 = phy_reg_rd(id,1);
+				gS->linked = rint2&(1<<2);
+				break;	
 			case PHY_IC_IP101ALF:
 				rint2 = phy_reg_rd(id,1);
 				gS->linked = rint2&(1<<2);
@@ -440,6 +448,7 @@ static void netdev_chk(void)
 			writel(val,ETH_PLL_CNTL);
 #endif
 			writel(readl(ETH_MAC_0_Configuration) & ~ ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);
+#ifndef NEW_MAC_LOGIC
 			if( get_cpuid() < 0x1B ){
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
 				// ---------------------------------------------
@@ -451,6 +460,7 @@ static void netdev_chk(void)
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 20
 				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
 			}
+#endif
 		} else if (speed == 1) {
 			printf("100m\n");
 #ifdef INTERNAL_PHY
@@ -459,6 +469,8 @@ static void netdev_chk(void)
 			writel(val,ETH_PLL_CNTL);
 #endif
 			writel(readl(ETH_MAC_0_Configuration) | ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
+#ifndef NEW_MAC_LOGIC
+
 			if(get_cpuid()< 0x1B){
 				writel(readl(ETH_PLL_CNTL) & ~ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// Disable the Ethernet clocks
 				// ---------------------------------------------
@@ -470,13 +482,20 @@ static void netdev_chk(void)
 				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_MACSPD, ETH_PLL_CNTL);	// divide by 2
 				writel(readl(ETH_PLL_CNTL) | ETH_PLL_CNTL_DIVEN, ETH_PLL_CNTL);		// enable Ethernet clocks
 			}	
+#endif
 		} else {
 			printf("1000m\n");
-			if(get_cpuid() >= 0x1B){
-
+#if defined(NEW_MAC_LOGIC)
 				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII|(1<<13), ETH_MAC_0_Configuration);	// program mac
 			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
+
+#else
+			if(get_cpuid() >= 0x1B){
+				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII|(1<<13), ETH_MAC_0_Configuration);	// program mac
+			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
+
 			}
+#endif
 		}
 
 		/* link_changed */
@@ -577,8 +596,10 @@ static int eth_reset(struct _gStruct* emac_config)
 		if(g_phy_Identifier == PHY_IC_IP101ALF){
 			if(get_cpuid() == 0x16)
 				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0x120); // phy ip101 need clock phase normal
+#ifndef NEW_MAC_LOGIC
 			if(get_cpuid() == 0x19)
 				WRITE_CBUS_REG(HHI_ETH_CLK_CNTL, 0xf00); // phy ip101 need clock phase normal
+#endif
 		}
 		/* Software Reset PHY */
 		phy_reg_wr(phyad, PHY_CR, PHY_CR_RST);

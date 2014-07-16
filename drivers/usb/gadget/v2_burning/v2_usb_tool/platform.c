@@ -8,8 +8,8 @@
  */
  #include "platform.h"
 
-
-#if !( defined(CONFIG_AML_MESON_6) || defined(CONFIG_M8) || defined(CONFIG_M8B) )
+/*CONFIG_AML_MESON_8 include m8, m8baby, m8m2, etc... defined in cpu.h*/
+#if !( defined(CONFIG_AML_MESON_6) || defined(CONFIG_AML_MESON_8) )
 #error "platform is not m6 or m8!!"
 #endif//#if 
 

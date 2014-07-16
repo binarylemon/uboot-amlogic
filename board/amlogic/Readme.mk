@@ -155,6 +155,22 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8B_FT_V1"
 	@echo config command: \"make m8b_ft_v1_config\"
-	
+
+	@echo =======================================================================
+	@echo The mark in board is "M8M2_SKT_V1"
+	@echo config command: \"make m8m2_skt_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M8M2_N200_V1"
+	@echo config command: \"make m8m2_n200_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M8M2_N100_V1"
+	@echo config command: \"make m8m2_n100_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M8M2_N101_V1"
+	@echo config command: \"make m8m2_n101_v1_config\"
+
 	@echo
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)
