@@ -242,6 +242,18 @@ int board_mmc_init(bd_t	*bis)
 }
 #endif
 
+#if CONFIG_AML_HDMI_TX
+/*
+ * Init hdmi related power configuration
+ * Refer to your board SCH, power including HDMI5V, HDMI1.8V, AVDD18_HPLL, etc
+ */
+extern void hdmi_tx_power_init(void);
+void hdmi_tx_power_init(void)
+{
+    // 
+    printf("hdmi tx power init\n");
+}
+#endif
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
 #include <asm/arch/usb.h>
