@@ -227,6 +227,7 @@ static int write_uboot(struct amlnand_phydev *phydev)
 	uint64_t addr, writelen = 0, len = 0;
 	int chip_num=1, nand_read_info, new_nand_type, i, ret = 0;
 	unsigned char  *tmp_buf;
+	char write_boot_status[BOOT_COPY_NUM] = {0},err = 0;
 	
 	if((devops->addr + devops->len) >  phydev->size){
 		aml_nand_msg("writeboot:out of space and addr:%llx len:%llx phydev->offset:%llx phydev->size:%llx",\
@@ -370,6 +371,7 @@ static int write_uboot(struct amlnand_phydev *phydev)
 					ops_para->data_buf = devops->datbuf;
 			ret = operation->write_page(aml_chip);			
 			if(ret<0){			
+				write_boot_status[i] = 1;
 				aml_nand_msg("fail page_addr:%d", ops_para->page_addr); 		
 				break;
 			}
@@ -400,7 +402,14 @@ static int write_uboot(struct amlnand_phydev *phydev)
 			}
 		}
 	}
+	for(i=0; i<BOOT_COPY_NUM; i++) {
 	
+		err +=write_boot_status[i];
+	}	
+	if(err < 2)
+		ret = 0;
+	else
+		ret =1;		
 	devops->retlen = writelen;
 	
 error_exit: 
@@ -512,7 +521,7 @@ int roomboot_nand_write(struct amlnand_phydev *phydev)
 
 			if(ret<0){
 				aml_nand_msg("nand erase fail at addr :%lx ", ops_para->page_addr);
-				break;
+				//break;
 			}
 			
 			addr += phydev->erasesize;
