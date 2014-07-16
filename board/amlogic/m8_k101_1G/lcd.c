@@ -19,12 +19,12 @@
  *
  */
 
-#include <asm/arch/lcdoutc.h>
+#include <amlogic/lcdoutc.h>
 
 //**********************************************//
 // backlight control
 //*********************************************//
-#define BL_LEVEL_DEFAULT		10	/** default brightness level */
+#define BL_LEVEL_DEFAULT		128	/** default brightness level */
 #define BL_LEVEL_MID			128	/** brightness middle level*/
 #define BL_LEVEL_MID_MAPPING	102	/** brightness middle level mapping to a new level*/
 #define BL_LEVEL_MAX			255	/** brightness level max, must match the rootfs setting*/
@@ -77,7 +77,7 @@ const static unsigned bl_pwm_pinmux_clr[][2] = {{0, 0x48}, {7, 0x10000200},};
 #define VADJ_SATURATION		0x100	/** video adjust saturation */
 
 #define GAMMA_EN			0		/** 0=disable gamma table, 1=enable gamma table */
-#define GAMMA_REVERT		0		/** 0=normal, 1=revert */
+#define GAMMA_REVERSE		0		/** 0=normal, 1=reverse */
 #define GAMMA_MULTI			0		/** gamma_multi(0=single gamma, RGB are same, 1=multi gamma, RGB are different) */
 									/** if gamma_multi=1, there must be 3 gamma tables, named as gamma_table_r, gamma_table_g, gamma_table_b */
 #define	GAMMA_R_COEFF		100		/** unit: % */
@@ -132,12 +132,18 @@ static LVDS_Config_t lcd_lvds_config = {
 };
 
 static EDP_Config_t lcd_edp_config = {
+#ifdef LCD_EDP_CONFIG
+	.max_lane_count = MAX_LANE_COUNT,
+#else
+	.max_lane_count = 4, /** default max lane_count */
+#endif
 	.link_user = 1,		/** 0=auto setting, 1=user define link config */
 	.link_rate = 1,		/** 0=1.62G, 1=2.7G, only valid when link_user=1 */
 	.lane_count = 4,	/** 1,2,4, only valid when link_user=1 */
 	.link_adaptive = 0,	/** 0=fixed user defined vswing, 1=auto setting vswing by training */
 	.vswing = 0,		/** support level 0,1,2,3, user defined vswing, only valid when adaptive=0 */
 	.preemphasis = 0,	/** fixed vaule */
+	.sync_clock_mode = 1, /** clocking mode for the user data: (0=asyncronous clock, 1=synchronous clock. default 1) */
 };
 
 static TTL_Config_t lcd_ttl_config = {
@@ -266,7 +272,7 @@ Lcd_Config_t lcd_config_dft = {
 		.div_ctrl = DIV_CTRL,
 		.clk_ctrl = CLK_CTRL,
 #else
-		.clk_ctrl = (CLK_AUTO_GENERATION<<CLK_CTRL_AUTO) | (1<<CLK_CTRL_VCLK_SEL) | (7<<CLK_CTRL_XD),
+		.clk_ctrl = (CLK_AUTO_GENERATION << CLK_CTRL_AUTO) | (7 << CLK_CTRL_XD),
 #endif
 		.video_on_pixel = VIDEO_ON_PIXEL,
 		.video_on_line = VIDEO_ON_LINE,
@@ -280,12 +286,10 @@ Lcd_Config_t lcd_config_dft = {
 		.h_offset = (H_OFFSET_SIGN << 31) | (H_OFFSET << 0),
 		.v_offset = (V_OFFSET_SIGN << 31) | (V_OFFSET << 0),
 		.vsync_h_phase =(VSYNC_H_ADJUST_SIGN << 31) | (VSYNC_H_ADJUST << 0),
-		.pol_cntl_addr = (CLK_POL << LCD_CPH1_POL) |(HS_POL << LCD_HS_POL) | (VS_POL << LCD_VS_POL),
-		.inv_cnt_addr = (0<<LCD_INV_EN) | (0<<LCD_INV_CNT),
-		.tcon_misc_sel_addr = (1<<LCD_STV1_SEL) | (1<<LCD_STV2_SEL),
+		.pol_ctrl = (CLK_POL << POL_CTRL_CLK) |(HS_POL << POL_CTRL_HS) | (VS_POL << POL_CTRL_VS),
 	},
 	.lcd_effect = {
-		.gamma_cntl_port = (GAMMA_EN << LCD_GAMMA_EN) | (0 << LCD_GAMMA_RVS_OUT) | (1 << LCD_GAMMA_VCOM_POL),
+		.gamma_ctrl = (GAMMA_EN << GAMMA_CTRL_EN) | (GAMMA_REVERSE << GAMMA_CTRL_REVERSE),
 		.rgb_base_addr = RGB_BASE,
 		.rgb_coeff_addr = RGB_COEFF,
 		.dith_user = DITHER_USER,
@@ -293,7 +297,6 @@ Lcd_Config_t lcd_config_dft = {
 		.vadj_brightness = VADJ_BRIGHTNESS,
 		.vadj_contrast = VADJ_CONTRAST,
 		.vadj_saturation = VADJ_SATURATION,
-		.gamma_revert = GAMMA_REVERT,
 		.gamma_r_coeff = GAMMA_R_COEFF,
 		.gamma_g_coeff = GAMMA_G_COEFF,
 		.gamma_b_coeff = GAMMA_B_COEFF,

@@ -1,17 +1,15 @@
 #include <asm/arch/mipi_dsi_reg.h>
 #include <asm/arch/io.h>
 #include <asm/arch/lcd_reg.h>
+#include <asm/arch/lcdoutc.h>
+#include <amlogic/lcdoutc.h>
+#include "lcd_config.h"
 #include "mipi_dsi_util.h"
 #ifdef CONFIG_AML_LCD_EXTERN
 #include <amlogic/aml_lcd_extern.h>
 #endif
 
-//#define PRINT_DEBUG_INFO
-#ifdef PRINT_DEBUG_INFO
 #define DPRINT(...)		printf(__VA_ARGS__)
-#else
-#define DPRINT(...)
-#endif
 
 //===============================================================================
 // Define MIPI DSI Default config
@@ -19,7 +17,7 @@
 #define MIPI_DSI_VIRTUAL_CHAN_ID        0                       // Range [0,3]
 #define MIPI_DSI_CMD_TRANS_TYPE         DCS_TRANS_LP            // Define DSI command transfer type: high speed or low power
 #define MIPI_DSI_DCS_ACK_TYPE           MIPI_DSI_DCS_NO_ACK     // Define if DSI command need ack: req_ack or no_ack
-#define MIPI_DSI_VIDEO_MODE_TYPE        BURST_MODE              // Applicable only to video mode. Define picture data transfer method: non-burst sync pulse; non-burst sync event; or burst.
+#define MIPI_DSI_VIDEO_MODE_TYPE        BURST_MODE              // Applicable only to video mode. Define data transfer method: non-burst sync pulse; non-burst sync event; or burst.
 #define MIPI_DSI_TEAR_SWITCH            MIPI_DCS_DISABLE_TEAR
 #define CMD_TIMEOUT_CNT                 3000
 //===============================================================================
@@ -45,8 +43,6 @@ static const char *video_mode_type_table[] = {
 
 static DSI_Phy_t dsi_phy_config;
 static DSI_Config_t *dsi_config = NULL;
-static unsigned char dsi_init_on_table[DSI_INIT_ON_MAX]={0xff,0xff};
-static unsigned char dsi_init_off_table[DSI_INIT_OFF_MAX]={0xff,0xff};
 static unsigned char dsi_init_on_table_dft[] = {
     0x05,0x11,0,
     0xff,50,
@@ -55,115 +51,142 @@ static unsigned char dsi_init_on_table_dft[] = {
     0xff,0xff,
 };
 
-unsigned char *get_dsi_init_table(int flag)
-{
-    if (flag > 0)
-        return &dsi_init_on_table[0];
-    else
-        return &dsi_init_off_table[0];
-}
-
 static inline void print_mipi_cmd_status(int cnt, unsigned status)
 {
     if (cnt == 0) {
-        printf("cmd error: status=0x%04x, int0=0x%06x, int1=0x%06x\n", status, READ_LCD_REG(MIPI_DSI_DWC_INT_ST0_OS), READ_LCD_REG(MIPI_DSI_DWC_INT_ST1_OS));
+        DPRINT("cmd error: status=0x%04x, int0=0x%06x, int1=0x%06x\n", status, READ_LCD_REG(MIPI_DSI_DWC_INT_ST0_OS), READ_LCD_REG(MIPI_DSI_DWC_INT_ST1_OS));
     }
 }
 
 static void print_info(void)
 {
     int i, j, n;
+    unsigned temp;
 
     if (dsi_config == NULL) {
-        printf("dsi config is NULL\n");
+        DPRINT("dsi config is NULL\n");
         return;
     }
-    printf("================================================\n");
-    printf("MIPI DSI Config\n");
-    printf(" Lane Num:              %d\n", dsi_config->lane_num);
-    printf(" Bit Rate min:          %dMHz\n", (dsi_config->bit_rate_min / 1000));
-    printf(" Bit Rate max:          %dMHz\n", (dsi_config->bit_rate_max / 1000));
-    printf(" Bit Rate:              %d.%03dMHz\n", (dsi_config->bit_rate / 1000000), (dsi_config->bit_rate % 1000000) / 1000);
-    printf(" Pclk lanebyte factor:  %d\n", ((dsi_config->factor_numerator * 100 / dsi_config->factor_denominator) + 5) / 10);
-    printf(" Operation mode:\n");
-    printf("     init:              %s\n", ((dsi_config->operation_mode == OPERATION_COMMAND_MODE>>BIT_OPERATION_MODE_INIT) & 1) ? "COMMAND":"VIDEO");
-    printf("     display:           %s\n", ((dsi_config->operation_mode == OPERATION_COMMAND_MODE>>BIT_OPERATION_MODE_DISP) & 1) ? "COMMAND":"VIDEO");
-    printf(" Transfer control:\n");
-    printf("     clk auto stop:     %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1));
-    printf("     transfer switch:   %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 3));
+    DPRINT("================================================\n");
+    DPRINT("MIPI DSI Config\n");
+    DPRINT(" Lane Num:              %d\n", dsi_config->lane_num);
+    DPRINT(" Bit Rate min:          %dMHz\n", (dsi_config->bit_rate_min / 1000));
+    DPRINT(" Bit Rate max:          %dMHz\n", (dsi_config->bit_rate_max / 1000));
+    DPRINT(" Bit Rate:              %d.%03dMHz\n", (dsi_config->bit_rate / 1000000), (dsi_config->bit_rate % 1000000) / 1000);
+    DPRINT(" Pclk lanebyte factor:  %d\n", ((dsi_config->factor_numerator * 100 / dsi_config->factor_denominator) + 5) / 10);
+    DPRINT(" Operation mode:\n");
+    DPRINT("     init:              %s\n", ((dsi_config->operation_mode>>BIT_OPERATION_MODE_INIT) & 1) ? "COMMAND":"VIDEO");
+    DPRINT("     display:           %s\n", ((dsi_config->operation_mode>>BIT_OPERATION_MODE_DISP) & 1) ? "COMMAND":"VIDEO");
+    DPRINT(" Transfer control:\n");
+    DPRINT("     clk auto stop:     %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1));
+    DPRINT("     transfer switch:   %d\n", ((dsi_config->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 3));
     if(dsi_config->video_mode_type == NON_BURST_SYNC_PULSE) {
-        printf(" Video mode type:       NON_BURST_SYNC_PULSE\n");
+        DPRINT(" Video mode type:       NON_BURST_SYNC_PULSE\n");
     }
     else if(dsi_config->video_mode_type == NON_BURST_SYNC_EVENT) {
-        printf(" Video mode type:       NON_BURST_SYNC_EVENT\n");
+        DPRINT(" Video mode type:       NON_BURST_SYNC_EVENT\n");
     }
     else if(dsi_config->video_mode_type == BURST_MODE) {
-        printf(" Video mode type:       BURST_MODE\n");
+        DPRINT(" Video mode type:       BURST_MODE\n");
     }
 
-    //printf(" Venc format:           %d\n", dsi_config->venc_fmt);
-    printf(" Data Format:           %s\n\n", video_mode_type_table[dsi_config->dpi_data_format]);
-    //printf(" POLARITY:              HIGH ACTIVE\n");
-    //printf(" Enable CRC/ECC/BTA\n");
+    //DPRINT(" Venc format:           %d\n", dsi_config->venc_fmt);
+    DPRINT(" Data Format:           %s\n\n", video_mode_type_table[dsi_config->dpi_data_format]);
+    //DPRINT(" POLARITY:              HIGH ACTIVE\n");
+    //DPRINT(" Enable CRC/ECC/BTA\n");
 
+    temp = dsi_config->bit_rate / 8 / dsi_phy_config.lp_tesc;
+    DPRINT("DSI LP escape clock:    %d.%03dMHz\n", (temp / 1000000), (temp % 1000000) / 1000);
     if (dsi_config->dsi_init_on) {
-        printf("DSI INIT ON:\n");
+        DPRINT("DSI INIT ON:\n");
         i = 0;
         while (i < DSI_INIT_ON_MAX) {
             if (dsi_config->dsi_init_on[i] == 0xff) {
                 n = 2;
                 if (dsi_config->dsi_init_on[i+1] == 0xff) {
-                    printf("    0x%02x,0x%02x\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
+                    DPRINT("    0x%02x,0x%02x,\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
                     break;
                 }
                 else {
-                    printf("    0x%02x,%d,\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
+                    DPRINT("    0x%02x,%d,\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
                 }
             }
             else {
                 n = 3 + dsi_config->dsi_init_on[i+2];
-                printf("    ");
+                DPRINT("    ");
                 for (j=0; j<n; j++) {
                     if (j == 2)
-                        printf("%d,", dsi_config->dsi_init_on[i+j]);
+                        DPRINT("%d,", dsi_config->dsi_init_on[i+j]);
                     else
-                        printf("0x%02x,", dsi_config->dsi_init_on[i+j]);
+                        DPRINT("0x%02x,", dsi_config->dsi_init_on[i+j]);
                 }
-                printf("\n");
+                DPRINT("\n");
             }
             i += n;
         }
     }
     if (dsi_config->dsi_init_off) {
-        printf("DSI INIT OFF:\n");
+        DPRINT("DSI INIT OFF:\n");
         i = 0;
         while (i < DSI_INIT_OFF_MAX) {
             if (dsi_config->dsi_init_off[i] == 0xff) {
                 n = 2;
                 if (dsi_config->dsi_init_off[i+1] == 0xff) {
-                    printf("    0x%02x,0x%02x\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
+                    DPRINT("    0x%02x,0x%02x,\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
                     break;
                 }
                 else {
-                    printf("    0x%02x,%d,\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
+                    DPRINT("    0x%02x,%d,\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
                 }
             }
             else {
                 n = 3 + dsi_config->dsi_init_off[i+2];
-                printf("    ");
+                DPRINT("    ");
                 for (j=0; j<n; j++) {
                     if (j == 2)
-                        printf("%d,", dsi_config->dsi_init_off[i+j]);
+                        DPRINT("%d,", dsi_config->dsi_init_off[i+j]);
                     else
-                        printf("0x%02x,", dsi_config->dsi_init_off[i+j]);
+                        DPRINT("0x%02x,", dsi_config->dsi_init_off[i+j]);
                 }
-                printf("\n");
+                DPRINT("\n");
             }
             i += n;
         }
     }
-    printf("DSI INIT EXTERN:        %d\n", dsi_config->lcd_extern_init);
-    printf("================================================\n");
+    DPRINT("DSI INIT EXTERN:        %d\n", dsi_config->lcd_extern_init);
+    DPRINT("================================================\n");
+}
+
+static void print_dphy_info(void)
+{
+    unsigned temp;
+
+    temp = ((1000000 * 100) / (dsi_config->bit_rate / 1000)) * 8;
+    DPRINT("================================================\n");
+    DPRINT("MIPI DSI DPHY timing (unit: ns)\n"
+        " UI:                  %d.%02d\n"
+        " LP LPX:              %d\n"
+        " LP TA_SURE:          %d\n"
+        " LP TA_GO:            %d\n"
+        " LP TA_GET:           %d\n"
+        " HS EXIT:             %d\n"
+        " HS TRAIL:            %d\n"
+        " HS ZERO:             %d\n"
+        " HS PREPARE:          %d\n"
+        " CLK TRAIL:           %d\n"
+        " CLK POST:            %d\n"
+        " CLK ZERO:            %d\n"
+        " CLK PREPARE:         %d\n"
+        " CLK PRE:             %d\n"
+        " INIT:                %d\n"
+        " WAKEUP:              %d\n",
+        (temp / 8 / 100), ((temp / 8) % 100),
+        (temp * dsi_phy_config.lp_lpx / 100), (temp * dsi_phy_config.lp_ta_sure / 100), (temp * dsi_phy_config.lp_ta_go / 100), 
+        (temp * dsi_phy_config.lp_ta_get / 100), (temp * dsi_phy_config.hs_exit / 100), (temp * dsi_phy_config.hs_trail / 100), 
+        (temp * dsi_phy_config.hs_zero / 100), (temp * dsi_phy_config.hs_prepare / 100), (temp * dsi_phy_config.clk_trail / 100), 
+        (temp * dsi_phy_config.clk_post / 100), (temp * dsi_phy_config.clk_zero / 100), (temp * dsi_phy_config.clk_prepare / 100),
+        (temp * dsi_phy_config.clk_pre / 100), (temp * dsi_phy_config.init / 100), (temp * dsi_phy_config.wakeup / 100));
+    DPRINT("================================================\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -176,7 +199,7 @@ static void check_phy_status(void)
         udelay(6);
     }
     while((( READ_LCD_REG(MIPI_DSI_DWC_PHY_STATUS_OS ) >> BIT_PHY_STOPSTATECLKLANE) & 0x1) == 0){
-        DPRINT(" Waiting STOP STATE LANE\n");
+        DBG_PRINT(" Waiting STOP STATE LANE\n");
         udelay(6);
     }
 }
@@ -285,10 +308,10 @@ static unsigned int wait_for_generic_read_response(void)
 static unsigned int generic_if_wr(unsigned int address, unsigned int data_in)
 {
     if(address != MIPI_DSI_DWC_GEN_HDR_OS && address != MIPI_DSI_DWC_GEN_PLD_DATA_OS) {
-        DPRINT(" Error Address : 0x%x\n", address);
+        DBG_PRINT(" Error Address : 0x%x\n", address);
     }
 
-    DPRINT("address 0x%x = 0x%08x\n", address, data_in);
+    DBG_PRINT("address 0x%x = 0x%08x\n", address, data_in);
     WRITE_LCD_REG(address, data_in);
 
     return 0;
@@ -303,7 +326,7 @@ static unsigned int generic_if_rd(unsigned int address)
     unsigned int data_out;
 
     if(address != MIPI_DSI_DWC_GEN_PLD_DATA_OS) {
-        DPRINT(" Error Address : %x\n", address);
+        DBG_PRINT(" Error Address : %x\n", address);
     }
 
     data_out = READ_DSI_REG(address);
@@ -321,8 +344,8 @@ static unsigned int generic_read_packet_0_para(unsigned char data_type, unsigned
 {
     unsigned int read_data;
 
-    // DPRINT(" para is %x, dcs_command is %x\n", para, dcs_command);
-    // DPRINT(" vc_id %x, data_type is %x\n", vc_id, data_type);
+    // DBG_PRINT(" para is %x, dcs_command is %x\n", para, dcs_command);
+    // DBG_PRINT(" vc_id %x, data_type is %x\n", vc_id, data_type);
     generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((0 << BIT_GEN_WC_MSBYTE)                           |
                                             (((unsigned int)dcs_command) << BIT_GEN_WC_LSBYTE) |
                                             (((unsigned int)vc_id) << BIT_GEN_VC)              |
@@ -468,10 +491,12 @@ static void dsi_write_long_packet(unsigned char data_type, unsigned char vc_id, 
 //                      DT_DCS_SHORT_WR_0, DT_DCS_SHORT_WR_1,
 //                      DT_GEN_LONG_WR, DT_DCS_LONG_WR,
 //                      DT_SET_MAX_RPS
+// Return:              command number
 // ----------------------------------------------------------------------------
-void dsi_write_cmd(unsigned char* payload)
+int dsi_write_cmd(unsigned char* payload)
 {
     int i=0, j=0;
+    int num = 0;
     unsigned char vc_id = MIPI_DSI_VIRTUAL_CHAN_ID;
     unsigned int req_ack = MIPI_DSI_DCS_ACK_TYPE;
 
@@ -504,7 +529,7 @@ void dsi_write_cmd(unsigned char* payload)
                     dsi_write_long_packet(payload[i], vc_id, &payload[i], payload[i+2], req_ack);
                     break;
                 case DT_SET_MAX_RPS:
-                    printf("to do data_type: 0x%2x\n", payload[i]);
+                    DPRINT("to do data_type: 0x%2x\n", payload[i]);
                     break;
                 case DT_TURN_ON:
                     WRITE_LCD_REG_BITS(MIPI_DSI_TOP_CNTL, 1, 2, 1);
@@ -517,11 +542,14 @@ void dsi_write_cmd(unsigned char* payload)
                     mdelay(20); //wait for vsync trigger
                     break;
                 default:
-                    printf("un-support data_type: 0x%02x\n", payload[i]);
+                    DPRINT("un-support data_type: 0x%02x\n", payload[i]);
             }
         }
         i += j;
+        num++;
     }
+
+    return num;
 }
 
 static void set_dsi_phy_config(DSI_Phy_t *dphy, unsigned dsi_ui)
@@ -548,7 +576,7 @@ static void set_dsi_phy_config(DSI_Phy_t *dphy, unsigned dsi_ui)
     dphy->init = (DPHY_TIME_INIT(t_ui) + t_lane_byte - 1) / t_lane_byte;
     dphy->wakeup = (DPHY_TIME_WAKEUP(t_ui) + t_lane_byte - 1) / t_lane_byte;
 
-    DPRINT("lp_tesc = 0x%02x\n"
+    DBG_PRINT("lp_tesc = 0x%02x\n"
             "lp_lpx = 0x%02x\n"
             "lp_ta_sure = 0x%02x\n"
             "lp_ta_go = 0x%02x\n"
@@ -618,7 +646,7 @@ static void dsi_phy_init(DSI_Phy_t *dphy, unsigned char lane_num)
 
 static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
 {
-    DPRINT("%s\n", __func__);
+    DBG_PRINT("%s\n", __func__);
     //Digital
     // Power up DSI
     WRITE_LCD_REG(MIPI_DSI_DWC_PWR_UP_OS, 1);
@@ -646,25 +674,36 @@ static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
 
 static void dsi_video_config(Lcd_Config_t *pConf)
 {
+    unsigned int hline, hsa, hbp;
+    unsigned int vsa, vbp, vfp, vact;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
 
-    DPRINT(" ============= VIDEO TIMING SETTING =============\n");
-    DPRINT(" HLINE        = %d\n", cfg->hline);
-    DPRINT(" HSA          = %d\n", cfg->hsa);
-    DPRINT(" HBP          = %d\n", cfg->hbp);
-    DPRINT(" VSA          = %d\n", cfg->vsa);
-    DPRINT(" VBP          = %d\n", cfg->vbp);
-    DPRINT(" VFP          = %d\n", cfg->vfp);
-    DPRINT(" VACT         = %d\n", cfg->vact);
-    DPRINT(" ================================================\n");
+    hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
+    hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
+    hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
 
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    cfg->hline);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      cfg->hsa);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      cfg->hbp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     cfg->vsa);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     cfg->vbp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     cfg->vfp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, cfg->vact);
+    vsa = pConf->lcd_timing.vsync_width;
+    vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
+    vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
+    vact = pConf->lcd_basic.v_active;
+
+    DBG_PRINT(" ============= VIDEO TIMING SETTING =============\n");
+    DBG_PRINT(" HLINE        = %d\n", hline);
+    DBG_PRINT(" HSA          = %d\n", hsa);
+    DBG_PRINT(" HBP          = %d\n", hbp);
+    DBG_PRINT(" VSA          = %d\n", vsa);
+    DBG_PRINT(" VBP          = %d\n", vbp);
+    DBG_PRINT(" VFP          = %d\n", vfp);
+    DBG_PRINT(" VACT         = %d\n", vact);
+    DBG_PRINT(" ================================================\n");
+
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    hline);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      hsa);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      hbp);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     vsa);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     vbp);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     vfp);
+    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, vact);
 }
 
 static void startup_transfer_cmd(void)
@@ -731,7 +770,7 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
         case COLOR_RGB_444 :
             break;
         default :
-            DPRINT(" Error: un-support data Format So Far, Please Add More\n");
+            DBG_PRINT(" Error: un-support data Format So Far, Please Add More\n");
             break;
     }    /*switch(dpi_data_format)*/
     num_of_chunk = p->lcd_basic.h_active / pixel_per_chunk;
@@ -741,7 +780,7 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
         if(chunk_overhead >= 6) {                                              // if room for null_vid's head(4)+crc(2)
             vid_null_size = chunk_overhead-6;                                  // chunk_overhead-null_vid's head(4)+crc(2) = null_vid's payload
         } else {
-            DPRINT(" No room for null, chunk_overhead is %d\n", chunk_overhead);
+            DBG_PRINT(" No room for null, chunk_overhead is %d\n", chunk_overhead);
         }
     }
     // -----------------------------------------------------
@@ -767,8 +806,8 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     // 2.3   Configure Signal polarity
     WRITE_LCD_REG( MIPI_DSI_DWC_DPI_CFG_POL_OS, (0x0 << BIT_COLORM_ACTIVE_LOW) |
                         (0x0 << BIT_SHUTD_ACTIVE_LOW)  |
-                        ((((p->lcd_timing.pol_cntl_addr >> LCD_HS_POL) & 1) ? 0 : 1) << BIT_HSYNC_ACTIVE_LOW)  |
-                        ((((p->lcd_timing.pol_cntl_addr >> LCD_VS_POL) & 1) ? 0 : 1) << BIT_VSYNC_ACTIVE_LOW)  |
+                        (0 << BIT_HSYNC_ACTIVE_LOW)  |//(((p->lcd_timing.pol_ctrl >> POL_CTRL_HS) & 1) << BIT_HSYNC_ACTIVE_LOW)  |
+                        (0 << BIT_VSYNC_ACTIVE_LOW)  |//(((p->lcd_timing.pol_ctrl >> POL_CTRL_VS) & 1) << BIT_VSYNC_ACTIVE_LOW)  |
                         (0x0 << BIT_DATAEN_ACTIVE_LOW));
 
     if (operation_mode == OPERATION_VIDEO_MODE) {
@@ -802,14 +841,14 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
         else {                                                                     // non burst mode
             WRITE_LCD_REG( MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, num_of_chunk);                     // HACT/VID_PKT_SIZE
             WRITE_LCD_REG( MIPI_DSI_DWC_VID_NULL_SIZE_OS, vid_null_size);                     // video null size
-            DPRINT(" ============== NON_BURST SETTINGS =============\n");
-            DPRINT(" pixel_per_chunk       = %d\n", pixel_per_chunk);
-            DPRINT(" num_of_chunk          = %d\n", num_of_chunk);
-            DPRINT(" totol_bytes_per_chunk = %d\n", totol_bytes_per_chunk);
-            DPRINT(" byte_per_chunk        = %d\n", byte_per_chunk);
-            DPRINT(" chunk_overhead        = %d\n", chunk_overhead);
-            DPRINT(" vid_null_size         = %d\n", vid_null_size);
-            DPRINT(" ===============================================\n");
+            DBG_PRINT(" ============== NON_BURST SETTINGS =============\n");
+            DBG_PRINT(" pixel_per_chunk       = %d\n", pixel_per_chunk);
+            DBG_PRINT(" num_of_chunk          = %d\n", num_of_chunk);
+            DBG_PRINT(" totol_bytes_per_chunk = %d\n", totol_bytes_per_chunk);
+            DBG_PRINT(" byte_per_chunk        = %d\n", byte_per_chunk);
+            DBG_PRINT(" chunk_overhead        = %d\n", chunk_overhead);
+            DBG_PRINT(" vid_null_size         = %d\n", vid_null_size);
+            DBG_PRINT(" ===============================================\n");
         }
 
         // 4     Configure the video relative parameters according to the output type
@@ -868,11 +907,12 @@ static void mipi_dsi_host_config(Lcd_Config_t *pConf)
     dpi_data_format = pConf->lcd_control.mipi_config->dpi_data_format;
     lane_num        = pConf->lcd_control.mipi_config->lane_num;
 
-#ifdef PRINT_DEBUG_INFO
+#ifdef LCD_DEBUG_INFO
     print_info();
+    print_dphy_info();
 #endif
 
-    DPRINT("Set mipi_dsi_host\n");
+    DBG_PRINT("Set mipi_dsi_host\n");
     set_mipi_dcs(MIPI_DSI_CMD_TRANS_TYPE,              // 0: high speed, 1: low power
                  MIPI_DSI_DCS_ACK_TYPE,                // if need bta ack check
                  MIPI_DSI_TEAR_SWITCH);                // enable tear ack
@@ -900,7 +940,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 #endif
     unsigned int init_flag = 0;
 
-    printf("%s\n", __FUNCTION__);
+    DPRINT("%s\n", __FUNCTION__);
     operation_mode_disp = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
     video_mode_type = pConf->lcd_control.mipi_config->video_mode_type;
     venc_format     = pConf->lcd_control.mipi_config->venc_fmt;
@@ -912,27 +952,25 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 #ifdef CONFIG_AML_LCD_EXTERN
         lcd_extern_driver = aml_lcd_extern_get_driver();
         if (lcd_extern_driver == NULL) {
-            printf("no lcd_extern driver\n");
+            DPRINT("no lcd_extern driver\n");
         }
         else {
             if (lcd_extern_driver->init_on_cmd_8) {
-                dsi_write_cmd(lcd_extern_driver->init_on_cmd_8);
-                printf("[extern]%s dsi init on\n", lcd_extern_driver->name);
+                init_flag += dsi_write_cmd(lcd_extern_driver->init_on_cmd_8);
+                DPRINT("[extern]%s dsi init on\n", lcd_extern_driver->name);
             }
-            init_flag++;
         }
 #endif
     }
 
     if (pConf->lcd_control.mipi_config->dsi_init_on) {
-        dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
-        init_flag++;
-        DPRINT("dsi init on\n");
+        init_flag += dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
+        DBG_PRINT("dsi init on\n");
     }
 
     if (init_flag == 0) {
+        DPRINT("[warning]: not init for mipi-dsi, use default command\n");
         dsi_write_cmd(dsi_init_on_table_dft);
-        printf("[warning]: not init for mipi-dsi, use default command\n");
     }
 
     if (operation_mode_disp != ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1)) {
@@ -956,19 +994,19 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
 
     if (pConf->lcd_control.mipi_config->dsi_init_off) {
         dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
-        DPRINT("dsi init off\n");
+        DBG_PRINT("dsi init off\n");
     }
 
     if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
         lcd_extern_driver = aml_lcd_extern_get_driver();
         if (lcd_extern_driver == NULL) {
-            printf("no lcd_extern driver\n");
+            DPRINT("no lcd_extern driver\n");
         }
         else {
             if (lcd_extern_driver->init_off_cmd_8) {
                 dsi_write_cmd(lcd_extern_driver->init_off_cmd_8);
-                printf("[extern]%s dsi init off\n", lcd_extern_driver->name);
+                DPRINT("[extern]%s dsi init off\n", lcd_extern_driver->name);
             }
         }
 #endif
@@ -980,22 +1018,17 @@ void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
     unsigned int bit_rate;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
 
-    dsi_config = pConf->lcd_control.mipi_config;
     if (cfg->bit_rate_max == 0) {
         bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 3 * 8) / cfg->lane_num;
         cfg->bit_rate_min = bit_rate - 20*1000;
         cfg->bit_rate_max = bit_rate - 20*1000 + (pConf->lcd_timing.lcd_clk / 1000);
-        printf("mipi dsi bit_rate min=%dMHz, max=%dMHz\n", (cfg->bit_rate_min / 1000), (cfg->bit_rate_max / 1000));
-    }
-    else {
-        cfg->bit_rate_min *= 1000;
-        cfg->bit_rate_max *= 1000;
+        DPRINT("mipi dsi bit_rate min=%dMHz, max=%dMHz\n", (cfg->bit_rate_min / 1000), (cfg->bit_rate_max / 1000));
     }
     if (cfg->bit_rate_max < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) {
-        printf("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
+        DPRINT("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
     }
     if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
-        printf("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
+        DPRINT("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
     }
 
     cfg->video_mode_type = MIPI_DSI_VIDEO_MODE_TYPE;
@@ -1026,38 +1059,22 @@ void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
 
 void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
 {
-    unsigned pre_div, post_div, xd;
     unsigned pclk, lanebyteclk;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
 
-    post_div = (((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_POST) & 0x7) + 1;
-    pre_div = ((pConf->lcd_timing.div_ctrl) >> DIV_CTRL_DIV_PRE) & 0x7;
-    pre_div = div_pre_table[pre_div];
-    xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
-
     pclk = pConf->lcd_timing.lcd_clk;
-    cfg->bit_rate = pclk * pre_div * post_div * xd;
 
     if (cfg->factor_numerator == 0) {
         lanebyteclk = cfg->bit_rate / 8;
-        DPRINT("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
+        DBG_PRINT("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
                  (cfg->bit_rate / 1000000), ((cfg->bit_rate / 1000) % 1000), (lanebyteclk / 1000000), ((lanebyteclk / 1000) % 1000));
 
         cfg->factor_denominator = lanebyteclk/1000;
         cfg->factor_numerator = pclk/1000;
         //cfg->factor_denominator = 10;
     }
-    DPRINT("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
+    DBG_PRINT("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
              ((cfg->factor_denominator % cfg->factor_numerator) * 100 / cfg->factor_numerator));
-
-    cfg->hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
-    cfg->hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
-    cfg->hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
-
-    cfg->vsa = pConf->lcd_timing.vsync_width;
-    cfg->vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
-    cfg->vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
-    cfg->vact = pConf->lcd_basic.v_active;
 
     set_dsi_phy_config(&dsi_phy_config, cfg->bit_rate);
 }
@@ -1078,7 +1095,7 @@ void set_mipi_dsi_control(Lcd_Config_t *pConf)
 
 void mipi_dsi_off(void)
 {
-    DPRINT("poweroff dsi digital\n");
+    DBG_PRINT("poweroff dsi digital\n");
     // Power down DSI
     WRITE_LCD_REG(MIPI_DSI_DWC_PWR_UP_OS, 0);
 
@@ -1087,6 +1104,20 @@ void mipi_dsi_off(void)
     // WRITE_LCD_REG(MIPI_DSI_DWC_PHY_RSTZ_OS, 0xc);
 
     WRITE_DSI_REG(MIPI_DSI_CHAN_CTRL, 0x1f);
-    DPRINT("MIPI_DSI_PHY_CTRL=0x%x\n", READ_DSI_REG(MIPI_DSI_PHY_CTRL)); //read
+    DBG_PRINT("MIPI_DSI_PHY_CTRL=0x%x\n", READ_DSI_REG(MIPI_DSI_PHY_CTRL)); //read
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL, 0, 7, 1);
+}
+
+void dsi_probe(Lcd_Config_t *pConf)
+{
+    dsi_config = pConf->lcd_control.mipi_config;
+
+    pConf->lcd_control.mipi_config->bit_rate_min *= 1000;
+    pConf->lcd_control.mipi_config->bit_rate_max *= 1000;
+}
+
+void dsi_remove(void)
+{
+    dsi_config->bit_rate_min /= 1000;  //for lcd_config_dft when no dt
+    dsi_config->bit_rate_max /= 1000;  //for lcd_config_dft when no dt
 }

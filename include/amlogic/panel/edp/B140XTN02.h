@@ -5,20 +5,20 @@
 //*****************************************
 // Define LCD Typical Timing Parameters
 //*****************************************
-#define MODEL_NAME            "LP097QX1" /** lcd model name */
+#define MODEL_NAME            "B140XTN02" /** lcd model name */
 
-#define ACITVE_AREA_WIDTH     197 /** lcd active_area or display_area horizontal size(unit in mm, you can find it on the home page of lcd spec) */
-#define ACITVE_AREA_HEIGHT    147 /** lcd active_area or display_area vertical size(unit in mm, you can find it on the home page of lcd spec) */
+#define ACITVE_AREA_WIDTH     309 /** lcd active_area or display_area horizontal size(unit in mm, you can find it on the home page of lcd spec) */
+#define ACITVE_AREA_HEIGHT    173 /** lcd active_area or display_area vertical size(unit in mm, you can find it on the home page of lcd spec) */
 #define LCD_TYPE              LCD_DIGITAL_EDP /** lcd interface(LCD_DIGITAL_MIPI, LCD_DIGITAL_LVDS, LCD_DIGITAL_EDP, LCD_DIGITAL_TTL) */
-#define LCD_BITS              8 /** lcd bits(6, 8) */
-#define BITS_OPTION           1 /** bits_option(0=only support one mode as LCD_BITS define, 1=both support 6/8bit) */
+#define LCD_BITS              6 /** lcd bits(6, 8) */
+#define BITS_OPTION           0 /** bits_option(0=only support one mode as LCD_BITS define, 1=both support 6/8bit) */
 
-#define H_ACTIVE              2048 /** horizontal resolution */
-#define V_ACTIVE              1536 /** vertical resolution */
-#define H_PERIOD              2219 /** horizontal period(htotal) */
-#define V_PERIOD              1560 /** vertical period(vtotal) */
+#define H_ACTIVE              1366 /** horizontal resolution */
+#define V_ACTIVE              768 /** vertical resolution */
+#define H_PERIOD              1598 /** horizontal period(htotal) */
+#define V_PERIOD              798 /** vertical period(vtotal) */
 
-#define LCD_CLK               207700000 /** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
+#define	LCD_CLK               76300000 /** clock(unit in Hz, both support clk and frame_rate, >200 regard as clk, <200 regard as frame_rate) */
 #define CLK_POL               0 /** clk_polarity(only valid for TTL) */
 #define HS_WIDTH              5 /** hsync_width */
 #define HS_BACK_PORCH         120 /** hsync_backporch(include hsync_width) */
@@ -32,6 +32,6 @@
 // EDP config
 //************************************************
 #define LCD_EDP_CONFIG
-#define MAX_LANE_COUNT        4
+#define MAX_LANE_COUNT        1
 
 #endif

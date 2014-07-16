@@ -160,10 +160,11 @@
 #define VAL_EDP_LPM_STATUS_LINK_VALID			0x0000
 #define VAL_EDP_LPM_STATUS_CHANGED				0xAA10
 #define VAL_EDP_LPM_STATUS_RETRAIN				0xAA11
-#define VAL_EDP_LPM_STATUS_NOT_CONNECTED		0xAA12
-#define VAL_EDP_LPM_STATUS_TX_NOT_CONFIGURED	0xAA13
-#define VAL_EDP_LPM_STATUS_RX_IDLE				0xAA21
-#define VAL_EDP_LPM_STATUS_RX_ACTIVE			0xAA22
+#define VAL_EDP_LPM_STATUS_LINK_RATE_ADJUST		0xAA12
+#define VAL_EDP_LPM_STATUS_NOT_CONNECTED		0xAA13
+#define VAL_EDP_LPM_STATUS_TX_NOT_CONFIGURED	0xAA21
+#define VAL_EDP_LPM_STATUS_RX_IDLE				0xAA31
+#define VAL_EDP_LPM_STATUS_RX_ACTIVE			0xAA32
 
 #define VAL_EDP_TX_AUX_INVALID_PARAMETER		0x1144
 #define VAL_EDP_TX_AUX_OPERATION_TIMEOUT		0x1133
@@ -174,6 +175,42 @@
 #define VAL_EDP_TX_OPERATION_FAILED				0x00FF
 #define VAL_EDP_TX_OPERATION_SUCCESS			0x0000
 //********************************************************//
+
+#define VAL_EDP_TX_INVALID_VALUE    0xFF
+static const unsigned char edp_link_rate_table[] = {
+    VAL_EDP_TX_LINK_BW_SET_162,
+    VAL_EDP_TX_LINK_BW_SET_270,
+    VAL_EDP_TX_LINK_BW_SET_540,
+    VAL_EDP_TX_INVALID_VALUE,
+};
+static const char *edp_link_rate_string_table[]={
+    "1.62Gbps",
+    "2.70Gbps",
+    "5.40Gbps",
+    "invalid",
+};
+static const unsigned char edp_lane_count_table[] = {1, 2, 4, VAL_EDP_TX_INVALID_VALUE,};
+#define LINK_RATE_TO_CAPACITY(x)    (x * 8 / 10) //8/10 coding
+static const unsigned edp_link_capacity_table[] = { //Mbps
+    LINK_RATE_TO_CAPACITY(1620), //1.62G
+    LINK_RATE_TO_CAPACITY(2700), //2.7G
+    LINK_RATE_TO_CAPACITY(5400), //5.4G
+};
+
+static const unsigned char edp_vswing_table[] = {
+    VAL_EDP_TX_PHY_VSWING_0,
+    VAL_EDP_TX_PHY_VSWING_1,
+    VAL_EDP_TX_PHY_VSWING_2,
+    VAL_EDP_TX_PHY_VSWING_3,
+    VAL_EDP_TX_INVALID_VALUE,
+};
+static const unsigned char edp_preemphasis_table[] = {
+    VAL_EDP_TX_PHY_PREEMPHASIS_0,
+    VAL_EDP_TX_PHY_PREEMPHASIS_1,
+    VAL_EDP_TX_PHY_PREEMPHASIS_2,
+    VAL_EDP_TX_PHY_PREEMPHASIS_3,
+    VAL_EDP_TX_INVALID_VALUE,
+};
 
 typedef enum {
 	EDP_HPD_STATE_DISCONNECTED = 0,
@@ -215,13 +252,12 @@ typedef struct {
 	unsigned short vsync_pol;
 	unsigned short vsync_width;
 	unsigned short vsync_bp;
-	unsigned short de_hstart;
-	unsigned short de_vstart;
 	
 	unsigned short ppc;		//pixels per clock cycle
 	unsigned short cformat;	//color format(0=RGB, 1=4:2:2, 2=Y only)
 	unsigned short bpc;		//bits per color
-} EDP_Video_Mode_t;
+	unsigned int sync_clock_mode;
+} EDP_MSA_t; //Main Stream Attribute
 
 typedef struct {
 	unsigned char max_lane_count;
@@ -238,17 +274,15 @@ typedef struct {
 	unsigned char use_dpcd_caps;
 	unsigned char link_rate_adjust_en;
 	unsigned char link_adaptive;
-	unsigned int bit_rate;	//Mbps
+	unsigned int bit_rate; //Mbps
 } EDP_Link_Config_t;
 
-#define EDP_TX_LINK_CAPACITY_162	1296	//Mbps
-#define EDP_TX_LINK_CAPACITY_270	2160	//Mbps
-#define EDP_TX_LINK_CAPACITY_540	4320	//Mbps
+extern void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx);
 
-extern int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_Video_Mode_t *vm);
+extern int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_MSA_t *vm);
 extern int dplpm_link_off(void);
 extern void dplpm_off(void);
+extern void edp_probe(void);
+extern void edp_remove(void);
 
-extern unsigned edp_clk_config_update(unsigned char link_rate);
-extern void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx);
 #endif
