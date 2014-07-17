@@ -320,7 +320,7 @@
 		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\
         "if unifykey get usid; then  "\
-            "setenv bootargs ${initargs} androidboot.serialno=${usid};"\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
