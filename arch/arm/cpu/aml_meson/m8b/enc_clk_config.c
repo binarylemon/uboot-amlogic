@@ -33,38 +33,38 @@
 static void set_hpll_clk_out(unsigned clk)
 {
     printf("config HPLL\n");
-    aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x69c88000);
-    aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0xca563823);
-    aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x40238100);
-    aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00012286);
-    aml_write_reg32(P_HHI_VID2_PLL_CNTL2, 0x430a800);       // internal LDO share with HPLL & VIID PLL
-    aml_write_reg32(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
+    aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c88000);
+    aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xca563823);
+    aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x40238100);
+    aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012286);
+    aml_write_reg32_op(P_HHI_VID2_PLL_CNTL2, 0x430a800);       // internal LDO share with HPLL & VIID PLL
+    aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL0, 0x08c31e8b);
     switch(clk){
         case 2160:
-            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x59c80000);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0x0a563823);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x0123b100);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x12385);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x6001042d);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x4001042d);
-            while(!(aml_read_reg32(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x59c80000);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0x0a563823);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x0123b100);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x12385);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6001042d);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4001042d);
+            while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
                 ;
             }
             break;
         case 1488:
-            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x69c8ce00);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x4023d100);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0x8a7ad023);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x12286);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x6000043d);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x4000043d);
-            while(!(aml_read_reg32(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c8ce00);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x4023d100);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0x8a7ad023);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x12286);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000043d);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000043d);
+            while(!(aml_read_reg32_op(P_HHI_VID_PLL_CNTL) & (1 << 31))) {
                 ;
             }
             break;
         case 1080:
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x6000042d);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x4000042d);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x6000042d);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x4000042d);
             break;
         case 1066:
             WRITE_CBUS_REG(HHI_VID_PLL_CNTL, 0x42a);
@@ -76,22 +76,26 @@ static void set_hpll_clk_out(unsigned clk)
             WRITE_CBUS_REG(HHI_VID_PLL_CNTL, 0x43e);
             break;
         case 1296:
-            aml_write_reg32(P_HHI_VID_PLL_CNTL2, 0x59c88000);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL3, 0xca49b022);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL4, 0x0023b100);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00012385);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x600c0436);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL,  0x400c0436);
-            aml_write_reg32(P_HHI_VID_PLL_CNTL5, 0x00016385);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x59c88000);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xca49b022);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x0023b100);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012385);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x600c0436);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL,  0x400c0436);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00016385);
             break;
         default:
+            printf("error hpll clk: %d\n", clk);
             break;
     }
+    if(clk < 2970)
+        aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, (aml_read_reg32_op(P_HHI_VID_PLL_CNTL5) & (~(0xf << 12))) | (0x6 << 12));
+
     // P_HHI_HDMI_PHY_CNTL1     bit[1]: enable clock    bit[0]: soft reset
 #define RESET_HDMI_PHY()                        \
-    aml_write_reg32(P_HHI_HDMI_PHY_CNTL1, 3);   \
+    aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 3);   \
     h_delay();                                  \
-    aml_write_reg32(P_HHI_HDMI_PHY_CNTL1, 2);   \
+    aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 2);   \
     h_delay()
 
     RESET_HDMI_PHY();
