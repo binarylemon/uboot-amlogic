@@ -140,7 +140,7 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#if defined(CONFIG_AML_MESON_8)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
@@ -166,9 +166,8 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		serial_puts("\nno sdio debug board detected ");
 		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
 	}
-#endif //#if defined(CONFIG_M8)
+#endif //#if defined(CONFIG_AML_MESON_8)
 
-
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
 		//A9 JTAG enable
@@ -262,10 +261,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     const unsigned paraMagic = binRunInfoHead->magic;
     const unsigned ChipId    = readl(CBUS_REG_ADDR(0x1f53));
 
-#if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#if defined(CONFIG_AML_MESON_8)
 	//enable watchdog, then when bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
-#endif// #if defined(CONFIG_M8) || defined(CONFIG_M8B)
+#endif// #if defined(CONFIG_AML_MESON_8)
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
     //serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
     //serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
