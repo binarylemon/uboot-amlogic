@@ -445,6 +445,12 @@ ifdef CONFIG_M6_SECU_AUTH_KEY
 else
 	@./tools/secu_boot/encrypto2 $@
 endif
+
+ifdef CONFIG_AML_CRYPTO_UBOOT
+	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
+	$@.aml $@.aml.encrypt $@.aml.efuse
+endif
+
 endif
 endif  #END CONFIG_JOIN_UBOOT_SECUREOS
 

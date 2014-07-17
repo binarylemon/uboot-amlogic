@@ -518,6 +518,18 @@ static void aml_m6_sec_boot_check(const unsigned char *pSRC)
 #define AML_MX_UCL_HASH_SIZE_2 		(16)
 //note:  the hash key of uboot ucl image is splitted to two parts (16+16bytes) and locate in  AML_MX_UCL_HASH_ADDR_1/2
 
+	int index = check_m6_chip_version();
+	if(index < 0){
+		serial_puts("\nErr! Wrong MX chip!\n");
+		AML_WATCH_DOG_START();
+	}
+	t_func_v3 fp_05 = (t_func_v3)m6_g_action[index][5];
+	unsigned int info=0;
+	fp_05((int)&info,0,4);
+	if(!(info &(1<<7))){
+		return ;
+	}
+
 	writel(readl(0xda004004) & ~0x80000510,0xda004004);//clear JTAG for long time hash
 	unsigned char szHashUCL[SHA256_HASH_BYTES];
 	unsigned int nSizeUCL = *((unsigned int *)(AML_MX_UCL_SIZE_ADDR)); //get ucl length to be hashed
