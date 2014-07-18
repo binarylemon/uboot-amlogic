@@ -354,6 +354,7 @@ typedef union nand_core_clk {
 #define	NAND_CMD_SANDISK_DYNAMIC_DISABLE			0xD6
 #define 	NAND_CMD_SANDISK_SLC  							0xA2     
 #define   NAND_CMD_SANDISK_SET_VALUE					0XEF
+#define	NAND_CMD_SANDISK_DSP_OFF					0x25
 #define	NAND_CMD_SANDISK_DSP_ON						0x26
 #define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
 //for hynix 20nm OTP
@@ -376,6 +377,11 @@ typedef union nand_core_clk {
 #define      SANDISK_19NM								40
 #define 	SANDISK_24NM								41
 #define 	SANDISK_A19NM								42
+#define     SANDISK_A19NM_4G							53
+
+//for Intel
+#define   INTEL_20NM									60
+//for Micron
 #define      MICRON_20NM								50
 
 struct read_retry_info
