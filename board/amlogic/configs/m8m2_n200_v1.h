@@ -1,9 +1,15 @@
 #ifndef __CONFIG_M8M2_N200_V1_H__
 #define __CONFIG_M8M2_N200_V1_H__
 
+#define CONFIG_AML_MESON_8      1
 #define CONFIG_MACH_MESON8_SKT  // generate M8 SKT machid number
 
 #define CONFIG_SECURITYKEY
+
+#ifndef CONFIG_M8
+#define CONFIG_M8
+#endif // ifndef CONFIG_M8
+//#define	CONFIG_VLSI_EMULATOR 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 // cart type of each port
@@ -14,6 +20,20 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+
+//#define CONFIG_SECURESTORAGEKEY
+#ifdef CONFIG_SECURESTORAGEKEY
+#ifndef CONFIG_RANDOM_GENERATE
+#define CONFIG_RANDOM_GENERATE
+#endif
+#endif
+
+//#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#endif
+
+//#define  CONFIG_AML_GATE_INIT	1
 #define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
@@ -34,13 +54,24 @@
 #ifdef CONFIG_NEXT_NAND
 #define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 #define CONFIG_AML_V2_USBTOOL 1
-#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
-#define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
-#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
-#define CONFIG_SHA1
 #endif//#ifdef CONFIG_NEXT_NAND
 
-#define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
+#if CONFIG_AML_V2_USBTOOL
+#define CONFIG_SHA1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_LED    1//1 then using led flickering states changing to show burning states when sdcard burning
+#define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
+#ifdef CONFIG_ACS
+#define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
+#else
+#define CONFIG_TPL_BOOT_ID_ADDR       		(&reboot_mode)//pass boot_id, spl->uboot
+#endif// #ifdef CONFIG_ACS
+#endif// #if CONFIG_AML_V2_USBTOOL
+
+#define CONFIG_UNIFY_KEY_MANAGE 1
+#define CONFIG_CMD_PWM  1
+//#define CONFIG_CMD_IMGREAD_FOR_SECU_BOOT_V2 1  //open this macro if need read encrypted kernel/dtb with whole part size
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
@@ -88,34 +119,7 @@
 	#define CONFIG_NETMASK         255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
 
-
-#define CONFIG_SDIO_B1   1
-#define CONFIG_SDIO_A    1
-#define CONFIG_SDIO_B    1
-#define CONFIG_SDIO_C    1
-#define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
-
-
-#define CONFIG_MMU                    1
-#define CONFIG_PAGE_OFFSET 	0xc0000000
-#define CONFIG_SYS_LONGHELP	1
-
-/* USB
- * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
- * Enable CONFIG_MUSB_UDD for Device functionalities.
- */
-/* #define CONFIG_MUSB_UDC		1 */
-#define CONFIG_CMD_USB 1
-#if defined(CONFIG_CMD_USB)
-	#define CONFIG_M8_USBPORT_BASE_A	0xC9040000
-	#define CONFIG_M8_USBPORT_BASE_B	0xC90C0000
-	#define CONFIG_USB_STORAGE      1
-	#define CONFIG_USB_DWC_OTG_HCD  1
-	#define CONFIG_USB_DWC_OTG_294	1
-#endif //#if defined(CONFIG_CMD_USB)
-
-#define CONFIG_ENABLE_CVBS 1
-
+//I2C definitions
 #define CONFIG_AML_I2C			1
 #ifdef CONFIG_AML_I2C
 #define CONFIG_CMD_I2C			1
@@ -172,6 +176,32 @@
 
 #endif /* CONFIG_PLATFORM_HAS_PMU */
 
+#define CONFIG_SDIO_B1   1
+#define CONFIG_SDIO_A    1
+#define CONFIG_SDIO_B    1
+#define CONFIG_SDIO_C    1
+#define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
+
+
+#define CONFIG_MMU                    1
+#define CONFIG_PAGE_OFFSET 	0xc0000000
+//#define CONFIG_SYS_LONGHELP	1
+
+/* USB
+ * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
+ * Enable CONFIG_MUSB_UDD for Device functionalities.
+ */
+/* #define CONFIG_MUSB_UDC		1 */
+#define CONFIG_CMD_USB 1
+#if defined(CONFIG_CMD_USB)
+	#define CONFIG_M8_USBPORT_BASE_A	0xC9040000
+	#define CONFIG_M8_USBPORT_BASE_B	0xC90C0000
+	#define CONFIG_USB_STORAGE      1
+	#define CONFIG_USB_DWC_OTG_HCD  1
+	#define CONFIG_USB_DWC_OTG_294	1
+#endif //#if defined(CONFIG_CMD_USB)
+
+
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
 //#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
@@ -188,6 +218,7 @@
 #define CONFIG_BOOTFILE		boot.img
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"us_delay_step=1\0" \
 	"loadaddr=0x12000000\0" \
 	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
@@ -197,12 +228,14 @@
 	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
+	"get_dt=checkhw\0" \
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
 	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -222,7 +255,7 @@
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
@@ -283,6 +316,8 @@
         "\0"\
 	\
 	"storeboot="\
+		"secukey auto;" \
+		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\
         "if unifykey get usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
@@ -437,6 +472,7 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
@@ -466,25 +502,24 @@
 //#define CONFIG_TEST_CPU_SWITCH 1
 
 
-#if defined(CONFIG_VLSI_EMULATOR)
-   //#undef CONFIG_DDR_2GB
-   #undef CONFIG_DDR_CLK
-   #define CONFIG_DDR_CLK    792
-   #undef CONFIG_BOOTCOMMAND
-   #define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
+#ifdef CONFIG_MESON_TRUSTZONE
 
-   //#define CONFIG_DDR_1GB
-   #define CONFIG_NO_DDR_PUB_VT_CHECK 1
+//#define CONFIG_MESON_SECUREARGS  1
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+#define SECUREOS_KEY_BASE_ADDR 0x06100000
+#define SECURE_OS_DECOMPRESS_ADDR 0x06200000
+#define CONFIG_SECURE_STORAGE_BURNED
 
-   #undef CONFIG_CMD_AUTOSCRIPT
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_MESON_STORAGE_BURN 1
+#define CONFIG_MESON_STORAGE_DEBUG
+#define CONFIG_SECURESTORAGEKEY
+#define CONFIG_RANDOM_GENERATE
+#define CONFIG_CMD_SECURESTORE
+#define CONFIG_CMD_RANDOM
+/* secure storage support both spi and emmc */
+#define CONFIG_SECURE_MMC
+#endif // CONFIG_SECURE_STORAGE_BURNED
 
-   #undef CONFIG_CMD_REBOOT
-   #undef CONFIG_PREBOOT
-
-   #undef CONFIG_AML_SUSPEND
-   #undef CONFIG_CMD_SUSPEND
-
-   #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
-#endif
-
+#endif //CONFIG_MESON_TRUSTZONE
 #endif //__CONFIG_M8M2_N200_V1_H__
