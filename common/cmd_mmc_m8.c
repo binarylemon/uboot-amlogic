@@ -29,6 +29,8 @@
 #include <partition_table.h>
 #include <emmc_partitions.h>
 
+unsigned emmc_cur_partition = 0;
+
 static int get_off_size(struct mmc * mmc, char * name, uint64_t offset, uint64_t  size, u64 * blk, u64 * cnt, u64 * sz_byte)
 {
 	struct partitions *part_info = NULL;
@@ -288,7 +290,12 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 }
 				
 				blk = part_info->offset>> blk_shift;
-				cnt = part_info->size>> blk_shift;				
+				if(emmc_cur_partition && !strncmp(name, "bootloader", strlen("bootloader"))){
+				    
+				    cnt = mmc->boot_size>> blk_shift;
+				}
+				else
+				    cnt = part_info->size>> blk_shift;				
                 n = mmc->block_dev.block_erase(dev, blk, cnt);
 			} else { // erase the whole card if possible
                 if (emmckey_is_protected(mmc)) {
@@ -325,6 +332,29 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 } else {
                     n = mmc->block_dev.block_erase(dev, 0, 0); // erase the whole card
                 }
+                
+                //erase boot partition
+                if(mmc->boot_size && (n == 0)){
+                    
+                    for(cnt=0;cnt<2;cnt++){
+                        rc = mmc_switch_partition(mmc, cnt+1);
+                        if(rc != 0){
+                            printf("mmc switch %s failed\n", (cnt == 0)?"boot0":"boot1");
+                            break;
+                        }
+                        
+                        n = mmc->block_dev.block_erase(dev, 0, mmc->boot_size>>blk_shift);      
+                        if(n != 0){
+                            printf("mmc erase %s failed\n", (cnt == 0)?"boot0":"boot1");
+                            break;                            
+                        }                  
+                    }
+                    
+                    rc = mmc_switch_partition(mmc, 0);    
+                    if(rc != 0){
+                        printf("mmc switch back to user failed\n");
+                    }                    
+                }
             }
 
 			// printf("dev # %d, %s, # %#llx blocks erased %s\n",
@@ -347,12 +377,21 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 return 1;
             }
             mmc_init(mmc);
-            if(strcmp(argv[3], "boot0")==0)
+            if(strcmp(argv[3], "boot0")==0){
                 rc = mmc_switch_partition(mmc, 1);
-            else if(strcmp(argv[3], "boot1")==0)
+                if(rc == 0)
+                    emmc_cur_partition = 1;
+            }
+            else if(strcmp(argv[3], "boot1")==0){
                 rc = mmc_switch_partition(mmc, 2);
-            else if(strcmp(argv[3], "user")==0)
+                if(rc == 0)
+                    emmc_cur_partition = 2;
+            }
+            else if(strcmp(argv[3], "user")==0){
                 rc = mmc_switch_partition(mmc, 0);
+                if(rc == 0)
+                    emmc_cur_partition = 0;
+            }
             return rc;
         }
                 
