@@ -380,7 +380,7 @@
 #define CONFIG_BOOTCOMMAND  \
     "imgread kernel boot ${loadaddr}; "\
     "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
-    "if unifykey get usid; then setenv bootargs ${bootargs} androidboot.serialno=$(usid};"\
+    "if unifykey get usid; then setenv bootargs ${bootargs} androidboot.serialno=${usid}; fi;"\
     "bootm;"\
     "run ota_update"
 
