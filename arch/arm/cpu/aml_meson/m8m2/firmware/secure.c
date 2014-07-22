@@ -17,28 +17,32 @@
  *             any of this file before verified.
  * Remark: 
  *			 1. 2013.12.10 v0.1 for decrypt only
- *			 2. 2014.07.03 v0.2 copy from M8
+ *			 2. 2014.04.10 v0.2 check secure boot flag before decrypt 
+ *			 3. 2014.06.26 v0.3 support image check
+ *			 4. 2014.06.26 v0.4 support 2-RSA
+  *			 5. 2014.07.18 v0.5 unify secure boot for M8/M8B/M8M2
  *
  **************************************************************************************************************/
 
-#if !defined(__AMLOGIC_M8M2_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__)
-#define __AMLOGIC_M8M2_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
+#if !defined(__AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__)
+#define __AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
 
 //help info show config
 #define AML_SECURE_PROCESS_MSG_SHOW 1
 
 int g_nStep = 0;
 
-unsigned int g_action[3][16]={
-	{0xd9046f08,0xd904a300,0xd9040390,0xd90442ac,0xd90472f4,0xd90443a8,
-	 0xd90443ec,0xd9044438,0xd9046ce0,0xd904cd58,0xd904cca4,0xd904a258,
-	 0xd904cf64,0xd9018040},
-	{0xd9046f90,0xd904a388,0xd904038c,0xd9044340,0xd904737c,0xd904443c,
-	 0xd9044480,0xd90444c0,0xd9046d68,0xd904cde0,0xd904cd2c,0xd904a2e0,
-	 0xd904cfec,0xd9018050},
-	{0xd904716c,0xd904b364,0xd904038c,0xd934441c,0xd9047258,0xd9044578, 
-	 0xd904438c,0xd90444c4,0xd9046d98,0xd904cfe0,0xd904ce2c,0xd904a280},
-	 };
+unsigned int g_action[5][18]={
+	{0x000025e2,0xd904706c,0xd904a59c,0xd904038c,0xd904441c,0xd9047458,0xd9044518,0xd904455c,
+	 0xd904459c,0xd9046e44,0xd904d014,0xd904cf60,0xd904a4f4,0xd904d220,0xd9018050},
+	{0x000027ed,0xd9046f90,0xd904a388,0xd904038c,0xd9044340,0xd904737c,0xd904443c,0xd9044480,
+	 0xd90444c0,0xd9046d68,0xd904cde0,0xd904cd2c,0xd904a2e0,0xd904cfec,0xd9018050},
+	{0x0000074E,0xd9046f08,0xd904a300,0xd9040390,0xd90442ac,0xd90472f4,0xd90443a8,0xd90443ec,
+	 0xd9044438,0xd9046ce0,0xd904cd58,0xd904cca4,0xd904a258,0xd904cf64,0xd9018040},
+	{0x00000b72,0xd9046fb4,0xd904a3ac,0xd9040408,0xd9044358,0xd90473a0,0xd9044454,0xd9044498,
+	 0xd90444e4,0xd9046d8c,0xd904ce04,0xd904cd50,0xd904a304,0xd904d010,0xd9018040},
+	{0x00000000,0x00000000},
+};
 
 typedef  void (*t_func_v1)( int a);
 typedef  void (*t_func_v2)( int a, int b);
@@ -49,15 +53,15 @@ typedef  int  (*t_func_r1)( int a);
 typedef  int  (*t_func_r2)( int a, int b);
 typedef  int  (*t_func_r3)( int a, int b, int c);
 
-static int aml_m8m2_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,
+static int aml_m8_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int nkey1Len,
 		unsigned char *pkey2,int nkey2Len,unsigned int *pState)
 {	
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
 
 	char * pInfo1[2][2]={
-		{"Aml log : M8-R1024 ",   "Aml log : M8M2-R2048 "},
-		{"Aml log : M8-R1024-2X ","Aml log : M8M2-R2048-2X "},
+		{"Aml log : M8-R1024 ",   "Aml log : M8-R2048 "},
+		{"Aml log : M8-R1024-2X ","Aml log : M8-R2048-2X "},
 	};
 	
 #if defined(CONFIG_AMLROM_SPL)
@@ -110,40 +114,52 @@ static int aml_m8m2_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int 
 	
 	g_nStep = 0;
 
+	/*
 	switch(* (unsigned int *)0xd9040004)
 	{
-	case 0x74E: break;
+	case 0x25e2: break;
+	case 0x27ed: g_nStep = 1 ; break;
+	case 0x74E : g_nStep = 2 ; break;
+	case 0xb72:  g_nStep = 3 ; break;
 	default: goto exit;break;
 	}
+	*/
+	for(g_nStep = 0;g_nStep<sizeof(g_action)/sizeof(g_action[0]);++g_nStep)
+	{
+		if(!g_action[g_nStep][0])
+			goto exit;
+		if((*(unsigned int *)0xd9040004) == g_action[g_nStep][0])
+			break;
+	}
 
-	t_func_v3 fp_00 = (t_func_v3)g_action[g_nStep][0]; //void rsa_init(1,2,3)
-	t_func_r3 fp_01 = (t_func_r3)g_action[g_nStep][1]; //int mpi_read_string(1,2,3)
-	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2]; //void efuse_read(1,2,3)
-	t_func_r2 fp_03 = (t_func_r2)g_action[g_nStep][3]; //int boot_rsa_read_puk(a,b)
-	t_func_r3 fp_04 = (t_func_r3)g_action[g_nStep][4]; //int rsa_public(1,2,3)
-	t_func_v2 fp_05 = (t_func_v2)g_action[g_nStep][5]; //void boot_aes_setkey_dec(1,2)
-	t_func_v1 fp_06 = (t_func_v1)g_action[g_nStep][6]; //void boot_aes_setiv_init(1)
-	t_func_v4 fp_07 = (t_func_v4)g_action[g_nStep][7]; //void boot_aes_crypt_cbc(1,2,3,4)
-	t_func_v4 fp_08 = (t_func_v4)g_action[g_nStep][8]; //void sha2(1,2,3,4)
-	t_func_r3 fp_09 = (t_func_r3)g_action[g_nStep][9]; //int memcpy(1,2,3)
-	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];//int memcmp(1,2,3)
-	t_func_r1 fp_11 = (t_func_r1)g_action[g_nStep][11];//int mpi_msb(1)
-	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];//void memset(1,2,3)
+	t_func_v3 fp_01 = (t_func_v3)g_action[g_nStep][1]; //void rsa_init(1,2,3)
+	t_func_r3 fp_02 = (t_func_r3)g_action[g_nStep][2]; //int mpi_read_string(1,2,3)
+	t_func_v3 fp_03 = (t_func_v3)g_action[g_nStep][3]; //void efuse_read(1,2,3)
+	t_func_r2 fp_04 = (t_func_r2)g_action[g_nStep][4]; //int boot_rsa_read_puk(a,b)
+	t_func_r3 fp_05 = (t_func_r3)g_action[g_nStep][5]; //int rsa_public(1,2,3)
+	t_func_v2 fp_06 = (t_func_v2)g_action[g_nStep][6]; //void boot_aes_setkey_dec(1,2)
+	t_func_v1 fp_07 = (t_func_v1)g_action[g_nStep][7]; //void boot_aes_setiv_init(1)
+	t_func_v4 fp_08 = (t_func_v4)g_action[g_nStep][8]; //void boot_aes_crypt_cbc(1,2,3,4)
+	t_func_v4 fp_09 = (t_func_v4)g_action[g_nStep][9]; //void sha2(1,2,3,4)
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10]; //int memcpy(1,2,3)
+	t_func_r3 fp_11 = (t_func_r3)g_action[g_nStep][11];//int memcmp(1,2,3)
+	t_func_r1 fp_12 = (t_func_r1)g_action[g_nStep][12];//int mpi_msb(1)
+	t_func_v3 fp_13 = (t_func_v3)g_action[g_nStep][13];//void memset(1,2,3)
 
-	fp_12(g_action[g_nStep][13],0,4);
+	fp_13(g_action[g_nStep][14],0,4);
 
-	fp_00(&cb1_ctx,0,0);
+	fp_01(&cb1_ctx,0,0);
 
 	if(pkey1 && pkey2)
 	{
-		if(fp_01(cb1_ctx.szBuf1,pkey1,nkey1Len) ||	fp_01(cb1_ctx.szBuf2,pkey2,nkey2Len))
+		if(fp_02(cb1_ctx.szBuf1,pkey1,nkey1Len) ||	fp_02(cb1_ctx.szBuf2,pkey2,nkey2Len))
 			goto exit;
-		cb1_ctx.len = ( fp_11( cb1_ctx.szBuf1 ) + 7 ) >> 3;			
+		cb1_ctx.len = ( fp_12( cb1_ctx.szBuf1 ) + 7 ) >> 3;			
 	}
 	else
 	{
 		unsigned int nState  = 0;
-		fp_02(&nState,0,4);
+		fp_03(&nState,0,4);
 		if(pState)
 			*pState = nState;
 		if(!(nState & (1<<7)))
@@ -151,14 +167,14 @@ static int aml_m8m2_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int 
 			nRet = 0;
 			goto exit;
 		}
-		fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
+		fp_04(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
 		cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
 	}
 
-	fp_09((unsigned char*)&chk_blk,(unsigned char*)pSRC,sizeof(chk_blk));
+	fp_10((unsigned char*)&chk_blk,(unsigned char*)pSRC,sizeof(chk_blk));
 
 	for(i = 0;i< sizeof(chk_blk);i+=cb1_ctx.len)
-		if(fp_04(&cb1_ctx, pBuf+i, pBuf+i ))
+		if(fp_05(&cb1_ctx, pBuf+i, pBuf+i ))
 			goto exit;
 
 	if(AMLOGIC_CHKBLK_ID != chk_blk.unAMLID ||
@@ -174,21 +190,21 @@ static int aml_m8m2_sec_boot_check(unsigned char *pSRC,unsigned char *pkey1,int 
 		goto exit;
 
 	if(chk_blk.nLength2)
-		fp_09((void*)pSRC,(void*)(pSRC+chk_blk.nLength1),
+		fp_10((void*)pSRC,(void*)(pSRC+chk_blk.nLength1),
 			chk_blk.nLength2);
 
-	fp_09((void*)szkey,(void*)chk_blk.szkey2,sizeof(szkey));
+	fp_10((void*)szkey,(void*)chk_blk.szkey2,sizeof(szkey));
 
-	fp_05( &cb2_ctx, szkey );
+	fp_06( &cb2_ctx, szkey );
 
-	fp_06(&szkey[32]);
+	fp_07(&szkey[32]);
 
 	for (i=0; i<(chk_blk.nLength4)/16; i++)
-		fp_07 ( &cb2_ctx, &szkey[32], &ct32[i*4], &ct32[i*4] );
+		fp_08 ( &cb2_ctx, &szkey[32], &ct32[i*4], &ct32[i*4] );
 
-	fp_08( pSRC,chk_blk.nLength3, szkey, 0 );	
+	fp_09( pSRC,chk_blk.nLength3, szkey, 0 );	
 
-	if(fp_10(szkey,chk_blk.szkey1,32))
+	if(fp_11(szkey,chk_blk.szkey1,32))
 		goto exit;
 
 	nRet = 0;
@@ -215,8 +231,8 @@ int aml_sec_boot_check(unsigned char *pSRC)
 {
 
 #if defined(AML_SECURE_PROCESS_MSG_SHOW)
-	#define AML_MSG_RSA_1024 ("Aml log : M8M2-R1024-1X ")
-	#define AML_MSG_RSA_2048 ("Aml log : M8M2-R2048-1X ")
+	#define AML_MSG_RSA_1024 ("Aml log : M8-R1024-1X ")
+	#define AML_MSG_RSA_2048 ("Aml log : M8-R2048-1X ")
 #if defined(CONFIG_AMLROM_SPL)
 	#define AML_MSG_FAIL ("TPL fail!\n")
 	#define AML_MSG_PASS ("TPL pass!\n")
@@ -231,8 +247,10 @@ int aml_sec_boot_check(unsigned char *pSRC)
 	int nRet = -1;
 	unsigned int nState = 0;
 	int nSPLLen = 32<<10;
+	unsigned char szCheck[36];
+	unsigned char szHash[32];
 
-	nRet = aml_m8m2_sec_boot_check(pSRC,0,0,0,0,&nState);
+	nRet = aml_m8_sec_boot_check(pSRC,0,0,0,0,&nState);
 	if(nRet || !(nState & (1<<7)))
 		goto exit;
 
@@ -253,18 +271,15 @@ int aml_sec_boot_check(unsigned char *pSRC)
 
 	aml_spl_blk *pblk = (aml_spl_blk *)(0xd9000000 + nSPLLen - 1152 );
 
-	t_func_v3 fp_2 = (t_func_v3)g_action[g_nStep][2];
-	t_func_v4 fp_8 = (t_func_v4)g_action[g_nStep][8];
-	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];
+	t_func_v3 fp_3 = (t_func_v3)g_action[g_nStep][3];
+	t_func_v4 fp_9 = (t_func_v4)g_action[g_nStep][9];
+	t_func_r3 fp_11 = (t_func_r3)g_action[g_nStep][11];
 
-	unsigned char szCheck[32];
-	unsigned char szHash[32];
+	fp_3(szCheck,452,36);
 
-	fp_2(&szCheck,328,32);
+	fp_9(pblk->sz2,260,szHash, 0 );
 
-	fp_8(pblk->sz2,260,szHash, 0 );
-
-	nRet = fp_10(szCheck,szHash,32);
+	nRet = fp_11(szCheck+2,szHash,32);
 
 	if(nRet)
 	{
@@ -275,7 +290,7 @@ int aml_sec_boot_check(unsigned char *pSRC)
 		goto exit;
 	}
 
-	nRet = aml_m8m2_sec_boot_check(pSRC,pblk->sz2,((nState & (1<<30)) ? 256:128),pblk->sz3,4,0);
+	nRet = aml_m8_sec_boot_check(pSRC,pblk->sz2,((nState & (1<<30)) ? 256:128),pblk->sz3,4,0);
 
 	if(nRet)
 	{
@@ -286,9 +301,9 @@ int aml_sec_boot_check(unsigned char *pSRC)
 		goto exit;
 	}
 
-	fp_8(0xd9000000+pblk->nSPLStartOffset,pblk->splLenght,szHash, 0 );
+	fp_9(0xd9000000+pblk->nSPLStartOffset,pblk->splLenght,szHash, 0 );
 
-	nRet = fp_10(pblk->sz4,szHash,32);
+	nRet = fp_11(pblk->sz4,szHash,32);
 
 	if(nRet)
 	{
@@ -327,7 +342,7 @@ int aml_sec_boot_check_efuse(unsigned char *pSRC)
 	unsigned char sz2[] = {
 	0x01,0x37,0x4B,};
 
-	return aml_m8m2_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2),0);
+	return aml_m8_sec_boot_check(pSRC,sz1,sizeof(sz1),sz2,sizeof(sz2),0);
 }
 int aml_img_key_check(unsigned char *pSRC,int nLen)
 {
@@ -364,39 +379,51 @@ int aml_img_key_check(unsigned char *pSRC,int nLen)
 	if(nLen & 0xF)
 		goto exit;
 
+	/*
 	g_nStep = 0;
 
 	switch(* (unsigned int *)0xd9040004)
 	{
-	case 0x74E: break;
+	case 0x25e2: break;
+	case 0x27ed: g_nStep = 1 ; break;
+	case 0x74E : g_nStep = 2 ; break;
+	case 0xb72:  g_nStep = 3 ; break;
 	default: goto exit;break;
 	}
+	*/
+	for(g_nStep = 0;g_nStep<sizeof(g_action)/sizeof(g_action[0]);++g_nStep)
+	{
+		if(!g_action[g_nStep][0])
+			goto exit;
+		if((*(unsigned int *)0xd9040004) == g_action[g_nStep][0])
+			break;
+	}
 
-	t_func_v3 fp_00 = (t_func_v3)g_action[g_nStep][0]; //void rsa_init(1,2,3)
-	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2]; //void efuse_read(1,2,3)
-	t_func_r2 fp_03 = (t_func_r2)g_action[g_nStep][3]; //int boot_rsa_read_puk(a,b)
-	t_func_r3 fp_04 = (t_func_r3)g_action[g_nStep][4]; //int rsa_public(1,2,3)
-	t_func_v4 fp_08 = (t_func_v4)g_action[g_nStep][8]; //void sha2(1,2,3,4)
-	t_func_r3 fp_09 = (t_func_r3)g_action[g_nStep][9]; //int memcpy(1,2,3)
-	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10];//int memcmp(1,2,3)
-	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];//void memset(1,2,3)
+	t_func_v3 fp_01 = (t_func_v3)g_action[g_nStep][1]; //void rsa_init(1,2,3)
+	t_func_v3 fp_03 = (t_func_v3)g_action[g_nStep][3]; //void efuse_read(1,2,3)
+	t_func_r2 fp_04 = (t_func_r2)g_action[g_nStep][4]; //int boot_rsa_read_puk(a,b)
+	t_func_r3 fp_05 = (t_func_r3)g_action[g_nStep][5]; //int rsa_public(1,2,3)
+	t_func_v4 fp_09 = (t_func_v4)g_action[g_nStep][9]; //void sha2(1,2,3,4)
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10]; //int memcpy(1,2,3)
+	t_func_r3 fp_11 = (t_func_r3)g_action[g_nStep][11];//int memcmp(1,2,3)
+	t_func_v3 fp_13 = (t_func_v3)g_action[g_nStep][13];//void memset(1,2,3)
 
-	fp_12(g_action[g_nStep][13],0,4);
+	fp_13(g_action[g_nStep][14],0,4);
 
-	fp_00(&cb1_ctx,0,0);
+	fp_01(&cb1_ctx,0,0);
 
-	fp_02(&nState,0,4);
+	fp_03(&nState,0,4);
 	if(!(nState & (1<<7)))
 		goto exit;
 
-	fp_03(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
+	fp_04(&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
 
 	cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
 
-	fp_09((unsigned char*)&chk_blk,(unsigned char*)(pSRC+nLen-sizeof(chk_blk)),sizeof(chk_blk));
+	fp_10((unsigned char*)&chk_blk,(unsigned char*)(pSRC+nLen-sizeof(chk_blk)),sizeof(chk_blk));
 
 	for(i = 0;i< sizeof(chk_blk);i+=cb1_ctx.len)
-		if(fp_04(&cb1_ctx, pBuf+i, pBuf+i ))
+		if(fp_05(&cb1_ctx, pBuf+i, pBuf+i ))
 			goto exit;
 
 	if(AMLOGIC_CHKBLK_ID != chk_blk.unAMLID ||
@@ -408,9 +435,9 @@ int aml_img_key_check(unsigned char *pSRC,int nLen)
 		chk_blk.nSizeT != chk_blk.nSizeH)
 		goto exit;
 
-	fp_08( pSRC,chk_blk.nLength3, szkey, 0 );
+	fp_09( pSRC,chk_blk.nLength3, szkey, 0 );
 
-	nRet = fp_10(szkey,chk_blk.szkey1,32);
+	nRet = fp_11(szkey,chk_blk.szkey1,32);
 
 exit:
 
@@ -422,19 +449,31 @@ int aml_is_secure_set()
 {
 	int nRet = 0;
 	int nState = 0;
+	/*
 	g_nStep = 0;
 
 	switch(* (unsigned int *)0xd9040004)
 	{
-	case 0x74E: break;
+	case 0x25e2: break;
+	case 0x27ed: g_nStep = 1 ; break;
+	case 0x74E : g_nStep = 2 ; break;
+	case 0xb72:  g_nStep = 3 ; break;	
 	default: goto exit;break;
 	}
+	*/
+	for(g_nStep = 0;g_nStep<sizeof(g_action)/sizeof(g_action[0]);++g_nStep)
+	{
+		if(!g_action[g_nStep][0])
+			goto exit;
+		if((*(unsigned int *)0xd9040004) == g_action[g_nStep][0])
+			break;
+	}
 
-	t_func_v3 fp_02 = (t_func_v3)g_action[g_nStep][2];
-	t_func_v3 fp_12 = (t_func_v3)g_action[g_nStep][12];
+	t_func_v3 fp_03 = (t_func_v3)g_action[g_nStep][3];
+	t_func_v3 fp_13 = (t_func_v3)g_action[g_nStep][13];
 
-	fp_12(g_action[g_nStep][13],0,4);
-	fp_02(&nState,0,4);
+	fp_13(g_action[g_nStep][13],0,4);
+	fp_03(&nState,0,4);
 	if((nState & (1<<7)))
 	{
 		nRet = 1;
@@ -447,4 +486,4 @@ exit:
 }
 
 //here can add more feature like encrypt...
-#endif //__AMLOGIC_M8M2_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
+#endif //__AMLOGIC_M8_SECURE_C_BFD0A6CA_8E97_47E1_9DDD_2E4544A831AE__
