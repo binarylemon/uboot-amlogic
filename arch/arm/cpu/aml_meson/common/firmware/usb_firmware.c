@@ -39,6 +39,10 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
     serial_puts("compressData "), serial_put_hex((unsigned)compressData, 32), serial_puts(",");
     serial_puts("decompressedAddr "), serial_put_hex((unsigned)decompressedAddr, 32), serial_puts(".\n");
 
+#if defined(CONFIG_AML_MESON_8)
+        AML_WATCH_DOG_SET(8000); //8s for ucl decompress, maybe it's enough!? Dog will silently reset system if timeout...
+#endif// #if defined(CONFIG_AML_MESON_8)
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
     extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
@@ -61,12 +65,6 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
 
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-#ifdef CONFIG_M8
-	//enable watchdog for 5s
-	//if bootup failed, switch to next boot device
-	AML_WATCH_DOG_SET(5000); //5s, wathdog will disabled after TPL enter usb burning mode
-	writel(readl(0xc8100000), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
-#endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	//Note: Following msg is used to calculate romcode boot time
@@ -99,11 +97,15 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_put_dec(TIMERE_GET());
 	serial_puts("\n");
 
+#if defined(CONFIG_AML_MESON_8)
+        AML_WATCH_DOG_SET(5000); //5s for secue boot check, maybe it's enough!? Dog will silently reset system if timeout...
+#endif// #if defined(CONFIG_AML_MESON_8)
     if(aml_sec_boot_check((unsigned char*)__TEXT_BASE))
     {
         serial_puts("\nSecure_boot_check FAILED,reset chip to let PC know!\n");
         AML_WATCH_DOG_START();
     }
+    serial_puts("\nUSB boot signature checked OK.\n");
 
 #ifdef CONFIG_MESON_TRUSTZONE
     {

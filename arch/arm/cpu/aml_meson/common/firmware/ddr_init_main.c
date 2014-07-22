@@ -87,8 +87,13 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
     serial_puts("compressData "), serial_put_hex((unsigned)compressData, 32), serial_puts(",");
     serial_puts("decompressedAddr "), serial_put_hex((unsigned)decompressedAddr, 32), serial_puts(".\n");
 
+#if defined(CONFIG_AML_MESON_8)
+        AML_WATCH_DOG_SET(8000); //8s for ucl decompress, maybe it's enough!? Dog will silently reset system if timeout...
+#endif// #if defined(CONFIG_AML_MESON_8)
+
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
+
     ret = uclDecompress((char*)decompressedAddr, decompressedLen, (char*)compressData);
 
     serial_puts("uclDecompress "), serial_puts(ret ? "FAILED!!\n": "OK.\n");
@@ -108,6 +113,9 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
 
 static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
+#if defined(CONFIG_AML_MESON_8)
+        AML_WATCH_DOG_SET(5000); //5s for ddr_init
+#endif// #if defined(CONFIG_AML_MESON_8)
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
@@ -261,10 +269,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     const unsigned paraMagic = binRunInfoHead->magic;
     const unsigned ChipId    = readl(CBUS_REG_ADDR(0x1f53));
 
-#if defined(CONFIG_AML_MESON_8)
-	//enable watchdog, then when bootup failed, switch to next boot device
-	AML_WATCH_DOG_SET(5000); //5s
-#endif// #if defined(CONFIG_AML_MESON_8)
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
     //serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
     //serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
@@ -295,7 +299,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         ret = _ddr_init_main(__TEXT_BASE, __TEXT_SIZE);
         binRunInfoHead->retVal = ret;
 
-    serial_puts(__TIME__);
+        serial_puts(__TIME__);
 	serial_puts(" ");
 	serial_puts(__DATE__);
 	serial_puts("\n");	

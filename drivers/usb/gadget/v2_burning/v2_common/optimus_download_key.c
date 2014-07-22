@@ -381,7 +381,7 @@ int v2_key_command(const int argc, char * const argv[], char *info)
         }
 
         rcode = v2_key_burn(keyName, (u8*)keyValInStr, strlen(keyValInStr), info);
-        rcode = (strlen(keyValInStr) == rcode) ? 0 : rcode;
+        rcode = (strlen(keyValInStr) == rcode) ? 0 : __LINE__;
     }
     else if(!strcmp("read", keyCmd) || !strcmp("get_len", keyCmd))
     {

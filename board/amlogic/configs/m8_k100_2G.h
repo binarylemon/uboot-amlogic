@@ -40,6 +40,8 @@
 #endif// #ifdef CONFIG_ACS
 #endif//#ifdef CONFIG_NEXT_NAND
 
+#define CONFIG_UNIFY_KEY_MANAGE 1
+
 #define  CONFIG_AML_GATE_INIT	1
 
 //Enable storage devices
@@ -378,6 +380,7 @@
 #define CONFIG_BOOTCOMMAND  \
     "imgread kernel boot ${loadaddr}; "\
     "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
+    "if unifykey get usid; then setenv bootargs ${bootargs} androidboot.serialno=$(usid};"\
     "bootm;"\
     "run ota_update"
 

@@ -27,11 +27,10 @@ static int key_drv_init(void)
 {
     static int _keyDrvInited = 0;
     int rcode = 0;
-    unsigned seedNum = 0x123456;
 
     if(_keyDrvInited)return 0;
 
-    rcode = key_unify_init((char*)&seedNum, sizeof(seedNum));
+    rcode = key_unify_init(0, 0);//Not need to init secure storage for read emmc/efuse key, unifykey cmd used to read mmc/efuse key
     return rcode;
 }
 

@@ -135,8 +135,10 @@ static int key_general_nand_query(char *keyname,unsigned int *keystate)
 static int key_securestorage_init(char *buf,unsigned int len)
 {
 #ifdef CONFIG_SECURESTORAGEKEY
-	int err = -EINVAL;
-	err = securestore_key_init(buf,(int)len);
+	int err = 0;
+        if(len){
+                err = securestore_key_init(buf,(int)len);
+        }
 	return err;
 #else
 	return 0;
