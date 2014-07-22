@@ -1131,6 +1131,8 @@ int aml1218_init(void)
     //aml1218_set_bits(0x003e, 0x04, 0x07);           // According David Wang, set DCDC OCP to 2A
 
     aml1218_set_bits(0x0011, 0x03, 0x03);
+
+    aml1218_set_bits(0x009B, 0x01, 0x01);       //close SAR lock
     aml1218_write(0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
     aml1218_write(0x009C, 0x10);
     aml1218_write(0x009D, 0x04);//close force charge and discharge sample mask
