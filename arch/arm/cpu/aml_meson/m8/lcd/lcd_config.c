@@ -634,12 +634,12 @@ static void set_venc_lcd(Lcd_Config_t *pConf)
 	WRITE_LCD_REG(ENCL_VIDEO_VAVON_BLINE, pConf->lcd_timing.video_on_line);
 	WRITE_LCD_REG(ENCL_VIDEO_VAVON_ELINE, pConf->lcd_basic.v_active - 1  + pConf->lcd_timing.video_on_line);
 
-	WRITE_LCD_REG(ENCL_VIDEO_HSO_BEGIN,   0);//pConf->lcd_timing.hs_hs_addr);
-	WRITE_LCD_REG(ENCL_VIDEO_HSO_END,     10);//pConf->lcd_timing.hs_he_addr);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_BEGIN,   0);//pConf->lcd_timing.vs_hs_addr);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_END,     0);//pConf->lcd_timing.vs_he_addr);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_BLINE,   0);//pConf->lcd_timing.vs_vs_addr);
-	WRITE_LCD_REG(ENCL_VIDEO_VSO_ELINE,   2);//pConf->lcd_timing.vs_ve_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_HSO_BEGIN,   10);//pConf->lcd_timing.hs_hs_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_HSO_END,     16);//pConf->lcd_timing.hs_he_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_VSO_BEGIN,   10);//pConf->lcd_timing.vs_hs_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_VSO_END,     10);//pConf->lcd_timing.vs_he_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_VSO_BLINE,   10);//pConf->lcd_timing.vs_vs_addr);
+	WRITE_LCD_REG(ENCL_VIDEO_VSO_ELINE,   12);//pConf->lcd_timing.vs_ve_addr);
 
 	WRITE_LCD_REG(ENCL_VIDEO_RGBIN_CTRL,  (1 << 0));//(1 << 1) | (1 << 0));	//bit[0] 1:RGB, 0:YUV
 
