@@ -12,6 +12,9 @@
 #define RESET_FLAG_CLR              2
 #endif
 
+#define DUMP_ALL                    0
+#define DUMP_KEY                    1
+
 struct aml_pmu_driver {
     int  (*pmu_init)(void);                                                     // initialize PMU board
     int  (*pmu_get_battery_capacity)(void);                                     // return battery percent
@@ -36,7 +39,7 @@ struct aml_pmu_driver {
 #ifdef CONFIG_RESET_TO_SYSTEM
     int  (*pmu_reset_flag_operation)(int op);
 #endif
-    void (*pmu_dump_register)(void);
+    void (*pmu_dump_register)(int dump_level);
 };
 
 extern struct aml_pmu_driver* aml_pmu_get_driver(void);

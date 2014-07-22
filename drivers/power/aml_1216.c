@@ -1034,7 +1034,7 @@ int aml1216_check_fault(void)
     
 }
 
-static void dump_pmu_register(void)
+static void dump_pmu_register(int dump_level)
 {
     uint8_t val[16];
     int     i;
@@ -1160,7 +1160,7 @@ int aml1216_init(void)
     aml1216_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
     aml1216_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
-    dump_pmu_register();
+    dump_pmu_register(DUMP_KEY);
 
     return 0;
 }

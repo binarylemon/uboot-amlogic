@@ -533,6 +533,10 @@ void aml1218_power_off_at_24M()
 #endif
 #endif
 
+    printf_arc("uvlo to 3.21v\n");
+    aml1218_set_bits(0x0061, 0x00, 0x01);
+    aml1218_set_bits(0x0062, 0x00, 0xc0);           // set UVLO to 3.21v
+
     aml1218_set_bits(0x0035, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
     //aml1218_set_bits(0x003e, 0x00, 0x07);                               // set DCDC OCP to 1.5A to protect DCDC
     aml1218_set_bits(0x0047, 0x03, 0x07);                               // set DCDC3
@@ -560,6 +564,9 @@ void aml1218_power_on_at_24M()
     power_on_vcc28();                                                   // open LDO5, VCC2.8
     power_on_vcc_cam();
     
+    printf_arc("uvlo to 2.95v\n");
+    aml1218_set_bits(0x0061, 0x01, 0x01);
+    aml1218_set_bits(0x0062, 0x80, 0xc0);           // set UVLO to 2.95v
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
   //aml1218_set_pfm(2, 0);

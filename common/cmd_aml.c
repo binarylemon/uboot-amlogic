@@ -241,7 +241,7 @@ static int do_pmu_reg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         rw = 1;    
     } else if (!strcmp(argv[1], "d")) {
         if (pmu_driver && pmu_driver->pmu_dump_register) {
-            pmu_driver->pmu_dump_register();
+            pmu_driver->pmu_dump_register(DUMP_ALL);
             return 0;
         }    
     } else {

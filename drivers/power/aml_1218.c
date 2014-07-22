@@ -928,6 +928,7 @@ void aml1218_set_long_press(int ms)
     
     aml1218_read16(0x0090, &val);
     tmp = ms/100 -1; 
+    val &= ~0x7f;
     val |= tmp;                                        // set power key long press to 10s
     return aml1218_set_bits(0x0090, val, 0x7f);
 
@@ -985,29 +986,30 @@ int aml1218_check_fault(void)
     uint32_t val_total;
     int i = 0;
     char *fault_reason[] = {
-        "LDO2 FAULT",                   // bit 0
-        "LDO1_OV",                      // bit 1
-        "LDO1_UV",                      // bit 2
-        "LDO1_OC",                      // bit 3
-        "PREUVLO caused the system to move to the OFF state",          // bit 4
-        "UVLO caused the system to move to the OFF state",               // bit 5
-        "watchdog timer",                 // bit 6
-        "Power Key LONG",               // bit 7
-        "DC1 fault",                // bit 8
-        "DC2 fault",                // bit 9
-        "DC3 fault",                // bit 10
-        "Charger fault",           // bit 11
-        "LDO6 Fault",               // bit 12
-        "LDO5 Fault",               // bit 13
-        "LDO4 Fault",               // bit 14
-        "LDO3 Fault",               // bit 15
-        "CHG_DCIN_HOV_raw Fault",     // bit 16
-        "LDO1 Fault",                          // bit 17
-        "LDO8 Fault",                          // bit 18
-        "LDO7 Fault",                         // bit 19
-        "Boost fault",                         // bit 20
-        "unused",                             // bit 21                 
-        
+        "Power Key LONG",               
+        "watchdog timer",              
+        "UVLO caused the system to move to the OFF state",
+        "PREUVLO caused the system to move to the OFF state", 
+        "LDO1_OC",          
+        "LDO1_UV",          
+        "LDO1_OV",          
+        "LDO2 FAULT",       
+        "LDO3 Fault",        
+        "LDO4 Fault",        
+        "LDO5 Fault",        
+        "LDO6 Fault",        
+        "Charger fault",     
+        "DC3 fault",
+        "DC2 fault",
+        "DC1 fault",
+        "Boost fault",
+        "LDO7 Fault",
+        "LDO8 Fault",
+        "LDO1 Fault",
+        "CHG_DCIN_HOV_raw Fault",    
+        "unused",                   
+        "unused",                  
+        "CHG_VBUS_HOV status"
     };
 
     printf("PMU fault status:\n");
@@ -1028,15 +1030,25 @@ int aml1218_check_fault(void)
     
 }
 
-static void dump_pmu_register(void)
+static void dump_pmu_register(int dump_level)
 {
     uint8_t val[16];
     int     i;
-    int     addr_table[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
-                            17, 18, 19, 20, 21, 22, 23, 24, 34, 35, 36, 37};
+    int     addr_table_all[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
+                                17, 18, 19, 20, 21, 22, 23, 24, 34, 35, 36, 37};
+    int     addr_table_key[] = {1, 2, 7, 8, 9, 13, 14, 17, 18};
+    int    *addr_table;
+    int     table_size;
 
+    if (dump_level == DUMP_KEY) {
+        addr_table = addr_table_key;
+        table_size = ARRAY_SIZE(addr_table_key);
+    } else {
+        addr_table = addr_table_all;
+        table_size = ARRAY_SIZE(addr_table_all);
+    }
     printf("[aml1218] DUMP ALL REGISTERS\n");
-    for (i = 0; i < ARRAY_SIZE(addr_table); i++) {
+    for (i = 0; i < table_size; i++) {
         aml1218_reads(addr_table[i] * 16, val, 16);
         printf("0x%03x - %03x: ", addr_table[i] * 16, addr_table[i] * 16 + 15);
         printf("%02x %02x %02x %02x ",   val[0],  val[1],  val[2],  val[3]);
@@ -1096,7 +1108,7 @@ int aml1218_init(void)
 {
     uint8_t val;
     
-    printf("---> PMU driver version:v0.91_B\n");
+    printf("---> PMU driver version:v0.92_C\n");
     printf("Call %s, %d\n", __func__, __LINE__);
 
     aml1218_get_charge_status(0);
@@ -1107,6 +1119,10 @@ int aml1218_init(void)
         aml1218_write(0x2f, 0x22);                  // David Li, increase vsys 120mv, only change for REVB
     }
     aml1218_write(0x0139, 0x1e);                    // by Anny.Zhao
+
+    aml1218_write(0x0011, 0x77);                    // according Knight, fix can't boot after power off by UVLO
+    aml1218_set_bits(0x0061, 0x01, 0x01);
+    aml1218_set_bits(0x0062, 0x80, 0xc0);           // set UVLO to 2.95v
 
     aml1218_set_bits(0x000f, 0xf0, 0xf0);           // GPIO2 power off last
     aml1218_set_bits(0x0009, 0x01, 0x0f);           // boost power off first
@@ -1151,6 +1167,7 @@ int aml1218_init(void)
 
     aml1218_write(0x0019, 0x10);
     aml1218_set_bits(0x0020, 0x00, 0x02);       // according harry
+    aml1218_set_bits(0x0116, 0x40, 0x40);       // according Knight 
     aml1218_write(0x0130, 0x45);                // according harry
     aml1218_read(0x00d6, &val);
     if (val & 0x01) {
@@ -1164,7 +1181,7 @@ int aml1218_init(void)
     aml1218_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
     aml1218_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
-    dump_pmu_register();
+    dump_pmu_register(DUMP_KEY);
 
     return 0;
 }
