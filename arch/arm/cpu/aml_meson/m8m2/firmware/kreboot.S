@@ -175,7 +175,6 @@ __wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	mov  r1, #2
 	str   r1, [r0]
 	dsb
-#if 0
 
 /*Retore ddr data which is rewrite by ddr trainning. See power.c for more info*/
 	ldr r0, =0x10000 //The sram address which save the data
@@ -205,7 +204,7 @@ store_loop2:
 	cmp r4, #0
 	bne store_loop2
 end_ch_store:
-#endif
+
 /* for debug */
 //    adr r1,reset_addr
 //    ldr r0,[r1]
