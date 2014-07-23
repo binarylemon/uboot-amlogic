@@ -489,6 +489,10 @@ void store_restore_plls(int flag)
 		for(i=0;i<10;i++)//store mpll
 			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
 
+		//disable sys pll & mpll
+		writel(readl(P_HHI_SYS_PLL_CNTL) & (~(1<<30)),P_HHI_SYS_PLL_CNTL);
+		writel(readl(P_HHI_MPLL_CNTL) & (~(1<<30)),P_HHI_MPLL_CNTL);
+
 		return;
     }    
     
