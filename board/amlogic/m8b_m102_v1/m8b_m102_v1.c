@@ -547,7 +547,16 @@ void magic_checkstatus(int saveEnvFlag)
         if( 0 == run_command("getkey", 0)){//Power key pressed
                 int pwrkeyRelease = 0;
                 start = get_timer(0);
-                delay = 1000;//wait powerkey at most one second
+                delay = 500;//wait powerkey until 400ms
+                static unsigned _lastPwrkeyTime = 0;
+
+                if(!saveEnvFlag){
+                        _lastPwrkeyTime = start;
+                        return ;
+                }
+
+                if(_lastPwrkeyTime)start = _lastPwrkeyTime;
+                _lastPwrkeyTime = 0;
 
                 while(get_timer(start) < delay){
                         if(ctrlc())return;
@@ -608,7 +617,6 @@ int board_init(void)
     nand_init();
     
 #endif    
-  /*run_command("magic_checkstatus", 0);*/
 #ifdef CONFIG_AML_I2C  
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
@@ -622,6 +630,7 @@ int board_init(void)
     key_init();
     
     wifi_power_init();
+    run_command("magic_checkstatus", 0);
 
 	return 0;
 }

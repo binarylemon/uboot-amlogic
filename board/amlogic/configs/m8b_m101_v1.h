@@ -69,7 +69,7 @@
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define RMII_PHY_INTERFACE    1
@@ -238,21 +238,21 @@
 		"echo preboot...;" \
                 "run upgrade_check;"\
 		"get_rebootmode; clear_rebootmode; magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status};" \
+                "run prepare;"\
 		"usbbc; run batlow_or_not; setenv sleep_count 0; "\
-                "run switch_bootmode" \
+                "run switch_bootmode;" \
                 "\0"\
    	"upgrade_check="\
                 "if itest ${upgrade_step} == 3; then run update; fi; "\
                 "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; saveenv; fi; "\
                 "\0"\
         "prepare="\
-                "video clear; video open; video dev bl_on;"\
-                "imgread res logo ${loadaddr_misc};"\
-                "unpackimg ${loadaddr_misc};"\
+                "video open; video dev bl_on;"\
+                "imgread pic logo poweron ${loadaddr_misc};"\
                 "\0"\
         "switch_bootmode="\
 		"if test ${reboot_mode} = normal; then "\
-			"run prepare; bmp display ${poweron_offset}; "\
+			"bmp display ${poweron_offset}; "\
 		"else if test ${reboot_mode} = factory_reset; then "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
@@ -262,7 +262,7 @@
 		"else if test ${magic_key_status} = update; then "\
 			"run update; "\
 		"else if test ${magic_key_status} = poweron; then "\
-			"run prepare; bmp display ${poweron_offset}; run bootcmd; "\
+			"bmp display ${poweron_offset}; run bootcmd; "\
 		"else "\
 			"run charging_or_not; "\
 		"fi; fi; fi; fi; fi; fi;" \
@@ -284,6 +284,8 @@
 		"fi; fi;" \
                  "\0"\
         "charging="\
+                "imgread res logo ${loadaddr_misc};"\
+                "unpackimg ${loadaddr_misc};"\
 		"video clear;"\
 		"while itest 1 == 1; do "\
 			"get_batcap; "\
@@ -314,11 +316,12 @@
 		"else "\
 			"get_batcap; "\
 			"if itest ${battery_cap} < ${batlow_threshold}; "\
-				"then run prepare; run batlow_warning; video dev disable; poweroff; "\
+				"then run batlow_warning; video dev disable; poweroff; "\
 			"fi; "\
 		"fi;" \
                  "\0"\
         "batlow_warning="\
+                "imgread pic logo batterylow ${loadaddr_misc};"\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 500; bmp display ${batterylow_offset}; msleep 500; "\
 		"bmp display ${batterylow_offset}; msleep 1000;"\
@@ -333,7 +336,9 @@
                 "\0"\
         "update="\
    		"echo update...; "\
-		"run prepare; bmp display ${upgrade_logo_offset}; "\
+		"run prepare;"\
+                "imgread pic logo upgrade_logo ${loadaddr_misc};"\
+		"bmp display ${upgrade_logo_offset}; "\
                 "run usb_burning; "\
                 "if mmcinfo; then "\
 			"if fatexist mmc 0 ${sdcburncfg}; then "\
