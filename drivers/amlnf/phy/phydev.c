@@ -1183,8 +1183,11 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 					partition = &(dev_para->partitions[j]);
 					dev_size += partition->size;
 				}
-				if(!is_phydev_off_adjust())
-				dev_size = dev_size + dev_size/ADJUST_SIZE_NFTL;  //adjust dev_size for nftl				
+				if(!is_phydev_off_adjust()){
+					int adjust_shift =  ffs(ADJUST_SIZE_NFTL) -1;
+					//aml_nand_msg("not adjust, adjust_shift : %d",adjust_shift);
+					dev_size = dev_size + (dev_size >> adjust_shift); 
+				}
 			}
 			else{
 				if((phydev_pre->option & DEV_SLC_MODE) && (flash->option & NAND_CHIP_SLC_MODE) && (!(phydev->option & DEV_MULTI_PLANE_MODE ))){
