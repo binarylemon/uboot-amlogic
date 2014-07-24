@@ -435,6 +435,7 @@
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CFG_DDR_CLK    516 //696 //768  //792// (636)
 #define CFG_DDR_MODE   CFG_DDR_16BIT_LANE02
+#define CONFIG_DDR3_512MB
 
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
