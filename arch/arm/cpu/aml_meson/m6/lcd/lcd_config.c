@@ -619,7 +619,7 @@ static void vclk_set_lcd(int lcd_type, unsigned long pll_reg, unsigned long vid_
 	DBG_PRINT("%s\n", __FUNCTION__);
 	
 	vid_div_reg = ((vid_div_reg & 0x1ffff) | (1 << 16) | (1 << 15) | (0x3 << 0));	//select vid2_pll and enable clk
-	xd = (clk_ctrl_reg >> CLK_CTRL_XD) & 0xf;
+	xd = (clk_ctrl_reg >> CLK_CTRL_XD) & 0xff;
 
 	WRITE_LCD_CBUS_REG_BITS(HHI_VIID_CLK_CNTL, 0, 19, 1);	//disable vclk2_en
 	udelay(2);
@@ -694,7 +694,7 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 	div_reg = pConf->lcd_timing.div_ctrl;
 	clk_reg = pConf->lcd_timing.clk_ctrl;
 	ss_level = (clk_reg >> CLK_CTRL_SS) & 0xf;
-	xd = (clk_reg >> CLK_CTRL_XD) & 0xf;
+	xd = (clk_reg >> CLK_CTRL_XD) & 0xff;
 
 	lcd_type = pConf->lcd_basic.lcd_type;
 
@@ -710,9 +710,8 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 		default:
 			break;
 	}
-	clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
+	clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
 	
-	DBG_PRINT("ss_level=%u(%s), pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, lcd_ss_level_table[ss_level], pll_reg, div_reg, xd);
 	vclk_set_lcd(lcd_type, pll_reg, div_reg, clk_reg);
 	set_lcd_spread_spectrum(ss_level);
 	
@@ -806,7 +805,7 @@ static void set_pll_mlvds(Lcd_Config_t *pConf)
     phy_clk_div2 = (test_pair_num != 3);
 	
 	div_reg = (div_reg | (1 << DIV_CTRL_POST_SEL) | (1 << DIV_CTRL_LVDS_CLK_EN) | ((pll_div_post-1) << DIV_CTRL_DIV_POST) | (phy_clk_div2 << DIV_CTRL_PHY_CLK_DIV2));
-	clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
+	clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
 	DBG_PRINT("ss_level=%u(%s), pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, lcd_ss_level_table[ss_level], pll_reg, div_reg, xd);
 	vclk_set_lcd(lcd_type, pll_reg, div_reg, clk_reg);
 	set_lcd_spread_spectrum(ss_level);
@@ -1496,12 +1495,12 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
     if (clk_num > 0) {
         pConf->lcd_timing.pll_ctrl = (pll_od << PLL_CTRL_OD) | (pll_n << PLL_CTRL_N) | (pll_m << PLL_CTRL_M);
         pConf->lcd_timing.div_ctrl = 0x18803 | (vid_div_pre << DIV_CTRL_DIV_PRE);
-        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (crt_xd << CLK_CTRL_XD);
+        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (crt_xd << CLK_CTRL_XD);
     }
     else {
         pConf->lcd_timing.pll_ctrl = (1 << PLL_CTRL_OD) | (1 << PLL_CTRL_N) | (32 << PLL_CTRL_M);
         pConf->lcd_timing.div_ctrl = 0x18803;
-        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (7 << CLK_CTRL_XD);
+        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (7 << CLK_CTRL_XD);
         printf("Out of clock range, reset to default setting!\n");
     }
 }
@@ -1528,7 +1527,7 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 			post_div = 7;
 			break;
 		case LCD_DIGITAL_TTL:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xff;
 			post_div = 1;
 			break;
 		case LCD_DIGITAL_MINILVDS:
@@ -1536,7 +1535,7 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 			post_div = 6;
 			break;
 		default:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xff;
 			post_div = 1;
 			break;
 	}
@@ -1793,12 +1792,11 @@ void lcd_config_init(Lcd_Config_t *pConf)
     if ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1) {
         printf("Auto generate clock parameters.\n");
         generate_clk_parameter(pConf);
-        printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
     }
     else {
         printf("Custome clock parameters.\n");
-        printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
     }
+    printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 
     lcd_sync_duration(pConf);
     lcd_tcon_config(pConf);

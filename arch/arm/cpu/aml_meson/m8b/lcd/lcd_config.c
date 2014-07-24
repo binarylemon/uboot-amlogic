@@ -304,8 +304,8 @@ static void lcd_ports_ctrl(Bool_t status)
 	}
 }
 
- //for special interface
 static void set_control_mipi(Lcd_Config_t *pConf);
+//for special interface
 static int lcd_power_ctrl_video(Bool_t status)
 {
     if (status) {
@@ -472,7 +472,7 @@ static void vclk_set_lcd(int lcd_type, unsigned long pll_reg, unsigned long vid_
 	DBG_PRINT("%s\n", __FUNCTION__);
 	
 	vid_div_reg = ((vid_div_reg & 0x1ffff) | (1 << 16) | (0 << 15) | (0x3 << 0));	//select vid_pll and enable clk
-	xd = (clk_ctrl_reg >> CLK_CTRL_XD) & 0xf;
+	xd = (clk_ctrl_reg >> CLK_CTRL_XD) & 0xff;
 	pll_level = (clk_ctrl_reg >> CLK_CTRL_LEVEL) & 0x7;
 	pll_frac = (clk_ctrl_reg >> CLK_CTRL_FRAC) & 0xfff;
 	ss_level = (clk_ctrl_reg >> CLK_CTRL_SS) & 0xf;
@@ -609,7 +609,7 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
 {
     unsigned pll_reg, div_reg, clk_reg;
     int xd;
-    int lcd_type, ss_level;
+    int lcd_type;
     unsigned pll_div_post = 0, phy_clk_div2 = 0;
 
     DBG_PRINT("%s\n", __FUNCTION__);
@@ -617,8 +617,7 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
     pll_reg = pConf->lcd_timing.pll_ctrl;
     div_reg = pConf->lcd_timing.div_ctrl;
     clk_reg = pConf->lcd_timing.clk_ctrl;
-    ss_level = (clk_reg >> CLK_CTRL_SS) & 0xf;
-    xd = (clk_reg >> CLK_CTRL_XD) & 0xf;
+    xd = (clk_reg >> CLK_CTRL_XD) & 0xff;
 
     lcd_type = pConf->lcd_basic.lcd_type;
 
@@ -636,9 +635,8 @@ static void set_pll_lcd(Lcd_Config_t *pConf)
         default:
             break;
     }
-    clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
+    clk_reg = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (xd << CLK_CTRL_XD);
 
-    DBG_PRINT("ss_level=%u(%s), pll_reg=0x%x, div_reg=0x%x, xd=%d.\n", ss_level, lcd_ss_level_table[ss_level], pll_reg, div_reg, xd);
     vclk_set_lcd(lcd_type, pll_reg, div_reg, clk_reg);
 
     switch(lcd_type){
@@ -1031,7 +1029,7 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
         case LCD_DIGITAL_MIPI:
             div_pre_sel_max = DIV_PRE_SEL_MAX;
             div_post = 1;
-            crt_xd_max = 16;
+            crt_xd_max = CRT_VID_DIV_MAX;
             dsi_bit_rate_min = pConf->lcd_control.mipi_config->bit_rate_min;
             dsi_bit_rate_max = pConf->lcd_control.mipi_config->bit_rate_max;
             iflogic_vid_clk_in_max = MIPI_MAX_VID_CLK_IN;
@@ -1102,18 +1100,13 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
                                             clk_num = 1;
                                             DBG_PRINT("pll_m=0x%x, pll_n=0x%x, pll_od=0x%x, vid_div_pre=0x%x, crt_xd=0x%x, pll_frac=0x%x, pll_level=%d\n",
                                                        pll_m, pll_n, pll_od, vid_div_pre, crt_xd, pll_frac, pll_level);
+                                            goto generate_clk_done;
                                         }
-                                        if (clk_num > 0)
-                                            break;
                                     }
                                 }
-                                if (clk_num > 0)
-                                    break;
                             }
                         }
                     }
-                    if (clk_num > 0)
-                        break;
                 }
             }
             break;
@@ -1163,36 +1156,31 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
                                             crt_xd = xd;
 
                                             clk_num = 1;
-                                            DBG_PRINT("pll_m=0x%x, pll_n=0x%x, pll_od=0x%x, vid_div_pre=0x%x, crt_xd=0x%x, pll_frac=0x%x, pll_level=%d\n",
-                                                       pll_m, pll_n, pll_od, vid_div_pre, crt_xd, pll_frac, pll_level);
+                                            goto generate_clk_done;
                                         }
-                                        if (clk_num > 0)
-                                            break;
                                     }
                                 }
-                                if (clk_num > 0)
-                                    break;
                             }
                         }
                     }
-                    if (clk_num > 0)
-                        break;
                 }
             }
             break;
         default:
             break;
     }
+
+generate_clk_done:
     if (clk_num > 0) {
         pConf->lcd_timing.pll_ctrl = (pll_od << PLL_CTRL_OD) | (pll_n << PLL_CTRL_N) | (pll_m << PLL_CTRL_M);
         pConf->lcd_timing.div_ctrl = 0x18803 | (vid_div_pre << DIV_CTRL_DIV_PRE);
-        tmp = (pConf->lcd_timing.clk_ctrl & ~((0xf << CLK_CTRL_XD) | (0x7 << CLK_CTRL_LEVEL) | (0xfff << CLK_CTRL_FRAC)));
+        tmp = (pConf->lcd_timing.clk_ctrl & ~((0xff << CLK_CTRL_XD) | (0x7 << CLK_CTRL_LEVEL) | (0xfff << CLK_CTRL_FRAC)));
         pConf->lcd_timing.clk_ctrl = (tmp | ((crt_xd << CLK_CTRL_XD) | (pll_level << CLK_CTRL_LEVEL) | (pll_frac << CLK_CTRL_FRAC)));
     }
     else {
         pConf->lcd_timing.pll_ctrl = (1 << PLL_CTRL_OD) | (1 << PLL_CTRL_N) | (50 << PLL_CTRL_M);
         pConf->lcd_timing.div_ctrl = 0x18803 | (1 << DIV_CTRL_DIV_PRE);
-        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_XD)) | (7 << CLK_CTRL_XD);
+        pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xff << CLK_CTRL_XD)) | (7 << CLK_CTRL_XD);
         printf("Out of clock range, reset to default setting!\n");
     }
 }
@@ -1217,7 +1205,7 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 
 	switch(pConf->lcd_basic.lcd_type) {
 		case LCD_DIGITAL_MIPI:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xff;
 			post_div = 1;
 			break;
 		case LCD_DIGITAL_LVDS:
@@ -1225,11 +1213,11 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 			post_div = 7;
 			break;
 		case LCD_DIGITAL_TTL:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xff;
 			post_div = 1;
 			break;
 		default:
-			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xf;
+			xd = ((pConf->lcd_timing.clk_ctrl) >> CLK_CTRL_XD) & 0xff;
 			post_div = 1;
 			break;
 	}
@@ -1237,8 +1225,10 @@ static void lcd_sync_duration(Lcd_Config_t *pConf)
 	pll_out_clk = (frac * (od_fb + 1) * FIN_FREQ) / 4096;
 	pll_out_clk = ((m * (od_fb + 1) * FIN_FREQ + pll_out_clk) / (n * od)) * 1000;
 	lcd_clk = pll_out_clk  / (pre_div * post_div * xd);
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_MIPI)
+	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_MIPI) {
 		pConf->lcd_control.mipi_config->bit_rate = pll_out_clk;
+		printf("mipi-dsi bit rate: %d.%03dMHz\n", (pConf->lcd_control.mipi_config->bit_rate / 1000000), ((pConf->lcd_control.mipi_config->bit_rate / 1000) % 1000));
+	}
 	pConf->lcd_timing.lcd_clk = lcd_clk;
 	sync_duration = ((lcd_clk / h_period) * 100) / v_period;
 	sync_duration = (sync_duration + 5) / 10;
@@ -1479,12 +1469,11 @@ void lcd_config_init(Lcd_Config_t *pConf)
     if ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1) {
         printf("Auto generate clock parameters.\n");
         generate_clk_parameter(pConf);
-        printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
     }
     else {
         printf("Custome clock parameters.\n");
-        printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
     }
+    printf("pll_ctrl=0x%x, div_ctrl=0x%x, clk_ctrl=0x%x.\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl);
 
     lcd_sync_duration(pConf);
     lcd_tcon_config(pConf);

@@ -112,7 +112,6 @@ static unsigned short gamma_table[256] = {
 static DSI_Config_t lcd_mipi_config = {
 #ifdef LCD_MIPI_DSI_CONFIG
     .lane_num = LANE_NUM,
-    .bit_rate_min = LANE_BIT_RATE_MIN,
     .bit_rate_max = LANE_BIT_RATE_MAX,
     .factor_numerator   = 0,
     .factor_denominator = 10,

@@ -18,6 +18,8 @@
 #define MIPI_DSI_CMD_TRANS_TYPE         DCS_TRANS_LP            // Define DSI command transfer type: high speed or low power
 #define MIPI_DSI_DCS_ACK_TYPE           MIPI_DSI_DCS_NO_ACK     // Define if DSI command need ack: req_ack or no_ack
 #define MIPI_DSI_VIDEO_MODE_TYPE        BURST_MODE              // Applicable only to video mode. Define data transfer method: non-burst sync pulse; non-burst sync event; or burst.
+#define MIPI_DSI_COLOR_18BIT            COLOR_18BIT_CFG_1
+#define MIPI_DSI_COLOR_24BIT            COLOR_24BIT
 #define MIPI_DSI_TEAR_SWITCH            MIPI_DCS_DISABLE_TEAR
 #define CMD_TIMEOUT_CNT                 3000
 //===============================================================================
@@ -42,6 +44,7 @@ static const char *video_mode_type_table[] = {
 };
 
 static DSI_Phy_t dsi_phy_config;
+static DSI_Vid_t dsi_vid_config;
 static DSI_Config_t *dsi_config = NULL;
 static unsigned char dsi_init_on_table_dft[] = {
     0x05,0x11,0,
@@ -70,7 +73,7 @@ static void print_info(void)
     DPRINT("================================================\n");
     DPRINT("MIPI DSI Config\n");
     DPRINT(" Lane Num:              %d\n", dsi_config->lane_num);
-    DPRINT(" Bit Rate min:          %dMHz\n", (dsi_config->bit_rate_min / 1000));
+    //DPRINT(" Bit Rate min:          %dMHz\n", (dsi_config->bit_rate_min / 1000));
     DPRINT(" Bit Rate max:          %dMHz\n", (dsi_config->bit_rate_max / 1000));
     DPRINT(" Bit Rate:              %d.%03dMHz\n", (dsi_config->bit_rate / 1000000), (dsi_config->bit_rate % 1000000) / 1000);
     DPRINT(" Pclk lanebyte factor:  %d\n", ((dsi_config->factor_numerator * 100 / dsi_config->factor_denominator) + 5) / 10);
@@ -674,115 +677,99 @@ static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
 
 static void dsi_video_config(Lcd_Config_t *pConf)
 {
-    unsigned int hline, hsa, hbp;
-    unsigned int vsa, vbp, vfp, vact;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
 
-    hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
-    hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
-    hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
+    dsi_vid_config.hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
+    dsi_vid_config.hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
+    dsi_vid_config.hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
 
-    vsa = pConf->lcd_timing.vsync_width;
-    vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
-    vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
-    vact = pConf->lcd_basic.v_active;
+    dsi_vid_config.vsa = pConf->lcd_timing.vsync_width;
+    dsi_vid_config.vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
+    dsi_vid_config.vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
+    dsi_vid_config.vact = pConf->lcd_basic.v_active;
 
     DBG_PRINT(" ============= VIDEO TIMING SETTING =============\n");
-    DBG_PRINT(" HLINE        = %d\n", hline);
-    DBG_PRINT(" HSA          = %d\n", hsa);
-    DBG_PRINT(" HBP          = %d\n", hbp);
-    DBG_PRINT(" VSA          = %d\n", vsa);
-    DBG_PRINT(" VBP          = %d\n", vbp);
-    DBG_PRINT(" VFP          = %d\n", vfp);
-    DBG_PRINT(" VACT         = %d\n", vact);
+    DBG_PRINT(" HLINE        = %d\n", dsi_vid_config.hline);
+    DBG_PRINT(" HSA          = %d\n", dsi_vid_config.hsa);
+    DBG_PRINT(" HBP          = %d\n", dsi_vid_config.hbp);
+    DBG_PRINT(" VSA          = %d\n", dsi_vid_config.vsa);
+    DBG_PRINT(" VBP          = %d\n", dsi_vid_config.vbp);
+    DBG_PRINT(" VFP          = %d\n", dsi_vid_config.vfp);
+    DBG_PRINT(" VACT         = %d\n", dsi_vid_config.vact);
     DBG_PRINT(" ================================================\n");
-
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    hline);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      hsa);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      hbp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     vsa);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     vbp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     vfp);
-    WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, vact);
 }
 
-static void startup_transfer_cmd(void)
+#define DSI_PACKET_HEADER_CRC      6 //4(header)+2(CRC)
+static void dsi_non_burst_chunk_config(Lcd_Config_t *pConf)
 {
-    // Startup transfer
-    WRITE_LCD_REG( MIPI_DSI_DWC_LPCLK_CTRL_OS, (0x1 << BIT_AUTOCLKLANE_CTRL) | (0x1 << BIT_TXREQUESTCLKHS));
-}
-static void startup_transfer_video(void)
-{
-    WRITE_LCD_REG( MIPI_DSI_DWC_LPCLK_CTRL_OS, (0x1 << BIT_TXREQUESTCLKHS));
-}
+    int pixel_per_chunk, num_of_chunk, vid_null_size;
+    int byte_per_chunk, total_bytes_per_chunk, chunk_overhead;
+    int bit_rate_pclk_factor;
+    int lane_num;
+    int i, done;
 
-static void set_mipi_dsi_host(int lane_num,                      // lane number, from 1 to 4
-                              int vcid,                          // virtual id
-                              int venc_data_width,               // VENC output data width
-                              int dpi_data_format,               // dpi data format
-                              int chroma_subsample,              // chroma_subsample for YUV422 or YUV420 only
-                              int operation_mode,                // video mode/command mode
-                              tv_enc_lcd_type_t output_type,     // video type, such as 1080x720
-                              int vid_mode_type,                 // video mode : burst/non_burst
-                              Lcd_Config_t *p)
-{
-    int num_of_chunk;
-    int pixel_per_chunk = 4;
-    int byte_per_chunk=0;
-    int totol_bytes_per_chunk;
-    int chunk_overhead;
-    int vid_null_size=0;
-
-    totol_bytes_per_chunk = lane_num*pixel_per_chunk*3/4;
-
-    // one lene has 8 bytes for 4 pixels
-    // according to DSI spec line50
-    switch(dpi_data_format) {
-        case COLOR_24_BIT_YCBCR :
-        case COLOR_24BIT        :
-            byte_per_chunk = 18;                                             // at least 3 lanes(12+6)=18: 3*8-18=6>=6
-            // byte_per_chunk = 12;                                             // at least 3 lanes(12+6)=18: 3*8-18=6>=6
-            break;
-        case COLOR_20BIT_LOOSE  :
-        case COLOR_18BIT_CFG_2  :
-            byte_per_chunk = 12;                                             // at least 3 lanes(12+6)=18: 3*8-18=6>=6
-            break;
-        case COLOR_16BIT_YCBCR :
-        case COLOR_16BIT_CFG_1 :
-        case COLOR_16BIT_CFG_2 :
-        case COLOR_16BIT_CFG_3 :
-            byte_per_chunk =  8;                                             // at least 3 lanes(8+6=14): 3*8-14=10>6
-            break;
-        case COLOR_30BIT :
-            byte_per_chunk = 15;                                             // at least 4 lanes(15+6=21): 4*8-21=11>6
-            break;
-        case COLOR_36BIT :
-            byte_per_chunk = 18;                                             // at least 4 leans(18+6=24): 4*8-24=8>6
-            break;
-        case COLOR_12BIT :
-            byte_per_chunk =  6;                                             // at least 3 leans(6+6=12): 3*8-12=12>6
-            break;
-        case COLOR_18BIT_CFG_1 :
-            byte_per_chunk =  9;                                             // at least 23lanes(9+6=15): 3*8-15=9>6
-            break;
-        case COLOR_RGB_111 :
-        case COLOR_RGB_332 :
-        case COLOR_RGB_444 :
-            break;
-        default :
-            DBG_PRINT(" Error: un-support data Format So Far, Please Add More\n");
-            break;
-    }    /*switch(dpi_data_format)*/
-    num_of_chunk = p->lcd_basic.h_active / pixel_per_chunk;
-    chunk_overhead = totol_bytes_per_chunk-(byte_per_chunk+6);                 // byte_per_chunk+6=valid_payload
-
-    if(operation_mode == OPERATION_VIDEO_MODE && vid_mode_type != BURST_MODE) {
-        if(chunk_overhead >= 6) {                                              // if room for null_vid's head(4)+crc(2)
-            vid_null_size = chunk_overhead-6;                                  // chunk_overhead-null_vid's head(4)+crc(2) = null_vid's payload
-        } else {
-            DBG_PRINT(" No room for null, chunk_overhead is %d\n", chunk_overhead);
+    i = 1;
+    done = 0;
+    lane_num = (int)(pConf->lcd_control.mipi_config->lane_num);
+    bit_rate_pclk_factor = pConf->lcd_control.mipi_config->bit_rate / pConf->lcd_timing.lcd_clk;
+    while ((i<=(pConf->lcd_basic.h_active/8)) && (done == 0)) {
+        pixel_per_chunk = i * 8;
+        if (pConf->lcd_control.mipi_config->dpi_data_format == COLOR_18BIT_CFG_1)
+            byte_per_chunk = pixel_per_chunk * 9/4; //18bit (4*18/8=9byte)
+        else
+            byte_per_chunk = pixel_per_chunk * 3; //24bit or 18bit-loosely
+        total_bytes_per_chunk = (lane_num * pixel_per_chunk * bit_rate_pclk_factor) / 8;
+        num_of_chunk = pConf->lcd_basic.h_active / pixel_per_chunk;
+        chunk_overhead = total_bytes_per_chunk - (byte_per_chunk + DSI_PACKET_HEADER_CRC); // byte_per_chunk+6=valid_payload
+        if (chunk_overhead >= DSI_PACKET_HEADER_CRC) { // if room for null_vid's head(4)+crc(2)
+            vid_null_size = chunk_overhead - DSI_PACKET_HEADER_CRC; // chunk_overhead-null_vid's head(4)+crc(2) = null_vid's payload
+            done = 1;
         }
+        else if (chunk_overhead >= 0) {
+            vid_null_size = 0;
+            done = 1;
+        }
+        else
+            vid_null_size = 0;
+        i++;
     }
+    if (done == 0) {
+        DPRINT(" No room packet header & CRC, chunk_overhead is %d\n", chunk_overhead);
+    }
+
+    dsi_vid_config.pixel_per_chunk = pixel_per_chunk;
+    dsi_vid_config.num_of_chunk = num_of_chunk;
+    dsi_vid_config.vid_null_size = vid_null_size;
+    DBG_PRINT(" ============== NON_BURST SETTINGS =============\n");
+    DBG_PRINT(" pixel_per_chunk       = %d\n", pixel_per_chunk);
+    DBG_PRINT(" num_of_chunk          = %d\n", num_of_chunk);
+    DBG_PRINT(" total_bytes_per_chunk = %d\n", total_bytes_per_chunk);
+    DBG_PRINT(" byte_per_chunk        = %d\n", byte_per_chunk);
+    DBG_PRINT(" chunk_overhead        = %d\n", chunk_overhead);
+    DBG_PRINT(" vid_null_size         = %d\n", vid_null_size);
+    DBG_PRINT(" ===============================================\n");
+}
+
+// ----------------------------------------------------------------------------
+//                           Function: set_mipi_dsi_host
+// Parameters:
+//              vcid,                    // virtual id
+//              chroma_subsample,        // chroma_subsample for YUV422 or YUV420 only
+//              operation_mode,          // video mode/command mode
+//              p,                       //lcd config
+// ----------------------------------------------------------------------------
+static void set_mipi_dsi_host(unsigned int vcid, unsigned int chroma_subsample, unsigned int operation_mode, Lcd_Config_t *p)
+{
+    unsigned int dpi_data_format, venc_data_width;
+    unsigned int lane_num, vid_mode_type;
+    tv_enc_lcd_type_t  output_type;
+
+    venc_data_width = p->lcd_control.mipi_config->venc_data_width;
+    dpi_data_format = p->lcd_control.mipi_config->dpi_data_format;
+    lane_num        = (unsigned int)(p->lcd_control.mipi_config->lane_num);
+    vid_mode_type   = (unsigned int)(p->lcd_control.mipi_config->video_mode_type);
+    output_type     = p->lcd_control.mipi_config->venc_fmt;
+
     // -----------------------------------------------------
     // Standard Configuration for Video Mode Operation
     // -----------------------------------------------------
@@ -825,35 +812,31 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
 
         // 3.2   Configure video packet size settings
         if( vid_mode_type == BURST_MODE ) {                                        // burst mode
-            WRITE_LCD_REG( MIPI_DSI_DWC_VID_PKT_SIZE_OS, p->lcd_basic.h_active);                          // should be one line in pixels, such as 480/240...
+            WRITE_LCD_REG( MIPI_DSI_DWC_VID_PKT_SIZE_OS, p->lcd_basic.h_active);                   // should be one line in pixels, such as 480/240...
         }
-        else if(vid_mode_type == NON_BURST_SYNC_PULSE || vid_mode_type == NON_BURST_SYNC_EVENT) {                           // non-burst mode
-            WRITE_LCD_REG( MIPI_DSI_DWC_VID_PKT_SIZE_OS, pixel_per_chunk);                    // in unit of pixels, (pclk period/byte clk period)*num_of_lane should be integer
-            // in our system, 16/8*num_of_lane is integer, so 6 pixel should be enough for 24bpp
-            // Worst case: (16/8)*8(pixel)*1(lane) >= 6(pkt head+crc)+3(max 24bpp)
+        else {  // non-burst mode
+            WRITE_LCD_REG( MIPI_DSI_DWC_VID_PKT_SIZE_OS, dsi_vid_config.pixel_per_chunk);        // in unit of pixels, (pclk period/byte clk period)*num_of_lane should be integer
         }
 
         // 3.3   Configure number of chunks and null packet size for one line
-        if( vid_mode_type == BURST_MODE ) {                                        // burst mode
+        if( vid_mode_type == BURST_MODE ) {                                // burst mode
             WRITE_LCD_REG( MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, 0);
             WRITE_LCD_REG( MIPI_DSI_DWC_VID_NULL_SIZE_OS, 0);
         }
-        else {                                                                     // non burst mode
-            WRITE_LCD_REG( MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, num_of_chunk);                     // HACT/VID_PKT_SIZE
-            WRITE_LCD_REG( MIPI_DSI_DWC_VID_NULL_SIZE_OS, vid_null_size);                     // video null size
-            DBG_PRINT(" ============== NON_BURST SETTINGS =============\n");
-            DBG_PRINT(" pixel_per_chunk       = %d\n", pixel_per_chunk);
-            DBG_PRINT(" num_of_chunk          = %d\n", num_of_chunk);
-            DBG_PRINT(" totol_bytes_per_chunk = %d\n", totol_bytes_per_chunk);
-            DBG_PRINT(" byte_per_chunk        = %d\n", byte_per_chunk);
-            DBG_PRINT(" chunk_overhead        = %d\n", chunk_overhead);
-            DBG_PRINT(" vid_null_size         = %d\n", vid_null_size);
-            DBG_PRINT(" ===============================================\n");
+        else {                                                             // non burst mode
+            WRITE_LCD_REG( MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, dsi_vid_config.num_of_chunk);  // HACT/VID_PKT_SIZE
+            WRITE_LCD_REG( MIPI_DSI_DWC_VID_NULL_SIZE_OS, dsi_vid_config.vid_null_size);  // video null size
         }
 
         // 4     Configure the video relative parameters according to the output type
         //         include horizontal timing and vertical line
-        dsi_video_config(p);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HLINE_TIME_OS,    dsi_vid_config.hline);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HSA_TIME_OS,      dsi_vid_config.hsa);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_HBP_TIME_OS,      dsi_vid_config.hbp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VSA_LINES_OS,     dsi_vid_config.vsa);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VBP_LINES_OS,     dsi_vid_config.vbp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VFP_LINES_OS,     dsi_vid_config.vfp);
+        WRITE_LCD_REG( MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, dsi_vid_config.vact);
     }  /* operation_mode == OPERATION_VIDEO_MODE */
 
     // -----------------------------------------------------
@@ -892,20 +875,21 @@ static void set_mipi_dsi_host(int lane_num,                      // lane number,
     }
 }
 
+static void startup_transfer_cmd(void)
+{
+    // Startup transfer
+    WRITE_LCD_REG( MIPI_DSI_DWC_LPCLK_CTRL_OS, (0x1 << BIT_AUTOCLKLANE_CTRL) | (0x1 << BIT_TXREQUESTCLKHS));
+}
+static void startup_transfer_video(void)
+{
+    WRITE_LCD_REG( MIPI_DSI_DWC_LPCLK_CTRL_OS, (0x1 << BIT_TXREQUESTCLKHS));
+}
+
 static void mipi_dsi_host_config(Lcd_Config_t *pConf)
 {
-    unsigned int        dpi_data_format;
-    unsigned int        venc_data_width;
-    tv_enc_lcd_type_t   venc_format;
-    unsigned char       lane_num;
-    unsigned char       operation_mode_init, video_mode_type;
 
+    unsigned int       operation_mode_init;
     operation_mode_init  = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1);
-    video_mode_type = pConf->lcd_control.mipi_config->video_mode_type;
-    venc_format     = pConf->lcd_control.mipi_config->venc_fmt;
-    venc_data_width = pConf->lcd_control.mipi_config->venc_data_width;
-    dpi_data_format = pConf->lcd_control.mipi_config->dpi_data_format;
-    lane_num        = pConf->lcd_control.mipi_config->lane_num;
 
 #ifdef LCD_DEBUG_INFO
     print_info();
@@ -917,24 +901,15 @@ static void mipi_dsi_host_config(Lcd_Config_t *pConf)
                  MIPI_DSI_DCS_ACK_TYPE,                // if need bta ack check
                  MIPI_DSI_TEAR_SWITCH);                // enable tear ack
 
-    set_mipi_dsi_host(lane_num,                        // Lane number
-                      MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
-                      venc_data_width,                 // MIPI dsi venc data bit width
-                      dpi_data_format,                 // MIPI dsi dpi data format
+    set_mipi_dsi_host(MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
                       0,                               // Chroma sub sample, only for YUV 422 or 420, even or odd
                       operation_mode_init,             // DSI operation mode, video or command
-                      venc_format,                     // Venc resolution format, eg, 240x160
-                      video_mode_type,                 // Video mode, burst or non-burst
                       pConf);
 }
 
 void mipi_dsi_link_on(Lcd_Config_t *pConf)
 {
-    unsigned int      dpi_data_format;
-    unsigned int      venc_data_width;
-    tv_enc_lcd_type_t venc_format;
-    unsigned char     lane_num;
-    unsigned char     operation_mode_disp, video_mode_type;
+    unsigned int      operation_mode_disp, operation_mode_init;
 #ifdef CONFIG_AML_LCD_EXTERN
     struct aml_lcd_extern_driver_t *lcd_extern_driver;
 #endif
@@ -942,11 +917,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 
     DPRINT("%s\n", __FUNCTION__);
     operation_mode_disp = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
-    video_mode_type = pConf->lcd_control.mipi_config->video_mode_type;
-    venc_format     = pConf->lcd_control.mipi_config->venc_fmt;
-    venc_data_width = pConf->lcd_control.mipi_config->venc_data_width;
-    dpi_data_format = pConf->lcd_control.mipi_config->dpi_data_format;
-    lane_num        = pConf->lcd_control.mipi_config->lane_num;
+    operation_mode_init = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1);
 
     if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
@@ -973,15 +944,10 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
         dsi_write_cmd(dsi_init_on_table_dft);
     }
 
-    if (operation_mode_disp != ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1)) {
-        set_mipi_dsi_host(lane_num,                        // Lane number
-                          MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
-                          venc_data_width,                 // MIPI dsi venc RGB data bit width
-                          dpi_data_format,                 // MIPI dsi dpi data format
+    if (operation_mode_disp != operation_mode_init) {
+        set_mipi_dsi_host(MIPI_DSI_VIRTUAL_CHAN_ID,        // Virtual channel id
                           0,                               // Chroma sub sample, only for YUV 422 or 420, even or odd
                           operation_mode_disp,             // DSI operation mode, video or command
-                          venc_format,                     // Venc resolution format, eg, 240x160
-                          video_mode_type,                 // Video mode, burst or non-burst
                           pConf);
     }
 }
@@ -1015,32 +981,54 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
 
 void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
 {
-    unsigned int bit_rate;
+    unsigned int bit_rate, lcd_bits;
+    unsigned int operation_mode;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
+    int n;
 
-    if (cfg->bit_rate_max == 0) {
-        bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 3 * 8) / cfg->lane_num;
-        cfg->bit_rate_min = bit_rate - 20*1000;
-        cfg->bit_rate_max = bit_rate - 20*1000 + (pConf->lcd_timing.lcd_clk / 1000);
-        DPRINT("mipi dsi bit_rate min=%dMHz, max=%dMHz\n", (cfg->bit_rate_min / 1000), (cfg->bit_rate_max / 1000));
-    }
-    if (cfg->bit_rate_max < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) {
-        DPRINT("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
-    }
-    if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
-        DPRINT("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
-    }
-
+    operation_mode = ((cfg->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
     cfg->video_mode_type = MIPI_DSI_VIDEO_MODE_TYPE;
     if(pConf->lcd_basic.lcd_bits == 6){
-        cfg->dpi_data_format = COLOR_18BIT_CFG_2;
         cfg->venc_data_width = MIPI_DSI_VENC_COLOR_18B;
+        cfg->dpi_data_format = MIPI_DSI_COLOR_18BIT;
+        if (cfg->dpi_data_format == COLOR_18BIT_CFG_2)
+            lcd_bits = 8;
+        else
+            lcd_bits = 6;
     }else{
-        cfg->dpi_data_format  = COLOR_24BIT;
         cfg->venc_data_width = MIPI_DSI_VENC_COLOR_24B;
+        cfg->dpi_data_format  = MIPI_DSI_COLOR_24BIT;
+        lcd_bits = 8;
+    }
+    if (cfg->bit_rate_max == 0) { //auto calculate
+        if ((operation_mode == OPERATION_VIDEO_MODE) && (cfg->video_mode_type != BURST_MODE))
+            bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 4 * lcd_bits) / cfg->lane_num;
+        else
+            bit_rate = ((pConf->lcd_timing.lcd_clk / 1000) * 3 * lcd_bits) / cfg->lane_num;
+        cfg->bit_rate_min = 0;
+        n = 0;
+        while ((cfg->bit_rate_min < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) && (n < 50)) {
+            cfg->bit_rate_max = bit_rate + 20000 + (n * (pConf->lcd_timing.lcd_clk / 1000));
+            cfg->bit_rate_min = cfg->bit_rate_max - (pConf->lcd_timing.lcd_clk / 1000);
+            n++;
+        }
+        if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
+            cfg->bit_rate_max = MIPI_PHY_MAX_CLK_IN;
+            cfg->bit_rate_min = cfg->bit_rate_max - (pConf->lcd_timing.lcd_clk / 1000);
+        }
+        DPRINT("mipi dsi bit_rate max=%dMHz\n", (cfg->bit_rate_max / 1000));
+    }
+    else { //user define
+        cfg->bit_rate_min = cfg->bit_rate_max - (pConf->lcd_timing.lcd_clk / 1000);
+        if (cfg->bit_rate_max < (PLL_VCO_MIN / od_table[OD_SEL_MAX-1])) {
+            DPRINT("[error]: mipi-dsi can't support %dMHz bit_rate (min bit_rate=%dMHz)\n", (cfg->bit_rate_max / 1000), ((PLL_VCO_MIN / od_table[OD_SEL_MAX-1]) / 1000));
+        }
+        if (cfg->bit_rate_max > MIPI_PHY_MAX_CLK_IN) {
+            DPRINT("[warning]: mipi-dsi bit_rate_max %dMHz is out of spec (%dMHz)\n", (cfg->bit_rate_max / 1000), (MIPI_PHY_MAX_CLK_IN / 1000));
+        }
     }
 
-    switch ((cfg->transfer_ctrl >> BIT_TRANS_CTRL_SWITCH) & 3) {
+    switch ((cfg->transfer_ctrl >> BIT_TRANS_CTRL_SWITCH) & 3) {//Venc resolution format
         case 1: //standard
             cfg->venc_fmt=TV_ENC_LCD768x1024p;
             break;
@@ -1059,7 +1047,8 @@ void set_mipi_dsi_control_config(Lcd_Config_t *pConf)
 
 void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
 {
-    unsigned pclk, lanebyteclk;
+    unsigned int pclk, lanebyteclk;
+    unsigned int operation_mode;
     DSI_Config_t *cfg= pConf->lcd_control.mipi_config;
 
     pclk = pConf->lcd_timing.lcd_clk;
@@ -1075,6 +1064,13 @@ void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
     }
     DBG_PRINT("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
              ((cfg->factor_denominator % cfg->factor_numerator) * 100 / cfg->factor_numerator));
+
+    operation_mode = ((cfg->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
+    if (operation_mode == OPERATION_VIDEO_MODE) {
+        dsi_video_config(pConf);
+        if (cfg->video_mode_type != BURST_MODE)
+            dsi_non_burst_chunk_config(pConf);
+    }
 
     set_dsi_phy_config(&dsi_phy_config, cfg->bit_rate);
 }
@@ -1112,12 +1108,12 @@ void dsi_probe(Lcd_Config_t *pConf)
 {
     dsi_config = pConf->lcd_control.mipi_config;
 
-    pConf->lcd_control.mipi_config->bit_rate_min *= 1000;
+    //pConf->lcd_control.mipi_config->bit_rate_min *= 1000;
     pConf->lcd_control.mipi_config->bit_rate_max *= 1000;
 }
 
 void dsi_remove(void)
 {
-    dsi_config->bit_rate_min /= 1000;  //for lcd_config_dft when no dt
+    //dsi_config->bit_rate_min /= 1000;  //for lcd_config_dft when no dt
     dsi_config->bit_rate_max /= 1000;  //for lcd_config_dft when no dt
 }

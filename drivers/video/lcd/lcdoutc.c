@@ -921,17 +921,15 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata));
 		}
 		DBG_PRINT("dsi_lane_num= %d\n",  cfg->lane_num);
-		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_bit_rate_min_max", NULL);
+		propdata = fdt_getprop(dt_addr, nodeoffset, "dsi_bit_rate_max", NULL);
 		if(propdata == NULL){
-			printf("faild to get dsi_bit_rate_min_max\n");
-			cfg->bit_rate_min = 0;
+			printf("faild to get dsi_bit_rate_max\n");
 			cfg->bit_rate_max = 0;
 		} 
 		else {
-			cfg->bit_rate_min = (be32_to_cpup((u32*)propdata));
-			cfg->bit_rate_max = (be32_to_cpup((((u32*)propdata)+1)));
+			cfg->bit_rate_max = (be32_to_cpup((u32*)propdata));
 		}
-		DBG_PRINT("dsi bit_rate min = %dMHz, max = %dMHz\n", cfg->bit_rate_min, cfg->bit_rate_max);
+		DBG_PRINT("dsi bit_rate max = %dMHz\n", cfg->bit_rate_max);
 		propdata = fdt_getprop(dt_addr, nodeoffset, "pclk_lanebyteclk_factor", NULL);
 		if(propdata == NULL){
 			printf("faild to get pclk_lanebyteclk_factor\n");

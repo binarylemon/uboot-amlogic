@@ -417,6 +417,21 @@ typedef struct DSI_Phy_s{
 }DSI_Phy_t;
 //********************************************************************************
 
+typedef struct DSI_Vid_s{
+    unsigned int hline;
+    unsigned int hsa;
+    unsigned int hbp;
+    unsigned int vsa;
+    unsigned int vbp;
+    unsigned int vfp;
+    unsigned int vact;
+
+    //for non-burst chunk overhead
+    unsigned int pixel_per_chunk;
+    unsigned int num_of_chunk;
+    unsigned int vid_null_size;
+}DSI_Vid_t;
+
 #define DSI_CMD_SIZE_MAX		2000
 
 extern void set_mipi_dsi_control_config(Lcd_Config_t *pConf);

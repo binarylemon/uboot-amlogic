@@ -32,8 +32,7 @@
 //************************************************
 #define LCD_MIPI_DSI_CONFIG
 #define LANE_NUM            4
-#define LANE_BIT_RATE_MIN   800  /** bit rate min(unit in MHz) */
-#define LANE_BIT_RATE_MAX   900  /** bit rate max(unit in MHz) */
+#define LANE_BIT_RATE_MAX   900  /** bit rate limit(unit in MHz) */
 #define MIPI_MODE_INIT      0    /** operation mode when init(0=video, 1=command) */
 #define MIPI_MODE_DISP      0    /** operation mode when display(0=video, 1=command) */
 #define LCD_EXTERN_INIT     0    /** if the init command size is large, should use lcd_extern init */
