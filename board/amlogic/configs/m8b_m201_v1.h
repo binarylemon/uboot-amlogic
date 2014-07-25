@@ -351,9 +351,9 @@
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9  
 #define PHYS_MEMORY_START        (0x00000000) // ???
 #if   defined(CONFIG_DDR3_512MB)
-	#define CONFIG_DDR3_ROW_SIZE (3)
+	#define CONFIG_DDR3_ROW_SIZE (2)
 	#define CONFIG_DDR3_COL_SIZE (2)
-	#define CONFIG_DDR_ROW_BITS  (15)
+	#define CONFIG_DDR_ROW_BITS  (14)
 	#define PHYS_MEMORY_SIZE     (0x20000000) // 512MB
 #elif defined(CONFIG_DDR3_1GB)
 	//2Gb(X16) x 4pcs
