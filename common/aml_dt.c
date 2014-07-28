@@ -49,7 +49,11 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		dt_total = readl(fdt_addr + AML_DT_TOTAL_DTB_OFFSET);
 		printf("      Multi dtb detected, support %d dtbs.\n", dt_total);
 		int i = 0;
-		unsigned char *aml_dt_buf = getenv(AML_DT_UBOOT_ENV);
+		unsigned char *aml_dt_buf;
+		aml_dt_buf = (unsigned char *)malloc(sizeof(unsigned char)*64);
+		memset(aml_dt_buf, 0, sizeof(aml_dt_buf));
+		unsigned char *aml_dt = getenv(AML_DT_UBOOT_ENV);
+		memcpy(aml_dt_buf, aml_dt, (strlen(aml_dt)>64?64:(strlen(aml_dt)+1)));
 		unsigned int aml_dt_len = aml_dt_buf ? strlen(aml_dt_buf) : 0;
 		if(aml_dt_len <= 0){
 			printf("      Get env aml_dt failed!\n");
@@ -59,6 +63,8 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		for(i = 0; i < AML_DT_ID_VARI_TOTAL; i++){
 			tokens[i] = strsep(&aml_dt_buf, "_");
 		}
+		if(aml_dt_buf)
+			free(aml_dt_buf);
 		printf("        aml_dt soc: %s platform: %s variant: %s\n", tokens[0], tokens[1], tokens[2]);
 
 		/*match and print result*/
