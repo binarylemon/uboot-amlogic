@@ -14,7 +14,20 @@
 
 static int init_pctl_ddr3(struct ddr_set * timing_set);
 
-#if (CFG_DDR_CLK >= 384) && (CFG_DDR_CLK < 750)
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+#if (CFG_DDR_CLK >= 336) && (CFG_DDR_CLK < 400)
+	#define CFG_PLL_OD 1
+	#define CFG_PLL_N  1
+	#define CFG_PLL_M  (((CFG_DDR_CLK/6)*6)/12)*2
+#elif (CFG_DDR_CLK >= 400) // && (CONFIG_DDR_CLK <= 912)
+	#define CFG_PLL_OD 0
+	#define CFG_PLL_N  1
+	#define CFG_PLL_M  (((CFG_DDR_CLK/12)*12)/24)*2
+#else
+	#error "Over PLL range! Please check CONFIG_DDR_CLK with file m8_skt_v1.h! \n"
+#endif
+#else
+#if (CFG_DDR_CLK >= 336) && (CFG_DDR_CLK < 750)
 	#define CFG_PLL_OD 2
 	#define CFG_PLL_N  1
 	#define CFG_PLL_M  (((CFG_DDR_CLK/6)*6)/12)
@@ -24,6 +37,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#define CFG_PLL_M  (((CFG_DDR_CLK/12)*12)/24)
 #else
 	#error "Over PLL range! Please check CFG_DDR_CLK with file m8_skt_v1.h! \n"
+#endif
 #endif
 
 #if (CFG_DDR_CLK >= 384 ) && (CFG_DDR_CLK <533)

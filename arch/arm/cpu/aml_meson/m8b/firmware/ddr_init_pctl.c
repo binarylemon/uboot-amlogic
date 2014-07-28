@@ -181,6 +181,81 @@ pub_init_ddr0:
 
 	writel(timing_set->t_ddr_clk_ctrl, P_DDR0_CLK_CTRL);
 
+#ifdef   CONFIG_DDR_BYPASS_PHY_PLL   //jiaxing debug
+//if(ddr_channel_0_power)
+        {
+        writel(0x12b,P_DDR0_CLK_CTRL);
+        hx_serial_puts("Aml log : DDR0 - pub 0 phy pir=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PIR)),32);
+                while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<0)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 phy init ok=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+                while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<1)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 plllock=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok=\n");
+                //hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+}
+///*
+        while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<2)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 ddl done=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+//*/
+        while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<3)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 zq ok=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+
+        writel(((0x80000000)),P_DDR0_PUB_PLLCR);
+        delay_us(1);
+        //nTempVal =      PUB_PIR_PLLINIT  ;
+        //writel(nTempVal, P_DDR0_PUB_PIR);
+        //delay_us(1);
+        //writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR);
+        writel((0xc0000000),P_DDR0_PUB_PLLCR);
+
+        //writel(0x12b,P_DDR0_CLK_CTRL);
+        delay_us(1);
+        //writel(((readl(P_DDR0_PUB_PLLCR)) &(~(1<<30))),P_DDR0_PUB_PLLCR);
+        writel(((0x80000000)),P_DDR0_PUB_PLLCR);
+        delay_us(1);
+        writel(((0xa0000000)),P_DDR0_PUB_PLLCR);
+        writel(0x41, P_DDR0_PUB_PIR);
+        delay_us(1);
+        writel(0x0, P_DDR0_PUB_PIR);
+        delay_us(1);
+        //writel(0x02b,P_DDR0_CLK_CTRL);
+/*
+        nTempVal =      0;//  PUB_PIR_PHYRST  ;
+        writel(nTempVal, P_DDR0_PUB_PIR);
+        delay_us(1);
+        writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR);
+        nTempVal =        PUB_PIR_PHYRST  ;
+        writel(nTempVal, P_DDR0_PUB_PIR);
+        delay_us(1);
+        writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR);
+        nTempVal =      0;//  PUB_PIR_PHYRST  ;
+        writel(nTempVal, P_DDR0_PUB_PIR);
+        delay_us(1);
+        writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR);
+        */
+//      writel(((readl(P_DDR0_PUB_PLLCR))&(~(1<<25))),P_DDR0_PUB_PGCR1);
+        delay_us(1);
+//      writel(((readl(P_DDR0_PUB_PLLCR)) |((1<<25))),P_DDR0_PUB_PGCR1);
+        delay_us(1);
+#endif
+
 #if (defined LPDDR2) || (defined LPDDR3)
 	writel(0x12b,P_DDR0_CLK_CTRL);
 #endif
@@ -209,7 +284,7 @@ pub_init_ddr0:
 	writel(timing_set->t_pub_mr[0], P_DDR0_PUB_MR0);
 	writel(timing_set->t_pub_mr[1], P_DDR0_PUB_MR1);
 	writel(timing_set->t_pub_mr[2], P_DDR0_PUB_MR2);
-	writel(timing_set->t_pub_mr[3], P_DDR0_PUB_MR3);	
+	writel(timing_set->t_pub_mr[3], P_DDR0_PUB_MR3);
 
 	//DDR SDRAM timing parameter.
 	writel( timing_set->t_pub_dtpr[0], P_DDR0_PUB_DTPR0);
@@ -219,8 +294,20 @@ pub_init_ddr0:
 	//configure auto refresh when data training.
 	writel( (readl(P_DDR0_PUB_PGCR2) & 0xfffc0000) | 0xc00 ,
 		P_DDR0_PUB_PGCR2 ); 
+#ifdef CONFIG_LPDDR2_RANK1
+	writel((readl(P_DDR0_APD_CTRL) |( 0x1<<19)), P_DDR0_APD_CTRL);
+	hx_serial_puts("\nP_DDR0_APD_CTRL=");
+	hx_serial_put_hex(readl(P_DDR0_APD_CTRL),32);
+	writel( ((readl(P_DDR0_PUB_DTCR) & 0x00ffffbf) | (1 << 28 ) | (3 << 24) | (1 << 6)  | ( 1 << 23)),
+		P_DDR0_PUB_DTCR);
+	writel((readl(P_DDR0_PUB_DX0GCR0) |( 0x3<<26)), P_DDR0_PUB_DX0GCR0);
+	writel((readl(P_DDR0_PUB_DX1GCR0) |( 0x3<<26)), P_DDR0_PUB_DX1GCR0);
+	writel((readl(P_DDR0_PUB_DX2GCR0) |( 0x3<<26)), P_DDR0_PUB_DX2GCR0);
+	writel((readl(P_DDR0_PUB_DX3GCR0) |( 0x3<<26)), P_DDR0_PUB_DX3GCR0);
+#else
 	writel( ((readl(P_DDR0_PUB_DTCR) & 0x00ffffbf) | (1 << 28 ) | (1 << 24) | (1 << 6)  | ( 1 << 23)),
 		P_DDR0_PUB_DTCR);
+#endif
 	//for training gate extended gate
 	writel(0x8, P_DDR0_PUB_DX0GCR3); //for pdr mode bug //for pdr mode bug this will cause some chip bit deskew  jiaxing add
 	writel(0x8, P_DDR0_PUB_DX1GCR3); 
@@ -396,7 +483,11 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 	//===============================================
 	//HX PUB INIT
 	hx_serial_puts("Aml log : HX DDR PUB training begin:\n");
-	
+
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL   //jiaxing debug
+	goto DDR_INIT_BYPASS_PLL;
+#endif
+
 	//===============================================
 	//PLL,DCAL,PHY RST,ZCAL
 	nTempVal =	PUB_PIR_ZCAL | PUB_PIR_PLLINIT | PUB_PIR_DCAL | PUB_PIR_PHYRST;
@@ -540,6 +631,54 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 #endif //LPDDR2, LPDDR3
 #endif //CONFIG_VLSI_EMULATOR
 
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+DDR_INIT_BYPASS_PLL:
+
+#if (!(defined LPDDR2))&& (!(defined LPDDR3))
+	hx_serial_puts("Aml log : DDR0 - start training");
+	writel(0x1002ffe1, P_DDR0_PUB_PIR);
+	hx_serial_puts("Aml log : DDR0 - start training1");
+	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x80000f5f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x40000fff) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x00000fff) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f)){
+		//ddr_udelay(10);
+		if(readl(P_DDR0_PUB_PGSR0) &( PUB_PGSR0_DTERR|PUB_PGSR0_ZCERR))
+			{
+			hx_serial_puts("Aml log : DDR0 - PUB_PGSR0_ERR with [");
+			hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			hx_serial_puts("] retry...\n");
+			goto pub_init_ddr0;
+		}
+	}
+	hx_serial_puts("Aml log : DDR0 - training done PGSR0 = 0x");
+	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	hx_serial_puts("\n");
+#endif
+
+#ifdef LPDDR2
+	writel(0x1002f161, P_DDR0_PUB_PIR);
+	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x80000f5f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x40000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x00000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f)){
+		//ddr_udelay(10);
+		if(readl(P_DDR0_PUB_PGSR0) &( PUB_PGSR0_DTERR|PUB_PGSR0_ZCERR)){
+			pctl_serial_puts("Aml log : DDR0 - PUB_PGSR0_ERR with [");
+			pctl_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			pctl_serial_puts("] retry...\n");
+			goto pub_init_ddr0;
+		}
+	}
+	hx_serial_puts("Aml log : DDR0 - training done PGSR0 = 0x");
+	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	hx_serial_puts("\n");
+#endif
+#else
 #ifdef LPDDR2
 	writel(0xf173, P_DDR0_PUB_PIR);
 	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
@@ -558,6 +697,7 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
 	hx_serial_puts("\n");
 #endif
+#endif
 
 	writel(UPCTL_CMD_GO, P_DDR0_PCTL_SCTL);
 	while ((readl(P_DDR0_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {
@@ -568,9 +708,18 @@ else if(cfg_ddr_mode == CFG_DDR_16BIT_LANE01)
 	nTempVal = readl(P_DDR0_PUB_PGSR0);
 #ifdef CONFIG_NO_DDR_PUB_VT_CHECK
 	if ((( (nTempVal >> 20) & 0xfff ) != 0xC00 ) &&
-		(( (nTempVal >> 20) & 0xfff ) != 0x800 ))
+		(( (nTempVal >> 20) & 0xfff ) != 0x800 )
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+		 && (( (nTempVal >> 20) & 0xfff ) != 0x400 )
+		 && (( (nTempVal >> 20) & 0xfff ) != 0x000 )
+#endif
+		)
 #else
-	if (( (nTempVal >> 20) & 0xfff ) != 0xC00 )
+	if ((( (nTempVal >> 20) & 0xfff ) != 0xC00 )
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+		&&(( (nTempVal >> 20) & 0xfff ) != 0x400 )
+#endif
+		)
 #endif
     {
 		pctl_serial_puts("Aml log : DDR0 - PUB init fail with PGSR0 : 0x");
