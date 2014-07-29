@@ -31,12 +31,9 @@
 //debug print define
 //***********************************************
 //#define LCD_DEBUG_INFO
-#ifdef LCD_DEBUG_INFO
-#define DBG_PRINT(...)		printf(__VA_ARGS__)
-#else
-#define DBG_PRINT(...)
-#endif
 
+extern unsigned int lcd_print_flag;
+extern void lcd_print(const char *fmt, ...);
 //**********************************************
 //global define
 //***********************************************

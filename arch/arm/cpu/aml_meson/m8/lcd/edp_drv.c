@@ -335,7 +335,7 @@ static int dptx_init_downspread(unsigned char ss_enable)
 {
 	int status = 0;
 	
-	DBG_PRINT("set spread spectrum\n");
+	lcd_print("set spread spectrum\n");
 	ss_enable = (ss_enable > 0) ? 1 : 0;
 	
 	//set in transmitter
@@ -836,7 +836,7 @@ static int trdp_set_link_rate(unsigned char link_rate)
 {
 	int status = VAL_EDP_TX_AUX_OPERATION_SUCCESS;
 	
-	DBG_PRINT("set link rate\n");
+	lcd_print("set link rate\n");
 	if (link_rate != READ_DPTX_REG(EDP_TX_LINK_BW_SET)) {
 		WRITE_DPTX_REG(EDP_TX_LINK_BW_SET, link_rate);
 		if (status)
@@ -861,7 +861,7 @@ static int trdp_set_lane_count(unsigned char lane_count)
 	int status = 0;
 	unsigned enhance_framing_mode;
 	
-	DBG_PRINT("set lane count\n");
+	lcd_print("set lane count\n");
 	switch (lane_count) {
 		case 1:			
 		case 2:			
@@ -884,7 +884,7 @@ static int trdp_set_downspread(unsigned char ss_enable)
 {
 	int status = 0;
 	
-	//DBG_PRINT("set spread spectrum\n");
+	//lcd_print("set spread spectrum\n");
 	ss_enable = (ss_enable > 0) ? 1 : 0;
 	
 	//set in sink device
@@ -1105,7 +1105,7 @@ static int trdp_set_training_pattern(unsigned char pattern)
 {
 	int status = 0;
 	
-	DBG_PRINT("%s: pattern %u\n", __FUNCTION__, pattern);
+	lcd_print("%s: pattern %u\n", __FUNCTION__, pattern);
 	//disable scrambling for any active test pattern
 	if (pattern)
 		pattern |= (1 << 5);
@@ -1322,7 +1322,7 @@ static int trdp_update_status(void)
 	unsigned char aux_data[3];
 	
 	status = trdp_AUXRead(EDP_DPCD_STATUS_LANE_0_1, 3, aux_data);
-	DBG_PRINT("%s: aux_data0=0x%x, aux_data1=0x%x, aux_data2=0x%x, \n", __FUNCTION__, aux_data[0], aux_data[1], aux_data[2]);
+	lcd_print("%s: aux_data0=0x%x, aux_data1=0x%x, aux_data2=0x%x, \n", __FUNCTION__, aux_data[0], aux_data[1], aux_data[2]);
 	if (status == VAL_EDP_TX_OPERATION_SUCCESS)
 		status = (aux_data[2] << 16) | (aux_data[1] << 8) | (aux_data[0] << 0);
 		
@@ -1583,7 +1583,7 @@ static void dplpm_main_stream_enable(unsigned enable)
 	}
 	else
 		WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_ENABLE, 0);
-	DBG_PRINT("displayport main stream %s\n", enable ? "enable" : "disable");
+	lcd_print("displayport main stream %s\n", enable ? "enable" : "disable");
 }
 
 static int dplpm_verify_link_status(void)
@@ -1616,7 +1616,7 @@ static int dplpm_verify_link_status(void)
 	else
 		status = VAL_EDP_LPM_STATUS_RETRAIN;
 
-	DBG_PRINT("%s: %s\n",__FUNCTION__, (status == VAL_EDP_LPM_STATUS_TRAINING_SUCCESS) ? "training success" : "retrain");
+	lcd_print("%s: %s\n",__FUNCTION__, (status == VAL_EDP_LPM_STATUS_TRAINING_SUCCESS) ? "training success" : "retrain");
 	return status;
 }
 
@@ -1675,12 +1675,12 @@ static int dplpm_link_init(EDP_Link_Config_t *link_config)
 		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
 		WRITE_LCD_CBUS_REG_BITS(RESET4_REGISTER, 1, 11, 1);
 		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
-		DBG_PRINT("reset edp tx\n");
+		lcd_print("reset edp tx\n");
 		mdelay(10);
 		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 0, 11, 1);
 		WRITE_LCD_CBUS_REG_BITS(RESET4_REGISTER, 0, 11, 1);
 		WRITE_LCD_CBUS_REG_BITS(RESET4_MASK, 1, 11, 1);
-		DBG_PRINT("release reset edp tx\n");		
+		lcd_print("release reset edp tx\n");		
 		
 		WRITE_DPTX_REG(EDP_TX_AUX_CLOCK_DIVIDER, 170); // Set Aux clk-div by APB clk
 
@@ -1706,7 +1706,7 @@ static int dplpm_link_init(EDP_Link_Config_t *link_config)
 		if (status)
 			return VAL_EDP_TX_OPERATION_FAILED;
 			
-		DBG_PRINT("..... Power up sink link .....\n");
+		lcd_print("..... Power up sink link .....\n");
 		power_state = 1;	//normal operation
 		status = trdp_AUXWrite(EDP_DPCD_SET_POWER, 1, &power_state);
 		mdelay(30);
@@ -1739,10 +1739,10 @@ int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_MSA_t *vm)
 
 	if (status == VAL_EDP_TX_OPERATION_SUCCESS) {
 		status = dplpm_maintain_link();
-#ifdef LCD_DEBUG_INFO
-		trdp_dump_DPCD();
-		trdp_dump_DPCD_training_status();
-#endif
+		if (lcd_print_flag > 0) {
+			trdp_dump_DPCD();
+			trdp_dump_DPCD_training_status();
+		}
 		dptx_set_MSA(vm);
 		WRITE_LCD_REG(ENCL_VIDEO_EN, 1);
 		dplpm_main_stream_enable(1);
@@ -1751,10 +1751,10 @@ int dplpm_link_policy_maker(EDP_Link_Config_t *mlconfig, EDP_MSA_t *vm)
 		DPRINT("displayport initial failed\n");
 		status = VAL_EDP_TX_OPERATION_FAILED;
 	}
-#ifdef LCD_DEBUG_INFO
-	dptx_dump_link_config();
-	dptx_dump_MSA();
-#endif
+	if (lcd_print_flag > 0) {
+		dptx_dump_link_config();
+		dptx_dump_MSA();
+	}
 	
 	//feedback link config to lcd driver
 	mlconfig->max_lane_count = link_config->max_lane_count;
@@ -1772,7 +1772,7 @@ int dplpm_link_off(void)
     int status = 0;
     unsigned char aux_data;
 
-    DBG_PRINT("..... Power down sink link .....\n");
+    lcd_print("..... Power down sink link .....\n");
     aux_data = 2;	//power down mode
     status = trdp_AUXWrite(EDP_DPCD_SET_POWER, 1, &aux_data);
 

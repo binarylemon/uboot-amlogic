@@ -202,7 +202,7 @@ static void check_phy_status(void)
         udelay(6);
     }
     while((( READ_LCD_REG(MIPI_DSI_DWC_PHY_STATUS_OS ) >> BIT_PHY_STOPSTATECLKLANE) & 0x1) == 0){
-        DBG_PRINT(" Waiting STOP STATE LANE\n");
+        lcd_print(" Waiting STOP STATE LANE\n");
         udelay(6);
     }
 }
@@ -311,10 +311,10 @@ static unsigned int wait_for_generic_read_response(void)
 static unsigned int generic_if_wr(unsigned int address, unsigned int data_in)
 {
     if(address != MIPI_DSI_DWC_GEN_HDR_OS && address != MIPI_DSI_DWC_GEN_PLD_DATA_OS) {
-        DBG_PRINT(" Error Address : 0x%x\n", address);
+        lcd_print(" Error Address : 0x%x\n", address);
     }
 
-    DBG_PRINT("address 0x%x = 0x%08x\n", address, data_in);
+    lcd_print("address 0x%x = 0x%08x\n", address, data_in);
     WRITE_LCD_REG(address, data_in);
 
     return 0;
@@ -329,7 +329,7 @@ static unsigned int generic_if_rd(unsigned int address)
     unsigned int data_out;
 
     if(address != MIPI_DSI_DWC_GEN_PLD_DATA_OS) {
-        DBG_PRINT(" Error Address : %x\n", address);
+        lcd_print(" Error Address : %x\n", address);
     }
 
     data_out = READ_DSI_REG(address);
@@ -347,8 +347,8 @@ static unsigned int generic_read_packet_0_para(unsigned char data_type, unsigned
 {
     unsigned int read_data;
 
-    // DBG_PRINT(" para is %x, dcs_command is %x\n", para, dcs_command);
-    // DBG_PRINT(" vc_id %x, data_type is %x\n", vc_id, data_type);
+    // lcd_print(" para is %x, dcs_command is %x\n", para, dcs_command);
+    // lcd_print(" vc_id %x, data_type is %x\n", vc_id, data_type);
     generic_if_wr(MIPI_DSI_DWC_GEN_HDR_OS, ((0 << BIT_GEN_WC_MSBYTE)                           |
                                             (((unsigned int)dcs_command) << BIT_GEN_WC_LSBYTE) |
                                             (((unsigned int)vc_id) << BIT_GEN_VC)              |
@@ -579,7 +579,7 @@ static void set_dsi_phy_config(DSI_Phy_t *dphy, unsigned dsi_ui)
     dphy->init = (DPHY_TIME_INIT(t_ui) + t_lane_byte - 1) / t_lane_byte;
     dphy->wakeup = (DPHY_TIME_WAKEUP(t_ui) + t_lane_byte - 1) / t_lane_byte;
 
-    DBG_PRINT("lp_tesc = 0x%02x\n"
+    lcd_print("lp_tesc = 0x%02x\n"
             "lp_lpx = 0x%02x\n"
             "lp_ta_sure = 0x%02x\n"
             "lp_ta_go = 0x%02x\n"
@@ -649,7 +649,7 @@ static void dsi_phy_init(DSI_Phy_t *dphy, unsigned char lane_num)
 
 static void mipi_dsi_phy_config(Lcd_Config_t *pConf)
 {
-    DBG_PRINT("%s\n", __func__);
+    lcd_print("%s\n", __func__);
     //Digital
     // Power up DSI
     WRITE_LCD_REG(MIPI_DSI_DWC_PWR_UP_OS, 1);
@@ -688,22 +688,22 @@ static void dsi_video_config(Lcd_Config_t *pConf)
     dsi_vid_config.vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
     dsi_vid_config.vact = pConf->lcd_basic.v_active;
 
-    DBG_PRINT(" ============= VIDEO TIMING SETTING =============\n");
-    DBG_PRINT(" HLINE        = %d\n", dsi_vid_config.hline);
-    DBG_PRINT(" HSA          = %d\n", dsi_vid_config.hsa);
-    DBG_PRINT(" HBP          = %d\n", dsi_vid_config.hbp);
-    DBG_PRINT(" VSA          = %d\n", dsi_vid_config.vsa);
-    DBG_PRINT(" VBP          = %d\n", dsi_vid_config.vbp);
-    DBG_PRINT(" VFP          = %d\n", dsi_vid_config.vfp);
-    DBG_PRINT(" VACT         = %d\n", dsi_vid_config.vact);
-    DBG_PRINT(" ================================================\n");
+    lcd_print(" ============= VIDEO TIMING SETTING =============\n");
+    lcd_print(" HLINE        = %d\n", dsi_vid_config.hline);
+    lcd_print(" HSA          = %d\n", dsi_vid_config.hsa);
+    lcd_print(" HBP          = %d\n", dsi_vid_config.hbp);
+    lcd_print(" VSA          = %d\n", dsi_vid_config.vsa);
+    lcd_print(" VBP          = %d\n", dsi_vid_config.vbp);
+    lcd_print(" VFP          = %d\n", dsi_vid_config.vfp);
+    lcd_print(" VACT         = %d\n", dsi_vid_config.vact);
+    lcd_print(" ================================================\n");
 }
 
 #define DSI_PACKET_HEADER_CRC      6 //4(header)+2(CRC)
 static void dsi_non_burst_chunk_config(Lcd_Config_t *pConf)
 {
-    int pixel_per_chunk, num_of_chunk, vid_null_size;
-    int byte_per_chunk, total_bytes_per_chunk, chunk_overhead;
+    int pixel_per_chunk=0, num_of_chunk=0, vid_null_size=0;
+    int byte_per_chunk=0, total_bytes_per_chunk=0, chunk_overhead=0;
     int bit_rate_pclk_factor;
     int lane_num;
     int i, done;
@@ -740,14 +740,14 @@ static void dsi_non_burst_chunk_config(Lcd_Config_t *pConf)
     dsi_vid_config.pixel_per_chunk = pixel_per_chunk;
     dsi_vid_config.num_of_chunk = num_of_chunk;
     dsi_vid_config.vid_null_size = vid_null_size;
-    DBG_PRINT(" ============== NON_BURST SETTINGS =============\n");
-    DBG_PRINT(" pixel_per_chunk       = %d\n", pixel_per_chunk);
-    DBG_PRINT(" num_of_chunk          = %d\n", num_of_chunk);
-    DBG_PRINT(" total_bytes_per_chunk = %d\n", total_bytes_per_chunk);
-    DBG_PRINT(" byte_per_chunk        = %d\n", byte_per_chunk);
-    DBG_PRINT(" chunk_overhead        = %d\n", chunk_overhead);
-    DBG_PRINT(" vid_null_size         = %d\n", vid_null_size);
-    DBG_PRINT(" ===============================================\n");
+    lcd_print(" ============== NON_BURST SETTINGS =============\n");
+    lcd_print(" pixel_per_chunk       = %d\n", pixel_per_chunk);
+    lcd_print(" num_of_chunk          = %d\n", num_of_chunk);
+    lcd_print(" total_bytes_per_chunk = %d\n", total_bytes_per_chunk);
+    lcd_print(" byte_per_chunk        = %d\n", byte_per_chunk);
+    lcd_print(" chunk_overhead        = %d\n", chunk_overhead);
+    lcd_print(" vid_null_size         = %d\n", vid_null_size);
+    lcd_print(" ===============================================\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -891,12 +891,12 @@ static void mipi_dsi_host_config(Lcd_Config_t *pConf)
     unsigned int       operation_mode_init;
     operation_mode_init  = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1);
 
-#ifdef LCD_DEBUG_INFO
-    print_info();
-    print_dphy_info();
-#endif
+    if (lcd_print_flag > 0) {
+        print_info();
+        print_dphy_info();
+    }
 
-    DBG_PRINT("Set mipi_dsi_host\n");
+    lcd_print("Set mipi_dsi_host\n");
     set_mipi_dcs(MIPI_DSI_CMD_TRANS_TYPE,              // 0: high speed, 1: low power
                  MIPI_DSI_DCS_ACK_TYPE,                // if need bta ack check
                  MIPI_DSI_TEAR_SWITCH);                // enable tear ack
@@ -936,7 +936,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 
     if (pConf->lcd_control.mipi_config->dsi_init_on) {
         init_flag += dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
-        DBG_PRINT("dsi init on\n");
+        lcd_print("dsi init on\n");
     }
 
     if (init_flag == 0) {
@@ -960,7 +960,7 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
 
     if (pConf->lcd_control.mipi_config->dsi_init_off) {
         dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_off);
-        DBG_PRINT("dsi init off\n");
+        lcd_print("dsi init off\n");
     }
 
     if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
@@ -1055,14 +1055,14 @@ void set_mipi_dsi_control_config_post(Lcd_Config_t *pConf)
 
     if (cfg->factor_numerator == 0) {
         lanebyteclk = cfg->bit_rate / 8;
-        DBG_PRINT("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
+        lcd_print("pixel_clk = %d.%03dMHz, bit_rate = %d.%03dMHz, lanebyteclk = %d.%03dMHz\n", (pclk / 1000000), ((pclk / 1000) % 1000), 
                  (cfg->bit_rate / 1000000), ((cfg->bit_rate / 1000) % 1000), (lanebyteclk / 1000000), ((lanebyteclk / 1000) % 1000));
 
         cfg->factor_denominator = lanebyteclk/1000;
         cfg->factor_numerator = pclk/1000;
         //cfg->factor_denominator = 10;
     }
-    DBG_PRINT("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
+    lcd_print("d=%d, n=%d, factor=%d.%02d\n", cfg->factor_denominator, cfg->factor_numerator, (cfg->factor_denominator/cfg->factor_numerator), 
              ((cfg->factor_denominator % cfg->factor_numerator) * 100 / cfg->factor_numerator));
 
     operation_mode = ((cfg->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
@@ -1091,7 +1091,7 @@ void set_mipi_dsi_control(Lcd_Config_t *pConf)
 
 void mipi_dsi_off(void)
 {
-    DBG_PRINT("poweroff dsi digital\n");
+    lcd_print("poweroff dsi digital\n");
     // Power down DSI
     WRITE_LCD_REG(MIPI_DSI_DWC_PWR_UP_OS, 0);
 
@@ -1100,7 +1100,7 @@ void mipi_dsi_off(void)
     // WRITE_LCD_REG(MIPI_DSI_DWC_PHY_RSTZ_OS, 0xc);
 
     WRITE_DSI_REG(MIPI_DSI_CHAN_CTRL, 0x1f);
-    DBG_PRINT("MIPI_DSI_PHY_CTRL=0x%x\n", READ_DSI_REG(MIPI_DSI_PHY_CTRL)); //read
+    lcd_print("MIPI_DSI_PHY_CTRL=0x%x\n", READ_DSI_REG(MIPI_DSI_PHY_CTRL)); //read
     WRITE_DSI_REG_BITS(MIPI_DSI_PHY_CTRL, 0, 7, 1);
 }
 
