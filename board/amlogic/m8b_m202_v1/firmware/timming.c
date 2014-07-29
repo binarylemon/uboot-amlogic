@@ -246,7 +246,7 @@ static struct ddr_set __ddr_setting={
 			(0 << 3 ) |   //[B3]burst type,  0:sequential; 1:Interleave.
 			(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
 				                    						      
-       	[1]=(0 << 9)|(0<< 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
+       	[1]=(0 << 9)|(1<< 6)|(0 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
            	(0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 		#ifdef CONFIG_ENABLE_WRITE_LEVELING
 	            (1 << 7)|     // Write leveling enable
