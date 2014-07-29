@@ -232,7 +232,8 @@ static int efuse_checkversion(char *buf)
 					break;
 				case EFUSE_SOC_CHIP_M8:
 				case EFUSE_SOC_CHIP_M8BABY:
-					if(ver != M8_EFUSE_VERSION_SERIALNUM_V1){
+					if((ver != M8_EFUSE_VERSION_SERIALNUM_V1)&&
+						ver != M8_EFUSE_VERSION_SERIALNUM_V2_2RSA){
 						ver = -1;
 					}
 					break;

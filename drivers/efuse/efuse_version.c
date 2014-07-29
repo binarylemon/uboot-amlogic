@@ -441,6 +441,7 @@ static efuseinfo_item_t efuseinfo_m8_serialNum_v1[] =
 		.bch_en = 0,
 		.bch_reverse = 0,
 	},
+	#if !defined(CONFIG_AML_SECU_BOOT_V2_2RSA)
 	{
 		.title = "usid",
 		.offset = 454,
@@ -450,6 +451,7 @@ static efuseinfo_item_t efuseinfo_m8_serialNum_v1[] =
 		.bch_en = 0,
 		.bch_reverse = 0,
 	},
+	#endif
 	{
 		.title = "version",
 		.offset = M8_EFUSE_VERSION_OFFSET, //509
@@ -547,7 +549,11 @@ efuseinfo_t efuseinfo[] =
 	{
 		.efuseinfo_version = efuseinfo_m8_serialNum_v1,
 		.size = sizeof(efuseinfo_m8_serialNum_v1)/sizeof(efuseinfo_item_t),
+		#if defined(CONFIG_AML_SECU_BOOT_V2_2RSA)
+		.version = M8_EFUSE_VERSION_SERIALNUM_V2_2RSA,
+		#else
 		.version = M8_EFUSE_VERSION_SERIALNUM_V1,
+		#endif
 	},
 	{
 		.efuseinfo_version = efuseinfo_m6tvd_serialNum_v1,
