@@ -263,6 +263,7 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+        "wipe_data=success\0"\
 	"preboot="\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
@@ -300,14 +301,16 @@
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\
-			"run recovery;"\
+                "run recovery;"\
         "else if test ${reboot_mode} = update; then "\
         	"run update;"\
         "else if test ${reboot_mode} = usb_burning; then "\
         	"run usb_burning;"\
+        "else if test ${wipe_data} = failed; then "\
+        	"echo wipe_data=${wipe_data}; run recovery;"\
         "else " \
         	"  "\
-        "fi;fi;fi\0" \
+        "fi;fi;fi;fi\0" \
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
