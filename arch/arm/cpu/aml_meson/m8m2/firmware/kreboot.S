@@ -137,7 +137,7 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	   ISB
 
 		//enable all channel
-		ldr r1,=0xFFF
+		ldr r1,=0xFFFF
 		ldr r0,=0xc8006000
 		str r1,[r0]
 		 NOP
