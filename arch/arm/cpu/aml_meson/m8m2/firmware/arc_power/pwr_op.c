@@ -392,7 +392,9 @@ void rn5t618_power_off_at_24M()
     //  rn5t618_set_gpio(1, 1);                                         // close boost
     }
 #endif
-	//rn5t618_set_gpio(1, 1);                                             // close vccx2
+#ifdef CONFIG_POWEROFF_VCCX2
+    rn5t618_set_gpio(1, 1);                                             // close vccx2
+#endif
     rn5t618_set_gpio(0, 1);                                             // close vccx3
     udelay__(500);
 
@@ -462,7 +464,11 @@ void rn5t618_power_on_at_24M()                                          // need 
     rn5t618_set_dcdc_voltage(2, CONFIG_VDDAO_VOLTAGE);
 #endif
 #endif
+
+#ifdef CONFIG_POWEROFF_VCCX2
 	rn5t618_set_gpio(1, 0);                                     // close vccx2
+#endif
+
 #if 0
     if (!vbus_status) {
         //rn5t618_set_gpio(1, 0);

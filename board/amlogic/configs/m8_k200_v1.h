@@ -173,6 +173,7 @@
  * DCDC mode switch when suspend 
  */
 #define CONFIG_DCDC_PFM_PMW_SWITCH      1
+#define CONFIG_POWEROFF_VCCX2
 #endif /* CONFIG_RN5T618 */
 
 #endif /* CONFIG_PLATFORM_HAS_PMU */
