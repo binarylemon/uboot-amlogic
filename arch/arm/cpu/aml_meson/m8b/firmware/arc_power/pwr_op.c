@@ -619,7 +619,7 @@ void aml1218_power_on_at_24M()
         printf_arc("\n");
         power_off_vcc50();
     }
-    udelay__(50 * 1000);
+    udelay__(2 * 1000);
     printf_arc("open boost\n");
     power_on_vcc50();
     udelay__(1000);
