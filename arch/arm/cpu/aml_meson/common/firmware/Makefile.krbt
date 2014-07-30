@@ -55,9 +55,10 @@ ELFFILES= $(dir $(FIRMWARE))aml-kreboot.out \
 all: clean $(ALL) $(ELFFILES)	 
 	
 %.bin:	%.out
-	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
-	./bin2code arm_reboot $@ $(obj)/boot_code.dat
-	cp -f $(obj)/boot_code.dat $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power/
+	@$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
+	@./bin2code arm_reboot $@ $(obj)/boot_code.dat	
+	@cp -f $(obj)/boot_code.dat $(SRCTREE)/$(CPUDIR)/$(SOC)/firmware/arc_power/
+	@rm -f $(dir $(FIRMWARE))aml-kreboot.out $(dir $(FIRMWARE))aml-kreboot.bin $(dir $(FIRMWARE))aml-kreboot.out.map
 
 
 $(dir $(FIRMWARE))aml-kreboot.out:$(OBJS) $(obj)kreboot.lds
