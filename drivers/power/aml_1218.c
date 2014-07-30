@@ -1176,7 +1176,7 @@ int aml1218_init(void)
         printf("find boost fault:%x\n", val);
         aml1218_write16(0x0084, 0x0001);            // close boost before open it, according Harry 
     }
-    udelay(1000 * 500);
+    udelay(1000 * 10);
     printf("%s, open boost\n", __func__);
     aml1218_write16(0x0082, 0x0001);            // software boost up
     udelay(1000);
