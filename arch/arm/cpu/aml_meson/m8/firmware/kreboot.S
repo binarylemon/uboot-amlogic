@@ -48,6 +48,11 @@ pwr_restart:
 	isb
 	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
 
+	cps #6 //switch to monitor user mode
+	mrc p15, 0, r0, c1, c1, 0  @ Read Secure Configuration Register
+	bic 	r0, r0, #1
+	mcr p15, 0, r0, c1, c1, 0  @ Write Secure Configuration Register
+
 	ldr r0,=0xc11081a8
 	ldr r1,=0x11111112
 	ldr r0, [r0]
@@ -181,21 +186,21 @@ m8m2_sec_dmc_handler:
 	ldr r0, =0xda002024
 	str r1,[r0]
 	str r1,[r0,#4]
-
+/*
 	ldr r0, =0xda002028
 	str r1,[r0]
 	str r1,[r0,#4]
-
+*/
 	ldr r0, =0xda002018
 	ldr r1,=0x80000000
 	str r1,[r0]
 
 	/*changed for AXI and AMBUS arbiter weight control.*/
 	ldr r0, =0xc8006080 /*writel((0x1f | (0xf << 6)), P_DMC_2ARB_CTRL);*/
-	ldr r1,[r0]
+//	ldr r1,[r0]
 	ldr r2, =0x3df
-	orr r1, r2, r1
-	str r1, [r0]
+//	orr r1, r2, r1
+	str r2, [r0]
 
 	/*enable the DMC auto refresh function*/
 	ldr r0, =0xc8006090
