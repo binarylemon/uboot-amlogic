@@ -47,12 +47,12 @@ pwr_restart:
 	dmb
 	isb
 	mov sp,#0x7800 /*2k before arc sp: 0x8000*/
-
+/*
 	cps #6 //switch to monitor user mode
 	mrc p15, 0, r0, c1, c1, 0  @ Read Secure Configuration Register
 	bic 	r0, r0, #1
 	mcr p15, 0, r0, c1, c1, 0  @ Write Secure Configuration Register
-
+*/
 	ldr r0,=0xc11081a8
 	ldr r1,=0x11111112
 	ldr r0, [r0]
