@@ -5,6 +5,7 @@
 #include "hdmi_tx_reg.h"
 #include <amlogic/aml_tv.h>
 #include <amlogic/enc_clk_config.h>
+#include <asm/cpu_id.h>
 
 #define HDMI_SOURCE_DESCRIPTION 0
 #define HDMI_PACKET_VEND        1
@@ -270,6 +271,12 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     case HDMI_576i50:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x58);              // PB2 (Note: the value should be meaningful but is not!)
         break;
+    case HDMI_480p60_16x9:
+    case HDMI_480i60_16x9:
+    case HDMI_576p50_16x9:
+    case HDMI_576i50_16x9:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x68);
+        break;
     default:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
         break;
@@ -279,6 +286,10 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     case HDMI_480i60:
     case HDMI_576p50:
     case HDMI_576i50:
+    case HDMI_480p60_16x9:
+    case HDMI_480i60_16x9:
+    case HDMI_576p50_16x9:
+    case HDMI_576i50_16x9:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x03);              // PB3 (Note: the value should be meaningful but is not!)
         break;
     default:
@@ -292,6 +303,8 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     switch(vic) {
     case HDMI_480i60:
     case HDMI_576i50:
+    case HDMI_480i60_16x9:
+    case HDMI_576i50_16x9:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 1); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
         break;
     default:
@@ -332,13 +345,22 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
 // Enable nessary hdmi related clock gate
 static void hdmi_tx_gate(HDMI_Video_Codes_t vic)
 {
+    if(IS_MESON_M8M2_CPU) {
+        aml_set_reg32_bits_op(P_HHI_VPU_MEM_PD_REG1, 0x0, 20, 2);
+        // Powerup VPU_HDMI
+        aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x1<<8))); // [8] power on
+        aml_write_reg32_op(P_HHI_MEM_PD_REG0, aml_read_reg32_op(P_HHI_MEM_PD_REG0) & (~(0xff << 8))); // HDMI MEM-PD
+
+        // Remove VPU_HDMI ISO
+        aml_write_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0, aml_read_reg32_op(P_AO_RTI_GEN_PWR_SLEEP0) & (~(0x1<<9))); // [9] VPU_HDMI
+    }
     aml_set_reg32_bits_op(P_HHI_GCLK_MPEG2, 1, 4, 1); //enable HDMI PCLK
     aml_set_reg32_bits_op(P_HHI_GCLK_MPEG2, 1, 3, 1); //enable HDMI Int Sync
     aml_write_reg32_op(P_HHI_HDMI_CLK_CNTL,  ((0 << 9)  |   // select XTAL
                              (1 << 8)  |   // Enable gated clock
                              (0 << 0)) );  // Divide by 1
     
-    if((vic == HDMI_480i60) || (vic == HDMI_576i50)) {
+    if((vic == HDMI_480i60) || (vic == HDMI_576i50) || (vic == HDMI_480i60_16x9) || (vic == HDMI_576i50_16x9)) {
         // For ENCI
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 8, 1); //enable VCLK2_ENCI
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 2, 1); //enable VCLK2_VENCI
@@ -1338,6 +1360,10 @@ static void hdmi_reconfig_packet_setting(HDMI_Video_Codes_t vic)
 
 void hdmi_tx_set(HDMI_Video_Codes_t vic) 
 {
+	// reset SD 4:3 to 16:9 formats
+	if((vic == HDMI_480p60) || (vic == HDMI_480i60) || (vic == HDMI_576p50) || (vic == HDMI_576i50))
+		vic ++;
+	printf("set HDMI vic: %d\n", vic);
     hdmi_tx_gate(vic);
     hdmi_tx_clk(vic);
     hdmi_tx_misc(vic);

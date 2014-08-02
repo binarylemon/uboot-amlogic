@@ -3,6 +3,7 @@
 #include <asm/arch/reg_addr.h>
 #include <asm/arch/io.h>
 #include <asm/io.h>
+#include <asm/cpu_id.h>
 #include "hdmi_tx_reg.h"
 
 #define check_div() \
@@ -117,6 +118,10 @@ static void set_hpll_hdmi_od(unsigned div)
             aml_set_reg32_bits_op(P_HHI_VID_PLL_CNTL, 1, 16, 2);
             break;
         case 4:
+            aml_set_reg32_bits_op(P_HHI_VID_PLL_CNTL, 3, 18, 2);
+            break;
+        case 8:
+            aml_set_reg32_bits_op(P_HHI_VID_PLL_CNTL, 1, 16, 2);
             aml_set_reg32_bits_op(P_HHI_VID_PLL_CNTL, 3, 18, 2);
             break;
         default:
@@ -274,12 +279,38 @@ static enc_clk_val_t setting_enc_clk_val[] = {
 //    {VMODE_XGA, 1085, 1, 1, 1, VIU_ENCP, 5, 1, 1, 1, -1, -1, -1,  1,  1},
 };
 
+static enc_clk_val_t setting_enc_clk_val_m8m2[] = {
+    {VMODE_480I,       2160, 8, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_480CVBS,    1296, 4, 1, 1, VIU_ENCI,  6, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_480P,       2160, 8, 1, 1, VIU_ENCP,  5, 4, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_576I,       2160, 8, 1, 1, VIU_ENCI,  5, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_576CVBS,    1296, 4, 1, 1, VIU_ENCI,  6, 4, 2,-1,  2, -1, -1,  2,  -1},
+    {VMODE_576P,       2160, 8, 1, 1, VIU_ENCP,  5, 4, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_720P,       1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080I,      1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080P,      1488, 1, 1, 1, VIU_ENCP, 10, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080P,      1488, 1, 1, 1, VIU_ENCP, 10, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_720P_50HZ,  1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080I_50HZ, 1488, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080P_50HZ, 1488, 1, 1, 1, VIU_ENCP, 10, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_1080P_24HZ, 1488, 2, 1, 1, VIU_ENCP, 10, 2, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_4K2K_30HZ,  2970, 1, 2, 1, VIU_ENCP,  5, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_4K2K_25HZ,  2970, 1, 2, 1, VIU_ENCP,  5, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_4K2K_24HZ,  2970, 1, 2, 1, VIU_ENCP,  5, 1, 1, 1, -1, -1, -1,  1,  -1},
+    {VMODE_4K2K_SMPTE, 2970, 1, 2, 1, VIU_ENCP,  5, 1, 1, 1, -1, -1, -1,  1,  -1},
+//    {VMODE_VGA,  1066, 3, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  1},
+//    {VMODE_SVGA, 1058, 2, 1, 1, VIU_ENCP, 10, 1, 2, 1, -1, -1, -1,  1,  1},
+//    {VMODE_XGA, 1085, 1, 1, 1, VIU_ENCP, 5, 1, 1, 1, -1, -1, -1,  1,  1},
+};
+
 void set_vmode_clk(vmode_t mode)
 {
     enc_clk_val_t *p_enc = &setting_enc_clk_val[0];
     int i = sizeof(setting_enc_clk_val) / sizeof(enc_clk_val_t);
     int j = 0;
-    
+
+    if(IS_MESON_M8M2_CPU)
+        p_enc = &setting_enc_clk_val_m8m2[0];
 //    printf("mode is: %d\n", mode);
     for (j = 0; j < i; j++){
         if(mode == p_enc[j].mode)

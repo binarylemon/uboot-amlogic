@@ -32,11 +32,15 @@ void init_hdmi(void)
  * the parameters mode from tv setting should be convert to HDMI VIC
  */
 static unsigned int tvmode_vmode_vic_map[][3] = {
+    {TVOUT_480I, VMODE_480I, HDMI_480i60_16x9},
     {TVOUT_480I, VMODE_480I, HDMI_480i60},
     {TVOUT_480CVBS, VMODE_480I, HDMI_480i60},
+    {TVOUT_480P, VMODE_480P, HDMI_480p60_16x9},
     {TVOUT_480P, VMODE_480P, HDMI_480p60},
+    {TVOUT_576I, VMODE_576I, HDMI_576i50_16x9},
     {TVOUT_576I, VMODE_576I, HDMI_576i50},
     {TVOUT_576CVBS, VMODE_576I, HDMI_576i50},
+    {TVOUT_576P, VMODE_576P, HDMI_576p50_16x9},
     {TVOUT_576P, VMODE_576P, HDMI_576p50},
     {TVOUT_720P, VMODE_720P, HDMI_720p60},
     {TVOUT_1080I, VMODE_1080I, HDMI_1080i60},

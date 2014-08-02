@@ -270,6 +270,12 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     case HDMI_576i50:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x58);              // PB2 (Note: the value should be meaningful but is not!)
         break;
+    case HDMI_480p60_16x9:
+    case HDMI_480i60_16x9:
+    case HDMI_576p50_16x9:
+    case HDMI_576i50_16x9:
+        hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0x68);
+        break;
     default:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x02, 0xa8);              // PB2 (Note: the value should be meaningful but is not!)
         break;
@@ -279,6 +285,10 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     case HDMI_480i60:
     case HDMI_576p50:
     case HDMI_576i50:
+    case HDMI_480p60_16x9:
+    case HDMI_480i60_16x9:
+    case HDMI_576p50_16x9:
+    case HDMI_576i50_16x9:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x03, 0x03);              // PB3 (Note: the value should be meaningful but is not!)
         break;
     default:
@@ -292,6 +302,8 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
     switch(vic) {
     case HDMI_480i60:
     case HDMI_576i50:
+    case HDMI_480i60_16x9:
+    case HDMI_576i50_16x9:
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x05, 1); // PB5: [7:4]  Rsrv     [3:0]  PixelRepeat
         break;
     default:
@@ -346,7 +358,7 @@ static void hdmi_tx_gate(HDMI_Video_Codes_t vic)
                              (1 << 8)  |   // Enable gated clock
                              (0 << 0)) );  // Divide by 1
     
-    if((vic == HDMI_480i60) || (vic == HDMI_576i50)) {
+    if((vic == HDMI_480i60) || (vic == HDMI_576i50) || (vic == HDMI_480i60_16x9) || (vic == HDMI_576i50_16x9)) {
         // For ENCI
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 8, 1); //enable VCLK2_ENCI
         aml_set_reg32_bits_op(P_HHI_GCLK_OTHER, 1, 2, 1); //enable VCLK2_VENCI
@@ -1294,6 +1306,11 @@ static void hdmi_reconfig_packet_setting(HDMI_Video_Codes_t vic)
 
 void hdmi_tx_set(HDMI_Video_Codes_t vic) 
 {
+	// reset SD 4:3 to 16:9 formats
+	if((vic == HDMI_480p60) || (vic == HDMI_480i60) || (vic == HDMI_576p50) || (vic == HDMI_576i50))
+		vic ++;
+	printf("set HDMI vic: %d\n", vic);
+
     if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
         printf("Not supported HDMI mode: %d\n", vic);
         return;
