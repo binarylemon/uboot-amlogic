@@ -36,7 +36,11 @@ void set_ddr_clock(struct ddr_set * timing_reg)
 		writel(CFG_DDR_PLL_CNTL_2,AM_DDR_PLL_CNTL1);
 		writel(CFG_DDR_PLL_CNTL_3,AM_DDR_PLL_CNTL2);
 		writel(CFG_DDR_PLL_CNTL_4,AM_DDR_PLL_CNTL3);
-		writel(CFG_DDR_PLL_CNTL_5,AM_DDR_PLL_CNTL4);
+		if(IS_MESON_M8M2_CPU)
+			writel(CFG_DDR_PLL_CNTL_5_M8M2,AM_DDR_PLL_CNTL4);
+		else
+			writel(CFG_DDR_PLL_CNTL_5,AM_DDR_PLL_CNTL4);
+		
 		#ifdef CONFIG_CMD_DDR_TEST
 		if((readl(P_PREG_STICKY_REG0)>>20) == 0xf13){
 			zqcr = readl(P_PREG_STICKY_REG0) & 0xfffff;

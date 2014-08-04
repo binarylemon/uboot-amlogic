@@ -148,6 +148,8 @@ struct pll_clk_settings{
 #define CFG_DDR_PLL_CNTL_3 (0xCA463823)
 #define CFG_DDR_PLL_CNTL_4 (0x0286A027)
 #define CFG_DDR_PLL_CNTL_5 (0x00003800)
+#define CFG_DDR_PLL_CNTL_5_M8M2 (0x00003000)
+
 
 //DDR PLL < 1G
 //#define CFG_DDR_PLL_CNTL_2 (0x59C88000)
@@ -213,10 +215,10 @@ struct pll_clk_settings{
 #define CFG_MPLL_CNTL_8 (0)
 #define CFG_MPLL_CNTL_9 (0)
 
-#define CFG_GP_PLL_CNTL_2 (0x69c80236)
-#define CFG_GP_PLL_CNTL_3 (0x0a673aa2)
-#define CFG_GP_PLL_CNTL_4 (0x0023d00f)
-#define CFG_GP_PLL_CNTL_5 (0x00008500)
+#define CFG_GP_PLL_CNTL_2 (CFG_DDR_PLL_CNTL_2)
+#define CFG_GP_PLL_CNTL_3 (CFG_DDR_PLL_CNTL_3)
+#define CFG_GP_PLL_CNTL_4 (CFG_DDR_PLL_CNTL_4)
+#define CFG_GP_PLL_CNTL_5 (CFG_DDR_PLL_CNTL_5_M8M2)
 
 #endif //__ASSEMBLY__
 #endif //__AML_BOOT_TIMING_H__
