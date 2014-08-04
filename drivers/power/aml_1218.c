@@ -1182,7 +1182,11 @@ int aml1218_init(void)
     udelay(1000);
     aml1218_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
+#ifdef INCREASE_HDMI_POWER
+    aml1218_set_bits(0x12f, 0x39, 0x39);        // open hdmi 5v output following boost
+#else
     aml1218_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
+#endif
     dump_pmu_register(DUMP_KEY);
 
     return 0;

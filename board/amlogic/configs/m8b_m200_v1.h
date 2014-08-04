@@ -138,6 +138,7 @@
 #define CONFIG_VDDAO_VOLTAGE_CHANGE     1
 #ifdef CONFIG_VDDAO_VOLTAGE_CHANGE
 #define CONFIG_VDDAO_SUSPEND_VOLTAGE    825         // voltage of VDDAO when suspend
+#define INCREASE_HDMI_POWER
 #endif /* CONFIG_VDDAO_VOLTAGE_CHANGE */
 
 /*
