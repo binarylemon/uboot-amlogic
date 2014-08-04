@@ -494,8 +494,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
 
 STATIC_PREFIX_DATA char init_script[DEBUGROM_CMD_BUF_SIZE] __attribute__((section(".setting"))) ="r c1107d54";
 
-//#ifdef CONFIG_MESON_SECUREARGS
-
+#ifdef CONFIG_MESON_SECUREARGS
 /*
 	streambuf :
 		memblock.vdec_VLD = 1;
@@ -504,11 +503,11 @@ STATIC_PREFIX_DATA char init_script[DEBUGROM_CMD_BUF_SIZE] __attribute__((sectio
 		decoding;
 		DI/Ge2D/VD
 */
-//STATIC_PREFIX_DATA unsigned char __secureargs_m8[] __attribute__((section(".setting"))) = {
-//	"videostreambufconfig=0x0aa00000,0x0c9fffff,0x0,0x0,0x0,0x0,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff \
-//	  videoframebufconfig=0x3a800000,0x3e7fffff,0x0,0x0,0x0,0x0,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff \0"};
+STATIC_PREFIX_DATA unsigned char __secureargs_m8[] __attribute__((section(".setting"))) = {
+	"videostreambufconfig=0x0aa00000,0x0c9fffff,0x0,0x0,0x0,0x0,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff \
+	videoframebufconfig=0x3a800000,0x3e7fffff,0x0,0x0,0x0,0x0,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff \0"};
 
-//STATIC_PREFIX_DATA unsigned char __secureargs_m8m2[] __attribute__((section(".setting"))) = {
-//       "videostreambufconfig=0x0aa00000,0x0c9FFFFF,0x0,0xff \
-//       videoframebufconfig=0x0ca00000,0x1c9FFFFF,0x0,0xff  \0"};
-//#endif
+STATIC_PREFIX_DATA unsigned char __secureargs_m8m2[] __attribute__((section(".setting"))) = {
+	"videostreambufconfig=0x0aa00000,0x0c9FFFFF,0x0,0xff \
+	videoframebufconfig=0x0ca00000,0x1c9FFFFF,0x0,0xff  \0"};
+#endif

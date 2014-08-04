@@ -234,3 +234,18 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls __attribute__((section(".setti
 
 STATIC_PREFIX_DATA char init_script[DEBUGROM_CMD_BUF_SIZE] __attribute__((section(".setting")))
 ="r c1107d54";
+
+#ifdef CONFIG_MESON_SECUREARGS
+/*
+	streambuf :
+		memblock.vdec_VLD = 1;
+		memblock.periph_PARSER = 1;
+	framebuf:
+		decoding;
+		DI/Ge2D/VD
+*/
+STATIC_PREFIX_DATA unsigned char __secureargs[] __attribute__((section(".setting"))) = {
+	"videostreambufconfig=0x8ce00000,0x8d7fffff,0x0000,0x0000,0x0001,0x0000,0x0200,0x0000,0x0000,0x0000 \
+	  videoframebufconfig=0x8d800000,0x8f7fffff,0xffff,0xffff,0x047f,0x0000,0x03c0,0x0000,0x001f,0x0000 \0"};
+
+#endif
