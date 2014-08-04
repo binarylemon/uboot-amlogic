@@ -7,12 +7,24 @@
 #include <asm/arch/io.h> 
 #include <asm/arch/clock.h>
 
-#define VPU_VERION	"v02"
+#define VPU_VERION	"v03"
+
+typedef enum {
+	VPU_CHIP_M8 = 0,
+	VPU_CHIP_M8M2,
+	VPU_CHIP_MAX,
+} VPU_Chip_t;
+
+static const char* vpu_chip_name[] = {
+	"m8",
+	"m8m2",
+	"invalid",
+};
 
 typedef struct {
-	unsigned int h_res;
-	unsigned int v_res;
-	unsigned int refresh_rate;
+	VPU_Chip_t   chip_type;
+	unsigned int clk_level_dft;
+	unsigned int clk_level_max;
 	unsigned int clk_level;
 }VPU_Conf_t;
 
@@ -21,24 +33,37 @@ static int dts_ready = 0;
 
 #define CLK_LEVEL_DFT		7
 #define CLK_LEVEL_MAX		8	//limit max clk to 425M
-static unsigned int vpu_clk_setting[][3] = {
-	//frequency		clk_mux		div
-	{106250000,		1,			7},	//0
-	{127500000,		2,			3},	//1
-	{159375000,		0,			3},	//2
-	{212500000,		1,			3},	//3
-	{255000000,		2,			1},	//4
-	{283333000,		1,			2},	//5
-	{318750000,		0,			1},	//6
-	{425000000,		1,			1},	//7
-	{510000000,		2,			0},	//8
-	{637500000,		0,			0},	//9
+static unsigned int vpu_clk_setting[][10][3] = {
+    {   //frequency    clk_mux   div //M8
+        {106250000,    1,        7}, //0
+        {127500000,    2,        3}, //1
+        {159375000,    0,        3}, //2
+        {212500000,    1,        3}, //3
+        {255000000,    2,        1}, //4
+        {283333000,    1,        2}, //5
+        {318750000,    0,        1}, //6
+        {364300000,    3,        0}, //7
+        {425000000,    1,        1}, //8
+        {510000000,    2,        0}, //9
+    },
+    {   //frequency    clk_mux   div //M8M2
+        {106250000,    1,        7}, //0
+        {127500000,    2,        3}, //1
+        {159375000,    0,        3}, //2
+        {212500000,    1,        3}, //3
+        {255000000,    2,        1}, //4
+        {283333000,    1,        2}, //5
+        {318750000,    0,        1}, //6
+        {425000000,    1,        1}, //7
+        {510000000,    2,        0}, //8
+        {637500000,    0,        0}, //9
+    },
 };
 
 static VPU_Conf_t vpu_config = {
-	.h_res = 2048,
-	.v_res = 1536,
-	.refresh_rate = 60,	//Hz
+	.chip_type = VPU_CHIP_MAX,
+	.clk_level_dft = CLK_LEVEL_DFT,
+	.clk_level_max = CLK_LEVEL_MAX,
 	.clk_level = CLK_LEVEL_DFT,
 };
 
@@ -50,8 +75,8 @@ static unsigned int get_vpu_clk_level(unsigned int video_clk)
 	
 	video_bw = video_clk + 2000000;
 
-	for (i=0; i<CLK_LEVEL_MAX; i++) {
-		if (video_bw <= vpu_clk_setting[i][0])			
+	for (i=0; i<vpu_config.clk_level_max; i++) {
+		if (video_bw <= vpu_clk_setting[vpu_config.chip_type][i][0])
 			break;
 	}
 	clk_level = i;
@@ -100,17 +125,17 @@ static int set_vpu_clk(unsigned int vclk)
 		clk_level = vclk;
 	}
 
-	if (clk_level >= CLK_LEVEL_MAX) {
+	if (clk_level >= vpu_config.clk_level_max) {
 		ret = 1;
-		clk_level = CLK_LEVEL_DFT;
+		clk_level = vpu_config.clk_level_dft;
 		printf("vpu clk out of supported range, set to default\n");
 	}
 	
-	writel(((vpu_clk_setting[clk_level][1] << 9) | (vpu_clk_setting[clk_level][2] << 0)), P_HHI_VPU_CLK_CNTL);
+	writel(((vpu_clk_setting[vpu_config.chip_type][clk_level][1] << 9) | (vpu_clk_setting[vpu_config.chip_type][clk_level][2] << 0)), P_HHI_VPU_CLK_CNTL);
 	writel(readl(P_HHI_VPU_CLK_CNTL) | (1<<8), P_HHI_VPU_CLK_CNTL);
 	
 	vpu_config.clk_level = clk_level;
-	printf("set vpu clk: %uHz, readback: %uHz(0x%x)\n", vpu_clk_setting[clk_level][0], get_vpu_clk(), (readl(P_HHI_VPU_CLK_CNTL)));
+	printf("set vpu clk: %uHz, readback: %uHz(0x%x)\n", vpu_clk_setting[vpu_config.chip_type][clk_level][0], get_vpu_clk(), (readl(P_HHI_VPU_CLK_CNTL)));
 
 	return ret;
 }
@@ -160,6 +185,21 @@ static void vpu_driver_disable(void)
     clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
 }
 
+static void detect_vpu_chip(void)
+{
+	if (IS_MESON_M8M2_CPU)
+		vpu_config.chip_type = VPU_CHIP_M8M2;
+	else if (IS_MESON_M8_CPU)
+		vpu_config.chip_type = VPU_CHIP_M8;
+	else
+		vpu_config.chip_type = VPU_CHIP_MAX;
+	
+	vpu_config.clk_level_dft = CLK_LEVEL_DFT;
+	vpu_config.clk_level_max = CLK_LEVEL_MAX;
+	
+	printf("vpu driver detect cpu type: %s\n", vpu_chip_name[vpu_config.chip_type]);
+}
+
 static int get_vpu_config(void)
 {
 	int ret=0;
@@ -176,7 +216,7 @@ static int get_vpu_config(void)
 		
 		propdata = fdt_getprop(dt_addr, nodeoffset, "clk_level", NULL);
 		if(propdata == NULL){
-			vpu_config.clk_level = CLK_LEVEL_DFT;
+			vpu_config.clk_level = vpu_config.clk_level_dft;
 			printf("don't find to match clk_level in dts, use default setting.\n");
 		}
 		else {
@@ -186,7 +226,7 @@ static int get_vpu_config(void)
 #endif
 	}
 	else {
-		vpu_config.clk_level = CLK_LEVEL_DFT;
+		vpu_config.clk_level = vpu_config.clk_level_dft;
 		printf("vpu clk_level = %u\n", vpu_config.clk_level);
 	}
 	return ret;
@@ -214,6 +254,7 @@ int vpu_probe(void)
 #endif
 #endif
 	
+	detect_vpu_chip();
 	get_vpu_config();
 	vpu_driver_init();
 
