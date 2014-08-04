@@ -96,10 +96,16 @@ struct pll_clk_settings{
 
 //M8 pll controler use bit 29 as reset bit
 #define PLL_ENTER_RESET(pll) \
-	Wr_cbus(pll,(1<<29));
+	Wr_cbus(pll,Rd_cbus(pll)|(1<<29));
 
 #define PLL_RELEASE_RESET(pll) \
 	Wr_cbus(pll, Rd_cbus(pll)&(~(1<<29)));
+
+#define PLL_DISABLE(pll) \
+	Wr_cbus(pll, Rd_cbus(pll)&(~(1<<30)));
+
+#define PLL_ENABLE(pll) \
+	Wr_cbus(pll, Rd_cbus(pll)|(1<<30));
 
 //M8 PLL enable: bit 30 ; 1-> enable;0-> disable
 #define PLL_SETUP(pll,set) \

@@ -197,10 +197,13 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 			Wr_cbus(HHI_GP_PLL_CNTL3, CFG_GP_PLL_CNTL_3);
 			Wr_cbus(HHI_GP_PLL_CNTL4, CFG_GP_PLL_CNTL_4);
 			Wr_cbus(HHI_GP_PLL_CNTL5, CFG_GP_PLL_CNTL_5);
-			Wr_cbus(HHI_GP_PLL_CNTL, plls->gp_pll_cntl);
+			/*fixed 364MHz, OD=1, N=3, M=91. 24/N*M/2^OD=364*/
+			Wr_cbus(HHI_GP_PLL_CNTL, 0x4011065B);
 			PLL_RELEASE_RESET(HHI_VID_PLL_CNTL);
 			PLL_LOCK_CHECK(n_pll_try_times,6);
 		}while((Rd_cbus(HHI_GP_PLL_CNTL)&(1<<31)) == 0);
+		/*power down*/
+		PLL_DISABLE(HHI_GP_PLL_CNTL);
 	}
 #endif
 	__udelay(100);
