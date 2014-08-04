@@ -699,19 +699,9 @@ U_BOOT_CMD(
 	"          - no clock index will measure all clock"
 );
 
-static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int select_m8_dtd(unsigned int pID1)
 {
-#ifndef CONFIG_MESON_TRUSTZONE
-       unsigned int *pID1 =(unsigned int *)0xd9040004;
-       //unsigned int *pID2 =(unsigned int *)0xd904002c;
-#else
-       unsigned int ID1 = meson_trustzone_read_socrev1();
-       //unsigned int ID2 = meson_trustzone_read_socrev2();
-       unsigned int *pID1 = &ID1;
-       //unsigned int *pID2 = &ID2;
-#endif
-
-  switch(*pID1)
+  switch(pID1)
 	{
 		case 0x25e2:   //chip version A
 			printf("chip version A, emmc use sdio controller\n");
@@ -725,8 +715,32 @@ static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("bad chip version!!!");
 			return 1;
 	}
-
   return 0;
+}
+
+static int select_m8m2_dtd(unsigned int pID1)
+{
+	setenv("aml_dt", "m8m2_n200_2G");
+	return 0;
+}
+static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifndef CONFIG_MESON_TRUSTZONE
+       unsigned int *pID1 =(unsigned int *)0xd9040004;
+       //unsigned int *pID2 =(unsigned int *)0xd904002c;
+#else
+       unsigned int ID1 = meson_trustzone_read_socrev1();
+       //unsigned int ID2 = meson_trustzone_read_socrev2();
+       unsigned int *pID1 = &ID1;
+       //unsigned int *pID2 = &ID2;
+#endif
+	int ret;
+	if(IS_MESON_M8M2_CPU)
+		ret=select_m8m2_dtd(*pID1);
+	else
+		ret=select_m8_dtd(*pID1);
+
+  return ret;
 }
 
 U_BOOT_CMD(
