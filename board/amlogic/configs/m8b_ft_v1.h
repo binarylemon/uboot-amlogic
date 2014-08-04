@@ -28,7 +28,7 @@ remark:
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_C_CARD_TYPE            CARD_TYPE_MMC // CARD_TYPE_MMC/CARD_TYPE_SD
-
+#define CONFIG_IR_REMOTE_WAKEUP 1
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 

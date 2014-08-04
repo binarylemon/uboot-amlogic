@@ -14,7 +14,7 @@
 
 
 
-#define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
+//#define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"

@@ -7,7 +7,7 @@
 #define CONFIG_PWM_VDDEE_VOLTAGE  1050
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
-
+#define CONFIG_IR_REMOTE_WAKEUP 1
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN

@@ -13,7 +13,7 @@
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
-
+#define CONFIG_IR_REMOTE_WAKEUP 1
 #define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
