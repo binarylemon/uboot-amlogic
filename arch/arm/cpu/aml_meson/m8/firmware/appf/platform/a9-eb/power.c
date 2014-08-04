@@ -225,8 +225,8 @@ void run_arc_program()
 		dbg_print("\nAml log : nMMC_DDR_SET is 0x",nMMC_DDR_SET);
 		dbg_print("\nAml log : nPUB0_DTAR0 is 0x",nPUB0_DTAR0);
 		dbg_print("\nAml log : nPUB1_DTAR0 is 0x",nPUB1_DTAR0);
-		if(((nMMC_DDR_SET>>26)&0x3) == 0x2){/*one channel*/
-			if(((nMMC_DDR_SET >> 24) & 3)){
+		if(((nMMC_DDR_SET>>26)&0x3) == 0x3){/*one channel*/
+			if(((nMMC_DDR_SET >> 24) & 0x1)){
 				address1 = GET_DT_ADDR(nPUB1_DTAR0,nMMC_DDR_SET,1);
 				dbg_print("\nAml log : DDR1 DTAR is 0x",address1);
 			}
