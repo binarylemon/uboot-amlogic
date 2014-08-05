@@ -190,6 +190,24 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 	return ret;
 }
 
+ssize_t meson_trustzone_efuse_writepattern(const char *buf, size_t count)
+{
+	struct efuse_hal_api_arg arg;
+	unsigned int retcnt;
+
+	if (count != EFUSE_BYTES)
+		return 0;	/* Past EOF */
+
+	arg.cmd=EFUSE_HAL_API_WRITE_PATTERN;
+	arg.offset = 0;
+	arg.size=count;
+	arg.buffer_phy=(unsigned int)buf;
+	arg.retcnt_phy=&retcnt;
+	int ret;
+	ret = meson_trustzone_efuse(&arg);
+	return ret;
+}
+
 #endif
 
 
@@ -307,6 +325,37 @@ uint32_t meson_trustzone_boot_check(unsigned char *addr)
 	struct sram_hal_api_arg arg = {};
 
 	arg.cmd = SRAM_HAL_API_CHECK;
+	arg.req_len = 0x1000000;
+	arg.res_len = 0;
+	arg.req_phy_addr = addr;
+	arg.res_phy_addr = NULL;
+	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+
+	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
+	register uint32_t r2 asm("r2") = (unsigned int)(&arg);
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    __asmeq("%3", "r2")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1), "r"(r2));
+	} while (0);
+
+	ret = r0;
+
+	return ret;
+}
+
+uint32_t meson_trustzone_efuse_check(unsigned char *addr)
+{
+	unsigned int ret = 0;
+	struct sram_hal_api_arg arg = {};
+
+	arg.cmd = SRAM_HAL_API_CHECK_EFUSE;
 	arg.req_len = 0x1000000;
 	arg.res_len = 0;
 	arg.req_phy_addr = addr;
