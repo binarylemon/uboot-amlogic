@@ -1694,9 +1694,9 @@
 #define HHI_HDMI_AFC_CNTL                          0x107f
 #define HHI_HDMIRX_CLK_CNTL                        0x1080
 #define HHI_HDMIRX_AUD_CLK_CNTL                    0x1081
-/*for m8*/
-//#define HHI_EDP_APB_CLK_CNTL                       0x107b
-#define HHI_EDP_APB_CLK_CNTL                       0x1082
+/*for m8/m8 diff*/
+#define HHI_EDP_APB_CLK_CNTL                       0x107b
+#define HHI_EDP_APB_CLK_CNTL_M8M2                  0x1082
 #define HHI_VID_PLL_MOD_CNTL0                      0x1084
 #define HHI_VID_PLL_MOD_LOW_TCNT                   0x1085
 #define HHI_VID_PLL_MOD_HIGH_TCNT                  0x1086

@@ -483,7 +483,10 @@ static void vclk_set_lcd(int lcd_type, unsigned long pll_reg, unsigned long vid_
 			WRITE_LCD_CBUS_REG_BITS(HHI_EDP_TX_PHY_CNTL0, edp_div1_sel, 24, 3);	//set edptx_phy_clk_div1
 			WRITE_LCD_CBUS_REG_BITS(HHI_EDP_TX_PHY_CNTL0, 1, 5, 1);	//enable divider N, for vid_pll2_in
 			
-			WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL, (1 << 7) | (2 << 0));	//fclk_div5---fixed 510M, div to 170M, edp apb clk
+			if (IS_MESON_M8_CPU)
+				WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL, (1 << 7) | (2 << 0));	//fclk_div5---fixed 510M, div to 170M, edp apb clk
+			else if (IS_MESON_M8M2_CPU)
+				WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL_M8M2, (1 << 7) | (2 << 0));	//fclk_div5---fixed 510M, div to 170M, edp apb clk
 			break;
 		case LCD_DIGITAL_LVDS:
 		case LCD_DIGITAL_TTL:
