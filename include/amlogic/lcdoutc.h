@@ -169,8 +169,8 @@ typedef struct {
 	u16 vsync_bp;
 	u32 vsync_h_phase; //[31]sign [15:0]value
 	u16 hvsync_valid;
-	u16 de_hstart;
-	u16 de_vstart;
+	//u16 de_hstart;
+	//u16 de_vstart;
 	u16 de_valid;
 	u32 h_offset;
 	u32 v_offset;
@@ -189,6 +189,10 @@ typedef struct {
 	u16 vs_he_addr;
 	u16 vs_vs_addr;
 	u16 vs_ve_addr;
+	
+	u16 vso_hstart;
+	u16 vso_vstart;
+	u16 vso_user;
 } Lcd_Timing_t;
 
 // Fine Effect Tune
