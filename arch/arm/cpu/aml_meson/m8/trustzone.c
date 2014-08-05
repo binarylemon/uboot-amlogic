@@ -163,9 +163,6 @@ uint32_t meson_trustzone_suspend_init(void)
 int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 {
 	int ret;
-	dcache_flush_range(arg->buffer_phy, (arg->size));
-	dcache_flush_range(arg->retcnt_phy, (sizeof(unsigned int)));
-	dcache_flush_range(arg, sizeof(struct efuse_hal_api_arg));
 
 	register int32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_EFUSE;
@@ -182,10 +179,6 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 	} while (0);
 
 	ret = r0;
-	if (arg->cmd == EFUSE_HAL_API_READ) {
-		ov_dcache_invalid_range(arg->buffer_phy, (arg->size));
-	}
-	ov_dcache_invalid_range(arg->retcnt_phy, (sizeof(unsigned int)));
 
 	return ret;
 }
@@ -215,9 +208,6 @@ ssize_t meson_trustzone_efuse_writepattern(const char *buf, size_t count)
 int32_t meson_trustzone_storage(struct storage_hal_api_arg* arg)
 {
 	int ret;
-	dcache_flush_range(arg->name_phy_addr, arg->namelen);
-	dcache_flush_range(arg->data_phy_addr, arg->datalen);
-	dcache_flush_range(arg, sizeof(struct storage_hal_api_arg));
 
 	register int32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register int32_t r1 asm("r1") = TRUSTZONE_HAL_API_STORAGE;
@@ -235,12 +225,6 @@ int32_t meson_trustzone_storage(struct storage_hal_api_arg* arg)
 	} while (0);
 
 	ret = r0;
-#ifdef CONFIG_MESON_STORAGE_DEBUG
-	if (arg->cmd == STORAGE_HAL_API_READ) {
-		ov_dcache_invalid_range(arg->data_phy_addr, (arg->datalen));
-	}
-#endif
-	ov_dcache_invalid_range(arg->retval_phy_addr, (sizeof(unsigned int)));
 
 	return ret;
 }
@@ -296,7 +280,7 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 	else
 		arg.req_phy_addr = meson_trustzone_sram_read_reg32(addr);
 	arg.res_phy_addr = SECURE_OS_ACS_DRAM_ADDR;
-	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+	asm __volatile__("": : :"memory");
 
 	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
@@ -312,7 +296,6 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 		    : "r"(r0), "r"(r1), "r"(r2));
 	} while (0);
 
-	ov_dcache_invalid_range(arg.res_phy_addr, (arg.res_len));
 	ret = arg.res_phy_addr;
 
 	return ret;
@@ -329,7 +312,8 @@ uint32_t meson_trustzone_boot_check(unsigned char *addr)
 	arg.res_len = 0;
 	arg.req_phy_addr = addr;
 	arg.res_phy_addr = NULL;
-	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+
+	asm __volatile__("": : :"memory");
 
 	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
@@ -360,7 +344,8 @@ uint32_t meson_trustzone_efuse_check(unsigned char *addr)
 	arg.res_len = 0;
 	arg.req_phy_addr = addr;
 	arg.res_phy_addr = NULL;
-	dcache_flush_range(&arg, sizeof(struct sram_hal_api_arg));
+
+	asm __volatile__("": : :"memory");
 
 	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
 	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
