@@ -25,6 +25,9 @@
 #include <environment.h>
 #include <malloc.h>
 #include <asm/byteorder.h>
+#ifdef CONFIG_MESON_SECURE_HDCP
+#include <asm/arch/trustzone.h>
+#endif
 
 #define HDCP_KEY_SIZE                   308
 #define HDCP_IP_KEY_SIZE                288
@@ -47,6 +50,7 @@ static unsigned char hdcp_keys_prefetch[HDCP_KEY_SIZE] = { 0x00 };
 static unsigned char hdcp_keys_reformat[HDCP_IP_KEY_SIZE] = { 0x00 };
 
 // copy the fetched data into HDMI IP
+#ifndef CONFIG_MESON_SECURE_HDCP
 static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
 {
     int i, j;
@@ -70,15 +74,21 @@ static int init_hdcp_ram(unsigned char * dat, unsigned int pre_clear)
 
     return 1;
 }
+#endif
 
 // Prefetch the HDCP keys data from nand, efuse, etc
 static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
     int ret=-1, prefetch_flag = 0;
+#ifdef CONFIG_MESON_SECURE_HDCP
+	struct hdcp_hal_api_arg arg;
+	char hdcpname[]="hdcp";
+#endif
 
     if (argc == 1)
         return cmd_usage(cmdtp);
 
+#ifndef CONFIG_MESON_SECURE_HDCP
     init_hdcp_ram(hdcp_keys_prefetch, 1);
 
     printf("hdcp get form storage medium: %s\n", argv[1]);
@@ -107,6 +117,20 @@ static int do_hdcp_prefetch(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
         ret = 1;
     }
 	return 1;
+#else
+	arg.namelen = sizeof(hdcpname);
+	arg.name_phy_addr = hdcpname;
+	arg.datalen = 308;
+	ret = meson_trustzone_hdcp(&arg);
+	if(ret<0){
+		printf("prefetch hdcp set fail!\n");
+		return -1;
+	}
+	else{
+		printf("prefech hdcp set success!\n");
+		return 1;
+	}
+#endif
 }
 
 static cmd_tbl_t cmd_hdcp_sub[] = {

@@ -64,6 +64,7 @@
 #define TRUSTZONE_HAL_API_STORAGE               0x200
 #define TRUSTZONE_HAL_API_MEMCONFIG             0x300
 #define TRUSTZONE_HAL_API_SRAM                  0x400
+#define TRUSTZONE_HAL_API_HDCP					0x500
 
 
 /* Secure OS defines */
@@ -116,4 +117,13 @@ uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
 uint32_t meson_trustzone_acs_addr(uint32_t addr);
 uint32_t meson_trustzone_boot_check(unsigned char *addr);
 
+#ifdef CONFIG_MESON_SECURE_HDCP
+struct hdcp_hal_api_arg{
+	unsigned int namelen;
+	unsigned int name_phy_addr;
+	unsigned int datalen;
+	unsigned int type;
+};
+int32_t meson_trustzone_hdcp(struct hdcp_hal_api_arg *arg);
+#endif
 #endif

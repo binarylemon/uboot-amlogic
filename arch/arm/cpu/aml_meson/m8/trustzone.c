@@ -365,3 +365,27 @@ uint32_t meson_trustzone_efuse_check(unsigned char *addr)
 
 	return ret;
 }
+
+#ifdef CONFIG_MESON_SECURE_HDCP
+int32_t meson_trustzone_hdcp(struct hdcp_hal_api_arg *arg)
+{
+	int ret;
+	register int32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_HDCP;
+	register uint32_t r2 asm("r2") = (unsigned int)arg;
+	do{
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    __asmeq("%3", "r2")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1), "r"(r2));
+	}while(0);
+
+	ret = r0;
+	return ret;
+}
+
+#endif
