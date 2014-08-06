@@ -963,9 +963,75 @@ int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
-int do_defenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+// add
+char * args[]=
 {
-	set_default_env(NULL);
+"480poutputx",
+"480poutputx",
+"480poutputy",
+"480poutputwidth",
+"480poutputheight",
+"480ioutputx",
+"480ioutputy",
+"480ioutputwidth",
+"480ioutputheight",
+"576poutputx",
+"576poutputy",
+"576poutputwidth",
+"576poutputheight",
+"576ioutputx",
+"576ioutputy",
+"576ioutputwidth",
+"576ioutputheight",
+"720poutputx",
+"720poutputy",
+"720poutputwidth",
+"720poutputheight",
+"1080poutputx",
+"1080poutputy",
+"1080poutputwidth",
+"1080poutputheight",
+"1080ioutputx",
+"1080ioutputy",
+"1080ioutputwidth",
+"1080ioutputheight",
+"4k2k24hz_x",
+"4k2k24hz_y",
+"4k2k24hz_width",
+"4k2k24hz_height",
+"4k2k25hz_x",
+"4k2k25hz_y",
+"4k2k25hz_width",
+"4k2k25hz_height",
+"4k2k30hz_x",
+"4k2k30hz_y",
+"4k2k30hz_width",
+"4k2k30hz_height",
+"4k2ksmpte_x",
+"4k2ksmpte_y",
+"4k2ksmpte_width",
+"4k2ksmpte_height",
+"digitaudiooutput",
+"defaulttvfrequency",
+"has.accelerometer",
+"cecconfig",
+"cvbsmode",
+"hdmimode",
+"disp.fromleft"
+};
+
+void set_env_without_def() 
+{ 
+
+	int size_args = sizeof(args)/sizeof(char*);
+
+	do_defenv_without (0,0,size_args,args);
+}
+
+
+int do_defenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{	
+	set_env_without_def();
 #ifdef  CONFIG_STORE_COMPATIBLE
 	run_command("put  store",0);
 #endif
@@ -998,7 +1064,7 @@ int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	char *init_val=NULL;
 	int i,envCnt=0;
 	
-#define	CONFIG_ENV_NUMBER	50					//effective environment variable number of max
+	#define	CONFIG_ENV_NUMBER	80					//effective environment variable number of max
 	char *varName[CONFIG_ENV_NUMBER];
 	char  varValue[CONFIG_ENV_NUMBER][CONFIG_SYS_CBSIZE];
 
@@ -1032,7 +1098,6 @@ int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		
 	return 0;
 }
-
 
 U_BOOT_CMD(
 	defenv_without, CONFIG_SYS_MAXARGS, 1,	do_defenv_without,
