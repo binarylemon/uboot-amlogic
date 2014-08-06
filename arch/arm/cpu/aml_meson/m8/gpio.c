@@ -432,7 +432,7 @@ static unsigned int gpio_to_pin[][5]={
 	[GPIOX_20]={NONE,NONE,NONE,NONE,NONE,},
 	[GPIOX_21]={NONE,NONE,NONE,NONE,NONE,},
 	[GPIO_BSD_EN]={NONE,NONE,NONE,NONE,NONE,},
-	[GPIO_TEST_N]={P_PIN_MUX_REG(9,19),NONE,NONE,NONE,NONE,},
+	[GPIO_TEST_N]={P_PIN_MUX_REG(10,19),NONE,NONE,NONE,NONE,},
 };
 struct amlogic_gpio_desc amlogic_pins[]=
 {
