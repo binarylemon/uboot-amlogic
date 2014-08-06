@@ -330,6 +330,39 @@ static void m6_enable_vdac_hw_switch(int mode)
 
 #endif // end of CONFIG_AML_MESON_6
 
+#if defined(CONFIG_CVBS_PERFORMANCE_SWITCH)
+void cvbs_performance_config(void)
+{
+	int actived = CVBS_PERFORMANCE_ACTIVED;
+	char buf[8];
+
+	sprintf(buf, "%d", actived);
+	setenv("cvbs_drv", buf);
+
+	return ;
+}
+
+static void cvbs_performance_enhancement(int mode)
+{
+	const reg_t *s;
+	unsigned int index = CVBS_PERFORMANCE_ACTIVED;
+	unsigned int max = sizeof(tvregs_576cvbs_performance)/sizeof(reg_t*);
+
+	if( VMODE_576CVBS != mode )
+		return ;
+
+	index = (index>=max)?0:index;
+	printf("cvbs performance use table = %d\n", index);
+	s = tvregs_576cvbs_performance[index];
+	while (MREG_END_MARKER != s->reg)
+	{
+    	setreg(s++);
+	}
+	return ;
+}
+
+#endif
+
 int tv_out_open(int mode)
 {
 #if CONFIG_AML_HDMI_TX
@@ -352,6 +385,10 @@ int tv_out_open(int mode)
         s = tvregsTab[mode];
         while (MREG_END_MARKER != s->reg)
             setreg(s++);
+
+#if defined(CONFIG_CVBS_PERFORMANCE_SWITCH)
+		cvbs_performance_enhancement(mode);
+#endif
 
 #if CONFIG_AML_MESON_8
 		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )

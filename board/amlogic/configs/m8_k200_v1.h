@@ -85,6 +85,16 @@
 #define CONFIG_AML_HDMI_TX  1
 #define CONFIG_OSD_SCALE_ENABLE 1
 
+#if defined(CONFIG_VIDEO_AMLTVOUT)
+#define CONFIG_CVBS_PERFORMANCE_SWITCH 1
+
+#define CVBS_CHINASARFT		0
+#define CVBS_CHINATELECOM	1
+#define CVBS_CHINAMOBILE	2
+#define CVBS_PERFORMANCE_ACTIVED	CVBS_CHINASARFT
+
+#endif
+
 //Enable storage devices
 #define CONFIG_CMD_SF    1
 
@@ -269,6 +279,7 @@
 	"firstboot=1\0" \
 	"store=0\0"\
         "wipe_data=success\0"\
+	"cvbs_drv=0\0"\
 	"preboot="\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
@@ -302,7 +313,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${initargs} cvbsdrv=${cvbs_drv} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\
