@@ -531,6 +531,22 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
             return __LINE__;
     }
 
+    //correct bootup for mbox
+    while(!strcmp("bootup", picName))
+    {
+            char* outputmode = getenv("outputmode");
+            if(!outputmode)break;//not env outputmode
+
+            rc = !strncmp("720", outputmode, 3) || !strncmp("576", outputmode, 3) || !strncmp("480", outputmode, 3);
+            if(rc){
+                    picName = "bootup_720";
+                    break;
+            }
+
+            picName = "bootup_1080";
+            break;
+    }
+
     pItem = (AmlResItemHead_t*)(pResImgHead + 1);
     for(itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem)
     {
@@ -538,7 +554,7 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
                     errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
                     return __LINE__;
             }
-            if(!strcmp(picName, pItem->name))
+            if(!strcmp(picName, pItem->name) || !strcmp(argv[2], pItem->name))
             {
                     char env_name[IH_NMLEN*2];
                     char env_data[IH_NMLEN*2];
@@ -552,11 +568,11 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
                             return __LINE__;
                     }
 
-                    sprintf(env_name, "%s_offset", pItem->name);
+                    sprintf(env_name, "%s_offset", argv[2]);//be bootup_offset ,not bootup_720_offset
                     sprintf(env_data, "0x%x", picLoadAddr);
                     setenv(env_name, env_data);
 
-                    sprintf(env_name, "%s_size", pItem->name);
+                    sprintf(env_name, "%s_size", argv[2]);
                     sprintf(env_data, "0x%x", pItem->size);
                     setenv(env_name, env_data);
 
