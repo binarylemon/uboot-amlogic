@@ -54,9 +54,9 @@ static unsigned int vpu_clk_setting[][10][3] = {
         {255000000,    2,        1}, //4
         {283333000,    1,        2}, //5
         {318750000,    0,        1}, //6
-        {425000000,    1,        1}, //7
-        {510000000,    2,        0}, //8
-        {637500000,    0,        0}, //9
+        {364000000,    3,        0}, //7 //use gp_pll
+        {425000000,    1,        1}, //8
+        {510000000,    2,        0}, //9
     },
 };
 
@@ -100,7 +100,10 @@ static unsigned int get_vpu_clk(void)
 			clk_source = 510000000;
 			break;
 		case 3:
-			clk_source = 364300000;
+			if (vpu_config.chip_type == VPU_CHIP_M8M2)
+				clk_source = 364000000;
+			else
+				clk_source = 364300000;
 			break;
 		default:
 			clk_source = 0;
@@ -111,6 +114,35 @@ static unsigned int get_vpu_clk(void)
 	clk_freq = clk_source / clk_div;
 	
 	return clk_freq;
+}
+
+static int switch_gp_pll(int flag)
+{
+	int cnt = 100;
+	int ret = 0;
+	
+	if (flag) { //enable gp_pll
+		//M=182, N=3, OD=2. gp_pll=24*M/N/2^OD=364M
+		writel(0x206b6, P_HHI_GP_PLL_CNTL); //set gp_pll frequency fixed to 364M
+		setbits_le32(P_HHI_GP_PLL_CNTL, (1 << 30)); //enable
+		do{
+			udelay(10);
+			setbits_le32(P_HHI_GP_PLL_CNTL, (1 << 29)); //reset
+			udelay(50);
+			clrbits_le32(P_HHI_GP_PLL_CNTL, (1 << 29)); //release reset
+			udelay(50);
+		}while(((readl(P_HHI_GP_PLL_CNTL)&(1<<31)) == 0) && (cnt > 0));
+		if (cnt == 0) {
+			ret = 1;
+			clrbits_le32(P_HHI_GP_PLL_CNTL, (1 << 30));
+			printf("[error]: GP_PLL lock failed, can't use the clk source!\n");
+		}
+	}
+	else { //disable gp_pll
+		clrbits_le32(P_HHI_GP_PLL_CNTL, (1 << 30));
+	}
+	
+	return ret;
 }
 
 static int set_vpu_clk(unsigned int vclk)
@@ -131,10 +163,23 @@ static int set_vpu_clk(unsigned int vclk)
 		printf("vpu clk out of supported range, set to default\n");
 	}
 	
-	writel(((vpu_clk_setting[vpu_config.chip_type][clk_level][1] << 9) | (vpu_clk_setting[vpu_config.chip_type][clk_level][2] << 0)), P_HHI_VPU_CLK_CNTL);
-	writel(readl(P_HHI_VPU_CLK_CNTL) | (1<<8), P_HHI_VPU_CLK_CNTL);
-	
 	vpu_config.clk_level = clk_level;
+	switch (vpu_config.chip_type) {
+		case VPU_CHIP_M8M2:
+			if (clk_level == 7) {
+				ret = switch_gp_pll(1);
+				if (ret)
+					clk_level = 6;
+			}
+			else
+				ret = switch_gp_pll(0);
+			break;
+		default:
+			break;
+	}
+	
+	writel(((vpu_clk_setting[vpu_config.chip_type][clk_level][1] << 9) | (vpu_clk_setting[vpu_config.chip_type][clk_level][2] << 0) | (1<<8)), P_HHI_VPU_CLK_CNTL);
+	
 	printf("set vpu clk: %uHz, readback: %uHz(0x%x)\n", vpu_clk_setting[vpu_config.chip_type][clk_level][0], get_vpu_clk(), (readl(P_HHI_VPU_CLK_CNTL)));
 
 	return ret;
@@ -142,47 +187,64 @@ static int set_vpu_clk(unsigned int vclk)
 
 static void vpu_driver_init(void)
 {
-    set_vpu_clk(vpu_config.clk_level);
+	set_vpu_clk(vpu_config.clk_level);
 
-    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<8)); // [8] power on
-    writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
-    writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
-    clrbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); // MEM-PD
-    udelay(2);
+	if (vpu_config.chip_type == VPU_CHIP_M8) {
+		writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
+		writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
+		
+		writel(0x00000000, P_VPU_MEM_PD_REG0);
+		writel(0x00000000, P_VPU_MEM_PD_REG1);
+	}
+	else {
+		clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<8)); // [8] power on
+		writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
+		writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
+		clrbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); // MEM-PD
+		udelay(2);
 
-    //Reset VIU + VENC
-    //Reset VENCI + VENCP + VADC + VENCL
-    //Reset HDMI-APB + HDMI-SYS + HDMI-TX + HDMI-CEC
-    clrbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
-    clrbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
-    clrbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
-    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
-    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
-    writel(((0x1 << 5) | (0x1<<10)), P_RESET0_REGISTER);
-    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
-    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
-    setbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
-    setbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
-    setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+		//Reset VIU + VENC
+		//Reset VENCI + VENCP + VADC + VENCL
+		//Reset HDMI-APB + HDMI-SYS + HDMI-TX + HDMI-CEC
+		clrbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+		clrbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+		clrbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+		writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+		writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
+		writel(((0x1 << 5) | (0x1<<10)), P_RESET0_REGISTER);
+		writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
+		writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+		setbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+		setbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+		setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
 
-    //Remove VPU_HDMI ISO
-    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<9)); // [9] VPU_HDMI
+		//Remove VPU_HDMI ISO
+		clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<9)); // [9] VPU_HDMI
+	}
 }
 
 static void vpu_driver_disable(void)
 {
-    // Power down VPU_HDMI
-    // Enable Isolation
-    setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 9)); //ISO
-    //Power off memory
-    writel(0xffffffff, P_HHI_VPU_MEM_PD_REG0);
-    writel(0xffffffff, P_HHI_VPU_MEM_PD_REG1);
-    setbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); //HDMI MEM-PD
+	if (vpu_config.chip_type == VPU_CHIP_M8) {
+		writel(0xffffffff, P_VPU_MEM_PD_REG0);
+		writel(0xffffffff, P_VPU_MEM_PD_REG1);
+		
+		writel(0xffffffff, P_HHI_VPU_MEM_PD_REG0);
+		writel(0xffffffff, P_HHI_VPU_MEM_PD_REG1);
+	}
+	else {
+		// Power down VPU_HDMI
+		// Enable Isolation
+		setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 9)); //ISO
+		//Power off memory
+		writel(0xffffffff, P_HHI_VPU_MEM_PD_REG0);
+		writel(0xffffffff, P_HHI_VPU_MEM_PD_REG1);
+		setbits_le32(P_HHI_MEM_PD_REG0, (0xff << 8)); //HDMI MEM-PD
 
-    // Power down VPU domain
-    setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 8)); //PDN
-
-    clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
+		// Power down VPU domain
+		setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 8)); //PDN
+	}
+	clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
 }
 
 static void detect_vpu_chip(void)
