@@ -144,6 +144,7 @@ static int do_spi_flash_erase(int argc, char * const argv[])
 	if (*argv[2] == 0 || *endp != 0)
 		goto usage;
 
+        printf("[SF]erase 0x%xB at offset 0x%x\n", len, offset);
 	ret = spi_flash_erase(flash, offset, len);
 	if (ret) {
 		printf("SPI flash %s failed\n", argv[0]);

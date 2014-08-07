@@ -448,16 +448,7 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
                 if(is_optimus_storage_inited() || 
                                 (OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get()))
                 {
-                        if(getenv("get_dt"))
-                        {
-                                rc = run_command("run get_dt", 0);
-                                if(rc){
-                                        sprintf(errInfo, "Fail to get aml_dt.\n");
-                                        DWN_ERR(errInfo);
-                                        return 0;
-                                }
-                                destDtb = get_multi_dt_entry(data);
-                        }
+                        destDtb = get_multi_dt_entry(data);
                 }
                 rc = fdt_check_header(destDtb);
                 if(rc){

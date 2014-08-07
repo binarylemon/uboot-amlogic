@@ -291,7 +291,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     }
 #endif//
 
-#if 1
     if(BIN_RUN_INFO_MAGIC_PARA != paraMagic)//default to run ddr_init.bin, Attention that sram area will not clear if not poweroff!
     {
         ret = _ddr_init_main(__TEXT_BASE, __TEXT_SIZE);
@@ -304,12 +303,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
         return ret;
     }
-#else
-    binRunInfoHead->runType = BIN_RUN_TYPE_UCL_DECOMPRESS;
-    ((UclDecompressInfo_t*)binRunInfoHead)->srcDataAddr = (unsigned char*)(4U<<20);
-
-	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);
-#endif//#if 1
 
     if(BIN_RUN_INFO_VERSION != binRunInfoHead->version){
         serial_puts("run info version "), serial_put_hex(binRunInfoHead->version, 16), serial_puts("error\n");

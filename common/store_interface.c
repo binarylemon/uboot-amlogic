@@ -19,6 +19,8 @@
 #define STORE_BOOT_ERASE_ALL   				          3
 #define STORE_BOOT_SCRUB_ALL				          4
 
+#define _SPI_FLASH_ERASE_SZ      (CONFIG_ENV_IN_SPI_OFFSET + CONFIG_ENV_SIZE)
+
 //Ignore mbr since mmc driver already handled 
 //#define MMC_UBOOT_CLEAR_MBR
 #define MMC_BOOT_PARTITION_SUPPORT
@@ -143,7 +145,8 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
 				}
-				ret = run_command("sf erase 0 100000",0);
+                                sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+                                ret = run_command(str,0);
 				if(ret != 0){
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
@@ -625,7 +628,8 @@ R_SWITCH_BACK:
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
 				}
-				ret = run_command("sf erase 0 200000", 0);
+                                sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+                                ret = run_command(str,0);
 				if(ret != 0){
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
@@ -688,7 +692,8 @@ R_SWITCH_BACK:
 					return -1;
 				}
 				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
-					ret = run_command("sf erase 0 100000",0);
+                                        sprintf(str, "sf erase 0 0x%x", _SPI_FLASH_ERASE_SZ);
+					ret = run_command(str,0);
 				}
 				sprintf(str, "amlnf  init  %d ",init_flag);
 				store_dbg("command:	%s", str);
@@ -735,7 +740,8 @@ R_SWITCH_BACK:
 				}
 				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
 					ret = run_command("sf probe 2", 0);
-					ret = run_command("sf erase 0 100000",0);
+                                        sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+					ret = run_command(str,0);
 				}
 			}
 			if(device_boot_flag == SPI_EMMC_FLAG){
@@ -754,7 +760,8 @@ R_SWITCH_BACK:
                 }
                 if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
                     ret = run_command("sf probe 2", 0);
-                    ret = run_command("sf erase 0 100000",0);
+                    sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+                    ret = run_command(str,0);
                 }
             }
 			
