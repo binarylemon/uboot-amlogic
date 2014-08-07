@@ -7,7 +7,7 @@
 #include <config.h>
 
 #define READ_SIZE       32*1024     // Size for data reading
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 #define SECURE_OS_SRAM_BASE (512+32)
 #else
 #define SECURE_OS_SRAM_BASE 32

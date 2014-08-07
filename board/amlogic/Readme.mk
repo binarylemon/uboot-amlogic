@@ -137,6 +137,10 @@ endif
 	@echo config command: \"make m8b_m200_1G_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M8B_M200_1G with TEE"
+	@echo config command: \"make m8b_m200_1G_tee_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M8B_M101_512M"
 	@echo config command: \"make m8b_m101_512M_config\"
 
@@ -147,6 +151,10 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8B_M201_1G"
 	@echo config command: \"make m8b_m201_1G_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "M8B_M201_1G with TEE"
+	@echo config command: \"make m8b_m201_1G_tee_config\"
 
 	@echo =======================================================================
 	@echo The mark in board is "M8B_M202_512M"

@@ -12,7 +12,7 @@
 #endif
 
 #ifdef SECUREOS_INTERFACE
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 #define AESKEY_SIZE   0x30
 #else
 #define AESKEY_SIZE   0x20
@@ -29,7 +29,7 @@ struct sstorekey_device_op_s{
 static struct sstorekey_device_op_s sstorekey_device_op;
 static int sstorekey_device_status=0;//0: prohibit, 1:permit
 
-#ifdef CONFIG_M8
+#if defined(CONFIG_M8) || defined(CONFIG_M8B)
 static int auto_find_device(void)
 {
 	int R_BOOT_DEVICE_FLAG_m8 = READ_CBUS_REG(ASSIST_POR_CONFIG);
