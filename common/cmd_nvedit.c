@@ -157,7 +157,7 @@ int do_env_print (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	for (i = 1; i < argc; ++i) {
 		int rc = env_print(argv[i]);
 		if (!rc) {
-			printf("## Error: \"%s\" not defined\n", argv[i]);
+			//printf("## Error: \"%s\" not defined\n", argv[i]);
 			++rcode;
 		}
 	}
@@ -1017,6 +1017,7 @@ char * args[]=
 "cecconfig",
 "cvbsmode",
 "hdmimode",
+"outputmode",
 "disp.fromleft"
 };
 
@@ -1084,8 +1085,8 @@ int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			
 			printf("%s = %s\n",varName[envCnt-1],varValue[envCnt-1]);
 		}
-		else
-			printf("## Error: \"%s\" not defined\n",argv[i]);
+		//else
+		//	printf("## Error: \"%s\" not defined\n",argv[i]);
 	}
 	
 	set_default_env(NULL);						//defenv
