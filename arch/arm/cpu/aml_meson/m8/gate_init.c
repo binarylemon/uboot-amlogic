@@ -41,9 +41,6 @@ void gate_init(void)
 	/* close stream */
 	CLK_GATE_OFF(STREAM);
 	
-	/* close DOS */
-	CLK_GATE_OFF(DOS);
-	
 	/* close USB */
 	#if 1
     // can't connect to PC
