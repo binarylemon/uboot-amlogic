@@ -14,7 +14,10 @@
 #include <ddr.c>
 #include <mtddevices.c>
 #include <sdio.c>
-#include <debug_rom.c>
+//#include <debug_rom.c>
+
+extern void ipl_memcpy(void*, const void *, __kernel_size_t);
+#define memcpy ipl_memcpy
 
 #include <loaduboot.c>
 #ifdef CONFIG_ACS

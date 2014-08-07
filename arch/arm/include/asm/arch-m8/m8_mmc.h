@@ -1368,6 +1368,17 @@
   //bit 2.   enable dmc request of chan 2.  Mali
   //bit 1.   enable dmc request of chan 1.  Mali
   //bit 0.   enable dmc request of chan 0.  A9
+  /*M8M2*/
+  //bit 15. DEVICE
+  //bit 14. AUDIO
+  //bit 13. RESERVED
+  //bit 11,12. DOS(VDEC, HCODEC)
+  //bit 8,9,10. VPU(VDISP, VPUARB2, VDIN)
+  //bit 5,6,7. RESERVED
+  //bit 4. HEVC
+  //bit 1,2,3. MALI
+  //bit 0. A9
+
 #define P_DMC_SOFT_RST        DMC_REG_BASE + (0x01 << 2)
 #define P_DMC_SOFT_RST1       DMC_REG_BASE + (0x02 << 2)
 #define P_DMC_RST_STS         DMC_REG_BASE + (0x03 << 2)

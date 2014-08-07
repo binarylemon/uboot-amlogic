@@ -18,7 +18,7 @@
 #define CFG_DDR_TWO_CHANNEL_SWITCH_BIT_30			(2)
 /*m8m2 only*/
 //#define CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12			(4)
-//#define CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8			(5) //don't use this one
+#define CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8			(5) //don't use this one
 #define CFG_DDR_TWO_CHANNEL_DDR0_LOW				(6)
 #define CFG_DDR_TWO_CHANNEL_DDR1_LOW				(7)
 //#define CFG_DDR_ONE_CHANNEL_DDR0_ONLY				(8)
@@ -42,7 +42,7 @@
 //#define CFG_DDR_BANK_SET_2_BANKS_SWITCH_BIT8		0x2
 //#define CFG_DDR_BANK_SET_4_BANKS_SWITCH_BIT8_9	0x3
 
-#define GET_DDR_ROW_BITS(mem_size, channel_set, bus_width) (((mem_size)>>30) + 14 + \
+#define GET_DDR_ROW_BITS(mem_size, bus_width) (13 + (((unsigned int)mem_size)>>29) - ((((unsigned int)mem_size)>>29)==0x4?(1):(0)) + \
 	((bus_width>=CFG_DDR_BUS_WIDTH_16BIT_LANE01)?(1):(0)))
 #define GET_DDR_ROW_SIZE(row_bits) ((row_bits>=16)?(0):(row_bits-12))
 
@@ -86,9 +86,9 @@
 #define CONFIG_DDR0_COL_SIZE     (2)
 #define CONFIG_DDR1_COL_BITS     (10)
 #define CONFIG_DDR1_COL_SIZE     (2)
-#define CONFIG_DDR0_ROW_BITS     GET_DDR_ROW_BITS(CONFIG_DDR_SIZE_0, CONFIG_DDR_CHANNEL_SET, CONFIG_DDR_MODE)
+#define CONFIG_DDR0_ROW_BITS     GET_DDR_ROW_BITS(CONFIG_DDR_SIZE_0, CONFIG_DDR_MODE)
 #define CONFIG_DDR0_ROW_SIZE     GET_DDR_ROW_SIZE(CONFIG_DDR0_ROW_BITS)
-#define CONFIG_DDR1_ROW_BITS     GET_DDR_ROW_BITS(CONFIG_DDR_SIZE_1, CONFIG_DDR_CHANNEL_SET, CONFIG_DDR_MODE)
+#define CONFIG_DDR1_ROW_BITS     GET_DDR_ROW_BITS(CONFIG_DDR_SIZE_1, CONFIG_DDR_MODE)
 #define CONFIG_DDR1_ROW_SIZE     GET_DDR_ROW_SIZE(CONFIG_DDR1_ROW_BITS)
 
 //check necessary defines
@@ -111,6 +111,16 @@
 #elif (CONFIG_DDR_CHANNEL_SET == CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8)
 	#define DDR0_DTAR_ADDR_OFFSET					(0)
 	#define DDR1_DTAR_ADDR_OFFSET					(1<<8)
+	#define CONFIG_DDR_CHANNEL_SWITCH				(0x1)
+	#define CONFIG_DDR_CHANNEL_SUB_SWITCH			(0)
+#elif (CONFIG_DDR_CHANNEL_SET == CFG_DDR_TWO_CHANNEL_SWITCH_BIT_30)
+	#define DDR0_DTAR_ADDR_OFFSET					(0)
+#if !defined(CONFIG_DDR_SIZE_AUTO_DETECT)
+#if (CONFIG_DDR_SIZE < 1024)
+#error "Channel switch bit30, doesn't support ddr capacity lower than 1GB.\n"
+#endif
+#endif
+	#define DDR1_DTAR_ADDR_OFFSET					(0x40000000)
 	#define CONFIG_DDR_CHANNEL_SWITCH				(0x1)
 	#define CONFIG_DDR_CHANNEL_SUB_SWITCH			(0)
 #elif (CONFIG_DDR_CHANNEL_SET == CFG_DDR_TWO_CHANNEL_DDR0_LOW)
@@ -136,7 +146,8 @@
 #endif
 //128Bytes each channel. COL[2:0] must be b'000. In addition of 128Bytes, set DTAR ADDR[6:0]=b'00,0000 for safe.
 //Please make sure DTAR ROW[10]!=1. Or please use MPR mode for pctl init. use 0x3fffef80 for test.
-#define CONFIG_DDR0_DTAR_ADDR (0x3000000 + DDR0_DTAR_ADDR_OFFSET)	/*don't modify*/
+#define CONFIG_DDR_DTAR_ADDR_BASE 0x3000000
+#define CONFIG_DDR0_DTAR_ADDR (CONFIG_DDR_DTAR_ADDR_BASE + DDR0_DTAR_ADDR_OFFSET)	/*don't modify*/
 #define CONFIG_DDR1_DTAR_ADDR (CONFIG_DDR0_DTAR_ADDR + DDR1_DTAR_ADDR_OFFSET)
 
 #if (CONFIG_DDR_MODE > CFG_DDR_BUS_WIDTH_32BIT)	//not 32bit mode

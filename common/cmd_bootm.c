@@ -96,10 +96,6 @@ static void fixup_silent_linux (void);
 void mem_size_arg_process(void);
 #endif
 
-#ifdef CONFIG_AUTO_SET_MULTI_DT_ID
-extern void board_dt_id_process(void);
-#endif
-
 static image_header_t *image_get_kernel (ulong img_addr, int verify);
 #if defined(CONFIG_FIT)
 static int fit_check_kernel (const void *fit, int os_noffset, int verify);
@@ -873,10 +869,6 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #ifdef CONFIG_AUTO_SET_BOOTARGS_MEM
 	mem_size_arg_process();
-#endif
-
-#ifdef CONFIG_AUTO_SET_MULTI_DT_ID
-	board_dt_id_process();
 #endif
 
 	boot_fn = boot_os[images.os.os];
