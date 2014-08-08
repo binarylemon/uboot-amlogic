@@ -232,6 +232,24 @@ int rn5t618_get_gpio(int gpio, int *val)
     return 0;
 }
 
+#define RN5T618     0
+#define RN5T567     1
+int ricoh_check_pmu_type()
+{
+    uint8_t val[2] = {};
+
+    rn5t618_reads(0x00, val, 2);
+    printf("LSI version:%02x, OTP version:%02x\n", val[0], val[1]);
+    if (val[0] == 0x01 && val[1] == 0x01) {
+        printf("PMU type:RN5T567\n");
+        return RN5T567;
+    } else {
+        printf("PMU type:RN5T618\n");
+        return RN5T618;
+    }
+    return -1;
+}
+
 void rn5t618_power_off()
 {
     uint8_t reg_coulomb[4];
@@ -714,7 +732,9 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x002C, 0x00, 0x30);                       // DCDC1 set to auto-mode
     rn5t618_set_bits(0x002E, 0x00, 0x30);                       // DCDC2 set to auto-mode
     rn5t618_set_bits(0x0030, 0x00, 0x30);                       // DCDC3 set to auto-mode
-    rn5t618_set_bits(0x002F, 0x40, 0xc0);                       // DCDC2 frequent set to 2.2MHz
+    if (ricoh_check_pmu_type() == RN5T618) {
+        rn5t618_set_bits(0x002F, 0x40, 0xc0);                       // DCDC2 frequent set to 2.2MHz
+    }
     rn5t618_set_gpio(3, 0);                                     // open GPIO 2, DCDC 3.3
     rn5t618_set_gpio(1, 0);                                     // close GPIO 1, boost 5V 
     rn5t618_set_bits(0x00EF, 0x10, 0x10);                       // enable coulomb counter
