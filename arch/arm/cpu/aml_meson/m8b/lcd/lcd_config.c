@@ -986,7 +986,7 @@ static void print_lcd_clk_info(void)
     printf("vid2 pll clk      %uMHz\n"
            "lvds fifo clk     %uMHz\n"
            "cts encl clk      %uMHz\n\n",
-           clk_util_clk_msr(62), clk_util_clk_msr(24), clk_util_clk_msr(9));
+           clk_util_clk_msr(12), clk_util_clk_msr(24), clk_util_clk_msr(9));
 }
 
 static void lcd_module_enable(void)
