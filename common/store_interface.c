@@ -145,7 +145,7 @@ int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 					store_msg("nand cmd %s failed",cmd);
 					return -1;
 				}
-                                sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+                                sprintf(str, "sf erase  0 0x%x", CONFIG_ENV_IN_SPI_OFFSET);//store erase boot shoould NOT erase ENV in flash!
                                 ret = run_command(str,0);
 				if(ret != 0){
 					store_msg("nand cmd %s failed",cmd);
@@ -772,30 +772,30 @@ R_SWITCH_BACK:
 			
 			return ret;
         }
-		else if(POR_EMMC_BOOT()){
-			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
-            device_boot_flag = EMMC_BOOT_FLAG;		
-			ret = run_command("mmcinfo 1", 0);
-			if(ret != 0){
-				store_msg("mmc cmd %s failed \n",cmd);
-				return -1;
-			}
-			if(init_flag == STORE_BOOT_ERASE_PROTECT_CACHE){ // OTA upgrade protect cache
-				ret = run_command("mmc erase non_cache", 0);
-			}else if(init_flag >= STORE_BOOT_ERASE_ALL){ // erase all except  reserved area
-                if(_info_disprotect_back_before_mmcinfo1 & DISPROTECT_KEY){
-                    MsgP("mmc key\n");
-                    run_command("mmc key", 0);
+        else if(POR_EMMC_BOOT()){
+                store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
+                device_boot_flag = EMMC_BOOT_FLAG;		
+                ret = run_command("mmcinfo 1", 0);
+                if(ret != 0){
+                        store_msg("mmc cmd %s failed \n",cmd);
+                        return -1;
                 }
-                MsgP("mmc erase 1");
-				ret = run_command("mmc erase 1", 0);
-			}
-			
-			return ret;
-		}else{
-			store_dbg("CARD BOOT, %s %d",__func__,__LINE__);
-			return 0;
-		}
+                if(init_flag == STORE_BOOT_ERASE_PROTECT_CACHE){ // OTA upgrade protect cache
+                        ret = run_command("mmc erase non_cache", 0);
+                }else if(init_flag >= STORE_BOOT_ERASE_ALL){ // erase all except  reserved area
+                        if(_info_disprotect_back_before_mmcinfo1 & DISPROTECT_KEY){
+                            MsgP("mmc key\n");
+                            run_command("mmc key", 0);
+                        }
+                        MsgP("mmc erase 1");
+                        ret = run_command("mmc erase 1", 0);
+                }
+                        
+                        return ret;
+        }else{
+                store_dbg("CARD BOOT, %s %d",__func__,__LINE__);
+                return 0;
+        }
 	}
 	else if(strcmp(cmd, "size") == 0){
 
