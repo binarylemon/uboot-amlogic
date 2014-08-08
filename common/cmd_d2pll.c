@@ -34,7 +34,11 @@ int do_ddr2pll(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #endif
     WRITE_CBUS_REG(PREG_STICKY_REG1, pll);
     printf("Set pll done [0x%08x]\n", READ_CBUS_REG(PREG_STICKY_REG1));
+#ifdef CONFIG_M8B
+    WRITE_CBUS_REG(WATCHDOG_TC, 0xf080000 | 2000);
+#else
     WRITE_CBUS_REG(WATCHDOG_TC, 0xf400000 | 2000);
+#endif
 
 	return 0;
 
