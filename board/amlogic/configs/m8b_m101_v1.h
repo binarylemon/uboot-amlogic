@@ -238,7 +238,6 @@
 		"echo preboot...;" \
                 "run upgrade_check;"\
 		"get_rebootmode; clear_rebootmode; magic_checkstatus 1; echo reboot_mode=${reboot_mode} magic=${magic_key_status};" \
-                "run prepare;"\
 		"usbbc; run batlow_or_not; setenv sleep_count 0; "\
                 "run switch_bootmode;" \
                 "\0"\
@@ -252,17 +251,17 @@
                 "\0"\
         "switch_bootmode="\
 		"if test ${reboot_mode} = normal; then "\
-			"bmp display ${poweron_offset}; "\
+			"run prepare; bmp display ${poweron_offset}; "\
 		"else if test ${reboot_mode} = factory_reset; then "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
 			"run update; "\
 		"else if test ${reboot_mode} = usb_burning; then "\
-			"run usb_burning; "\
+			"run prepare; run usb_burning; "\
 		"else if test ${magic_key_status} = update; then "\
 			"run update; "\
 		"else if test ${magic_key_status} = poweron; then "\
-			"bmp display ${poweron_offset}; run bootcmd; "\
+			"run prepare; bmp display ${poweron_offset}; run bootcmd; "\
 		"else "\
 			"run charging_or_not; "\
 		"fi; fi; fi; fi; fi; fi;" \
