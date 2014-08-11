@@ -256,6 +256,19 @@ static inline unsigned ddr_pre_init(struct ddr_set * timing_reg){
 		timing_reg->t_pub0_dtar	= ((0x0 + CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28));
 		timing_reg->t_pub1_dtar	= ((0x0 + CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28));
 	}
+#if defined(__CONFIG_M8_K200_V1_H__)
+	if(IS_MESON_M8M2_CPU){
+        serial_puts("Detect N200: set ddr to 2GB\n");
+        __ddr_setting.phy_memory_size = 0x80000000;
+       __ddr_setting.t_pub0_dtar = ((0x0 + CONFIG_M8M2_DDR0_DTAR_DTCOL)| \
+           ((M8M2_DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,15,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) <<12)| \
+           ((M8M2_DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,15,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) << 28));
+       __ddr_setting.t_pub1_dtar = ((0x0 + CONFIG_M8M2_DDR1_DTAR_DTCOL)| \
+           ((M8M2_DDR_DTAR_DTROW_GET(CONFIG_DDR1_DTAR_ADDR,15,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) <<12)| \
+           ((M8M2_DDR_DTAR_BANK_GET(CONFIG_DDR1_DTAR_ADDR,15,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) << 28));
+        __ddr_setting.t_mmc_ddr_ctrl = (__ddr_setting.t_mmc_ddr_ctrl & 0xfffff3f3) | (3<<10) | (3<<2);
+    }
+#endif
 }
 
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
