@@ -7,6 +7,7 @@
 #include <arc_pwr.h>
 
 #include <pwr_op.c>
+#include <linux/types.h>
 
 static struct arc_pwr_op arc_pwr_op;
 static struct arc_pwr_op *p_arc_pwr_op;
@@ -43,6 +44,7 @@ extern void wait_uart_empty();
 extern void uart_reset();
 extern void init_ddr_pll(void);
 extern void __udelay(int n);
+
 
 static void timer_init()
 {
@@ -251,7 +253,6 @@ void enter_power_down()
 	cpu_off();
 	f_serial_puts("CPU off done\n");
 	wait_uart_empty();
-
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
@@ -314,7 +315,6 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_24M();
 
  	uart_reset();
-
 	f_serial_puts("step 8: ddr resume\n");
 	wait_uart_empty();
 	ddr_resume();

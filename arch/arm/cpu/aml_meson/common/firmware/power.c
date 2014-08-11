@@ -1420,21 +1420,19 @@ static int pwm_duty_cycle_set(int duty_high,int duty_total)
 int m8b_pwm_set_vddEE_voltage(int voltage)
 {
 
+    int duty_high = 0;
     vcck_pwm_on();
 
 
-    if(voltage == 1000)
-    {
-        pwm_duty_cycle_set(14,28);//1.0V
-    }
-    else if(voltage == 1050)
-    {
-        pwm_duty_cycle_set(8,28);//1.06->1.053V
-    }
-    else if(voltage == 1100)
-    {
-        pwm_duty_cycle_set(4,28);//1.1V
-    }
+    duty_high = 28-(voltage-860)/10;
+
+#if 1
+    serial_puts("##### VDDEE voltage = 0x");
+    serial_put_hex(voltage, 16);
+    serial_puts("\n");
+#endif
+    pwm_duty_cycle_set(duty_high,28);
+
 }
 #endif
 
@@ -1464,7 +1462,7 @@ void power_init(int init_mode)
 #elif defined (CONFIG_PWM_DEFAULT_VCCK_VOLTAGE) && defined (CONFIG_VCCK_VOLTAGE)
     vcck_set_default_voltage(CONFIG_VCCK_VOLTAGE);
 #elif defined CONFIG_PWM_VDDEE_VOLTAGE
-    m8b_pwm_set_vddEE_voltage(1050);
+    m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
 #endif
     __udelay(1000);
 }
