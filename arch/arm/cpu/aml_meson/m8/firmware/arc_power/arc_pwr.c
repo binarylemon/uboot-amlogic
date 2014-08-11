@@ -183,11 +183,13 @@ void restart_arm()
 
 static void switch_to_rtc()
 {
-	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+	if(0x11111112 != readl(0xc11081A8))//M8M2 do not switch ao to 32k via P_AO_RTI_PWR_CNTL_REG0
+		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
 }
 static void switch_to_81()
 {
-	 writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<8)),P_AO_RTI_PWR_CNTL_REG0);
+	if(0x11111112 != readl(0xc11081A8))
+		writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<8)),P_AO_RTI_PWR_CNTL_REG0);
 }
 
 
