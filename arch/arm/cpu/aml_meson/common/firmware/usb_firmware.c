@@ -112,7 +112,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_MESON_TRUSTZONE
     {
         unsigned* ubootBinAddr  = (unsigned*)CONFIG_USB_SPL_ADDR;
-        unsigned* psecureargs   = 0;
         unsigned  decompressedLen = 0;
         unsigned  secureosOffset  = 0;
         unsigned char* compressedAddr   = 0;
@@ -127,19 +126,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
             serial_puts("\nload secureos error,now reset chip to let PC know\n");
             AML_WATCH_DOG_START();
         }
-
-        psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
-        *psecureargs = 0;
-#ifdef CONFIG_MESON_SECUREARGS
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
-	if(IS_MESON_M8M2_CPU)
-		*psecureargs = __secureargs_m8m2;
-	else
-		*psecureargs = __secureargs_m8;
-#else
-	*psecureargs = __secureargs;
-#endif		
-#endif// #ifdef CONFIG_MESON_SECUREARGS
     }
 #endif//#ifdef CONFIG_MESON_TRUSTZONE
  

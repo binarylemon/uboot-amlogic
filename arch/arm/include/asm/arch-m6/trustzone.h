@@ -100,6 +100,7 @@ struct storage_hal_api_arg{
 
 #define SRAM_HAL_API_CAS 0x401
 #define SRAM_HAL_API_CHECK 0x402
+#define SRAM_HAL_API_CHECK_EFUSE 0x403
 struct sram_hal_api_arg {
 	unsigned int cmd;
 	unsigned int req_len;

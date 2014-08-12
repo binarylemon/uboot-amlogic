@@ -182,10 +182,10 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg* arg)
 }
 
 ssize_t meson_trustzone_efuse_writepattern(const char *buf, size_t count)
-{ 	
+{
 	struct efuse_hal_api_arg arg;
 	unsigned int retcnt;
-	
+
 	if (count != EFUSE_BYTES)
 		return 0;	/* Past EOF */
 
@@ -278,7 +278,6 @@ uint32_t meson_trustzone_acs_addr(uint32_t addr)
 	else
 		arg.req_phy_addr = meson_trustzone_sram_read_reg32(addr);
 	arg.res_phy_addr = SECURE_OS_ACS_DRAM_ADDR;
-
 	asm __volatile__("": : :"memory");
 
 	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
@@ -306,8 +305,39 @@ uint32_t meson_trustzone_boot_check(unsigned char *addr)
 	unsigned int ret = 0;
 	struct sram_hal_api_arg arg = {};
 
-
 	arg.cmd = SRAM_HAL_API_CHECK;
+	arg.req_len = 0x1000000;
+	arg.res_len = 0;
+	arg.req_phy_addr = addr;
+	arg.res_phy_addr = NULL;
+
+	asm __volatile__("": : :"memory");
+
+	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_HAL_API;
+	register uint32_t r1 asm("r1") = TRUSTZONE_HAL_API_SRAM;
+	register uint32_t r2 asm("r2") = (unsigned int)(&arg);
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    __asmeq("%3", "r2")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1), "r"(r2));
+	} while (0);
+
+	ret = r0;
+
+	return ret;
+}
+
+uint32_t meson_trustzone_efuse_check(unsigned char *addr)
+{
+	unsigned int ret = 0;
+	struct sram_hal_api_arg arg = {};
+
+	arg.cmd = SRAM_HAL_API_CHECK_EFUSE;
 	arg.req_len = 0x1000000;
 	arg.res_len = 0;
 	arg.req_phy_addr = addr;

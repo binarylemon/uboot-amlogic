@@ -301,6 +301,21 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts(__DATE__);
 	serial_puts("\n");	
 
+#ifdef CONFIG_MESON_TRUSTZONE
+        unsigned* psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
+        *psecureargs = 0;
+#ifdef CONFIG_MESON_SECUREARGS
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
+	if(IS_MESON_M8M2_CPU)
+		*psecureargs = __secureargs_m8m2;
+	else
+		*psecureargs = __secureargs_m8;
+#else
+	*psecureargs = __secureargs;
+#endif		
+#endif// #ifdef CONFIG_MESON_SECUREARGS
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+
         return ret;
     }
 
@@ -344,18 +359,6 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
                 if(ret){
                     break;
                 }
-                unsigned* psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
-                *psecureargs = 0;
-#ifdef CONFIG_MESON_SECUREARGS
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
-	if(IS_MESON_M8M2_CPU)
-		*psecureargs = __secureargs_m8m2;
-	else
-		*psecureargs = __secureargs_m8;
-#else
-	*psecureargs = __secureargs;
-#endif		
-#endif// #ifdef CONFIG_MESON_SECUREARGS
 
 #endif//#ifdef CONFIG_MESON_TRUSTZONE
 
