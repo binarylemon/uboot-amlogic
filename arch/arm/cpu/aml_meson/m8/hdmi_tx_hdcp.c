@@ -18,6 +18,7 @@
 #include <asm/arch/io.h>
 #include <common.h>
 #include "hdmi_tx_reg.h"
+#include <asm/cpu_id.h>
 
 // if the following bits are 0, then access HDMI IP Port will cause system hungup
 #define GATE_NUM    2
@@ -46,10 +47,18 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 {
     unsigned long data;
     check_cts_hdmi_sys_clk_status();
-    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-
-    data = READ_APB_HDMI_REG(HDMI_DATA_PORT);
+	if(IS_MESON_M8_CPU){    
+	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
+	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
+	
+	    data = READ_APB_HDMI_REG(HDMI_DATA_PORT);
+	  }
+	  else{
+	  	WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+		WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+		
+		data = READ_APB_REG(HDMI_DATA_PORT);
+	  }
 
     return (data);
 }
@@ -57,10 +66,18 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 {
     check_cts_hdmi_sys_clk_status();
+    if(IS_MESON_M8_CPU){
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
     WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
 
     WRITE_APB_HDMI_REG(HDMI_DATA_PORT, data);
+  }
+  else{
+  	 WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+      WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+      
+      WRITE_APB_REG(HDMI_DATA_PORT, data);
+  }
 }
 
 #define TX_HDCP_KSV_OFFSET          0x540
@@ -71,7 +88,7 @@ void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 extern int hdmi_hdcp_clear_ksv_ram(void);
 int hdmi_hdcp_clear_ksv_ram(void)
 {
-    int i;
+    int i;    
     WRITE_CBUS_REG_BITS(HHI_MEM_PD_REG0, 0x00, 8, 8);
     for(i = 0; i < TX_HDCP_KSV_SIZE; i++) {
         hdmi_hdcp_wr_reg(TX_HDCP_KSV_OFFSET + i, 0x00);
