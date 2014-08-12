@@ -559,7 +559,7 @@ void rn5t618_power_off_at_32K_1()
 	if  (readl(P_AO_RTI_STATUS_REG2) == 0x87654321) {
     	reg |= (10 << 12);              // suspended from uboot 
     } else {
-		reg |= (5 << 12);               // suspended from kernel
+		reg |= (10 << 12);               // suspended from kernel
     }
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 	udelay__(10);
