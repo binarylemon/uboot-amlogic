@@ -141,6 +141,23 @@ static void setup_net_chip(void)
 	eth_reg0.b.eth_urgent = 0;
 WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);// rgmii mode
 #endif
+#ifdef CONFIG_M201_COSTDOWN
+	/* open interl pll & ethernet output clock*/
+	SET_CBUS_REG_MASK(0x10a5,1<<27);
+        SET_CBUS_REG_MASK(0x108a,0xb803);
+        SET_CBUS_REG_MASK(HHI_MPLL_CNTL9,0x5c666);
+       
+        SET_CBUS_REG_MASK(0x2050,0x7d00);
+        udelay(2000);
+	/* setup ethernet mode */
+	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
+	
+	/* hardware reset ethernet phy : gpioh_4 connect phyreset pin*/
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_EN_N, 1 << 23);
+	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
+	udelay(2000);
+	SET_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
+#endif
 	/* setup ethernet mode */
 	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
 	/* hardware reset ethernet phy : gpioh_4 connect phyreset pin*/
@@ -575,6 +592,11 @@ void borad_power_init(void)
 }
 int board_init(void)
 {
+#ifdef CONFIG_M201_COSTDOWN
+	/* pull up Linux rx/tx */
+	writel(readl(P_AO_RTI_PULL_UP_REG) | (3 << 0 | 3 << 16),
+			P_AO_RTI_PULL_UP_REG);
+#endif
 	borad_power_init();
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
@@ -593,6 +615,15 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_b,BOARD_USB_MODE_HOST);
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
+
+#ifdef CONFIG_M201_COSTDOWN
+	/* 32k clock init */
+	printf("init 32k clock\n");
+	aml_set_reg32_mask(P_PERIPHS_PIN_MUX_9,0x1<<19);//set mode GPIOX_10-->CLK_OUT3
+	WRITE_CBUS_REG(PWM_PWM_E, 0x16d016d);
+	WRITE_CBUS_REG(PWM_MISC_REG_EF, 0x8001);
+#endif
+	
 
 	return 0;
 }
