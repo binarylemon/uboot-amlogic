@@ -236,7 +236,7 @@ static __inline__ int abortboot(int bootdelay)
 #ifdef CONFIG_MENUPROMPT
 	printf(CONFIG_MENUPROMPT);
 #else
-	printf("Hit Enter key to stop autoboot -- : %2d ", bootdelay);
+	fprintf(stdout, "Hit Enter key to stop autoboot -- : %2d ", bootdelay);
 #endif
 
 #if defined CONFIG_ZERO_BOOTDELAY_CHECK
@@ -337,7 +337,7 @@ static __inline__ int abortboot(int bootdelay)
 			printf("\b\b\b%2d ", bootdelay);
 	}
 
-	putc('\n');
+	fputc(stdout, '\n');
 
 #ifdef CONFIG_SILENT_CONSOLE
 	if (abort)

@@ -1,3 +1,4 @@
+#include <common.h>
 #include "platform.h"
 #include "usb_pcd.h"
 
@@ -6,9 +7,16 @@
 #include "dwc_pcd.c"
 #include "dwc_pcd_irq.c"
 
+DECLARE_GLOBAL_DATA_PTR;
+
 int usb_boot(int clk_cfg, int time_out)
 {
 	int cfg = INT_CLOCK;
+
+#if defined(CONFIG_SILENT_CONSOLE)
+	gd->flags &= ~GD_FLG_SILENT;
+#endif
+
 	if(clk_cfg)
 		cfg = EXT_CLOCK;
 	set_usb_phy_config(cfg);

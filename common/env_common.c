@@ -265,6 +265,15 @@ void env_relocate (void)
 	}
 #endif //#if !defined (CONFIG_VLSI_EMULATOR)
 
+#if defined(CONFIG_SILENT_CONSOLE) && \
+	defined(CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC)
+	if (getenv("silent") != NULL) {
+		puts("silenced by env\n");
+		gd->flags |= GD_FLG_SILENT;
+	} else {
+		gd->flags &= ~GD_FLG_SILENT;
+	}
+#endif
 }
 
 #ifdef CONFIG_AUTO_COMPLETE

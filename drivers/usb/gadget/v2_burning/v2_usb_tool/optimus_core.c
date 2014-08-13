@@ -1,3 +1,4 @@
+#include <common.h>
 #include "platform.h"
 #include "usb_pcd.h"
 
@@ -6,9 +7,15 @@
 #include "dwc_pcd.c"
 #include "dwc_pcd_irq.c"
 
+DECLARE_GLOBAL_DATA_PTR;
+
 int v2_usbburning(unsigned timeout)
 {
         int cfg = EXT_CLOCK;
+
+#if defined(CONFIG_SILENT_CONSOLE)
+        gd->flags &= ~GD_FLG_SILENT;
+#endif
 
         printf("Enter v2 usbburning mode\n");
         set_usb_phy_config(cfg);
