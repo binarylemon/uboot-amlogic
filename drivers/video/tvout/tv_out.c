@@ -330,6 +330,67 @@ static void m6_enable_vdac_hw_switch(int mode)
 
 #endif // end of CONFIG_AML_MESON_6
 
+#ifdef CONFIG_CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT
+void cvbs_performance_config(void)
+{
+	int actived = CONFIG_CVBS_PERFORMANCE_ACTIVED;
+	char buf[8];
+
+	sprintf(buf, "%d", actived);
+	setenv("cvbs_drv", buf);
+
+	return ;
+}
+
+static const reg_t tvregs_576cvbs_china_sarft[] =
+{
+	{MREG_END_MARKER,            	0      }
+};
+
+static const reg_t tvregs_576cvbs_china_telecom[] =
+{
+	{P_ENCI_SYNC_ADJ,				0x8060	},
+    {P_ENCI_VIDEO_SAT,              0xfe	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0		}
+};
+
+static const reg_t tvregs_576cvbs_china_mobile[] =
+{
+	{P_ENCI_SYNC_ADJ,				0x8060	},
+    {P_ENCI_VIDEO_SAT,              0xfe	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0       }
+};
+
+static const reg_t *tvregs_576cvbs_performance[] =
+{
+	tvregs_576cvbs_china_sarft,
+	tvregs_576cvbs_china_telecom,
+	tvregs_576cvbs_china_mobile
+};
+
+static void cvbs_performance_enhancement(int mode)
+{
+	const reg_t *s;
+	unsigned int index = CONFIG_CVBS_PERFORMANCE_ACTIVED;
+	unsigned int max = sizeof(tvregs_576cvbs_performance)/sizeof(reg_t*);
+
+	if( VMODE_576CVBS != mode )
+		return ;
+
+	index = (index>=max)?0:index;
+	printf("cvbs performance use table = %d\n", index);
+	s = tvregs_576cvbs_performance[index];
+	while (MREG_END_MARKER != s->reg)
+	{
+    	setreg(s++);
+	}
+	return ;
+}
+
+#endif // end of CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT
+
 int tv_out_open(int mode)
 {
 #if CONFIG_AML_HDMI_TX
@@ -352,6 +413,10 @@ int tv_out_open(int mode)
         s = tvregsTab[mode];
         while (MREG_END_MARKER != s->reg)
             setreg(s++);
+
+#ifdef CONFIG_CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT
+		cvbs_performance_enhancement(mode);
+#endif
 
 #if CONFIG_AML_MESON_8
 		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )

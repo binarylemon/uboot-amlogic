@@ -490,6 +490,11 @@ extern void init_secure_firmware(void);
 	cvbs_trimming();
 #endif
 
+#ifdef CONFIG_CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT
+	extern void cvbs_performance_config(void);
+	cvbs_performance_config();
+#endif
+
 	AML_LOG_TE("main");
 
 #ifdef CONFIG_PREBOOT
