@@ -220,13 +220,13 @@ static int write_uboot(struct amlnand_phydev *phydev)
 	struct chip_operation *operation = &(aml_chip->operation);	
 	struct chip_ops_para *ops_para = &(aml_chip->ops_para);
 	struct en_slc_info *slc_info = &(controller->slc_info);
-	unsigned char *fill_buf;
-	unsigned char *oob_buf, *page0_buf, tmp_bch_mode, tmp_user_mode, tmp_ecc_limit, tmp_ecc_max,tmp_rand;
+	unsigned char *fill_buf=NULL;
+	unsigned char *oob_buf=NULL, *page0_buf=NULL, tmp_bch_mode, tmp_user_mode, tmp_ecc_limit, tmp_ecc_max,tmp_rand;
 	unsigned configure_data, pages_per_blk, oobsize, page_size, tmp_size,priv_lsb,ops_tem; 
 	unsigned short tmp_ecc_unit, tmp_ecc_bytes, tmp_ecc_steps;
 	uint64_t addr, writelen = 0, len = 0;
 	int chip_num=1, nand_read_info, new_nand_type, i, ret = 0;
-	unsigned char  *tmp_buf;
+	//unsigned char  *tmp_buf;
 	char write_boot_status[BOOT_COPY_NUM] = {0},err = 0;
 	
 	if((devops->addr + devops->len) >  phydev->size){
@@ -290,7 +290,7 @@ static int write_uboot(struct amlnand_phydev *phydev)
 		ret = -NAND_MALLOC_FAILURE;
 		goto error_exit;
 	}
-	memset(fill_buf,0xff,(flash->pagesize + flash->oobsize));
+	memset(fill_buf,0xff,flash->pagesize);
 	//clear ops_para here
 	memset(ops_para, 0, sizeof(struct chip_ops_para));
 	addr = phydev->offset + devops->addr;
@@ -397,7 +397,10 @@ static int write_uboot(struct amlnand_phydev *phydev)
 			devops->datbuf += phydev->writesize;
 			writelen += phydev->writesize;
 			
-			if((writelen >= (len -flash->pagesize))||(addr%flash->blocksize ==0)){
+			if((writelen >= devops->len)&&(writelen < phydev->erasesize)){
+				devops->datbuf = fill_buf;
+			}
+			if((writelen > (len -flash->pagesize))||(addr%flash->blocksize ==0)){
 				break;
 			}
 		}
@@ -433,6 +436,11 @@ error_exit:
 		kfree(fill_buf);
 		fill_buf =NULL;
 	}
+	if(oob_buf){
+		kfree(oob_buf);
+		oob_buf =NULL;
+	}
+	
 	return ret;
 }
 
@@ -585,18 +593,22 @@ static ssize_t uboot_write(struct file *file, const char __user *buf,
 
 	unsigned char *data_buf;
 	int  ret;
-
-	data_buf = aml_nand_malloc(UBOOT_WRITE_SIZE);
+	size_t align_count = 0;
+	//data_buf = aml_nand_malloc(UBOOT_WRITE_SIZE);
+	align_count = ((((unsigned)count +phydev->writesize)-1)/phydev->writesize)*phydev->writesize;
+	data_buf = aml_nand_malloc(align_count);
 	if(!data_buf){
 		aml_nand_dbg("malloc buf for rom_write failed");
 		goto err_exit0;
 	}	
-	memset(data_buf,0x0,UBOOT_WRITE_SIZE);
-	ret=copy_from_user(data_buf, buf, UBOOT_WRITE_SIZE);
+	//memset(data_buf,0x0,UBOOT_WRITE_SIZE);
+	//ret=copy_from_user(data_buf, buf, UBOOT_WRITE_SIZE);
+	memset(data_buf,0x0,align_count);
+	ret=copy_from_user(data_buf, buf, count);
 	
 	memset(devops, 0x0, sizeof(struct phydev_ops));
 	devops->addr = 0x0;
-	devops->len = UBOOT_WRITE_SIZE;
+	devops->len = align_count;
 	devops->mode = NAND_HW_ECC;
 	devops->datbuf = data_buf;
 
