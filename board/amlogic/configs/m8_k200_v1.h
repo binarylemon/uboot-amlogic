@@ -463,7 +463,7 @@
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_CHANNEL_AUTO_DETECT	//ddr channel setting auto detect
 //#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection. m8 doesn't support.
-//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
+#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
 #endif
 
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT

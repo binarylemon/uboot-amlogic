@@ -216,7 +216,7 @@ unsigned ddr_test(int arg)
 			return por_cfg;
 		}
 	}
-	serial_puts("DDR check: Pass!\n");
+	//serial_puts("DDR check: Pass!\n");
 	//AML_WATCH_DOG_DISABLE();
 	return por_cfg;
 }
@@ -256,19 +256,6 @@ static inline unsigned ddr_pre_init(struct ddr_set * timing_reg){
 		timing_reg->t_pub0_dtar	= ((0x0 + CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28));
 		timing_reg->t_pub1_dtar	= ((0x0 + CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28));
 	}
-#if defined(__CONFIG_M8_K200_V1_H__)
-	if(IS_MESON_M8M2_CPU){
-        serial_puts("Detect N200: set ddr to 2GB\n");
-        __ddr_setting.phy_memory_size = 0x80000000;
-       __ddr_setting.t_pub0_dtar = ((0x0 + CONFIG_M8M2_DDR0_DTAR_DTCOL)| \
-           ((M8M2_DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,15,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) <<12)| \
-           ((M8M2_DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,15,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) << 28));
-       __ddr_setting.t_pub1_dtar = ((0x0 + CONFIG_M8M2_DDR1_DTAR_DTCOL)| \
-           ((M8M2_DDR_DTAR_DTROW_GET(CONFIG_DDR1_DTAR_ADDR,15,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) <<12)| \
-           ((M8M2_DDR_DTAR_BANK_GET(CONFIG_DDR1_DTAR_ADDR,15,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,CONFIG_DDR_CHANNEL_SWITCH,CONFIG_DDR_BIT_MODE)) << 28));
-        __ddr_setting.t_mmc_ddr_ctrl = (__ddr_setting.t_mmc_ddr_ctrl & 0xfffff3f3) | (3<<10) | (3<<2);
-    }
-#endif
 }
 
 SPL_STATIC_FUNC unsigned ddr_init_test(void)
@@ -316,11 +303,15 @@ SPL_STATIC_FUNC unsigned ddr_init_test(void)
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
 	ddr_size_auto_detect(&__ddr_setting);
 #endif
+
+	serial_puts("DDR info: ");
 #ifdef CONFIG_ACS
 	print_ddr_size(__ddr_setting.phy_memory_size);
 #else
 	print_ddr_size(PHYS_MEMORY_SIZE);
 #endif
+	ddr_info_dump(&__ddr_setting);
+	print_ddr_channel();
 
 int ddr_test_mode = 0;
 #ifdef CONFIG_ACS
@@ -334,9 +325,6 @@ int ddr_test_mode = 0;
 		__udelay(10000);
 		AML_WATCH_DOG_START();
 	}
-
-	ddr_info_dump(&__ddr_setting);
-	print_ddr_channel();
 
 #ifdef CONFIG_ACS
 	writel(((__ddr_setting.phy_memory_size)>>20), CONFIG_DDR_SIZE_IND_ADDR);

@@ -56,15 +56,15 @@ void print_ddr_channel(void){
 }
 
 void print_ddr_size(unsigned int size){
-	serial_puts("DDR size: ");
+	//serial_puts("DDR size: ");
 	unsigned int mem_size = size >> 20; //MB
 	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10) : serial_put_dec(mem_size);
 	(((mem_size>>9)&0x1)&&((mem_size)>=1024)) ? serial_puts(".5") : 0;
 	(mem_size) >= 1024 ? serial_puts("GB"):serial_puts("MB");
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
-	serial_puts(" (auto)\n");
-#else
-	serial_puts("\n");
+	serial_puts("(auto)");
+//#else
+//	serial_puts("\n");
 #endif
 }
 
@@ -92,7 +92,7 @@ unsigned int set_dmc_row(unsigned int dmc, unsigned int channel0, unsigned int c
 	dmc = dmc | ((channel0 & 0x3) << 2) | ((channel1 & 0x3) << 10);
 	return dmc;
 }
-
+#if 0
 unsigned int get_ddr_channel(unsigned int dmc){/*return 1 channel or 2 channels*/
 	/*return b'01: ddr0 only, b'10: ddr1 only, b'11: ddr0+ddr1*/
 	if(IS_MESON_M8M2_CPU){/*m8m2*/
@@ -116,7 +116,7 @@ unsigned int get_ddr_channel(unsigned int dmc){/*return 1 channel or 2 channels*
 			return 0x3; /*b'11*/ /*ddr 0 + ddr 1*/
 	}
 }
-
+#endif
 unsigned int get_ddr_channel_num(unsigned int dmc){
 	if(IS_MESON_M8M2_CPU){
 		unsigned int chl_switch = (dmc>>26)&0x3;

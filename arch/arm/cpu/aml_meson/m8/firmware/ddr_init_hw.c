@@ -113,6 +113,21 @@ int ddr_init_hw(struct ddr_set * timing_set)
 
 void ddr_info_dump(struct ddr_set * timing_set)
 {
+#ifdef CONFIG_DUMP_DDR_INFO
+	int nPLL = readl(AM_DDR_PLL_CNTL);
+	int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
+	//serial_puts("DDR clock: ");
+	serial_puts(" @ ");
+	serial_put_dec(nDDRCLK);
+	serial_puts("MHz(");
+#ifdef CONFIG_DDR_LOW_POWER
+	serial_puts("LP&");
+#endif
+	if((timing_set->t_pctl_mcfg) & (1<<3)) //DDR0, DDR1 same setting?
+		serial_puts("2T)");
+	else
+		serial_puts("1T)");
+#endif
 #ifdef DDR_SCRAMBE_ENABLE
 	unsigned int dmc_sec_ctrl_value;
 	unsigned int ddr_key;
@@ -126,7 +141,7 @@ void ddr_info_dump(struct ddr_set * timing_set)
 #ifdef CONFIG_DUMP_DDR_INFO
 		dmc_sec_ctrl_value = readl(M8M2_DMC_SEC_CTRL);
 		if(dmc_sec_ctrl_value & (1<<0)){
-			serial_puts("ddr scramb EN\n");
+			serial_puts("+Scramb EN");
 		}
 #endif
 	}
@@ -139,24 +154,10 @@ void ddr_info_dump(struct ddr_set * timing_set)
 #ifdef CONFIG_DUMP_DDR_INFO
 		dmc_sec_ctrl_value = readl(M8_DMC_SEC_CTRL);
 		if(dmc_sec_ctrl_value & (1<<0)){
-			serial_puts("ddr scramb EN\n");
+			serial_puts("+Scramb EN");
 		}
 #endif
 	}
 #endif
-
-#ifdef CONFIG_DUMP_DDR_INFO
-	int nPLL = readl(AM_DDR_PLL_CNTL);
-	int nDDRCLK = 2*((24 / ((nPLL>>9)& 0x1F) ) * (nPLL & 0x1FF))/ (1<<((nPLL>>16) & 0x3));
-	serial_puts("DDR clock: ");
-	serial_put_dec(nDDRCLK);
-	serial_puts("MHz with ");
-#ifdef CONFIG_DDR_LOW_POWER
-	serial_puts("Low Power & ");
-#endif
-	if((timing_set->t_pctl_mcfg) & (1<<3)) //DDR0, DDR1 same setting?
-		serial_puts("2T mode\n");
-	else
-		serial_puts("1T mode\n");
-#endif
+	serial_puts("\n");
 }
