@@ -13,6 +13,26 @@
 #endif
 //U boot code control
 
+/*  Silent print function by Lawrence.Mok
+        CONFIG_SILENT_CONSOLE checks if "silent" exists in env.
+            If 'setenv silent 1' in uboot, then part of TPL print is silenced
+                and 'quiet' is added to kernel bootargs.
+            If "silent=1" is added to default env (CONFIG_EXTRA_ENV_SETTINGS),
+                then all of TPL will be silenced and 'quiet' added to bootargs.
+            To enable print, "setenv silent;saveenv" to delete env variable
+                or undef CONFIG_SILENT_CONSOLE
+    Add CONFIG_DISABLE_SILENT_CONSOLE in board.h if you want disable this function
+*/
+#if !defined(CONFIG_DISABLE_SILENT_CONSOLE)
+#define CONFIG_SILENT_CONSOLE
+#ifdef CONFIG_SILENT_CONSOLE
+#define CONFIG_SILENT_CONSOLE_LINUX_QUIET
+#define CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
+#define CONFIG_SYS_DEVICE_NULLDEV
+#define CONFIG_SYS_CONSOLE_INFO_QUIET
+#endif
+#endif
+
 //timer
 #define CONFIG_SYS_HZ 1000
 

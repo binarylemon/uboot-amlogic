@@ -22,21 +22,6 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
-//CONFIG_SILENT_CONSOLE checks if "silent" exists in env.
-// If 'setenv silent 1' in uboot, then part of TPL print is silenced
-//        and 'quiet' is added to kernel bootargs.
-// If "silent=1" is added to default env (CONFIG_EXTRA_ENV_SETTINGS),
-//        then all of TPL will be silenced and 'quiet' added to bootargs.
-// To enable print, "setenv silent;saveenv" to delete env variable
-//        or undef CONFIG_SILENT_CONSOLE
-#define CONFIG_SILENT_CONSOLE
-#ifdef CONFIG_SILENT_CONSOLE
-#define CONFIG_SILENT_CONSOLE_LINUX_QUIET
-#define CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
-#define CONFIG_SYS_DEVICE_NULLDEV
-#define CONFIG_SYS_CONSOLE_INFO_QUIET
-#endif
-
 //UART A Section
 //#define CONFIG_UART_A_FUNCTION_ADD
 
