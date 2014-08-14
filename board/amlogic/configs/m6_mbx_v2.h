@@ -16,6 +16,7 @@
 #define WRITE_TO_NAND_ENABLE
 
 #define CONFIG_IR_REMOTE
+#define CONFIG_DSP_VSYNC_INTERRUPT             1
 
 #define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
@@ -93,6 +94,7 @@
 #define CONFIG_L2_OFF			1
 //#define CONFIG_ICACHE_OFF	1
 //#define CONFIG_DCACHE_OFF	1
+#define CONFIG_CMD_LOGO
 
 
 #define CONFIG_CMD_NET   1
@@ -193,8 +195,8 @@
 	"display_width=1920\0" \
 	"display_height=1080\0" \
 	"display_bpp=24\0" \
-	"display_color_format_index=16\0" \
-	"display_layer=osd1\0" \
+	"display_color_format_index=24\0" \
+	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x85900000\0" \
@@ -214,20 +216,21 @@
 	"store=0\0"\
 	"preboot="\
         "run upgrade_check; "\
-        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
+        "run prepare; get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
         "run nand_key_burning; "\
         "run updatekey_or_not; run irremote_update; run switch_bootmode\0" \
 	"mbr_write=if test ${upgrade_step} != 2; then mmcinfo 1; mmc read 1 82000000 0 1; mw.l 820001fc 0 1; mmc write 1 82000000 0 1;fi;\0" \
 	"upgrade_check="\
         "if itest ${upgrade_step} == 1; then defenv; setenv upgrade_step 2; save; fi; "\
-        "if itest ${upgrade_step} == 3; then save; run update; fi;\0" \
+        "if itest ${upgrade_step} == 3; then save; run prepare; run update; fi;\0" \
 	"updatekey_or_not=saradc open 4;if saradc get_in_range 0x0 0x50 ;then msleep 500;if saradc get_in_range 0x0 0x50; then run update; fi; fi\0" \
 	"irremote_update=if irkey 0x41beb14e 500000 ;then run update; fi\0" \
 	"nand_key_burning=saradc open 4;if saradc get_in_range 0x164 0x1b4 ;then msleep 500;if saradc get_in_range 0x164 0x1b4; then run usb_burning; fi; fi\0" \
 	"cvbscheck=setenv outputtemp ${outputmode};if test ${outputmode} = 480i; then if test ${cvbsenable} = true; then setenv outputtemp 480cvbs;fi;fi; if test ${outputmode} = 576i; then if test ${cvbsenable} = true; then setenv outputtemp 576cvbs;fi;fi\0" \
-	"nandargs=run cvbscheck; "\
-            "imgread res logo ${loadaddr_misc};unpackimg ${loadaddr_misc}; cp ${bootup_offset} 0x85100000 ${bootup_size}; "\
-            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,0x85100000,${outputtemp},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+	"prepare= "\
+		"logo size ${outputmode};video dev open ${outputmode};video open; video clear;store read logo 0x83000000 0 800000;unpackimg 0x83000000;bmp scale ${bootup_offset} ${loadaddr};bmp display ${loadaddr}\0"\
+	"nandargs= "\
+            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${bootup_offset},${outputmode},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
         "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
@@ -235,7 +238,6 @@
 	"nandboot="\
         "echo Booting ...;"\
         "run nandargs;"\
-        "setenv bootargs ${initargs} androidboot.firstboot=${firstboot}; "\
         "imgread kernel boot ${loadaddr};"\
         "hdcp prefetch nand;"\
         "bootm;run recovery\0" \
@@ -440,6 +442,8 @@
 //#define CONFIG_CMD_SUSPEND 1
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
+
+#define CONFIG_DSP_VSYNC_INTERRUPT 		1
 
 /*
  * Secure OS
