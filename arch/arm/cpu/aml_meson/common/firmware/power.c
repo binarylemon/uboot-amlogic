@@ -19,18 +19,25 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
 
 #ifdef CONFIG_AW_AXP20
     #define DEVID 0x68
+    #define PMU_NAME    "axp202"
 #elif defined CONFIG_PMU_ACT8942
     #define DEVID 0xb6
+    #define PMU_NAME    "act8942"
 #elif defined CONFIG_AML_PMU
     #define DEVID 0x6A
+    #define PMU_NAME    "aml1212"
 #elif defined CONFIG_RN5T618
     #define DEVID 0x64
+    #define PMU_NAME    "rn5t618"
 #elif defined CONFIG_AML1216
     #define DEVID 0x6A
+    #define PMU_NAME    "aml1216"
 #elif defined CONFIG_AML1218
     #define DEVID 0x6A
+    #define PMU_NAME    "aml1218"
 #else
     #warning no PMU device is selected
+    #define PMU_NAME    "NONE"
 #endif
 
 static char format_buf[12] = {};
@@ -53,14 +60,14 @@ static void print_voltage_info(char *voltage_prefix, int voltage_idx, uint32_t v
     if (voltage_idx >= 0) {
         serial_put_hex(voltage_idx, 8);
     }
-    serial_puts(" set to ");
+    serial_puts(" v:");
     serial_puts(format_dec_value(voltage));
-    serial_puts(", register from 0x");
-    serial_put_hex(reg_from, 16);
-    serial_puts(" to 0x");
-    serial_put_hex(reg_to, 16);
-    serial_puts(", addr:0x");
-    serial_put_hex(addr, 16);
+    serial_puts(", 0x[");
+    serial_put_hex(addr, 8);
+    serial_puts("]: ");
+    serial_put_hex(reg_from, 8);
+    serial_puts(" -> ");
+    serial_put_hex(reg_to, 8);
     serial_puts("\n");
 }
 
@@ -168,7 +175,7 @@ int axp20_set_dcdc_voltage(int dcdc, int voltage)
     mask = (dcdc == 2 ? 0x3f : 0x7f);
     idx_to = find_idx(700, voltage, 25, size);                  // step is 25mV
     idx_cur = hard_i2c_read8(DEVID, addr);
-    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to, addr);
+    print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to, addr);
     val = idx_cur;
     while (idx_cur != idx_to) {
         if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
@@ -339,7 +346,7 @@ void aml_pmu_set_voltage(int dcdc, int voltage)
     val = hard_i2c_read168(DEVID, addr);
     idx_cur = ((val & 0xfc) >> 2);
     idx_to = find_idx_by_voltage(voltage, table);
-    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to, addr);
+    print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to, addr);
     while (idx_cur != idx_to) {
         if (idx_cur < idx_to) {                                 // adjust to target voltage step by step
             idx_cur++;    
@@ -397,7 +404,7 @@ int rn5t618_set_dcdc_voltage(int dcdc, int voltage)
     addr = 0x35 + dcdc;
     idx_to = find_idx(6000, voltage * 10, 125, 256);            // step is 12.5mV
     idx_cur = hard_i2c_read8(DEVID, addr);
-    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to, addr);
+    print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to, addr);
     hard_i2c_write8(DEVID, addr, idx_to);
     __udelay(5 * 1000);
 }
@@ -542,7 +549,7 @@ int aml1216_set_vddEE_voltage(int voltage)
 
     current = idx_to*5; 
 
-    print_voltage_info("VDDEE", -1, voltage, idx_cur, idx_to, addr);
+    print_voltage_info("EE", -1, voltage, idx_cur, idx_to, addr);
     
     val &= ~0xfc;
     val |= (idx_to << 2);
@@ -635,7 +642,7 @@ int aml1216_set_dcdc_voltage(int dcdc, int voltage)
     }
     idx_cur  = hard_i2c_read168(DEVID, addr);
     idx_to   = find_idx(start, voltage, step, range);
-    print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 2, addr);
+    print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to << 2, addr);
     val = idx_cur;
     idx_cur >>= 2;
     while (idx_cur != idx_to) {
@@ -1067,9 +1074,9 @@ int aml1218_set_dcdc_voltage(int dcdc, int voltage)
     idx_cur  = hard_i2c_read168(DEVID, addr);
     idx_to   = find_idx(start, voltage, step, range);
     if (dcdc == 1) {
-        print_voltage_info("VDDEE", dcdc, voltage, idx_cur, idx_to << 1, addr);
+        print_voltage_info("EE", dcdc, voltage, idx_cur, idx_to << 1, addr);
     } else {
-        print_voltage_info("DCDC", dcdc, voltage, idx_cur, idx_to << 1, addr);
+        print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to << 1, addr);
     }
     val = idx_cur;
     idx_cur = (idx_cur & 0x7e) >> 1;
@@ -1442,6 +1449,7 @@ void power_init(int init_mode)
     hard_i2c_init();
     
     __udelay(1000);
+    serial_puts("PMU:"PMU_NAME"\n");
 #ifdef CONFIG_AW_AXP20
     axp20_power_init(init_mode);
 #elif defined CONFIG_PMU_ACT8942
