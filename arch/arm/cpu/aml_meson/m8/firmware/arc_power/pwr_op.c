@@ -23,9 +23,17 @@
 /*
  * i2c clock speed define for 32K and 24M mode
  */
-#define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
-#define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
+#define I2C_CLK_SOURCE_IN_RESUME 24000000	// 24MHz
+#define I2C_CLK_IN_RESUME	100000	// 100K
+#define I2C_CLK_DIV_IN_RESUME (I2C_CLK_SOURCE_IN_RESUME/I2C_CLK_IN_RESUME/4)
 
+#define I2C_CLK_SOURCE_IN_SUSPEND 32768	// 32.768KHz
+#define I2C_CLK_IN_SUSPEND	1000 // 1KHz
+//#define I2C_CLK_DIV_IN_SUSPEND (I2C_CLK_SOURCE_IN_SUSPEND/I2C_CLK_IN_SUSPEND/4)
+/* High pulse is about 740us and low pulse is 540us if use above setting.
+ * Use following setting can set high pulse to 620us and low pulse to 420us.
+ */
+#define I2C_CLK_DIV_IN_SUSPEND 6
 /*
  * use globle virable to fast i2c speed
  */
@@ -194,9 +202,11 @@ void init_I2C()
 
 
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
-	reg &= 0xFFC00FFF;
-	reg |= (I2C_RESUME_SPEED <<12);             // at 24MHz, i2c speed to 100KHz
+	reg &= 0xCFC00FFF;
+	reg |= (I2C_CLK_DIV_IN_RESUME <<12);             // at 24MHz, i2c speed to 100KHz
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+	writel(0,P_AO_I2C_M_0_TOKEN_LIST0);
+	writel(0,P_AO_I2C_M_0_TOKEN_LIST1);
 //	delay_ms(20);
 //	delay_ms(1);
 	udelay__(1000);
@@ -555,13 +565,14 @@ void rn5t618_power_off_at_32K_1()
     unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
 
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
-	reg &= 0xFFC00FFF;
+	reg &= 0xCFC00FFF;
 	if  (readl(P_AO_RTI_STATUS_REG2) == 0x87654321) {
-    	reg |= (10 << 12);              // suspended from uboot 
+    	reg |= (I2C_CLK_DIV_IN_SUSPEND << 12);              // suspended from uboot 
     } else {
-		reg |= (10 << 12);               // suspended from kernel
+		reg |= (I2C_CLK_DIV_IN_SUSPEND << 12);               // suspended from kernel
     }
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+	writel(0,P_AO_I2C_M_0_SLAVE_ADDR);
 	udelay__(10);
 
     reg_ldo &= ~(LDO5_BIT);
@@ -582,9 +593,10 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
     i2c_pmu_write_b(0x0044, reg_ldo);                   // open LDO5, AVDD1.8
 
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
-	reg &= 0xFFC00FFF;
-	reg |= (I2C_RESUME_SPEED << 12);
+	reg &= 0xCFC00FFF;
+	reg |= (I2C_CLK_DIV_IN_RESUME << 12);
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+	writel(0,P_AO_I2C_M_0_SLAVE_ADDR);
 	udelay__(10);
 	
 }

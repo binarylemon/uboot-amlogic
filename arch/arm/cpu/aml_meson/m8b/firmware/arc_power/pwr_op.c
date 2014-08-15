@@ -21,10 +21,24 @@
 #endif
 
 /*
- * i2c clock speed define for 32K and 24M mode
+ * i2c clock speed define for 32K and 24M mode only for M8B
  */
-#define I2C_SUSPEND_SPEED    6                  // speed = 8KHz / I2C_SUSPEND_SPEED
-#define I2C_RESUME_SPEED    60                  // speed = 6MHz / I2C_RESUME_SPEED
+#define I2C_CLK_SOURCE_IN_RESUME 24000000	// 24MHz
+#define I2C_CLK_IN_RESUME	100000	// 100K
+#define I2C_CLK_DIV_IN_RESUME (I2C_CLK_SOURCE_IN_RESUME/I2C_CLK_IN_RESUME)
+#define I2C_CLK_HIGH_DIV_IN_RESUME (I2C_CLK_DIV_IN_RESUME/2)
+#define I2C_CLK_LOW_DIV_IN_RESUME (I2C_CLK_DIV_IN_RESUME/4)
+
+#define I2C_CLK_SOURCE_IN_SUSPEND 32768	// 32.768KHz
+#define I2C_CLK_IN_SUSPEND	1000 // 1KHz
+#define I2C_CLK_DIV_IN_SUSPEND (I2C_CLK_SOURCE_IN_SUSPEND/I2C_CLK_IN_SUSPEND)
+//#define I2C_CLK_HIGH_DIV_IN_SUSPEND (I2C_CLK_DIV_IN_SUSPEND/2)
+//#define I2C_CLK_LOW_DIV_IN_SUSPEND (I2C_CLK_DIV_IN_SUSPEND/4)
+/* High pulse is about 740us and low pulse is 540us if use above setting.
+ * Use following setting can set high pulse to 540us.
+ */
+#define I2C_CLK_HIGH_DIV_IN_SUSPEND 10
+#define I2C_CLK_LOW_DIV_IN_SUSPEND 8
 
 /*
  * use globle virable to fast i2c speed
@@ -149,7 +163,7 @@ unsigned short hard_i2c_read1616(unsigned char SlaveAddr, unsigned short RegAddr
                              (I2C_DATA << 8)              |  // Read RegAddr
                              (I2C_SLAVE_ADDR_WRITE << 4)  |
                              (I2C_START << 0);
-    (*I2C_TOKEN_LIST_REG1) = (I2C_END);
+    (*I2C_TOKEN_LIST_REG1) = I2C_STOP;
 
     // Fill the write data registers
     (*I2C_TOKEN_WDATA_REG0) = (RegAddr << 0);
@@ -169,7 +183,7 @@ unsigned char hard_i2c_read168(unsigned char SlaveAddr, unsigned short RegAddr)
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
-    (*I2C_TOKEN_LIST_REG0) = (I2C_END << 28)              |
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP << 28)             |
                              (I2C_DATA_LAST << 24)        |  // Read Data
                              (I2C_SLAVE_ADDR_READ << 20)  |
                              (I2C_START << 16)            |
@@ -177,7 +191,7 @@ unsigned char hard_i2c_read168(unsigned char SlaveAddr, unsigned short RegAddr)
                              (I2C_DATA << 8)              |  // Read RegAddr
                              (I2C_SLAVE_ADDR_WRITE << 4)  |
                              (I2C_START << 0);
-    (*I2C_TOKEN_LIST_REG1) = (0);
+    (*I2C_TOKEN_LIST_REG1) = I2C_END;
 
     // Fill the write data registers
     (*I2C_TOKEN_WDATA_REG0) = (RegAddr << 0); 
@@ -196,14 +210,14 @@ void hard_i2c_write1616(unsigned char SlaveAddr, unsigned short RegAddr, unsigne
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
-    (*I2C_TOKEN_LIST_REG0) = (I2C_END  << 24)             |
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP  << 24)            |
                              (I2C_DATA << 20)             |    // Write Data
                              (I2C_DATA << 16)             |    // Write Data
                              (I2C_DATA << 12)             |
                              (I2C_DATA << 8)              |    // Write RegAddr
                              (I2C_SLAVE_ADDR_WRITE << 4)  |
                              (I2C_START << 0);
-    (*I2C_TOKEN_LIST_REG1) = (0);
+    (*I2C_TOKEN_LIST_REG1) = I2C_END;
 
     // Fill the write data registers
     (*I2C_TOKEN_WDATA_REG0) = (Data << 16) | (RegAddr << 0); 
@@ -219,13 +233,13 @@ void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, unsigned
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
-    (*I2C_TOKEN_LIST_REG0) = (I2C_END  << 20)             |
+    (*I2C_TOKEN_LIST_REG0) = (I2C_STOP  << 20)            |
                              (I2C_DATA << 16)             |    // Write Data
                              (I2C_DATA << 12)             |
                              (I2C_DATA << 8)              |    // Write RegAddr
                              (I2C_SLAVE_ADDR_WRITE << 4)  |
                              (I2C_START << 0);
-    (*I2C_TOKEN_LIST_REG1) = (0);
+    (*I2C_TOKEN_LIST_REG1) = I2C_END;
 
     // Fill the write data registers
     (*I2C_TOKEN_WDATA_REG0) = (Data << 16) | (RegAddr << 0); 
@@ -283,9 +297,12 @@ void init_I2C()
 
 
 	reg = readl(P_AO_I2C_M_0_CONTROL_REG);
-	reg &= 0xFFC00FFF;
-	reg |= (I2C_RESUME_SPEED <<12);             // at 24MHz, i2c speed to 100KHz
+	reg &= 0xCFC00FFF;
+	reg |= (I2C_CLK_HIGH_DIV_IN_RESUME <<12);             // at 24MHz, i2c speed to 100KHz
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+	writel((1<<28)|(I2C_CLK_LOW_DIV_IN_RESUME<<16),P_AO_I2C_M_0_SLAVE_ADDR);
+	writel(0,P_AO_I2C_M_0_TOKEN_LIST0);
+	writel(0,P_AO_I2C_M_0_TOKEN_LIST1);
 //	delay_ms(20);
 //	delay_ms(1);
 	udelay__(1000);
@@ -642,13 +659,14 @@ void aml1218_power_off_at_32K_1()
     unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
 
     reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
-    reg &= 0xFFC00FFF;
+    reg &= 0xCFC00FFF;
     if  (readl(P_AO_RTI_STATUS_REG2) == 0x87654321) {
-        reg |= (10 << 12);              // suspended from uboot 
+        reg |= (I2C_CLK_HIGH_DIV_IN_SUSPEND << 12);              // suspended from uboot 
     } else {
-        reg |= (10 << 12);               // suspended from kernel
+        reg |= (I2C_CLK_HIGH_DIV_IN_SUSPEND << 12);               // suspended from kernel
     }
     writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+    writel((1<<28)|(I2C_CLK_LOW_DIV_IN_SUSPEND<<16),P_AO_I2C_M_0_SLAVE_ADDR);
     udelay__(10);
 
 //  power_off_vcc18();                                  // close LDO4, vcc1.8v
@@ -663,9 +681,10 @@ void aml1218_power_on_at_32K_1()
 //  power_on_vcc18();                                   // open LDO4, vcc1.8v
 
     reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
-    reg &= 0xFFC00FFF;
-    reg |= (I2C_RESUME_SPEED << 12);
+    reg &= 0xCFC00FFF;
+    reg |= (I2C_CLK_HIGH_DIV_IN_RESUME << 12);
     writel(reg,P_AO_I2C_M_0_CONTROL_REG);
+    writel((1<<28)|(I2C_CLK_LOW_DIV_IN_RESUME<<16),P_AO_I2C_M_0_SLAVE_ADDR);
     udelay__(10);
 }
 

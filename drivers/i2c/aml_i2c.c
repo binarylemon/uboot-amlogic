@@ -67,14 +67,24 @@ static void aml_i2c_set_clk(struct aml_i2c *i2c)
 	i2c_clock_set = sys_clk / i2c->master_i2c_speed;
 
 	AML_I2C_DBG(1, "i2c->master_i2c_speed is 0x%x\n", i2c->master_i2c_speed);
-	
+#if MESON_CPU_TYPE > MESON_CPU_TYPE_MESON8
+	i2c_clock_set >>= 1;
+	ctrl = (struct aml_i2c_reg_ctrl*)&(i2c->master_regs->i2c_ctrl);
+	if (i2c_clock_set > 0xfff) i2c_clock_set = 0xfff;
+	ctrl->clk_delay = i2c_clock_set & 0x3ff;
+	ctrl->clk_delay_ext = i2c_clock_set >> 10;
+	i2c->master_regs->i2c_slave_addr &= ~(0xfff<<16);
+	i2c->master_regs->i2c_slave_addr |= (i2c_clock_set>>1)<<16;
+	i2c->master_regs->i2c_slave_addr |= 1<<28;
+	i2c->master_regs->i2c_slave_addr &= ~(0x3f<<8); //no filter on scl&sda
+#else	
 	i2c_clock_set >>= 2;
 
 	AML_I2C_DBG(1, "i2c_clock_set is 0x%x\n", i2c_clock_set);
 		
 	ctrl = (struct aml_i2c_reg_ctrl*)&(i2c->master_regs->i2c_ctrl);
 	ctrl->clk_delay = i2c_clock_set & AML_I2C_CTRL_CLK_DELAY_MASK;		
-	
+#endif
 } 
 
 static void aml_i2c_set_platform_data(struct aml_i2c *i2c, 
@@ -291,11 +301,13 @@ static int aml_i2c_do_address(struct aml_i2c *i2c, unsigned int addr)
     AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
     
     i2c->cur_slave_addr = addr & AML_I2C_SLAVE_ADDR_MASK_7BIT;
-	
+#if MESON_CPU_TYPE > MESON_CPU_TYPE_MESON8	
     i2c->master_regs->i2c_slave_addr &=(~AML_I2C_SLAVE_ADDR_MASK);
-	
+
     i2c->master_regs->i2c_slave_addr |=(i2c->cur_slave_addr<<1);
-	
+#else
+	i2c->master_regs->i2c_slave_addr = i2c->cur_slave_addr<<1;
+#endif
     return 0;
 }
 
@@ -306,6 +318,7 @@ static void aml_i2c_stop(struct aml_i2c *i2c)
 	i2c->token_tag[0]=TOKEN_STOP;
 	aml_i2c_set_token_list(i2c);
 	aml_i2c_start_token_xfer(i2c);
+	aml_i2c_wait_ack(i2c);
 }
 
 static int aml_i2c_read(struct aml_i2c *i2c, unsigned char *buf, 
