@@ -7,12 +7,11 @@
 #include <asm/arch/io.h> 
 #include <asm/arch/clock.h>
 
-#define VPU_VERION	"v02"
+#define VPU_VERION	"v03"
 
 typedef struct {
-	unsigned int h_res;
-	unsigned int v_res;
-	unsigned int refresh_rate;
+	unsigned int clk_level_dft;
+	unsigned int clk_level_max;
 	unsigned int clk_level;
 }VPU_Conf_t;
 
@@ -42,9 +41,8 @@ static unsigned int vpu_clk_setting[][3] = {
 };
 
 static VPU_Conf_t vpu_config = {
-	.h_res = 2048,
-	.v_res = 1536,
-	.refresh_rate = 60,	//Hz
+	.clk_level_dft = CLK_LEVEL_DFT,
+	.clk_level_max = CLK_LEVEL_MAX,
 	.clk_level = CLK_LEVEL_DFT,
 };
 
@@ -56,8 +54,8 @@ static unsigned int get_vpu_clk_level(unsigned int video_clk)
 	
 	video_bw = video_clk + 2000000;
 
-	for (i=0; i<CLK_LEVEL_MAX; i++) {
-		if (video_bw <= vpu_clk_setting[i][0])			
+	for (i=0; i<vpu_config.clk_level_max; i++) {
+		if (video_bw <= vpu_clk_setting[i][0])
 			break;
 	}
 	clk_level = i;
@@ -106,14 +104,14 @@ static int set_vpu_clk(unsigned int vclk)
 		clk_level = vclk;
 	}
 
-	if (clk_level >= CLK_LEVEL_MAX) {
+	if (clk_level >= vpu_config.clk_level_max) {
 		ret = 1;
-		clk_level = CLK_LEVEL_DFT;
+		clk_level = vpu_config.clk_level_dft;
 		printf("vpu clk out of supported range, set to default\n");
 	}
 	
-	writel(((1 << 8) | (vpu_clk_setting[clk_level][1] << 9) | (vpu_clk_setting[clk_level][2] << 0)), P_HHI_VPU_CLK_CNTL);
 	vpu_config.clk_level = clk_level;
+	writel(((1 << 8) | (vpu_clk_setting[clk_level][1] << 9) | (vpu_clk_setting[clk_level][2] << 0)), P_HHI_VPU_CLK_CNTL);
 	printf("set vpu clk: %uHz, readback: %uHz(0x%x)\n", vpu_clk_setting[clk_level][0], get_vpu_clk(), (readl(P_HHI_VPU_CLK_CNTL)));
 
 	return ret;
@@ -145,6 +143,10 @@ static void vpu_driver_init(void)
     setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
 
     clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<9)); // [9] VPU_HDMI
+
+    //add for power consumption tuning by VLSI team advice
+    writel(0x00000000, P_HHI_VID_CLK_CNTL2); //clear all cts_clk_gate
+    //writel(((readl(P_VPU_VPU_PWM_V0) & ~(0x3 << 29)) | (0x1 << 29)), P_VPU_VPU_PWM_V0); //disable vpu_pwm_src
 }
 
 static void vpu_driver_disable(void)
@@ -160,7 +162,7 @@ static void vpu_driver_disable(void)
     writel(0xffffffff, P_HHI_VPU_MEM_PD_REG1);
 
     // Power down VPU domain
-    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 8)); //PDN
+    setbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1 << 8)); //PDN
     clrbits_le32(P_HHI_VPU_CLK_CNTL, (1 << 8));
 }
 
@@ -180,7 +182,7 @@ static int get_vpu_config(void)
 		
 		propdata = fdt_getprop(dt_addr, nodeoffset, "clk_level", NULL);
 		if(propdata == NULL){
-			vpu_config.clk_level = CLK_LEVEL_DFT;
+			vpu_config.clk_level = vpu_config.clk_level_dft;
 			printf("don't find to match clk_level in dts, use default setting.\n");
 		}
 		else {
@@ -190,7 +192,7 @@ static int get_vpu_config(void)
 #endif
 	}
 	else {
-		vpu_config.clk_level = CLK_LEVEL_DFT;
+		vpu_config.clk_level = vpu_config.clk_level_dft;
 		printf("vpu clk_level = %u\n", vpu_config.clk_level);
 	}
 	return ret;
@@ -218,6 +220,8 @@ int vpu_probe(void)
 #endif
 #endif
 	
+	vpu_config.clk_level_dft = CLK_LEVEL_DFT;
+	vpu_config.clk_level_max = CLK_LEVEL_MAX;
 	get_vpu_config();
 	vpu_driver_init();
 
