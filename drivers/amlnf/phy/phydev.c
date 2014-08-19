@@ -1327,7 +1327,17 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 						#ifdef AML_NAND_M8B
 						total_blk = total_blk + (total_blk + ADJUST_PART_SIZE - 1) /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
 						#else
-						total_blk = total_blk + total_blk /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+						if(IS_MESON_M8_CPU) //M8
+						{
+							if(phydev->erasesize >= 0x400000){
+							total_blk = total_blk + (total_blk + ADJUST_PART_SIZE - 1) /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+							}
+							else{
+							total_blk = total_blk + total_blk /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+							}
+						}else{//M8M2
+							total_blk = total_blk + (total_blk + ADJUST_PART_SIZE - 1) /ADJUST_PART_SIZE + ADJUST_BLOCK_NUM;
+						}
 						#endif
 					}
 
