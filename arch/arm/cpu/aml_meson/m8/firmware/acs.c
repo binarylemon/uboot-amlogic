@@ -16,7 +16,7 @@ struct acs_setting __acs_set={
 					.ddr_set_addr	= &__ddr_setting,
 
 					.pll_magic		= "pll_",
-					.pll_set_version= 1,
+					.pll_set_version= 2,
 					.pll_set_length	= sizeof(__plls),
 					.pll_set_addr	= &__plls,
 

@@ -63,11 +63,7 @@ struct ddr_set{
 	unsigned short t_pctl_txpdll; //PCTL TXPDLL 3..63
 	unsigned short t_pctl_tzqcsi; //PCTL TZQCSI 0..4294967295
 	unsigned short t_pctl_scfg;   //PCTL 
-	#if defined (LPDDR2)||defined (LPDDR3)
-	unsigned short t_pctl_tckesr;   //
-	unsigned short t_pctl_tdpd;   //
-	#endif
-	
+
 	unsigned       t_mmc_ddr_ctrl;
 	unsigned       t_ddr_pll_cntl;
 	unsigned       t_ddr_clk;
@@ -76,6 +72,11 @@ struct ddr_set{
 	unsigned       t_mmc_ddr_timming2;
 	unsigned       t_mmc_arefr_ctrl;
 	int            (* init_pctl)(struct ddr_set *);
+
+//#if defined (LPDDR2)||defined (LPDDR3) //for lpddr only
+	unsigned short t_pctl_tckesr;   //
+	unsigned short t_pctl_tdpd;   //
+//#endif
 }__attribute__ ((packed));
 struct pll_clk_settings{
 	unsigned sys_pll_cntl;	//HHI_SYS_PLL_CNTL	       0x10c0

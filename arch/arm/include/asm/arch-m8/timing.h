@@ -83,15 +83,14 @@ struct pll_clk_settings{
 	unsigned mpeg_clk_cntl;
 	unsigned vid_pll_cntl;
 	unsigned vid2_pll_cntl;
-	unsigned gp_pll_cntl;
-	unsigned gp2_pll_cntl;
 	unsigned spi_setting;
 	unsigned nfc_cfg;
 	unsigned sdio_cmd_clk_divide;
 	unsigned sdio_time_short;
 	unsigned uart;
-
 	unsigned clk81;
+	unsigned gp_pll_cntl;
+	unsigned gp2_pll_cntl;
 }__attribute__ ((packed));
 
 //M8 pll controler use bit 29 as reset bit

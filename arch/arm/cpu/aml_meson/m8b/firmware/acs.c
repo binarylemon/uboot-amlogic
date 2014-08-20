@@ -11,7 +11,7 @@ struct acs_setting __acs_set={
 					.acs_set_length	= sizeof(__acs_set),
 
 					.ddr_magic		= "ddr_",
-					.ddr_set_version= 1,
+					.ddr_set_version= 2,
 					.ddr_set_length	= sizeof(__ddr_setting),
 					.ddr_set_addr	= &__ddr_setting,
 
