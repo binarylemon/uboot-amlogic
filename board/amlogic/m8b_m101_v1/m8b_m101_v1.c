@@ -511,7 +511,7 @@ static int _saradc_key_pressed(void)
                 adc_init = 1;
         }
 
-        return  (0 == run_command("saradc get_in_range 0x95 0x150 1", 0));
+        return  (0 == run_command("saradc get_in_range 0x64 0xb4 1", 0));
 }
 
 void magic_checkstatus(int saveEnvFlag)
