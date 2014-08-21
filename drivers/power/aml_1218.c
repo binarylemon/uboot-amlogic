@@ -1187,6 +1187,7 @@ int aml1218_init(void)
 #else
     aml1218_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
 #endif
+    aml1218_set_bits(0x005d, 0x02, 0x02);       // open Ext current source for backlight 
     dump_pmu_register(DUMP_KEY);
 
     return 0;
