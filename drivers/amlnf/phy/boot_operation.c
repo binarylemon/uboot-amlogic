@@ -400,8 +400,11 @@ static int write_uboot(struct amlnand_phydev *phydev)
 			if((writelen >= devops->len)&&(writelen < phydev->erasesize)){
 				devops->datbuf = fill_buf;
 			}
-			if((writelen > (len -flash->pagesize))||(addr%flash->blocksize ==0)){
-				break;
+			
+			if ((writelen >= (len-flash->pagesize)) \
+			    ||((ops_para->option & DEV_SLC_MODE) && ((unsigned)addr%(flash->blocksize>>1) ==0)) \
+			    || (((ops_para->option & DEV_SLC_MODE) == 0) && ((unsigned)addr%flash->blocksize ==0))){
+			        break;
 			}
 		}
 	}
