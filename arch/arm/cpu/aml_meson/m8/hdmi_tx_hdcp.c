@@ -47,18 +47,11 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 {
     unsigned long data;
     check_cts_hdmi_sys_clk_status();
-	if(IS_MESON_M8_CPU){    
-	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-	
-	    data = READ_APB_HDMI_REG(HDMI_DATA_PORT);
-	  }
-	  else{
-	  	WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-		WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-		
-		data = READ_APB_REG(HDMI_DATA_PORT);
-	  }
+
+    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
+    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
+
+    data = aml_read_reg32(P_HDMI_DATA_PORT);
 
     return (data);
 }
@@ -66,18 +59,38 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 {
     check_cts_hdmi_sys_clk_status();
-    if(IS_MESON_M8_CPU){
-    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
-    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
 
-    WRITE_APB_HDMI_REG(HDMI_DATA_PORT, data);
-  }
-  else{
-  	 WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-      WRITE_APB_REG(HDMI_ADDR_PORT, addr);
-      
-      WRITE_APB_REG(HDMI_DATA_PORT, data);
-  }
+    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
+    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
+
+    aml_write_reg32(P_HDMI_DATA_PORT, data);
+}
+
+static void vpu_init(void)
+{
+    writel((1 << 8) | (7 << 9), P_HHI_VPU_CLK_CNTL);
+
+    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<8)); // [8] power on
+    writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);
+    writel(0x00000000, P_HHI_VPU_MEM_PD_REG1);
+
+    //Reset VIU + VENC
+    //Reset VENCI + VENCP + VADC + VENCL
+    //Reset HDMI-APB + HDMI-SYS + HDMI-TX + HDMI-CEC
+    clrbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+    clrbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    clrbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);    // reset this will cause VBUS reg to 0
+    writel(((0x1 << 5) | (0x1<<10)), P_RESET0_REGISTER);
+    writel(((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)), P_RESET4_REGISTER);
+    writel(((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)), P_RESET2_REGISTER);
+    setbits_le32(P_RESET0_MASK, ((0x1 << 5) | (0x1<<10)));
+    setbits_le32(P_RESET4_MASK, ((0x1 << 6) | (0x1<<7) | (0x1<<9) | (0x1<<13)));
+    setbits_le32(P_RESET2_MASK, ((0x1 << 2) | (0x1<<3) | (0x1<<11) | (0x1<<15)));
+
+    //Remove VPU_HDMI ISO
+    clrbits_le32(P_AO_RTI_GEN_PWR_SLEEP0, (0x1<<9)); // [9] VPU_HDMI
 }
 
 #define TX_HDCP_KSV_OFFSET          0x540
@@ -88,7 +101,9 @@ void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 extern int hdmi_hdcp_clear_ksv_ram(void);
 int hdmi_hdcp_clear_ksv_ram(void)
 {
-    int i;    
+    int i;
+    if (!(IS_MESON_M8_CPU))
+        vpu_init();
     WRITE_CBUS_REG_BITS(HHI_MEM_PD_REG0, 0x00, 8, 8);
     for(i = 0; i < TX_HDCP_KSV_SIZE; i++) {
         hdmi_hdcp_wr_reg(TX_HDCP_KSV_OFFSET + i, 0x00);
