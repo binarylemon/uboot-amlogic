@@ -1,37 +1,54 @@
 #define  CONFIG_AMLROM_SPL 1
+#include <config.h>
+#include <asm/arch/cpu.h>
+#include <asm/arch/timer.h>
+#include <asm/arch/reboot.h>
+#include <asm/cpu_id.h>
+#ifdef CONFIG_POWER_SPL
+#include <amlogic/aml_pmu_common.h>
+#endif// #ifdef CONFIG_POWER_SPL
+#ifdef CONFIG_MESON_TRUSTZONE
+#include <asm/arch/trustzone.h>
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+
+#ifndef CONFIG_ENABLE_MEM_DEVICE_TEST
+#define CONFIG_ENABLE_MEM_DEVICE_TEST 1
+#endif//#ifndef CONFIG_ENABLE_MEM_DEVICE_TEST
+#ifndef CONFIG_DUMP_DDR_INFO
+#define CONFIG_DUMP_DDR_INFO
+#endif// #ifndef CONFIG_DUMP_DDR_INFO
+
+#ifndef CONFIG_AML_UBOOT_MAGIC
+#define CONFIG_AML_UBOOT_MAGIC 0x12345678
+#endif// #ifndef CONFIG_AML_UBOOT_MAGIC
+
+extern void ipl_memcpy(void*, const void *, unsigned);
+
 #include <timer.c>
 #include <timming.c>
 #include <uartpin.c>
 #include <serial.c>
 #include <pinmux.c>
-#include <sdpinmux.c>
+/*#include <sdpinmux.c>*/
+
 #include <memtest.c>
 #include <pll.c>
+#ifdef CONFIG_POWER_SPL
 #include <hardi2c_lite.c>
 #include <power.c>
+#endif//#ifdef CONFIG_POWER_SPL
 
-#ifndef CONFIG_DUMP_DDR_INFO
-#define CONFIG_DUMP_DDR_INFO
-#endif// #ifndef CONFIG_DUMP_DDR_INFO
 #include <ddr.c>
 
-#include <mtddevices.c>
-#include <sdio.c>
-#include <debug_rom.c>
+/*#include <mtddevices.c>*/
+/*#include <sdio.c>*/
+/*#include <debug_rom.c>*/
 
-#include <loaduboot.c>
+/*#include <loaduboot.c>*/
 #ifdef CONFIG_ACS
 #include <storage.c>
 #include <acs.c>
 #endif
-
-#include <asm/arch/reboot.h>
-
-#ifdef CONFIG_POWER_SPL
-#include <amlogic/aml_pmu_common.h>
-#endif
-
-#include <asm/cpu_id.h>
 
 #if CONFIG_UCL
 #ifndef CONFIG_IMPROVE_UCL_DEC
@@ -47,8 +64,8 @@ extern int uclDecompress(char* destAddr, unsigned* o_len, char* srcAddr);
 
 #define BIN_RUN_INFO_MAGIC_PARA      (0X3412CDABU)
 #define BIN_RUN_INFO_VERSION    (0x0100)
-#define BIN_RUN_TYPE_RUN_ADDRESS    0
-#define BIN_RUN_TYPE_RUN_IN_ADDR    (0)
+#define BIN_RUN_TYPE_RUN_IN_ADDR    (0x0)
+#define BIN_RUN_TYPE_DDR_TEST       (0xefe8)
 #define BIN_RUN_TYPE_UCL_DECOMPRESS (0xc0de)
 
 //As sram area will not cleared before poweroff, the result maigc must not be equal to para magic and clear before run
@@ -78,6 +95,16 @@ typedef struct _UclDecompressInfo{
     unsigned char*      decompressedAddr;
     unsigned            decompressedLen;
 }UclDecompressInfo_t;
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+typedef struct _USB_DDR_TEST{
+        BinRunInfoHead_t        binRunHead;
+        unsigned                cacheEnable;
+        unsigned                reserv[3];//16bytes align and reserve 12bytes
+        struct ddr_set          ddr_testing_para;
+
+}UsbDdrTest_t;
 #pragma pack(pop)
 
 static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decompressedAddr, unsigned* decompressedLen)
@@ -260,6 +287,51 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     return 0;
 }
 
+
+static int _usb_decompress_tpl(UclDecompressInfo_t* uclDecompressInfo)
+{
+        int ret = 0;
+        unsigned char*          tplSrcDataAddr      = uclDecompressInfo->srcDataAddr;
+        unsigned                secureosOffset      = 0;
+        unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
+
+        uclDecompressInfo->decompressedAddr = (unsigned char*)CONFIG_SYS_TEXT_BASE;
+#ifdef CONFIG_MESON_TRUSTZONE
+        tplSrcDataAddr += READ_SIZE;
+        serial_puts("READ_SIZE "), serial_put_hex(READ_SIZE, 32), serial_puts(",");
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+        ret = _usb_ucl_decompress(tplSrcDataAddr, uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
+        if(ret){
+                return __LINE__;
+        }
+#ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
+        else
+        {
+                const unsigned* pDestAddr = (unsigned*)uclDecompressInfo->decompressedAddr;
+                ret = CONFIG_AML_UBOOT_MAGIC == pDestAddr[15];
+                if(ret){
+                        serial_puts("check magic error!\t0x");
+                        serial_put_hex(pDestAddr[15],32), serial_puts("!="),serial_put_dword(CONFIG_AML_UBOOT_MAGIC);
+                        return __LINE__;
+                }
+        }
+#endif// #ifndef CONFIG_DISABLE_INTERNAL_U_BOO_CHECK
+
+#ifdef CONFIG_MESON_TRUSTZONE
+        secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
+        serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
+        uclDecompressInfo->decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
+        ret = _usb_ucl_decompress((unsigned char*)ubootBinAddr + secureosOffset, 
+                        uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
+        if(ret){
+                return __LINE__;
+        }
+
+#endif//#ifdef CONFIG_MESON_TRUSTZONE
+
+        return ret;
+}
+
 unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
     BinRunInfoHead_t*       binRunInfoHead      = (BinRunInfoHead_t*)(RAM_START + 64 * 1024);//D9010000
@@ -327,44 +399,29 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     {
         case BIN_RUN_TYPE_UCL_DECOMPRESS:
             {
-                UclDecompressInfo_t*    uclDecompressInfo   = (UclDecompressInfo_t*)binRunInfoHead;
-                unsigned char*          tplSrcDataAddr      = uclDecompressInfo->srcDataAddr;
-                unsigned                secureosOffset      = 0;
-                unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
-
-                uclDecompressInfo->decompressedAddr = (unsigned char*)CONFIG_SYS_TEXT_BASE;
-#ifdef CONFIG_MESON_TRUSTZONE
-                tplSrcDataAddr += READ_SIZE;
-                serial_puts("READ_SIZE "), serial_put_hex(READ_SIZE, 32), serial_puts(",");
-#endif//#ifdef CONFIG_MESON_TRUSTZONE
-                ret = _usb_ucl_decompress(tplSrcDataAddr, uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
-                if(ret){
-                    break;
-                }
-                else
-                {
-                    ret = check_sum((unsigned*)uclDecompressInfo->decompressedAddr, 0, 0);
-                    if(ret){
-                        serial_puts("check magic error\n");
-                        break;
-                    }
-                }
-
-#ifdef CONFIG_MESON_TRUSTZONE
-                secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
-                serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
-                uclDecompressInfo->decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
-                ret = _usb_ucl_decompress((unsigned char*)ubootBinAddr + secureosOffset, 
-                        uclDecompressInfo->decompressedAddr, &uclDecompressInfo->decompressedLen);
-                if(ret){
-                    break;
-                }
-
-#endif//#ifdef CONFIG_MESON_TRUSTZONE
-
+                    UclDecompressInfo_t*    uclDecompressInfo   = (UclDecompressInfo_t*)binRunInfoHead;
+                    
+                    ret = _usb_decompress_tpl(uclDecompressInfo);
             }
             break;
             
+        case BIN_RUN_TYPE_DDR_TEST:
+            {
+                UsbDdrTest_t*    usbDdrPara   = (UsbDdrTest_t*)binRunInfoHead;
+                struct ddr_set*  pDdrPara     = &usbDdrPara->ddr_testing_para;
+                /*const unsigned   CacheEnable  = usbDdrPara->cacheEnable;*/
+                
+                serial_puts("\n\nddr_set="),serial_put_hex(&__ddr_setting,32),serial_puts("\t");
+                serial_puts("size="),serial_put_hex(sizeof(struct ddr_set),32),serial_puts("\n");
+                //overwrite except init(*init_pctrl)(struct ddr_set*)
+                pDdrPara->init_pctl = __ddr_setting.init_pctl;//init_pctl will vary for each compiling
+                ipl_memcpy(&__ddr_setting, pDdrPara, sizeof(struct ddr_set));
+                /*if(CacheEnable) { aml_cache_enable(); }*///temp disabled as fail to enable in usb boot
+                ret = _ddr_init_main(__TEXT_BASE, __TEXT_SIZE);
+                /*if(CacheEnable) aml_cache_disable();*/ //temp disabled as fail to enable in usb boot
+            }
+            break;
+
         default:
             serial_puts("Error run type "), serial_put_hex(binRunInfoHead->runType, 32), serial_puts("\n");
             ret = __LINE__;

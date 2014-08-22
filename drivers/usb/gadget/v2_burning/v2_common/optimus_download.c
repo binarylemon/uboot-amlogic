@@ -185,6 +185,30 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
 #define _check_partition_table_consistency(a)   0
 #endif//#if defined(CONFIG_ACS)
 
+//asset nand logical partition size equals CFG size in storage.c
+//nand often make mistake this size, emmc should always ok
+static int _assert_logic_partition_cap(const char* thePartName, const uint64_t nandPartCap)
+{
+	extern struct partitions * part_table;
+
+	struct partitions * thePart = NULL;
+	int i=0;
+
+        for(thePart = part_table; NAND_PART_SIZE_FULL != thePart->size; ++thePart)
+        {
+                const uint64_t partSzInBytes = thePart->size;
+                if(strcmp(thePartName, thePart->name))continue;
+                if(partSzInBytes != nandPartCap){
+                        DWN_ERR("partSz in ACS %llx != flash Sz %llx\n", partSzInBytes, nandPartCap);
+                        return __LINE__;
+                }
+
+                break;
+        }
+	
+	return 0;
+}
+
 //return value is the actual size it write
 static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 dataSzReceived, const u8* data)
 {
@@ -656,10 +680,15 @@ static int _parse_img_download_info(struct ImgBurnInfo* pDownInfo, const char* p
                 return __LINE__;
             }
             partCap <<= 9;//trans sector to byte
-            DWN_MSG("partCap 0x%llxB\n", partCap);
+            DWN_MSG("flash LOGIC partCap 0x%llxB\n", partCap);
             if(imgSz > partCap) {
                 DWN_ERR("imgSz 0x%llx out of cap 0x%llx\n", imgSz, partCap);
                 return __LINE__;
+            }
+            ret = _assert_logic_partition_cap(partName, partCap);
+            if(ret){
+                    DWN_ERR("Fail in _assert_logic_partition_cap\n");
+                    return __LINE__;
             }
         }
     }
