@@ -85,6 +85,28 @@ void init_dmc_m8(struct ddr_set * timing_set)
 	writel(0, P_MMC_PARB_CTRL);
 }
 
+#ifdef DDR_SCRAMBE_ENABLE
+void ddr_scramble(void){
+	unsigned int dmc_sec_ctrl_value;
+	unsigned int ddr_key;
+
+	ddr_key = readl(P_RAND64_ADDR0);
+	if(IS_MESON_M8M2_CPU){ //m8m2
+		writel(ddr_key, DMC_SEC_KEY);
+		dmc_sec_ctrl_value = 0x80000000 | (1<<0);
+		writel(dmc_sec_ctrl_value, M8M2_DMC_SEC_CTRL);
+		while( readl(M8M2_DMC_SEC_CTRL) & 0x80000000 ) {}
+	}
+	else{
+		writel(ddr_key &0x0000ffff, DMC_SEC_KEY0);
+		writel((ddr_key >>16)&0x0000ffff, DMC_SEC_KEY1);
+		dmc_sec_ctrl_value = 0x80000000 | (1<<0);
+		writel(dmc_sec_ctrl_value, M8_DMC_SEC_CTRL);
+		while( readl(M8_DMC_SEC_CTRL) & 0x80000000 ) {}
+	}
+}
+#endif
+
 int ddr_init_hw(struct ddr_set * timing_set)
 {
 	int ret = 0;
@@ -108,6 +130,10 @@ int ddr_init_hw(struct ddr_set * timing_set)
 	else
 		init_dmc_m8(timing_set);
 
+#ifdef DDR_SCRAMBE_ENABLE
+	ddr_scramble();
+#endif
+
 	return 0;
 }
 
@@ -128,35 +154,19 @@ void ddr_info_dump(struct ddr_set * timing_set)
 	else
 		serial_puts("1T)");
 #endif
-#ifdef DDR_SCRAMBE_ENABLE
+#if defined(DDR_SCRAMBE_ENABLE) || defined(CONFIG_DUMP_DDR_INFO)
 	unsigned int dmc_sec_ctrl_value;
-	unsigned int ddr_key;
-
-	ddr_key = readl(P_RAND64_ADDR0);
 	if(IS_MESON_M8M2_CPU){ //m8m2
-		dmc_sec_ctrl_value = 0x80000000 | (1<<0);
-		writel(dmc_sec_ctrl_value, M8M2_DMC_SEC_CTRL);
-		while( readl(M8M2_DMC_SEC_CTRL) & 0x80000000 ) {}
-		writel(ddr_key, DMC_SEC_KEY);
-#ifdef CONFIG_DUMP_DDR_INFO
 		dmc_sec_ctrl_value = readl(M8M2_DMC_SEC_CTRL);
 		if(dmc_sec_ctrl_value & (1<<0)){
 			serial_puts("+Scramb EN");
 		}
-#endif
 	}
 	else{
-		dmc_sec_ctrl_value = 0x80000000 | (1<<0);
-		writel(dmc_sec_ctrl_value, M8_DMC_SEC_CTRL);
-		while( readl(M8_DMC_SEC_CTRL) & 0x80000000 ) {}
-		writel(ddr_key &0x0000ffff, DMC_SEC_KEY0);
-		writel((ddr_key >>16)&0x0000ffff, DMC_SEC_KEY1);
-#ifdef CONFIG_DUMP_DDR_INFO
 		dmc_sec_ctrl_value = readl(M8_DMC_SEC_CTRL);
 		if(dmc_sec_ctrl_value & (1<<0)){
 			serial_puts("+Scramb EN");
 		}
-#endif
 	}
 #endif
 	serial_puts("\n");
