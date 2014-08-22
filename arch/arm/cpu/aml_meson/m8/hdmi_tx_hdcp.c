@@ -47,11 +47,18 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 {
     unsigned long data;
     check_cts_hdmi_sys_clk_status();
-
-    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
-    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
-
-    data = aml_read_reg32(P_HDMI_DATA_PORT);
+	if(IS_MESON_M8_CPU){    
+	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
+	    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
+	
+	    data = READ_APB_HDMI_REG(HDMI_DATA_PORT);
+	  }
+	  else{
+	  	WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+		WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+		
+		data = READ_APB_REG(HDMI_DATA_PORT);
+	  }
 
     return (data);
 }
@@ -59,11 +66,18 @@ unsigned long hdmi_hdcp_rd_reg(unsigned long addr)
 void hdmi_hdcp_wr_reg(unsigned long addr, unsigned long data)
 {
     check_cts_hdmi_sys_clk_status();
+    if(IS_MESON_M8_CPU){
+    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
+    WRITE_APB_HDMI_REG(HDMI_ADDR_PORT, addr);
 
-    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
-    aml_write_reg32(P_HDMI_ADDR_PORT, addr);
-
-    aml_write_reg32(P_HDMI_DATA_PORT, data);
+    WRITE_APB_HDMI_REG(HDMI_DATA_PORT, data);
+  }
+  else{
+  	 WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+      WRITE_APB_REG(HDMI_ADDR_PORT, addr);
+      
+      WRITE_APB_REG(HDMI_DATA_PORT, data);
+  }
 }
 
 #define TX_HDCP_KSV_OFFSET          0x540
