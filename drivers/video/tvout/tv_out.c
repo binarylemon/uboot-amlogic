@@ -391,6 +391,69 @@ static void cvbs_performance_enhancement(int mode)
 
 #endif // end of CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT
 
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8B
+static void tv_out_gate_config(int mode)
+{
+	switch(mode)
+	{
+		case VMODE_480CVBS:
+		case VMODE_576CVBS:
+			// close hdmi pixel clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 5, 1);
+			// close encp clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 2, 1);
+			// open enci clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 0, 1);
+			// open vdac clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 4, 1);
+			break;
+		case VMODE_480I:
+		case VMODE_576I:
+			// open hdmi pixel clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 5, 1);
+			// close encp clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 2, 1);
+			// open enci clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 0, 1);
+			// close vdac clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 4, 1);
+			break;
+		case VMODE_480P:
+		case VMODE_576P:
+    	case VMODE_720P:
+    	case VMODE_1080I:
+    	case VMODE_1080P:
+    	case VMODE_720P_50HZ:
+    	case VMODE_1080I_50HZ:
+    	case VMODE_1080P_50HZ:
+    	case VMODE_1080P_24HZ:
+			// open hdmi pixel clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 5, 1);
+			// open encp clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 1, 2, 1);
+			// close enci clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 0, 1);
+			// close vdac clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 4, 1);
+			break;
+		default:
+			// close hdmi pixel clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 5, 1);
+			// close encp clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 2, 1);
+			// close enci clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 0, 1);
+			// close vdac clk gate
+			WRITE_CBUS_REG_BITS(HHI_VID_CLK_CNTL2, 0, 4, 1);
+			break;
+	}
+
+	return ;
+}
+
+#endif
+
+
 int tv_out_open(int mode)
 {
 #if CONFIG_AML_HDMI_TX
@@ -408,6 +471,10 @@ int tv_out_open(int mode)
 
 #if CONFIG_AML_MESON_8
 		cvbs_cntl_output(0);
+#endif
+
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8B
+		tv_out_gate_config(mode);
 #endif
 
         s = tvregsTab[mode];
