@@ -415,6 +415,8 @@
 #endif
 
 
+//wifi wake up
+#define CONFIG_WIFI_WAKEUP 1
 //----------------------------------------------------------------------
 //Please set the M8 CPU clock(unit: MHz)
 //legal value: 600, 792, 996, 1200,1440
