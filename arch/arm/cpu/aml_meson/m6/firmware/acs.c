@@ -22,7 +22,7 @@ struct acs_setting __acs_set={
 
 					.partition_table_magic		= "part",
 					.partition_table_version	= 1,
-					.partition_table_length		= (MAX_PART_NUM*sizeof(struct partitions)),
+					.partition_table_length		= sizeof(partition_table),
 					.partition_table_addr		= & partition_table,
 
 					.store_config_magic 		="stor",

@@ -112,12 +112,12 @@ static void _show_partition_table(const struct partitions* pPartsTab)
 static int _check_partition_table_consistency(const unsigned uboot_bin)
 {
     int rc = 0;
-    const int partitionTableSz = MAX_PART_NUM * sizeof(struct partitions);
+    unsigned partitionTableSz = 0;
     const int acsOffsetInSpl   = START_ADDR - AHB_SRAM_BASE;
     const int addrMapFromAhb2Bin = AHB_SRAM_BASE - uboot_bin;
 
     const struct acs_setting* acsSettingInBin   = NULL;
-    unsigned partTabAddrInBin             = NULL;
+    unsigned partTabAddrInBin             = 0;
     const struct partitions*  partsTabInBin     = NULL;
 
     const struct acs_setting* acsSettingInSram  = NULL;
@@ -125,7 +125,8 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
 
     DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
     acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
-    DWN_MSG("acsSettingInBin=0x%x\n", acsSettingInBin);
+    partitionTableSz = acsSettingInBin->partition_table_length;
+    DWN_MSG("acsSettingInBin=0x%x, partTabSz=0x%x\n", acsSettingInBin, partitionTableSz);
     
     if( acsSettingInBin >= uboot_bin + 64*1024 || acsSettingInBin <= uboot_bin){//acs not in the spl
         DWN_MSG("Acs not in the spl of uboot_bin\n");
@@ -192,7 +193,6 @@ static int _assert_logic_partition_cap(const char* thePartName, const uint64_t n
 	extern struct partitions * part_table;
 
 	struct partitions * thePart = NULL;
-	int i=0;
 
         for(thePart = part_table; NAND_PART_SIZE_FULL != thePart->size; ++thePart)
         {
