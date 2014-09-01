@@ -30,6 +30,7 @@
 #include <amlogic/aml_lcd.h>
 #include <amlogic/vinfo.h>
 #include <amlogic/lcdoutc.h>
+#include <amlogic/aml_lcd_common.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
 #include <asm/arch/lcd_reg.h>
@@ -50,6 +51,7 @@
 #define PANEL_NAME		"panel"
 
 unsigned int lcd_print_flag = 0;
+unsigned int lcd_debug_flag = 0;
 void lcd_print(const char *fmt, ...)
 {
 	va_list args;
@@ -64,6 +66,23 @@ void lcd_print(const char *fmt, ...)
 
 	puts(printbuffer);
 }
+
+static const char* lcd_power_type_table[]={
+	"cpu",
+	"pmu",
+	"signal",
+	"init",
+	"null",
+};
+
+static const char* lcd_power_pmu_gpio_table[]={
+	"GPIO0",
+	"GPIO1",
+	"GPIO2",
+	"GPIO3",
+	"GPIO4",
+	"null",
+}; 
 
 typedef struct {
 	Lcd_Config_t *pConf;
@@ -1975,14 +1994,22 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 }
 #endif
 
-static void set_lcd_print(void)
+static void prepare_lcd_debug(void)
 {
 #ifdef LCD_DEBUG_INFO
 	lcd_print_flag = 1;
 #else
-	lcd_print_flag = simple_strtoul(getenv("lcd_print_flag"), NULL, NULL);
+	if (getenv("lcd_print_flag") == NULL)
+		lcd_print_flag = 0;
+	else
+		lcd_print_flag = simple_strtoul(getenv("lcd_print_flag"), NULL, 10);
 #endif
-	printf("lcd print flag: %u\n", lcd_print_flag);
+	lcd_print("lcd print flag: %u\n", lcd_print_flag);
+	
+	if (getenv("lcd_debug_flag") == NULL)
+		lcd_debug_flag = 0;
+	else
+		lcd_debug_flag = simple_strtoul(getenv("lcd_debug_flag"), NULL, 10);
 }
 
 static inline void _set_panel_info(void)
@@ -1998,13 +2025,11 @@ static inline void _set_panel_info(void)
 	lcd_print("panel_info: vl_bpix = %u\n", panel_info.vl_bpix);
 }
 
-static void print_lcd_info(Lcd_Config_t *pConf)
+static void print_lcd_info(void)
 {
     unsigned lcd_clk;
     int h_adj, v_adj;
-
-    if (lcd_print_flag == 0)
-        return;
+    Lcd_Config_t *pConf = pDev->pConf;
 
     lcd_clk = (pConf->lcd_timing.lcd_clk / 1000);
     h_adj = ((pConf->lcd_timing.h_offset >> 31) & 1);
@@ -2101,7 +2126,7 @@ int lcd_probe(void)
         printf("[lcd]: Not enough memory.\n");
         return -1;
     }
-	set_lcd_print();
+	prepare_lcd_debug();
 	dts_ready = 0;	//prepare dts_ready flag, default no dts
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
@@ -2123,6 +2148,8 @@ int lcd_probe(void)
 #endif
 #endif
 	
+	if (lcd_debug_flag > 0)
+		dts_ready = 0;
 	if(dts_ready == 0) {
 		pDev->pConf = &lcd_config_dft;
 		pDev->bl_config = &bl_config_dft;
@@ -2154,7 +2181,8 @@ int lcd_probe(void)
 	
 	pDev->pConf->lcd_misc_ctrl.print_version();
 	_lcd_init(pDev->pConf);
-	print_lcd_info(pDev->pConf);
+	if (lcd_print_flag > 0)
+		print_lcd_info();
 	return 0;
 }
 
@@ -2203,14 +2231,14 @@ static void _lcd_enable(void)
 	if (pDev == NULL)
 		lcd_probe();
 	else
-		printf("lcd has already ON\n");
+		printf("lcd is already ON\n");
 }
 static void _lcd_disable(void)
 {
 	if (pDev != NULL)
 		lcd_remove();
 	else
-		printf("lcd has already OFF\n");
+		printf("lcd is already OFF\n");
 }
 static void _lcd_power_on(void)
 {
@@ -2227,7 +2255,18 @@ static void _lcd_test(unsigned num)
 	if (pDev != NULL)
 		pDev->pConf->lcd_misc_ctrl.lcd_test(num);
 	else
-		printf("lcd has already OFF, can't display test pattern\n");
+		printf("lcd is OFF, can't display test pattern\n");
+}
+
+static void _lcd_info(void)
+{
+	if (pDev != NULL) {
+		pDev->pConf->lcd_misc_ctrl.print_version();
+		print_lcd_info();
+	}
+	else {
+		printf("lcd is OFF\n");
+	}
 }
 
 struct panel_operations panel_oper =
@@ -2241,6 +2280,7 @@ struct panel_operations panel_oper =
 	.power_on     = _lcd_power_on,
 	.power_off    = _lcd_power_off,
 	.test         = _lcd_test,
+	.info         = _lcd_info,
 };
 //****************************************
 

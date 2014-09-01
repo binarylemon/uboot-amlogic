@@ -29,6 +29,7 @@
 #include <asm/arch/vinfo.h>
 #include <asm/arch/lcd_reg.h>
 #include <amlogic/lcdoutc.h>
+#include <amlogic/aml_lcd_common.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
 #include "lcd_config.h"
@@ -38,6 +39,15 @@
 
 static Lcd_Config_t *lcd_Conf;
 static unsigned char lcd_gamma_init_err = 0;
+
+#define SS_LEVEL_MAX	5
+static const char *lcd_ss_level_table[]={
+	"0",
+	"0.5%",
+	"1%",
+	"1.5%",
+	"2%",
+};
 
 static void print_lcd_driver_version(void)
 {
@@ -940,11 +950,11 @@ static void lcd_test(unsigned num)
 		case 4:
 			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
 			WRITE_LCD_REG(ENCL_TST_MDSEL, 0);
-			WRITE_LCD_REG(ENCL_TST_Y, 0x3ff);
+			WRITE_LCD_REG(ENCL_TST_Y, 0x200);
 			WRITE_LCD_REG(ENCL_TST_CB, 0x200);
 			WRITE_LCD_REG(ENCL_TST_CR, 0x200);
 			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 4: White (0: disable test pattern)\n");
+			printf("show test pattern 4: Gray (0: disable test pattern)\n");
 			break;
 		case 5:
 			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
