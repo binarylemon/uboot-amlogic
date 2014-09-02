@@ -105,7 +105,8 @@ static void set_hpll_clk_out(unsigned clk)
     if(clk < 2970)
         aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, (aml_read_reg32_op(P_HHI_VID_PLL_CNTL5) & (~(0xf << 12))) | (0x6 << 12));
     // Improve HDMI HPLL Long TIE
-    aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0x8a56d023);
+    if( clk != 1296 )// 1296MHz is only for 480cvbs/576cvbs on m8 serials, and is not suitable with 0x8a56d023
+	    aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0x8a56d023);
     // P_HHI_HDMI_PHY_CNTL1     bit[1]: enable clock    bit[0]: soft reset
 #define RESET_HDMI_PHY()                        \
     aml_write_reg32_op(P_HHI_HDMI_PHY_CNTL1, 3);   \
