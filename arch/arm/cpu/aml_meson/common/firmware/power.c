@@ -39,7 +39,7 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
     #warning no PMU device is selected
     #define PMU_NAME    "NONE"
 #endif
-
+extern void memset(void *,int,int);
 static char format_buf[12] = {};
 static char *format_dec_value(uint32_t val)
 {

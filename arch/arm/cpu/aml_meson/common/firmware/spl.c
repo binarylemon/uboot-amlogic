@@ -12,7 +12,7 @@
 #include <power.c>
 #endif
 #include <ddr.c>
-#include <mtddevices.c>
+//#include <mtddevices.c>
 #include <sdio.c>
 //#include <debug_rom.c>
 

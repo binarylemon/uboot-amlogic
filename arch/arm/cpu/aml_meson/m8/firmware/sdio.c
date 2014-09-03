@@ -238,10 +238,10 @@ STATIC_PREFIX int sdio_read(unsigned target,unsigned size,unsigned por_sel)
     if(card_type == CARD_TYPE_EMMC){
 #if defined(CONFIG_AML_SPL_L1_CACHE_ON)
         memset((unsigned char *)&switch_status, 0, 64);
-        invalidate_dcache_range((unsigned char *)&switch_status, (unsigned char *)&switch_status+64);
+        invalidate_dcache_range((unsigned long)((unsigned char*)&switch_status), (unsigned long)((unsigned char *)&switch_status+64));
 #endif  
         
-        WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned char *)&switch_status);        
+        WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned)((unsigned char *)&switch_status));        
         WRITE_CBUS_REG(SDIO_EXTENSION,(64*8 + (16 - 1)) << 16);    
         
         arg = ((0x3 << 24) |(183 << 16) |(1 << 8));  

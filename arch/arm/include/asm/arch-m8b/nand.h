@@ -342,7 +342,7 @@ typedef union nand_core_clk {
 #define NAND_INFO_DATA_1INFO(a)   ((a)&0xff)
 
 
-#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
+//#define NAND_DEFAULT_OPTIONS			(NAND_TIMING_MODE5 | NAND_ECC_BCH8_512_MODE)
 
 
 #define AML_NORMAL						0
