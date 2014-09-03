@@ -1791,15 +1791,20 @@ int aml1218_battery_calibrate(void)
     energy_top = energy_c;
     terminal_print(0, 10, "============= RESULT FOR CHARGE ================\n");
     terminal_print(0, 11, "i,    ocv,     energy,     c,   c_e,   off,    %%\n");
+    /*
     offset = battery_energy_charge[15].coulomb_p - battery_energy_charge[2].coulomb_p;
     i = (battery_energy_charge[3].coulomb_p - battery_energy_charge[2].coulomb_p) * 100;
     if ((i / offset) >= 3) {
-        ocv_0 = 2; 
+        //ocv_0 = 2;
+        ocv_0 = 3; 
         terminal_print(0, 35, "We set zero reference ocv to 3414mV\n");
     } else {
         ocv_0 = 3;    
         terminal_print(0, 35, "We set zero reference ocv to 3555mV\n");
-    }
+    }*/
+    ocv_0 = 3;  
+    terminal_print(0, 35, "We set zero reference ocv to 3555mV\n");
+
     base = battery_energy_charge[ocv_0].coulomb_p;
     range_charge = battery_energy_charge[15].coulomb_p - base;
     for (i = 0; i < 16; i++) {
@@ -1890,7 +1895,7 @@ int aml1218_battery_calibrate(void)
         prev_ocv = ocv;
         prev_ibat = ibat;
         udelay(1000000);
-        if (ocv < 3350) {
+        if (ocv < 3500) {
             ibat_cnt++;
             if (ibat_cnt > 10) {
                 terminal_print(0, 35, "ocv is too low, we stop discharging test now!\n");
