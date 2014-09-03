@@ -241,6 +241,9 @@
         "if itest ${upgrade_step} == 1; then  "\
             "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
         "fi; "\
+        "if itest ${upgrade_step} == 4; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+        "fi; "\
         "run prepare;"\
         "run storeargs;"\
         "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
