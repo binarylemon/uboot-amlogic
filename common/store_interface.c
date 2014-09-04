@@ -270,7 +270,7 @@ E_SWITCH_BACK:
 			else if(POR_EMMC_BOOT()){
 				store_dbg("MMC BOOT,erase data : %s %d  off =%llx ,size=%llx",__func__,__LINE__, off, size);
 				off = size =0;
-				ret = run_command("mmc erase  1",0); //whole
+				ret = run_command("mmc erase non_loader",0); //whole
 				if(ret != 0){
 					store_msg("mmc cmd %s failed ",cmd);
 					return -1;
