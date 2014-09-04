@@ -132,7 +132,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 
 	if((((unsigned int)fw_load_intl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
 	{	
-		memcpy(temp_addr,target,size); //here need fine tune!!
+		memcpy((void*)temp_addr,(void*)target,size); //here need fine tune!!
 #if defined(CONFIG_AML_SECU_BOOT_V2)
 		serial_puts("Aml log : M8-TPL-SEC-DEC-1\n");
 		goto m8_tpl_dec;	
@@ -256,7 +256,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 
 	if((((unsigned int)fw_load_extl >> 24) & 0xFF) != ((AHB_SRAM_BASE>>24)&0xFF))
 	{	
-		memcpy(temp_addr,target,size); //here need fine tune!!
+		memcpy((void*)temp_addr,(void*)target,size); //here need fine tune!!
 #if defined(CONFIG_AML_SECU_BOOT_V2)
 		serial_puts("Aml log : M8-TPL-SEC-DEC-2\n");
 		goto m8_tpl_dec;	
@@ -265,7 +265,9 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 		goto m8_tpl_ucl_dec;
 	}
 
-    int rc=sdio_read(temp_addr,size,por_cfg);   
+    int rc=sdio_read(temp_addr,size,por_cfg); 
+	if(rc)
+		return rc;
 
 #if defined(CONFIG_AML_SECU_BOOT_V2)
 m8_tpl_dec:
