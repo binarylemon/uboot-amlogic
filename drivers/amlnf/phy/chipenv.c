@@ -799,7 +799,7 @@ int amlnand_save_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info
 	unsigned char phys_erase_shift, phys_page_shift;
 	unsigned char  oob_buf[sizeof(struct _nand_arg_oobinfo)];
 	unsigned short tmp_blk;
-	int full_page_flag=0, ret = 0, i,test_cnt = 0,extra_page = 0;
+	int full_page_flag=0, ret = 0, i,test_cnt = 0,extra_page = 0,write_page_cnt=0;
 	
 	nand_boot = 1;
 	/*if(boot_device_flag == 0){
@@ -836,7 +836,7 @@ int amlnand_save_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info
 	}else{
 		pages_read = pages_per_blk;
 	}
-	
+write_again:
 	arg_oob_info =(struct nand_arg_oobinfo *) oob_buf;
 	arg_info->timestamp +=1;
 	arg_oob_info->timestamp = arg_info->timestamp;
@@ -1112,10 +1112,20 @@ get_free_blk:
 #endif			
 				}
 			}
+        if(arg_info->arg_type == FULL_PAGE)
+        {
+            if(write_page_cnt==0)
+            {
+                arg_info->arg_valid = 1;
+                full_page_flag = 0;
+                arg_info->update_flag = 0;
+                write_page_cnt = 1;
+                goto write_again;
+            }
+        }
 		arg_info->arg_valid = 1;   //SAVE SET VALID
 		full_page_flag = 0;
 	}
-	
 	
 exit_error0:
 
