@@ -1185,15 +1185,10 @@ static void generate_clk_parameter(Lcd_Config_t *pConf)
     unsigned edp_tx_phy_out;
     unsigned clk_num = 0;
     unsigned tmp;
-    unsigned fin = FIN_FREQ;
-    unsigned fout = pConf->lcd_timing.lcd_clk;
+    unsigned fin, fout;
 
-    if (fout >= 200) {//clk
-        fout = fout / 1000;  //kHz
-    }
-    else {//frame_rate
-        fout = (fout * pConf->lcd_basic.h_period * pConf->lcd_basic.v_period) / 1000;	//kHz
-    }
+    fin = FIN_FREQ; //kHz
+    fout = pConf->lcd_timing.lcd_clk / 1000; //kHz
 
     switch (pConf->lcd_basic.lcd_type) {
         case LCD_DIGITAL_MIPI:
@@ -1595,6 +1590,10 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 static void lcd_control_config_pre(Lcd_Config_t *pConf)
 {
     unsigned ss_level;
+
+    if (pConf->lcd_timing.lcd_clk < 200) {//prepare refer clock for frame_rate setting
+        pConf->lcd_timing.lcd_clk = (pConf->lcd_timing.lcd_clk * pConf->lcd_basic.h_period * pConf->lcd_basic.v_period);
+    }
 
     ss_level = ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf);
     ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
