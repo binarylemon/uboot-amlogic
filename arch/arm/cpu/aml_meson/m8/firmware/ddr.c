@@ -256,6 +256,7 @@ static inline unsigned ddr_pre_init(struct ddr_set * timing_reg){
 		timing_reg->t_pub0_dtar	= ((0x0 + CONFIG_M8_DDR0_DTAR_DTCOL)|(CONFIG_M8_DDR0_DTAR_DTROW <<12)|(CONFIG_M8_DDR0_DTAR_DTBANK << 28));
 		timing_reg->t_pub1_dtar	= ((0x0 + CONFIG_M8_DDR1_DTAR_DTCOL)|(CONFIG_M8_DDR1_DTAR_DTROW <<12)|(CONFIG_M8_DDR1_DTAR_DTBANK << 28));
 	}
+	return 0;
 }
 
 SPL_STATIC_FUNC unsigned ddr_init_test(void)

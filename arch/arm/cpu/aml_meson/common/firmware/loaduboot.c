@@ -17,7 +17,7 @@
 
 #if defined(CONFIG_AML_SMP)
 #include <smp.dat>
-SPL_STATIC_FUNC int load_smp_code()
+SPL_STATIC_FUNC int load_smp_code(void)
 {
 	//serial_puts("Start load SMP code!\n");
 	unsigned * paddr = (unsigned*)PHYS_MEMORY_START;
@@ -28,6 +28,7 @@ SPL_STATIC_FUNC int load_smp_code()
 		paddr++;
 	}
 	//serial_puts("Load SMP code finished!\n");
+	return 0;
 }
 #endif
 

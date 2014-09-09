@@ -292,8 +292,6 @@ static int _usb_decompress_tpl(UclDecompressInfo_t* uclDecompressInfo)
 {
         int ret = 0;
         unsigned char*          tplSrcDataAddr      = uclDecompressInfo->srcDataAddr;
-        unsigned                secureosOffset      = 0;
-        unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
 
         uclDecompressInfo->decompressedAddr = (unsigned char*)CONFIG_SYS_TEXT_BASE;
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -318,6 +316,8 @@ static int _usb_decompress_tpl(UclDecompressInfo_t* uclDecompressInfo)
 #endif// #ifndef CONFIG_DISABLE_INTERNAL_U_BOO_CHECK
 
 #ifdef CONFIG_MESON_TRUSTZONE
+        unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
+        unsigned                secureosOffset      = 0;
         secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
         serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
         uclDecompressInfo->decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
@@ -411,7 +411,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
                 struct ddr_set*  pDdrPara     = &usbDdrPara->ddr_testing_para;
                 /*const unsigned   CacheEnable  = usbDdrPara->cacheEnable;*/
                 
-                serial_puts("\n\nddr_set="),serial_put_hex(&__ddr_setting,32),serial_puts("\t");
+                serial_puts("\n\nddr_set="),serial_put_hex((int)(&__ddr_setting),32),serial_puts("\t");
                 serial_puts("size="),serial_put_hex(sizeof(struct ddr_set),32),serial_puts("\n");
                 //overwrite except init(*init_pctrl)(struct ddr_set*)
                 pDdrPara->init_pctl = __ddr_setting.init_pctl;//init_pctl will vary for each compiling
