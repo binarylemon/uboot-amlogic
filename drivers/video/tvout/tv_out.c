@@ -347,12 +347,13 @@ void cvbs_performance_config(void)
 	return ;
 }
 
-static const reg_t tvregs_576cvbs_china_sarft[] =
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8
+static const reg_t tvregs_576cvbs_china_sarft_m8[] =
 {
 	{MREG_END_MARKER,            	0      }
 };
 
-static const reg_t tvregs_576cvbs_china_telecom[] =
+static const reg_t tvregs_576cvbs_china_telecom_m8[] =
 {
 	{P_ENCI_SYNC_ADJ,				0x8060	},
     {P_ENCI_VIDEO_SAT,              0xfe	},
@@ -360,7 +361,7 @@ static const reg_t tvregs_576cvbs_china_telecom[] =
 	{MREG_END_MARKER,            	0		}
 };
 
-static const reg_t tvregs_576cvbs_china_mobile[] =
+static const reg_t tvregs_576cvbs_china_mobile_m8[] =
 {
 	{P_ENCI_SYNC_ADJ,				0x8060	},
     {P_ENCI_VIDEO_SAT,              0xfe	},
@@ -368,25 +369,113 @@ static const reg_t tvregs_576cvbs_china_mobile[] =
 	{MREG_END_MARKER,            	0       }
 };
 
-static const reg_t *tvregs_576cvbs_performance[] =
+static const reg_t *tvregs_576cvbs_performance_m8[] =
 {
-	tvregs_576cvbs_china_sarft,
-	tvregs_576cvbs_china_telecom,
-	tvregs_576cvbs_china_mobile
+	tvregs_576cvbs_china_sarft_m8,
+	tvregs_576cvbs_china_telecom_m8,
+	tvregs_576cvbs_china_mobile_m8
 };
+
+static const reg_t tvregs_576cvbs_china_sarft_m8m2[] =
+{
+	{P_ENCI_YC_DELAY,				0x343  },
+	{MREG_END_MARKER,            	0      }
+};
+
+static const reg_t tvregs_576cvbs_china_telecom_m8m2[] =
+{
+	{P_ENCI_YC_DELAY,				0x343   },
+	{P_ENCI_SYNC_ADJ,				0x8080	},
+    {P_ENCI_VIDEO_SAT,              0xfd	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0		}
+};
+
+static const reg_t tvregs_576cvbs_china_mobile_m8m2[] =
+{
+	{P_ENCI_YC_DELAY,				0x343   },
+	{P_ENCI_SYNC_ADJ,				0x8080	},
+    {P_ENCI_VIDEO_SAT,              0xfd	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0       }
+};
+
+static const reg_t *tvregs_576cvbs_performance_m8m2[] =
+{
+	tvregs_576cvbs_china_sarft_m8m2,
+	tvregs_576cvbs_china_telecom_m8m2,
+	tvregs_576cvbs_china_mobile_m8m2
+};
+
+#elif MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8B
+
+static const reg_t tvregs_576cvbs_china_sarft_m8b[] =
+{
+	{P_ENCI_YC_DELAY,				0x343  },
+	{MREG_END_MARKER,            	0      }
+};
+
+static const reg_t tvregs_576cvbs_china_telecom_m8b[] =
+{
+	{P_ENCI_YC_DELAY,				0x343   },
+	{P_ENCI_SYNC_ADJ,				0x8080	},
+    {P_ENCI_VIDEO_SAT,              0xfd	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0		}
+};
+
+static const reg_t tvregs_576cvbs_china_mobile_m8b[] =
+{
+	{P_ENCI_YC_DELAY,				0x343   },
+	{P_ENCI_SYNC_ADJ,				0x8080	},
+    {P_ENCI_VIDEO_SAT,              0xfd	},
+    {P_VENC_VDAC_DAC0_FILT_CTRL1,   0xf850	},
+	{MREG_END_MARKER,            	0       }
+};
+
+static const reg_t *tvregs_576cvbs_performance_m8b[] =
+{
+	tvregs_576cvbs_china_sarft_m8b,
+	tvregs_576cvbs_china_telecom_m8b,
+	tvregs_576cvbs_china_mobile_m8b
+};
+
+#endif
 
 static void cvbs_performance_enhancement(int mode)
 {
 	const reg_t *s;
 	unsigned int index = CONFIG_CVBS_PERFORMANCE_ACTIVED;
-	unsigned int max = sizeof(tvregs_576cvbs_performance)/sizeof(reg_t*);
+	unsigned int max = 0;
+	unsigned int type = 0;
 
 	if( VMODE_576CVBS != mode )
 		return ;
 
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8
+	if( IS_MESON_M8M2_CPU )
+	{
+		max = sizeof(tvregs_576cvbs_performance_m8m2)/sizeof(reg_t*);
+		index = (index>=max)?0:index;
+		s = tvregs_576cvbs_performance_m8m2[index];
+		type = 2;
+	}
+	else
+	{
+		max = sizeof(tvregs_576cvbs_performance_m8)/sizeof(reg_t*);
+		index = (index>=max)?0:index;
+		s = tvregs_576cvbs_performance_m8[index];
+		type = 0;
+	}
+#elif MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8B
+	max = sizeof(tvregs_576cvbs_performance_m8b)/sizeof(reg_t*);
 	index = (index>=max)?0:index;
-	printf("cvbs performance use table = %d\n", index);
-	s = tvregs_576cvbs_performance[index];
+	s = tvregs_576cvbs_performance_m8b[index];
+	type = 1;
+#endif
+
+	printf("cvbs performance type = %d, table = %d\n", type, index);
+
 	while (MREG_END_MARKER != s->reg)
 	{
     	setreg(s++);
