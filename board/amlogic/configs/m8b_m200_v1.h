@@ -310,8 +310,11 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
-        "if unifykey get usid; then  "\
+        "if unifykey getserialno usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
+        "if unifykey get mac; then  "\
+            "setenv bootargs ${bootargs} mac=${mac}  androidboot.mac=${mac};"\
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
