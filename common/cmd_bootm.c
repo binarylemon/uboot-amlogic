@@ -1511,7 +1511,7 @@ void mem_size_arg_process(void)
 	(defined(CONFIG_SILENT_CONSOLE_LINUX_QUIET) || defined(CONFIG_DEPRECATED_SILENT_LINUX_CONSOLE))
 static void fixup_silent_linux ()
 {
-	char buf[256], *start, *end;
+	char buf[1024], *start, *end;
 	char *cmdline = getenv ("bootargs");
 
 	/* Only fix cmdline when requested */
