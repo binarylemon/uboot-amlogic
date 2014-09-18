@@ -9,9 +9,10 @@
 #include "tv_out.h"
 
 static int tvmode = -1;
-static int used_audio_pll=-1;
+//static int used_audio_pll=-1;
 unsigned int system_serial_low=0xA;
 
+#if 0
 static unsigned long get_xtal_clock(void)
 {
 	unsigned long clk;
@@ -20,6 +21,8 @@ static unsigned long get_xtal_clock(void)
 	clk=clk*1000*1000;
 	return clk;
 }
+#endif
+
 typedef  enum{
 	INTERALCE_COMPONENT=0,
 	CVBS_SVIDEO,
@@ -113,6 +116,7 @@ void  change_vdac_setting(unsigned int  vdec_setting,int  mode)
 	
 }
 
+#if 0
 static void enable_vsync_interrupt(void)
 {
 	
@@ -167,6 +171,7 @@ static void enable_vsync_interrupt(void)
         WRITE_MPEG_REG(VENC_INTCTRL, 0x2);
     }
 }
+#endif
 
 #if CONFIG_AML_MESON_8
 static unsigned int vdac_cfg_valid = 0, vdac_cfg_value = 0;
@@ -238,7 +243,7 @@ void cvbs_trimming(void)
 {
 	char cvbs_buf[2] = {0,0}, cvbs_value[8];
 	int ret;
-	int fake;
+	//int fake;
 
 	ret = efuse_read_intlItem("cvbs_trimming", cvbs_buf, 2);
 

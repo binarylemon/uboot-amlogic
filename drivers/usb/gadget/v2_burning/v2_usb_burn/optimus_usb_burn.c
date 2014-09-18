@@ -13,6 +13,8 @@
 #include "../v2_sdc_burn/optimus_sdc_burn_i.h"
 #include "../v2_sdc_burn/optimus_led.h"
 
+extern int optimus_burn_with_cfg_file(const char* cfgFile);
+
 // added by scy
 int optimus_burn_package_in_usb(const char* sdc_cfg_file)
 {

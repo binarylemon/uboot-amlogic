@@ -12,7 +12,8 @@
 #include <asm/arch/ao_reg.h>
 #include <arc_pwr.h>
 
-
+extern void wait_uart_empty();
+extern void udelay__(int i);
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
 
@@ -37,7 +38,7 @@
 /*
  * use globle virable to fast i2c speed
  */
-static unsigned char exit_reason = 0;
+volatile static unsigned char exit_reason = 0;
 
 #ifdef CONFIG_RN5T618
 #define I2C_RN5T618_ADDR   (0x32 << 1)
@@ -46,7 +47,7 @@ static unsigned char exit_reason = 0;
 #define i2c_pmu_read_w(reg)             (unsigned short)i2c_pmu_read_12(reg, 2)
 #endif
 
-static unsigned char vbus_status;
+volatile static unsigned char vbus_status;
 
 static int gpio_sel0;
 static int gpio_mask;
@@ -173,8 +174,8 @@ unsigned short i2c_pmu_read_12(unsigned int reg, int size)
 extern void delay_ms(int ms);
 void init_I2C()
 {
-	unsigned v,speed,reg;
-	struct aml_i2c_reg_ctrl* ctrl;
+	unsigned v,reg;
+	//struct aml_i2c_reg_ctrl* ctrl;
 
 		//save gpio intr setting
 	gpio_sel0 = readl(0xc8100084);

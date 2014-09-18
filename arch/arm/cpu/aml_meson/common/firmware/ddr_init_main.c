@@ -337,12 +337,12 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     BinRunInfoHead_t*       binRunInfoHead      = (BinRunInfoHead_t*)(RAM_START + 64 * 1024);//D9010000
     int ret = 0;
     const unsigned paraMagic = binRunInfoHead->magic;
-    const unsigned ChipId    = readl(CBUS_REG_ADDR(0x1f53));
 
     binRunInfoHead->magic = BIN_RUN_INFO_MAGIC_RESULT; binRunInfoHead->retVal = 0xdd;
     //serial_puts("\nboot_ID "), serial_put_hex(C_ROM_BOOT_DEBUG->boot_id, 32), serial_puts("\n");
     //serial_puts("binMagic "), serial_put_hex(paraMagic, 32), serial_puts("\n");
 #if defined(CONFIG_M6)//Asset m6 platform
+    const unsigned ChipId    = readl(CBUS_REG_ADDR(0x1f53));
     if(22 != ChipId){
             binRunInfoHead->retVal = ChipId + (22<<16);//Error value for pc
             return __LINE__;

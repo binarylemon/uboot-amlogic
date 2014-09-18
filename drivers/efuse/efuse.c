@@ -177,8 +177,8 @@ static const struct efuse_chip_identify_t efuse_chip_hw_info[]={
 efuse_socchip_type_e efuse_get_socchip_type(void)
 {
 	efuse_socchip_type_e type;
-	unsigned int *pID1 =(unsigned int *)0xd9040004;
-	unsigned int *pID2 =(unsigned int *)0xd904002c;
+	//unsigned int *pID1 =(unsigned int *)0xd9040004;
+	//unsigned int *pID2 =(unsigned int *)0xd904002c;
 	type = EFUSE_SOC_CHIP_UNKNOW;
 	if(cpu_is_before_m6()){
 		type = EFUSE_SOC_CHIP_M3;

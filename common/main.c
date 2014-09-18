@@ -293,7 +293,7 @@ static __inline__ int abortboot(int bootdelay)
 
 #undef BOOT_DELAY_UNIT_US
 
-    unsigned int sect = get_timer(0);// 1---> 20ms
+    //unsigned int sect = get_timer(0);// 1---> 20ms
    // printf("get_timer0 = %d \n",t1);
 
     while ((bootdelay > 0) && (!abort)) {
@@ -1489,7 +1489,7 @@ int run_command (const char *cmd, int flag)
 	char *str = cmdbuf;
 	char *argv[CONFIG_SYS_MAXARGS + 1];	/* NULL terminated	*/
 	int argc, inquotes;
-	int repeatable = 1;
+	//int repeatable = 1;
 	int rc = 0;
 
 #ifdef DEBUG_PARSER
@@ -1591,6 +1591,7 @@ int run_command (const char *cmd, int flag)
 
 		/* OK - call function to do the command */
 		rc = (cmdtp->cmd) (cmdtp, flag, argc, argv);
+#if 0
 /*
 		if ((cmdtp->cmd) (cmdtp, flag, argc, argv) != 0) {
 			rc = -1;
@@ -1598,10 +1599,10 @@ int run_command (const char *cmd, int flag)
 
 		repeatable &= cmdtp->repeatable;
 
-		/* Did the user stop this? 
-		if (had_ctrlc ())
-			return -1;	/* if stopped then not repeatable */
-		
+		// Did the user stop this? 
+		//if (had_ctrlc ())
+			return -1;	// if stopped then not repeatable */
+#endif
 	}
 
 	//return rc ? rc : repeatable;

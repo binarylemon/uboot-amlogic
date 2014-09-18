@@ -59,7 +59,7 @@ static void wait_uart_empty(void)
 #define CONFIG_MESON_SUSPEND
 
 
-static struct meson_pm_config *pdata;
+//static struct meson_pm_config *pdata;
 
 
 #if 0

@@ -9,6 +9,9 @@ Linux gpio.C
 #include <asm/arch/gpio.h>
 #include <amlogic/gpio.h>
 
+extern void *malloc (size_t len);
+extern void free(void*);
+
 int gpio_debug=0;
 
 struct gpio_addr
@@ -575,7 +578,7 @@ struct amlogic_gpio_desc amlogic_pins[]=
 };
 int gpio_amlogic_requst(struct gpio_chip *chip ,unsigned offset)
 {
-	int ret;
+	//int ret;
 	unsigned int i,reg,bit;
 	unsigned int *gpio_reg=&gpio_to_pin[offset][0];
 		for(i=0;i<sizeof(gpio_to_pin[offset])/sizeof(gpio_to_pin[offset][0]);i++){
@@ -588,6 +591,7 @@ int gpio_amlogic_requst(struct gpio_chip *chip ,unsigned offset)
 					printf("clear pinmux reg%d[%d]=%d\n",reg,bit,aml_get_reg32_bits(p_pin_mux_reg_addr[reg],bit,1));
 			}
 		}
+	return 0;
 }
 /* amlogic request gpio interface*/
 
@@ -674,7 +678,7 @@ int gpio_amlogic_name_to_num(const char *name)
 	if(!strcmp(name,"GPIO_TEST_N"))
 		return GPIO_TEST_N;
 	len=strlen(name);
-	p=malloc(len+1);
+	p=(char *)malloc(len+1);
 	start=p;
 	if(!p)
 	{

@@ -36,7 +36,7 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
     #define DEVID 0x6A
     #define PMU_NAME    "aml1218"
 #else
-    #warning no PMU device is selected
+    //#warning no PMU device is selected
     #define PMU_NAME    "NONE"
 #endif
 extern void memset(void *,int,int);

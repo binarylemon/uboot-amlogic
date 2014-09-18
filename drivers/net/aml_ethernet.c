@@ -88,7 +88,7 @@ M8baby
 G9TV
  28
 */
-static unsigned int get_cpuid(){
+static unsigned int get_cpuid(void){
 	return READ_CBUS_REG(0x1f53)&0xff;
 }
 #ifdef INTERNAL_PHY
@@ -486,13 +486,13 @@ static void netdev_chk(void)
 		} else {
 			printf("1000m\n");
 #if defined(NEW_MAC_LOGIC)
-				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII|(1<<13), ETH_MAC_0_Configuration);	// program mac
-			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
+				writel(((readl(ETH_MAC_0_Configuration)) & (~ETH_MAC_0_Configuration_PS_MII)) | (1<<13), ETH_MAC_0_Configuration);	// program mac
+			writel(readl(ETH_MAC_0_Configuration) & (~ETH_MAC_0_Configuration_FES_100M), ETH_MAC_0_Configuration);	// program mac
 
 #else
 			if(get_cpuid() >= 0x1B){
-				writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_PS_MII|(1<<13), ETH_MAC_0_Configuration);	// program mac
-			writel(readl(ETH_MAC_0_Configuration) & ~ETH_MAC_0_Configuration_FES_100M, ETH_MAC_0_Configuration);	// program mac
+				writel(((readl(ETH_MAC_0_Configuration)) & (~ETH_MAC_0_Configuration_PS_MII)) | (1<<13), ETH_MAC_0_Configuration);	// program mac
+			writel(readl(ETH_MAC_0_Configuration) & (~ETH_MAC_0_Configuration_FES_100M), ETH_MAC_0_Configuration);	// program mac
 
 			}
 #endif

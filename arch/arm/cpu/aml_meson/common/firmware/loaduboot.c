@@ -132,6 +132,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #if CONFIG_ENABLE_EXT_DEVICE_RETRY
 	while(rc)
 	{
+		extern void debug_rom(char * file, int line);
      debug_rom(__FILE__,__LINE__);
 
 	    rc=fw_init_extl(por_cfg);//INTL device  BOOT FAIL

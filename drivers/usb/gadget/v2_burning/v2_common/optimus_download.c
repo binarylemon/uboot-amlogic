@@ -92,6 +92,7 @@ struct imgBurnInfo_bootloader{
 COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 
 #if defined(CONFIG_ACS)
+#if 0
 static void _show_partition_table(const struct partitions* pPartsTab)
 {
 	int i=0;
@@ -108,6 +109,7 @@ static void _show_partition_table(const struct partitions* pPartsTab)
 	
 	return;
 }
+#endif
 
 static int _check_partition_table_consistency(const unsigned uboot_bin)
 {
@@ -126,9 +128,9 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
     DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
     acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
     partitionTableSz = acsSettingInBin->partition_table_length;
-    DWN_MSG("acsSettingInBin=0x%x, partTabSz=0x%x\n", acsSettingInBin, partitionTableSz);
+    DWN_MSG("acsSettingInBin=0x%x, partTabSz=0x%x\n", (unsigned int)acsSettingInBin, partitionTableSz);
     
-    if( acsSettingInBin >= uboot_bin + 64*1024 || acsSettingInBin <= uboot_bin){//acs not in the spl
+    if( (unsigned)acsSettingInBin >= uboot_bin + 64*1024 || (unsigned)acsSettingInBin <= uboot_bin){//acs not in the spl
         DWN_MSG("Acs not in the spl of uboot_bin\n");
         return 0;
     }
@@ -472,7 +474,7 @@ static u32 optimus_storage_write(struct ImgBurnInfo* pDownInfo, u64 addrOrOffset
                 if(is_optimus_storage_inited() || 
                                 (OPTIMUS_WORK_MODE_USB_PRODUCE != optimus_work_mode_get()))
                 {
-                        destDtb = get_multi_dt_entry(data);
+                        destDtb = (unsigned char*)get_multi_dt_entry((unsigned int)data);
                 }
                 rc = fdt_check_header(destDtb);
                 if(rc){
@@ -1303,5 +1305,6 @@ int optimus_enable_romboot_skip_boot(void)
 
 	//enable romboot skip_boot function to jump to usb boot
     DWN_MSG("Skip boot flag[%x]\n", readl(0xc8100000));
+    return 0;
 }
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED

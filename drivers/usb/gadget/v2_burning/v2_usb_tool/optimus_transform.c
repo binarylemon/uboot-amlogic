@@ -308,17 +308,16 @@ int optimus_mem_md (int argc, char * const argv[], char *info)
 
 int set_low_power_for_usb_burn(int arg, char* buff)
 {
-    int ret = 0;
-
     if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()){
         return 0;//just return ok as usb producing mode as LCD not initialized yet!
     }
 
 #if defined(CONFIG_VIDEO_AMLLCD)
+    int ret1=0;
     //axp to low power off LCD, no-charging
     MYDBG("To close LCD\n");
-    ret = run_command("video dev disable", 0);
-    if(ret){
+    ret1 = run_command("video dev disable", 0);
+    if(ret1){
         if(buff) sprintf(buff, "Fail to close back light");
         printf("Fail to close back light\n");
         /*return __LINE__;*/
@@ -326,10 +325,11 @@ int set_low_power_for_usb_burn(int arg, char* buff)
 #endif// #if defined(CONFIG_VIDEO_AMLLCD)
 
 #if USB_BURN_POWER_CONTROL
+    int ret2=0;
     //limit vbus curretn to 500mA, i.e, if hub is 4A, 8 devices at most, arg3 to not set_env as it's not inited yet!!
     MYDBG("set_usbcur_limit 500 0\n");
-    ret = run_command("set_usbcur_limit 500 0", 0);
-    if(ret){
+    ret2 = run_command("set_usbcur_limit 500 0", 0);
+    if(ret2){
         if(buff) sprintf(buff, "Fail to set_usb_cur_limit");
         printf("Fail to set_usb_cur_limit\n");
         return __LINE__;
@@ -343,11 +343,11 @@ int set_low_power_for_usb_burn(int arg, char* buff)
 int optimus_erase_bootloader(char* info)
 {
     int ret = 0;
-    extern int device_boot_flag;
 
 #if ROM_BOOT_SKIP_BOOT_ENABLED
     optimus_enable_romboot_skip_boot();
 #else
+    extern int device_boot_flag;
     if(SPI_EMMC_FLAG == device_boot_flag || SPI_NAND_FLAG == device_boot_flag){
         run_command("sf probe 2", 0);
     }
