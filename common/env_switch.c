@@ -45,6 +45,10 @@ int env_init(void)
 
 void env_relocate_spec(void)
 {
+	extern void nand_env_relocate_spec(void);
+	extern void spi_env_relocate_spec(void);
+	extern void emmc_env_relocate_spec(void);
+
 	if(POR_NAND_BOOT()){
 		printk("NAND BOOT,nand_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "NAND";
@@ -89,6 +93,9 @@ void env_relocate_spec(void)
 int saveenv(void)
 {
 	int ret = 0;
+	extern int nand_saveenv(void);
+	extern int spi_saveenv(void);
+	extern int emmc_saveenv(void);
 
 	if(POR_NAND_BOOT()){
 		printk("NAND BOOT,nand_saveenv :%s %d \n",__func__,__LINE__);

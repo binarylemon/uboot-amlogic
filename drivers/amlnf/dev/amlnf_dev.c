@@ -649,9 +649,8 @@ error0:
 *****************************************************************************/
 int amlnf_logicdev_mis_init(struct amlnf_logicdev_t *amlnf_logicdev)
 {
-	int ret = 0;
-
 #ifndef AML_NAND_UBOOT	
+	int ret = 0;
 	mutex_init(&amlnf_logicdev->lock);
 	
 	amlnf_logicdev->nb.notifier_call = amlnf_reboot_notifier;
@@ -687,12 +686,10 @@ int amlnf_logicdev_mis_init(struct amlnf_logicdev_t *amlnf_logicdev)
 *****************************************************************************/
 int amlnf_dev_init(unsigned flag)
 {
+#ifndef AML_NAND_UBOOT
 	struct amlnand_phydev *phydev = NULL;
 	struct amlnf_dev* nf_dev = NULL;
-	
 	int i = 0, ret = 0;
-	
-#ifndef AML_NAND_UBOOT
 	list_for_each_entry(phydev, &nphy_dev_list, list){
 		if ((phydev != NULL)  && 
 			(strncmp((char*)phydev->name, NAND_BOOT_NAME, strlen((const char*)NAND_BOOT_NAME)))){				
@@ -717,13 +714,14 @@ int amlnf_dev_init(unsigned flag)
 #endif
 
 	return 0;
-
+#ifndef AML_NAND_UBOOT
 exit_error0:
 	return ret;	
+#endif
 }
 
 #ifdef AML_NAND_UBOOT
-static int get_boot_device()
+static int get_boot_device(void)
 {
 
 	
@@ -750,7 +748,7 @@ static int get_boot_device()
 		return -1;
 	}
 	
-	return ;
+	return 0;
 }
 struct amlnand_phydev *aml_phy_get_dev(char * name)
 {
@@ -846,6 +844,8 @@ int amlnf_exit(unsigned flag)
 static int amlnf_exit(struct platform_device *pdev)
 #endif
 {
+	extern void amlnf_phy_exit(void);
+	extern void amlnf_logic_exit(void);
 	amlnf_phy_exit();
 	amlnf_logic_exit();
 	aml_nand_msg("amlnf_exit : ok");

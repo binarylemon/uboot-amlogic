@@ -104,7 +104,7 @@ void spi_env_relocate_spec(void)
 	if (ret)
 		goto err_read;
 
-		env_import(&env_buf, 1);
+		env_import((const char *)&env_buf, 1);
 		gd->env_valid = 1;
 
 		return;

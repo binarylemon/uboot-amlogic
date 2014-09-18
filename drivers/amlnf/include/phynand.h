@@ -321,6 +321,8 @@ typedef union nand_core_clk {
 #define 	NAND_STATUS_READY						0x40
 #define 	NAND_STATUS_WP							0x80
 
+struct hw_controller;
+
 #ifdef NEW_NAND_SUPPORT
 #define 	RETRY_NAND_MAGIC						"refv"
 #define 	RETRY_NAND_BLK_NUM					2
@@ -522,7 +524,8 @@ struct hw_controller{
 	unsigned char (*readbyte)(struct hw_controller *controller);	
 	void (*writebyte)(struct hw_controller *controller, unsigned char data);
 	void	(*cmd_ctrl)(struct hw_controller *controller, unsigned cmd,  unsigned ctrl);
-	int (*quene_rb)(struct hw_controller *controller, unsigned char chipnr);
+	int (*quene_rb)(struct hw_controller *controller, unsigned char chipnr);
+
 	int	(*dma_read)(struct hw_controller *controller, unsigned len, unsigned char bch_mode);		
 	int	(*dma_write)(struct hw_controller *controller, unsigned char *buf, unsigned len, unsigned char bch_mode);
 	int (*hwecc_correct)(struct hw_controller *controller, unsigned size, unsigned char *oob_buf);

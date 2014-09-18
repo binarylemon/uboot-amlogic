@@ -2,6 +2,9 @@
 #include <asm/arch/storage.h>
 #include <partition_table.h>
 
+extern void *malloc (size_t len);
+extern void free(void*);
+
 #define ENV_NAME   "env"
 struct partitions * part_table = NULL;
 int device_boot_flag = -1;   // indicate spi nand emmc 

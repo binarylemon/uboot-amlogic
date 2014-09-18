@@ -29,6 +29,9 @@
 #include <partition_table.h>
 #include <emmc_partitions.h>
 
+extern int find_dev_num_by_partition_name (char *name);
+extern bool emmckey_is_protected (struct mmc *mmc);
+
 unsigned emmc_cur_partition = 0;
 
 static int get_off_size(struct mmc * mmc, char * name, uint64_t offset, uint64_t  size, u64 * blk, u64 * cnt, u64 * sz_byte)
@@ -59,7 +62,7 @@ static int get_off_size(struct mmc * mmc, char * name, uint64_t offset, uint64_t
 static int get_partition_size(unsigned char* name, uint64_t* addr)
 {
 	struct partitions *part_info = NULL;
-	part_info = find_mmc_partition_by_name(name);
+	part_info = find_mmc_partition_by_name((char *)name);
 	if(part_info == NULL){
 		printf("get partition info failed !!\n");
 		return -1;
@@ -422,7 +425,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             uint64_t* addr =NULL;
             name = argv[2];
             addr = (uint64_t *)simple_strtoul(argv[3], NULL, 16);
-            return get_partition_size(name, addr);
+            return get_partition_size((unsigned char *)name, addr);
         }
         
         return cmd_usage(cmdtp);
@@ -464,7 +467,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             void *addr =NULL;
             u32 flag =0;
             u64 cnt =0,n =0, blk =0, sz_byte =0;
-            char *name;
+            char *name=NULL;
             u64 offset =0,size =0;
 
 			if(argc != 6){
@@ -554,7 +557,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			void *addr =NULL;
 			u32 flag =0;
 			u64 cnt =0,n =0, blk =0,sz_byte =0;
-			char *name;
+			char *name=NULL;
 			u64 offset =0,size =0;
 
 			if(argc != 6){
@@ -638,10 +641,10 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 		else if (strcmp(argv[1], "erase") == 0) {
 
-			int dev;
+			int dev=0;
 			u32 flag=0;
 			u64 cnt = 0, blk = 0, n = 0, sz_byte =0; 
-			char *name;
+			char *name=NULL;
 			u64 offset_addr =0, size=0;
 
 			if(argc != 5){

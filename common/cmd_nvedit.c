@@ -52,6 +52,8 @@
 #include <net.h>
 #endif
 
+extern void set_storage_device_flag(void);
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if !defined(CONFIG_ENV_IS_IN_EEPROM)	&& \
@@ -965,12 +967,13 @@ int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 // added by scy for reserve env
 static char* temp_for_compile[] = {"test1","test2","test3",NULL};
-extern char * env_args_reserve[]
-	__attribute__((weak, alias("temp_for_compile")));
-void set_env_for_reserve() 
+extern char * env_args_reserve[] __attribute__((weak, alias("temp_for_compile")));
+int get_envlist_size(const char* envlist[]);
+int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
+void set_env_for_reserve(void) 
 { 
 	int size_of_env_args = 0; 
-	size_of_env_args = get_envlist_size(env_args_reserve);
+	size_of_env_args = get_envlist_size((const char **)env_args_reserve);
 	do_defenv_without (0,0,size_of_env_args, env_args_reserve);
 }
 
@@ -1080,7 +1083,7 @@ U_BOOT_CMD(
 void replace(char* org, char* find, char* rep)
 {	
 	char *p1, *p2;		
-	while(p1 = strstr(org, find)){		
+	while((p1 = strstr(org, find))){		
 	p2 = p1 + strlen(find);		
 	memmove(p1 + strlen(rep), p2, strlen(p2) + 1);		
 	memcpy(p1, rep, strlen(rep));	

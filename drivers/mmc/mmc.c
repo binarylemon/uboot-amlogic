@@ -47,6 +47,10 @@ static int cur_dev_num = -1;
 #define MMC_RD_WR_MAX_BLK_NUM   (256)
 
 extern void mdelay(unsigned long msec);
+extern bool aml_is_emmc_tsd (struct mmc *mmc);
+extern void aml_sd_cs_high (void);
+extern void aml_sd_cs_dont_care (void);
+extern int mmc_device_init (struct mmc *mmc);
 
 /* If reserve partition is protected, we should not access it.
  * 0--allow accessed 

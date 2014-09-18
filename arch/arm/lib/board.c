@@ -575,6 +575,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
 	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
 #ifdef CONFIG_ACS
+	extern int  get_partition_table(void);
 	get_partition_table();
 #endif
 
@@ -634,6 +635,12 @@ unsigned int before_nand_init =  get_utimer(0);
 	puts ("NAND:  ");
 #ifdef  CONFIG_NEXT_NAND
 #ifndef CONFIG_VLSI_EMULATOR
+#ifdef AML_NAND_UBOOT
+extern int amlnf_init(unsigned flag);
+#else
+struct platform_device;
+extern int amlnf_init(struct platform_device *pdev);
+#endif
 	ret = amlnf_init(0x0);
 	init_ret = ret;
 #endif
@@ -653,6 +660,7 @@ unsigned int before_nand_init =  get_utimer(0);
 	AML_LOG_TE("board");
 
 #ifdef CONFIG_STORE_COMPATIBLE
+	extern int get_storage_device_flag(int init_ret);
 	get_storage_device_flag(init_ret);
 #endif
 
@@ -697,6 +705,7 @@ unsigned int before_nand_init =  get_utimer(0);
 	AML_LOG_TE("board");
 
 #ifdef CONFIG_STORE_COMPATIBLE
+	extern void set_storage_device_flag(void);
 	set_storage_device_flag();
 #endif
 
@@ -719,6 +728,7 @@ unsigned int before_nand_init =  get_utimer(0);
 	AML_LOG_TE("board");
 
 #ifdef CONFIG_VPU_PRESET
+	extern int vpu_probe(void);
 	vpu_probe();
 #endif
 

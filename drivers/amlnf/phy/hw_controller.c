@@ -11,6 +11,7 @@
 **            
 *****************************************************************/
 #include "../include/phynand.h"
+extern void get_sys_clk_rate(int * rate);
 
 static int controller_select_chip(struct hw_controller *controller, unsigned char chipnr)
 {
@@ -341,7 +342,8 @@ static int controller_dma_write(struct hw_controller *controller, unsigned char 
   */
 static int controller_hw_init(struct hw_controller *controller)
 {
-	int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, bus_timing, Tcycle, T_REA = DEFAULT_T_REA, T_RHOH = DEFAULT_T_RHOH;
+	//int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, bus_timing, Tcycle, T_REA = DEFAULT_T_REA, T_RHOH = DEFAULT_T_RHOH;
+	int sys_clk_rate, sys_time, bus_cycle, bus_timing;
 	int ret = 0;
 
 	sys_clk_rate = 212;
@@ -385,7 +387,8 @@ static int controller_adjust_timing(struct hw_controller *controller)
 {
 	struct amlnand_chip *aml_chip = controller->aml_chip;
 	struct nand_flash *flash = &(aml_chip->flash);
-	int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, bus_timing, Tcycle;
+	//int sys_clk_rate, sys_time, start_cycle, end_cycle, bus_cycle, bus_timing, Tcycle;
+	int sys_clk_rate, sys_time, bus_cycle, bus_timing;
 
 	if (!flash->T_REA ||(flash->T_REA < 16))
 		flash->T_REA = 16;

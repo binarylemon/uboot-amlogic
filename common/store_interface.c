@@ -104,9 +104,9 @@ static int get_off_size(int argc, char *argv[],  loff_t *off, loff_t *size)
 	return 0;
 }
 
-int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_store(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
-	int i, init_flag=0,dev, ret = 0;
+	int i, init_flag=0, ret = 0;
 	uint64_t addr;	
 	loff_t off=0, size=0;	
 	char *cmd, *s, *area;
@@ -292,7 +292,7 @@ E_SWITCH_BACK:
 		
 		s = argv[2];	
 		addr = (ulong)simple_strtoul(argv[3], NULL, 16);
-		if (get_off_size(argc - 4, argv + 4, &off, &size) != 0)
+		if (get_off_size(argc - 4, (char **)(argv + 4), &off, &size) != 0)
 			goto usage;
 		
 		store_dbg("addr = %llx off= 0x%llx  size=0x%llx",addr,off,size);
@@ -348,7 +348,7 @@ E_SWITCH_BACK:
 			goto usage;
 		s = argv[2];	
 		addr = (ulong)simple_strtoul(argv[3], NULL, 16);
-		if (get_off_size(argc - 4, argv + 4, &off, &size) != 0)
+		if (get_off_size(argc - 4, (char **)(argv + 4), &off, &size) != 0)
 			goto usage;
 		if((POR_NAND_BOOT())){	
 
@@ -401,7 +401,7 @@ E_SWITCH_BACK:
 		if (argc < 5)
 			goto usage;
 		addr = (ulong)simple_strtoul(argv[2], NULL, 16);
-		if (get_off_size(argc - 3, argv + 3, &off, &size) != 0)
+		if (get_off_size(argc - 3, (char **)(argv + 3), &off, &size) != 0)
 			goto usage;
 		if(POR_NAND_BOOT()){
 			sprintf(str, "amlnf  rom_write  0x%llx  0x%llx  0x%llx",  addr, off, size);
@@ -435,7 +435,7 @@ E_SWITCH_BACK:
 		}
 		else if(POR_EMMC_BOOT()){
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
-			tmp_buf= (unsigned char *)addr;
+			tmp_buf= (unsigned char *)(int)addr;
 #ifndef CONFIG_AML_SECU_BOOT_V2
             #ifdef MMC_UBOOT_CLEAR_MBR
 			//modify the 55 AA info for emmc uboot
@@ -503,7 +503,7 @@ W_SWITCH_BACK:
 		if (argc < 5)
 			goto usage;
 		addr = (ulong)simple_strtoul(argv[2], NULL, 16);
-		if (get_off_size(argc - 3, argv + 3, &off, &size) != 0)
+		if (get_off_size(argc - 3, (char **)(argv + 3), &off, &size) != 0)
 			goto usage;
 		if(POR_NAND_BOOT()){
 			sprintf(str, "amlnf  rom_read  0x%llx  0x%llx  0x%llx",  addr, off, size);
@@ -531,7 +531,7 @@ W_SWITCH_BACK:
 			store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
 			sprintf(str, "mmc  read bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
 			store_dbg("command: %s\n", str);
-			tmp_buf= (unsigned char *)addr;
+			tmp_buf= (unsigned char *)(int)addr;
 			ret = run_command(str, 0);
 			if(ret != 0){
 				store_msg("mmc cmd %s failed \n",cmd);
@@ -608,7 +608,7 @@ R_SWITCH_BACK:
 	}
 	else if (strcmp(cmd, "scrub") == 0){	
 		off = (ulong)simple_strtoul(argv[2], NULL, 16);
-		sprintf(str, "amlnf  scrub %d", off);
+		sprintf(str, "amlnf  scrub %d", (int)off);
 		if((POR_NAND_BOOT()) ){	
 			ret = run_command(str, 0);
 			if(ret != 0){

@@ -38,6 +38,10 @@
 DECLARE_GLOBAL_DATA_PTR;
 extern env_t *env_ptr;
 extern uchar default_environment[];
+#ifdef CONFIG_STORE_COMPATIBLE
+extern struct partitions* find_mmc_partition_by_name (char *name);
+extern int find_dev_num_by_partition_name (char *name);
+#endif
 
 #if defined CONFIG_SPI_NAND_COMPATIBLE || defined CONFIG_SPI_NAND_EMMC_COMPATIBLE || defined CONFIG_STORE_COMPATIBLE 
 int emmc_env_init(void)
@@ -108,7 +112,7 @@ void emmc_env_relocate_spec(void)
 	}
 	memset(env_buf->data, 0, ENV_SIZE);
 #ifdef CONFIG_STORE_COMPATIBLE
-    part_info = find_mmc_partition_by_name(name);
+    part_info = (struct partitions *)find_mmc_partition_by_name(name);
 	if(part_info == NULL){
 		printf("get partition info failed !!\n");
 		return ;
@@ -149,7 +153,7 @@ void emmc_env_relocate_spec(void)
 		saveenv();
 	}
 	
-	env_import(env_buf, 1);	 
+	env_import((const char *)env_buf, 1);	 
 
 #endif
 }
@@ -176,12 +180,12 @@ int emmc_saveenv(void)
 	part_info = find_mmc_partition_by_name(name);
 	if(part_info == NULL){
 		printf("get partition info failed !!\n");
-		return ;
+		return -1;
 	}
 	dev_num = find_dev_num_by_partition_name (name);
 	if(dev_num < 0){
 		printf("get mmc dev  failed !!\n");
-		return ;
+		return -1;
 	}
 #else
 	blk = CONFIG_ENV_IN_EMMC_OFFSET;
