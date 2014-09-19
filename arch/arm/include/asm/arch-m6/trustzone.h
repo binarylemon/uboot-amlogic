@@ -95,6 +95,7 @@ struct storage_hal_api_arg{
 #ifdef CONFIG_MESON_STORAGE_DEBUG
 #define STORAGE_HAL_API_READ            3
 #endif
+#define STORAGE_HAL_API_VERIFY          4
 
 #endif
 

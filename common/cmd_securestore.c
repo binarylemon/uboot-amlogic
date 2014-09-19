@@ -225,8 +225,37 @@ int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		else{
 			printf("key not exist\n");
 		}
-		return 0;
+		return 0;		
 	}
+	if(!strcmp(cmd,"verify")){
+		if(argc < 6){
+			printf("para too few\n");
+			goto usage;
+		}
+		keyname = argv[2];
+		addr = simple_strtoul(argv[3], NULL, 16);//hash buf
+		len = simple_strtoul(argv[4], NULL, 16); //hash len
+		query_status = simple_strtoul(argv[5], NULL, 16);
+		err = securestore_key_verify(keyname,(unsigned int*)query_status,(char*)addr,len);
+		if(!err){
+			int stat = (*(unsigned int*)query_status);
+			switch(stat){
+				case 0:
+					printf("%s key verify succuss\n",keyname);
+					break;
+				case -1:printf("%s key hash is not match \n",keyname);
+					break;
+				case -2:printf("%s key is not exist\n",keyname);
+					break;
+				default:printf("%s key is unkown\n",keyname);
+					break;
+			}
+		}
+		else{
+			printf("%s key verify fail\n",keyname);
+		}
+		return err;
+	}	
 usage:
 	cmd_usage(cmdtp);
 	return 1;
@@ -245,6 +274,7 @@ U_BOOT_CMD(sstorekey, CONFIG_SYS_MAXARGS, 1, do_sstorekey,
 	"sstorekey write key-name data-addr data-len  --write a key \n"
 	"sstorekey read key-name data-addr data-len reallen-addr   -- read a key\n"
 	"sstorekey query key-name querystatus-addr    ---query a key if it is exist   \n"
+	"sstorekey verify key-name hash-addr hash-len verifystatus-addr   -- verify a key \n"
 );
 
 
