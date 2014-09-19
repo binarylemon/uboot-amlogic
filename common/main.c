@@ -485,7 +485,7 @@ extern void init_secure_firmware(void);
 
 	AML_LOG_TE("main");
 
-#if defined(CONFIG_AML_MESON_8)&&defined(CONFIG_EFUSE)&&defined(CONFIG_VIDEO_AMLTVOUT)
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)&&defined(CONFIG_EFUSE)&&defined(CONFIG_VIDEO_AMLTVOUT)
 	extern void cvbs_trimming(void);
 	cvbs_trimming();
 #endif

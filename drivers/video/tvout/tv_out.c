@@ -173,7 +173,7 @@ static void enable_vsync_interrupt(void)
 }
 #endif
 
-#if CONFIG_AML_MESON_8
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 static unsigned int vdac_cfg_valid = 0, vdac_cfg_value = 0;
 static unsigned int cvbs_get_trimming_version(unsigned int flag)
 {
@@ -563,7 +563,7 @@ int tv_out_open(int mode)
 		m6_enable_vdac_hw_switch(mode);
 #endif
 
-#if CONFIG_AML_MESON_8
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 		cvbs_cntl_output(0);
 #endif
 
@@ -579,7 +579,7 @@ int tv_out_open(int mode)
 		cvbs_performance_enhancement(mode);
 #endif
 
-#if CONFIG_AML_MESON_8
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )
 		{
 			WRITE_MPEG_REG(HHI_GCLK_OTHER, READ_MPEG_REG(HHI_GCLK_OTHER) | (0x1<<10) | (0x1<<8)); //enable CVBS GATE, DAC_CLK:bit[10] = 1;VCLK2_ENCI:bit[8] = 1;
