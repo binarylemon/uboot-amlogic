@@ -255,9 +255,10 @@
         "if itest ${upgrade_step} == 4; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
+        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "if test ${reboot_mode} = suspend_off; then suspend;fi;"\
         "run prepare;"\
         "run storeargs;"\
-        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
         "run update_key; " \
 	"run update_ir; " \
         "run switch_bootmode\0" \
@@ -287,7 +288,7 @@
         "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${initargs} cvbsdrv=${cvbs_drv} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${initargs} cvbsdrv=${cvbs_drv} vdaccfg=${vdac_config} reboot_args=uboot_suspend logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then "\
