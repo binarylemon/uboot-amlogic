@@ -102,6 +102,7 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_SHA1SUM_BUFFER_ADDR             OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR
 #define OPTIMUS_SHA1SUM_BUFFER_LEN              (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/8) //16M each time
 
+//As key size < 64K, So buffer [OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW, OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR) not used when download key
 #define OPTIMUS_KEY_DECRYPT_BUF                 OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW//buffer for decrypt the key
 #define OPTIMUS_KEY_DECRYPT_BUF_SZ              OPTIMUS_DOWNLOAD_SLOT_SZ              
 
