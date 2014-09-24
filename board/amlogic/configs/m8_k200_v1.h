@@ -60,6 +60,7 @@
 #define CONFIG_AML_V2_USBTOOL 1
 #endif//#ifdef CONFIG_NEXT_NAND
 
+#define CONFIG_CMD_CPU_TEMP
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
 #define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
@@ -142,6 +143,7 @@
 #endif	//#ifdef CONFIG_AML_I2C
 
 #define CONFIG_CMD_AML
+#define CONFIG_CMD_CPU_TEMP
 /*
  * PMU definitions, all PMU devices must be include involved
  * in CONFIG_PLATFORM_HAS_PMU

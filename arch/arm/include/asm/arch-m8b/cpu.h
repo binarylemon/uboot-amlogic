@@ -345,4 +345,8 @@
 #define CONFIG_AML_MESON_8		1
 #define CONFIG_AML_SMP
 
+#define CONFIG_SARADC 1
+#define CONFIG_CMD_SARADC 1
+
+
 #endif /* _CPU_H */

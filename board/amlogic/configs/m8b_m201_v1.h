@@ -48,6 +48,7 @@
 #define CONFIG_CMD_PWM  1
 
 //Enable storage devices
+#define CONFIG_CMD_CPU_TEMP
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1

@@ -50,6 +50,7 @@
 #define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
 
 //Enable storage devices
+#define CONFIG_CMD_CPU_TEMP
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1

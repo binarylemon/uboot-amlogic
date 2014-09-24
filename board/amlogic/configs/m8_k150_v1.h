@@ -100,6 +100,7 @@
 #endif	//#ifdef CONFIG_AML_I2C
 
 #define CONFIG_CMD_AML
+#define CONFIG_CMD_CPU_TEMP
 /*
  * PMU definitions, all PMU devices must be include involved
  * in CONFIG_PLATFORM_HAS_PMU
