@@ -2,8 +2,9 @@
 #include <io.h>
 #include <uart.h>
 #include <reg_addr.h>
+#ifndef CONFIG_MESON_TRUSTZONE
 #include "boot_code.dat"
-
+#endif
 #include <arc_pwr.h>
 
 #include <pwr_op.c>
@@ -114,10 +115,17 @@ void copy_reboot_code()
 {
 	int i;
 	int code_size;
+#ifdef CONFIG_MESON_TRUSTZONE
+	volatile unsigned char* pcode = *(int *)(0x0004);//appf_arc_code_memory[1]
+	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
+
+	code_size = *(int *)(0x0008);//appf_arc_code_memory[2]
+#else
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
 	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
 
 	code_size = sizeof(arm_reboot);
+#endif
 	//copy new code for ARM restart
 	for(i = 0; i < code_size; i++)
 	{
@@ -370,7 +378,7 @@ int main(void)
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
 	writel(0,P_AO_RTI_STATUS_REG1);
 	f_serial_puts("sleep .......\n");
-	
+	arc_param->serial_disable=0;
 
 	while(1){
 		

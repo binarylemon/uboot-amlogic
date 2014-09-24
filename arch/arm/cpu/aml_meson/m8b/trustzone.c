@@ -144,6 +144,23 @@ uint32_t meson_trustzone_suspend_init(void)
 {
 	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_MON;
 	register uint32_t r1 asm("r1") = TRUSTZONE_MON_SUSPNED_FIRMWARE_INIT;
+	do {
+		asm volatile(
+		    __asmeq("%0", "r0")
+		    __asmeq("%1", "r0")
+		    __asmeq("%2", "r1")
+		    "smc    #0  @switch to secure world\n"
+		    : "=r"(r0)
+		    : "r"(r0), "r"(r1));
+	} while (0);
+
+	return r0;
+}
+
+uint32_t meson_get_share_mem_base(void)
+{
+	register uint32_t r0 asm("r0") = CALL_TRUSTZONE_MON;
+	register uint32_t r1 asm("r1") = TRUSTZONE_MON_MEM_BASE;
 
 	do {
 		asm volatile(
@@ -157,6 +174,7 @@ uint32_t meson_trustzone_suspend_init(void)
 
 	return r0;
 }
+
 #endif //CONFIG_AML_SUSPEND
 
 #ifdef CONFIG_EFUSE
