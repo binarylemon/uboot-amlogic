@@ -11,11 +11,11 @@
 extern void ipl_memcpy(void*, const void *, __kernel_size_t);
 #define memcpy ipl_memcpy
 #define get_timer get_utimer
-static  char cmd_buf[DEBUGROM_CMD_BUF_SIZE];
 
 void restart_arm(void);
 
 #ifdef AML_DEBUGROM
+static  char cmd_buf[DEBUGROM_CMD_BUF_SIZE];
 STATIC_PREFIX char * get_cmd(void)
 {
     

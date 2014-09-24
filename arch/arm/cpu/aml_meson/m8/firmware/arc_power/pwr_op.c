@@ -14,6 +14,9 @@
 
 extern void wait_uart_empty();
 extern void udelay__(int i);
+#ifdef CONFIG_RN5T618
+void rn5t618_set_gpio(int gpio, int output);
+#endif
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
 
@@ -285,7 +288,7 @@ int get_charging_state()
 void rn5t618_shut_down()
 {
     unsigned char reg_coulomb[4];
-    unsigned char reg_save[4];
+    unsigned char reg_save[4]={0};
     unsigned char flag;
     int save_coulomb, curr_coulomb;
 
@@ -563,7 +566,7 @@ void rn5t618_power_on_at_24M()                                          // need 
 void rn5t618_power_off_at_32K_1()
 {
     unsigned int reg;                               // change i2c speed to 1KHz under 32KHz cpu clock
-    unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
+    //unsigned int sleep_flag = readl(P_AO_RTI_STATUS_REG2);
 
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xCFC00FFF;

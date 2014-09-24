@@ -8,6 +8,9 @@
 //#include <amlogic/secure_storage.h>
 #include "key_manage.h"
 
+extern int efuse_chk_written(loff_t pos, size_t count);
+extern ssize_t efuse_read(char *buf, size_t count, loff_t *ppos );
+
 /*
  * key_manage.c
  * this file support key read/write with key unite interface,and don't care about device for saving key
@@ -294,8 +297,8 @@ static int key_efuse_read(char *keyname,unsigned char *keydata,unsigned int data
 
 static int _key_query_secure_boot_set(char* keyname, unsigned int * keystate)
 {
-    unsigned int pos = 0;
-    unsigned int info_lis=0xffffffff;
+    //unsigned int pos = 0;
+    //unsigned int info_lis=0xffffffff;
     int nChkVal = 0, nChkAddr = 0;
 
     if(strcmp("secure_boot_set", keyname)){
@@ -568,7 +571,7 @@ int key_unify_uninit(void)
 
 
 
-int do_keyunify(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_keyunify(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int err;
 	char *cmd,*name;

@@ -90,10 +90,11 @@ static int get_off_size(int argc, char *argv[],  loff_t *off, loff_t *size)
 
 int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 {
-	int i, dev, ret = 0;
-	ulong addr;
-	loff_t off, size;
-	char *cmd, *s;
+	//int i, dev, ret = 0;
+	int ret = 0;
+	//ulong addr;
+	//loff_t off, size;
+	char *cmd;//, *s;
 
 	cmd = argv[1];
 	if (argc < 3)
@@ -159,10 +160,11 @@ U_BOOT_CMD(boot, CONFIG_SYS_MAXARGS, 1, do_boot,
 
 int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 {
-	int i, dev, ret = 0;
-	ulong addr;
+	//int i, dev, ret = 0;
+	int ret = 0;
+	//ulong addr;
 	loff_t off, size;
-	char *cmd, *s;
+	char *cmd;//, *s;
 	char	str[128];
 
 	cmd = argv[1];
@@ -232,10 +234,12 @@ usage:
 
 
 
-U_BOOT_CMD(data, CONFIG_SYS_MAXARGS, 1, do_data,
+U_BOOT_CMD(
+	data, CONFIG_SYS_MAXARGS, 1, do_data,
 	"SPI-NAND-COMPATIBLE || SPI-NAND-EMMC-COMPATIBLE",
 	"data erase - addr off|partition size\n"
-	"erase data in nand, spi, mmc\n"
+	"data erase - addr off|partition abcd\n"
+	"erase data in nand, spi, mmc"
 );
 
 

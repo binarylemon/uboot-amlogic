@@ -4,7 +4,7 @@
 
 #include <asm/arch/gpio.h>
 
-static const char* aml_lcd_gpio_type_table[]={
+volatile static const char* aml_lcd_gpio_type_table[]={
 	"GPIOAO_0",
 	"GPIOAO_1",
 	"GPIOAO_2",

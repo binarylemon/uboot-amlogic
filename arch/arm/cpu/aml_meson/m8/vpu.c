@@ -16,6 +16,7 @@ extern int fdt_path_offset(const void *fdt, const char *path);
 extern const char *fdt_strerror(int errval);
 extern const void *fdt_getprop(const void *fdt, int nodeoffset, const char *name, int *lenp);
 #endif
+extern int fdt_check_header(const void *fdt);
 
 typedef enum {
 	VPU_CHIP_M8 = 0,
@@ -308,12 +309,12 @@ int vpu_probe(void)
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
 #ifdef CONFIG_DTB_LOAD_ADDR
-	dt_addr = CONFIG_DTB_LOAD_ADDR;
+	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
 #else
-	dt_addr = 0x0f000000;
+	dt_addr = (char *)0x0f000000;
 #endif
 	int ret;
-	ret = fdt_check_header(dt_addr);
+	ret = fdt_check_header((const void *)dt_addr);
 	if(ret < 0) {
 		printf("check dts: %s, load default vpu parameters\n", fdt_strerror(ret));
 	}

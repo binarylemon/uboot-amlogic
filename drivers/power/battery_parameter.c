@@ -324,7 +324,7 @@ static char *mem_get_line(char *in, char *buf, int size, int copy_size)
 
 static int parse_battery_para(char *base, int size)
 {
-    int i; 
+    //int i; 
     char *offset = base;
     char *value;
     char *tmp1, *tmp2;
@@ -801,7 +801,7 @@ int parse_battery_parameters(void)
         printf("Not find "BATTERY_PARA_SIZE"\n");
         return  -1;
     }
-    ssscanf(base_pointer, TYPE_HEX, &offset);
+    ssscanf(base_pointer, TYPE_HEX, (int *)&offset);
     ssscanf(env_offset, TYPE_HEX, &size);
     
     if (parse_battery_para(offset, size) < 0) {
@@ -830,7 +830,7 @@ int get_battery_para_flag(void)
 void set_battery_para_flag(int val)
 {
     if (val > PARA_PARSE_SUCCESS || val < PARA_PARSE_FAILED) {
-        printf("%s, wrong input val:%d\n", val);
+        printf("wrong input val:%d\n", val);
         return ;
     }
     para_flag = val;

@@ -189,6 +189,7 @@ int axp20_set_dcdc_voltage(int dcdc, int voltage)
         __udelay(100);                                          // atleast delay 100uS
     }
     __udelay(1 * 1000);
+    return 0;
 }
 
 static int find_ldo4(int voltage) 
@@ -209,9 +210,9 @@ static int find_ldo4(int voltage)
 
 static void axp20_ldo_voltage(int ldo, int voltage)
 {
-    int addr, size, start, step;
-    int idx_to, idx_cur, mask;
-    int shift;
+    int addr=0, size=0, start=0, step=0;
+    int idx_to, idx_cur, mask=0;
+    int shift=0;
 
     switch (ldo) {
     case 2:
@@ -407,13 +408,14 @@ int rn5t618_set_dcdc_voltage(int dcdc, int voltage)
     print_voltage_info("DC", dcdc, voltage, idx_cur, idx_to, addr);
     hard_i2c_write8(DEVID, addr, idx_to);
     __udelay(5 * 1000);
+    return 0;
 }
 
 #define LDO_RTC1        10 
 #define LDO_RTC2        11
 int rn5t618_set_ldo_voltage(int ldo, int voltage)
 {
-    int addr;
+    int addr=0;
     int idx_to, idx_cur;
     int start = 900;
 
@@ -446,6 +448,7 @@ int rn5t618_set_ldo_voltage(int ldo, int voltage)
     print_voltage_info("LDO", ldo, voltage, idx_cur, idx_to, addr);
     hard_i2c_write8(DEVID, addr, idx_to);
     __udelay(5 * 100);
+    return 0;
 }
 
 void rn5t618_power_init(int init_mode)

@@ -81,13 +81,13 @@ void emmc_env_relocate_spec(void)
 
 	blk >>= 9;
     cnt >>= 9;
-	ret =(cnt == mmc->block_dev.block_read(dev_num, blk, cnt, (const void *)&env_buf));
+	ret =(cnt == mmc->block_dev.block_read(dev_num, blk, cnt, (void *)&env_buf));
 	if(!ret){
 		set_default_env("!readenv() failed");
 		return;
 	}
 
-	env_import(&env_buf, 1);
+	env_import((const char *)&env_buf, 1);
 #endif
 }
 #else

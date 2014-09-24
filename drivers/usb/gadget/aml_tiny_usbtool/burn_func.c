@@ -45,6 +45,7 @@ extern int cmd_efuse(int argc, char * const argv[], char *buf);
 #endif
 #endif
 
+extern int usb_get_update_result(void);
 
 #if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
 static int sInitedSecukey = 0;
@@ -475,29 +476,29 @@ int burn_board(const char *dev, void *mem_addr, u64 offset, u64 size)
 {
 	char	str[128];
 	printf("burn_board!!!\n");
-	printf("CMD: dev=%s, mem_addr=0x%x, offset=0xllx, size=0x%llx\n", dev, mem_addr, offset, size);
-	if(!strncmp("nand", *dev, 4))
+	printf("CMD: dev=%s, mem_addr=0x%x, offset=0x%llx, size=0x%llx\n", dev, (unsigned int)mem_addr, offset, size);
+	if(!strncmp("nand", (const char *)(unsigned int)(*dev), 4))
 	{
 		sprintf(str, "nand erase 0x%llx 0x%llx}", offset, size);
 		printf("command:    %s\n", str);
 		run_command(str, 0);
-		sprintf(str, "nand write 0x%x 0x%llx 0x%llx}", mem_addr, offset, size);
+		sprintf(str, "nand write 0x%x 0x%llx 0x%llx}", (unsigned int)mem_addr, offset, size);
 		printf("command:    %s\n", str);
 		run_command(str, 0);
 	}
-	else if(!strncmp("spi", *dev, 3))
+	else if(!strncmp("spi", (const char *)(unsigned int)(*dev), 3))
 	{
 		run_command("sf probe 2", 0);
 		sprintf(str, "sf erase 0x%llx 0x%llx}", offset, size);
 		printf("command:    %s\n", str);
 		run_command(str, 0);
-		sprintf(str, "sf write 0x%x 0x%llx 0x%llx}", mem_addr, offset, size);
+		sprintf(str, "sf write 0x%x 0x%llx 0x%llx}", (unsigned int)mem_addr, offset, size);
 		printf("command:    %s\n", str);
 		run_command(str, 0);
 	}
-	else if(!strncmp("emmc", *dev, 4))
+	else if(!strncmp("emmc", (const char *)(unsigned int)(*dev), 4))
 	{
-		sprintf(str, "mmc write 1 0x%x 0x%llx 0x%llx}", mem_addr, offset, size);
+		sprintf(str, "mmc write 1 0x%x 0x%llx 0x%llx}", (unsigned int)mem_addr, offset, size);
 		printf("command:    %s\n", str);
 		run_command(str, 0);
 	}
@@ -513,20 +514,20 @@ static int usb_bootm(const void *addr)
 {
 	char cmd[128];
 	memset(cmd, 0, sizeof(cmd));
-	sprintf(cmd, "bootm %x", addr);
+	sprintf(cmd, "bootm %x", (unsigned int)addr);
 	return run_command(cmd, 0);
 }
 
 u32 checkcum_32(const unsigned char *buf, u32 len)
 {
 	u32 fake_len, chksum = 0;
-	u32 *ptr = buf;
+	u32 *ptr = (u32 *)buf;
 	int i;
-	printf("buf=0x%08x, len=0x%x\n", buf, len);
+	printf("buf=0x%08x, len=0x%x\n", (unsigned int)buf, len);
 	if(len%4)
 	{
 		fake_len = len - len%4 + 4;
-		memset((buf+len), 0, (fake_len-len));
+		memset((void *)(buf+len), 0, (fake_len-len));
 	}
 	else
 	{
@@ -566,19 +567,19 @@ int usb_run_command (const char *cmd, char* buff)
 	else if(strncmp(cmd,"usb_bootm",(sizeof("usb_bootm")-1)) == 0){
 		addr = *((u32*)(&cmd[60]));
 		strcpy(buff, "okay");
-		usb_bootm(addr);
+		usb_bootm((const void *)addr);
 		strcpy(buff, "fail");
 		return -1;
 	}
 	else if(strncmp(cmd,"crc",(sizeof("crc")-1)) == 0){
-		if ((argc = parse_line (cmd, argv)) == 0) {
+		if ((argc = parse_line ((char *)cmd, argv)) == 0) {
 			return -1;	/* no command at all */
 		}
 		addr = simple_strtoul (argv[1], NULL, 16);
 		length = simple_strtoul (argv[2], NULL, 10);
 		crc_verify = simple_strtoul (argv[3], NULL, 16);
 		//crc_value = crc32 (0, (const uchar *) addr, length);
-		crc_value = checkcum_32(addr, length);
+		crc_value = checkcum_32((const unsigned char *)addr, length);
 		printf("crc_value=0x%x\n", crc_value);
 		if(crc_verify == crc_value)
 		{
@@ -592,7 +593,7 @@ int usb_run_command (const char *cmd, char* buff)
 	else if(strncmp(cmd,"cmd_in_mem",(sizeof("cmd_in_mem")-1)) == 0){
 		char *cmd_in_mem = NULL;
 		/* Extract arguments */
-		if ((argc = parse_line (cmd, argv)) == 0) {
+		if ((argc = parse_line ((char *)cmd, argv)) == 0) {
 			return -1;	/* no command at all */
 		}
 		cmd_in_mem = (char *)simple_strtoul(argv[1], NULL, 0);
@@ -685,7 +686,7 @@ int usb_run_command (const char *cmd, char* buff)
 
             if(!strncmp(cmd, "pctool version:", strlen("pctool version:"))) {
                 sPctoolVersion = simple_strtoul((char *)(cmd+strlen("pctool version:")), 0, 10);
-                sprintf(buff, "success:(sPctoolVersion:%d)", sPctoolVersion);
+                sprintf(buff, "success:(sPctoolVersion:%d)", (int)sPctoolVersion);
                 printf("%s\n", buff);
                 return 0;
             }
@@ -694,17 +695,17 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(cmd, "read hdcp2", 10) || !strncmp(cmd, "write hdcp2:", 12)) {
                 char cmd_hdcp2[50] = {0};
                 strncpy(cmd_hdcp2, cmd, strlen(cmd));
-                sprintf(cmd, "%s %s", "flash", cmd_hdcp2);  // add parameter for hdcp2 command
+                sprintf((char *)cmd, "%s %s", "flash", cmd_hdcp2);  // add parameter for hdcp2 command
                 printf("Actual cmd:%s\n", cmd);
             }
             else if(!strncmp(cmd, "read hdcp", 9) || !strncmp(cmd, "write hdcp:", 11)) {
                 char cmd_hdcp[50] = {0};
                 strncpy(cmd_hdcp, cmd, strlen(cmd));
-                sprintf(cmd, "%s %s", "efuse", cmd_hdcp);  // add parameter for hdcp command
+                sprintf((char *)cmd, "%s %s", "efuse", cmd_hdcp);  // add parameter for hdcp command
                 printf("Actual cmd:%s\n", cmd);
             }
 
-            if ((argc = parse_line (cmd, argv)) == 0) {
+            if ((argc = parse_line ((char *)cmd, argv)) == 0) {
                return -1;	/* no command at all */
             }
 

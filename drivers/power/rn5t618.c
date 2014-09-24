@@ -24,6 +24,8 @@ int rn5t618_battery_calibrate(void);
 static int rn5t618_curr_dir = 0;
 static int rn5t618_battery_test = 0;
 
+extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
+
 int rn5t618_write(int add, uint8_t val)
 {
     int ret;
@@ -154,7 +156,7 @@ int rn5t618_get_charge_status(int print)
     uint16_t val = 0;
     uint8_t status;
 
-    rn5t618_read(0x00BD, &val);
+    rn5t618_read(0x00BD, (uint8_t *)&val);
     if (rn5t618_curr_dir < 0) {
         val |= 0x8000;    
     }
@@ -227,14 +229,14 @@ int rn5t618_get_gpio(int gpio, int *val)
         DBG("%s, wrong input of GPIO:%d\n", __func__, gpio);
         return -1;
     }
-    rn5t618_read(0x0097, &value);                           // read status
+    rn5t618_read(0x0097, (uint8_t *)&value);                           // read status
     *val = (value & (1 << gpio)) ? 1 : 0;
     return 0;
 }
 
 #define RN5T618     0
 #define RN5T567     1
-int ricoh_check_pmu_type()
+int ricoh_check_pmu_type(void)
 {
     uint8_t val[2] = {};
 
@@ -250,7 +252,7 @@ int ricoh_check_pmu_type()
     return -1;
 }
 
-void rn5t618_power_off()
+void rn5t618_power_off(void)
 {
     uint8_t reg_coulomb[4];
     uint8_t reg_save[4];
@@ -358,10 +360,10 @@ int rn5t618_get_ocv(int rdc, int cnt)
 }
 #endif
 
-int rn5t618_get_charging_percent()
+int rn5t618_get_charging_percent(void)
 {
-    int rest_vol;
 #ifdef CONFIG_UBOOT_BATTERY_PARAMETERS
+    int rest_vol;
     int i;
     int ocv = 0;
     int ocv_diff, percent_diff, ocv_diff2;
@@ -491,7 +493,7 @@ int rn5t618_set_charging_current(int current)
 int rn5t618_charger_online(void)
 {
     int val;
-    rn5t618_read(0x00BD, &val);
+    rn5t618_read(0x00BD, (uint8_t *)&val);
     if (val & 0xc0) {
         return 1;    
     } else {
@@ -868,7 +870,7 @@ int rn5t618_calculate_rdc(void)
     int32_t i_lo, i_hi;
     int32_t v_lo, v_hi;
     int32_t rdc_cal = 0;
-    int32_t avg;
+    int32_t avg=0;
     static int32_t rdc_avg = 0;
     static int32_t rdc_cnt = 0;
 
@@ -1146,7 +1148,7 @@ int rn5t618_battery_calibrate(void)
     int     key;
     int     ibat_cnt = 0;
     int     i;
-    int64_t energy_top, energy_visible;
+    int64_t energy_top;//, energy_visible;
     int     base, offset, range_charge, percent, range_discharge;
     char    buf[200] = {};
     int     size;

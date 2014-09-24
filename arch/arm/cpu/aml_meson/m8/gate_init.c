@@ -10,7 +10,7 @@ static int is_sd_format(unsigned char *mode)
     unsigned char *sd_mode[] = {"480I", "480i", "576I", "576i", "480cvbs", "480CVBS", "576cvbs", "576CVBS", NULL};
 
     for(i = 0; sd_mode[i]; i++) {
-        if(strncmp(mode, sd_mode[i], strlen(sd_mode[i])) == 0)
+        if(strncmp((const char *)mode, (const char *)sd_mode[i], strlen((const char *)sd_mode[i])) == 0)
             return 1;
     }
     return 0;
@@ -18,7 +18,7 @@ static int is_sd_format(unsigned char *mode)
 
 void gate_init(void)
 {
-	unsigned char * disp_mode = getenv("outputmode");
+	unsigned char * disp_mode = (unsigned char *)getenv("outputmode");
 	int i_flag = is_sd_format(disp_mode);
 
 	/* close spi */

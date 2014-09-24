@@ -50,6 +50,11 @@
 
 #define PANEL_NAME		"panel"
 
+extern int  clear_mio_mux(unsigned mux_index, unsigned mux_mask);
+extern int  set_mio_mux(unsigned mux_index, unsigned mux_mask);
+extern void lcd_default_config_init(Lcd_Config_t *pConf);
+extern void backlight_default_config_init(Lcd_Bl_Config_t *bl_config);
+
 unsigned int lcd_print_flag = 0;
 unsigned int lcd_debug_flag = 0;
 void lcd_print(const char *fmt, ...)
@@ -67,6 +72,7 @@ void lcd_print(const char *fmt, ...)
 	puts(printbuffer);
 }
 
+#ifdef CONFIG_OF_LIBFDT
 static const char* lcd_power_type_table[]={
 	"cpu",
 	"pmu",
@@ -74,6 +80,7 @@ static const char* lcd_power_type_table[]={
 	"init",
 	"null",
 };
+#endif
 
 static const char* lcd_power_pmu_gpio_table[]={
 	"GPIO0",
@@ -91,7 +98,9 @@ typedef struct {
 } lcd_dev_t;
 
 static lcd_dev_t *pDev = NULL;
+#ifdef CONFIG_OF_LIBFDT
 static char * dt_addr;
+#endif
 static int dts_ready = 0;
 
 vidinfo_t panel_info = {
@@ -115,7 +124,7 @@ vidinfo_t panel_info = {
 
 static unsigned bl_level;
 
-static Lcd_Bl_Config_t bl_config = {
+volatile static Lcd_Bl_Config_t bl_config = {
 	.level_default = BL_LEVEL_DFT,
 	.level_mid = BL_LEVEL_MID_DFT,
 	.level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT,
@@ -797,6 +806,7 @@ static void lcd_setup_gamma_table(Lcd_Config_t *pConf, unsigned int rgb_flag)
 	}
 }
 
+#ifdef CONFIG_OF_LIBFDT
 static int aml_lcd_pmu_gpio_name_map_num(const char *name)
 {
 	int index;
@@ -807,6 +817,7 @@ static int aml_lcd_pmu_gpio_name_map_num(const char *name)
 	}
 	return index;
 }
+#endif
 
 #ifdef CONFIG_OF_LIBFDT
 #define LCD_MODEL_LEN_MAX    30
@@ -2014,12 +2025,12 @@ static void prepare_lcd_debug(void)
 
 static inline void _set_panel_info(void)
 {
-	panel_info.vd_base = simple_strtoul(getenv("fb_addr"), NULL, NULL);
-	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, NULL);
-	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, NULL);
-	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, NULL);
-	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, NULL);
-	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, NULL);
+	panel_info.vd_base = (typeof(panel_info.vd_base))simple_strtoul(getenv("fb_addr"), NULL, 0);
+	panel_info.vl_col = simple_strtoul(getenv("display_width"), NULL, 0);
+	panel_info.vl_row = simple_strtoul(getenv("display_height"), NULL, 0);
+	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 0);
+	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
+	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
 	
 	lcd_print("panel_info: resolution = %ux%u\n", panel_info.vl_col, panel_info.vl_row);
 	lcd_print("panel_info: vl_bpix = %u\n", panel_info.vl_bpix);

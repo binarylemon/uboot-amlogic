@@ -254,7 +254,7 @@ static int controller_dma_read(struct hw_controller *controller, unsigned len, u
 	return NAND_SUCCESS;
 }
 
-static int controller_dma_write(struct hw_controller *controller, unsigned char *buf, int len, unsigned char bch_mode)
+static int controller_dma_write(struct hw_controller *controller, unsigned char *buf, unsigned len, unsigned char bch_mode)
 {
 	int ret = 0, time_out_cnt = 0, oob_fill_cnt = 0;
 	unsigned dma_unit_size = 0, count = 0;

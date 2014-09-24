@@ -527,8 +527,15 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	char *s;
 	bd_t *bd;
 	ulong malloc_start;
-	int init_ret=0, ret = 0;
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_STORE_COMPATIBLE
+	int init_ret=0;
+#endif
+#ifdef  CONFIG_NEXT_NAND
+#ifndef CONFIG_VLSI_EMULATOR
+	int ret = 0;
+#endif
+#endif
+#if (defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)) || defined(CONFIG_PARTITIONS_STORE)
     struct mmc *mmc;
 #endif
 #if !defined(CONFIG_SYS_NO_FLASH)
@@ -584,6 +591,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
     mmc_initialize(bd);
 #endif
 #ifdef CONFIG_AML_I2C
+    extern int aml_i2c_init(void);
     aml_i2c_init();
 #endif
 #if defined(CONFIG_AML_V2_USBTOOL)
@@ -642,7 +650,6 @@ struct platform_device;
 extern int amlnf_init(struct platform_device *pdev);
 #endif
 	ret = amlnf_init(0x0);
-	init_ret = ret;
 #endif
 // flag = 0,indicate normal boot;
 //flag = 1, indicate update;
@@ -660,6 +667,7 @@ extern int amlnf_init(struct platform_device *pdev);
 	AML_LOG_TE("board");
 
 #ifdef CONFIG_STORE_COMPATIBLE
+	init_ret = ret;
 	extern int get_storage_device_flag(int init_ret);
 	get_storage_device_flag(init_ret);
 #endif

@@ -288,13 +288,21 @@ void test_ddr(int i)
 #define pwr_ddr_off 
 void enter_power_down()
 {
-	int i;
+	//int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned char vcin_state = 0;
+#ifdef PLATFORM_HAS_PMU
 	unsigned char charging_state;
+#endif
+#if defined(CONFIG_AML_PMU) || defined(CONFIG_AW_AXP20)
     int delay_cnt = 0;
+#endif
+#ifdef CONFIG_AML_PMU
     int voltage   = 0;
+#endif
+#ifdef CONFIG_AW_AXP20  
     int axp_ocv = 0;
+#endif
 
 
 	//	disp_pctl();
@@ -383,6 +391,7 @@ void enter_power_down()
    	f_serial_puts("Set up pwr key\n");
  	wait_uart_empty();
 #ifdef CONFIG_AW_AXP20       
+ 	extern int axp_get_ocv(void);
     axp_ocv = axp_get_ocv();
     f_serial_puts("axp_ocv=");
     wait_uart_empty();
