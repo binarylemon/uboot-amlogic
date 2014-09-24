@@ -361,6 +361,26 @@ static __inline__ int abortboot(int bootdelay)
 # endif	/* CONFIG_AUTOBOOT_KEYED */
 #endif	/* CONFIG_BOOTDELAY >= 0  */
 
+void force_update() {
+    int ret=0;
+    char* enable = getenv("auto_update_enable");
+    if((enable == NULL) || (strcmp(enable, "true") != 0)) {
+        return;
+    }
+    char* str = getenv("force_auto_update");
+    if((str != NULL) && (strcmp(str, "false") == 0)) {
+    	setenv("force_auto_update", "true");
+        saveenv();
+        return;
+    }
+    ret = run_command("mmcinfo", 0);
+    if(ret) return;
+    ret = run_command("fatexist mmc 0:1 force_enter_recovery.aml", 0);
+    if(ret) return;
+    printf("force update.\n");
+    ret = run_command("run prepare;run storeargs;run recovery", 0);
+}
+
 /****************************************************************************/
 
 void main_loop (void)
@@ -495,6 +515,8 @@ extern void init_secure_firmware(void);
 	extern void cvbs_performance_config(void);
 	cvbs_performance_config();
 #endif
+
+	force_update();
 
 	AML_LOG_TE("main");
 

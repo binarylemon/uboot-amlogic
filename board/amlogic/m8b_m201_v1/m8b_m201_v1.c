@@ -69,6 +69,7 @@ const char * env_args_reserve[]=
 "cvbsmode",
 "hdmimode",
 "outputmode",
+"auto_update_enable",
 "disp.fromleft",
 NULL
 };
