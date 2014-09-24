@@ -178,7 +178,7 @@
 	"preboot="\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
-            "defenv; setenv upgrade_step 2; saveenv;"\
+            "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
         "fi; "\
         "run prepare;"\
         "run storeargs;"\
