@@ -2,7 +2,6 @@
 #include <asm/io.h>
 #include <asm/cache.h>
 #include <asm/arch/io.h>
-#ifndef CONFIG_MESON_TRUSTZONE
 #include <power_firmware.dat>
 //#include <../appf/power_firmware.dat>
 void init_suspend_firmware(void)
@@ -25,4 +24,3 @@ void init_suspend_firmware(void)
 	i = entry();
 	printf("init suspend firmware done. (ret:%d)\n",i);
 }
-#endif

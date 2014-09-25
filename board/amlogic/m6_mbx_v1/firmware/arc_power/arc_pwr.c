@@ -7,8 +7,9 @@
 #include <asm/arch/ddr.h>
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
-//#include <asm/arch/register.h>
+#ifndef CONFIG_MESON_TRUSTZONE
 #include "boot_code.dat"
+#endif
 #include <asm/arch/cec_tx_reg.h>
 
 extern void wait_uart_empty(void);
@@ -100,10 +101,17 @@ void copy_reboot_code()
 {
 	int i;
 	int code_size;
+#ifdef CONFIG_MESON_TRUSTZONE
+	volatile unsigned char* pcode = *(int *)(0x0008);//appf_arc_code_memory[2]
+	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
+
+	code_size = *(int *)(0x000c);//appf_arc_code_memory[3]
+#else
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
   volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
 
 	code_size = sizeof(arm_reboot);
+#endif
 	//copy new code for ARM restart
 	for(i = 0; i < code_size; i++)
 	{
