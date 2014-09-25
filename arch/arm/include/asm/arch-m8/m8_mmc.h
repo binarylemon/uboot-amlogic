@@ -1352,8 +1352,14 @@
 
 //#define MMC_Wr(addr,data) *(volatile unsigned long *) (addr ) = data
 //#define MMC_Rd(addr) *(volatile unsigned long *) (addr)
+#if defined(writel)
+#undef writel
 #define writel(v,c) *(volatile unsigned long *) (c ) = v
+#endif
+#if defined(readl)
+#undef readl
 #define readl(c)    *(volatile unsigned long *) (c )
+#endif
 
 #define P_DMC_REQ_CTRL        DMC_REG_BASE + (0x00 << 2) 
   //bit 11.  enable dmc request of chan 11. Audio

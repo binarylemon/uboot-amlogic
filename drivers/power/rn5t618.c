@@ -22,7 +22,9 @@ int rn5t618_battery_calibrate(void);
 
 #define DBG(format, args...) printf("[RN5T618]"format,##args)
 static int rn5t618_curr_dir = 0;
+#if defined(CONFIG_UBOOT_BATTERY_PARAMETERS) || defined(CONFIG_UBOOT_BATTERY_PARAMETER_TEST)
 static int rn5t618_battery_test = 0;
+#endif
 
 extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
 
@@ -176,6 +178,7 @@ int rn5t618_get_charge_status(int print)
     return 0;
 }
 
+#ifdef CONFIG_UBOOT_BATTERY_PARAMETER_TEST
 static int rn5t618_get_coulomber(void)
 {
     uint8_t val[4];
@@ -191,6 +194,7 @@ static int rn5t618_get_coulomber(void)
     result = result / (3600);                                           // to mAh
     return result;
 }
+#endif
 
 int rn5t618_get_battery_current(void)
 {
@@ -368,7 +372,6 @@ int rn5t618_get_charging_percent(void)
     int ocv = 0;
     int ocv_diff, percent_diff, ocv_diff2;
     int percent1, percent2;
-    int charge_status;
     int para_flag;
     static int ocv_full  = 0;
     static int ocv_empty = 0;
@@ -969,7 +972,7 @@ int rn5t618_update_calibrate(int charge)
     return rdc_c;
 }
 
-static struct energy_array {
+struct energy_array {
     int     ocv;                            // mV
     int     coulomb;                        // mAh read 
     int     coulomb_p;                      // mAh @ 3700mV
@@ -1140,8 +1143,8 @@ extern struct panel_operations panel_oper;
 
 int rn5t618_battery_calibrate(void)
 {
-    int64_t energy_c = 0;
-    int64_t energy_p = 0;
+    uint64_t energy_c = 0;
+    uint64_t energy_p = 0;
     int     prev_coulomb = 0;
     int     prev_ocv  = 0;
     int     prev_ibat = 0;

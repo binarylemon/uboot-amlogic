@@ -722,7 +722,7 @@ exit_0:
 }
 
 
-int do_amlnand_test(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_amlnand_test(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
 	//ulong addr;

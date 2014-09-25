@@ -8,7 +8,7 @@
 #include <linux/err.h>
 #include <partition_table.h>
 
-unsigned char *cmd_name = "store";
+unsigned char *cmd_name = (unsigned char *)("store");
 
 /***
 upgrade_read_ops:

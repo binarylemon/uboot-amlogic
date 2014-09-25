@@ -718,7 +718,7 @@ int gpio_amlogic_name_to_num(const char *name)
 }
 
 
-static int m8_set_pullup(unsigned pin,unsigned int val,unsigned int pullen)
+static int m8_set_pullup(unsigned pin, int val,unsigned int pullen)
 {
 	unsigned int reg=0,bit=0,bit_en=0,ret;
 	ret=m8_pin_to_pullup(pin,&reg,&bit,&bit_en);

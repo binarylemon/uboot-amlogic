@@ -651,7 +651,7 @@ int get_member_from_dtb(char *addr, void *value, char *name, int type, int offse
     int   i;
     int  *array;
 
-    data = fdt_getprop(addr, offset, name, NULL);
+    data = (void *)fdt_getprop(addr, offset, name, NULL);
     if (data == NULL) {
         printf("Got %s failed, ", name);
         if (err_level) {
@@ -773,8 +773,8 @@ int parse_battery_parameters(void)
         dt_addr = (char *)0x83000000;
     #endif
     } else {
-        dt_addr = simple_strtoul (getenv ("dtbaddr"), NULL, 16);    
-        printf("Get dtb addr %x from env\n", dt_addr);
+        dt_addr = (char *)simple_strtoul (getenv ("dtbaddr"), NULL, 16);    
+        printf("Get dtb addr %p from env\n", dt_addr);
     }
     if (!get_battery_para_form_dtb(dt_addr, &board_battery_para)) {
         if (check_parsed_parameters()) {

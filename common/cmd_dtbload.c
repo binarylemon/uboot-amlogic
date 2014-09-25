@@ -57,7 +57,7 @@ int do_dtbload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 return -1;
             }
             else
-                printf("load dtb file to memory 0x%x\n",dest_addr);
+                printf("load dtb file to memory 0x%x\n",(unsigned int)dest_addr);
         }
     }
 #endif

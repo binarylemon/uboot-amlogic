@@ -335,7 +335,7 @@ int do_mmcdump(cmd_tbl_t * cmdtp,int flag,int argc,char * const argv [ ])
 
 	 if (argc > 2) {
 		printf (" arguments error\n");
-		return;
+		return -1;
 	}
 
 
@@ -367,7 +367,7 @@ int do_mmcdump(cmd_tbl_t * cmdtp,int flag,int argc,char * const argv [ ])
 	else
 	{
 		printf("mmc 1 error !!!");
-		return;
+		return -1;
 	}
 	printf("mmc 0:---------------------\n");
 	run_command ("mmcinfo", 0);
@@ -416,8 +416,7 @@ int do_mmcdump(cmd_tbl_t * cmdtp,int flag,int argc,char * const argv [ ])
 		printf("percent:%d",100);
 
 	}
-
-
+	return 0;
 }
 
 U_BOOT_CMD(

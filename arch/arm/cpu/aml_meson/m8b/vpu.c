@@ -9,6 +9,15 @@
 
 #define VPU_VERION	"v03"
 
+extern void udelay(unsigned long usec);
+extern int printf(const char *fmt, ...);
+#ifdef CONFIG_OF_LIBFDT
+extern int fdt_path_offset(const void *fdt, const char *path);
+extern const char *fdt_strerror(int errval);
+extern const void *fdt_getprop(const void *fdt, int nodeoffset, const char *name, int *lenp);
+extern int fdt_check_header(const void *fdt);
+#endif
+
 typedef struct {
 	unsigned int clk_level_dft;
 	unsigned int clk_level_max;
@@ -180,7 +189,7 @@ static int get_vpu_config(void)
 			return ret;
 		}
 		
-		propdata = fdt_getprop(dt_addr, nodeoffset, "clk_level", NULL);
+		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, (const char *)("clk_level"), NULL);
 		if(propdata == NULL){
 			vpu_config.clk_level = vpu_config.clk_level_dft;
 			printf("don't find to match clk_level in dts, use default setting.\n");
@@ -206,9 +215,9 @@ int vpu_probe(void)
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
 #ifdef CONFIG_DTB_LOAD_ADDR
-	dt_addr = CONFIG_DTB_LOAD_ADDR;
+	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
 #else
-	dt_addr = 0x0f000000;
+	dt_addr = (char *)0x0f000000;
 #endif
 	ret = fdt_check_header(dt_addr);
 	if(ret < 0) {

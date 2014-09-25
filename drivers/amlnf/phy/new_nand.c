@@ -710,8 +710,10 @@ static int enslc_exit_hynix(struct hw_controller *controller)
 static int set_reg_value_toshiba(struct hw_controller *controller,  unsigned char *buf, unsigned char *addr, 
 						unsigned char chipnr, unsigned char cnt)
 {
+#ifdef AML_NAND_DBG
 	struct amlnand_chip *aml_chip = controller->aml_chip;
-	struct nand_flash *flash = &(aml_chip->flash);	
+	struct nand_flash *flash = &(aml_chip->flash);
+#endif
 	struct read_retry_info *retry_info =  &(controller->retry_info);
 	int i, ret = 0;
 
@@ -760,8 +762,10 @@ static int set_reg_value_toshiba(struct hw_controller *controller,  unsigned cha
 //when ecc fail,set nand retry reg
 static int readretry_handle_toshiba(struct hw_controller *controller, unsigned char chipnr)
 {
+#ifdef AML_NAND_DBG
 	struct amlnand_chip *aml_chip = controller->aml_chip;
-	struct nand_flash *flash = &(aml_chip->flash);	
+	struct nand_flash *flash = &(aml_chip->flash);
+#endif
 	struct read_retry_info *retry_info =  &(controller->retry_info);
 	int cur_cnt, ret = 0;
 

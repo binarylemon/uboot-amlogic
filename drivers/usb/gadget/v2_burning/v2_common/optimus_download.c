@@ -1304,7 +1304,7 @@ int optimus_enable_romboot_skip_boot(void)
 #endif// #ifdef CONFIG_MESON_TRUSTZONE
 
 	//enable romboot skip_boot function to jump to usb boot
-    DWN_MSG("Skip boot flag[%x]\n", readl(0xc8100000));
+    DWN_MSG("Skip boot flag[%x]\n", (unsigned int)readl(0xc8100000));
     return 0;
 }
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED

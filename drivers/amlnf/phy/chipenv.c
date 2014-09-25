@@ -714,7 +714,7 @@ int amlnand_read_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info
 		offset = 0;
 	}
 
-	arg_oob_info = (struct nand_arg_oobinfo *)(unsigned int)oob_buf;
+	arg_oob_info = (nand_arg_oobinfo *)(unsigned int)oob_buf;
 	memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
 
 	phys_erase_shift = ffs(flash->blocksize) - 1;
@@ -846,7 +846,7 @@ int amlnand_save_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info
 		pages_read = pages_per_blk;
 	}
 write_again:
-	arg_oob_info =(struct nand_arg_oobinfo *)(unsigned int)oob_buf;
+	arg_oob_info =(nand_arg_oobinfo *)(unsigned int)oob_buf;
 	arg_info->timestamp +=1;
 	arg_oob_info->timestamp = arg_info->timestamp;
 	
@@ -1178,7 +1178,7 @@ int amlnand_check_info_by_name(struct amlnand_chip *aml_chip,unsigned char * inf
 		offset = 0;
 	}
 
-	arg_oob_info = (struct nand_arg_oobinfo *)(unsigned int)oob_buf;
+	arg_oob_info = (nand_arg_oobinfo *)(unsigned int)oob_buf;
 	memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
 
 	phys_erase_shift = ffs(flash->blocksize) - 1;

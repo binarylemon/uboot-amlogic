@@ -126,8 +126,8 @@ static int axp_calculate_ocv(int charging, int rdc)
 static int axp_get_coulomb(void)
 {
 	uint8_t  temp[8];
-	int64_t  rValue1,rValue2,rValue;
-	int Cur_CoulombCounter_tmp,m;
+	uint64_t  rValue1,rValue2,rValue;
+	uint32_t Cur_CoulombCounter_tmp,m;
 
 	axp_reads(POWER20_BAT_CHGCOULOMB3,8, temp);
 	rValue1 = ((temp[0] << 24) + (temp[1] << 16) + (temp[2] << 8) + temp[3]);
@@ -617,7 +617,7 @@ int axp_update_calibrate(int charge)
     return 0;
 }
 
-static struct energy_array{
+struct energy_array {
     int     ocv;                            // mV
     int     coulomb;                        // mAh read from axp202
     int     coulomb_p;                      // mAh @ 3700mV
@@ -757,8 +757,8 @@ extern struct panel_operations panel_oper;
 
 int axp_battery_calibrate(void)
 {
-    int64_t energy_c = 0;
-    int64_t energy_p = 0;
+    uint64_t energy_c = 0;
+    uint64_t energy_p = 0;
     int     prev_coulomb = 0;
     int     prev_ocv  = 0;
     int     prev_ibat = 0;

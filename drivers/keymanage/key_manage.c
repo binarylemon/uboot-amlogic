@@ -308,7 +308,7 @@ static int _key_query_secure_boot_set(char* keyname, unsigned int * keystate)
 
     //Check if bit7 && bit 6 are both 1
     //Attention: check this code to stay same with cmd[efuse secure_boot_set] 
-    efuse_read(&nChkVal,sizeof(nChkVal),(loff_t*)&nChkAddr);
+    efuse_read((char *)&nChkVal,sizeof(nChkVal),(loff_t*)&nChkAddr);
     if(((nChkVal >> 7) & 1) && ((nChkVal >> 6) & 1))
     {
         *keystate = KEY_BURNED;

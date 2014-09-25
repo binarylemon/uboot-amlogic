@@ -150,13 +150,13 @@ int sdc_burn_verify(const char* verifyFile)
     char  verifyCmd[64] = "";
     char cmdBuf[64];
     char *usb_update = getenv("usb_update");
+
     if(!strcmp(usb_update,"1")){
-    	  cmdBuf[64] = "fatload usb 0 ";
+          sprintf(cmdBuf, "%s 0x%p %s",  "fatload usb 0 ", verifyCmd, verifyFile);
     }
     else{
-	  cmdBuf[64]  = "fatload mmc 0 ";
+          sprintf(cmdBuf, "%s 0x%p %s",  "fatload mmc 0 ", verifyCmd, verifyFile);
     }
-    sprintf(cmdBuf, "%s 0x%p %s", cmdBuf, verifyCmd, verifyFile);
     SDC_DBG("To run cmd [%s]\n", cmdBuf);
     rcode = run_command(cmdBuf, 0);
     if(rcode < 0){

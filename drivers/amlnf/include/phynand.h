@@ -121,10 +121,10 @@ typedef union nand_core_clk {
 #define 	FBBT_COPY_NUM  						1
 
 #define CONFIG_KEYSIZE         		0x1000
-#define KEYSIZE  (CONFIG_KEYSIZE - 2*(sizeof(uint32_t)))
+#define KEYSIZE  (CONFIG_KEYSIZE - (sizeof(uint32_t)))
 
 #define CONFIG_SECURE_SIZE         		(0x10000*2) //128k
-#define SECURE_SIZE (CONFIG_SECURE_SIZE - 2*(sizeof(uint32_t)))
+#define SECURE_SIZE (CONFIG_SECURE_SIZE - (sizeof(uint32_t)))
 
 #define FULL_BLK     0 
 #define FULL_PAGE  1

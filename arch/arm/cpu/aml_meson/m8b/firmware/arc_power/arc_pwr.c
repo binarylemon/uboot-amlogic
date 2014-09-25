@@ -45,12 +45,13 @@ extern void uart_reset();
 extern void init_ddr_pll(void);
 extern void __udelay(int n);
 
-
+#if 0
 static void timer_init()
 {
 	//100uS stick timer a mode : periodic, timer a enable, timer e enable
     setbits_le32(P_AO_TIMER_REG,0x1f);
 }
+#endif
 
 unsigned  get_tick(unsigned base)
 {
@@ -228,12 +229,12 @@ inline void switch_32K_to_24M(void)
 #define pwr_ddr_off 
 void enter_power_down()
 {
-	int i;
+	//int i;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned int vcin_state = 0;
 
-    int voltage   = 0;
-    int axp_ocv = 0;
+    //int voltage   = 0;
+    //int axp_ocv = 0;
 	int wdt_flag;
 	// First, we disable all memory accesses.
 
@@ -356,7 +357,7 @@ void enter_power_down()
 
 //#define ART_CORE_TEST
 
-struct ARC_PARAM *arc_param=ARC_PARAM_ADDR;//
+struct ARC_PARAM *arc_param=(struct ARC_PARAM *)ARC_PARAM_ADDR;//
 
 #define _UART_DEBUG_COMMUNICATION_
 

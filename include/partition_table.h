@@ -4,6 +4,7 @@
 #include <asm/arch/storage.h>
 #endif
 #include <asm/arch/nand.h>
+#include <asm/arch/poc.h>
 
 
 //#define STORE_DBG
@@ -27,12 +28,13 @@
 #define POR_BOOT_VALUE 	(R_BOOT_DEVICE_FLAG & 7)
 #endif
 
+#if 0 /*defined in poc.h*/
 #define POR_NAND_BOOT()	 ((POR_BOOT_VALUE == 7) || (POR_BOOT_VALUE == 6))
 #define POR_SPI_BOOT()  		((POR_BOOT_VALUE == 5) || (POR_BOOT_VALUE == 4))
 
 #define POR_EMMC_BOOT()	((IS_MESON_M8M2_CPU | IS_MESON_M8BABY_CPU)?((POR_BOOT_VALUE == 3) || ((POR_BOOT_VALUE == 1))):(POR_BOOT_VALUE == 3))
 #define POR_CARD_BOOT() 	(POR_BOOT_VALUE == 0)
-
+#endif
 
 #define SPI_BOOT_FLAG 			0
 #define NAND_BOOT_FLAG 		1

@@ -130,8 +130,8 @@ int mmc_get_partition_table (struct mmc *mmc)
                 resv_size = MMC_BOOT_PARTITION_RESERVED;
 #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8B                
                 if(!POR_EMMC_BOOT()){  //for spi boot case
-                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)] = "e";
-                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)+1] = "\0";
+                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)] = 'e';
+                    part_ptr[part_num].name[strlen(MMC_BOOT_NAME)+1] = '\0';
 
                     printf("change MMC BOOT NAME into 'bootloadere' for none emmc boot case, POR_BOOT_VALUE=%d\n", POR_BOOT_VALUE);
                 }

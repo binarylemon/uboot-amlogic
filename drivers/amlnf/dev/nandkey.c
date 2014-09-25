@@ -22,7 +22,7 @@ extern int amlnand_read_info_by_name(struct amlnand_chip *aml_chip,unsigned char
 extern int amlnand_save_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info,unsigned char * buf,unsigned char * name,unsigned size);
 extern int amlnand_info_init(struct amlnand_chip *aml_chip,unsigned char * info,unsigned char * buf,unsigned char *name,unsigned size);
 
-#define KEYSIZE (CONFIG_KEYSIZE - (sizeof(uint32_t)))
+//#define KEYSIZE (CONFIG_KEYSIZE - (sizeof(uint32_t)))
 
 static struct amlnand_chip *aml_chip_key = NULL;
 

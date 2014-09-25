@@ -59,6 +59,11 @@ extern inline void power_on_at_32k_1();
 extern inline void power_on_at_24M();
 extern void shut_down();
 extern void init_I2C();
+extern void printf_arc(const char *str);
+#endif
+#ifdef CONFIG_AML_PMU
+extern unsigned char get_charge_end_det();
+extern int aml_pmu_get_voltage(void);
 #endif
 extern void uart_reset();
 extern void init_ddr_pll(void);

@@ -167,7 +167,7 @@ STATIC_PREFIX void debugrom_ddr_init(int argc, char * argv[])
     if(argv[1])
         get_dword(argv[1],&i);
     //ddr_pll_init(&__ddr_setting);
-    ddr_init(i);
+    ddr_init((struct ddr_set *)i);
     
 }
 STATIC_PREFIX void clk_msr(int argc, char * argv[])

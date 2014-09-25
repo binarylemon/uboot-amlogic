@@ -1084,7 +1084,7 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("=== ETH_MAC register dump:\n");
 			//for (i = 0x0000; i <= 0x00FC; i += 0x4)
 			for (i = 0x0000; i <= 0x004C; i += 0x4)
-				printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
+				printf("[0x%04x] 0x%x\n", i, (unsigned int)readl(ETH_BASE + i));
 #if 0
 			printf("=== ETH_MMC register dump:\n");
 			for (i = 0x0100; i <= 0x0284; i += 0x4)
@@ -1092,7 +1092,7 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 			printf("=== ETH_DMA register dump:\n");
 			for (i = 0x1000; i <= 0x1054; i += 0x4)
-				printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + i));
+				printf("[0x%04x] 0x%x\n", i, (unsigned int)readl(ETH_BASE + i));
 
 			printf("=== ethernet board config register dump:\n");
 			printf("[0x1076] 0x%x\n", READ_CBUS_REG(0x1076));
@@ -1105,7 +1105,7 @@ static int do_macreg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			}
 			printf("=== ethernet mac register read:\n");
 			reg = simple_strtoul(argv[2], NULL, 10);
-			printf("[0x%04x] 0x%x\n", i, readl(ETH_BASE + reg));
+			printf("[0x%04x] 0x%x\n", i, (unsigned int)readl(ETH_BASE + reg));
 
 			break;
 		case 'w':
@@ -1462,11 +1462,11 @@ static int  do_netspeed(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 #ifdef CONFIG_M8B
 static int do_eth_cali(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int reg, value;
+	unsigned int value;
 	int rise=0;
 	int sel=0;
 	int i;
-	char *cmd = NULL;
+	//char *cmd = NULL;
 
 
 	if (argc < 2) {
