@@ -8,14 +8,15 @@
 #include <common.h>
 #include <asm/io.h>
 #include <amlogic/efuse.h>
-unsigned int get_cpu_temp(int tsc,int flag);
+extern unsigned int get_cpu_temp(int tsc,int flag);
+extern int efuse_init(void);
+extern ssize_t efuse_read(char *buf, size_t count, loff_t *ppos );
 
 int do_read_efuse(int ppos,int *flag,int *temp,int *TS_C, int print)
 {
     char buf[2];
-    int i;
     int ret;
-    int cpu;
+    int cpu = 0;
     char *cpu_str[] = {"M8", "M8M2", "M8Baby"};
     *flag=0;
     buf[0]=0;buf[1]=0;
@@ -60,7 +61,7 @@ static int do_read_temp(cmd_tbl_t *cmdtp, int flag1, int argc, char * const argv
     int flag,ret;
     int print = 0;
     static int saradc_open = 0;
-    char buf[20] = {};
+    char buf[100] = {};
 
     if (!saradc_open) {
         run_command("saradc open", 0);
@@ -79,7 +80,7 @@ static int do_read_temp(cmd_tbl_t *cmdtp, int flag1, int argc, char * const argv
      * add emmc key check here if efuse data is not correct
      */
     flag = 0;
-    setenv("cpu_temp", " ");
+    setenv("tempa", " ");
     ret = do_read_efuse(502, &flag, &temp, &TS_C, print);
     if (ret > 0) {
         int adc = get_cpu_temp(TS_C, flag);
@@ -100,13 +101,20 @@ static int do_read_temp(cmd_tbl_t *cmdtp, int flag1, int argc, char * const argv
             }
             printf("%d\n",tempa);
             sprintf(buf, "%d", tempa);
-            setenv("cpu_temp", buf);
+            setenv("tempa", buf);
+            memset(buf, 0, sizeof(buf));
+            sprintf(buf, "temp:%d, adc:%d, tsc:%d, dout:%d", tempa, adc, TS_C, temp);
+            setenv("err_info_tempa", buf);
         } else {
             printf("This chip is not trimmed\n");
+            sprintf(buf, "%s", "This chip is not trimmed");
+            setenv("err_info_tempa", buf);
             return -1;
         }
     } else {
         printf("read efuse failed\n");
+        sprintf(buf, "%s", "read efuse failed");
+        setenv("err_info_tempa", buf);
     }
     return ret;
 }
