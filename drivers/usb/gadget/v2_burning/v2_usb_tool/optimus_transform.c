@@ -369,6 +369,46 @@ int cb_4_dis_connect_intr(void)
     return 0;
 }
 
+static int _cpu_temp_in_valid_range(int argc, char* argv[], char* errInfo)
+{
+        int ret = 0;
+        int minTemp = 0;
+        int maxTemp = 0;
+        int cpu_temp = 0;
+        char* env_cpu_temp = NULL;
+
+        if(3 > argc){
+                sprintf(errInfo, "argc %d < 3 is invalid\n", argc);
+                return __LINE__;
+        }
+        minTemp = simple_strtol(argv[1], NULL, 0);
+        maxTemp = simple_strtol(argv[2], NULL, 0);
+        if(minTemp <=0 || maxTemp <= 0 || minTemp >= maxTemp){
+                sprintf(errInfo, "Invalid:minTemp=%s, maxTemp=%s\n", argv[1], argv[2]);
+                return __LINE__;
+        }
+        ret = run_command("cpu_temp -p", 0);
+        if(ret < 0){
+                sprintf(errInfo, "cmd[cpu_temp] failed\n");
+                return __LINE__;
+        }
+        env_cpu_temp = getenv("tempa");
+        if(!env_cpu_temp){
+                sprintf(errInfo, "Can't get cpu_temp, cpu is not calibrated.\n");
+                return __LINE__;
+        }
+        cpu_temp = simple_strtol(env_cpu_temp, NULL, 0);
+        ret = (cpu_temp >= minTemp && cpu_temp <= maxTemp) ? 0 : __LINE__;
+        if(!ret){
+                sprintf(errInfo, "%s", env_cpu_temp);
+        }
+        else{
+                sprintf(errInfo, "%s is out of temp range[%d, %d], errInfo[%s]\n", env_cpu_temp, minTemp, maxTemp, getenv("err_info_tempa"));
+        }
+
+        return ret;
+}
+
 int optimus_working (const char *cmd, char* buff)
 {
         static char cmdBuf[CMD_BUFF_SIZE] = {0};
@@ -462,6 +502,26 @@ int optimus_working (const char *cmd, char* buff)
         else if(strncmp(cmd,"sha1sum",(sizeof("sha1sum")-1)) == 0)
         {
                 ret = optimus_sha1sum(argc, argv, buff);		
+        }
+        else if(!strcmp(optCmd, "support_tempcontrol"))
+        {
+#ifndef CONFIG_CMD_CPU_TEMP
+                ret = __LINE__;
+#else
+                ret = run_command("cpu_temp -p", 0);
+                if(ret <= 0){
+                        DWN_MSG("Fail in cmd[cpu_temp]\n");
+                        ret = __LINE__;
+                }
+                else{
+                        ret = 0;
+                }
+#endif// #ifdef CONFIG_CMD_CPU_TEMP
+                sprintf(buff + 7, "cpu temp control cmd %s supported.\n", ret ? "NOT" : "DO");//7 == strlen("failed")
+        }
+        else if(!strcmp(optCmd, "tempcontrol"))
+        {
+                ret = _cpu_temp_in_valid_range(argc, argv, buff + 7);
         }
         else
         {
