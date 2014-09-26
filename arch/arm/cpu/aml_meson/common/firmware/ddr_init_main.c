@@ -115,7 +115,7 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
     serial_puts("compressData "), serial_put_hex((unsigned)compressData, 32), serial_puts(",");
     serial_puts("decompressedAddr "), serial_put_hex((unsigned)decompressedAddr, 32), serial_puts(".\n");
 
-#if defined(CONFIG_AML_MESON_8)
+#if defined(CONFIG_AML_MESON_8) && 0 //temp disabled as 8s for m8b otzone-ucl.bin is not enough!!!
         AML_WATCH_DOG_SET(8000); //8s for ucl decompress, maybe it's enough!? Dog will silently reset system if timeout...
 #endif// #if defined(CONFIG_AML_MESON_8)
 
@@ -316,8 +316,9 @@ static int _usb_decompress_tpl(UclDecompressInfo_t* uclDecompressInfo)
 #endif// #ifndef CONFIG_DISABLE_INTERNAL_U_BOO_CHECK
 
 #ifdef CONFIG_MESON_TRUSTZONE
-        unsigned*               ubootBinAddr        = (unsigned*)tplSrcDataAddr;
+        unsigned*               ubootBinAddr        = (unsigned*)uclDecompressInfo->srcDataAddr;
         unsigned                secureosOffset      = 0;
+
         secureosOffset = ubootBinAddr[(READ_SIZE - SECURE_OS_OFFSET_POSITION_IN_SRAM)>>2];
         serial_puts("secureos offset "), serial_put_hex(secureosOffset, 32), serial_puts(",");
         uclDecompressInfo->decompressedAddr = (unsigned char*)SECURE_OS_DECOMPRESS_ADDR;
