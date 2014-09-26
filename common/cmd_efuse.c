@@ -209,11 +209,12 @@ int cmd_efuse(int argc, char * const argv[], char *buf)
 			return -1;
 		}		
 	#ifdef CONFIG_MESON_TRUSTZONE
-		if (meson_trustzone_efuse_check(nAddr)) {
+		extern uint32_t meson_trustzone_efuse_check(unsigned char *addr);
+		if (meson_trustzone_efuse_check((unsigned char *)nAddr)) {
 			printf("aml log : efuse pattern check fail!\n");
 			return -1;
 		}
-		if(meson_trustzone_efuse_writepattern(nAddr, EFUSE_BYTES)){
+		if(meson_trustzone_efuse_writepattern((const char *)nAddr, EFUSE_BYTES)){
 			printf("aml log : efuse pattern write fail!\n");
 			return -1;
 		}

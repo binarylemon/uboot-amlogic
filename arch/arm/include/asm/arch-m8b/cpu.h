@@ -346,7 +346,7 @@
 #define CONFIG_AML_SMP
 
 #define CONFIG_SARADC 1
-#define CONFIG_CMD_SARADC 1
+#define CONFIG_CMD_SARADC
 
 
 #endif /* _CPU_H */

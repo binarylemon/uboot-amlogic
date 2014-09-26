@@ -65,7 +65,7 @@ extern int securestore_key_init( char *seed,int len);
 extern int securestore_key_query(char *keyname, unsigned int *query_return);
 extern int securestore_key_read(char *keyname,char *keybuf,unsigned int keylen,unsigned int *reallen);
 extern int securestore_key_write(char *keyname, char *keybuf,unsigned int keylen,int keytype);
-extern int securestore_key_uninit();
+extern int securestore_key_uninit(void);
 int ensure_securestore_key_init(char *seed, int seed_len);
 int cmd_securestore(int argc, char *argv[], char *buf);
 #endif
@@ -103,18 +103,18 @@ void SHA1Transform_H(DWORD *state, BYTE *buffer); //5  64
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define R0(v,w,x,y,z,i) \
-        z += ((w & (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5); \
+        z += (((w & (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5)); \
         w = rol(w, 30);
 #define R1(v,w,x,y,z,i) \
-        z += ((w & (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5); \
+        z += (((w & (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5)); \
         w = rol(w, 30);
 #define R2(v,w,x,y,z,i) \
-        z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5); w = rol(w, 30);
+        z += ((w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5)); w = rol(w, 30);
 #define R3(v,w,x,y,z,i) \
-        z += (((w | x) & y) | (w & x)) + blk(i) + 0x8F1BBCDC + rol(v, 5); \
+        z += ((((w | x) & y) | (w & x)) + blk(i) + 0x8F1BBCDC + rol(v, 5)); \
         w = rol(w, 30);
 #define R4(v,w,x,y,z,i) \
-        z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5); \
+        z += ((w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5)); \
         w=rol(w, 30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
@@ -664,8 +664,7 @@ int usb_run_command (const char *cmd, char* buff)
             !strncmp(cmd, "read hdcp2", strlen("read hdcp2")) ||!strncmp(cmd, "write hdcp2:", strlen("write hdcp2:")) ||
             !strncmp(cmd, "read hdcp", strlen("read hdcp")) ||!strncmp(cmd, "write hdcp:", strlen("write hdcp:")) ||
             !strncmp(cmd, "secukey_efuse", strlen("secukey_efuse")) ||!strncmp(cmd, "secukey_nand", strlen("secukey_nand"))) {
-            int i = 0, ret = -1, key_device_index = -1, boardid_key_len = 0, serialno_key_len = 0, MFG_Serialno_key_len = 0, random_len = 0;
-            int widevinekeybox_len = 0, PlayReadykeybox_len = 0, MobiDRMPrivate_len = 0, MobiDRMPublic_len = 0;
+            int i = 0, key_device_index = -1, random_len = 0;
             char widevinekeybox_verify_data_receive[20], widevinekeybox_verify_data_calculate[20];
             char PlayReadykeybox_verify_data_receive[20], PlayReadykeybox_verify_data_calculate[20];
             char MobiDRMPrivate_verify_data_receive[20], MobiDRMPrivate_verify_data_calculate[20];
@@ -673,8 +672,7 @@ int usb_run_command (const char *cmd, char* buff)
             char key_data[SECUKEY_BYTES], hdcp_verify_data_receive[20], hdcp_verify_data_calculate[20];
             char hdcp2lc128[HDCP2LC128_LEN], hdcp2key[HDCP2KEY_LEN], hdcp2TotalData[HDCP2_KEY_TOTAL_LEN];
             char hdcp2_verify_data_receive[20], hdcp2_verify_data_calculate[20];
-            char *hdcp = NULL, *hdcp2 = NULL, *boardid = NULL, *serialno = NULL, *MFG_Serialno = NULL, *random = NULL;
-            char *widevinekeybox = NULL, *PlayReadykeybox = NULL, *MobiDRMPrivate = NULL, *MobiDRMPublic = NULL;
+            char *random = NULL;
 
             enum {
                 RANDOM_MAX_LEN = 32,
@@ -683,6 +681,8 @@ int usb_run_command (const char *cmd, char* buff)
                 MOBIDRMPRIVATE_MAX_LEN = 1200,
                 MOBIDRMPUBLIC_MAX_LEN = 300,
             };
+
+            //added to remover warnning
 
             if(!strncmp(cmd, "pctool version:", strlen("pctool version:"))) {
                 sPctoolVersion = simple_strtoul((char *)(cmd+strlen("pctool version:")), 0, 10);
@@ -726,6 +726,10 @@ int usb_run_command (const char *cmd, char* buff)
             memset(MobiDRMPublic_verify_data_receive, 0, sizeof(MobiDRMPublic_verify_data_receive));
             memset(MobiDRMPublic_verify_data_calculate, 0, sizeof(MobiDRMPublic_verify_data_calculate));
 
+
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE) || defined(WRITE_TO_EFUSE_ENABLE)
+            char* hdcp = NULL;
+#endif
 
 /* Burn key to efuse */
 /* ---Command process */
@@ -778,7 +782,7 @@ int usb_run_command (const char *cmd, char* buff)
                     printf("%.2x:", hdcp_verify_data_calculate[i]);
                printf("\n");
 
-               ret = memcmp(hdcp_verify_data_receive, hdcp_verify_data_calculate, 20);
+               int ret = memcmp(hdcp_verify_data_receive, hdcp_verify_data_calculate, 20);
                if(ret == 0) {
                     printf("hdcp datas verify success\n");
                     argv[0] = "efuse";
@@ -795,6 +799,10 @@ int usb_run_command (const char *cmd, char* buff)
             }
 #endif   /* WRITE_TO_EFUSE_ENABLE */
 
+
+#if defined(WRITE_TO_NAND_EMMC_ENABLE) || defined(WRITE_TO_NAND_ENABLE)
+             char* hdcp2 = NULL;
+#endif
 
 /* Burn key to nand/emmc */
 /* ---Command process */
@@ -850,7 +858,7 @@ int usb_run_command (const char *cmd, char* buff)
                printf("\nstart to verify %d hdcp2(%s & %s) datas...\n", HDCP2_KEY_TOTAL_LEN, HDCP2LC128_NAME, HDCP2KEY_NAME);
                memcpy((char *)hdcp2TotalData, (char *)hdcp2lc128, HDCP2LC128_LEN);
                memcpy((char *)(hdcp2TotalData+HDCP2LC128_LEN), (char *)hdcp2key, HDCP2KEY_LEN);
-               SHA1_Perform(hdcp2TotalData, HDCP2_KEY_TOTAL_LEN, hdcp2_verify_data_calculate);
+               SHA1_Perform((unsigned char *)hdcp2TotalData, HDCP2_KEY_TOTAL_LEN, (unsigned char *)hdcp2_verify_data_calculate);
                printf("verify & get 20 hdcp2(%s & %s) verify datas:\n", HDCP2LC128_NAME, HDCP2KEY_NAME);
                for(i=0; i<20; i++)
                     printf("%.2x:", hdcp2_verify_data_calculate[i]);
@@ -892,7 +900,7 @@ int usb_run_command (const char *cmd, char* buff)
                printf("\n");
 
                printf("start to verify %d hdcp key datas...\n", HDCP_KEY_LEN);
-               SHA1_Perform(key_data, HDCP_KEY_LEN, hdcp_verify_data_calculate);
+               SHA1_Perform((unsigned char *)key_data, HDCP_KEY_LEN, (unsigned char *)hdcp_verify_data_calculate);
                printf("verify & get 20 hdcp verify datas:\n");
                for(i=0; i<20; i++)
                     printf("%.2x:", hdcp_verify_data_calculate[i]);
@@ -917,12 +925,12 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "boardid:", strlen("boardid:"))) {
 #define BOARDID_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get boardid data from address:0x82000000
                char length[4] = {0};
-               boardid = (char *)BOARDID_DATA_ADDR;
+               char* boardid = (char *)BOARDID_DATA_ADDR;
                for(i=0; i<4; i++) {
                   length[i] = *boardid++;
                   //printf("length[%d]=0x%02x\n", i, length[i]);
                }
-               boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               int boardid_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                printf("boardid_key_len=%d(maximum length limit is %d)\n", boardid_key_len, SECUKEY_BYTES);
                memcpy(key_data, boardid, boardid_key_len);
                printf("receive %d boardid key datas from address:0x82000000:\n%s\n", boardid_key_len, key_data);
@@ -936,12 +944,12 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "serialno:", strlen("serialno:"))) {
 #define SERIALNO_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get serialno data from address:0x82000000
                char length[4] = {0};
-               serialno = (char *)SERIALNO_DATA_ADDR;
+               char* serialno = (char *)SERIALNO_DATA_ADDR;
                for(i=0; i<4; i++) {
                   length[i] = *serialno++;
                   //printf("length[%d]=0x%02x\n", i, length[i]);
                }
-               serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               int serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                printf("serialno_key_len=%d(maximum length limit is %d)\n", serialno_key_len, SECUKEY_BYTES);
                memcpy(key_data, serialno, serialno_key_len);
                printf("receive %d serialno key datas from address:0x82000000:\n%s\n", serialno_key_len, key_data);
@@ -955,12 +963,12 @@ int usb_run_command (const char *cmd, char* buff)
              if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MFG_Serialno:", strlen("MFG_Serialno:"))) {
 #define MFG_SERIALNO_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MFG_Serialno data from address:0x82000000
                char length[4] = {0};
-               MFG_Serialno = (char *)MFG_SERIALNO_DATA_ADDR;
+               char* MFG_Serialno = (char *)MFG_SERIALNO_DATA_ADDR;
                for(i=0; i<4; i++) {
                   length[i] = *MFG_Serialno++;
                   //printf("length[%d]=0x%02x\n", i, length[i]);
                }
-               MFG_Serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+               int MFG_Serialno_key_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                printf("MFG_Serialno_key_len=%d(maximum length limit is %d)\n", MFG_Serialno_key_len, SECUKEY_BYTES);
                memcpy(key_data, MFG_Serialno, MFG_Serialno_key_len);
                printf("receive %d MFG_Serialno key datas from address:0x82000000:\n%s\n", MFG_Serialno_key_len, key_data);
@@ -972,6 +980,9 @@ int usb_run_command (const char *cmd, char* buff)
             }
 #endif   /* WRITE_TO_NAND_EMMC_ENABLE || WRITE_TO_NAND_ENABLE */
 
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+            int widevinekeybox_len=0, PlayReadykeybox_len=0, MobiDRMPublic_len=0, MobiDRMPrivate_len=0;
+#endif
 
 /* Burn key to securestorage */
 /* ---Command process */
@@ -1009,13 +1020,13 @@ int usb_run_command (const char *cmd, char* buff)
 
                 if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "widevinekeybox", strlen("widevinekeybox"))) {
 #define WIDEVINE_KEYBOX_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get widevinekeybox data from address:0x82000000
-                    widevinekeybox = (char *)WIDEVINE_KEYBOX_DATA_ADDR;
+                    char* widevinekeybox = (char *)WIDEVINE_KEYBOX_DATA_ADDR;
                     char length[4] = {0}, widevinekeybox_data[WIDEVINEKEYBOX_MAX_LEN] = {0};
                     for(i=0; i<4; i++) {
                         length[i] = *widevinekeybox++;
                         //printf("length[%d]=0x%02x\n", i, length[i]);
                     }
-                    widevinekeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    int widevinekeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                     if(widevinekeybox_len > WIDEVINEKEYBOX_MAX_LEN || widevinekeybox_len <= 0) {
                         sprintf(buff, "widevinekeybox_len=%d(maximum length limit is %d)", widevinekeybox_len, WIDEVINEKEYBOX_MAX_LEN);
                         printf("%s\n", buff);
@@ -1040,7 +1051,7 @@ int usb_run_command (const char *cmd, char* buff)
                     printf("\n");
 
                     printf("start to verify %d widevinekeybox datas...\n", widevinekeybox_len);
-                    SHA1_Perform(widevinekeybox_data, widevinekeybox_len, widevinekeybox_verify_data_calculate);
+                    SHA1_Perform((unsigned char *)widevinekeybox_data, widevinekeybox_len, (unsigned char *)widevinekeybox_verify_data_calculate);
                     printf("verify & get 20 widevinekeybox verify datas:\n");
                     for(i=0; i<20; i++)
                         printf("%02x:", widevinekeybox_verify_data_calculate[i]);
@@ -1061,13 +1072,13 @@ int usb_run_command (const char *cmd, char* buff)
 
                if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "PlayReadykeybox", strlen("PlayReadykeybox"))) {
 #define PLAYREADY_KEYBOX_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get PlayReadykeybox data from address:0x82000000
-                    PlayReadykeybox = (char *)PLAYREADY_KEYBOX_DATA_ADDR;
+                    char* PlayReadykeybox = (char *)PLAYREADY_KEYBOX_DATA_ADDR;
                     char length[4] = {0}, PlayReadykeybox_data[PLAYREADYKEYBOX_MAX_LEN] = {0};
                     for(i=0; i<4; i++) {
                         length[i] = *PlayReadykeybox++;
                         //printf("length[%d]=0x%02x\n", i, length[i]);
                     }
-                    PlayReadykeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    int PlayReadykeybox_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                     if(PlayReadykeybox_len > PLAYREADYKEYBOX_MAX_LEN || PlayReadykeybox_len <= 0) {
                         sprintf(buff, "PlayReadykeybox_len=%d(maximum length limit is %d)", PlayReadykeybox_len, PLAYREADYKEYBOX_MAX_LEN);
                         printf("%s\n", buff);
@@ -1092,7 +1103,7 @@ int usb_run_command (const char *cmd, char* buff)
                     printf("\n");
 
                     printf("start to verify %d PlayReadykeybox datas...\n", PlayReadykeybox_len);
-                    SHA1_Perform(PlayReadykeybox_data, PlayReadykeybox_len, PlayReadykeybox_verify_data_calculate);
+                    SHA1_Perform((unsigned char *)PlayReadykeybox_data, PlayReadykeybox_len, (unsigned char *)PlayReadykeybox_verify_data_calculate);
                     printf("verify & get 20 PlayReadykeybox verify datas:\n");
                     for(i=0; i<20; i++)
                         printf("%02x:", PlayReadykeybox_verify_data_calculate[i]);
@@ -1113,12 +1124,13 @@ int usb_run_command (const char *cmd, char* buff)
 
                if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPrivate", strlen("MobiDRMPrivate"))) {
 #define MOBIDRMPRIVATE_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MobiDRMPrivate data from address:0x82000000
-                    MobiDRMPrivate = (char *)MOBIDRMPRIVATE_DATA_ADDR;
+                    char* MobiDRMPrivate = (char *)MOBIDRMPRIVATE_DATA_ADDR;
                     char length[4] = {0}, MobiDRMPrivate_data[MOBIDRMPRIVATE_MAX_LEN] = {0};
                     for(i=0; i<4; i++) {
                         length[i] = *MobiDRMPrivate++;
                         //printf("length[%d]=0x%02x\n", i, length[i]);
                     }
+
                     MobiDRMPrivate_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                     if(MobiDRMPrivate_len > MOBIDRMPRIVATE_MAX_LEN || MobiDRMPrivate_len <= 0) {
                         sprintf(buff, "MobiDRMPrivate_len=%d(maximum length limit is %d)", MobiDRMPrivate_len, MOBIDRMPRIVATE_MAX_LEN);
@@ -1144,7 +1156,7 @@ int usb_run_command (const char *cmd, char* buff)
                     printf("\n");
 
                     printf("start to verify %d MobiDRMPrivate datas...\n", MobiDRMPrivate_len);
-                    SHA1_Perform(MobiDRMPrivate_data, MobiDRMPrivate_len, MobiDRMPrivate_verify_data_calculate);
+                    SHA1_Perform((unsigned char *)MobiDRMPrivate_data, MobiDRMPrivate_len, (unsigned char *)MobiDRMPrivate_verify_data_calculate);
                     printf("verify & get 20 MobiDRMPrivate verify datas:\n");
                     for(i=0; i<20; i++)
                         printf("%02x:", MobiDRMPrivate_verify_data_calculate[i]);
@@ -1165,13 +1177,13 @@ int usb_run_command (const char *cmd, char* buff)
 
                if(!strncmp(argv[1], "write", strlen("write")) && !strncmp(argv[2], "MobiDRMPublic", strlen("MobiDRMPublic"))) {
 #define MOBIDRMPUBLIC_DATA_ADDR	(volatile unsigned long *)(0x82000000)//get MobiDRMPublic data from address:0x82000000
-                    MobiDRMPublic = (char *)MOBIDRMPUBLIC_DATA_ADDR;
+                    char* MobiDRMPublic = (char *)MOBIDRMPUBLIC_DATA_ADDR;
                     char length[4] = {0}, MobiDRMPublic_data[MOBIDRMPUBLIC_MAX_LEN] = {0};
                     for(i=0; i<4; i++) {
                         length[i] = *MobiDRMPublic++;
                         //printf("length[%d]=0x%02x\n", i, length[i]);
                     }
-                    MobiDRMPublic_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
+                    int MobiDRMPublic_len = (int)((length[3]<<24)|(length[2]<<16)|(length[1]<<8)|(length[0]));
                     if(MobiDRMPublic_len > MOBIDRMPUBLIC_MAX_LEN || MobiDRMPublic_len <= 0) {
                         sprintf(buff, "MobiDRMPublic_len=%d(maximum length limit is %d)", MobiDRMPublic_len, MOBIDRMPUBLIC_MAX_LEN);
                         printf("%s\n", buff);
@@ -1196,7 +1208,7 @@ int usb_run_command (const char *cmd, char* buff)
                     printf("\n");
 
                     printf("start to verify %d MobiDRMPublic datas...\n", MobiDRMPublic_len);
-                    SHA1_Perform(MobiDRMPublic_data, MobiDRMPublic_len, MobiDRMPublic_verify_data_calculate);
+                    SHA1_Perform((unsigned char *)MobiDRMPublic_data, MobiDRMPublic_len, (unsigned char *)MobiDRMPublic_verify_data_calculate);
                     printf("verify & get 20 MobiDRMPublic verify datas:\n");
                     for(i=0; i<20; i++)
                         printf("%02x:", MobiDRMPublic_verify_data_calculate[i]);
@@ -1221,6 +1233,7 @@ int usb_run_command (const char *cmd, char* buff)
             if(!strncmp(argv[1], "write", strlen("write")) &&  !strncmp(argv[2], "hdcp2", strlen("hdcp2"))) {
                for(i=0; i<argc-1; i++) printf("argv[%d]=%s\n", i, argv[i]);
                printf("argv[3]=");
+
 #ifdef HDCP_PRINT
                hdcp2 = argv[3];
                for(i=0; i<HDCP2_KEY_TOTAL_LEN; i++) printf("%02x:", *hdcp2 ++);
@@ -2074,14 +2087,14 @@ int cmd_secukey(int argc, char *argv[], char *buf)
                 if(error >= 0) {    //read success
                     if(strncmp(namebuf, HDCP2KEY_NAME, strlen(HDCP2KEY_NAME)) != 0) {
                         memset(buf, 0, SECUKEY_BYTES);
-                        for(i=0,j=0; i<SECUKEY_BYTES*2; i++,j++) {
-                            buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[++i])));
+                        for(i=0,j=0; i<SECUKEY_BYTES*2; i+=2,j++) {
+                            buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[i+1])));
                         }
                     }
                     else {
                         memset(buf, 0, HDCP2_KEY_TOTAL_LEN);
-                        for(i=0,j=0; i<HDCP2_KEY_TOTAL_LEN*2; i++,j++) {
-                            buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[++i])));
+                        for(i=0,j=0; i<HDCP2_KEY_TOTAL_LEN*2; i+=2,j++) {
+                            buf[j]= (((asc_to_hex(databuf[i]))<<4) | (asc_to_hex(databuf[i+1])));
                         }
                     }
                     printf("read ok!!\n");

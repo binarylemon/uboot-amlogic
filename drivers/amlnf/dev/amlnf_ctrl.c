@@ -397,10 +397,9 @@ void get_sys_clk_rate(int * rate)
 	struct nand_flash *flash = &(aml_chip->flash);
 	//struct phydev_ops *devops = &(phydev->ops);
 	struct hw_controller *controller = &(aml_chip->controller); 
-	struct en_slc_info *slc_info = &(controller->slc_info);
 	
 	unsigned en_slc,configure_data, pages_per_blk; 
-	int chip_num=1, nand_read_info, new_nand_type, i;
+	int chip_num=1, nand_read_info, new_nand_type;
 
 	pages_per_blk = flash->blocksize / flash->pagesize;
 	new_nand_type = aml_chip->flash.new_type;
@@ -418,7 +417,8 @@ void get_sys_clk_rate(int * rate)
     }    
         
 #ifdef CONFIG_NAND_AML_M8
-	
+	int i;
+	struct en_slc_info *slc_info = &(controller->slc_info);
 	memset(page0_buf, 0x0, flash->pagesize);
 
 	struct nand_page0_cfg_t *info_cfg = (struct nand_page0_cfg_t *)page0_buf;

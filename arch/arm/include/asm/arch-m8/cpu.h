@@ -226,6 +226,6 @@
 #define CONFIG_AML_GPIO_CMD 1
 #define CONFIG_AML_GPIO 1
 #define CONFIG_SARADC 1
-#define CONFIG_CMD_SARADC 1
+#define CONFIG_CMD_SARADC
 
 #endif /* _CPU_H */

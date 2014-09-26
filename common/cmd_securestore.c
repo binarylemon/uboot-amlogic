@@ -16,11 +16,11 @@
 
 static int storage_type = 0;
 static int storage_status=SECURE_STORAGE_WRITE_PROHIBIT;
-static unsigned int securestorage_addr=0,securestorage_len=0;
-static int securestorage_start=0;
+//static unsigned int securestorage_addr=0,securestorage_len=0;
+//static int securestorage_start=0;
 static int sstorekey_start = 0;
 
-int do_securestore(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_securestore(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int len,addr;
 	const char *cmd;
@@ -133,14 +133,14 @@ usage:
 	return 1;
 }
 
-int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int len,addr,query_status;
 	unsigned int reallen;
 	const char *cmd,*keyname;
 	unsigned int seedaddr;
 	unsigned int seedlen;
-	int err;
+	int err=0;
 	if (argc < 2)
 		goto usage;
 
@@ -182,7 +182,7 @@ int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		
 		addr = simple_strtoul(argv[3], NULL, 16);
 		len = simple_strtoul(argv[4], NULL, 16);
-		err = securestore_key_write(keyname,addr,len,0);
+		err = securestore_key_write((char *)keyname,(char *)addr,len,0);
 		if(err){
 			if(err == 0x1fe){
 				printf("%s:%d,secure storage no space to save key\n",__func__,__LINE__);
@@ -203,7 +203,7 @@ int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		addr = simple_strtoul(argv[3], NULL, 16);
 		len = simple_strtoul(argv[4], NULL, 16);
 		reallen = simple_strtoul(argv[5], NULL, 16);
-		err = securestore_key_read(keyname,(char*)addr,len,(unsigned int*)reallen);
+		err = securestore_key_read((char *)keyname,(char*)addr,len,(unsigned int*)reallen);
 		if(err){
 			printf("%s:%d,read a key fail\n",__func__,__LINE__);
 			return err;
@@ -218,7 +218,7 @@ int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		}
 		keyname = argv[2];
 		query_status = simple_strtoul(argv[3], NULL, 16);
-		err = securestore_key_query(keyname,(unsigned int*)query_status);
+		err = securestore_key_query((char *)keyname,(unsigned int*)query_status);
 		if((!err) && ((*(unsigned int*)query_status) == 1)){
 			printf("key exist\n");
 		}
@@ -236,7 +236,7 @@ int do_sstorekey(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 		addr = simple_strtoul(argv[3], NULL, 16);//hash buf
 		len = simple_strtoul(argv[4], NULL, 16); //hash len
 		query_status = simple_strtoul(argv[5], NULL, 16);
-		err = securestore_key_verify(keyname,(unsigned int*)query_status,(char*)addr,len);
+		err = securestore_key_verify((char *)keyname,(unsigned int*)query_status,(char*)addr,len);
 		if(!err){
 			int stat = (*(unsigned int*)query_status);
 			switch(stat){

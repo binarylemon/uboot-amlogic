@@ -31,7 +31,7 @@
  *
  */
 #define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	const typeof( ((type *)0)->member ) *__mptr = (const typeof( ((type *)0)->member ) *)(ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 
 #define NAND_CMD                                ((0xc1108600-IO_CBUS_BASE)>>2)

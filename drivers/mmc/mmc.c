@@ -51,6 +51,9 @@ extern bool aml_is_emmc_tsd (struct mmc *mmc);
 extern void aml_sd_cs_high (void);
 extern void aml_sd_cs_dont_care (void);
 extern int mmc_device_init (struct mmc *mmc);
+#ifdef CONFIG_SECURE_MMC	
+extern int mmc_storage_probe(struct mmc* mmc);
+#endif
 
 /* If reserve partition is protected, we should not access it.
  * 0--allow accessed 

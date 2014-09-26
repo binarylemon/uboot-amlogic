@@ -460,6 +460,7 @@ void main_loop (void)
 extern void init_suspend_firmware(void);
 	init_suspend_firmware();
 #else
+	extern uint32_t meson_trustzone_suspend_init(void);
 	meson_trustzone_suspend_init();
 #endif
 #endif

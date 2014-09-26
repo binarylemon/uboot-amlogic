@@ -380,11 +380,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #ifdef CONFIG_MESON_SECUREARGS
 #if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
 	if(IS_MESON_M8M2_CPU)
-		*psecureargs = __secureargs_m8m2;
+		*psecureargs = (unsigned)__secureargs_m8m2;
 	else
-		*psecureargs = __secureargs_m8;
+		*psecureargs = (unsigned)__secureargs_m8;
 #else
-	*psecureargs = __secureargs;
+	*psecureargs = (unsigned)__secureargs;
 #endif		
 #endif// #ifdef CONFIG_MESON_SECUREARGS
 #endif//#ifdef CONFIG_MESON_TRUSTZONE

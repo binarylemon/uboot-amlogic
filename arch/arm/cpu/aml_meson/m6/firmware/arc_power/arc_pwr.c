@@ -37,7 +37,7 @@ void store_restore_plls(int flag);
 
 #define TICK_OF_ONE_SECOND 32000
 
-#define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
+#define dbg_out(s,v) f_serial_puts((const char *)(s));serial_put_hex(v,32);f_serial_puts((const char *)("\n"));wait_uart_empty();
 
 #if (defined(CONFIG_AW_AXP20) || defined(CONFIG_ACT8942QJ233_PMU) || defined(CONFIG_AML_PMU))
 #define PLATFORM_HAS_PMU

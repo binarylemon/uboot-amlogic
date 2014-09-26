@@ -76,7 +76,7 @@ typedef union nand_core_clk {
  *
  */
 #define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	const typeof( ((type *)0)->member ) *__mptr = (const typeof( ((type *)0)->member ) *)(ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 
 #define P_NAND_BASE ((0xd0048600-IO_CBUS_BASE)>>2)

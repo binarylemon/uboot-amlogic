@@ -19,7 +19,7 @@ static int is_sd_format(unsigned char *mode)
 void gate_init(void)
 {
 #if 1
-	unsigned char * disp_mode = getenv((char *)("outputmode"));
+	unsigned char * disp_mode = (unsigned char *)getenv((char *)("outputmode"));
 	int i_flag = is_sd_format(disp_mode);
 
 	/* close spi */

@@ -339,7 +339,7 @@ int do_mmcdump(cmd_tbl_t * cmdtp,int flag,int argc,char * const argv [ ])
 	}
 
 
-	u64 Capacity = 2909798400;
+	u64 Capacity = 2909798400LL;
 	unsigned int BlockLen = 512;
 	unsigned int MaxBlock  = Capacity/BlockLen;
 	unsigned int PRB = 0x8000;//PerReadBlock

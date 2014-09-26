@@ -88,7 +88,7 @@ static int get_off_size(int argc, char *argv[],  loff_t *off, loff_t *size)
 }
 
 
-int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_boot(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	//int i, dev, ret = 0;
 	int ret = 0;
@@ -158,7 +158,7 @@ U_BOOT_CMD(boot, CONFIG_SYS_MAXARGS, 1, do_boot,
 	"erase uboot in nand or spi\n"
 );
 
-int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	//int i, dev, ret = 0;
 	int ret = 0;
@@ -171,7 +171,7 @@ int do_data(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	if (argc < 3)
 		goto usage;
 	
-	if (get_off_size(argc - 2, argv + 2,  &off, &size) != 0)
+	if (get_off_size(argc - 2, (char **)(argv + 2),  &off, &size) != 0)
 		return 1;
 
 	printk("erase data : %s %d  off =%llx ,size=%llx\n",__func__,__LINE__, off, size);
