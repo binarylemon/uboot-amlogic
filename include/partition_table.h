@@ -4,7 +4,7 @@
 #include <asm/arch/storage.h>
 #endif
 #include <asm/arch/nand.h>
-#include <asm/arch/poc.h>
+//#include <asm/arch/poc.h>
 
 
 //#define STORE_DBG
@@ -28,7 +28,7 @@
 #define POR_BOOT_VALUE 	(R_BOOT_DEVICE_FLAG & 7)
 #endif
 
-#if 0 /*defined in poc.h*/
+#if 1 /*defined in poc.h*/
 #define POR_NAND_BOOT()	 ((POR_BOOT_VALUE == 7) || (POR_BOOT_VALUE == 6))
 #define POR_SPI_BOOT()  		((POR_BOOT_VALUE == 5) || (POR_BOOT_VALUE == 4))
 
