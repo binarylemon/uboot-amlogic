@@ -1446,7 +1446,7 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
     serial_puts("\n");
 #endif
     pwm_duty_cycle_set(duty_high,28);
-
+    return 0;
 }
 #endif
 

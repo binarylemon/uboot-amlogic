@@ -38,9 +38,9 @@ void store_restore_plls(int flag);
 #define dbg_out(s,v) f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n");wait_uart_empty();
 
 extern void udelay(int i);
-extern void wait_uart_empty();
+extern void wait_uart_empty(void);
 
-extern void uart_reset();
+extern void uart_reset(void);
 extern void init_ddr_pll(void);
 extern void __udelay(int n);
 /*

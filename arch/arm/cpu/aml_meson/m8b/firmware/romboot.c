@@ -240,7 +240,8 @@ STATIC_PREFIX int fw_init_extl(unsigned por_cfg)
 }
 STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
-    unsigned temp_addr;
+	int rc = 0;
+	unsigned temp_addr;
 	unsigned len;
 #ifdef CONFIG_MESON_TRUSTZONE
 	unsigned secure_addr;
@@ -265,7 +266,7 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 		goto m8_tpl_ucl_dec;
 	}
 
-    int rc=sdio_read(temp_addr,size,por_cfg); 
+	rc=sdio_read(temp_addr,size,por_cfg);
 	if(rc)
 		return rc;
 

@@ -729,10 +729,10 @@ STATIC_PREFIX int sdio_read_off_size(unsigned  target,unsigned off, unsigned siz
 	if(card_type == CARD_TYPE_EMMC){
 #if defined(CONFIG_AML_SPL_L1_CACHE_ON)
 		memset((unsigned char *)&switch_status, 0, 64);
-		invalidate_dcache_range((unsigned char *)&switch_status, (unsigned char *)&switch_status+64);
+		invalidate_dcache_range((long unsigned int)&switch_status, (long unsigned int)&switch_status+64);
 #endif  
 		
-		WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned char *)&switch_status);		 
+		WRITE_CBUS_REG(SDIO_M_ADDR, (unsigned int)&switch_status);
 		WRITE_CBUS_REG(SDIO_EXTENSION,(64*8 + (16 - 1)) << 16);    
 		
 		arg = ((0x3 << 24) |(183 << 16) |(1 << 8));  
@@ -877,7 +877,7 @@ DATA_READ:
 
 static inline void init_magic(unsigned char * magic)
 {
-	unsigned char * source_magic = MMC_STORAGE_MAGIC;
+	unsigned char * source_magic = (unsigned char *)MMC_STORAGE_MAGIC;
 	int i=0;
 	
 	for(i = 0; i < 11; i++){
@@ -899,7 +899,7 @@ static int check_data(void* cmp, char part_flag)
 		addr = MMC_DATA_BUF2 + MMC_STORAGE_AREA_HEAD_SIZE;
 	}	
 
-	if(head->checksum != mmckey_calculate_checksum(&(head->data[0]),MMC_STORAGE_AREA_VALID_SIZE)){
+	if(head->checksum != mmckey_calculate_checksum((unsigned char *)&(head->data[0]),MMC_STORAGE_AREA_VALID_SIZE)){
 		ret = -1;
 		print("mmc check storage check_sum failed\n");
 	}
@@ -970,7 +970,7 @@ STATIC_PREFIX int sdio_switch_partition(void)
 
 STATIC_PREFIX int sdio_secure_storage_get(void)
 {
-	struct mmc_storage_head_t  *part0_head = MMC_DATA_BUF1, *part1_head = MMC_DATA_BUF2;
+	struct mmc_storage_head_t  *part0_head = (struct mmc_storage_head_t  *)MMC_DATA_BUF1, *part1_head = (struct mmc_storage_head_t  *)MMC_DATA_BUF2;
 	unsigned char magic[MMC_STORAGE_MAGIC_SIZE];
 	char part0_valid = 0,part1_valid = 0;
 	unsigned valid_addr=0;

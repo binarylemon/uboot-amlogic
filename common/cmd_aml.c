@@ -168,6 +168,9 @@ static int pmu_set_usbcur_limit(int usbcur_limit)
 #ifdef CONFIG_AML_PMU
     return aml_pmu_set_usb_curr_limit(usbcur_limit);
 #endif
+#if !defined(CONFIG_AW_AXP20) && !defined(CONFIG_AML_PMU)
+    return 0;
+#endif
 }
 #endif
 static int do_set_usbcur_limit(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])

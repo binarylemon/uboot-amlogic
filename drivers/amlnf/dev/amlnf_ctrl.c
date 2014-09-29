@@ -483,7 +483,9 @@ void uboot_set_ran_mode(struct amlnand_phydev *phydev)
 
 int aml_sys_info_init(struct amlnand_chip *aml_chip)
 {
+#ifdef CONFIG_SECURITYKEY
 	nand_arg_info * nand_key = &aml_chip->nand_key;  
+#endif
 	//nand_arg_info  * nand_secure= &aml_chip->nand_secure;
 	nand_arg_info *  uboot_env =  &aml_chip->uboot_env;
 	unsigned char *buf = NULL;

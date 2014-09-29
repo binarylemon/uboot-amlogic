@@ -725,11 +725,13 @@ static int vcck_pwm_on(void)
     
     return 0;
 }
+#if 0
 static int vcck_pwm_off(void)
 {
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 1, 1);  //disable pwm_d
     return 0;
 }
+#endif
 
 static int pwm_duty_cycle_set(int duty_high,int duty_total)
 {
@@ -757,8 +759,8 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
     printf_arc("m8b_pwm_set_vddEE_voltage\n");
     
     int duty_high = 0;
-    int duty_high_tmp = 0;
-    int tmp1,tmp2,tmp3;
+    //int duty_high_tmp = 0;
+    //int tmp1,tmp2,tmp3;
     vcck_pwm_on();
     printf_arc("## VDDEE voltage = 0x");
     serial_put_hex(voltage, 16);
@@ -794,37 +796,39 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
 
 #endif
     pwm_duty_cycle_set(duty_high,28);
-
+    return 0;
 }
 
-void m8b_pwm_power_off_at_24M()
+void m8b_pwm_power_off_at_24M(void)
 {
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);    
 }
 
-void m8b_pwm_power_on_at_24M()
+void m8b_pwm_power_on_at_24M(void)
 {
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
 }
     
-void m8b_pwm_power_off_at_32K_1()
+void m8b_pwm_power_off_at_32K_1(void)
 {
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE); 
 }
     
-void m8b_pwm_power_on_at_32K_1()
+void m8b_pwm_power_on_at_32K_1(void)
 {
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
 }
 #endif 
 unsigned int detect_key(unsigned int flags)
 {
+#ifdef CONFIG_AML1218
     int delay_cnt   = 0;
     int power_status;
     int prev_status;
     int battery_voltage;
-    int ret = FLAG_WAKEUP_PWRKEY;
     int low_bat_cnt = 0;
+#endif
+    int ret = FLAG_WAKEUP_PWRKEY;
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)

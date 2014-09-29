@@ -124,7 +124,7 @@ static void tv_enable(void)
 //\\temp
 //	tv_sync_duration(&lcd_config);
 	
-    return 0;
+    //return 0;
 }
 
 void tv_disable(void)

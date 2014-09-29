@@ -787,6 +787,7 @@ static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
        unsigned int *pID1 =(unsigned int *)0xd9040004;
        //unsigned int *pID2 =(unsigned int *)0xd904002c;
 #else
+       extern uint32_t meson_trustzone_read_socrev1(void);
        unsigned int ID1 = meson_trustzone_read_socrev1();
        //unsigned int ID2 = meson_trustzone_read_socrev2();
        unsigned int *pID1 = &ID1;

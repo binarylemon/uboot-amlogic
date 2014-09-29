@@ -36,7 +36,9 @@
 #ifdef CONFIG_MESON_TRUSTZONE
 #define CONFIG_SECURE_UBOOT_SIZE     0x100000
 #endif
+#ifndef CONFIG_SYS_MALLOC_LEN
 #define CONFIG_SYS_MALLOC_LEN   (8<<20)
+#endif
 
 #define CONFIG_SYS_MAXARGS      32
 

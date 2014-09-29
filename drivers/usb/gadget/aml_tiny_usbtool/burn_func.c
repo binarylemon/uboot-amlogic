@@ -96,9 +96,9 @@ void SHA1Transform_H(DWORD *state, BYTE *buffer); //5  64
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
 
-#define blk0(i) (block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00) | \
+#define blk0(i) (workspace[i] = (rol(block->l[i], 24) & 0xFF00FF00) | \
         (rol(block->l[i], 8) & 0x00FF00FF))
-#define blk(i) (block->l[i & 15] = rol(block->l[(i + 13) & 15] ^ \
+#define blk(i) (workspace[i & 15] = rol(block->l[(i + 13) & 15] ^ \
         block->l[(i + 8) & 15] ^ block->l[(i + 2) & 15] ^ block->l[i & 15], 1))
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */

@@ -73,6 +73,10 @@ const char * env_args_reserve[]=
 NULL
 };
 
+struct gpio_chip;
+extern int gpio_amlogic_requst(struct gpio_chip *chip,unsigned offset);
+extern int gpio_amlogic_direction_output(struct gpio_chip *chip,unsigned offset, int value);
+
 #if defined(CONFIG_CMD_NET)
 /*************************************************
   * Amlogic Ethernet controller operation
@@ -667,7 +671,7 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	//printf("\n");
 	for(;((nIndex < 64) && nCounter);nCounter--,nIndex++)
-		printf("MSR clock[%d] = %dMHz\n",nIndex,clk_util_clk_msr(nIndex));
+		printf("MSR clock[%d] = %dMHz\n",nIndex,(int)clk_util_clk_msr(nIndex));
 
 	return 0;
 	

@@ -967,7 +967,7 @@ int do_loadenv (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 // added by scy for reserve env
 static char* temp_for_compile[] = {"test1","test2","test3",NULL};
-extern char * env_args_reserve[] __attribute__((weak, alias("temp_for_compile")));
+extern char * env_args_reserve[80] __attribute__((weak, alias("temp_for_compile")));
 int get_envlist_size(const char* envlist[]);
 int	do_defenv_without (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 void set_env_for_reserve(void) 

@@ -276,10 +276,10 @@ void restart_arm()
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
 #define pwr_ddr_off 
-void enter_power_down()
+void enter_power_down(void)
 {
-	unsigned v;
-	int i;
+	//unsigned v;
+	//int i;
 	//unsigned addr;
 	//unsigned gate;
 	unsigned power_key;

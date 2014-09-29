@@ -46,6 +46,14 @@ extern ssize_t efuse_read(char *buf, size_t count, loff_t *ppos );
 #define KEY_WRITE_PROHIBIT	(11<<4)
 //#define ACS_ADDR_ADDR	0xd9000200
 
+#ifdef CONFIG_SECURESTORAGEKEY
+extern int securestore_key_init( char *seed,int len);
+extern int securestore_key_write(char *keyname, char *keybuf,unsigned int keylen,int keytype);
+extern int securestore_key_read(char *keyname,char *keybuf,unsigned int keylen,unsigned int *reallen);
+extern int securestore_key_query(char *keyname, unsigned int *query_return);
+extern int securestore_key_uninit(void);
+#endif
+
 /*function: key_unify_secure_boot_key
  * keyname:
  * keydata:

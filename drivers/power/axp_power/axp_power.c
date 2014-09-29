@@ -340,7 +340,7 @@ int check_axp_regulator_for_m6_board(void)
 	axp_read(POWER20_LDO24OUT_VOL, &reg_data);
 	if(((reg_data>>4)&0xf)  != val)
 	{
-		val = reg_data & 0xf0 | (val<<4);
+		val = (reg_data & 0xf0) | (val<<4);
 		axp_write(POWER20_LDO24OUT_VOL, val);	//set LDO2(VDDIO_AO) to 3.000V
 		printf("Set  LDO2(VDDIO_AO) to %dmV(0x%x). But the register is 0x%x before\n", CONFIG_LDO2_VOLTAGE, val, reg_data);
 		mdelay(10);

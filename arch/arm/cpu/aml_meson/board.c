@@ -4,6 +4,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+extern uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+
 #ifdef CONFIG_ACS
 //IMPORTANT: following function must be call before the uboot relocation
 static void update_ddr_mmu_table(void)

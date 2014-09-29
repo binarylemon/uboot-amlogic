@@ -773,7 +773,7 @@ DDR_INIT_BYPASS_PLL:
 
 	__udelay(1);
 
-#ifdef CONFIG_M8B_SKT_V0
+#ifdef CONFIG_M8B_SKT_V0_DDR
 	writel(0x02020202,P_DDR0_PUB_DX3BDLR0);  //jiaxing just debug for socket board
 	writel(0x02020202,P_DDR0_PUB_DX3BDLR1); //jiaxing just debug for socket board
 	writel(0x02020202,P_DDR0_PUB_DX3BDLR2); //jiaxingjust debug for socket board

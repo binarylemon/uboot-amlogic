@@ -608,7 +608,7 @@ void aml1216_power_on_at_24M()
     }   
 }
 
-void aml1216_power_off_at_32K_1()
+void aml1216_power_off_at_32K_1(void)
 {
     unsigned int reg;                               // change i2c speed to 1KHz under 32KHz cpu clock
 
@@ -626,7 +626,7 @@ void aml1216_power_off_at_32K_1()
     power_off_vcc33();                                  // close DCDC3, VCC3.3v
 }
 
-void aml1216_power_on_at_32K_1()
+void aml1216_power_on_at_32K_1(void)
 {
     unsigned int    reg;
 
@@ -640,18 +640,18 @@ void aml1216_power_on_at_32K_1()
     udelay__(10);
 }
 
-void aml1216_power_off_at_32K_2()
+void aml1216_power_off_at_32K_2(void)
 {
        // TODO: add code here
 }
 
-void aml1216_power_on_at_32K_2()
+void aml1216_power_on_at_32K_2(void)
 {
        // TODO: add code here
 }
 
 
-void aml1216_shut_down()
+void aml1216_shut_down(void)
 {
     i2c_pmu_write_b(0x0019, 0x10);                              // cut usb output 
     i2c_pmu_write_w(0x0084, 0x0001);                            // close boost

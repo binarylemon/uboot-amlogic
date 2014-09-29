@@ -10,6 +10,10 @@ struct partitions * part_table = NULL;
 int device_boot_flag = -1;   // indicate spi nand emmc 
 int aml_card_type = 0;
 
+#ifdef CONFIG_MESON_TRUSTZONE
+extern uint32_t meson_trustzone_acs_addr(uint32_t addr);
+#endif
+
 void show_partition_table(void)
 {
 	int i=0;

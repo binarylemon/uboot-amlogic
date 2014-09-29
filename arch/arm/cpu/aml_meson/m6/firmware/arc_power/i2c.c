@@ -523,7 +523,7 @@ unsigned short i2c_pmu_read_12(unsigned int reg, int size)
             .addr = I2C_AML_PMU_ADDR,
             .flags = I2C_M_RD,
             .len = size,
-            .buf = &val,
+            .buf = (__u8 *)&val,
         }
     };
 
@@ -1155,8 +1155,8 @@ unsigned char get_charge_end_det()
 void aml_pmu_set_charger(int en)
 {
     unsigned char reg;
-    unsigned char addr;
-    unsigned char mask;
+    unsigned char addr=0;
+    unsigned char mask=0;
 
     en &= 0x01;
     if (pmu_version <= 2 && pmu_version) {
@@ -1220,7 +1220,7 @@ void aml_pmu_set_voltage(int dcdc, int voltage)
     if (dcdc == AML_PMU_DCDC1) {
         addr   = 0x2f; 
         idx_to = find_idx(2000, voltage, 20);                   // voltage index of DCDC1 
-    } else if (dcdc = AML_PMU_DCDC2) {
+    } else if (dcdc == AML_PMU_DCDC2) {
         addr  = 0x38;
         idx_to = find_idx(2160, voltage, 20);                   // voltage index of DCDC2
     }

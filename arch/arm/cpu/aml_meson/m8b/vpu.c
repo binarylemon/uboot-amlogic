@@ -209,8 +209,6 @@ static int get_vpu_config(void)
 
 int vpu_probe(void)
 {
-	int ret;
-
 	dts_ready = 0;
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
@@ -219,6 +217,7 @@ int vpu_probe(void)
 #else
 	dt_addr = (char *)0x0f000000;
 #endif
+	int ret;
 	ret = fdt_check_header(dt_addr);
 	if(ret < 0) {
 		printf("check dts: %s, load default vpu parameters\n", fdt_strerror(ret));
