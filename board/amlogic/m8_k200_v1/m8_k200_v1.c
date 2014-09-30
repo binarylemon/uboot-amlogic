@@ -759,26 +759,65 @@ U_BOOT_CMD(
 
 static int select_m8_dtd(unsigned int pID1)
 {
-  switch(pID1)
-	{
-		case 0x25e2:   //chip version A
-			printf("chip version A, emmc use sdio controller\n");
-			setenv("aml_dt", "m8_k200_sdio");
-			break;
-		case 0x27ed:   //chip version B
-			printf("chip version B, emmc use sdhc controller\n");
-			setenv("aml_dt", "m8_k200_sdhc");
-			break;
-		default:
-			printf("bad chip version!!!");
-			return 1;
+	unsigned int ddr_size;
+	int i;
+	for(i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
+		ddr_size += gd->bd->bi_dram[i].size;
 	}
-  return 0;
+	if(0x80000000==ddr_size){/*2G ddr*/
+		switch(pID1){
+			case 0x25e2:   //chip version A
+				//printf("chip version A, emmc use sdio controller\n");
+				setenv("aml_dt", "m8_k200_2gsdio");
+				break;
+			case 0x27ed:   //chip version B
+				//printf("chip version B, emmc use sdhc controller\n");
+				setenv("aml_dt", "m8_k200_2gsdhc");
+				break;
+			default:
+				printf("bad chip version!!!");
+				return 1;
+		}
+	}
+	else if(0x40000000==ddr_size){/*1G ddr*/
+		switch(pID1){
+			case 0x25e2:   //chip version A
+				//printf("chip version A, emmc use sdio controller\n");
+				setenv("aml_dt", "m8_k200_sdio");
+				break;
+			case 0x27ed:   //chip version B
+				//printf("chip version B, emmc use sdhc controller\n");
+				setenv("aml_dt", "m8_k200_sdhc");
+				break;
+			default:
+				printf("bad chip version!!!");
+				return 1;
+		}
+	}
+	else{/*others doesn't support fo now*/
+		printf("DDR size: 0x%x, multi-dt doesn't support\n", ddr_size);
+		return -1;
+	}
+	return 0;
 }
 
 static int select_m8m2_dtd(unsigned int pID1)
 {
-	setenv("aml_dt", "m8m2_n200_2G");
+	unsigned int ddr_size;
+	int i;
+	for(i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
+		ddr_size += gd->bd->bi_dram[i].size;
+	}
+	if(0x80000000==ddr_size){/*2G ddr*/
+		setenv("aml_dt", "m8m2_n200_2G");
+	}
+	else if(0x40000000==ddr_size){/*1G ddr*/
+		setenv("aml_dt", "m8m2_n200_1G");
+	}
+	else{/*others doesn't support fo now*/
+		printf("DDR size: 0x%x, multi-dt doesn't support\n", ddr_size);
+		return -1;
+	}
 	return 0;
 }
 static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
