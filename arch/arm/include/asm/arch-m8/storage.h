@@ -7,7 +7,7 @@
 
 #include <linux/types.h>
 #include <asm/sizes.h>
-
+#include <asm/arch/romboot.h>
 #ifndef __ASSEMBLY__
 
 //Partition table defines
@@ -30,8 +30,8 @@
 #define CARD_TYPE_SHIFT             4
 #define CARD_TYPE_MASK              0xf
 #define CARD_TYPE_UNKNOWN           0        /* unknown */
-#define CARD_TYPE_MMC               1        /* MMC card */
-#define CARD_TYPE_SD                2        /* SD card */
+//#define CARD_TYPE_MMC               1        /* MMC card */
+//#define CARD_TYPE_SD                2        /* SD card */
 #define CARD_TYPE_SDIO              3        /* SDIO card */
 #define CARD_TYPE_SD_COMBO          4        /* SD combo (IO+mem) card */
 #define CARD_TYPE_NON_SDIO          5        /* NON sdio device (means SD/MMC card) */

@@ -104,9 +104,9 @@
 //#define VOLTAGE_VALIDATION_RETRY    0x8000
 //#define APP55_RETRY                 3
 
-#define CARD_TYPE_SD		0
+//#define CARD_TYPE_SD		0
 #define CARD_TYPE_SDHC		1
-#define CARD_TYPE_MMC		2
+//#define CARD_TYPE_MMC		2
 #define CARD_TYPE_EMMC		3
 
 /* 250ms of timeout */
