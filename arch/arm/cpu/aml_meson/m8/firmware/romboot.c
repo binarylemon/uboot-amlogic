@@ -129,7 +129,9 @@ SPL_STATIC_FUNC void fw_print_info(unsigned por_cfg,unsigned stage)
 STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc=0;
+#if defined(CONFIG_UCL) && !defined(CONFIG_IMPROVE_UCL_DEC) && !defined(CONFIG_VLSI_EMULATOR)
 	unsigned len;
+#endif
     unsigned temp_addr;
 
 #ifdef CONFIG_MESON_TRUSTZONE
@@ -292,7 +294,9 @@ STATIC_PREFIX int fw_load_extl(unsigned por_cfg,unsigned target,unsigned size)
 {
     int rc = 0;
     unsigned temp_addr;
+#if defined(CONFIG_UCL) && !defined(CONFIG_IMPROVE_UCL_DEC) && !defined(CONFIG_VLSI_EMULATOR)
 	unsigned len;
+#endif
 
 #ifdef CONFIG_MESON_TRUSTZONE
 	unsigned secure_addr;

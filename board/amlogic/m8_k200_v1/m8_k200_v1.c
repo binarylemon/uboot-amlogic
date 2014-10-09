@@ -610,7 +610,7 @@ static void board_i2c_init(void)
 }
 
 #ifdef CONFIG_NET_WIFI
-void wifi_power_init()
+void wifi_power_init(void)
 {
 	printf("mcli -- wifi_power_init in uboot --\n");
 	clrbits_le32(P_AO_GPIO_O_EN_N,1<<22);

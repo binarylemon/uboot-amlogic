@@ -156,10 +156,9 @@ void blue_LED_off(void) __attribute__((weak, alias("__blue_LED_off")));
 #endif
 static int init_baudrate (void)
 {
+#if !defined (CONFIG_VLSI_EMULATOR)
 	char tmp[64];	/* long enough for environment variables */
 	int i = getenv_f("baudrate", tmp, sizeof (tmp));
-
-#if !defined (CONFIG_VLSI_EMULATOR)
 	gd->baudrate = (i > 0)
 			? (int) simple_strtoul (tmp, NULL, 10)
 			: CONFIG_BAUDRATE;
@@ -531,9 +530,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	int init_ret=0;
 #endif
 #ifdef  CONFIG_NEXT_NAND
-#ifndef CONFIG_VLSI_EMULATOR
 	int ret = 0;
-#endif
 #endif
 #if (defined(CONFIG_GENERIC_MMC) && defined(CONFIG_STORE_COMPATIBLE)) || defined(CONFIG_PARTITIONS_STORE)
     struct mmc *mmc;
@@ -642,7 +639,6 @@ unsigned int before_nand_init =  get_utimer(0);
 #if defined(CONFIG_CMD_NAND)
 	puts ("NAND:  ");
 #ifdef  CONFIG_NEXT_NAND
-#ifndef CONFIG_VLSI_EMULATOR
 #ifdef AML_NAND_UBOOT
 extern int amlnf_init(unsigned flag);
 #else
@@ -650,7 +646,6 @@ struct platform_device;
 extern int amlnf_init(struct platform_device *pdev);
 #endif
 	ret = amlnf_init(0x0);
-#endif
 // flag = 0,indicate normal boot;
 //flag = 1, indicate update;
 //flag = 2, indicate need erase

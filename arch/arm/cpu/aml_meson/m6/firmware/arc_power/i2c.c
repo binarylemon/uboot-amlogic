@@ -1212,7 +1212,7 @@ void aml_pmu_set_voltage(int dcdc, int voltage)
     int idx_to = 0xff;
     int idx_cur;
     unsigned char val;
-    unsigned char addr;
+    unsigned char addr=0;
 
     if (dcdc < 0 || dcdc > AML_PMU_DCDC2 || voltage > 2160 || voltage < 760) {
         return ;                                                // current only support DCDC1&2 voltage adjust
