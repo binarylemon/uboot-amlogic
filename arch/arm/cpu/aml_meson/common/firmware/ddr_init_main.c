@@ -175,8 +175,7 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 #endif
 
-
-#if defined(CONFIG_AML_MESON_8)
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
 	//TDO enable
@@ -202,7 +201,7 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		serial_puts("\nno sdio debug board detected ");
 		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
 	}
-#endif //#if defined(CONFIG_AML_MESON_8)
+#endif //#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 
 #ifdef AML_M6_JTAG_ENABLE
 	#ifdef AML_M6_JTAG_SET_ARM
