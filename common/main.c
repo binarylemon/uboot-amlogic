@@ -361,7 +361,7 @@ static __inline__ int abortboot(int bootdelay)
 # endif	/* CONFIG_AUTOBOOT_KEYED */
 #endif	/* CONFIG_BOOTDELAY >= 0  */
 
-void force_update() {
+void force_update(void) {
     int ret=0;
     char* enable = getenv("auto_update_enable");
     if((enable == NULL) || (strcmp(enable, "true") != 0)) {
