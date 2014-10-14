@@ -138,7 +138,6 @@
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
 	"bootm_size=0x80000000\0" \
-	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
