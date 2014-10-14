@@ -26,6 +26,14 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    |UART_CNTL_MASK_TX_EN
 	    |UART_CNTL_MASK_RX_EN
 	,P_UART_CONTROL(UART_PORT_CONS));
+	switch(readl(0xd9040004))
+	{
+	case 0x74e: //M8B revA
+	case 0xb72: //M8M2 revA
+		writel(	(1<<24)|(1 << 23)|((8000000/(CONFIG_BAUDRATE)) -1),0xc81004d4); // set xtal as M8B/M8M2 uart-ao clock source,xtal is 24000000,
+	    //new baudrate formula is (24000000/3/baudrate),0xc81004d4 is AO_UART0_REG5 address
+		break;
+	}
     serial_set_pin_port(UART_PORT_CONS);
     clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),
 	    UART_CNTL_MASK_RST_TX | UART_CNTL_MASK_RST_RX | UART_CNTL_MASK_CLR_ERR);

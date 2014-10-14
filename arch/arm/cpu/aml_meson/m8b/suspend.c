@@ -311,12 +311,15 @@ void clk_switch(int flag)
                     udelay(10);
                     setbits_le32(clks[i], (1<<8));//switch to pll
                     udelay(10);
-					clrbits_le32(P_UART0_CONTROL, (1 << 19) | 0xFFF);
-                  	setbits_le32(P_UART0_CONTROL, (((uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
-                    clrbits_le32(P_UART1_CONTROL, (1 << 19) | 0xFFF);
-                    setbits_le32(P_UART1_CONTROL, (((uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
-                    clrbits_le32(P_AO_UART_CONTROL, (1 << 19) | 0xFFF);
-                    clrsetbits_le32(P_AO_UART_CONTROL, 0xfff, ((uart_rate_backup / (115200 * 4)) - 1) & 0xfff);
+                    if(!(readl(P_AO_UART_REG5) & (1 << 24)))
+                    {
+                        clrbits_le32(P_UART0_CONTROL, (1 << 19) | 0xFFF);
+                        setbits_le32(P_UART0_CONTROL, (((uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
+                        clrbits_le32(P_UART1_CONTROL, (1 << 19) | 0xFFF);
+                        setbits_le32(P_UART1_CONTROL, (((uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
+                        clrbits_le32(P_AO_UART_CONTROL, (1 << 19) | 0xFFF);
+                        clrsetbits_le32(P_AO_UART_CONTROL, 0xfff, ((uart_rate_backup / (115200 * 4)) - 1) & 0xfff);
+                    }
 				}
 				else
 				{
@@ -346,12 +349,15 @@ void clk_switch(int flag)
                     udelay(10);
                     clrbits_le32(clks[i], (1 << 7)); // 24M
                     udelay(10);
-                    clrbits_le32(P_UART0_CONTROL, (1 << 19) | 0xFFF);
-                    setbits_le32(P_UART0_CONTROL, (((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
-                    clrbits_le32(P_UART1_CONTROL, (1 << 19) | 0xFFF);
-                    setbits_le32(P_UART1_CONTROL, (((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
-                    clrbits_le32(P_AO_UART_CONTROL, (1 << 19) | 0xFFF);
-                    clrsetbits_le32(P_AO_UART_CONTROL, 0xfff, ((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff);
+                    if(!(readl(P_AO_UART_REG5) & (1 << 24)))
+                    {
+                        clrbits_le32(P_UART0_CONTROL, (1 << 19) | 0xFFF);
+                        setbits_le32(P_UART0_CONTROL, (((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
+                        clrbits_le32(P_UART1_CONTROL, (1 << 19) | 0xFFF);
+                        setbits_le32(P_UART1_CONTROL, (((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff));
+                        clrbits_le32(P_AO_UART_CONTROL, (1 << 19) | 0xFFF);
+                        clrsetbits_le32(P_AO_UART_CONTROL, 0xfff, ((xtal_uart_rate_backup / (115200 * 4)) - 1) & 0xfff);
+                    }
                 }
             } else {
                 clk_flag[i] = (readl(clks[i])>>8)&1 ? 1 : 0;
