@@ -8,7 +8,7 @@ Linux gpio.C
 #include <asm/arch/io.h>
 #include <asm/arch/gpio.h>
 #include <amlogic/gpio.h>
-
+#include <asm/cpu_id.h>
 extern void *malloc (size_t len);
 extern void free(void*);
 
@@ -622,9 +622,15 @@ int gpio_amlogic_direction_output(struct gpio_chip *chip ,unsigned offset, int v
 		aml_clr_reg32_mask(P_PREG_PAD_GPIO0_O,1<<29);
 		aml_set_reg32_mask(P_AO_SECURE_REG0,1<<0);
 		if(value)
-			aml_set_reg32_mask(P_PREG_PAD_GPIO0_O,1<<31);//out put high
+			if(IS_MESON_M8M2_CPU)
+				aml_set_reg32_mask(P_PAD_PULL_UP_REG2,1<<0);
+			else
+				aml_set_reg32_mask(P_PREG_PAD_GPIO0_O,1<<31);//out put high
 		else
-			aml_clr_reg32_mask(P_PREG_PAD_GPIO0_O,1<<31);//out put low
+			if(IS_MESON_M8M2_CPU)
+				aml_clr_reg32_mask(P_PAD_PULL_UP_REG2,1<<0);
+			else
+				aml_clr_reg32_mask(P_PREG_PAD_GPIO0_O,1<<31);//out put low
 		aml_clr_reg32_mask(P_PREG_PAD_GPIO0_O,1<<30);//out put enable
 		return 0;
 	}
