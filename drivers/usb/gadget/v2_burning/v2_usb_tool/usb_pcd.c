@@ -153,6 +153,8 @@ static const char dt_string_vid[DT_STRING_VID_LEN]=
 #define _PLATFORM_CHIP_INDEX    '8'
 #elif defined(CONFIG_AML_MESON_6)  
 #define _PLATFORM_CHIP_INDEX    '6'
+#elif defined(CONFIG_AML_G9TV)
+#define _PLATFORM_CHIP_INDEX    '9'
 #else
 #error "chip not supported!"
 #endif// #if defined(CONFIG_AML_MESON_8) 

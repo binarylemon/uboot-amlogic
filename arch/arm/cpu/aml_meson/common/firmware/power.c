@@ -17,6 +17,11 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
 #define CONFIG_VDDAO_VOLTAGE 1200
 #endif
 
+#define PWM_D   4
+#ifndef CONFIG_VDDEE_PWM
+#define CONFIG_VDDEE_PWM    PWM_D
+#endif
+
 #ifdef CONFIG_AW_AXP20
     #define DEVID 0x68
     #define PMU_NAME    "axp202"
@@ -1397,6 +1402,7 @@ void aml1218_power_init(int init_mode)
 
 static int vcck_pwm_on(void)
 {
+#if (CONFIG_VDDEE_PWM == PWM_D) // for M8baby
     //aml_set_reg32_bits(P_PREG_PAD_GPIO2_EN_N, 0, 29, 1);
     //set GPIODV 28 to PWM D
     aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3, 1, 26, 1);
@@ -1406,12 +1412,24 @@ static int vcck_pwm_on(void)
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 6, 2);  //pwm_d_clk_sel
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 23, 1);  //pwm_d_clk_en
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 1, 1);  //enable pwm_d
-    
+#elif (CONFIG_VDDEE_PWM == PWM_F)    // for G9TV
+    aml_set_reg32_bits(P_AO_RTI_PIN_MUX_REG, 1, 29, 1);  // set GPIO_AO_12 to PWM_F
+    /* set  pwm_f regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 16, 7);  //pwm_f_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 6, 2);  //pwm_f_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 23, 1);  //pwm_f_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 1, 1);  //enable pwm_f
+#endif
+
     return 0;
 }
 static int vcck_pwm_off(void)
 {
+#if (CONFIG_VDDEE_PWM == PWM_D)
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 1, 1);  //disable pwm_d
+#elif (CONFIG_VDDEE_PWM == PWM_F)    
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 1, 1);  //disable pwm_f
+#endif
     return 0;
 }
 
@@ -1419,6 +1437,7 @@ static int pwm_duty_cycle_set(int duty_high,int duty_total)
 {
     int pwm_reg=0;
 
+#if (CONFIG_VDDEE_PWM == PWM_D)
     aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 16, 7);  //pwm_d_clk_div
     if(duty_high > duty_total){
         serial_puts("error: duty_high larger than duty_toral !!!\n");
@@ -1430,6 +1449,16 @@ static int pwm_duty_cycle_set(int duty_high,int duty_total)
     //serial_puts("##### P_PWM_PWM_D value = ");
     //serial_put_hex(pwm_reg, 32);
     //serial_puts("\n");
+#elif (CONFIG_VDDEE_PWM == PWM_F)    
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 16, 7);  //pwm_f_clk_div
+    if(duty_high > duty_total){
+        serial_puts("error: duty_high larger than duty_toral !!!\n");
+        return -1; 
+    }
+    aml_write_reg32(P_PWM_PWM_F, (duty_high << 16) | (duty_total-duty_high));
+    __udelay(100000);
+    pwm_reg = aml_read_reg32(P_PWM_PWM_F);
+#endif
 
     return 0;
 }
@@ -1446,6 +1475,7 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
 #if 1
     serial_puts("##### VDDEE voltage = 0x");
     serial_put_hex(voltage, 16);
+	serial_put_dec(voltage);
     serial_puts("\n");
 #endif
     pwm_duty_cycle_set(duty_high,28);

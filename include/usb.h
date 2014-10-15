@@ -27,7 +27,16 @@
 #define _USB_H_
 
 #include <usb_defs.h>
-#include <usbdescriptors.h>
+#include <linux/usb/ch9.h>
+/*
+ * The EHCI spec says that we must align to at least 32 bytes.  However,
+ * some platforms require larger alignment.
+ */
+#if ARCH_DMA_MINALIGN > 32
+#define USB_DMA_MINALIGN	ARCH_DMA_MINALIGN
+#else
+#define USB_DMA_MINALIGN	32
+#endif
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
@@ -41,6 +50,52 @@
 #define USB_MAX_HUB			16
 
 #define USB_CNTL_TIMEOUT 100 /* 100ms timeout */
+#define	USB_DT_SS_ENDPOINT_COMP		0x30
+#define USB_DT_SS_EP_COMP_SIZE		6
+
+
+/*
+ * This is the timeout to allow for submitting an urb in ms. We allow more
+ * time for a BULK device to react - some are slow.
+ */
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
+#if 0
+
+/* USB_DT_SS_ENDPOINT_COMP: SuperSpeed Endpoint Companion descriptor */
+struct usb_ss_ep_comp_descriptor {
+	__u8  bLength;
+	__u8  bDescriptorType;
+
+	__u8  bMaxBurst;
+	__u8  bmAttributes;
+	__le16 wBytesPerInterval;
+} __attribute__ ((packed));
+/* USB_DT_CONFIG: Configuration descriptor information.
+ *
+ * USB_DT_OTHER_SPEED_CONFIG is the same descriptor, except that the
+ * descriptor type is different.  Highspeed-capable devices can look
+ * different depending on what speed they're currently running.  Only
+ * devices with a USB_DT_DEVICE_QUALIFIER have any OTHER_SPEED_CONFIG
+ * descriptors.
+ */
+struct usb_config_descriptor {
+	__u8  bLength;
+	__u8  bDescriptorType;
+
+	__le16 wTotalLength;
+	__u8  bNumInterfaces;
+	__u8  bConfigurationValue;
+	__u8  iConfiguration;
+	__u8  bmAttributes;
+	__u8  bMaxPower;
+} __attribute__ ((packed));
+/* All standard descriptors have these 2 fields at the beginning */
+struct usb_descriptor_header {
+	__u8  bLength;
+	__u8  bDescriptorType;
+} __attribute__ ((packed));
+#endif
+
 
 /* device request (setup) */
 struct devrequest {
@@ -49,12 +104,6 @@ struct devrequest {
 	unsigned short	value;
 	unsigned short	index;
 	unsigned short	length;
-} __attribute__ ((packed));
-
-/* All standard descriptors have these 2 fields in common */
-struct usb_descriptor_header {
-	unsigned char	bLength;
-	unsigned char	bDescriptorType;
 } __attribute__ ((packed));
 
 /* Interface */
@@ -66,11 +115,17 @@ struct usb_interface {
 	unsigned char	act_altsetting;
 
 	struct usb_endpoint_descriptor ep_desc[USB_MAXENDPOINTS];
+	/*
+	 * Super Speed Device will have Super Speed Endpoint
+	 * Companion Descriptor  (section 9.6.7 of usb 3.0 spec)
+	 * Revision 1.0 June 6th 2011
+	 */
+	struct usb_ss_ep_comp_descriptor ss_ep_comp_desc[USB_MAXENDPOINTS];
 } __attribute__ ((packed));
 
 /* Configuration information.. */
 struct usb_config {
-	struct usb_configuration_descriptor desc;
+	struct usb_config_descriptor desc;
 
 	unsigned char	no_of_if;	/* number of interfaces */
 	struct usb_interface if_desc[USB_MAXINTERFACES];
@@ -103,7 +158,9 @@ struct usb_device {
 	int epmaxpacketout[16];		/* OUTput endpoint specific maximums */
 
 	int configno;			/* selected config number */
-	struct usb_device_descriptor descriptor; /* Device Descriptor */
+	/* Device Descriptor */
+	struct usb_device_descriptor descriptor
+		__attribute__((aligned(64)));
 	struct usb_config config; /* config descriptor */
 
 	int have_langid;		/* whether string_langid is valid yet */
@@ -122,6 +179,20 @@ struct usb_device {
 	int portnr;
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
+
+	void *controller;		/* hardware controller private data */
+	/* slot_id - for xHCI enabled devices */
+	unsigned int slot_id;
+};
+
+/*
+ * You can initialize platform's USB host or device
+ * ports by passing this enum as an argument to
+ * board_usb_init().
+ */
+enum usb_init_type {
+	USB_INIT_HOST,
+	USB_INIT_DEVICE
 };
 
 /**********************************************************************
@@ -133,10 +204,13 @@ struct usb_device {
 	defined(CONFIG_USB_SL811HS) || defined(CONFIG_USB_ISP116X_HCD) || \
 	defined(CONFIG_USB_R8A66597_HCD) || defined(CONFIG_USB_DAVINCI) || \
 	defined(CONFIG_USB_OMAP3) || defined(CONFIG_USB_DA8XX) || \
-	defined(CONFIG_USB_BLACKFIN) || defined(CONFIG_USB_DWC_OTG_HCD)
+	defined(CONFIG_USB_BLACKFIN) || defined(CONFIG_USB_AM35X) || \
+	defined(CONFIG_USB_MUSB_DSPS) || defined(CONFIG_USB_MUSB_AM35X) || \
+	defined(CONFIG_USB_MUSB_OMAP2PLUS) || defined(CONFIG_USB_XHCI) || defined(CONFIG_USB_DWC_OTG_HCD)
 
-int usb_lowlevel_init(int index);
-int usb_lowlevel_stop(void);
+int usb_lowlevel_init(int index, enum usb_init_type init, void **controller);
+int usb_lowlevel_stop(int index);
+
 int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 			void *buffer, int transfer_len);
 int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
@@ -149,9 +223,37 @@ void usb_event_poll(void);
 #define USB_UHCI_VEND_ID	0x8086
 #define USB_UHCI_DEV_ID		0x7112
 
+/*
+ * PXA25x can only act as USB device. There are drivers
+ * which works with USB CDC gadgets implementations.
+ * Some of them have common routines which can be used
+ * in boards init functions e.g. udc_disconnect() used for
+ * forced device disconnection from host.
+ */
+#elif defined(CONFIG_USB_GADGET_PXA2XX)
+
+extern void udc_disconnect(void);
 #else
 #error USB Lowlevel not defined
 #endif
+
+/*
+ * board-specific hardware initialization, called by
+ * usb drivers and u-boot commands
+ *
+ * @param index USB controller number
+ * @param init initializes controller as USB host or device
+ */
+//int board_usb_init(int index, enum usb_init_type init);
+
+/*
+ * can be used to clean up after failed USB initialization attempt
+ * vide: board_usb_init()
+ *
+ * @param index USB controller number for selective cleanup
+ * @param init usb_init_type passed to board_usb_init()
+ */
+int board_usb_cleanup(int index, enum usb_init_type init);
 
 #ifdef CONFIG_USB_STORAGE
 
@@ -162,14 +264,21 @@ int usb_stor_info(void);
 
 #endif
 
+#ifdef CONFIG_USB_HOST_ETHER
+
+#define USB_MAX_ETH_DEV 5
+int usb_host_eth_scan(int mode);
+
+#endif
+
 #ifdef CONFIG_USB_KEYBOARD
 
 int drv_usb_kbd_init(void);
-int usb_kbd_deregister(void);
+int usb_kbd_deregister(int force);
 
 #endif
 /* routines */
-int usb_init(int index); /* initialize the USB Controller */
+int usb_init(void); /* initialize the USB Controller */
 int usb_stop(void); /* stop the USB Controller */
 
 
@@ -260,7 +369,7 @@ int usb_set_interface(struct usb_device *dev, int interface, int alternate);
 /* Create various pipes... */
 #define create_pipe(dev,endpoint) \
 		(((dev)->devnum << 8) | ((endpoint) << 15) | \
-		((dev)->speed << 26) | (dev)->maxpacketsize)
+		(dev)->maxpacketsize)
 #define default_pipe(dev) ((dev)->speed << 26)
 
 #define usb_sndctrlpipe(dev, endpoint)	((PIPE_CONTROL << 30) | \
@@ -319,6 +428,10 @@ int usb_set_interface(struct usb_device *dev, int interface, int alternate);
 #define usb_pipecontrol(pipe)	(usb_pipetype((pipe)) == PIPE_CONTROL)
 #define usb_pipebulk(pipe)	(usb_pipetype((pipe)) == PIPE_BULK)
 
+#define usb_pipe_ep_index(pipe)	\
+		usb_pipecontrol(pipe) ? (usb_pipeendpoint(pipe) * 2) : \
+				((usb_pipeendpoint(pipe) * 2) - \
+				 (usb_pipein(pipe) ? 0 : 1))
 
 /*************************************************************************
  * Hub Stuff
@@ -353,5 +466,16 @@ struct usb_hub_device {
 	struct usb_device *pusb_dev;
 	struct usb_hub_descriptor desc;
 };
+
+int usb_hub_probe(struct usb_device *dev, int ifnum);
+void usb_hub_reset(void);
+int hub_port_reset(struct usb_device *dev, int port,
+			  unsigned short *portstat);
+
+struct usb_device *usb_alloc_new_device(void *controller);
+
+int usb_new_device(struct usb_device *dev);
+void usb_free_device(void);
+int usb_alloc_device(struct usb_device *dev);
 
 #endif /*_USB_H_ */

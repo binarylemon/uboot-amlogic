@@ -54,6 +54,7 @@
 #include <asm/arch/reboot.h>
 #include <partition_table.h>
 
+
 #ifdef CONFIG_AML_RTC
 #include <aml_rtc.h>
 #endif

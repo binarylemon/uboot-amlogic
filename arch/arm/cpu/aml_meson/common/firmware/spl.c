@@ -92,6 +92,27 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//detect sdio debug board
 	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
 	
+		
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_G9TV)
+
+	// clear sdio pinmux
+	setbits_le32(P_PREG_PAD_GPIO2_O,0x3f<<20);
+	setbits_le32(P_PREG_PAD_GPIO2_EN_N,0x3f<<20);
+	clrbits_le32(P_PERIPHS_PIN_MUX_2,7<<12);  //clear sd d1~d3 pinmux
+ 	
+	if(!(readl(P_PREG_PAD_GPIO2_I)&(1<<24))){  //sd_d3 low, debug board in
+		serial_puts("\nsdio debug board detected ");
+		clrbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);   //clear AO uart pinmux
+		setbits_le32(P_PERIPHS_PIN_MUX_8,3<<9);
+		
+		if((readl(P_PREG_PAD_GPIO2_I)&(1<<20)))
+		writel(0x220,P_AO_SECURE_REG1);  //enable sdio jtag
+	}
+	else{
+		serial_puts("\nno sdio debug board detected ");
+		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
+	}
+#else 			
 	// clear sdio pinmux
 	setbits_le32(P_PREG_PAD_GPIO0_O,0x3f<<22);
 	setbits_le32(P_PREG_PAD_GPIO0_EN_N,0x3f<<22);
@@ -110,6 +131,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
 	}
 #endif 
+#endif
 
 
 #ifdef AML_M6_JTAG_ENABLE
@@ -130,6 +152,9 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//asm volatile ("wfi");
 
 #endif //AML_M6_JTAG_ENABLE
+
+	//temp add
+	serial_init(readl(P_UART_CONTROL(UART_PORT_CONS))|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);
 
 	//Note: Following msg is used to calculate romcode boot time
 	//         Please DO NOT remove it!

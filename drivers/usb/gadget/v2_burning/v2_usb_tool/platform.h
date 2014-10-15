@@ -77,7 +77,11 @@ typedef __u64    __be64;
 
 
 /*M3*/
+#if defined CONFIG_AML_G9TV
+#define DWC_REG_BASE   0xc9100000
+#else
 #define DWC_REG_BASE  (0xC9040000 + PORT_REG_OFFSET)
+#endif
 #define PERI_BASE_ADDR               0xc1100000
 #define ISABASE                      0x01000000
 

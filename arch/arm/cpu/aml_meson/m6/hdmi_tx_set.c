@@ -286,7 +286,7 @@ static void hdmi_tx_misc(HDMI_Video_Codes_t vic)
         break;
     }
     hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, vic);               // PB4: [7]    Rsrv
-    if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)) {
+    if((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte_24)) {
         hdmi_wr_reg(TX_PKT_REG_AVI_INFO_BASE_ADDR+0x04, 0);             // if mode is 4k, then set vic = 0 and set to VSDB
     }
     switch(vic) {
@@ -1179,7 +1179,7 @@ static void hdmi_tx_set_vend_spec_infofram(HDMI_Video_Codes_t vic)
     VEN_HB[1] = 0x01; 
     VEN_HB[2] = 0x6; 
 
-    if(!((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte)))
+    if(!((vic >= HDMI_4k2k_30) && (vic <= HDMI_4k2k_smpte_24)))
         return;
 
     for(i = 0; i < 0x6; i++){
@@ -1196,7 +1196,7 @@ static void hdmi_tx_set_vend_spec_infofram(HDMI_Video_Codes_t vic)
         VEN_DB[4] = 0x2;
     else if(vic == HDMI_4k2k_24)
         VEN_DB[4] = 0x3;
-    else if(vic == HDMI_4k2k_smpte)
+    else if(vic == HDMI_4k2k_smpte_24)
         VEN_DB[4] = 0x4;
     else {
         // nothing

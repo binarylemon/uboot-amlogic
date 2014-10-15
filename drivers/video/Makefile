@@ -51,6 +51,10 @@ else ifdef CONFIG_AML_MESON_8
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
 	osd/m8_osd_hw.o
+else ifdef CONFIG_AML_G9TV
+COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
+	osd/canvas.o \
+	osd/g9tv_osd_hw.o
 else
 COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/canvas.o \
@@ -72,7 +76,7 @@ COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/aml_tvout.o  \
 
 ifdef CONFIG_AML_HDMI_TX
 #ifdef CONFIG_AML_MESON_8
-COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx.o
+COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx.o tvout/hdmi_parameters.o
 #endif
 #ifdef CONFIG_AML_MESON_6
 #COBJS-$(CONFIG_VIDEO_AMLTVOUT) += tvout/hdmi_tx_meson.o \

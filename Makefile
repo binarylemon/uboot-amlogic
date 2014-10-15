@@ -713,6 +713,18 @@ $(VERSION_FILE):
 		 '$(shell $(CC) --version | head -n 1)' )>>  $@.tmp
 		@( printf '#define LD_VERSION_STRING "%s"\n' \
 		 '$(shell $(LD) -v | head -n 1)' )>>  $@.tmp
+		@( printf '#define U_BOOT_GIT_BRANCH "%s"\n' \
+		 '$(shell git branch | grep \* -m 1)' )>>  $@.tmp
+		@( printf '#define U_BOOT_GIT_COMMIT "%s"\n' \
+		 '$(shell git log | grep commit -m 1 | cut -d' ' -f 2)' )>>  $@.tmp
+		@( printf '#define U_BOOT_GIT_UNCOMMIT_FILE_NUM "%s"\n' \
+		 '$(shell git diff | grep +++ -c)' )>>  $@.tmp
+		@( printf '#define U_BOOT_LAST_CHANGED "%s"\n' \
+		 '$(shell git log | grep Date -m 1)' )>>  $@.tmp
+		@( printf '#define U_BOOT_BUILD_TIME "%s"\n' \
+		 '$(shell date)' )>>  $@.tmp
+		@( printf '#define U_BOOT_BUILD_NAME "%s"\n' \
+		 '$(shell echo ${LOGNAME})' )>>  $@.tmp
 		@cmp -s $@ $@.tmp && rm -f $@.tmp || mv -f $@.tmp $@
 
 $(TIMESTAMP_FILE):

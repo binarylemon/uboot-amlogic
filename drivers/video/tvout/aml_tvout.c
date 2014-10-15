@@ -4,7 +4,7 @@
  * Copyright (C) 2011 Amlogic.
  */
 #include <common.h>
-
+#include <asm/plat-cpu.h>
 
 /********************************************************************************************
 *
@@ -20,10 +20,14 @@ static void opt_cmd_help(void)
 {
 	printf("Help:\n");
 	printf("tv sub-system\n");
-#if CONFIG_AML_MESON_8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_G9TV
+	printf("open <mode>	-open the tv out, mode is 4K2K50HZ420/4K2K60HZ420/4K2K30HZ/4K2K25HZ/4K2K24HZ/4K2KSMPTE/1080P24HZ\n1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I\n");
+#else
 	printf("open <mode>	-open the tv out, mode is 4K2K30HZ/4K2K25HZ/4K2K24HZ/4K2KSMPTE/1080P24HZ\n1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I\n");
 #endif
-#if CONFIG_AML_MESON_6
+#endif
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON6
 	printf("open <mode>	-open the tv out, mode is 1080P24HZ/1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I\n");
 #endif
 	printf("close	-close the tv out\n");
@@ -33,57 +37,67 @@ static void opt_cmd_help(void)
 
 static int to_mode(char *mode_name)
 {
-#if CONFIG_AML_MESON_8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_G9TV
+	if((strcmp(mode_name, "4K2K60HZ420")==0)||(strcmp(mode_name, "4k2k60hz420")==0))
+		return TVMODE_4K2K_60HZ_Y420;
+	if((strcmp(mode_name, "4K2K50HZ420")==0)||(strcmp(mode_name, "4k2k50hz420")==0))
+		return TVMODE_4K2K_50HZ_Y420;
+#endif
 	if((strcmp(mode_name, "4K2K30HZ")==0)||(strcmp(mode_name, "4k2k30hz")==0))
-		return TVOUT_4K2K_30HZ;
+		return TVMODE_4K2K_30HZ;
 	if((strcmp(mode_name, "4K2K25HZ")==0)||(strcmp(mode_name, "4k2k25hz")==0))
-		return TVOUT_4K2K_25HZ;
+		return TVMODE_4K2K_25HZ;
 	if((strcmp(mode_name, "4K2K24HZ")==0)||(strcmp(mode_name, "4k2k24hz")==0))
-		return TVOUT_4K2K_24HZ;
+		return TVMODE_4K2K_24HZ;
 	if((strcmp(mode_name, "4K2KSMPTE")==0)||(strcmp(mode_name, "4k2ksmpte")==0))
-		return TVOUT_4K2K_SMPTE;
+		return TVMODE_4K2K_SMPTE;
 #endif
 	if((strcmp(mode_name, "1080P")==0)||(strcmp(mode_name, "1080p")==0))
-		return TVOUT_1080P;
+		return TVMODE_1080P;
 	if((strcmp(mode_name, "1080I")==0)||(strcmp(mode_name, "1080i")==0))
-		return TVOUT_1080I;
+		return TVMODE_1080I;
 	if((strcmp(mode_name, "720P")==0)||(strcmp(mode_name, "720p")==0))
-		return TVOUT_720P;
+		return TVMODE_720P;
 	if((strcmp(mode_name, "1080P24HZ")==0)||(strcmp(mode_name, "1080p24hz")==0))
-		return TVOUT_1080P_24HZ;
+		return TVMODE_1080P_24HZ;
 	if((strcmp(mode_name, "1080P50HZ")==0)||(strcmp(mode_name, "1080p50hz")==0))
-		return TVOUT_1080P_50HZ;
+		return TVMODE_1080P_50HZ;
 	if((strcmp(mode_name, "1080I50HZ")==0)||(strcmp(mode_name, "1080i50hz")==0))
-		return TVOUT_1080I_50HZ;
+		return TVMODE_1080I_50HZ;
 	if((strcmp(mode_name, "720P50HZ")==0)||(strcmp(mode_name, "720p50hz")==0))
-		return TVOUT_720P_50HZ;
+		return TVMODE_720P_50HZ;
 	if((strcmp(mode_name, "576P")==0)||(strcmp(mode_name, "576p")==0))
-		return TVOUT_576P;
+		return TVMODE_576P;
 	if((strcmp(mode_name, "480P")==0)||(strcmp(mode_name, "480p")==0))
-		return TVOUT_480P;
+		return TVMODE_480P;
 	if((strcmp(mode_name, "576I")==0)||(strcmp(mode_name, "576i")==0))
-		return TVOUT_576I;
+		return TVMODE_576I;
 	if((strcmp(mode_name, "480I")==0)||(strcmp(mode_name, "480i")==0))
-		return TVOUT_480I;
+		return TVMODE_480I;
 	if((strcmp(mode_name, "576CVBS")==0)||(strcmp(mode_name, "576cvbs")==0))
-		return TVOUT_576CVBS;
+		return TVMODE_576CVBS;
 	if((strcmp(mode_name, "480CVBS")==0)||(strcmp(mode_name, "480cvbs")==0))
-		return TVOUT_480CVBS;
+		return TVMODE_480CVBS;
     
-	return TVOUT_MAX;
+	return TVMODE_MAX;
 }
 
 static char * to_modestr(int mode)
 {
-#define CASE_RET(_x_)	case TVOUT_##_x_: return #_x_
+#define CASE_RET(_x_)	case TVMODE_##_x_: return #_x_
 
 	switch(mode)
 	{
-#if CONFIG_AML_MESON_8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
         CASE_RET(4K2K_30HZ);
         CASE_RET(4K2K_25HZ);
         CASE_RET(4K2K_24HZ);
         CASE_RET(4K2K_SMPTE);
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_G9TV
+        CASE_RET(4K2K_60HZ_Y420);
+        CASE_RET(4K2K_50HZ_Y420);
+#endif
 #endif
 		CASE_RET(1080P_24HZ);
 		CASE_RET(1080P_50HZ);
@@ -114,7 +128,7 @@ static int tvout_open(int argc, char *argv[])
 		goto usage;
 
 	mode = to_mode(argv[1]);
-	if(mode == TVOUT_MAX)
+	if(mode == TVMODE_MAX)
 		goto usage;
 
     tv_oper.enable();
@@ -127,8 +141,8 @@ static int tvout_open(int argc, char *argv[])
 		return 1;
 	}
 #if CONFIG_AML_MESON_6
-	if(mode==TVOUT_1080I||mode==TVOUT_576I||mode==TVOUT_480I||
-		mode == TVOUT_480CVBS ||mode == TVOUT_576CVBS){
+	if(mode==TVMODE_1080I||mode==TVMODE_576I||mode==TVMODE_480I||
+		mode == TVMODE_480CVBS ||mode == TVMODE_576CVBS){
 		#ifdef CONFIG_DSP_VSYNC_INTERRUPT
 		start_dsp();
 		#endif
@@ -136,10 +150,10 @@ static int tvout_open(int argc, char *argv[])
 #endif
 	return 0;
 usage:
-#if CONFIG_AML_MESON_8
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 	puts("Usage: video dev open <mode>(4K2K30HZ/4K2K25HZ/4K2K24HZ/4K2KSMPTE/1080P24HZ\n1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I)\n");
 #endif
-#if CONFIG_AML_MESON_6
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON6
 	puts("Usage: video dev open <mode>(1080P24HZ/1080P50HZ/1080I50HZ/720P50HZ/1080P/1080I/720P/576P/480P/576I/480I)\n");
 #endif
 	return 1;

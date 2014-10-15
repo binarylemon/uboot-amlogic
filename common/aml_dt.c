@@ -1,3 +1,4 @@
+#include <asm/arch/io.h>
 
 #define AML_DT_IND_LENGTH_V1		4	/*fixed*/
 #define AML_DT_IND_LENGTH_V2		16	/*fixed*/
@@ -19,7 +20,7 @@
 #define DT_HEADER_MAGIC		0xedfe0dd0	/*header of dtb file*/
 #define AML_DT_HEADER_MAGIC	0x5f4c4d41	/*"AML_", multi dtbs supported*/
 
-#define readl(addr) (*(volatile unsigned int*)(addr))
+//#define readl(addr) (*(volatile unsigned int*)(addr))
 
 unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 	unsigned int dt_magic = readl(fdt_addr);

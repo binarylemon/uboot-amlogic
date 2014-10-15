@@ -33,7 +33,7 @@
 /* ------------------------------------------------------- */
 #define get_unaligned_16(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8))
 #define get_unaligned_32(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
-#define get_unaligned(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
+//#define get_unaligned(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
 
 static dwc_otg_device_t dwc_otg_dev;
 static int dwc_otg_port_init(dwc_otg_core_if_t * _core_if);
@@ -1621,7 +1621,7 @@ next:
  * --- Init functions ------------------------------------------------------ 
  */
 int
-usb_lowlevel_init(int index)
+usb_lowlevel_init(int index,enum usb_init_type init, void **controller)
 {
     dwc_otg_device_t *dwc_otg_device = &dwc_otg_dev;
     int             retval = 0;
@@ -1695,7 +1695,7 @@ usb_lowlevel_init(int index)
 }
 
 int
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(int index)
 {
     dwc_otg_core_if_t *core_if = dwc_otg_dev.core_if;
 

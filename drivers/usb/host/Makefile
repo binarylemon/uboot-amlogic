@@ -51,6 +51,11 @@ COBJS-$(CONFIG_USB_DWC_OTG_HCD) += dwc_otg_hcd_294.o
 else
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += dwc_otg_hcd.o
 endif
+
+# xhci
+COBJS-$(CONFIG_USB_XHCI) += xhci.o xhci-mem.o xhci-ring.o
+COBJS-$(CONFIG_USB_XHCI_AMLOGIC) += xhci-amlogic.o
+
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -34,17 +34,6 @@
 	#define VIDEO_CLOCK_HD_24	0x00140863
 	#define VIDEO_CLOCK_SD_24	0x0050042d
 
-
-typedef struct reg_s {
-    uint reg;
-    uint val;
-} reg_t;
-
-typedef struct tvinfo_s {
-    uint xres;
-    uint yres;
-    const char *id;
-} tvinfo_t;
 /*
 24M
 25M
@@ -1004,37 +993,37 @@ static const reg_t tvregs_1080p_24hz[] = {
     {MREG_END_MARKER,            0      }
 };
 
-/* The sequence of register tables items must match the enum define in tvmode.h */
-static const reg_t *tvregsTab[] = {
-    tvregs_480i,
-    tvregs_480cvbs,		
-    tvregs_480p,
-    tvregs_576i,
-    tvregs_576cvbs,
-    tvregs_576p,
-    tvregs_720p,
-    tvregs_1080i,       //Adjust tvregs_* sequences and match the enum define in tvmode.h
-    tvregs_1080p,
-    tvregs_720p_50hz,
-    tvregs_1080i_50hz,
-    tvregs_1080p_50hz,
-    tvregs_1080p_24hz,
+// Using tvmode as index
+static struct tvregs_set_t tvregsTab[] = {
+    {TVMODE_480I, tvregs_480i,        },
+    {TVMODE_480CVBS, tvregs_480cvbs,     },
+    {TVMODE_480P, tvregs_480p,        },
+    {TVMODE_576I, tvregs_576i,        },
+    {TVMODE_576CVBS, tvregs_576cvbs,     },
+    {TVMODE_576P, tvregs_576p,        },
+    {TVMODE_720P, tvregs_720p,        },
+    {TVMODE_1080I, tvregs_1080i,       },//Adjust tvregs_* sequences and match the enum define in tvmode.h
+    {TVMODE_1080P, tvregs_1080p,       },
+    {TVMODE_720P_50HZ, tvregs_720p_50hz,   },
+    {TVMODE_1080I_50HZ, tvregs_1080i_50hz,  },
+    {TVMODE_1080P_50HZ, tvregs_1080p_50hz,  },
+    {TVMODE_1080P_24HZ, tvregs_1080p_24hz,  },
 };
 
 static const tvinfo_t tvinfoTab[] = {
-    {.xres =  720, .yres =  480, .id = "480i"},
-    {.xres =  720, .yres =  480, .id = "480cvbs"},		
-    {.xres =  720, .yres =  480, .id = "480p"},
-    {.xres =  720, .yres =  576, .id = "576i"},
-    {.xres =  720, .yres =  576, .id = "576cvbs"},
-    {.xres =  720, .yres =  576, .id = "576p"},
-    {.xres = 1280, .yres =  720, .id = "720p"},
-    {.xres = 1920, .yres = 1080, .id = "1080i"},
-    {.xres = 1920, .yres = 1080, .id = "1080p"},
-    {.xres = 1280, .yres =  720, .id = "720p50hz"},
-    {.xres = 1920, .yres = 1080, .id = "1080i50hz"},
-    {.xres = 1920, .yres = 1080, .id = "1080p50hz"},
-    {.xres = 1920, .yres = 1080, .id = "1080p24hz"},
+    {.tvmode = TVMODE_480I, .xres =  720, .yres =  480, .id = "480i"},
+    {.tvmode = TVMODE_480CVBS, .xres =  720, .yres =  480, .id = "480cvbs"},
+    {.tvmode = TVMODE_480P, .xres =  720, .yres =  480, .id = "480p"},
+    {.tvmode = TVMODE_576I, .xres =  720, .yres =  576, .id = "576i"},
+    {.tvmode = TVMODE_576CVBS, .xres =  720, .yres =  576, .id = "576cvbs"},
+    {.tvmode = TVMODE_576P, .xres =  720, .yres =  576, .id = "576p"},
+    {.tvmode = TVMODE_720P, .xres = 1280, .yres =  720, .id = "720p"},
+    {.tvmode = TVMODE_1080I, .xres = 1920, .yres = 1080, .id = "1080i"},
+    {.tvmode = TVMODE_1080P, .xres = 1920, .yres = 1080, .id = "1080p"},
+    {.tvmode = TVMODE_720P_50HZ, .xres = 1280, .yres =  720, .id = "720p50hz"},
+    {.tvmode = TVMODE_1080I_50HZ, .xres = 1920, .yres = 1080, .id = "1080i50hz"},
+    {.tvmode = TVMODE_1080P_50HZ, .xres = 1920, .yres = 1080, .id = "1080p50hz"},
+    {.tvmode = TVMODE_1080P_24HZ, .xres = 1920, .yres = 1080, .id = "1080p24hz"},
 };
 
 static inline void setreg(const reg_t *r)

@@ -49,6 +49,16 @@ struct romboot_s support_socs[]={
         .write_ex=m8_write_ex,
     },
     {
+        .cpu="g9tv",
+        .write=m8_write,
+        .write_ex=m8_write_ex,
+    },
+    {
+        .cpu="g9tv+",
+        .write=m8_write_crypto,
+        .write_ex=m8_write_ex,
+    },
+    {
         .cpu="m8+",
         .write=m8_write_crypto,
         .write_ex=m8_write_ex,
