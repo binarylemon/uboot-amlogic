@@ -23,6 +23,9 @@ read one page only
 */
 #undef NAND_INFO_BUF
 
+
+#define MAX_CE_NUM_SUPPORT 4
+
 #ifdef CONFIG_NAND_AML_M8
 #define NAND_INFO_BUF 		0x10000
 #define NAND_OOB_BUF  		0x22000
@@ -35,7 +38,9 @@ read one page only
 #define NAND_DATA_BUF   0x83000000
 #endif
 
-#define NAND_SECURE_BUF   0xa00e0000
+#ifdef CONFIG_SECURE_NAND
+#define NAND_SECURE_BUF   (SECUREOS_KEY_BASE_ADDR+0xe0000)
+#endif
 
 #define 	SECURE_HEAD_MAGIC 			0x6365736e  //stand for "nsec"  in phynand.h
 #define CONFIG_SECURE_SIZE         		(0x10000*2) //128k
@@ -49,6 +54,7 @@ static struct nand_retry_t nand_retry;
 //** Default large page mode and without RB PIN, 4 ecc units
 #define DEFAULT_ECC_MODE  ((1<<23) |(1<<22) | (2<<20) |(1<<19) |(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
 //#define	NAND_RETRY_ROMCODE
+
 extern void memset(void *,int,int);
 
 unsigned char pagelist_hynix256[128] = {
@@ -480,7 +486,8 @@ void nfio_read_retry(int mode)
 
 STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src,unsigned mem, unsigned char *oob_buf, unsigned ext)
 {
-	int /*i,*/ k, ecc_mode, short_mode, short_size, pages, page_size;
+	//int i;
+	int k, ecc_mode, short_mode, short_size, pages, page_size;
 	unsigned long info_adr = NAND_INFO_BUF;
 	volatile unsigned long long * info_buf=(volatile unsigned long long *)NAND_INFO_BUF;
 	int ret = 0;
@@ -687,8 +694,8 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 {
 	int ecc_mode, short_mode, short_size, pages, page_size;
 	//unsigned por_cfg = romboot_info->por_cfg;
-	unsigned ret = 0;
-	unsigned partition_num  = 0/*, rand_mode = 0*/;
+	unsigned ret = 0;//, fsm;
+	unsigned partition_num  = 0;//, rand_mode = 0;
 	//unsigned a2h_cmd_flag = 0;
 	unsigned nand_dma_mode = DEFAULT_ECC_MODE;
 #ifdef NAND_RETRY_ROMCODE
@@ -712,7 +719,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	setbits_le32(P_PAD_PULL_UP_REG2, 0x0400);
 	
 	//default CE0 is enable
-	setbits_le32(P_PERIPHS_PIN_MUX_2, ((0x38f<<18) | (1<<17)));
+	setbits_le32(P_PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
 
 #if 0
 		// NAND uses crystal, 24 or 25 MHz 0xc110425c
@@ -861,16 +868,19 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 
 STATIC_PREFIX void nf_set_pux(unsigned ce)
 {
-	if(ce == CE0){		
-		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 25));		
-	}else if (ce == CE1){
-		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 24));	
-	}else if(ce == CE2){
-		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 23));	
-	}else if(ce == CE3){
-		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));
-	}
-	
+//	if(ce == CE0){		
+//		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 25));		
+//	}else if (ce == CE1){
+//		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 24));	
+//	}else if(ce == CE2){
+//		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 23));	
+//	}else if(ce == CE3){
+//		SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));
+//	}
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 25));
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 24));	
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 23));
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, (1 << 22));	
 	writel((ce | IDLE | 40), P_NAND_CMD); 
 }
 
@@ -905,9 +915,32 @@ STATIC_PREFIX unsigned int  select_chip(int num)
 	return ce;
 }
 
+STATIC_PREFIX  int index_of_valid_ceNum(int chipnum)
+{
+	int i,ce_num;
+
+	unsigned int ce_mask;
+	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
+
+	ce_mask = page0_info->ce_mask;
+	ce_num = chipnum;
+
+	if(ce_num > 4)
+		return	0xff;
+
+	for(i=0;i<MAX_CE_NUM_SUPPORT;i++){
+		if(ce_mask&(0x01<<ce_num))
+			break;
+		else
+			ce_num++;
+	}
+	return ce_num;
+}
+
+
 STATIC_PREFIX void send_plane0_cmd(unsigned page, unsigned ext,unsigned ce)
 {
-	int   plane_mode;
+	int  /*chip_num,*/ plane_mode;
 	unsigned int /*nand_read_info,*/ ran_mode;
 	unsigned char micron_nand_flag=0;
 	unsigned page_in_blk, blk_num, /*pages_in_block,*/ plane0, plane1;
@@ -1031,7 +1064,7 @@ STATIC_PREFIX void send_plane0_cmd(unsigned page, unsigned ext,unsigned ce)
 	}
 	// set Timer 13 ms.
 	if(ext>>23&1) { // without RB
-		serial_puts("with out rb \n");
+		//serial_puts("with out rb \n");
 		writel((ce | CLE | 0x70), P_NAND_CMD);  //read status
 		writel((ce | IDLE | 2), P_NAND_CMD);    // tWB
 		writel((IO6  | RB | 16), P_NAND_CMD);     //wait IO6
@@ -1053,7 +1086,7 @@ STATIC_PREFIX void send_plane0_cmd(unsigned page, unsigned ext,unsigned ce)
 
 STATIC_PREFIX void send_plane1_cmd(unsigned page, unsigned ext,unsigned ce)
 {
-	int   plane_mode;
+	int  /*chip_num,*/ plane_mode;
 	//unsigned int nand_read_info;
 	unsigned char micron_nand_flag=0;
 	unsigned page_in_blk, blk_num, /*pages_in_block,*/ plane0, plane1;
@@ -1123,7 +1156,7 @@ STATIC_PREFIX void send_plane1_cmd(unsigned page, unsigned ext,unsigned ce)
 
 STATIC_PREFIX void send_read_cmd(unsigned src, unsigned ext,unsigned ce)
 {
-	int   plane_mode;
+	int  /*chip_num,*/ plane_mode;
 	//unsigned int nand_read_info;
 	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
 
@@ -1157,7 +1190,7 @@ STATIC_PREFIX void send_read_cmd(unsigned src, unsigned ext,unsigned ce)
 	writel((ce | IDLE | 40), P_NAND_CMD);    // tWB, 8us
 	// set Timer 13 ms.
 	if(ext>>23&1) { // without RB
-		serial_puts("with out rb \n");
+		//serial_puts("with out rb \n");
 		writel((ce | CLE | 0x70), P_NAND_CMD);  //read status
 		writel((ce | IDLE | 2), P_NAND_CMD);    // tWB
 		writel((IO6  | RB | 16), P_NAND_CMD);     //wait IO6
@@ -1182,15 +1215,19 @@ STATIC_PREFIX void send_read_cmd(unsigned src, unsigned ext,unsigned ce)
 }
 STATIC_PREFIX void send_reset_cmd(unsigned ext)
 {
-	unsigned int i, chip_num/*,nand_read_info*/;
+	unsigned int i, chip_num, ce_mask;
 	unsigned int ce;
 	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
 	
 	//nand_read_info = *(volatile unsigned int *)(NAND_TEMP_BUF+sizeof(int)+sizeof(int) + sizeof(int) );
-	chip_num  = page0_info->nand_read_info & 0x3;
+	//chip_num  = page0_info->nand_read_info & 0x3;
+		
+	chip_num  = MAX_CE_NUM_SUPPORT;
+	ce_mask = page0_info->ce_mask;
 	
 	for(i=0;i<chip_num;i++){ //send reset cmd 0xff
 
+		if(ce_mask&(0x01<<i)){
 		ce = select_chip(i);
 		writel((ce | CLE | 0xff), P_NAND_CMD);	//reset
 		writel((ce | IDLE | 2), P_NAND_CMD);	// dummy
@@ -1209,20 +1246,41 @@ STATIC_PREFIX void send_reset_cmd(unsigned ext)
 		}
 
 		while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
+				serial_puts("reset_cmd \n");
+		}
 	}
 
 }
 
 STATIC_PREFIX unsigned nf_read_check(volatile unsigned long long *info_buf, unsigned char * oob_buf,unsigned ext, unsigned ce )
 {	
-	int  pages, k, ret=0;
+	int pages, k, ret=0, ecc_mode,extra_len=0,newoobtype=0;
 
 	pages = ext&0x3f;
-	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
+	ecc_mode = ext>>14&7;
 	
-	while(info_buf[pages-1]==0);
+	if((ecc_mode >= 2)&&(pages >=8)){
+		//serial_puts("new oob here\n");
+		extra_len = 2;
+		newoobtype =1;
+	}
+	else{
+		newoobtype =0;
+		extra_len = 0;
+	}
+	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+		do{ 
+			flush_dcache_range((unsigned long)info_buf,(unsigned long)info_buf+(pages +extra_len )*PER_INFO_BYTE);
+			//invalidate_dcache_range((unsigned long)info_buf,(unsigned long)info_buf+(pages +extra_len )*PER_INFO_BYTE); 
+		}
 
-	for (k=0; k<pages; k++){
+#endif //defined(CONFIG_AML_SPL_L1_CACHE_ON)
+		while(info_buf[pages + extra_len -1]==0);
+	
+	//while(info_buf[pages-1]==0);
+
+	for (k=extra_len; k<pages + extra_len; k++){
 
 	    	while(info_buf[k]==0);
 
@@ -1260,12 +1318,20 @@ STATIC_PREFIX unsigned nf_read_check(volatile unsigned long long *info_buf, unsi
 
 		if(ret)
 			break;
+		if(newoobtype != 1){
 
-		oob_buf[0] = (info_buf[k]&0xff);
-		oob_buf[1] = ((info_buf[k]>>8)&0xff);
+			oob_buf[0] = (info_buf[k]&0xff);
+			oob_buf[1] = ((info_buf[k]>>8)&0xff);
 
-		oob_buf += 2;
+			oob_buf += 2;
+		}
 	    	
+	}
+	if(newoobtype == 1){
+		for(k=0; k<8; k++){
+			oob_buf[k] =((info_buf[0]>> 8*k)&0xff);
+			oob_buf[k + 8] =((info_buf[1]>> 8*k)&0xff);			
+		}
 	}
 	
 	return ret;
@@ -1273,22 +1339,54 @@ STATIC_PREFIX unsigned nf_read_check(volatile unsigned long long *info_buf, unsi
 
 STATIC_PREFIX short nf_normal_read_page_hwctrl(unsigned page,unsigned  mem, unsigned char *oob_buf, unsigned ext, unsigned data_size, int chipnr)
 {
-	int i, k, chip_num, plane_mode=0/*,ecc_mode, short_mode, short_size*/;
+	int i, k, chip_num, plane_mode=0, ecc_mode, newoobtype = 0,extra_len=0;
 	unsigned long info_adr = NAND_INFO_BUF;
 	volatile unsigned long long * info_buf=(volatile unsigned long long *)NAND_INFO_BUF;
+	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
 	//unsigned int nand_read_info;
 	int ce, pages, ret=0;
 	
 	//nand_read_info = *(volatile unsigned int *)(NAND_TEMP_BUF+sizeof(int)+sizeof(int) + sizeof(int) );
-	chip_num  = 1;
+	unsigned int ce_mask;
+	ce_mask = page0_info->ce_mask;
+	//chip_num = page0_info->nand_read_info & 0x3;
+	chip_num  = MAX_CE_NUM_SUPPORT;
+	//serial_puts("nf_normal_read_page_hwctrl : chip_num\n");
+	//serial_put_hex(chip_num,32);
+	//serial_puts("\n");
+
+	//serial_puts("nf_normal_read_page_hwctrl : ce_mask\n");
+	//serial_put_hex(ce_mask,32);
+	//serial_puts("\n");
 	//plane_mode = (nand_read_info >> 2) & 0x1;
 	pages = ext&0x3f;
+	ecc_mode = ext>>14&7;
+	
+	if((ecc_mode >= 2)&&(pages >=8)){
+		//serial_puts("new oob here\n");
+		newoobtype =1;
+		extra_len = 2;
+	}
+	else{
+		extra_len = 0;
+		newoobtype =0;
+	}
 	writel(info_adr, P_NAND_IADR);
-	for(k=0;k<pages;k++){
+	for(k=0;k<pages +extra_len;k++){
 		info_buf[k]=0;
 	}
+	
+#if defined(CONFIG_AML_SPL_L1_CACHE_ON)
+	flush_dcache_range((unsigned long)info_buf,(unsigned long)info_buf+(pages +extra_len )*PER_INFO_BYTE);
+	invalidate_dcache_range(mem, mem+ 128* 8 * pages);
+#endif  	
 
 	for(i=0;i<chip_num;i++){
+		if(ce_mask&(0x01<<chipnr))
+			break;
+		else
+			chipnr++;
+	}
 		
 		while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 		writel(mem, P_NAND_DADR);
@@ -1326,7 +1424,7 @@ STATIC_PREFIX short nf_normal_read_page_hwctrl(unsigned page,unsigned  mem, unsi
 		}
 		mem += data_size;
 		oob_buf += pages *2;
-	}
+
 
 	return ret;
 }
@@ -1335,7 +1433,7 @@ STATIC_PREFIX int nf_normal_read_page(unsigned page, unsigned  mem, unsigned cha
 {
 	unsigned read_page/*, new_nand_type, pages_in_block*/;
 	//unsigned chip_num, plane_mode, ram_mode;
-	int  ret = 0;
+	int /*i,retry_cnt,*/ ret = 0;
 	//struct nand_page0_info_t *page0_info = (NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t);
 
 	//new_nand_type  = *(volatile unsigned int *)(NAND_TEMP_BUF+sizeof(int) + sizeof(int));
@@ -1360,7 +1458,7 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 {
 	unsigned ext = romboot_info->ext;
 	unsigned int read_size, data_size;
-	int page_base;//, retry_cnt, read_page,  tmp_page;
+	int /*retry_cnt, read_page, tmp_page,*/ page_base;
 	unsigned char *oob_buf = (unsigned char *)NAND_OOB_BUF;
 	unsigned mem, count, pages;
 	int /*pages_in_block,*/ total_page = 1024;
@@ -1429,7 +1527,7 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 #ifdef CONFIG_SECURE_NAND
 	//load os_key	
 	psecure = (unsigned char*)NAND_SECURE_BUF;
-
+	//extern void * memset(void * s,char c,size_t count);
 	memset((void*)psecure, 0, 0x100);
 	nf_read_secure(target);
 #endif
@@ -1442,25 +1540,42 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 STATIC_PREFIX void nf_read_secure(unsigned target)
 {
 	unsigned ext = romboot_info->ext;
-	unsigned pages_in_block, data_size/*, read_size, page_base*/;
-	unsigned ok_flag, read_page,tmp_page, key_addr, sec_pages, pages;
+	unsigned pages_in_block, data_size /*, read_size, page_base*/;
+	unsigned ok_flag, read_page,tmp_page, key_addr, sec_pages, pages, reg_v32, ecc_mode,newoobtype=0;
 	unsigned  data_buf = NAND_DATA_BUF;
 	unsigned char *oob_buf = (unsigned char *)NAND_OOB_BUF;
-	int i=0, j,  times,  times_tamp=0, ret = 0;
-   	unsigned int magic_name,plane,chip_num/*,nand_read_info*/;
+	int i, j, times, times_tamp=0, ret = 0;
+   	unsigned int magic_name,plane,chip_num /*,nand_read_info,ce*/;
 	unsigned int secure_blk,chipnr, tmp_blk, start_blk = 0;
 	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));	
 	
 	plane = 1;
 	data_size = 0;
 	pages = (ext&0x3f);
+	serial_put_hex(pages,32);
+	serial_puts("\n");
+	ecc_mode = (ext>>14)&7;
+	
+	if((ecc_mode >= 2)&&(pages >=8)){
+		//serial_puts("new oob here\n");
+		newoobtype =1;
+	}
 	//init hw config and get nand info from page0
 	ret = nf_init(ext, &data_size);
 	if(ret){
 		serial_puts("nfio init failed here\n");
 		//return ret;
-		return ;
+		return;
 	}
+
+	#define AMLNF_WRITE_REG(reg, val)			*(volatile unsigned *)(reg) = (val)
+	#define AMLNF_READ_REG(reg) 				*(volatile unsigned *)(reg)	
+	
+	if(newoobtype == 1) {
+		reg_v32=AMLNF_READ_REG(P_NAND_CFG);
+		reg_v32 |= 3<<26;
+		AMLNF_WRITE_REG(P_NAND_CFG, reg_v32);
+	}	
 
 	//pages_in_block = *(volatile int *)(NAND_TEMP_BUF + sizeof(int));
 	pages_in_block = page0_info->pages_in_block;
@@ -1481,6 +1596,7 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 	serial_puts("\n");
 #endif
 
+	   setbits_le32(P_PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
 	send_reset_cmd(ext);
 	
 	ok_flag = 0;
@@ -1493,6 +1609,7 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 
 		tmp_page =(((start_blk - start_blk % chip_num) /chip_num) + tmp_blk -tmp_blk/chip_num) * pages_in_block;
 		chipnr = start_blk % chip_num;
+		i=0;
 		ret = nf_normal_read_page(tmp_page, (data_buf+ i*(data_size)), oob_buf, ext, data_size,chipnr);
 		if(ret == ERROR_NAND_BLANK_PAGE) {
 			continue;
@@ -1627,6 +1744,11 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 	}
 
 error_exit:
+	if(newoobtype == 1) {	
+		reg_v32=AMLNF_READ_REG(P_NAND_CFG);
+		reg_v32 &= ~(3<<26);
+		AMLNF_WRITE_REG(P_NAND_CFG, reg_v32);
+	}
 	return;
 }
 #endif

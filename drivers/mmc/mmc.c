@@ -674,6 +674,34 @@ int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 	return mmc_send_cmd(mmc, &cmd, NULL);
 }
 
+int mmc_send_status(struct mmc *mmc)
+{
+	struct mmc_cmd cmd;
+	unsigned int timeout = 0;
+	int err;
+	uint *res = (uint*)(&(cmd.response[0]));
+	do {		
+		cmd.cmdidx = MMC_CMD_SEND_STATUS;
+		cmd.cmdarg = mmc->rca << 16;
+		cmd.resp_type = MMC_RSP_R1;
+		cmd.flags = 0;
+		
+		err = mmc_send_cmd(mmc, &cmd, NULL);
+		if (err || (*res & 0xFDF92000)) {
+			printf("error %d requesting status %#x\n", err, *res);
+		//	return -1;
+		}
+		
+		timeout ++;
+		if (timeout > 10*60*1000){
+			printf("error:eMMC is not ready in a long time\n");
+			return -2;
+		}
+		mdelay(1);		
+	} while (err ||!(*res & R1_READY_FOR_DATA) || (R1_CURRENT_STATE(*res) == R1_STATE_PRG));
+	return 0;
+}
+
 int mmc_change_freq(struct mmc *mmc)
 {
 	char ext_csd[512];
@@ -710,10 +738,13 @@ int mmc_change_freq(struct mmc *mmc)
 	cardtype = ext_csd[196] & 0xf;
 
 	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_HS_TIMING, 1);
-	mdelay(1);
+//	mdelay(1);
 	if (err)
 		return err;
-
+	
+	err = mmc_send_status(mmc);
+	if (err)
+		return err;	
 	/* Now check to see that it worked */
 	err = mmc_send_ext_csd(mmc, ext_csd);
 
@@ -1115,7 +1146,9 @@ int mmc_startup(struct mmc *mmc)
 
 			if (err)
 				return err;
-
+			err = mmc_send_status(mmc);
+			if (err)
+				return err;
 			mmc_set_bus_width(mmc, 4);
 		} else if (mmc->card_caps & MMC_MODE_8BIT) {
 			/* Set the card to use 8 bit*/
@@ -1125,7 +1158,9 @@ int mmc_startup(struct mmc *mmc)
 
 			if (err)
 				return err;
-
+			err = mmc_send_status(mmc);
+			if (err)
+				return err;
 			mmc_set_bus_width(mmc, 8);
 		}
 

@@ -44,8 +44,9 @@ struct nand_page0_info_t{
 	unsigned new_nand_type;
 	unsigned pages_in_block;
 	unsigned secure_block;
-	unsigned reserved[4];
-} ;
+	//unsigned reserved[4];
+    unsigned ce_mask;	
+    unsigned reserved[3];} ;
 
 typedef union nand_core_clk {
     /** raw register data */
@@ -109,7 +110,7 @@ typedef union nand_core_clk {
 #define NAND_SECURE_BLK    			2
 #define SECURE_STORE_MAGIC		0x9fe7d05c
 #define REMAIN_BLOCK_NUM 			4
-#define	NAND_SEC_MAX_BLK_NUM   4
+//#define	NAND_SEC_MAX_BLK_NUM   4
 
 #define CONFIG_SECURE_SIZE         		(0x10000*2) //128k
 #define SECURE_SIZE (CONFIG_SECURE_SIZE - (sizeof(uint32_t)))

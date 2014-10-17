@@ -2928,12 +2928,13 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 #ifdef CONFIG_AML_NAND_KEY
 		//never erase env_valid_node and aml_nandkey_info blocks if aml_nandkey_info valid.
 	#ifdef CONFIG_SECURE_NAND
-		if(aml_chip->aml_nandkey_info->env_valid &&( !aml_chip->key_protect)){
-			
-				if(((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr < aml_chip->aml_nandsecure_info->start_block))){
+	    if(aml_chip->aml_nandkey_info !=NULL){
+		    if(aml_chip->aml_nandkey_info->env_valid &&( !aml_chip->key_protect)){			
+				if(((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr < aml_chip->aml_nandkey_info->end_block))){
 						return;
 				}
 			}
+		}
 		if(aml_chip->aml_nandsecure_info != NULL){
 			if(aml_chip->aml_nandsecure_info->secure_valid &&( !aml_chip->secure_protect)){
 					if(((block_addr >= aml_chip->aml_nandsecure_info->start_block) && (block_addr <= aml_chip->aml_nandsecure_info->end_block))){
@@ -2942,12 +2943,14 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 				}
 		}
 	#else
-		if(aml_chip->aml_nandkey_info->env_valid &&( !aml_chip->key_protect)){
-	
-			if(((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr	<= aml_chip->aml_nandkey_info->end_block))){
-					return;
-			}
-		}
+	    if(aml_chip->aml_nandkey_info !=NULL){
+    		if(aml_chip->aml_nandkey_info->env_valid &&( !aml_chip->key_protect)){
+    	
+    			if(((block_addr >= aml_chip->aml_nandkey_info->start_block) && (block_addr	<= aml_chip->aml_nandkey_info->end_block))){
+    					return;
+    			}
+    		}
+	    }
 	#endif
 		if((aml_chip->aml_nandenv_info->env_valid_node->env_status) && (block_addr == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)){
 				 aml_nand_free_valid_env(mtd);
@@ -2955,11 +2958,13 @@ static void aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 #else 
 
 #ifdef CONFIG_SECURE_NAND
-		if(aml_chip->aml_nandsecure_info->secure_valid &&( !aml_chip->secure_protect)){
-			if(((block_addr >= aml_chip->aml_nandsecure_info->start_block) && (block_addr <= aml_chip->aml_nandsecure_info->end_block))){
-					return;
-			}
-		}
+        if(aml_chip->aml_nandsecure_info != NULL){
+    		if(aml_chip->aml_nandsecure_info->secure_valid &&( !aml_chip->secure_protect)){
+    			if(((block_addr >= aml_chip->aml_nandsecure_info->start_block) && (block_addr <= aml_chip->aml_nandsecure_info->end_block))){
+    					return;
+    			}
+    		}
+    	}
 #endif
 			
 		if ((aml_chip->aml_nandenv_info->env_valid_node->env_status) && (((page / valid_page_num) >> pages_per_blk_shift) == aml_chip->aml_nandenv_info->env_valid_node->phy_blk_addr)){

@@ -444,12 +444,11 @@ void get_sys_clk_rate(int * rate)
 		}		
 	}
 
-		
-
 	chip_num = controller->chip_num;
-	aml_nand_msg("chip_num %d controller->chip_num %d",chip_num,controller->chip_num);
+	aml_nand_msg("chip_num %d controller->chip_num %d, ce bitmask %0x",chip_num,controller->chip_num, aml_chip->ce_bit_mask);
 	nand_read_info = chip_num;	// chip_num occupy the lowest 2 bit
 
+	info->ce_mask = aml_chip->ce_bit_mask;
 	info->nand_read_info = nand_read_info;
 	info->pages_in_block = pages_per_blk;
 	info->new_nand_type = new_nand_type;
@@ -486,7 +485,9 @@ int aml_sys_info_init(struct amlnand_chip *aml_chip)
 #ifdef CONFIG_SECURITYKEY
 	nand_arg_info * nand_key = &aml_chip->nand_key;  
 #endif
-	//nand_arg_info  * nand_secure= &aml_chip->nand_secure;
+#ifdef CONFIG_SECURE_NAND
+	nand_arg_info  * nand_secure= &aml_chip->nand_secure;
+#endif
 	nand_arg_info *  uboot_env =  &aml_chip->uboot_env;
 	unsigned char *buf = NULL;
 	unsigned int buf_size = MAX(CONFIG_SECURE_SIZE,CONFIG_KEYSIZE);
@@ -538,7 +539,7 @@ int aml_sys_info_init(struct amlnand_chip *aml_chip)
 
 #ifdef CONFIG_SECURE_NAND
 	if(nand_secure->arg_valid == 0){
-		ret = amlnand_save_info_by_name(aml_chip,&(aml_chip->nand_secure),buf, SECURE_INFO_HEAD_MAGIC,CONFIG_SECURE_SIZE);
+		ret = amlnand_save_info_by_name(aml_chip,(unsigned char *)(&aml_chip->nand_secure),buf, (unsigned char *)SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
 		if(ret < 0){
 			aml_nand_msg("nand save default secure_ptr failed");
 			goto exit_error;
