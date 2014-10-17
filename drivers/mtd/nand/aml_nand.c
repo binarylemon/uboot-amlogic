@@ -3579,13 +3579,13 @@ dma_retry_plane1:
 						mtd->ecc_stats.corrected += stat;
 					}
 #ifdef NEW_NAND_SUPPORT
-					if( readretry_failed_cnt && (aml_chip->new_nand_info.read_rety_info.read_retry_exit)) {
-						if(aml_chip->new_nand_info.type == SANDISK_19NM) {
+					if( readretry_failed_cnt ) {
+						if((aml_chip->new_nand_info.type == SANDISK_19NM)&& (aml_chip->new_nand_info.dynamic_read_info.dynamic_read_exit)) {
 							aml_chip->new_nand_info.dynamic_read_info.dynamic_read_exit(mtd, i);
 					}
-						else if(aml_chip->new_nand_info.type)
+						else if((aml_chip->new_nand_info.type)&& (aml_chip->new_nand_info.read_rety_info.read_retry_exit))
 							aml_chip->new_nand_info.read_rety_info.read_retry_exit(mtd, i);
-					}
+					}					
 #endif
 					oob_buf += user_byte_num;
 					buf += nand_page_size;
@@ -4022,11 +4022,11 @@ dma_retry_plane1:
 						mtd->ecc_stats.corrected += stat;
 					}
 #ifdef NEW_NAND_SUPPORT
-					if( readretry_failed_cnt && (aml_chip->new_nand_info.read_rety_info.read_retry_exit)) {
-						if(aml_chip->new_nand_info.type == SANDISK_19NM) {
+					if( readretry_failed_cnt ) {
+						if((aml_chip->new_nand_info.type == SANDISK_19NM)&& (aml_chip->new_nand_info.dynamic_read_info.dynamic_read_exit)) {
 							aml_chip->new_nand_info.dynamic_read_info.dynamic_read_exit(mtd, i);
 					}
-						else if(aml_chip->new_nand_info.type)
+						else if((aml_chip->new_nand_info.type)&& (aml_chip->new_nand_info.read_rety_info.read_retry_exit))
 							aml_chip->new_nand_info.read_rety_info.read_retry_exit(mtd, i);
 					}
 #endif
