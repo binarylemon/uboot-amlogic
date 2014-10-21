@@ -725,29 +725,29 @@ static int get_boot_device(void)
 {
 
 	
-	if(POR_SPI_BOOT()){
+	if((device_boot_flag == SPI_BOOT_FLAG)){
 		boot_device_flag = 0; // spi boot 
 		aml_nand_msg("SPI BOOT: boot_device_flag %d",boot_device_flag);
 		return 0;
 	}
 
-	if(POR_NAND_BOOT()){
+	if(device_boot_flag == NAND_BOOT_FLAG){
 		boot_device_flag = 1; // nand boot
 		aml_nand_msg("NAND BOOT: boot_device_flag %d",boot_device_flag);
 		return 0;
 	}
 
-	if(POR_EMMC_BOOT()){
+	if(device_boot_flag == EMMC_BOOT_FLAG){
 		boot_device_flag = -1;
 		aml_nand_msg("EMMC BOOT: not init nand");
 		return -1;
 	}
-	if(POR_CARD_BOOT()){
+	if(device_boot_flag == CARD_BOOT_FLAG){
 		boot_device_flag = -1;
 		aml_nand_msg("CARD BOOT: not init nand");
 		return -1;
 	}
-	
+	printf("boot_device_flag %d\n",boot_device_flag);
 	return 0;
 }
 struct amlnand_phydev *aml_phy_get_dev(char * name)

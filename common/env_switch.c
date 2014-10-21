@@ -48,18 +48,29 @@ void env_relocate_spec(void)
 	extern void nand_env_relocate_spec(void);
 	extern void spi_env_relocate_spec(void);
 	extern void emmc_env_relocate_spec(void);
-
+#ifdef CONFIG_STORE_COMPATIBLE
+	if(device_boot_flag == NAND_BOOT_FLAG){
+#else
 	if(POR_NAND_BOOT()){
+#endif
 		printk("NAND BOOT,nand_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "NAND";
 		nand_env_relocate_spec();
+#ifdef CONFIG_STORE_COMPATIBLE
+	}else if((device_boot_flag == SPI_NAND_FLAG)||(device_boot_flag == SPI_EMMC_FLAG)){
+#else
 	}else if(POR_SPI_BOOT()){
+#endif
 		printk("SPI BOOT,spi_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "SPI Flash";
 		spi_env_relocate_spec();
 	}
 #if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
-	else if(POR_EMMC_BOOT()) {
+#ifdef CONFIG_STORE_COMPATIBLE
+	else if(device_boot_flag == EMMC_BOOT_FLAG) {
+#else
+	else if(POR_EMMC_BOOT()){
+#endif
 		printk("MMC BOOT, emmc_env_relocate_spec : %s %d \n",__func__,__LINE__);
 		env_name_spec = "eMMC";
 		emmc_env_relocate_spec();
@@ -96,21 +107,37 @@ int saveenv(void)
 	extern int nand_saveenv(void);
 	extern int spi_saveenv(void);
 	extern int emmc_saveenv(void);
-
+#ifdef CONFIG_STORE_COMPATIBLE
+	if(device_boot_flag == NAND_BOOT_FLAG){
+#else
 	if(POR_NAND_BOOT()){
+#endif
 		printk("NAND BOOT,nand_saveenv :%s %d \n",__func__,__LINE__);
 		ret = nand_saveenv();
+#ifdef CONFIG_STORE_COMPATIBLE
+	}else if((device_boot_flag == SPI_EMMC_FLAG)||(device_boot_flag == SPI_NAND_FLAG)){
+#else
 	}else if(POR_SPI_BOOT()){
+#endif
 		printk("SPI BOOT,spi_saveenv : %s %d \n",__func__,__LINE__);
 		ret = spi_saveenv();
 	}
 #if defined(CONFIG_SPI_NAND_EMMC_COMPATIBLE) || defined(CONFIG_STORE_COMPATIBLE)
+#ifdef CONFIG_STORE_COMPATIBLE
+	else if(device_boot_flag == EMMC_BOOT_FLAG){
+#else
 	else if(POR_EMMC_BOOT()){
+#endif
 		printk("MMC BOOT,emmc_saveenv : %s %d \n",__func__,__LINE__);
 		ret = emmc_saveenv();
 	}
 #endif
-	else if (POR_CARD_BOOT()){
+
+#ifdef CONFIG_STORE_COMPATIBLE
+	else if (device_boot_flag == CARD_BOOT_FLAG){
+#else
+	else if(POR_CARD_BOOT()){
+#endif
 		printk("BOOT FROM CARD?\n");
 		if(!run_command("sf probe 2", 0)){
 			printk("SPI BOOT, spi_saveenv %s %d \n",__func__,__LINE__);

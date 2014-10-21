@@ -114,7 +114,7 @@ int mmc_get_partition_table (struct mmc *mmc)
 	for (i=0; i < ARRAY_SIZE(emmc_partition_table); i++) {
 #if MESON_CPU_TYPE < MESON_CPU_TYPE_MESON8B	//force emmc boot     
         if((!strncmp(emmc_partition_table[i].name, MMC_BOOT_NAME, MAX_MMC_PART_NAME_LEN)) // eMMC boot partition
-                && (!POR_EMMC_BOOT())) { // not eMMC boot, skip
+                && ((device_boot_flag!=EMMC_BOOT_FLAG))) { // not eMMC boot, skip
             printf("Not emmc boot, POR_BOOT_VALUE=%d\n", POR_BOOT_VALUE);
             continue;
         }
@@ -129,7 +129,7 @@ int mmc_get_partition_table (struct mmc *mmc)
             if (!strncmp(part_ptr[part_num-1].name, MMC_BOOT_NAME, MAX_MMC_PART_NAME_LEN)) { // eMMC boot partition
                 resv_size = MMC_BOOT_PARTITION_RESERVED;
 #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8B                
-                if(!POR_EMMC_BOOT()){  //for spi boot case
+                if((device_boot_flag!=EMMC_BOOT_FLAG)){  //for spi boot case
                     part_ptr[part_num].name[strlen(MMC_BOOT_NAME)] = 'e';
                     part_ptr[part_num].name[strlen(MMC_BOOT_NAME)+1] = '\0';
 

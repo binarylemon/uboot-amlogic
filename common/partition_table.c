@@ -141,7 +141,7 @@ exit_err:
 	}
 	return ret;
 }
-
+/*
 int get_storage_device_flag(int init_ret)
 {
 	printf("get_boot_device_flag: init_ret %d\n",init_ret);
@@ -176,7 +176,7 @@ int get_storage_device_flag(int init_ret)
 
 	return -1;
 }
-
+*/
 
 void set_storage_device_flag(void)
 {
@@ -201,6 +201,18 @@ void set_storage_device_flag(void)
 		}
 	 }
 	return ;
+}
+
+int get_storage_device_flag(void)// return -1 error;
+{
+		char *s =NULL;
+		int tmp_num = -1;
+		s = getenv("store");
+		if (!s)
+		return -1; 
+		tmp_num = simple_strtoul(s,NULL,16);
+		printf("get_storage_device_flag: store %d\n",tmp_num);
+		return tmp_num;
 }
 
 bool is_nand_exist (void) // is nand exist

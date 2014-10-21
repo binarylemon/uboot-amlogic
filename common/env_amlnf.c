@@ -417,7 +417,15 @@ void env_relocate_spec (void)
 #if !defined(ENV_IS_EMBEDDED)
 	int ret;
 	env_t env_buf;
-	
+	//only init once for env relocate
+	static int flag=0;
+	if(flag == 0){
+		flag = 1;
+	}
+	else{
+		printf("nand env have been init already, just retun here\n");
+		return ;
+	}
 	memset(env_buf.data, 0, ENV_SIZE);
 	ret = readenv((u_char *) &env_buf);
 	if (ret ) {
