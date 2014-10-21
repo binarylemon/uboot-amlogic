@@ -356,6 +356,8 @@ typedef struct {
 	unsigned short power_on_delay;
 	unsigned char method;
 	int gpio;
+	unsigned char gpio_on;
+	unsigned char gpio_off;
 	unsigned dim_max;
 	unsigned dim_min;
 	unsigned char pwm_port;

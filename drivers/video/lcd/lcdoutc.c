@@ -55,6 +55,7 @@ extern int  set_mio_mux(unsigned mux_index, unsigned mux_mask);
 extern void lcd_default_config_init(Lcd_Config_t *pConf);
 extern void backlight_default_config_init(Lcd_Bl_Config_t *bl_config);
 
+
 unsigned int lcd_print_flag = 0;
 unsigned int lcd_debug_flag = 0;
 void lcd_print(const char *fmt, ...)
@@ -168,7 +169,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 				WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, 1, 12, 2);
 #endif
 				mdelay(20);
-				aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
+				aml_lcd_gpio_set(pDev->bl_config->gpio, pDev->bl_config->gpio_on);
 				break;
 			case BL_CTL_PWM_NEGATIVE:
 			case BL_CTL_PWM_POSITIVE:
@@ -196,7 +197,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 				}
 				mdelay(20);
 				if (pDev->bl_config->pwm_gpio_used)
-					aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_HIGH);
+					aml_lcd_gpio_set(pDev->bl_config->gpio, pDev->bl_config->gpio_on);
 				break;
 			case BL_CTL_PWM_COMBO:
 				switch (pDev->bl_config->combo_high_port) {
@@ -265,13 +266,13 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	else {
 		switch (pDev->bl_config->method) {
 			case BL_CTL_GPIO:
-				aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
+				aml_lcd_gpio_set(pDev->bl_config->gpio, pDev->bl_config->gpio_off);
 				break;
 			case BL_CTL_PWM_NEGATIVE:
 			case BL_CTL_PWM_POSITIVE:
 				if (pDev->bl_config->pwm_gpio_used) {
 					if (pDev->bl_config->gpio)
-						aml_lcd_gpio_set(pDev->bl_config->gpio, LCD_POWER_GPIO_OUTPUT_LOW);
+						aml_lcd_gpio_set(pDev->bl_config->gpio, pDev->bl_config->gpio_off);
 				}
 				switch (pDev->bl_config->pwm_port) {
 					case BL_PWM_A:
@@ -1764,20 +1765,46 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	lcd_print("bl control_method: %s(%u)\n", bl_ctrl_method_table[bl_conf->method], bl_conf->method);
 	
 	if (bl_conf->method == BL_CTL_GPIO) {
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port", NULL);
+		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port_on_off", NULL);
 		if (propdata == NULL) {
-			printf("faild to get bl_gpio_port\n");
+			printf("faild to get bl_gpio_port_on_off\n");
 #ifdef GPIODV_28
 			bl_conf->gpio = GPIODV_28;
+			bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
+			bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 #endif
 #ifdef GPIOD_1
 			bl_conf->gpio = GPIOD_1;
+			bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
+			bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 #endif
 		}
 		else {
-			bl_conf->gpio = aml_lcd_gpio_name_map_num(propdata);
+			prop = container_of(propdata, struct fdt_property, data);
+			p = prop->data;
+			str = p;
+			bl_conf->gpio = aml_lcd_gpio_name_map_num(p);
+			p += strlen(p) + 1;
+			str = p;
+			if (strncmp(str, "2", 1) == 0)
+				bl_conf->gpio_on = LCD_POWER_GPIO_INPUT;
+			else if (strncmp(str, "0", 1) == 0)
+				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_LOW;
+			else
+				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;	
+					
+			p += strlen(p) + 1;
+			str = p;
+			if (strncmp(str, "2", 1) == 0)
+				bl_conf->gpio_off = LCD_POWER_GPIO_INPUT;
+			else if (strncmp(str, "1", 1) == 0)
+				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_HIGH;
+			else
+				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;				
 		}
-		lcd_print("bl gpio = %s(%d)\n", propdata, bl_conf->gpio);
+
+		lcd_print("bl gpio =%d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on,bl_conf->gpio_off);
+		
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_dim_max_min", NULL);
 		if(propdata == NULL){
 			printf("faild to get bl_gpio_dim_max_min\n");
@@ -1821,20 +1848,44 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		lcd_print("bl pwm_port: %s(%u)\n", propdata, bl_conf->pwm_port);
 		lcd_print("bl pwm gpio_used: %u\n", bl_conf->pwm_gpio_used);
 		if (bl_conf->pwm_gpio_used == 1) {
-			propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port", NULL);
+			propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port_on_off", NULL);
 			if (propdata == NULL) {
-				printf("faild to get bl_gpio_port\n");
+				printf("faild to get bl_gpio_port_on_off\n");
 	#ifdef GPIODV_28
 				bl_conf->gpio = GPIODV_28;
+				bl_conf->gpio_on = 1;
+				bl_conf->gpio_off = 0;
 	#endif
 	#ifdef GPIOD_1
 				bl_conf->gpio = GPIOD_1;
+				bl_conf->gpio_on = 1;
+				bl_conf->gpio_off = 0;
 	#endif
 			}
 			else {
-				bl_conf->gpio = aml_lcd_gpio_name_map_num(propdata);
+				prop = container_of(propdata, struct fdt_property, data);
+				p = prop->data;
+				str = p;
+				bl_conf->gpio = aml_lcd_gpio_name_map_num(p);
+				p += strlen(p) + 1;
+				str = p;
+				if (strncmp(str, "2", 1) == 0)
+						bl_conf->gpio_on = 2;
+				else if (strncmp(str, "0", 1) == 0)
+						bl_conf->gpio_on = 0;
+				else
+						bl_conf->gpio_on = 1;	
+					
+				p += strlen(p) + 1;
+				str = p;
+				if (strncmp(str, "2", 1) == 0)
+						bl_conf->gpio_off = 2;
+				else if (strncmp(str, "1", 1) == 0)
+						bl_conf->gpio_off = 1;
+				else
+						bl_conf->gpio_off = 0;
 			}
-			lcd_print("bl gpio = %s(%d)\n", propdata, bl_conf->gpio);
+			lcd_print("bl gpio = %d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on, bl_conf->gpio_off);
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_freq", NULL);
 		if(propdata == NULL){

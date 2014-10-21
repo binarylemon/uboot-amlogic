@@ -23,6 +23,7 @@ struct aml_bl_extern_driver_t {
 	int (*power_on) (void);
 	int (*power_off)(void);
 	int (*set_level)(unsigned int level);
+	int (*get_bl_ext_config)(char *dt_addr);
 };
 
 #define BL_EXTERN_GPIO_NONE GPIO_MAX
@@ -31,6 +32,8 @@ struct bl_extern_config_t {
 	Bl_Extern_Type_t type;
 	unsigned int gpio_used;
 	int gpio;
+	unsigned char gpio_on;
+	unsigned char gpio_off;
 	int i2c_addr;
 	int i2c_bus;
 	int spi_cs;
