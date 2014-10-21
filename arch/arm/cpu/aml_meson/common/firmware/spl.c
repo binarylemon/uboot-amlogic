@@ -79,8 +79,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
+	
+#if (MESON_CPU_TYPE != MESON_CPU_TYPE_MESON8B)//reg[14] is PWM_C pinmux enable/disable in m8baby,remove MESON_CPU_TYPE_MESON8B for PWM_C disabled.
 	//TDO enable
 	writel(readl(0xc8100014)|0x4000,0xc8100014);
+#endif
 	
 	//detect sdio debug board
 	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
