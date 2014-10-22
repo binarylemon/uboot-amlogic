@@ -800,6 +800,9 @@ static const struct {
 #ifdef CONFIG_SPI_FLASH_PMDEVICE
 	{ 0, 0x7f, spi_flash_probe_pmdevice, },
 #endif
+#ifdef CONFIG_SPI_FLASH_ESMT
+	{ 0, 0x8c, spi_flash_probe_esmt, },
+#endif
 #ifdef CONFIG_SPI_FRAM_RAMTRON
 	{ 6, 0xc2, spi_fram_probe_ramtron, },
 # undef IDCODE_CONT_LEN

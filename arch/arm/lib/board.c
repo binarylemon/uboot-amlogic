@@ -308,7 +308,9 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	arm_pci_init,
 #endif
+#if !defined(CONFIG_M3)
    hdmi_hdcp_clear_ksv_ram,
+#endif
 #ifdef CONFIG_AML_EFUSE_INIT_PLUS
     efuse_aml_init_plus,
 #endif //CONFIG_AML_EFUSE_INIT_PLUS

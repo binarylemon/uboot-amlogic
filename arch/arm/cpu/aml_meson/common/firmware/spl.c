@@ -46,7 +46,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
+#if defined(CONFIG_M3)
+	serial_init(52);
+#else
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
+#endif
 
 //write ENCI_MACV_N0 (CBUS 0x1b30) to 0, disable Macrovision
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV)||defined(CONFIG_M6TVD)
@@ -149,7 +153,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #if !defined(CONFIG_VLSI_EMULATOR)
     // initial pll
     pll_init(&__plls);
+
+#if !defined(CONFIG_M3)
 	serial_init(__plls.uart);
+#endif
+
 #else
 	serial_init(readl(P_UART_CONTROL(UART_PORT_CONS))|UART_CNTL_MASK_TX_EN|UART_CNTL_MASK_RX_EN);
 	serial_puts("\n\nAmlogic log: UART OK for emulator!\n");

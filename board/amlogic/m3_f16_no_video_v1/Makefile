@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2006
+# (C) Copyright 2000, 2001, 2002
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
 # See file CREDITS for list of people who contributed to this
@@ -12,7 +12,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -23,35 +23,23 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	:= $(obj)libspi_flash.o
+LIB	= $(obj)lib$(BOARD).o
 
-ifdef CONFIG_AMLOGIC_SPI_FLASH
-COBJS-$(CONFIG_SPI_FLASH)	+= spi_flash_amlogic.o
-else
-COBJS-$(CONFIG_SPI_FLASH)	+= spi_flash.o
-endif
-COBJS-$(CONFIG_SPI_FLASH_ATMEL)	+= atmel.o
-COBJS-$(CONFIG_SPI_FLASH_EON)	+= eon.o
-COBJS-$(CONFIG_SPI_FLASH_MACRONIX)	+= macronix.o
-COBJS-$(CONFIG_SPI_FLASH_SPANSION)	+= spansion.o
-COBJS-$(CONFIG_SPI_FLASH_SST)	+= sst.o
-COBJS-$(CONFIG_SPI_FLASH_STMICRO)	+= stmicro.o
-COBJS-$(CONFIG_SPI_FLASH_WINBOND)	+= winbond.o
-COBJS-$(CONFIG_SPI_FRAM_RAMTRON)	+= ramtron.o
-COBJS-$(CONFIG_SPI_M95XXX) += eeprom_m95xxx.o
-COBJS-$(CONFIG_SPI_FLASH_GIGADEVICE) += gigadevice.o
-COBJS-$(CONFIG_SPI_FLASH_PMDEVICE) += pmdevice.o
-COBJS-$(CONFIG_SPI_NOR_SECURE_STORAGE) += spi_secure_storage.o
-COBJS-$(CONFIG_SPI_FLASH_ESMT) += esmt.o
+CSRCS	:= $(wildcard *.c */*.c)
+CSRCS	:= $(subst firmware/timming.c,,$(CSRCS))
+COBJS	:= $(CSRCS:%.c=%.o)
 
-COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-all:	$(LIB)
-
-$(LIB): $(obj).depend $(OBJS)
+$(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+
+clean:
+	rm -f $(OBJS)
+
+distclean:	clean
+	rm -f $(LIB) core *.bak $(obj).depend
 
 #########################################################################
 
@@ -59,5 +47,3 @@ $(LIB): $(obj).depend $(OBJS)
 include $(SRCTREE)/rules.mk
 
 sinclude $(obj).depend
-
-#########################################################################

@@ -88,15 +88,20 @@ unsigned char pagelist_1ynm_hynix256[128] = {
 	0xEf, 0xf1, 0xF3, 0xF5, 0xF7, 0xF9, 0xFb, 0xFd,
 };
 #endif
+
+#ifndef CONFIG_M3
 extern unsigned int aml_mx_get_id(void);
+#endif
+
 static unsigned mx_nand_check_chiprevd(void)
 {
     unsigned flag = 0;
     
+#ifndef CONFIG_M3    
     if(aml_mx_get_id() == MX_REV_D_ID){
         flag = 1;
     }
-    
+#endif    
     //printk("checking ChiprevD :%d\n", flag);  
     
     return flag;    
