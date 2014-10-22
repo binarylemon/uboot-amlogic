@@ -1316,7 +1316,7 @@ void aml1218_power_init(int init_mode)
 
     aml1218_set_bits(0x0033, 0x00, 0x70);                           // test
     aml1218_set_bits(0x001b, 0x06, 0x46);                           // Enable DCDC1 & 2 fault
-    aml1218_set_bits(0x001c, 0x06, 0x06);
+  //aml1218_set_bits(0x001c, 0x06, 0x06);
     aml1218_set_bits(0x0045, 0x08, 0x08);
     aml1218_set_bits(0x003c, 0x08, 0x08);
     hard_i2c_write168(DEVID, 0x0121, 0x12);                         // enable DC3 oc
