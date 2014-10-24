@@ -28,7 +28,7 @@
 #ifdef MMC_UBOOT_CLEAR_MBR   
 static char _mbrFlag[4] ;
 #endif
-
+extern void get_device_boot_flag(void);
 static int _info_disprotect_back_before_mmcinfo1 = 0;//mmcinfo 1 will clear info_disprotect before run_command("mmc erase 1")
 int info_disprotect = 0;
 static inline int isstring(char *p)
@@ -666,6 +666,9 @@ R_SWITCH_BACK:
 		
 		init_flag = (argc > 2) ? (int)simple_strtoul(argv[2], NULL, 16) : 0;
 		store_dbg("init_flag %d",init_flag);
+		if(device_boot_flag == -1){
+			get_device_boot_flag();
+		}
 		if(device_boot_flag==NAND_BOOT_FLAG){	
 			sprintf(str, "amlnf  init  %d ",init_flag);
 			printf("command:	%s\n", str);
