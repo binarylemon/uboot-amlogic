@@ -522,133 +522,14 @@ unsigned int emmc_init(void)
 	}
 	return ret;
 }
-/************************************************************************
- *
- * This is the next part if the initialization sequence: we are now
- * running from RAM and have a "normal" C environment, i. e. global
- * data can be written, BSS has been cleared, the stack size in not
- * that critical any more, etc.
- *
- ************************************************************************
- */
-
-void board_init_r (gd_t *id, ulong dest_addr)
+#ifdef CONFIG_STORE_COMPATIBLE
+extern int amlnf_init(unsigned flag);
+extern int spi_env_relocate_spec(void);
+extern int get_storage_device_flag(void);
+void get_device_boot_flag(void)
 {
-	char *s;
-	bd_t *bd;
-	ulong malloc_start;
-	//unsigned init_flag = 0;
-	extern int amlnf_init(unsigned flag);
-	extern int spi_env_relocate_spec(void);
-	extern int get_storage_device_flag(void);
-#ifdef CONFIG_STORE_COMPATIBLE
-	//int init_ret=0;
 	unsigned init_flag = 0;
-#endif
-#ifdef  CONFIG_NEXT_NAND
-	int ret = 0;
-#endif
-#if defined(CONFIG_PARTITIONS_STORE)
-    struct mmc *mmc;
-#endif
-#if !defined(CONFIG_SYS_NO_FLASH)
-	ulong flash_size;
-#endif
-
-
-	//2013.07.16
-	//cache update after relocation
-	dcache_flush();
-	icache_invalid();
-	//end 2013.07.16
-
-#ifdef TEST_UBOOT_BOOT_SPEND_TIME
-	lib_board_init_r_start = get_utimer(0);
-
-	printf("\ntime: from powerup to board_init_r time(us):%d\n",(lib_board_init_r_start));
-#endif
-
-	gd = id;
-	bd = gd->bd;
-
-	gd->env_addr += gd->reloc_off;
-
-	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
-
-	monitor_flash_len = _end_ofs;
-	debug ("monitor flash len: %08lX\n", monitor_flash_len);
-
-#ifdef CONFIG_SERIAL_MULTI
-	serial_initialize();
-#endif
-
-	debug ("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
-
-#ifdef CONFIG_LOGBUFFER
-	logbuff_init_ptrs ();
-#endif
-#ifdef CONFIG_POST
-	post_output_backlog ();
-#endif
-
-	/* The Malloc area is immediately below the monitor copy in DRAM */
-	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
-	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
-#ifdef CONFIG_ACS
-	extern int  get_partition_table(void);
-	get_partition_table();
-#endif
-
-#ifdef CONFIG_GENERIC_MMC
-    puts("MMC:   ");
-    mmc_initialize(bd);
-#endif
-#ifdef CONFIG_AML_I2C
-    extern int aml_i2c_init(void);
-    aml_i2c_init();
-#endif
-#if defined(CONFIG_AML_V2_USBTOOL)
-	if(is_tpl_loaded_from_usb())//is uboot loaded from usb or bootable sdcard
-	{
-        aml_v2_usb_producing(0, bd);//would NOT return if 1)boot from usb, 2)boot from sdmmc and fatexist(aml_sdc_burn.ini)
-	}
-#endif// #if defined(CONFIG_AML_V2_USBTOOL)
-
-	board_init();	/* Setup chipselects */
-#if !defined(CONFIG_SYS_NO_FLASH)
-	puts ("Flash: ");
-
-	if ((flash_size = flash_init ()) > 0) {
-# ifdef CONFIG_SYS_FLASH_CHECKSUM
-		print_size (flash_size, "");
-		/*
-		 * Compute and print flash CRC if flashchecksum is set to 'y'
-		 *
-		 * NOTE: Maybe we should add some WATCHDOG_RESET()? XXX
-		 */
-		s = getenv ("flashchecksum");
-		if (s && (*s == 'y')) {
-			printf ("  CRC: %08X",
-				crc32 (0, (const unsigned char *) CONFIG_SYS_FLASH_BASE, flash_size)
-			);
-		}
-		putc ('\n');
-# else	/* !CONFIG_SYS_FLASH_CHECKSUM */
-		print_size (flash_size, "\n");
-# endif /* CONFIG_SYS_FLASH_CHECKSUM */
-	} else {
-		puts (failed);
-		hang ();
-	}
-#endif
-
-#ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int before_nand_init =  get_utimer(0);
-#endif
-
-	AML_LOG_INIT("board");
-	AML_LOG_TE("board");
-#ifdef CONFIG_STORE_COMPATIBLE
+	int ret=0;
 	if(POR_NAND_BOOT()){
 		printf("enter nand boot\n");
 		//try nand first
@@ -784,6 +665,133 @@ unsigned int before_nand_init =  get_utimer(0);
 		}
 	}
 printf("device_boot_flag=%d\n",device_boot_flag);
+}
+#endif
+/************************************************************************
+ *
+ * This is the next part if the initialization sequence: we are now
+ * running from RAM and have a "normal" C environment, i. e. global
+ * data can be written, BSS has been cleared, the stack size in not
+ * that critical any more, etc.
+ *
+ ************************************************************************
+ */
+
+void board_init_r (gd_t *id, ulong dest_addr)
+{
+	char *s;
+	bd_t *bd;
+	ulong malloc_start;
+	//unsigned init_flag = 0;
+/*#ifdef CONFIG_STORE_COMPATIBLE
+	//int init_ret=0;
+	unsigned init_flag = 0;
+#endif
+#ifdef  CONFIG_NEXT_NAND
+	int ret = 0;
+#endif*/
+#if defined(CONFIG_PARTITIONS_STORE)
+    struct mmc *mmc;
+#endif
+#if !defined(CONFIG_SYS_NO_FLASH)
+	ulong flash_size;
+#endif
+
+
+	//2013.07.16
+	//cache update after relocation
+	dcache_flush();
+	icache_invalid();
+	//end 2013.07.16
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	lib_board_init_r_start = get_utimer(0);
+
+	printf("\ntime: from powerup to board_init_r time(us):%d\n",(lib_board_init_r_start));
+#endif
+
+	gd = id;
+	bd = gd->bd;
+
+	gd->env_addr += gd->reloc_off;
+
+	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
+
+	monitor_flash_len = _end_ofs;
+	debug ("monitor flash len: %08lX\n", monitor_flash_len);
+
+#ifdef CONFIG_SERIAL_MULTI
+	serial_initialize();
+#endif
+
+	debug ("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
+
+#ifdef CONFIG_LOGBUFFER
+	logbuff_init_ptrs ();
+#endif
+#ifdef CONFIG_POST
+	post_output_backlog ();
+#endif
+
+	/* The Malloc area is immediately below the monitor copy in DRAM */
+	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
+	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
+#ifdef CONFIG_ACS
+	extern int  get_partition_table(void);
+	get_partition_table();
+#endif
+
+#ifdef CONFIG_GENERIC_MMC
+    puts("MMC:   ");
+    mmc_initialize(bd);
+#endif
+#ifdef CONFIG_AML_I2C
+    extern int aml_i2c_init(void);
+    aml_i2c_init();
+#endif
+#if defined(CONFIG_AML_V2_USBTOOL)
+	if(is_tpl_loaded_from_usb())//is uboot loaded from usb or bootable sdcard
+	{
+        aml_v2_usb_producing(0, bd);//would NOT return if 1)boot from usb, 2)boot from sdmmc and fatexist(aml_sdc_burn.ini)
+	}
+#endif// #if defined(CONFIG_AML_V2_USBTOOL)
+
+	board_init();	/* Setup chipselects */
+#if !defined(CONFIG_SYS_NO_FLASH)
+	puts ("Flash: ");
+
+	if ((flash_size = flash_init ()) > 0) {
+# ifdef CONFIG_SYS_FLASH_CHECKSUM
+		print_size (flash_size, "");
+		/*
+		 * Compute and print flash CRC if flashchecksum is set to 'y'
+		 *
+		 * NOTE: Maybe we should add some WATCHDOG_RESET()? XXX
+		 */
+		s = getenv ("flashchecksum");
+		if (s && (*s == 'y')) {
+			printf ("  CRC: %08X",
+				crc32 (0, (const unsigned char *) CONFIG_SYS_FLASH_BASE, flash_size)
+			);
+		}
+		putc ('\n');
+# else	/* !CONFIG_SYS_FLASH_CHECKSUM */
+		print_size (flash_size, "\n");
+# endif /* CONFIG_SYS_FLASH_CHECKSUM */
+	} else {
+		puts (failed);
+		hang ();
+	}
+#endif
+
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+unsigned int before_nand_init =  get_utimer(0);
+#endif
+
+	AML_LOG_INIT("board");
+	AML_LOG_TE("board");
+#ifdef CONFIG_STORE_COMPATIBLE
+	get_device_boot_flag();
 #else
 #if CONFIG_JERRY_NAND_TEST
 	nand_init();
@@ -797,7 +805,7 @@ extern int amlnf_init(unsigned flag);
 struct platform_device;
 extern int amlnf_init(struct platform_device *pdev);
 #endif
-	ret = amlnf_init(0x0);
+	amlnf_init(0x0);
 // flag = 0,indicate normal boot;
 //flag = 1, indicate update;
 //flag = 2, indicate need erase
