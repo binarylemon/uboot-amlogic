@@ -622,6 +622,13 @@ int board_init(void)
 	aml_set_reg32_mask(P_PERIPHS_PIN_MUX_9,0x1<<19);//set mode GPIOX_10-->CLK_OUT3
 	WRITE_CBUS_REG(PWM_PWM_E, 0x16d016d);
 	WRITE_CBUS_REG(PWM_MISC_REG_EF, 0x8001);
+	/* init led out put */
+	//red off
+    gpio_amlogic_requst(NULL, GPIOAO_2);
+    gpio_amlogic_direction_output(NULL, GPIOAO_2, 1);
+	//green on
+    gpio_amlogic_requst(NULL, GPIOAO_13);
+    gpio_amlogic_direction_output(NULL, GPIOAO_13, 0);  
 #endif
 	
 
