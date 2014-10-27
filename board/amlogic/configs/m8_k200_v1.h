@@ -352,6 +352,9 @@
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
+        "if usb start 0; then "\
+                "if fatload usb 0 ${loadaddr} udisk_autoscript; then autoscr ${loadaddr}; fi;"\
+        "fi;"\
 	      "if imgread kernel recovery ${loadaddr}; then "\
 	        "bootm; "\
 				"else "\
