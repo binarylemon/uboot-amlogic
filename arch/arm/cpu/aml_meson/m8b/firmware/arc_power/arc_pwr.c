@@ -265,7 +265,12 @@ void enter_power_down()
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
-
+#ifdef CONFIG_M201_COSTDOWN
+	/* for led */
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<18);
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<29);
+#endif
+	
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
 
@@ -328,6 +333,12 @@ void enter_power_down()
 	wait_uart_empty();
 	ddr_resume();
 
+#ifdef CONFIG_M201_COSTDOWN
+	/* for led */
+    clrbits_le32(P_AO_GPIO_O_EN_N,1<<29);
+	setbits_le32(P_AO_GPIO_O_EN_N,1<<18);
+#endif
+	
 	f_serial_puts("restore pll\n");
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
