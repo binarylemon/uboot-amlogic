@@ -16,7 +16,12 @@
 #include <amlogic/aml_lcd_extern.h>
 
 //#define LCD_EXT_DEBUG_INFO
-
+#ifdef LCD_EXT_DEBUG_INFO
+#define DBG_PRINT(...)		printf(__VA_ARGS__)
+#else
+#define DBG_PRINT(...)
+#endif
+#define LCD_EXTERN_DEVICE_NODE    "/lcd_extern_spi_LD070WS2"
 #define LCD_EXTERN_NAME		"lcd_spi_LD070WS2"
 #define LCD_EXTERN_TYPE		LCD_EXTERN_SPI
 
@@ -26,6 +31,13 @@
 
 #define SPI_DELAY		30 //unit: us
 
+static struct lcd_extern_config_t lcd_ext_config = {
+	.name = LCD_EXTERN_NAME,
+	.type = LCD_EXTERN_TYPE,
+	.spi_cs = GPIO_SPI_CS,
+	.spi_clk = GPIO_SPI_CLK,
+	.spi_data = GPIO_SPI_DATA,
+};
 static unsigned char spi_init_table[][2] = {
     {0x00,0x21},  //reset
     {0x00,0xa5},  //standby
@@ -47,21 +59,33 @@ static unsigned char spi_off_table[][2] = {
     {0xff,0xff},
 };
 
+static int get_spi_LD070WS2_config(char *dt_addr)
+{
+	char *of_node = LCD_EXTERN_DEVICE_NODE;
+	struct lcd_extern_config_t *pdata = &lcd_ext_config;
+	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
+		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+    	return -1;
+	}
+	return 0;
+}
+
+
 static void set_lcd_csb(unsigned v)
 {
-    aml_lcd_gpio_set(GPIO_SPI_CS, v);
+    aml_lcd_gpio_set(lcd_ext_config.spi_cs, v);
     udelay(SPI_DELAY);
 }
 
 static void set_lcd_scl(unsigned v)
 {
-    aml_lcd_gpio_set(GPIO_SPI_CLK, v);
+    aml_lcd_gpio_set(lcd_ext_config.spi_clk, v);
     udelay(SPI_DELAY);
 }
     
 static void set_lcd_sda(unsigned v)
 {
-    aml_lcd_gpio_set(GPIO_SPI_DATA, v);
+    aml_lcd_gpio_set(lcd_ext_config.spi_data, v);
     udelay(SPI_DELAY);
 }
 
@@ -110,7 +134,7 @@ static void spi_write_8(unsigned char addr, unsigned char data)
     udelay(SPI_DELAY);
 }
 
-static void lcd_extern_spi_init(void)
+static int lcd_extern_spi_init(void)
 {
     int ending_flag = 0;
     int i=0;
@@ -129,10 +153,11 @@ static void lcd_extern_spi_init(void)
         }
         i++;
     }
-   // printk("%s\n", __FUNCTION__);
+    DBG_PRINT("%s\n", __FUNCTION__);
+	return 0;
 }
 
-static void lcd_extern_spi_off(void)
+static int lcd_extern_spi_off(void)
 {
     int ending_flag = 0;
     int i=0;
@@ -151,9 +176,10 @@ static void lcd_extern_spi_off(void)
         }
         i++;
     }
-    //printk("%s\n", __FUNCTION__);
+    DBG_PRINT("%s\n", __FUNCTION__);
     mdelay(10);
     spi_gpio_off();
+	return 0;
 }
 
 static struct aml_lcd_extern_driver_t lcd_ext_driver = {
@@ -165,6 +191,7 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = lcd_extern_spi_off,
     .init_on_cmd_8 = NULL,
     .init_off_cmd_8 = NULL,
+	.get_lcd_ext_config = get_spi_LD070WS2_config,
 };
 
 struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)

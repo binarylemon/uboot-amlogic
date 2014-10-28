@@ -17,12 +17,25 @@
 #include <amlogic/aml_lcd_extern.h>
 
 //#define LCD_EXT_DEBUG_INFO
+#ifdef LCD_EXT_DEBUG_INFO
+#define DBG_PRINT(...)		printf(__VA_ARGS__)
+#else
+#define DBG_PRINT(...)
+#endif
 
+#define LCD_EXTERN_DEVICE_NODE "/lcd_extern_i2c_tc101"
 #define LCD_EXTERN_NAME			"lcd_i2c_tc101"
 #define LCD_EXTERN_TYPE			LCD_EXTERN_I2C
 
 #define LCD_EXTERN_I2C_ADDR		(0xfc >> 1) //7bit address
 #define LCD_EXTERN_I2C_BUS		AML_I2C_MASTER_A
+
+static struct lcd_extern_config_t lcd_ext_config ={
+		.name = LCD_EXTERN_NAME,
+		.type = LCD_EXTERN_TYPE,
+		.i2c_addr= LCD_EXTERN_I2C_ADDR,
+		.i2c_bus = LCD_EXTERN_I2C_BUS,
+};
 
 static unsigned char tc101_init_table[][3] = {
     //{0xff, 0xff, 20},//delay mark(20ms)
@@ -36,6 +49,18 @@ static unsigned char tc101_init_table[][3] = {
 
 static unsigned aml_i2c_bus_tmp;
 static struct aml_lcd_extern_driver_t lcd_ext_driver;
+extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
+
+static int get_i2c_tc101_config(char *dt_addr)
+{
+	char *of_node = LCD_EXTERN_DEVICE_NODE;
+	struct lcd_extern_config_t *pdata = &lcd_ext_config;
+	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
+		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+		return -1;
+	}
+	return 0;
+}
 
 static int aml_lcd_i2c_write(unsigned i2caddr, unsigned char *buff, unsigned len)
 {
@@ -48,13 +73,13 @@ static int aml_lcd_i2c_write(unsigned i2caddr, unsigned char *buff, unsigned len
         .buf = buff,
         }
     };
-#ifdef LCD_EXT_DEBUG_INFO
-    printf("%s:", __FUNCTION__);
+
+    DBG_PRINT("%s:", __FUNCTION__);
     for (i=0; i<len; i++) {
-        printf(" 0x%02x", buff[i]);
+        DBG_PRINT(" 0x%02x", buff[i]);
     }
-    printf(" [addr 0x%02x]\n", i2caddr);
-#endif
+    DBG_PRINT(" [addr 0x%02x]\n", i2caddr);
+
     //res = aml_i2c_xfer(msg, 1);
     res = aml_i2c_xfer_slow(msg, 1);
     if (res < 0) {
@@ -64,31 +89,6 @@ static int aml_lcd_i2c_write(unsigned i2caddr, unsigned char *buff, unsigned len
     return res;
 }
 
-static int aml_lcd_i2c_read(unsigned i2caddr, unsigned char *buff, unsigned len)
-{
-    int res = 0;
-    struct i2c_msg msg[] = {
-        {
-            .addr  = i2caddr,
-            .flags = 0,
-            .len   = 1,
-            .buf   = buff,
-        },
-        {
-            .addr  = i2caddr,
-            .flags = I2C_M_RD,
-            .len   = len,
-            .buf   = buff,
-        }
-    };
-    //res = aml_i2c_xfer(msg, 2);
-    res = aml_i2c_xfer_slow(msg, 2);
-    if (res < 0) {
-        printf("%s: i2c transfer failed [addr 0x%02x]\n", __FUNCTION__, i2caddr);
-    }
-
-    return res;
-}
 
 static int tc101_reg_read(unsigned char reg, unsigned char *buf)
 {
@@ -123,7 +123,7 @@ static int tc101_init(void)
             tData[0]=tc101_init_table[i][0];
             tData[1]=tc101_init_table[i][1];
             tData[2]=tc101_init_table[i][2];
-            ret = aml_lcd_i2c_write(LCD_EXTERN_I2C_ADDR, tData, 3);
+            ret = aml_lcd_i2c_write(lcd_ext_config.i2c_addr, tData, 3);
         }
         i++;
     }
@@ -167,6 +167,7 @@ static int aml_lcd_extern_port_init(void)
     return ret;
 }
 
+
 static int aml_lcd_extern_change_i2c_bus(unsigned aml_i2c_bus)
 {
     int ret=0;
@@ -180,13 +181,12 @@ static int aml_lcd_extern_change_i2c_bus(unsigned aml_i2c_bus)
 
 static int aml_lcd_extern_init(void)
 {
-    int ret=0;
-    extern struct aml_i2c_platform g_aml_i2c_plat;
-
+  	int ret=0;
+	extern struct aml_i2c_platform g_aml_i2c_plat;
     aml_i2c_bus_tmp = g_aml_i2c_plat.master_no;
 
     aml_lcd_extern_port_init();
-    aml_lcd_extern_change_i2c_bus(LCD_EXTERN_I2C_BUS);
+    aml_lcd_extern_change_i2c_bus(lcd_ext_config.i2c_bus);
     ret = tc101_init();
     aml_lcd_extern_change_i2c_bus(aml_i2c_bus_tmp);
 
@@ -201,7 +201,7 @@ static int aml_lcd_extern_remove(void)
     aml_i2c_bus_tmp = g_aml_i2c_plat.master_no;
 
     aml_lcd_extern_port_init();
-    aml_lcd_extern_change_i2c_bus(LCD_EXTERN_I2C_BUS);
+    aml_lcd_extern_change_i2c_bus(lcd_ext_config.i2c_bus);
     ret = tc101_remove();
     aml_lcd_extern_change_i2c_bus(aml_i2c_bus_tmp);
 
@@ -217,6 +217,7 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = aml_lcd_extern_remove,
     .init_on_cmd_8 = NULL,
     .init_off_cmd_8 = NULL,
+    .get_lcd_ext_config = get_i2c_tc101_config,
 };
 
 struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)

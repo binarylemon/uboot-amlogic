@@ -11,9 +11,21 @@
 #include <asm/arch/gpio.h>
 #include <amlogic/aml_lcd_extern.h>
 
+//#define LCD_EXT_DEBUG_INFO
+#ifdef LCD_EXT_DEBUG_INFO
+#define DBG_PRINT(...)		printf(__VA_ARGS__)
+#else
+#define DBG_PRINT(...)
+#endif
+
+#define LCD_EXTERN_DEVICE_NODE    "/lcd_extern_mipi_N070ICN"
 #define LCD_EXTERN_NAME			"lcd_mipi_N070ICN"
 #define LCD_EXTERN_TYPE			LCD_EXTERN_MIPI
 
+static struct lcd_extern_config_t lcd_ext_config ={
+	.name = LCD_EXTERN_NAME,
+	.type = LCD_EXTERN_TYPE,
+};
 static unsigned char mipi_init_on_table[] = {
     0x39,0xFF,4,0xAA,0x55,0xA5,0x80, //========== Internal setting ==========
 
@@ -187,6 +199,16 @@ static unsigned char mipi_init_off_table[] = {
     0xff,10,     //delay 10ms
     0xff,0xff,   //ending flag
 };
+static int get_mipi_N070ICN_config(char *dt_addr)
+{
+	char *of_node = LCD_EXTERN_DEVICE_NODE;
+	struct lcd_extern_config_t *pdata = &lcd_ext_config;
+	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
+		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+    	return -1;
+	}
+	return 0;
+}
 
 static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .name = LCD_EXTERN_NAME,
@@ -197,6 +219,7 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = NULL,
     .init_on_cmd_8  = &mipi_init_on_table[0],
     .init_off_cmd_8 = &mipi_init_off_table[0],
+    .get_lcd_ext_config = get_mipi_N070ICN_config,
 };
 
 struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)

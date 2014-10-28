@@ -2145,6 +2145,9 @@ static void lcd_config_assign(Lcd_Config_t *pConf)
 
 int lcd_probe(void)
 {
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct aml_lcd_extern_driver_t *lcd_ext_driver;
+#endif 
     pDev = (lcd_dev_t *)malloc(sizeof(lcd_dev_t));
     if (!pDev) {
         printf("[lcd]: Not enough memory.\n");
@@ -2196,6 +2199,18 @@ int lcd_probe(void)
 		_get_lcd_default_config(pDev->pConf);
 		_get_lcd_power_config(pDev->pConf);
 		_get_lcd_backlight_config(pDev->bl_config);
+#ifdef CONFIG_AML_LCD_EXTERN
+		lcd_ext_driver = aml_lcd_extern_get_driver();
+		if (lcd_ext_driver == NULL) {
+			printf("no lcd_extern driver\n");
+		}
+		else {
+			if (lcd_ext_driver->get_lcd_ext_config){
+				lcd_ext_driver->get_lcd_ext_config(dt_addr);
+				lcd_print("%s get_lcd_ext_config\n", lcd_ext_driver->name);
+			}
+		}
+#endif 		
 #endif
 	}
 	
