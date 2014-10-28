@@ -12,6 +12,7 @@
  *
  */
 #include "../v2_burning_i.h"
+#include <partition_table.h>
 
 #define sperr               DWN_ERR
 #define spmsg(fmt ...)      //printf("spmsg:"fmt)
@@ -20,6 +21,8 @@
 #define  SPARSE_HEADER_MAJOR_VER 1
 #define  CHUNK_HEAD_SIZE        sizeof(chunk_header_t)
 #define  FILE_HEAD_SIZE         sizeof(sparse_header_t)
+
+extern int device_boot_flag;
 
 //states for a sparse packet, initialized when sparse packet probed
 static struct  
@@ -210,6 +213,7 @@ int optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedData
                     const unsigned FillBufSz = OPTIMUS_SPARSE_IMG_FILL_BUF_SZ;
                     static unsigned _filledBufValidLen = 0;
                     const unsigned thisChunkFilledLen = min(chunkDataLen, FillBufSz);
+                    int _NeedFillAsNotErasedYet = 0;
 
                     spdbg("CHUNK_TYPE_FILL,fillVal=0x%8x, chunkDataLen=0x%8x, thisChunkFilledLen=0x%x\n", 
                                     fillVal, chunkDataLen, thisChunkFilledLen);
@@ -217,36 +221,54 @@ int optimus_simg_to_media(char* simgPktHead, const u32 pktLen, u32* unParsedData
                             sperr("error FILL chunk\n");
                             return -__LINE__;
                     }
-
-                    if(!_filledBufValidLen){
-                            DWN_MSG("CHUNK_TYPE_FILL\n");
-                    }
-                    if(fillVal != *pFillValBuf && _filledBufValidLen){
-                            _filledBufValidLen = 0;
-                    }
-                    if(_filledBufValidLen < thisChunkFilledLen){
-                            int i = _filledBufValidLen>>2;
-                            unsigned* temBuf = pFillValBuf + i;
-
-                            while(i++ < (thisChunkFilledLen>>2))*temBuf++ = fillVal;
-                            _filledBufValidLen = thisChunkFilledLen;
-                    }
-
-                    do{
-                            unsigned actualWrLen = 0;
-
-                            thisWriteLen = min(LeftDataLen, thisChunkFilledLen);
-
-                            actualWrLen = optimus_cb_simg_write_media(temp_flashAddrStart, thisWriteLen, (char*)pFillValBuf);
-                            if(actualWrLen != thisWriteLen){
-                                    sperr("FILL_CHUNK:Want write 0x%x Bytes, but 0x%x\n", thisWriteLen, actualWrLen);
+                    switch(device_boot_flag){
+                            case EMMC_BOOT_FLAG:
+                            case SPI_EMMC_FLAG:
+                                    _NeedFillAsNotErasedYet = (fillVal != 0);
                                     break;
+
+                            case NAND_BOOT_FLAG:
+                            case SPI_NAND_FLAG:
+                                    _NeedFillAsNotErasedYet = (fillVal != 0XFFFFFFFFU);
+                                    break;
+                            default: 
+                                    _NeedFillAsNotErasedYet = 1;
+                                    break;
+                    }
+                    //for, emmc, if fillVal is 0, then _NeedFillAsNotErasedYet = false if "disk_inital > 0"
+                    if(!_NeedFillAsNotErasedYet)_NeedFillAsNotErasedYet = (is_optimus_storage_inited()>>16) == 0;//==0 means 'disk_inital 0'
+
+                    if(_NeedFillAsNotErasedYet)
+                    {
+                            if(!_filledBufValidLen){
+                                    DWN_MSG("CHUNK_TYPE_FILL\n");
+                            }
+                            if(fillVal != *pFillValBuf && _filledBufValidLen){
+                                    _filledBufValidLen = 0;
+                            }
+                            if(_filledBufValidLen < thisChunkFilledLen){
+                                    int i = _filledBufValidLen>>2;
+                                    unsigned* temBuf = pFillValBuf + i;
+
+                                    while(i++ < (thisChunkFilledLen>>2))*temBuf++ = fillVal;
+                                    _filledBufValidLen = thisChunkFilledLen;
                             }
 
-                            temp_flashAddrStart += thisWriteLen >> 9;
-                            LeftDataLen -= thisWriteLen;
-                    }while(LeftDataLen);
+                            do{
+                                    unsigned actualWrLen = 0;
 
+                                    thisWriteLen = min(LeftDataLen, thisChunkFilledLen);
+
+                                    actualWrLen = optimus_cb_simg_write_media(temp_flashAddrStart, thisWriteLen, (char*)pFillValBuf);
+                                    if(actualWrLen != thisWriteLen){
+                                            sperr("FILL_CHUNK:Want write 0x%x Bytes, but 0x%x\n", thisWriteLen, actualWrLen);
+                                            break;
+                                    }
+
+                                    temp_flashAddrStart += thisWriteLen >> 9;
+                                    LeftDataLen -= thisWriteLen;
+                            }while(LeftDataLen);
+                    }
                     thisWriteLen = 4;///////////
             }
             break;

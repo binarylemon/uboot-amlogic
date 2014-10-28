@@ -160,6 +160,7 @@ int optimus_erase_bootloader(char* info);
 void optimus_reset(const int cfgFlag);
 int optimus_storage_init(int toErase);//init dest burning staorge
 int optimus_storage_exit(void);
+int is_optimus_storage_inited(void);
 void optimus_poweroff(void);
 int optimus_burn_complete(const int choice);
 int is_the_flash_first_burned(void);

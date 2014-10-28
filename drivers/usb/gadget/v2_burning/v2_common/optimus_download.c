@@ -20,7 +20,7 @@
 #endif//#if defined(CONFIG_ACS)
 
 extern unsigned int get_multi_dt_entry(unsigned int fdt_addr);
-static int is_optimus_storage_inited(void);
+int is_optimus_storage_inited(void);
 
 #ifndef CONFIG_UNIFY_KEY_MANAGE
 int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen)
@@ -722,7 +722,7 @@ int optimus_parse_img_download_info(const char* partName, const u64 imgSz, const
 
 static int _disk_intialed_ok = 0;
 
-static int is_optimus_storage_inited(void)
+int is_optimus_storage_inited(void)
 {
         return _disk_intialed_ok;
 }
@@ -784,7 +784,8 @@ int optimus_storage_init(int toErase)
 
     if(!ret)
     {
-        _disk_intialed_ok = 1;
+        _disk_intialed_ok  = 1;
+        _disk_intialed_ok += toErase <<16;
 
         if(OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get())//env not relocated in this case
         {
