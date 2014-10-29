@@ -7,7 +7,7 @@
 #ifdef CONFIG_M201_COSTDOWN
 #define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
 #else
-#define CONFIG_PWM_VDDEE_VOLTAGE            1050   //VDDEE voltage when boot, must have
+#define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
 #endif
 #define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    860	 //VDDEE voltage when suspend, must have
 #define CONFIG_IR_REMOTE_WAKEUP 1
