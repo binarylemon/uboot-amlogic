@@ -49,7 +49,7 @@ extern void udelay(unsigned long usec);
 extern void mdelay(unsigned long msec);
 
 extern struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void);
-int get_lcd_extern_dt_data(char * dt_addr, char *of_node, struct lcd_extern_config_t *pdata);
+extern int get_lcd_extern_dt_data(char * dt_addr, char *of_node, struct lcd_extern_config_t *pdata);
 
 #endif
 

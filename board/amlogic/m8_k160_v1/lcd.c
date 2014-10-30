@@ -143,6 +143,7 @@ static EDP_Config_t lcd_edp_config = {
 	.vswing = 0,		/** support level 0,1,2,3, user defined vswing, only valid when adaptive=0 */
 	.preemphasis = 0,	/** fixed vaule */
 	.sync_clock_mode = 1, /** clocking mode for the user data: (0=asyncronous clock, 1=synchronous clock. default 1) */
+	.edid_timing_used = 0, /** edp use edid timing: (0=no use, 1=use) */
 };
 
 static TTL_Config_t lcd_ttl_config = {

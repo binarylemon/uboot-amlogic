@@ -607,7 +607,10 @@ static int lcd_power_ctrl(Bool_t status)
 #endif
 					break;
 				case LCD_POWER_TYPE_SIGNAL:
-					pDev->pConf->lcd_power_ctrl.ports_ctrl(ON);
+					if (pDev->pConf->lcd_power_ctrl.ports_ctrl == NULL)
+						lcd_print("no lcd_ports_ctrl\n");
+					else
+						pDev->pConf->lcd_power_ctrl.ports_ctrl(ON);
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
@@ -659,7 +662,10 @@ static int lcd_power_ctrl(Bool_t status)
 #endif
 					break;
 				case LCD_POWER_TYPE_SIGNAL:
-					pDev->pConf->lcd_power_ctrl.ports_ctrl(OFF);
+					if (pDev->pConf->lcd_power_ctrl.ports_ctrl == NULL)
+						lcd_print("no lcd_ports_ctrl\n");
+					else
+						pDev->pConf->lcd_power_ctrl.ports_ctrl(OFF);
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
@@ -962,7 +968,7 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 	
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "vsync_horizontal_phase", NULL);
 		if(propdata == NULL){
-		printf("faild to get vsync_horizontal_phase\n");
+		lcd_print("faild to get vsync_horizontal_phase\n");
 		pConf->lcd_timing.vsync_h_phase =0;
 	}
 	else {
@@ -1359,6 +1365,15 @@ static int _get_lcd_default_config(Lcd_Config_t *pConf)
 			pConf->lcd_control.edp_config->sync_clock_mode = (be32_to_cpup((u32*)propdata) & 1);
 			printf("edp sync_clock_mode = %u\n", pConf->lcd_control.edp_config->sync_clock_mode);
 		}
+		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "edp_edid_timing_used", NULL);
+		if(propdata == NULL){
+			lcd_print("don't find to match edp_edid_timing_used, use default setting.\n");
+			pConf->lcd_control.edp_config->edid_timing_used = 0;
+		}
+		else {
+			pConf->lcd_control.edp_config->edid_timing_used = (be32_to_cpup((u32*)propdata) & 1);
+			printf("edp edid_timing_used = %u\n", pConf->lcd_control.edp_config->edid_timing_used);
+		}
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "rgb_base_coeff", NULL);
 	if(propdata == NULL){
@@ -1368,7 +1383,7 @@ static int _get_lcd_default_config(Lcd_Config_t *pConf)
 		pConf->lcd_effect.rgb_base_addr = (unsigned short)(be32_to_cpup((u32*)propdata));
 		pConf->lcd_effect.rgb_coeff_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 		lcd_print("rgb_base = 0x%x, rgb_coeff = 0x%x\n", pConf->lcd_effect.rgb_base_addr, pConf->lcd_effect.rgb_coeff_addr);
-	}	
+	}
 	// propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "video_on_pixel_line", NULL);
 	// if(propdata == NULL){
 		// lcd_print("don't find to match video_on_pixel_line, use default setting.\n");
@@ -2114,10 +2129,11 @@ static void print_lcd_info(void)
                    "link_adaptive     %u\n"
                    "vswing            %u\n"
                    "max_lane_count    %u\n"
-                   "sync_clock_mode   %u\n\n",
+                   "sync_clock_mode   %u\n"
+                   "EDID timing used  %u\n\n",
                    ((pConf->lcd_control.edp_config->link_rate == 0) ? "1.62G" : "2.7G"), pConf->lcd_control.edp_config->lane_count,
                    pConf->lcd_control.edp_config->link_adaptive, pConf->lcd_control.edp_config->vswing,
-                   pConf->lcd_control.edp_config->max_lane_count, pConf->lcd_control.edp_config->sync_clock_mode);
+                   pConf->lcd_control.edp_config->max_lane_count, pConf->lcd_control.edp_config->sync_clock_mode, pConf->lcd_control.edp_config->edid_timing_used);
             break;
         default:
             break;
@@ -2230,9 +2246,10 @@ int lcd_remove(void)
 	lcd_backlight_power_ctrl(OFF);
 	pDev->pConf->lcd_misc_ctrl.module_disable();
 	lcd_config_remove();
-	
-	if (pDev->pConf->lcd_basic.model_name)
-		free(pDev->pConf->lcd_basic.model_name);
+	if (dts_ready > 0) {
+		if (pDev->pConf->lcd_basic.model_name)
+			free(pDev->pConf->lcd_basic.model_name);
+	}
 	if (pDev)
 		free(pDev);
 	pDev = NULL;

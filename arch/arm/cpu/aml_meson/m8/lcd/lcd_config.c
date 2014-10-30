@@ -828,6 +828,34 @@ void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx)
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, vswing_ctrl);
     printf("edp link adaptive update: vswing_level=%u, preemphasis_level=%u\n", vswing_tx, preemp_tx);
 }
+
+static void lcd_config_edp_edid_load(void)
+{
+    if (lcd_Conf->lcd_control.edp_config->edid_timing_used) {
+        //enable edp power, phy and tx
+        if (IS_MESON_M8_CPU)
+            WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL, (1 << 7) | (2 << 0));      //fclk_div5---fixed 510M, div to 170M, edp apb clk
+        else if (IS_MESON_M8M2_CPU)
+            WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL_M8M2, (1 << 7) | (2 << 0)); //fclk_div5---fixed 510M, div to 170M, edp apb clk
+
+        WRITE_LCD_CBUS_REG(HHI_DSI_LVDS_EDP_CNTL0, LCD_DIGITAL_EDP);    //dphy select by interface
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x8018);//[7:4]swing b:800mv, step 50mv
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, ((0x6 << 16) | (0xf5d7 << 0)));
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, ((0xc2b2 << 16) | (0x600 << 0)));//0xd2b0fe00);
+        WRITE_LCD_CBUS_REG_BITS(HHI_DIF_CSI_PHY_CNTL3, 0x10, 11, 5); //enable AUX channel
+        lcd_Conf->lcd_power_ctrl.power_ctrl(ON);
+        edp_edid_pre_enable();
+
+        edp_edid_timing_probe(lcd_Conf);
+
+        //disable edp tx, phy and power
+        edp_edid_pre_disable();
+        lcd_Conf->lcd_power_ctrl.power_ctrl(OFF);
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x0);
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, 0x00060000);
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, 0x00200000);
+    }
+}
 //**************************************************//
 
 static int set_control_edp(Lcd_Config_t *pConf)
@@ -1712,6 +1740,8 @@ static Lcd_Config_t lcd_config = {
         .power_on_step = 0,
         .power_off_step = 0,
         .power_ctrl = NULL,
+        .ports_ctrl = NULL,
+        .power_ctrl_video = NULL,
     },
 };
 
@@ -1735,6 +1765,7 @@ static void lcd_config_assign(Lcd_Config_t *pConf)
     pConf->lcd_misc_ctrl.lcd_test = lcd_test;
     pConf->lcd_misc_ctrl.print_version = print_lcd_driver_version;
     pConf->lcd_misc_ctrl.print_clk = print_lcd_clk_info;
+    pConf->lcd_misc_ctrl.edp_edid_load = lcd_config_edp_edid_load;
 }
 
 void lcd_config_init(Lcd_Config_t *pConf)
@@ -1759,15 +1790,18 @@ void lcd_config_init(Lcd_Config_t *pConf)
 void lcd_config_probe(Lcd_Config_t *pConf)
 {
     lcd_Conf = pConf;
-    lcd_config_assign(pConf);
 
     switch (pConf->lcd_basic.lcd_type) {
         case LCD_DIGITAL_MIPI:
             dsi_probe(pConf);
             break;
+        case LCD_DIGITAL_EDP:
+            lcd_config_edp_edid_load();
+            break;
         default:
             break;
     }
+    lcd_config_assign(pConf);
 }
 
 void lcd_config_remove(void)
