@@ -32,7 +32,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
-	writel(readl(0xc8100000), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
+	writel(readl(P_AO_RTI_STATUS_REG0), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
 #endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
@@ -113,7 +113,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_DISABLE(); //disable watchdog
 	//temp added
-	writel(0,0xc8100000);
+	writel(0,P_AO_RTI_STATUS_REG0);
 #endif
 
 	typedef  void (*t_func_v1)(void);

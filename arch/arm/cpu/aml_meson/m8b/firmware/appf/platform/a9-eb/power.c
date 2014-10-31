@@ -79,12 +79,15 @@ void pwr_delay(int n)
 			n--;
 		}
 }
+
+#define IO_AOBUS_BASE       0xc8100000  ///1M
+
 #define AUD_ARC_CTL           0x2659
-#define P_AO_RTI_STATUS_REG0         (0xC8100000 | (0x00 << 10) | (0x00 << 2))
-#define P_AO_RTI_STATUS_REG1         (0xC8100000 | (0x00 << 10) | (0x01 << 2))
-#define P_AO_RTI_STATUS_REG2         (0xC8100000 | (0x00 << 10) | (0x02 << 2))
-#define P_AO_REMAP_REG0              (0xC8100000 | (0x00 << 10) | (0x07 << 2))
-#define P_AO_REMAP_REG1              (0xC8100000 | (0x00 << 10) | (0x08 << 2))
+#define P_AO_RTI_STATUS_REG0         (IO_AOBUS_BASE | (0x00 << 10) | (0x00 << 2))
+#define P_AO_RTI_STATUS_REG1         (IO_AOBUS_BASE | (0x00 << 10) | (0x01 << 2))
+#define P_AO_RTI_STATUS_REG2         (IO_AOBUS_BASE | (0x00 << 10) | (0x02 << 2))
+#define P_AO_REMAP_REG0              (IO_AOBUS_BASE | (0x00 << 10) | (0x07 << 2))
+#define P_AO_REMAP_REG1              (IO_AOBUS_BASE | (0x00 << 10) | (0x08 << 2))
 
 #define P_AO_RTC_ADDR0				0xc8100740
 #define P_AO_RTC_ADDR1				0xc8100744
@@ -115,8 +118,6 @@ extern void platform_reset_handler(void);
 
 #define AO_SECURE_REG0 0x00 	///../ucode/secure_apb.h:19
 #define P_AO_SECURE_REG0 		SECBUS2_REG_ADDR(AO_SECURE_REG0)
-
-#define IO_AOBUS_BASE       0xc8100000  ///1M
 
 #define AOBUS_REG_OFFSET(reg)   ((reg) )
 #define AOBUS_REG_ADDR(reg)	    (IO_AOBUS_BASE + AOBUS_REG_OFFSET(reg))

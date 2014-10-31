@@ -1,6 +1,14 @@
 #ifndef __ALWAYS_ON_REGS_H_
 #define __ALWAYS_ON_REGS_H_
-#define P_AO_RTI_STATUS_REG0	        (0xc8100000)	
+
+#if !defined(IO_AOBUS_BASE)
+  #define IO_AOBUS_BASE	(0xc8100000)
+#elif (IO_AOBUS_BASE != 0xc8100000)
+  #warning(Please check the IO_AOBUS_BASE!)
+#endif
+
+
+#define P_AO_RTI_STATUS_REG0	        (IO_AOBUS_BASE)	
 #define P_AO_RTI_STATUS_REG1	        (0xc8100004)	
 #define P_AO_RTI_STATUS_REG2	        (0xc8100008)	
 #define P_AO_RTI_PWR_CNTL_REG0	        (0xc8100010)	

@@ -878,7 +878,7 @@ extern int amlnf_init(struct platform_device *pdev);
 //#ifdef MX_REVD
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV) || defined(CONFIG_M6TVD)
  		//if not clear, uboot command reset will fail -> blocked
- 		*((volatile unsigned long *)0xc8100000) = 0;
+ 		*((volatile unsigned long *)P_AO_RTI_STATUS_REG0) = 0;
 #endif
 
 	AML_LOG_TE("board");

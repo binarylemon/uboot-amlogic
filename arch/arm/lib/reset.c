@@ -52,7 +52,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 
 #if defined(CONFIG_M6) || defined(CONFIG_M8) || defined (CONFIG_M6TVD)
-	writel(0,0xc8100000);	/*still use current boot device*/
+	writel(0,P_AO_RTI_STATUS_REG0);	/*still use current boot device*/
 #endif
 
 	udelay (50000);				/* wait 50 ms */

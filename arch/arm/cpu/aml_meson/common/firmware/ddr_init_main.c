@@ -167,10 +167,10 @@ static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	// This disables boot device fall back feature in MX Rev-D
 	// This still enables bootloader to detect which boot device
 	// is selected during boot time. 
-	switch(readl(0xc8100000))
+	switch(readl(P_AO_RTI_STATUS_REG0))
 	{
 	case 0x6b730001:
-	case 0x6b730002: writel(readl(0xc8100000) |(0x70<<8),0xc8100000);break;
+	case 0x6b730002: writel(readl(P_AO_RTI_STATUS_REG0) |(0x70<<8),P_AO_RTI_STATUS_REG0);break;
 	}
 
 #endif

@@ -248,9 +248,6 @@ void enter_power_down()
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
-
-//	while(readl(0xc8100000) != 0x13151719)
-//	{}
 	switch_24M_to_32K();
 
 	if(p_arc_pwr_op->power_off_at_32K_1)

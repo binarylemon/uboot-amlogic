@@ -271,7 +271,7 @@ void enter_power_down()
 	setbits_le32(P_AO_GPIO_O_EN_N,1<<29);
 #endif
 	
-//	while(readl(0xc8100000) != 0x13151719)
+//	while(readl(P_AO_RTI_STATUS_REG0) != 0x13151719)
 //	{}
 
 	switch_24M_to_32K();

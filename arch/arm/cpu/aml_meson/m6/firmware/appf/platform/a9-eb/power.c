@@ -78,12 +78,19 @@ void pwr_delay(int n)
 			n--;
 		}
 }
+
+#if !defined(IO_AOBUS_BASE)
+  #define IO_AOBUS_BASE	(0xc8100000)
+#elif (IO_AOBUS_BASE != 0xc8100000)
+  #warning(Please check the IO_AOBUS_BASE!)
+#endif
+
 #define AUD_ARC_CTL           0x2659
-#define P_AO_RTI_STATUS_REG0         (0xC8100000 | (0x00 << 10) | (0x00 << 2))
-#define P_AO_RTI_STATUS_REG1         (0xC8100000 | (0x00 << 10) | (0x01 << 2))
-#define P_AO_RTI_STATUS_REG2         (0xC8100000 | (0x00 << 10) | (0x02 << 2))
-#define P_AO_REMAP_REG0              (0xC8100000 | (0x00 << 10) | (0x07 << 2))
-#define P_AO_REMAP_REG1              (0xC8100000 | (0x00 << 10) | (0x08 << 2))
+#define P_AO_RTI_STATUS_REG0         (IO_AOBUS_BASE | (0x00 << 10) | (0x00 << 2))
+#define P_AO_RTI_STATUS_REG1         (IO_AOBUS_BASE | (0x00 << 10) | (0x01 << 2))
+#define P_AO_RTI_STATUS_REG2         (IO_AOBUS_BASE | (0x00 << 10) | (0x02 << 2))
+#define P_AO_REMAP_REG0              (IO_AOBUS_BASE | (0x00 << 10) | (0x07 << 2))
+#define P_AO_REMAP_REG1              (IO_AOBUS_BASE | (0x00 << 10) | (0x08 << 2))
 
 
 #define RESET0_REGISTER                            0x1101

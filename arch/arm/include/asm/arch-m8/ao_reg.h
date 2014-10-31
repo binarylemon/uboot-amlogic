@@ -12,26 +12,11 @@
 #define P_I2C_TOKEN_RDATA_REG0	        (0xc8100518)	
 #define P_I2C_TOKEN_RDATA_REG1	        (0xc810051c)	
 
-
-#if 0
-// ----------------------------
-// I2C Slave (3)
-// ----------------------------
-#define P_AO_I2C_S_CONTROL_REG      (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x50 << 2))
-#define P_AO_I2C_S_SEND_REG         (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x51 << 2))
-#define P_AO_I2C_S_RECV_REG         (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x52 << 2))
-#define P_AO_I2C_S_CNTL1_REG        (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x53 << 2))
-#endif
-
 // ---------------------------
 // RTC (4)
 // ---------------------------
 // NOTE:  These are on the Secure APB3  bus
 // 
-
-
-
-#define IO_AOBUS_BASE       0xc8100000  ///1M
 
 #define AOBUS_REG_OFFSET(reg)   ((reg) )
 #define AOBUS_REG_ADDR(reg)	    (IO_AOBUS_BASE + AOBUS_REG_OFFSET(reg))

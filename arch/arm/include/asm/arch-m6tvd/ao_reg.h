@@ -1,7 +1,14 @@
 #ifndef __ALWAYS_ON_REGS_H_
 #define __ALWAYS_ON_REGS_H_
 
-#define P_AO_RTI_STATUS_REG0	        (0xc8100000)	
+#if !defined(IO_AOBUS_BASE)
+  #define IO_AOBUS_BASE	(0xc8100000)
+#elif (IO_AOBUS_BASE != 0xc8100000)
+  #warning(Please check the IO_AOBUS_BASE!)
+#endif
+
+
+#define P_AO_RTI_STATUS_REG0	        (IO_AOBUS_BASE)	
 #define P_AO_RTI_STATUS_REG1	        (0xc8100004)	
 #define P_AO_RTI_STATUS_REG2	        (0xc8100008)	
 
@@ -45,11 +52,11 @@
 #define AO_IR_BLASTER_ADDR1         0x31
 #define AO_IR_BLASTER_ADDR2         0x32
 
-#define P_AO_CEC_GEN_CNTL           (volatile unsigned long *)(0xc8100000 | (0x00 << 10) | (0x40 << 2))
-#define P_AO_CEC_RW_REG             (volatile unsigned long *)(0xc8100000 | (0x00 << 10) | (0x41 << 2))
-#define P_AO_CEC_INTR_MASKN         (volatile unsigned long *)(0xc8100000 | (0x00 << 10) | (0x42 << 2))
-#define P_AO_CEC_INTR_CLR           (volatile unsigned long *)(0xc8100000 | (0x00 << 10) | (0x43 << 2))
-#define P_AO_CEC_INTR_STAT          (volatile unsigned long *)(0xc8100000 | (0x00 << 10) | (0x44 << 2))
+#define P_AO_CEC_GEN_CNTL           (volatile unsigned long *)(IO_AOBUS_BASE | (0x00 << 10) | (0x40 << 2))
+#define P_AO_CEC_RW_REG             (volatile unsigned long *)(IO_AOBUS_BASE | (0x00 << 10) | (0x41 << 2))
+#define P_AO_CEC_INTR_MASKN         (volatile unsigned long *)(IO_AOBUS_BASE | (0x00 << 10) | (0x42 << 2))
+#define P_AO_CEC_INTR_CLR           (volatile unsigned long *)(IO_AOBUS_BASE | (0x00 << 10) | (0x43 << 2))
+#define P_AO_CEC_INTR_STAT          (volatile unsigned long *)(IO_AOBUS_BASE | (0x00 << 10) | (0x44 << 2))
 
 
 // -------------------------------------------------------------------
@@ -88,14 +95,14 @@
 // I2C Master (8)
 // ----------------------------
 #if 0
-#define P_AO_I2C_M_0_CONTROL_REG    (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x40 << 2))
-#define P_AO_I2C_M_0_SLAVE_ADDR     (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x41 << 2))
-#define P_AO_I2C_M_0_TOKEN_LIST0    (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x42 << 2))
-#define P_AO_I2C_M_0_TOKEN_LIST1    (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x43 << 2))
-#define P_AO_I2C_M_0_WDATA_REG0     (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x44 << 2))
-#define P_AO_I2C_M_0_WDATA_REG1     (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x45 << 2))
-#define P_AO_I2C_M_0_RDATA_REG0     (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x46 << 2))
-#define P_AO_I2C_M_0_RDATA_REG1     (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x47 << 2))
+#define P_AO_I2C_M_0_CONTROL_REG    (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x40 << 2))
+#define P_AO_I2C_M_0_SLAVE_ADDR     (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x41 << 2))
+#define P_AO_I2C_M_0_TOKEN_LIST0    (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x42 << 2))
+#define P_AO_I2C_M_0_TOKEN_LIST1    (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x43 << 2))
+#define P_AO_I2C_M_0_WDATA_REG0     (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x44 << 2))
+#define P_AO_I2C_M_0_WDATA_REG1     (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x45 << 2))
+#define P_AO_I2C_M_0_RDATA_REG0     (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x46 << 2))
+#define P_AO_I2C_M_0_RDATA_REG1     (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x47 << 2))
 #endif
 
 #define P_I2C_CONTROL_REG	            (0xc8100500)	
@@ -112,10 +119,10 @@
 // ----------------------------
 // I2C Slave (3)
 // ----------------------------
-#define P_AO_I2C_S_CONTROL_REG      (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x50 << 2))
-#define P_AO_I2C_S_SEND_REG         (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x51 << 2))
-#define P_AO_I2C_S_RECV_REG         (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x52 << 2))
-#define P_AO_I2C_S_CNTL1_REG        (volatile unsigned long *)(0xc8100000 | (0x01 << 10) | (0x53 << 2))
+#define P_AO_I2C_S_CONTROL_REG      (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x50 << 2))
+#define P_AO_I2C_S_SEND_REG         (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x51 << 2))
+#define P_AO_I2C_S_RECV_REG         (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x52 << 2))
+#define P_AO_I2C_S_CNTL1_REG        (volatile unsigned long *)(IO_AOBUS_BASE | (0x01 << 10) | (0x53 << 2))
 #endif
 
 // ---------------------------

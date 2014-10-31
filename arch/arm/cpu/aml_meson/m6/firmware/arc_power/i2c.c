@@ -8,6 +8,12 @@
 #include <asm/arch/memtest.h>
 #include <asm/arch/pctl.h>
 
+#if !defined(IO_AOBUS_BASE)
+  #define IO_AOBUS_BASE	(0xc8100000)
+#elif (IO_AOBUS_BASE != 0xc8100000)
+  #warning(Please check the IO_AOBUS_BASE!)
+#endif
+
 extern void wait_uart_empty();
 
 #define AML_I2C_CTRL_CLK_DELAY_MASK			0x3ff

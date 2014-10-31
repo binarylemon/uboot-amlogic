@@ -42,7 +42,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//enable watchdog for 5s
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_SET(5000); //5s
-	writel(readl(0xc8100000), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
+	writel(readl(P_AO_RTI_STATUS_REG0), SKIP_BOOT_REG_BACK_ADDR); //[By Sam.Wu]backup the skip_boot flag to sram for v2_burning
 #endif
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
@@ -71,10 +71,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	// This disables boot device fall back feature in MX Rev-D
 	// This still enables bootloader to detect which boot device
 	// is selected during boot time. 
-	switch(readl(0xc8100000))
+	switch(readl(P_AO_RTI_STATUS_REG0))
 	{
 	case 0x6b730001:
-	case 0x6b730002: writel(readl(0xc8100000) |(0x70<<8),0xc8100000);break;
+	case 0x6b730002: writel(readl(P_AO_RTI_STATUS_REG0) |(0x70<<8),P_AO_RTI_STATUS_REG0);break;
 	}
 
 #endif
@@ -235,7 +235,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//if bootup failed, switch to next boot device
 	AML_WATCH_DOG_DISABLE(); //disable watchdog
 	//temp added
-	writel(0,0xc8100000);
+	writel(0,P_AO_RTI_STATUS_REG0);
 #endif
 
 #if defined(CONFIG_M8B) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)

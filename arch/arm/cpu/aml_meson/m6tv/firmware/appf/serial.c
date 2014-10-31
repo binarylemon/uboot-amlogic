@@ -26,14 +26,21 @@
 #define MESON_PERIPHS1_VIRT_BASE	0xc1108400
 #define MESON_PERIPHS1_PHYS_BASE	0xc1108400
 
+#if !defined(IO_AOBUS_BASE)
+  #define IO_AOBUS_BASE (0xc8100000)
+#elif (0xc8100000 != IO_AOBUS_BASE)
+  #warning(Please check the IO_AOBUS_BASE!)  
+#endif
+
+
 // ----------------------------
 // UART
 // ----------------------------
-#define P_AO_UART_WFIFO              (0xc8100000 | (0x01 << 10) | (0x30 << 2))
-#define P_AO_UART_RFIFO              (0xc8100000 | (0x01 << 10) | (0x31 << 2))
-#define P_AO_UART_CONTROL            (0xc8100000 | (0x01 << 10) | (0x32 << 2))
-#define P_AO_UART_STATUS             (0xc8100000 | (0x01 << 10) | (0x33 << 2))
-#define P_AO_UART_MISC               (0xc8100000 | (0x01 << 10) | (0x34 << 2))
+#define P_AO_UART_WFIFO              (IO_AOBUS_BASE | (0x01 << 10) | (0x30 << 2))
+#define P_AO_UART_RFIFO              (IO_AOBUS_BASE | (0x01 << 10) | (0x31 << 2))
+#define P_AO_UART_CONTROL            (IO_AOBUS_BASE | (0x01 << 10) | (0x32 << 2))
+#define P_AO_UART_STATUS             (IO_AOBUS_BASE | (0x01 << 10) | (0x33 << 2))
+#define P_AO_UART_MISC               (IO_AOBUS_BASE | (0x01 << 10) | (0x34 << 2))
 
 
 #define CBUS_REG_OFFSET(reg) ((reg) << 2)

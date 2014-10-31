@@ -13,6 +13,8 @@
 #define MESON_CPU_TYPE_MESON8B		0x8B
 #define MESON_CPU_TYPE_MESON8M2		0x8C
 
+#define IO_AOBUS_BASE (0xc8100000)
+
 //set watchdog timer by ms
 #define AML_WATCH_DOG_SET(time) \
 	writel(0, P_WATCHDOG_RESET); \

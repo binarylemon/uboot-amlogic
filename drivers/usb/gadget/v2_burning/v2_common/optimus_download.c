@@ -1204,7 +1204,7 @@ void optimus_reset(const int cfgFlag)
 
 #if defined(CONFIG_M6) || defined(CONFIG_M6TV)
     //if not clear, uboot command reset will fail -> blocked
-    *((volatile unsigned long *)0xc8100000) = 0;
+    *((volatile unsigned long *)P_AO_RTI_STATUS_REG0) = 0;
 #endif//#if defined(CONFIG_M6) || defined(CONFIG_M6TV)
     printf("Burn Reboot...\n");//Add printf to delay to save env
     while(--i);
@@ -1298,13 +1298,13 @@ int optimus_burn_complete(const int choice)
 int optimus_enable_romboot_skip_boot(void)
 {
 #ifdef CONFIG_MESON_TRUSTZONE
-	writel(meson_trustzone_sram_read_reg32(SKIP_BOOT_REG_BACK_ADDR), 0xc8100000); //disable watchdog
+	writel(meson_trustzone_sram_read_reg32(SKIP_BOOT_REG_BACK_ADDR), P_AO_RTI_STATUS_REG0); //disable watchdog
 #else
-	writel(readl(SKIP_BOOT_REG_BACK_ADDR), 0xc8100000); //disable watchdog
+	writel(readl(SKIP_BOOT_REG_BACK_ADDR), P_AO_RTI_STATUS_REG0); //disable watchdog
 #endif// #ifdef CONFIG_MESON_TRUSTZONE
 
 	//enable romboot skip_boot function to jump to usb boot
-    DWN_MSG("Skip boot flag[%x]\n", (unsigned int)readl(0xc8100000));
+    DWN_MSG("Skip boot flag[%x]\n", (unsigned int)readl(P_AO_RTI_STATUS_REG0));
     return 0;
 }
 #endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
