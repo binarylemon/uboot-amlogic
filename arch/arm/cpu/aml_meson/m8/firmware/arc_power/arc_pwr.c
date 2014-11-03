@@ -213,18 +213,22 @@ static void switch_to_81()
 
 inline void switch_24M_to_32K(void)
 {
+#ifndef CONFIG_NO_32K_XTAL
 	// ee use 32k, So interrup status can be accessed.
 	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);	
 	switch_to_rtc();
 	udelay__(100);
+#endif
 }
 
 inline void switch_32K_to_24M(void)
 {
+#ifndef CONFIG_NO_32K_XTAL
 	switch_to_81();
 	// ee go back to clk81
 	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay__(100);
+#endif
 }
 
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}

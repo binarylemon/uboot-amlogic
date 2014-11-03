@@ -181,6 +181,10 @@ endif
 	@echo config command: \"make m8m2_n200_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "M8M2_N200C_V1"
+	@echo config command: \"make m8m2_n200C_v1_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M8M2_N100_2G"
 	@echo config command: \"make m8m2_n100_2G_config\"
 
