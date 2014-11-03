@@ -793,27 +793,37 @@ void board_dt_id_process(void)
 		mem_size += gd->bd->bi_dram[i].size;
 	}
 	mem_size = mem_size >> 20;	//MB
-	unsigned char dt_name[64] = {0};
-	strcat(dt_name, "m8b_m201_");  //please change this name when you add a new config
-	debug_print("aml_dt: %s\n", getenv("aml_dt"));
+	char dt_name[64] = {0};
+	//strcat(dt_name, "m8b_m201_");  //please change this name when you add a new config
+	//debug_print("aml_dt: %s\n", getenv("aml_dt"));
 	switch(mem_size){
-		case 2048: //2GB
-			strcat(dt_name, "2g");
-			break;
 		case 1024: //1GB
-			strcat(dt_name, "1g");
+			strcat(dt_name, "m8b_m201_1G");
 			break;
 		case 512: //512MB
-			strcat(dt_name, "512m");
+			strcat(dt_name, "m8b_m201C_512M");
 			break;
 		case 256:
-			strcat(dt_name, "256m");
+			strcat(dt_name, "m8b_m201_256M");
 			break;
 		default:
-			strcat(dt_name, "v1");
+			strcat(dt_name, "m8b_m201_v1");
 			break;
 	}
 	setenv("aml_dt", dt_name);
-	debug_print("aml_dt: %s\n", getenv("aml_dt"));
+	//debug_print("aml_dt: %s\n", getenv("aml_dt"));
 }
 #endif
+
+static int do_checkhw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifdef CONFIG_AUTO_SET_MULTI_DT_ID
+	board_dt_id_process();
+#endif
+	return 0;
+}
+
+U_BOOT_CMD(
+        checkhw, 1, 1, do_checkhw,
+        "Get the hardware revsion","[<string>]\n"
+);

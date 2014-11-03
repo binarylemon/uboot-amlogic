@@ -157,6 +157,7 @@
 	"bootm_size=0x80000000\0" \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
+	"get_dt=checkhw\0" \
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
@@ -350,7 +351,7 @@
 
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
-//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
+#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
 #endif
 
 //On board DDR capactiy
