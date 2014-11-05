@@ -23,9 +23,8 @@ void gate_init(void)
 	/* close spi */
 	CLK_GATE_OFF(SPICC);
 	CLK_GATE_OFF(SPI1);
-	CLK_GATE_OFF(SPI2);
-    
-	CLK_GATE_OFF(AUD_BUF);                          // CBUS[0x1050], gate off Audio buffer
+	CLK_GATE_OFF(SPI2);   
+	
 	/* can't open HDMI */
 	CLK_GATE_OFF(RANDOM_NUM_GEN);                   // CBUS[0x1050], gate off RANDOM_NUM_GEN 
 	CLK_GATE_OFF(ASYNC_FIFO);                       // CBUS[0x1050], gate off ASYNC FIFO
@@ -84,7 +83,8 @@ void gate_init(void)
 	#endif
 	
 	/* close AIU */
-	#if 1
+	#if 0
+	CLK_GATE_OFF(AUD_BUF);                          // CBUS[0x1050], gate off Audio buffer
 	CLK_GATE_OFF(AIU_AI_TOP_GLUE);
 	CLK_GATE_OFF(AIU_IEC958);
 	CLK_GATE_OFF(AIU_I2S_OUT);
