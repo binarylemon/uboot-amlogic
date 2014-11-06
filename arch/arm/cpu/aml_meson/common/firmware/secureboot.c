@@ -30,18 +30,33 @@ int load_secureos(void)
 	int rc = 0;
 	unsigned len;
 	unsigned *psecureargs = NULL;
+	unsigned memsize;
 
 	psecureargs = (unsigned*)(AHB_SRAM_BASE + READ_SIZE-SECUREARGS_ADDRESS_IN_SRAM);
 	*psecureargs = (unsigned)NULL;	
-#ifdef CONFIG_MESON_SECUREARGS	
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)	
-	if(IS_MESON_M8M2_CPU)
-		*psecureargs = (unsigned)__secureargs_m8m2;
-	else
-		*psecureargs = (unsigned)__secureargs_m8;
+	memsize = 0;
+#ifdef CONFIG_MESON_SECUREARGS
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
+	memsize = readl(CONFIG_DDR_SIZE_IND_ADDR);
+	if(IS_MESON_M8M2_CPU) {
+		if (memsize > 1024) {
+			*psecureargs = (unsigned)__secureargs_m8m2_2g;
+		} else {
+			*psecureargs = (unsigned)__secureargs_m8m2;
+		}
+	} else {
+		if (memsize > 1024) {
+			*psecureargs = (unsigned)__secureargs_m8_2g;
+		} else {
+			*psecureargs = (unsigned)__secureargs_m8;
+		}
+	}
+	serial_puts("\nDDR size : ");
+	serial_put_dec(memsize);
+	serial_puts(" MB\n");
 #else
 	*psecureargs = (unsigned)__secureargs;
-#endif		
+#endif
 #endif
 
 	/* UCL decompress */
