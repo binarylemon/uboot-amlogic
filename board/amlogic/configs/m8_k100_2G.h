@@ -379,7 +379,7 @@
 
 
 #define CONFIG_BOOTCOMMAND  \
-    "run try_auto_burn;"\
+    "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
     "imgread kernel boot ${loadaddr}; "\
     "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
     "if unifykey get usid; then setenv bootargs ${bootargs} androidboot.serialno=${usid}; fi;"\

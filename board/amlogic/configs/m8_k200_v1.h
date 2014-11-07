@@ -337,7 +337,7 @@
         "\0"\
 	\
 	"storeboot="\
-                "run try_auto_burn;"\
+                "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
 		"secukey auto;" \
 		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\

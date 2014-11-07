@@ -267,7 +267,7 @@
 		"fi; fi; fi; fi; fi; fi;" \
                 "\0"\
 	"storeboot="\
-                "run try_auto_burn;"\
+                "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
                 "echo Booting...; "\
                 "imgread kernel boot ${loadaddr};"\
                 "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\

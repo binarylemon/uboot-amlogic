@@ -310,7 +310,7 @@
         "\0"\
 	\
 	"storeboot="\
-        "run try_auto_burn;"\
+        "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
         "echo Booting...; "\
         "if unifykey getserialno usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
