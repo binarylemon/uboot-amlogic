@@ -247,7 +247,7 @@
 		"fi; fi; fi; fi; fi; fi\0" \
 		\
 	"prepare="\
-		"video open; video clear; video dev bl_on; " \
+		"video clear; video open; video clear; video dev bl_on; " \
 		"imgread res logo ${loadaddr_misc}; "\
         "unpackimg ${loadaddr_misc}; "\
 		"\0"\
@@ -281,6 +281,7 @@
 		"fi\0" \
 		\
 	"usb_burning=update 1000\0" \
+        "try_auto_burn=update 700 750;\0"\
 		\
 	"charging_or_not="\
 		"if ac_online; then "\
@@ -381,8 +382,10 @@
 
 
 #define CONFIG_BOOTCOMMAND  \
+    "run try_auto_burn;"\
     "imgread kernel boot ${loadaddr}; "\
     "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
+    "if unifykey get usid; then setenv bootargs ${bootargs} androidboot.serialno=${usid}; fi;"\
     "bootm;"\
     "run ota_update"
 

@@ -233,6 +233,7 @@
 	"magic_key_status=none\0" \
 	"sleep_threshold=20\0" \
 	"usb_burning=update 1000\0"\
+        "try_auto_burn=update 700 750;\0"\
 	"preboot="\
 		"echo preboot...;" \
                 "run upgrade_check;"\
@@ -266,6 +267,7 @@
 		"fi; fi; fi; fi; fi; fi;" \
                 "\0"\
 	"storeboot="\
+                "run try_auto_burn;"\
                 "echo Booting...; "\
                 "imgread kernel boot ${loadaddr};"\
                 "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\

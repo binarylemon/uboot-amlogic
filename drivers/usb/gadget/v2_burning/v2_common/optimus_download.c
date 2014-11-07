@@ -127,13 +127,12 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
 
     DWN_DBG("uboot_bin 0x%p, acsOffsetInSpl 0x%x, addrMapFromAhb2Bin 0x%x\n", uboot_bin, acsOffsetInSpl, addrMapFromAhb2Bin);
     acsSettingInBin   = (struct acs_setting*)(*(unsigned*)(uboot_bin + acsOffsetInSpl) - addrMapFromAhb2Bin);
-    partitionTableSz = acsSettingInBin->partition_table_length;
-    DWN_MSG("acsSettingInBin=0x%x, partTabSz=0x%x\n", (unsigned int)acsSettingInBin, partitionTableSz);
     
     if( (unsigned)acsSettingInBin >= uboot_bin + 64*1024 || (unsigned)acsSettingInBin <= uboot_bin){//acs not in the spl
         DWN_MSG("Acs not in the spl of uboot_bin\n");
         return 0;
     }
+
     if(memcmp(MAGIC_ACS, acsSettingInBin->acs_magic, strlen(MAGIC_ACS))
         || memcmp(TABLE_MAGIC_NAME, acsSettingInBin->partition_table_magic, strlen(TABLE_MAGIC_NAME)))
     {
@@ -163,6 +162,9 @@ static int _check_partition_table_consistency(const unsigned uboot_bin)
 #ifdef CONFIG_MESON_TRUSTZONE
     partsTabInSram    = (const struct partitions*)meson_trustzone_acs_addr((unsigned)&acsSettingInSram->partition_table_addr);
 #endif// #ifndef CONFIG_MESON_TRUSTZONE
+
+    partitionTableSz = acsSettingInBin->partition_table_length;
+    DWN_MSG("acsSettingInBin=0x%x, partTabSz=0x%x\n", (unsigned int)acsSettingInBin, partitionTableSz);
 
     rc = memcmp(partsTabInSram, partsTabInBin, partitionTableSz);
     DWN_MSG("Check parts table %s\n", !rc ? "OK." : "FAILED!");

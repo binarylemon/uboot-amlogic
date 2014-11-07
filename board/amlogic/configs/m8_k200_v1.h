@@ -337,6 +337,7 @@
         "\0"\
 	\
 	"storeboot="\
+                "run try_auto_burn;"\
 		"secukey auto;" \
 		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\
@@ -362,6 +363,7 @@
 				"fi;\0" \
     \
 	"usb_burning=update 1000\0" \
+        "try_auto_burn=update 700 750;\0"\
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 

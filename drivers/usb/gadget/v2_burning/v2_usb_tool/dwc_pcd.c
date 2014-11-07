@@ -18,7 +18,7 @@ dwc_ep_t g_dwc_eps[NUM_EP];
 
 int dwc_core_init(void)
 {
-
+    gotgctl_data_t gctrldata;
     int32_t         snpsid;
 
     memset(&this_pcd, 0, sizeof(this_pcd));
@@ -30,6 +30,17 @@ int dwc_core_init(void)
         printf("%s,Bad value for SNPSID: 0x%08x\n", __func__, snpsid);
         return -1;
     }
+
+#if 1
+    /*GOTGCTL*/
+    gctrldata.d32 = dwc_read_reg32(DWC_REG_GOTGCTL);//Can this GOTGCTL read before dwc_otg_core_init() ??
+    if(!gctrldata.b.asesvld || !gctrldata.b.bsesvld){
+            printf("GOTGCTL=0x%08x, asesvld=%x, bsesvld=%x\n", 
+                            gctrldata.d32, gctrldata.b.asesvld, gctrldata.b.bsesvld);
+            return __LINE__;
+
+    }
+#endif//
 
     DBG("dwc core init is ok!\n");// show printf is ok.
     /*

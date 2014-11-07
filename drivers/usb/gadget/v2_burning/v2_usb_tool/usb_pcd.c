@@ -215,6 +215,7 @@ int usb_pcd_init(void)
 
 static unsigned int need_check_timeout;
 static unsigned int time_out_val;
+static unsigned int _auto_burn_time_out_base = 0;
 
 void usb_parameter_init(int time_out)
 {
@@ -240,17 +241,26 @@ void usb_parameter_init(int time_out)
 
 int usb_pcd_irq(void)
 {
-	if(need_check_timeout)
-    {
-        unsigned curTime = get_timer(need_check_timeout);
-		if(curTime > time_out_val){
-			dwc_otg_power_off_phy();
-            ERR("Try connect time out %u, %u\n", curTime, time_out_val);
-			return 2;// return to other device boot
-		}
-	}
+        if(need_check_timeout)
+        {
+                unsigned curTime = get_timer(need_check_timeout);
+                if(curTime > time_out_val){
+                        dwc_otg_power_off_phy();
+                        ERR("Try connect time out %u, %u, %u\n", curTime, time_out_val, need_check_timeout);
+                        return 2;// return to other device boot
+                }
+        }
+        if(_auto_burn_time_out_base){
+                unsigned waitIdentifyTime = get_timer(_auto_burn_time_out_base);
+                unsigned timeout = simple_strtoul(getenv(_ENV_TIME_OUT_TO_AUTO_BURN), NULL, 0);
+                if(waitIdentifyTime > timeout){
+                        ERR("waitIdentifyTime(%u) > timeout(%u)\n", waitIdentifyTime, timeout);
+                        _auto_burn_time_out_base = 0;//clear it to allow enter burning next time
+                        return __LINE__;
+                }
+        }
 
-	return dwc_otg_irq();
+        return dwc_otg_irq();
 }
 
 void start_bulk_transfer(pcd_struct_t *_pcd)
@@ -277,7 +287,7 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
               if (ctrl->bRequestType != (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE))
                   break;
               //time_out_val = USB_ROM_DRIVER_TIMEOUT;// Wait SetConfig (PC install driver OK)
-              need_check_timeout = 0;
+              /*need_check_timeout = 0;*/
               switch (w_value >> 8) 
               {
                   case USB_DT_DEVICE:
@@ -369,7 +379,10 @@ void do_gadget_setup( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
               _pcd->buf = 0;
               _pcd->length = 0;
               _pcd->request_config = 1;   /* Configuration changed */
-              //need_check_timeout = 0;
+              need_check_timeout = 0;
+              if(OPTIMUS_WORK_MODE_USB_UPDATE == optimus_work_mode_get()){//not booting from usb
+                      if(getenv(_ENV_TIME_OUT_TO_AUTO_BURN))_auto_burn_time_out_base = get_timer(0);
+              }
           }
           break;
 
@@ -511,7 +524,7 @@ void do_vendor_request( pcd_struct_t *_pcd, struct usb_ctrlrequest * ctrl)
 
             _pcd->buf = (char*)id;
             _pcd->length = w_length;//FIXME:asset w_length == 4 ??
-            need_check_timeout = 0;
+            _auto_burn_time_out_base = 0;//get burning tool identify command, so clear the timeout flag
             printf("\nID[%d]\n", _pcd->buf[3]);
         }
         break;

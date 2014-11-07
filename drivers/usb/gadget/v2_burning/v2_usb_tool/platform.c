@@ -7,6 +7,7 @@
  *
  */
  #include "platform.h"
+#include <asm/arch/power_gate.h>
 
 /*CONFIG_AML_MESON_8 include m8, m8baby, m8m2, etc... defined in cpu.h*/
 #if !( defined(CONFIG_AML_MESON_6) || defined(CONFIG_AML_MESON_8) )
@@ -102,6 +103,10 @@ static void set_usb_phy_config(int cfg)
     usb_config_data_t config;
     usb_ctrl_data_t control;
 
+    /*CLK_GATE_ON(USB0);*/
+    if(!IS_CLK_GATE_ON(USB0)){
+            SET_CBUS_REG_MASK(GCLK_REG_USB0, GCLK_MASK_USB0);
+    }
     /*printf("%s %d\n", __func__, __LINE__);*/
     cfg = cfg;//avoid compiler warning
     /**P_RESET1_REGISTER = (1<<2);//usb reset*/
@@ -123,7 +128,7 @@ static void set_usb_phy_config(int cfg)
 
     control.b.por = 0;
     usb_aml_regs->ctrl = control.d32;
-    udelay(time_dly*100);//by Sam: delay 0.5s to wait usb clam down
+    udelay(time_dly);//by Sam: delay 0.5s to wait usb clam down
 
     control.d32 = usb_aml_regs->ctrl;
     if(!control.b.clk_detected){

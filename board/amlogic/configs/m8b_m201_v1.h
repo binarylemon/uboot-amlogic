@@ -242,6 +242,7 @@
         "\0"\
 	\
 	"storeboot="\
+        "run try_auto_burn;"\
         "echo Booting...; "\
         "if unifykey get usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
@@ -265,6 +266,7 @@
 				"fi;\0" \
     \
 	"usb_burning=update 1000\0" \
+        "try_auto_burn=update 700 750;\0"\
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 
