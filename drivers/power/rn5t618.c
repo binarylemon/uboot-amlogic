@@ -426,7 +426,7 @@ int rn5t618_get_charging_percent(void)
     avg_current = 0;
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += rn5t618_get_ocv(battery_rdc, i); 
-        udelay(10000); 
+        udelay(2000); 
     }
     ocv = ocv / 8;
     avg_voltage /= 8;
@@ -665,6 +665,9 @@ int rn5t618_check_fault(void)
 
     printf("PMU fault status:\n");
     rn5t618_read(0x000A, &val);
+	if (val) {					// has fault, dump registers
+		dump_pmu_register();		
+	}
     while (val) {
         if (val & 0x01) {
             printf("-- %s\n", fault_reason[i]);    
@@ -772,8 +775,6 @@ int rn5t618_init(void)
     rn5t618_set_bits(0x00BA, 0x00, 0x0c);                       // set VWEAK to 3.0V
     rn5t618_set_bits(0x00BB, 0x00, 0x80);                       // set VWEAK to 3.0v
     udelay(100 * 1000);                                         // delay a short time
-
-//    dump_pmu_register();
 
     return 0;
 }

@@ -31,6 +31,7 @@ static int pmu_init_chg_enabled = 0;
 static int battery_rdc = 0;
 extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
 extern void mdelay(int n);
+static void dump_pmu_register(int dump_level);
 int aml1218_get_pmu_version(void);
 int aml1218_set_charge_enable(int enable);
 int aml1218_set_full_charge_voltage(int voltage);
@@ -626,7 +627,7 @@ int aml1218_get_charging_percent()
     avg_current = 0;
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += aml1218_get_ocv(charge_status, battery_rdc); 
-        udelay(10000); 
+        udelay(2000); 
     }
     ocv = ocv / 8;
     avg_voltage /= 8;
@@ -1014,6 +1015,9 @@ int aml1218_check_fault(void)
     aml1218_read(0x89, &val2);
 
     val_total = val0 | (val1  << 8 ) | (val2  << 16 );
+	if (val_total) {				// has fault, dump registers
+		dump_pmu_register(DUMP_ALL);
+	}
     
     while (val_total) {
         if (val_total & 0x01) {
@@ -1184,7 +1188,6 @@ int aml1218_init(void)
     aml1218_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
 #endif
     aml1218_set_bits(0x005d, 0x02, 0x02);       // open Ext current source for backlight 
-    dump_pmu_register(DUMP_KEY);
 
     return 0;
 }

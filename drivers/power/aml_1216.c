@@ -31,6 +31,7 @@ static int pmu_init_chg_enabled = 0;
 static int battery_rdc = 0;
 extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
 extern void mdelay(unsigned long msec);
+static void dump_pmu_register(int dump_level);
 int aml1216_set_charge_enable(int enable);
 int aml1216_get_otp_version(void);
 int aml1216_set_full_charge_voltage(int voltage);
@@ -630,7 +631,7 @@ int aml1216_get_charging_percent()
     avg_current = 0;
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += aml1216_get_ocv(charge_status, battery_rdc); 
-        udelay(10000); 
+        udelay(2000); 
     }
     ocv = ocv / 8;
     avg_voltage /= 8;
@@ -1018,6 +1019,9 @@ int aml1216_check_fault(void)
     aml1216_read(0x89, &val2);
 
     val_total = val0 | (val1  << 8 ) | (val2  << 16 );
+	if (val_total) {
+		dump_pmu_register(DUMP_ALL);			// has fault, dump all register
+	}
     
     while (val_total) {
         if (val_total & 0x01) {
@@ -1156,7 +1160,6 @@ int aml1216_init(void)
     aml1216_set_bits(0x1A, 0x06, 0x06);
     udelay(1000);
     aml1216_set_bits(0x12f, 0x30, 0x30);        // open hdmi 5v output following boost
-    dump_pmu_register(DUMP_KEY);
 
     return 0;
 }

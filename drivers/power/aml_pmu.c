@@ -29,6 +29,7 @@ int aml_battery_calibrate(void);
 #define AML_PMU_VERSION_D       0x03
 #define AML_PMU_VERSION_B       0x02
 
+void dump_pmu_register(void);
 extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int);
 extern void mdelay(int n);
 static int aml_pmu_version  = 0;
@@ -490,7 +491,7 @@ int aml_pmu_get_charging_percent(void)
     }
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += aml_pmu_get_ocv(charge_status, battery_rdc); 
-        udelay(10000); 
+        udelay(2000); 
     }
     ocv = ocv / 8;
     printf(" ocv is %4d, ", ocv);
@@ -826,6 +827,9 @@ void check_falut_status(void)
     aml_pmu_read(0x89, &val2);
     printf("[AML_PMU]fault status, reg[0x87]=0x%02x, reg[0x88]=0x%02x, reg[0x89]=0x%02x\n", 
            val0, val1, val2);
+	if (val0 | (val1 | val2)) {	// has fault, dump all registers
+		dump_pmu_register();		
+	}
 }
 
 void check_pmu_version(void)
@@ -989,7 +993,6 @@ int aml_pmu_init(void)
 
     aml_pmu_set_bits(0x0078, 0x20, 0x30);       // set re-charge threshold to 100mV
 
-    dump_pmu_register();
     return 1;
 }
 

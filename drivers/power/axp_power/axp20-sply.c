@@ -206,7 +206,7 @@ int axp202_get_charging_percent(void)
     avg_current = 0;
     for (i = 0; i < 8; i++) {                           // calculate average ocv
         ocv += axp_calculate_ocv(charge_status, battery_rdc);
-        udelay(10000); 
+        udelay(2000); 
     }
     ocv = ocv / 8;
     avg_voltage /= 8;
