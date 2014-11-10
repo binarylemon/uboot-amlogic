@@ -174,6 +174,7 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"wipe_data=success\0"\
 	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"preboot="\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
@@ -221,9 +222,11 @@
         	"run update;"\
         "else if test ${reboot_mode} = usb_burning; then "\
         	"run usb_burning;"\
+		"else if test ${wipe_data} = failed; then "\
+			"echo wipe_data=${wipe_data}; run recovery;"\
         "else " \
         	"  "\
-        "fi;fi;fi\0" \
+        "fi;fi;fi;fi\0" \
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
