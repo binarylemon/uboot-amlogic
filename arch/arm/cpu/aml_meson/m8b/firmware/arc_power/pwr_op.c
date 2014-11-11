@@ -15,11 +15,17 @@
 
 
 //#define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
+#ifndef CONFIG_CEC_WAKEUP
+#define CONFIG_CEC_WAKEUP       1//for CEC function
+#endif
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"
 #endif
 
+#ifdef CONFIG_CEC_WAKEUP
+#include <cec_tx_reg.h>
+#endif
 /*
  * i2c clock speed define for 32K and 24M mode only for M8B
  */
@@ -898,6 +904,14 @@ unsigned int detect_key(unsigned int flags)
         if(remote_detect_key()){
             exit_reason = 6;
             break;
+		}
+#endif
+#ifdef CONFIG_CEC_WAKEUP
+        if(hdmi_cec_func_config & 0x1){
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
         }
 #endif
 

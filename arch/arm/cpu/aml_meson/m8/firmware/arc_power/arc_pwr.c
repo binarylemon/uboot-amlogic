@@ -9,6 +9,13 @@
 
 #include <pwr_op.c>
 
+#ifndef CONFIG_CEC_WAKEUP
+#define CONFIG_CEC_WAKEUP       1//for CEC function
+#endif
+#ifdef CONFIG_CEC_WAKEUP
+#include "hdmi_cec_arc.c"
+#endif
+
 static struct arc_pwr_op arc_pwr_op;
 static struct arc_pwr_op *p_arc_pwr_op;
 
@@ -40,6 +47,7 @@ void store_restore_plls(int flag);
 
 extern void udelay(int i);
 extern void wait_uart_empty(void);
+extern void wait_uart_empty();
 
 extern void uart_reset(void);
 extern void init_ddr_pll(void);
@@ -245,6 +253,12 @@ void enter_power_down()
 	cpu_off();
 	f_serial_puts("CPU off done\n");
 	wait_uart_empty();
+#ifdef CONFIG_CEC_WAKEUP
+    hdmi_cec_func_config = readl(P_AO_DEBUG_REG0); 
+    f_serial_puts("CEC M8:uboot: P_AO_DEBUG_REG0:\n");
+    serial_put_hex(hdmi_cec_func_config,32);
+    f_serial_puts("\n");
+#endif
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
@@ -264,6 +278,14 @@ void enter_power_down()
 		if(p_arc_pwr_op->power_off_ddr15)
 			p_arc_pwr_op->power_off_ddr15();
 	}
+#ifdef CONFIG_CEC_WAKEUP
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        cec_msg.log_addr = 4;
+        remote_cec_hw_reset();  
+        cec_node_init();
+    }
+#endif 
 
 	if(0x11111112 == readl(0xc11081A8)){
 		wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
@@ -282,7 +304,6 @@ void enter_power_down()
 	for(i=0;i<10;i++)
 	{
 		udelay__(1000);
-		//udelay(1000);
 	}
 #endif
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
