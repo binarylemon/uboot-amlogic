@@ -51,7 +51,7 @@ extern void __udelay(unsigned long usec);
 #endif 
 
 #if 0
-    #define hx_serial_puts    serial_puts
+    #define hx_serial_puts    f_serial_puts
 	#define hx_serial_put_hex serial_put_hex
 #else
     #define hx_serial_puts(a) 
@@ -212,6 +212,7 @@ static void hx_ddr_setting_save()
 	DDR_SUSPEND_SAVE( _PUB_DTPR0);
 	DDR_SUSPEND_SAVE( _PUB_DTPR1);
 	DDR_SUSPEND_SAVE( _PUB_DTPR2);
+    DDR_SUSPEND_SAVE( _PUB_DTPR3);
 
 	DDR_SUSPEND_SAVE( _PUB_PGCR3);	
 	DDR_SUSPEND_SAVE( _PUB_PGCR2);
@@ -583,6 +584,7 @@ pub_init_ddr0:
 	DDR0_SUSPEND_LOAD(_PUB_DTPR0);
 	DDR0_SUSPEND_LOAD(_PUB_DTPR1);
 	DDR0_SUSPEND_LOAD(_PUB_DTPR2);
+    DDR0_SUSPEND_LOAD(_PUB_DTPR3);
 
 	//DDR0_SUSPEND_LOAD(_PUB_PGCR3);
 	writel(g_ddr_settings[_PUB_PGCR3] & (~(0x7f<<9)), 
@@ -728,7 +730,7 @@ pub_init_ddr0:
 	}
 	hx_serial_puts("Aml log : DDR0 - DRAM INIT done\n");
 
-#if !defined(CONFIG_PXP_EMULATOR)
+#if !defined(CONFIG_PXP_EMULATOR) && !defined(LPDDR2) && defined(CONFIG_ENABLE_WRITE_LEVELING)
 	//===============================================	
 	//WL init
 	nTempVal =	PUB_PIR_WL ;
@@ -745,11 +747,12 @@ pub_init_ddr0:
 
 	//===============================================	
 	//DQS Gate training
+#if (!(defined LPDDR2))&& (!(defined LPDDR3))
 	nTempVal =	PUB_PIR_QSGATE ;
 	writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 	writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
-#if defined(CONFIG_VLSI_EMULATOR)
+#if (defined(CONFIG_VLSI_EMULATOR) || !defined(CONFIG_ENABLE_WRITE_LEVELING))
 	while((readl(P_DDR0_PUB_PGSR0) != 0x8000005f) &&
 		(readl(P_DDR0_PUB_PGSR0) != 0xC000005f))
 #else
@@ -765,16 +768,22 @@ pub_init_ddr0:
 		}
 		hx_serial_puts("Aml log : DDR0 - DQS done\n");
 	}
+#endif
 
 #if !defined(CONFIG_PXP_EMULATOR)
+#if !defined(LPDDR2) && defined(CONFIG_ENABLE_WRITE_LEVELING)
 	//===============================================	
 	//Write leveling ADJ
 	nTempVal =	PUB_PIR_WLADJ ;
 	writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 	writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
-
+#ifdef LPDDR3
+    while((readl(P_DDR0_PUB_PGSR0) != 0x800000bf) &&
+		(readl(P_DDR0_PUB_PGSR0) != 0xC00000bf))
+#else
 	while((readl(P_DDR0_PUB_PGSR0) != 0x800000ff) &&
 		(readl(P_DDR0_PUB_PGSR0) != 0xC00000ff))
+#endif
 	{
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_WLAERR)
 		{	
@@ -783,6 +792,7 @@ pub_init_ddr0:
 		}
 	}
 	hx_serial_puts("Aml log : DDR0 - WLADJ done\n");
+#endif
 
 	//===============================================	
 	//Data bit deskew & data eye training
@@ -790,8 +800,23 @@ pub_init_ddr0:
 	writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 	writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
+#ifdef CONFIG_ENABLE_WRITE_LEVELING
+    #ifdef LPDDR3
+    while((readl(P_DDR0_PUB_PGSR0) != 0x80000fbf)&&
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000fbf))
+    #else
 	while((readl(P_DDR0_PUB_PGSR0) != 0x80000fff)&&
 		(readl(P_DDR0_PUB_PGSR0) != 0xC0000fff))
+    #endif
+#else
+    #if (defined LPDDR2) || (defined LPDDR3)
+    while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f)&&
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f))
+    #else
+    while((readl(P_DDR0_PUB_PGSR0) != 0x80000f5f)&&
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f))
+    #endif
+#endif
 	{
 		if(readl(P_DDR0_PUB_PGSR0) & PUB_PGSR0_DTERR)
 		{
