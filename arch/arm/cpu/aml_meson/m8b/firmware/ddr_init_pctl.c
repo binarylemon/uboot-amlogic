@@ -317,6 +317,8 @@ pub_init_ddr0:
 		P_DDR0_PUB_PGCR2 ); 
 #ifdef CONFIG_LPDDR2_RANK1
 	writel((readl(P_DDR0_APD_CTRL) |( 0x1<<19)), P_DDR0_APD_CTRL);
+    writel( ((readl(P_DDR0_PUB_DTCR) & 0x00ffffbf) | (1 << 28 ) | (3 << 24) | (1 << 6)  | ( 1 << 23)),
+		P_DDR0_PUB_DTCR);
 #endif
 #ifdef CONFIG_LPDDR23_DUAL_RANK
     writel( ((readl(P_DDR0_PUB_DTCR) & 0x00ffffbf) | (1 << 28 ) | (3 << 24) | (1 << 6)  | ( 1 << 23)),
