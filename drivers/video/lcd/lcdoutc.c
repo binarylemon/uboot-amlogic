@@ -1039,13 +1039,21 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 						}
 						i += 2;
 					}
+					else if (((be32_to_cpup((((u32*)propdata)+i))) & 0xf) == 0x0) {
+						printf("get dsi_init_on wrong data_type: 0x%02x\n", (be32_to_cpup((((u32*)propdata)+i))));
+						break;
+					}
 					else {
-						i = i + 3 + (be32_to_cpup((((u32*)propdata)+i+2)));
+						if ((be32_to_cpup((((u32*)propdata)+i+2))) > 0xffff)
+							break;
+						else
+							i = i + 3 + ((be32_to_cpup((((u32*)propdata)+i+2))) & 0xff);
 					}
 				}
+				i = (i > DSI_INIT_ON_MAX) ? DSI_INIT_ON_MAX : i;
 				lcd_print("dsi_init_on: ");
 				for (j=0; j<i; j++) {
-					cfg->dsi_init_on[j] = (be32_to_cpup((((u32*)propdata)+j)));
+					cfg->dsi_init_on[j] = (unsigned char)((be32_to_cpup((((u32*)propdata)+j))) & 0xff);
 					lcd_print("0x%02x ", cfg->dsi_init_on[j]);
 				}
 				lcd_print("\n");
@@ -1067,13 +1075,21 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 						}
 						i += 2;
 					}
+					else if (((be32_to_cpup((((u32*)propdata)+i))) & 0xf) == 0x0) {
+						printf("get dsi_init_off wrong data_type: 0x%02x\n", (be32_to_cpup((((u32*)propdata)+i))));
+						break;
+					}
 					else {
-						i = i + 3 + (be32_to_cpup((((u32*)propdata)+i+2)));
+						if ((be32_to_cpup((((u32*)propdata)+i+2))) > 0xffff)
+							break;
+						else
+							i = i + 3 + ((be32_to_cpup((((u32*)propdata)+i+2))) & 0xff);
 					}
 				}
+				i = (i > DSI_INIT_OFF_MAX) ? DSI_INIT_OFF_MAX : i;
 				lcd_print("dsi_init_off: ");
 				for (j=0; j<i; j++) {
-					cfg->dsi_init_off[j] = (be32_to_cpup((((u32*)propdata)+j)));
+					cfg->dsi_init_off[j] = (unsigned char)((be32_to_cpup((((u32*)propdata)+j))) & 0xff);
 					lcd_print("0x%02x ", cfg->dsi_init_off[j]);
 				}
 				lcd_print("\n");

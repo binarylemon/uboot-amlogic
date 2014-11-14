@@ -114,6 +114,10 @@ static void print_info(void)
                     DPRINT("    0x%02x,%d,\n", dsi_config->dsi_init_on[i], dsi_config->dsi_init_on[i+1]);
                 }
             }
+            else if ((dsi_config->dsi_init_on[i] & 0xf) == 0x0) {
+                DPRINT("dsi_init_on wrong data_type: 0x%02x\n", dsi_config->dsi_init_on[i]);
+                break;
+            }
             else {
                 n = 3 + dsi_config->dsi_init_on[i+2];
                 DPRINT("    ");
@@ -141,6 +145,10 @@ static void print_info(void)
                 else {
                     DPRINT("    0x%02x,%d,\n", dsi_config->dsi_init_off[i], dsi_config->dsi_init_off[i+1]);
                 }
+            }
+            else if ((dsi_config->dsi_init_off[i] & 0xf) == 0x0) {
+                DPRINT("dsi_init_off wrong data_type: 0x%02x\n", dsi_config->dsi_init_off[i]);
+                break;
             }
             else {
                 n = 3 + dsi_config->dsi_init_off[i+2];
@@ -333,7 +341,7 @@ static unsigned int generic_if_rd(unsigned int address)
         lcd_print(" Error Address : %x\n", address);
     }
 
-    data_out = READ_DSI_REG(address);
+    data_out = READ_LCD_REG(address);
 
     return data_out;
 }
@@ -516,6 +524,10 @@ int dsi_write_cmd(unsigned char* payload)
             else
                 mdelay(payload[i+1]);
         }
+        else if ((payload[i] & 0xf) == 0x0) {
+            DPRINT("[error]dsi data_type: 0x%02x\n", payload[i]);
+            break;
+        }
         else {
             j = 3 + payload[i+2]; //payload[i+2] is parameter num
             switch (payload[i]) {//analysis data_type
@@ -547,6 +559,7 @@ int dsi_write_cmd(unsigned char* payload)
                     break;
                 default:
                     DPRINT("un-support data_type: 0x%02x\n", payload[i]);
+                    break;
             }
         }
         i += j;

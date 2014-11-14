@@ -60,9 +60,9 @@ static void lcd_ports_ctrl_lvds(Bool_t status)
 	if (status) {
 		WRITE_LCD_REG_BITS(LVDS_GEN_CNTL, 1, 3, 1); //enable lvds fifo
 		if (lcd_Conf->lcd_basic.lcd_bits == 6)
-			WRITE_LCD_REG_BITS(LVDS_PHY_CNTL4, 0x27, 0, 6);	//enable LVDS phy 3 channels
+			WRITE_LCD_REG_BITS(LVDS_PHY_CNTL4, LVDS_LANE_COUNT_3, BIT_PHY_LANE, 6);
 		else
-			WRITE_LCD_REG_BITS(LVDS_PHY_CNTL4, 0x2f, 0, 6);	//enable LVDS phy 4 channels
+			WRITE_LCD_REG_BITS(LVDS_PHY_CNTL4, LVDS_LANE_COUNT_4, BIT_PHY_LANE, 6);
 	}
 	else {
 		WRITE_LCD_REG_BITS(LVDS_PHY_CNTL3, 0, 0, 1);
