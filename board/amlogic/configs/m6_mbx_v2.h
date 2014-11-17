@@ -238,6 +238,7 @@
 	"nandboot="\
         "echo Booting ...;"\
         "run nandargs;"\
+        "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot} ;"\
         "imgread kernel boot ${loadaddr};"\
         "hdcp prefetch nand;"\
         "bootm;run recovery\0" \
