@@ -545,7 +545,7 @@ static void board_i2c_set_pinmux(void){
 	setbits_le32(P_AO_RTI_PIN_MUX_REG,
 	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
 
-    udelay(10000);
+    udelay(10);
 
 };
 
@@ -604,7 +604,7 @@ static void board_i2c_init(void)
 	/*M6 board*/
 	//udelay(10000);
 
-	udelay(10000);
+	udelay(10);
 #ifdef CONFIG_PLATFORM_HAS_PMU
     board_pmu_init();
 #endif

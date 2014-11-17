@@ -99,7 +99,7 @@ static void board_i2c_set_pinmux(void)
     CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,(0x3<<28)); //SPI_W_B/SPI_HOLD_B
     //enable I2C MASTER B pins
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2,((1<<2)|(1<<5)));//I2C_SDA_B/I2C_SCK_A
-    udelay(10000);
+    udelay(10);
 }
 
 #define I2C_TCA6424_ADDR   (0x22)

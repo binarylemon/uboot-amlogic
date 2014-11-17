@@ -300,7 +300,7 @@ static void board_i2c_set_pinmux(void){
 	setbits_le32(P_AO_RTI_PIN_MUX_REG,
 	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
 	
-    udelay(10000);
+    udelay(10);
 	
 };
 struct aml_i2c_platform g_aml_i2c_plat = {
@@ -335,7 +335,7 @@ static void board_i2c_init(void)
 	/*M6 ref board*/
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10);		
 }
 #endif /*CONFIG_AML_I2C*/
 
