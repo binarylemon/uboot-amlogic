@@ -155,7 +155,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x6c00000\0" \
+	"fb_addr=0x7900000\0"\
 	"fb_width=1280\0"\
 	"fb_height=720\0"\
 	"partnum=2\0" \
@@ -449,5 +449,30 @@
 
    #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif
+/*
+ * Secure OS
+ */
+#ifdef CONFIG_MESON_TRUSTZONE
+
+//#define CONFIG_MESON_SECUREARGS  1
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+#define SECUREOS_KEY_BASE_ADDR 0x06100000
+#define SECURE_OS_DECOMPRESS_ADDR 0x06200000
+#define CONFIG_SECURE_STORAGE_BURNED
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_MESON_STORAGE_BURN 1
+#define CONFIG_MESON_STORAGE_DEBUG
+#define CONFIG_SECURESTORAGEKEY
+#define CONFIG_RANDOM_GENERATE
+#define CONFIG_CMD_SECURESTORE
+#define CONFIG_CMD_RANDOM
+/* secure storage support both spi and emmc */
+#define CONFIG_SECURE_MMC
+#define CONFIG_SPI_NOR_SECURE_STORAGE
+#endif // CONFIG_SECURE_STORAGE_BURNED
+
+#endif //CONFIG_MESON_TRUSTZONE
+
+
 
 #endif //__CONFIG_M8B_M201_V1_H__
