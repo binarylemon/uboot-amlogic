@@ -32,7 +32,7 @@ static void board_i2c_set_pinmux(void)
     //enable I2C MASTER B pins
 	setbits_le32(P_AO_RTI_PIN_MUX_REG,((1<<5)|(1<<6)));
 	
-    udelay(10000);
+    udelay(10);
 }
 
 #define I2C_ACT8942QJ233_ADDR   (0x5B)

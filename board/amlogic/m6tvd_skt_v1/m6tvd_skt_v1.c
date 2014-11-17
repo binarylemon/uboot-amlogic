@@ -428,7 +428,7 @@ static void board_i2c_set_pinmux(void){
 	setbits_le32(MESON_I2C_MASTER_B_GPIOX_27_REG,
 	(MESON_I2C_MASTER_B_GPIOX_27_BIT|MESON_I2C_MASTER_B_GPIOX_28_BIT));
 	
-    udelay(10000);
+    udelay(10);
 	
 };
 struct aml_i2c_platform g_aml_i2c_plat = {
@@ -540,7 +540,7 @@ static void board_i2c_init(void)
 	board_M6_SKT_V1_i2c_test();	
 	//udelay(10000);	
 
-	udelay(10000);		
+	udelay(10);		
 }
 
 //for sys_test only, not check yet

@@ -287,7 +287,7 @@ static void board_i2c_init(void)
 
 	//must call aml_i2c_init(); before any I2C operation	
 
-	udelay(10000);		
+	udelay(10);		
 }
 
 //for sys_test only, not check yet
