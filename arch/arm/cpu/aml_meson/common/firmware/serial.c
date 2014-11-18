@@ -26,6 +26,7 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    |UART_CNTL_MASK_TX_EN
 	    |UART_CNTL_MASK_RX_EN
 	,P_UART_CONTROL(UART_PORT_CONS));
+#ifndef CONFIG_M3
 	switch(readl(0xd9040004))
 	{
 	case 0x74e: //M8B revA
@@ -34,6 +35,7 @@ SPL_STATIC_FUNC void serial_init(unsigned set)
 	    //new baudrate formula is (24000000/3/baudrate),0xc81004d4 is AO_UART0_REG5 address
 		break;
 	}
+#endif
     serial_set_pin_port(UART_PORT_CONS);
     clrbits_le32(P_UART_CONTROL(UART_PORT_CONS),
 	    UART_CNTL_MASK_RST_TX | UART_CNTL_MASK_RST_RX | UART_CNTL_MASK_CLR_ERR);
