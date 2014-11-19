@@ -5,7 +5,7 @@
 
 #define CONFIG_POWER_SPL
 #define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
-#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    860	 //VDDEE voltage when suspend, must have
+#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    1100        //VDDEE voltage when suspend, must have
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 #define CONFIG_IR_REMOTE_WAKEUP 1

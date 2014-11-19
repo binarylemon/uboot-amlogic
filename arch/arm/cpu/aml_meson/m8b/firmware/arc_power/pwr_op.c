@@ -833,8 +833,10 @@ unsigned int detect_key(unsigned int flags)
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
     backup_remote_register();
+#ifndef CONFIG_NON_32K
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
+#endif // #ifndef CONFIG_NON_32K
 #endif
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -938,7 +940,9 @@ unsigned int detect_key(unsigned int flags)
     writel(gpio_mask,0xc8100080);
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
+#ifndef CONFIG_NON_32K
     resume_remote_register();
+#endif
 #endif
     return ret;
 }
