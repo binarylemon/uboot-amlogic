@@ -73,7 +73,7 @@
 #define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
 #endif// #if CONFIG_AML_V2_USBTOOL
 
-//#define CONFIG_UNIFY_KEY_MANAGE 1
+#define CONFIG_UNIFY_KEY_MANAGE 1
 //#define CONFIG_CMD_PWM  1
 
 #define CONFIG_CMD_NAND  1
