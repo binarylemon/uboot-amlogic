@@ -123,7 +123,8 @@ int dsp_main(void)
 			clear_arc2_irq_mask(VIU2_VSYNC_INT);
 			//clear_arc2_irq_mask(VIU1_VSYNC_INT);
 			writel(DSP_CURRENT_SLEEP,P_AO_RTI_STATUS_REG0);
-			arch_sleep();
+			//arch_sleep(); /*if arc has a interrupt, it can be actived*/
+			halt_system_handle(0,0); /* arc entry halt, it can't be actived */
 		}
 	}
 	return 0;
