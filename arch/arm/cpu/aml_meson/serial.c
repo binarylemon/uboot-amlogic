@@ -244,11 +244,83 @@ static int serial_getc_port (unsigned port_base)
 
 }
 
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+void serial_putc(const char c);
+
+static void serial_put_dec(unsigned int data)
+{
+	char szTxt[10];
+	szTxt[0] = 0x30;
+	int i = 0;
+
+	do {
+		szTxt[i++] = (data % 10) + 0x30;
+		data = data / 10;
+	} while(data);
+
+	for(--i;i >=0;--i)	
+		serial_putc(szTxt[i]);
+}
+
+static void print_timestamp(unsigned port_base)
+{
+	unsigned int time = get_utimer(0);
+	unsigned int sec_p, usec_p;
+	unsigned int scale;
+
+	sec_p  = time / 1000000;
+	usec_p = time - (sec_p * 1000000);
+	serial_putc('[');
+	scale = 10000;
+	while (scale > sec_p) {
+		if (!sec_p && (scale == 1)) {
+			break;  
+		} 
+        serial_putc(' ');
+		scale /= 10;
+	}
+	serial_put_dec(sec_p);
+	serial_putc('.');
+	scale = 100000;
+	while (scale > usec_p) {
+		if (!usec_p && (scale == 1)) {
+			break;  
+		} 
+        serial_putc('0');
+		scale /= 10;
+	}
+	serial_put_dec(usec_p);
+	serial_putc(']');
+	serial_putc(' ');
+}
+#endif
+
 static void serial_puts_port (unsigned port_base,const char *s)
 {
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	static int newline = 1, first = 0;
+	if (!first) {
+		while (*s++ == '\n');			// escape redundant '\n'
+		serial_putc('\n');
+		first = 1;
+	}
+	if (newline) {
+		print_timestamp(port_base);
+	}
+#endif
+
     while (*s) {
-        serial_putc_port(port_base,*s++);
+        serial_putc_port(port_base,*s);
+	#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+		if (*s == '\n' && s[1]) {		// not end
+			print_timestamp(port_base);
+		}
+	#endif
+		s++;
     }
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	newline = (('\n' == (*(s-1))) ? 1:0);
+#endif
 }
 #if CONFIG_SERIAL_MULTI
 #include <serial.h>

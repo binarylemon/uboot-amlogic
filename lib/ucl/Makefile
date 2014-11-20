@@ -25,13 +25,13 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)libucl.o
 
-SOBJS	=
+SOBJS-$(CONFIG_M8B)	= ucl_adler32_neon.o strlib.o
 
 COBJS-$(CONFIG_UCL) += $(patsubst %.c,%.o,$(wildcard *.c))
 
 COBJS	= $(COBJS-y)
-SRCS 	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
+SRCS 	:= $(SOBJS-y:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS))
 CFLAGS  := $(CFLAGS:-O0=-O2)
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

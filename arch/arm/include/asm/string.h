@@ -12,17 +12,30 @@ extern char * strrchr(const char * s, int c);
 #undef __HAVE_ARCH_STRCHR
 extern char * strchr(const char * s, int c);
 
+#ifdef CONFIG_M8B
+#define  __HAVE_ARCH_MEMCPY
+#else
 #undef __HAVE_ARCH_MEMCPY
+#endif
 extern void * memcpy(void *, const void *, __kernel_size_t);
 
+#ifdef CONFIG_M8B
+#define __HAVE_ARCH_MEMMOVE
+#else
 #undef __HAVE_ARCH_MEMMOVE
+#endif
 extern void * memmove(void *, const void *, __kernel_size_t);
 
 #undef __HAVE_ARCH_MEMCHR
 extern void * memchr(const void *, int, __kernel_size_t);
 
+#ifdef CONFIG_M8B
+#define __HAVE_ARCH_MEMZERO
+#define __HAVE_ARCH_MEMSET
+#else
 #undef __HAVE_ARCH_MEMZERO
 #undef __HAVE_ARCH_MEMSET
+#endif
 extern void * memset(void *, int, __kernel_size_t);
 
 #if 0

@@ -1269,7 +1269,6 @@ void aml1218_check_vbat(int init)
         serial_put_hex(val2, 8);
         serial_put_hex(val3, 8);
         serial_puts("\n");
-        __udelay(10 * 1000);
         hard_i2c_write168(DEVID, 0x009B, 0x0c);//enable auto_sample and accumulate IBAT measurement
         hard_i2c_write168(DEVID, 0x009C, 0x10);
         hard_i2c_write168(DEVID, 0x009D, 0x04);//close force charge and discharge sample mask
@@ -1282,8 +1281,8 @@ void aml1218_check_vbat(int init)
         hard_i2c_write168(DEVID, 0x00A0, 0x01);//select auto-sampling timebase is 2ms
         hard_i2c_write168(DEVID, 0x00A1, 0x15);//set the IBAT measure threshold and enable auto IBAT +VBAT_in_active sample
         hard_i2c_write168(DEVID, 0x00C9, 0x06);// open DCIN_OK and USB_OK IRQ
+        __udelay(8 * 1000);
     }
-    __udelay(80000);
     val1 = hard_i2c_read168(DEVID, 0x00af);
     val2 = hard_i2c_read168(DEVID, 0x00b0);
     serial_puts("\n-- vbat: 0x");

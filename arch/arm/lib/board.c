@@ -784,10 +784,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	}
 #endif
 
-#ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int before_nand_init =  get_utimer(0);
-#endif
-
 	AML_LOG_INIT("board");
 	AML_LOG_TE("board");
 #ifdef CONFIG_STORE_COMPATIBLE
@@ -1003,10 +999,6 @@ extern int amlnf_init(struct platform_device *pdev);
 #endif
 
 	AML_LOG_TE("board");
-
-#ifdef TEST_UBOOT_BOOT_SPEND_TIME
-unsigned int before_lcd_init =  get_utimer(0);
-#endif
 
 #if CONFIG_AUTO_START_SD_BURNING
     if(is_tpl_loaded_from_ext_sdmmc())

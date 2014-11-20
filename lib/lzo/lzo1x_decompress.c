@@ -21,8 +21,24 @@
 #define HAVE_OP(x, op_end, op) ((size_t)(op_end - op) < (x))
 #define HAVE_LB(m_pos, out, op) (m_pos < out || m_pos >= op)
 
+#ifdef CONFIG_M8B
+#define COPY4(dst1, src1) \
+	{											\
+		unsigned char *dst = dst1;				\
+		const unsigned char *src = src1;		\
+		asm volatile (							\
+			"ldr	r12, [%[src]]		\n"		\
+			"str	r12, [%[dst]]		\n"		\
+			:									\
+			:[src] "r" (src), [dst] "r" (dst)	\
+			:"memory", "cc", "r12"				\
+		);										\
+	}
+
+#else
 #define COPY4(dst, src)	\
 		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
+#endif
 
 static const unsigned char lzop_magic[] = {
 	0x89, 0x4c, 0x5a, 0x4f, 0x00, 0x0d, 0x0a, 0x1a, 0x0a
@@ -130,9 +146,15 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
 			goto output_overrun;
 		if (HAVE_IP(t + 1, ip_end, ip))
 			goto input_overrun;
+	#ifdef CONFIG_M8B
+		memcpy(op, ip, t);
+		op += t; 
+		ip += t;
+	#else
 		do {
 			*op++ = *ip++;
 		} while (--t > 0);
+	#endif
 		goto first_literal_run;
 	}
 
@@ -160,6 +182,11 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
 		op += 4;
 		ip += 4;
 		if (--t > 0) {
+		#ifdef CONFIG_M8B 
+			memcpy(op, ip, t);
+			op += t;
+			ip += t;
+		#else
 			if (t >= 4) {
 				do {
 					COPY4(op, ip);
@@ -177,6 +204,7 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
 					*op++ = *ip++;
 				} while (--t > 0);
 			}
+		#endif
 		}
 
 first_literal_run:
@@ -286,9 +314,22 @@ match:
 copy_match:
 				*op++ = *m_pos++;
 				*op++ = *m_pos++;
+			#ifndef CONFIG_M8B
 				do {
 					*op++ = *m_pos++;
 				} while (--t > 0);
+			#else
+				asm volatile (
+				".Lcopy_match_loop:					\n"
+					"ldrb	r12, [%[m_pos]], #1		\n"
+					"subs	%[t], %[t], #1			\n"
+					"strb	r12, [%[op]], #1		\n"
+					"bne	.Lcopy_match_loop		\n"
+					:[m_pos] "+r" (m_pos), [t] "+r" (t), [op] "+r" (op)
+					:
+					:"memory", "cc", "r12"
+				);
+			#endif
 			}
 match_done:
 			t = ip[-2] & 3;

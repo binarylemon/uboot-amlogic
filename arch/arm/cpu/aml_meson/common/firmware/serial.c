@@ -94,16 +94,76 @@ int serial_getc(void)
 
 }
 
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+static int sec = 0; 
+SPL_STATIC_FUNC void serial_put_dec(unsigned int data);
+void print_timestamp(void)
+{
+	unsigned int time = get_utimer(0);
+	unsigned int sec_p, usec_p;
+	unsigned int scale;
+
+	while (time >= (1000000 * (sec + 1))) {
+		sec++;	
+	}
+	sec_p = sec;
+	usec_p = time - (sec * 1000000);
+	serial_putc('[');
+	scale = 10000;
+	while (scale > sec_p) {
+		if (!sec_p && (scale == 1)) {
+			break;	
+		}
+        serial_putc(' ');
+		scale /= 10;
+	}
+	serial_put_dec(sec_p);
+	serial_putc('.');
+	scale = 100000;
+	while (scale > usec_p) {
+		if (!usec_p && (scale == 1)) {
+			break;	
+		}
+        serial_putc('0');
+		scale /= 10;
+	}
+	serial_put_dec(usec_p);
+	serial_putc(']');
+	serial_putc(' ');
+	serial_wait_tx_empty();
+}
+#endif
+
 //SPL_STATIC_FUNC
 void serial_puts(const char *s)
 {
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	static int newline = 1, first = 0;
+	if (!first) {
+		while (*s++ == '\n');			// escape redundant '\n'
+		serial_putc('\n');
+		first = 1;
+	}
+	if (newline) {
+		print_timestamp();
+	}
+#endif
     while (*s) {
-        serial_putc(*s++);
+        serial_putc(*s);
+	#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+		if (*s == '\n' && s[1]) {		// not end
+			print_timestamp();
+		}
+	#endif
+		s++;
     }
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	newline = (('\n' == (*(s-1))) ? 1:0);
+#endif
 
 	serial_wait_tx_empty();
 }
-SPL_STATIC_FUNC
+//SPL_STATIC_FUNC
 void serial_put_hex(unsigned int data,unsigned bitlen)
 {
 	int i;
@@ -130,11 +190,11 @@ SPL_STATIC_FUNC void serial_put_dec(unsigned int data)
 	char szTxt[10];
 	szTxt[0] = 0x30;
 	int i = 0;
-	while(data)
-	{
+
+	do {
 		szTxt[i++] = (data % 10) + 0x30;
 		data = data / 10;
-	}
+	} while(data);
 
 	for(--i;i >=0;--i)	
 		serial_putc(szTxt[i]);
@@ -143,8 +203,8 @@ SPL_STATIC_FUNC void serial_put_dec(unsigned int data)
 }
 
 
-#define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_putc('\n')
-#define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_putc('\n')
+#define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_puts("\n")
+#define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_puts("\n")
 void do_exception(unsigned reason,unsigned lr)
 {
     serial_puts("Enter Exception:");

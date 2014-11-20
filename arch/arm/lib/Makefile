@@ -49,6 +49,8 @@ else ifndef CONFIG_ICACHE_OFF
 SOBJS-y += cache_init.o
 SOBJS-y += cache_v7.o
 endif
+SOBJS-$(CONFIG_M8B) += memcpy.o bcopy_neon.o memset.o
+COBJS-$(CONFIG_M8B) += bcopy.o
 ifndef CONFIG_SYS_NO_CP15_CACHE
 COBJS-y	+= cache-cp15.o
 endif

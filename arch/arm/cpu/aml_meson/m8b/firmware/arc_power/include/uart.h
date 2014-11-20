@@ -241,9 +241,9 @@
                         | UART_CNTL_MASK_RST_RX             \
                         | UART_CNTL_MASK_CLR_ERR    )
 
-#define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_putc('\n')
+#define serial_put_char(data) serial_puts("0x");serial_put_hex((unsigned)data,8);serial_puts("\n")
 
-#define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_putc('\n')
+#define serial_put_dword(data) serial_puts("0x");serial_put_hex((unsigned)data,32);serial_puts("\n")
 
 
 

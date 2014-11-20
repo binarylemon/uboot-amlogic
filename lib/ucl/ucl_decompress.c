@@ -34,6 +34,7 @@
 // starting point for adaption for you applications.
 **************************************************************************/
 
+#include "config.h"
 #include "ucl_conf.h"
 #include "ucl.h"
 
@@ -64,6 +65,10 @@ static const unsigned char magic[8] =
 **************************************************************************/
 #define printf(a,...)
 
+#ifdef CONFIG_M8B
+extern void *memcpy_ucl(void * dest,const void *src,unsigned int count);
+extern void init_neon(void);
+#else
 static inline void * memcpy(void * dest,const void *src,unsigned int count)
     {
     
@@ -107,6 +112,7 @@ static inline void * memcpy(void * dest,const void *src,unsigned int count)
         return dest;
     }
 
+#endif
 
 static inline int memcmp(const void * cs,const void * ct,size_t count)
 {
@@ -141,6 +147,10 @@ ucl_assert(int expr)
 #define UCL_DO8(buf,i)  UCL_DO4(buf,i); UCL_DO4(buf,i+4);
 #define UCL_DO16(buf,i) UCL_DO8(buf,i); UCL_DO8(buf,i+8);
 
+#ifdef CONFIG_M8B
+extern  ucl_uint32 *ucl_adler32_neon(const ucl_bytep buf, ucl_uint32 *s1, ucl_uint32 *s2, int k);
+#endif
+
 UCL_PUBLIC(ucl_uint32)
 ucl_adler32(ucl_uint32 adler, const ucl_bytep buf, ucl_uint len)
 {
@@ -155,12 +165,20 @@ ucl_adler32(ucl_uint32 adler, const ucl_bytep buf, ucl_uint len)
     {
         k = len < UCL_NMAX ? (int) len : UCL_NMAX;
         len -= k;
+	#ifndef CONFIG_M8B
         if (k >= 16) do
         {
             UCL_DO16(buf,0);
             buf += 16;
             k -= 16;
         } while (k >= 16);
+	#else
+		if (k >= 16) {
+			ucl_adler32_neon(buf, &s1, &s2, k);
+			buf += (k & ~0xf);
+			k = k % 16;
+		}
+	#endif
         if (k != 0) do
         {
             s1 += *buf++;
@@ -184,7 +202,11 @@ static ucl_uint xread(ucl_bytep f, ucl_voidp buf, ucl_uint len)
 	f += total_in;
 	
 	if(buf != f)
+	#ifdef CONFIG_M8B
+    	memcpy_ucl(buf, f, len);
+	#else
     	memcpy(buf, f, len);
+	#endif
     total_in += len;
     return len;
 }
@@ -200,6 +222,7 @@ static int xgetc(ucl_bytep f)
 /* read and write portable 32-bit integers */
 static ucl_uint32 xread32(ucl_bytep f)
 {
+#ifndef CONFIG_M8B
     unsigned char b[4];
     ucl_uint32 v;
 
@@ -208,6 +231,16 @@ static ucl_uint32 xread32(ucl_bytep f)
     v |= (ucl_uint32) b[2] <<  8;
     v |= (ucl_uint32) b[1] << 16;
     v |= (ucl_uint32) b[0] << 24;
+#else
+	ucl_uint32 v;
+	xread(f, &v, 4);
+	asm volatile (
+		"REV	%[v], %[v]			\n"
+		: [v] "+r" (v)
+		:
+		: "memory", "cc"
+	);
+#endif
     return v;
 }
 
@@ -217,7 +250,11 @@ static ucl_uint xwrite(ucl_bytep f, const ucl_voidp buf, ucl_uint len)
     	return 0;
     f += total_out;
 	if(f != buf)
-        memcpy(f, buf, len);
+	#ifdef CONFIG_M8B
+        memcpy_ucl(f, buf, len);
+	#else
+		memcpy(f, buf, len);
+	#endif
 
     total_out += len;
     return len;
@@ -263,6 +300,10 @@ int uclDecompress(ucl_bytep op, ucl_uint32p o_len, ucl_bytep ip)
     ucl_uint in_len;
     ucl_uint out_len;
 
+#ifdef CONFIG_M8B
+	init_neon();
+#else
+#endif
     total_in = total_out = 0;
     *o_len = 0;
 
@@ -350,7 +391,7 @@ int uclDecompress(ucl_bytep op, ucl_uint32p o_len, ucl_bytep ip)
             }
             else if (method == 0x2d)
             {
-                    r = ucl_nrv2d_decompress_8(in,in_len,out,&new_len,NULL);
+                    r = ucl_nrv2d_decompress_8(in,in_len,out,&new_len,NULL); // need opt
             }
             else if (method == 0x2e)
             {

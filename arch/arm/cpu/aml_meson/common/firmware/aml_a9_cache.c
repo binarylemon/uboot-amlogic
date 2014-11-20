@@ -342,7 +342,9 @@ static inline void mmu_setup(void)
 	asm volatile("bic	r0, r0, #0x00002000");//	@ clear bits 13(--V--)	
 
 	asm volatile("bic	r0, r0, #0x00000007");//	@ clear bits 2:0 (-CAM)
+#ifndef CONFIG_M8B
 	asm volatile("orr	r0, r0, #0x00000002");//	@ set bit 1 (--A-) Align
+#endif
 	asm volatile("orr	r0, r0, #0x00000800");//	@ set bit 12 (Z---) BTB
 	asm volatile("mcr	p15, 0, r0, c1, c0, 0");//
 
