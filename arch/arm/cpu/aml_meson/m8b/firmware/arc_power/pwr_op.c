@@ -274,6 +274,9 @@ extern void delay_ms(int ms);
 void init_I2C()
 {
 	unsigned v,reg;
+	//save gpio intr setting
+	gpio_sel0 = readl(0xc8100084);
+	gpio_mask = readl(0xc8100080);
 
 	f_serial_puts("i2c init\n");
 
