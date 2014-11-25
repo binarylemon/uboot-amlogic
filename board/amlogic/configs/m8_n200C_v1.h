@@ -197,7 +197,7 @@
 #define CONFIG_NO_32K_XTAL 1
 #define CONFIG_POWER_SPL
 #define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
-#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    860	 //VDDEE voltage when suspend, must have
+#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    1100	 //VDDEE voltage when suspend, must have
 
 #endif /* CONFIG_PLATFORM_HAS_PMU */
 

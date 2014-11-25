@@ -11,6 +11,7 @@
 #include <i2c.h>
 #include <asm/arch/ao_reg.h>
 #include <arc_pwr.h>
+#include <linux/types.h>
 
 extern void wait_uart_empty();
 extern void udelay__(int i);
@@ -49,6 +50,21 @@ volatile static unsigned char exit_reason = 0;
 #define i2c_pmu_read_b(reg)             (unsigned  char)i2c_pmu_read_12(reg, 1)
 #define i2c_pmu_read_w(reg)             (unsigned short)i2c_pmu_read_12(reg, 2)
 #endif
+#ifdef CONFIG_PWM_VDDEE_VOLTAGE
+static  uint32_t aml_read_reg32(uint32_t _reg)
+{
+    return readl((volatile void *)_reg);
+};
+static void aml_write_reg32( uint32_t _reg, const uint32_t _value)
+{
+    writel( _value,(volatile void *)_reg );
+};
+static void aml_set_reg32_bits(uint32_t _reg, const uint32_t _value, const uint32_t _start, const uint32_t _len)
+{
+    writel(( (readl((volatile void *)_reg) & ~((( 1L << (_len) )-1) << (_start))) | ((unsigned)((_value)&((1L<<(_len))-1)) << (_start))), (volatile void *)_reg );
+}
+
+#endif  /* CONFIG_PWM_VDDEE_VOLTAGE */
 
 volatile static unsigned char vbus_status;
 
@@ -619,29 +635,93 @@ void rn5t618_power_on_at_32K_2()        // need match power sequence of power_of
 
 #ifdef CONFIG_PWM_POWER
 #ifdef CONFIG_PWM_VDDEE_VOLTAGE
-void pwm_set_vddEE_voltage(int voltage)
-{    
-    int duty_high = 0;
 
-    duty_high = (28 - (((voltage-860)*103) >> 10) );
+static int vcck_pwm_on(void)
+{
+    //aml_set_reg32_bits(P_PREG_PAD_GPIO2_EN_N, 0, 29, 1);
+    //set GPIODV 28 to PWM D
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3, 1, 26, 1);
     
-    setbits_le32(P_PERIPHS_PIN_MUX_3, (1<<26));
-    clrbits_le32(P_PWM_MISC_REG_CD, (0x7f<<16) | (3<<6));
-    setbits_le32(P_PWM_MISC_REG_CD, ((1 << 23) | (0<<16) | (0<<6) | (1<<1)));
-    writel((duty_high << 16) | (28-duty_high), P_PWM_MISC_REG_CD);   //pwm duty
+    /* set  pwm_d regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 16, 7);  //pwm_d_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 6, 2);  //pwm_d_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 23, 1);  //pwm_d_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 1, 1);  //enable pwm_d
+    
+    return 0;
+}
+#if 0
+static int vcck_pwm_off(void)
+{
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 1, 1);  //disable pwm_d
+    return 0;
 }
 #endif
+
+static int pwm_duty_cycle_set(int duty_high,int duty_total)
+{
+    int pwm_reg=0;
+
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 16, 7);  //pwm_d_clk_div
+    if(duty_high > duty_total){
+        printf_arc("error: duty_high larger than duty_toral !!!\n");
+        return -1; 
+    }
+    aml_write_reg32(P_PWM_PWM_D, (duty_high << 16) | (duty_total-duty_high));
+    udelay__(100000);
+
+    pwm_reg = aml_read_reg32(P_PWM_PWM_D);
+#if 1
+    printf_arc("##### P_PWM_PWM_D value = ");
+    serial_put_hex(pwm_reg, 32);
+    printf_arc("\n");
+#endif
+    return 0;
+}
+
+int n200C_pwm_set_vddEE_voltage(int voltage)
+{
+    printf_arc("n200C_pwm_set_vddEE_voltage\n");
+    
+    int duty_high = 0;
+    //int duty_high_tmp = 0;
+    //int tmp1,tmp2,tmp3;
+    vcck_pwm_on();
+    printf_arc("## VDDEE voltage = 0x");
+    serial_put_hex(voltage, 16);
+    printf_arc("\n");
+
+    //duty_high = (28-(voltage-860)/10);
+    duty_high = (28 - (((voltage-860)*103) >> 10) );
+
+
+
+#if 1
+    printf_arc("##### duty_high = 0x");
+    serial_put_hex(duty_high, 16);
+    printf_arc("\n");
+
+#endif
+    pwm_duty_cycle_set(duty_high,28);
+    return 0;
+}
+#endif 
+
 void power_off_at_24M()
 {
+
+#ifdef CONFIG_PWM_VDDEE_VOLTAGE
+    n200C_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);    
+#endif
+//close vcck GPIAO_3
     clrbits_le32(P_AO_GPIO_O_EN_N, (1<<3) | (1<<19) | (1<<2));
     setbits_le32(P_AO_GPIO_O_EN_N, (1<<18));
-#ifdef CONFIG_PWM_VDDEE_VOLTAGE
-    pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);    
-#endif
+
+
 
 //    clrbits_le32(P_AO_GPIO_O_EN_N, (1<<14));
 //    clrbits_le32(P_AO_GPIO_O_EN_N, (1<<30));
-    printf_arc("enter 32K...66\n");
+    printf_arc("suspend stay 24M...\n");
     wait_uart_empty();
 }
 void power_on_at_24M()                                          // need match power sequence of  power_off_at_24M
@@ -651,7 +731,7 @@ void power_on_at_24M()                                          // need match po
     printf_arc("\n");
     wait_uart_empty();
 #ifdef CONFIG_PWM_VDDEE_VOLTAGE
-    pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);    
+    n200C_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);    
 #endif
 
     clrbits_le32(P_AO_GPIO_O_EN_N, (1<<3) | (1<<2) | (1<<18));
