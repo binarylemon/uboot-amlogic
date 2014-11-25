@@ -199,7 +199,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x85900000\0" \
+	"fb_addr=0x88100000\0" \
 	"sleep_threshold=20\0" \
 	"upgrade_step=0\0" \
 	"batlow_threshold=10\0" \
