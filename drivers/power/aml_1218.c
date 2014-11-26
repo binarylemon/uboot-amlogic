@@ -271,7 +271,7 @@ int aml1218_get_charge_status(int print)
 
     aml1218_set_bits(0x0035, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
     //aml1218_set_bits(0x003e, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
-    aml1218_set_bits(0x0047, (reg_all & 0x02000000) ? 0x00 : 0x04, 0x07);
+    aml1218_set_bits(0x0047, (reg_all & 0x02000000) ? 0x03 : 0x02, 0x07);
     aml1218_set_bits(0x004f, (reg_all & 0x02000000) >> 22, 0x08);
     if (val & 0x18) {
         if (charger_sign_bit) {
@@ -508,6 +508,8 @@ void aml1218_power_off()
 
     uint8_t buf = (1 << 5);                                     // software goto OFF state
 
+	aml1218_set_bits(0x004b, 0x00, 0x08);
+	aml1218_set_bits(0x0047, 0x03, 0x07);						// according David Wang for DC3 settings
     aml1218_write(0x0019, 0x10);                            
     aml1218_write16(0x0084, 0x0001);                            // close boost before cut vccx2
     udelay(10 * 1000);

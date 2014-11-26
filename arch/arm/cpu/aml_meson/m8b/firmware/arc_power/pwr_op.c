@@ -698,6 +698,8 @@ void aml1218_shut_down()
 {
     i2c_pmu_write_b(0x0019, 0x10);                              // cut usb output 
     i2c_pmu_write_w(0x0084, 0x0001);                            // close boost
+	aml1218_set_bits(0x004b, 0x00, 0x08);
+	aml1218_set_bits(0x0047, 0x03, 0x07);						// according David Wang for DC3 settings
     udelay__(10 * 1000);
     aml1218_set_gpio(1, 1);
     aml1218_set_gpio(2, 1);

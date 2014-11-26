@@ -1298,6 +1298,10 @@ void aml1218_power_init(int init_mode)
     aml1218_set_pfm(3, 0);
 
     // According David Wang
+    hard_i2c_write168(DEVID, 0x002f, 0x66);                     // set VSYS to 4.6v 
+	aml1218_set_bits(0x0048, 0x00, 0x0f);						// change DC3 current limit
+	aml1218_set_bits(0x004b, 0x08, 0x08);						// change DC3 current limit
+
     aml1218_set_bits(0x0038, 0x08, 0x08);                       // DCDC ov threshold adjust
     aml1218_set_bits(0x0041, 0x08, 0x08);
     aml1218_set_bits(0x004b, 0x40, 0x40);
