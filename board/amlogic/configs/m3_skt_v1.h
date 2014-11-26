@@ -34,7 +34,7 @@
 #define CONFIG_CMD_NET   1
 #define CONFIG_M3_EXT_CLK 1 //to use external clock
 
-
+#define CONFIG_AML_SUSPEND 1
 #if defined(CONFIG_CMD_NET)
 #define CONFIG_AML_ETHERNET 1
 #define CONFIG_NET_MULTI 1
@@ -222,7 +222,6 @@
 /*-----------------------------------------------------------------------
  * power down
  */
-#define CONFIG_CMD_RUNARC 1 /* runarc */
 
 
 /* Pass open firmware flat tree */

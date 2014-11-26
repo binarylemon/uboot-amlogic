@@ -79,19 +79,12 @@ void pwr_delay(int n)
 			n--;
 		}
 }
-
-#if !defined(IO_AOBUS_BASE)
-  #define IO_AOBUS_BASE	(0xc8100000)
-#elif (IO_AOBUS_BASE != 0xc8100000)
-  #Warning(Please check the IO_AOBUS_BASE!)
-#endif
-
 #define AUD_ARC_CTL           0x2659
-#define P_AO_RTI_STATUS_REG0         (IO_AOBUS_BASE | (0x00 << 10) | (0x00 << 2))
-#define P_AO_RTI_STATUS_REG1         (IO_AOBUS_BASE | (0x00 << 10) | (0x01 << 2))
-#define P_AO_RTI_STATUS_REG2         (IO_AOBUS_BASE | (0x00 << 10) | (0x02 << 2))
-#define P_AO_REMAP_REG0              (IO_AOBUS_BASE | (0x00 << 10) | (0x07 << 2))
-#define P_AO_REMAP_REG1              (IO_AOBUS_BASE | (0x00 << 10) | (0x08 << 2))
+#define P_AO_RTI_STATUS_REG0         (0xC8100000 | (0x00 << 10) | (0x00 << 2))
+#define P_AO_RTI_STATUS_REG1         (0xC8100000 | (0x00 << 10) | (0x01 << 2))
+#define P_AO_RTI_STATUS_REG2         (0xC8100000 | (0x00 << 10) | (0x02 << 2))
+#define P_AO_REMAP_REG0              (0xC8100000 | (0x00 << 10) | (0x07 << 2))
+#define P_AO_REMAP_REG1              (0xC8100000 | (0x00 << 10) | (0x08 << 2))
 
 
 #define RESET0_REGISTER                            0x1101
@@ -108,7 +101,7 @@ void pwr_delay(int n)
 #define RESET_ARC625        (1<<13)
 #define P_AUD_ARC_CTL       0xC1109964 //CBUS_REG_ADDR(AUD_ARC_CTL)
 #define P_AHB_ARBDEC_REG    0xC110990c //CBUS_REG_ADDR(AHB_ARBDEC_REG)
-
+#define P_HHI_GCLK_AO		0xc1104154
 void l2x0_clean_all(void); 
 extern void platform_reset_handler(void);
 void run_arc_program()
@@ -132,6 +125,7 @@ void run_arc_program()
    // memcpy((char*)vaddr2,(char*)addr,16*1024);
    	//load arc code into memory
    	writel(0,P_AO_REMAP_REG0);
+	writel(readl(P_HHI_GCLK_AO)|0xf,P_HHI_GCLK_AO);
    	pwr_delay(10);
    	pbuffer = (unsigned*)vaddr2;
 		for(i = 0; i < sizeof(arc_code)/4; i++){

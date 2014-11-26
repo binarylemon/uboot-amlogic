@@ -115,7 +115,8 @@ void udelay(int i)
     int delays = 0;
     for(delays=0;delays<i;delays++)
     {
-        asm("mov r0,r0");
+        asm("nop");
+//				asm("mov r0, r0");
     }
 }
 #endif
@@ -493,7 +494,7 @@ unsigned pin_mux = 0;
 unsigned gpio_ao = 0;
 void switch_voltage(int idx)
 {
-	if(idx = 1){
+	if(idx == 1){
 		unsigned v = readl(P_AO_RTI_PIN_MUX_REG);
 		pin_mux = v;
 		gpio_ao = readl(0xc8100024);
@@ -514,7 +515,7 @@ void switch_voltage(int idx)
 	}
 }
 unsigned char vcc12_setting = 0;
-#if 0
+#if 1
 void powerdown_vcc12(void)
 {
 	unsigned char data;

@@ -62,8 +62,10 @@ unsigned delay_tick(unsigned count)
     {
         for(j=0;j<1000;j++)
         {
-            asm("mov r0,r0");
-            asm("mov r0,r0");
+            //asm("mov r0,r0");
+            //asm("mov r0,r0");
+            asm("nop");
+            asm("nop");
         }
     }
 }
@@ -97,12 +99,12 @@ void copy_reboot_code()
 }
 
 void power_off_vddio();
-#define POWER_OFF_VDDIO
+/*#define POWER_OFF_VDDIO
 #define POWER_OFF_HDMI_VCC
 #define POWER_OFF_AVDD33
 #define POWER_OFF_AVDD25
 #define POWER_DOWN_VCC12
-#define POWER_DOWN_DDR
+#define POWER_DOWN_DDR*/
 //#define POWER_OFF_EE
 void enter_power_down()
 {
@@ -115,6 +117,14 @@ void enter_power_down()
 	//*******************************************
 	f_serial_puts("\n");
 	wait_uart_empty();
+
+	// disable jtag
+	setbits_le32(P_AO_RTI_PIN_MUX_REG, 1<<13);
+	clrbits_le32(P_AO_RTI_PIN_MUX_REG, 1<<14);
+	
+	// turn off mali clock
+	clrbits_le32(P_HHI_MALI_CLK_CNTL, 1 << 8);
+	
 	// disable all memory accesses.
     disable_mmc_req();
    
@@ -140,11 +150,16 @@ void enter_power_down()
 	writel(0,P_AO_RTI_STATUS_REG1);
 
  	// reset A9
+//	setbits_le32(P_A9_CFG2, 7<<16);
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL, 1<<4); // disable APB_CLK
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL, 1<<5); // disable AT_CLK
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
+	udelay(10);
 	 
 	// enable iso ee for A9
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
-
+	udelay(1000);
+	
 #ifdef POWER_OFF_HDMI_VCC
 	reg7_off();
 #endif
@@ -175,7 +190,8 @@ void enter_power_down()
 	
 	// change RTC filter for 32k
   rtc_ctrl = readl(0xC810074c);
-	writel(0x00800000,0xC810074c);
+	//writel(0x00800000,0xC810074c);
+	writel(0,0xC810074c);
 	// switch to 32k
     writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
     udelay(100);
@@ -273,8 +289,9 @@ void enter_power_down()
     store_restore_plls(0);
      
     init_ddr_pll();
-    
-		uart_reset();
+	
+    udelay(1000);
+    uart_reset();
 
     reset_mmc();
 
@@ -295,8 +312,14 @@ void enter_power_down()
 //	f_serial_puts("restart arm...\n");
 	
 	//0. make sure a9 reset
+	setbits_le32(P_A9_CFG2,1<<17); // release APB reset
+	udelay(1000);
+	setbits_le32(P_A9_CFG2,1<<16); // release AXI reset
+	udelay(1000);
+	setbits_le32(P_A9_CFG2,1<<18); // release A9DBG reset
+	udelay(1000);
 	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-		
+	udelay(1000);	
 	//1. write flag
 	if (power_key&8)
 		writel(0xabcd1234,P_AO_RTI_STATUS_REG2);
@@ -312,12 +335,36 @@ void enter_power_down()
  
 	//4. Release ISO for A9 domain.
 	setbits_le32(P_AO_RTI_PWR_CNTL_REG0,1<<4);
-
+	udelay(1000);
+	
+	writel(	(0 << 9)    | // select xtal as clock source
+			(0 << 0)	, 
+			P_HHI_MALI_CLK_CNTL);
+	delay_ms(1);
+	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL, (1<<14)|(1<<15)); // soft reset
+	udelay(10);
+	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL, (1<<14)|(1<<15)); // soft reset
+	udelay(1000);
+	
 	//reset A9
 	writel(0xF,P_RESET4_REGISTER);// -- reset arm.ww
 	writel(1<<14,P_RESET2_REGISTER);// -- reset arm.mali
-	delay_ms(1);
+	udelay(1000);
+	clrbits_le32(P_A9_CFG2,1<<17); // release APB reset
+	udelay(1000);
+	clrbits_le32(P_A9_CFG2,1<<16); // release AXI reset
+	udelay(1000);
+	clrbits_le32(P_A9_CFG2,1<<18); // release A9DBG reset
+	udelay(1000);
+
+	setbits_le32(P_HHI_SYS_CPU_CLK_CNTL, 1<<4); // enable APB_CLK
+	udelay(10);
+	
 	clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19); // release A9 reset
+	
+	
+	udelay(1000);
+
   
 //	delay_1s();
 //	delay_1s();
@@ -423,6 +470,8 @@ int main(void)
 	unsigned cmd;
 	char c;
 	int i = 0,j;
+
+	f_serial_puts("sleep ... XXXXXX\n");
 	timer_init();
 #ifdef POWER_OFF_VDDIO	
 	f_serial_puts("sleep ... off\n");
@@ -507,7 +556,8 @@ int main(void)
 	    //writel(cmd,P_AO_RTI_STATUS_REG1);
 	    
 		asm(".long 0x003f236f"); //add sync instruction.
-		asm("SLEEP");
+		//asm("SLEEP");
+		asm("FLAG 1");//halt mode
 	}
 	return 0;
 }

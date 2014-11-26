@@ -23,7 +23,8 @@ void __udelay(int n)
 	int i;
 	for(i=0;i<n;i++)
 	{
-	    asm("mov r0,r0");
+	   // asm("mov r0,r0");
+	   asm("nop");
 	}
 }
 #endif

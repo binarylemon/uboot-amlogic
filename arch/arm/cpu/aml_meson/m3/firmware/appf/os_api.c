@@ -284,7 +284,6 @@ static int power_down_cpu(unsigned cstate, unsigned rstate, unsigned flags)
 		
     /* Call the platform-specific shutdown code */
     rc = appf_platform_enter_cstate(cpu_index, cpu, cluster);
-    
     /* Did the power down succeed? */
     if (rc == APPF_OK)
     {

@@ -548,5 +548,8 @@
 
 
 
+
+#define P_HHI_MALI_CLK_CNTL                         CBUS_REG_ADDR(HHI_MALI_CLK_CNTL)
+#define P_A9_CFG2                                   CBUS_REG_ADDR(A9_CFG2)
 #endif                                                          
 

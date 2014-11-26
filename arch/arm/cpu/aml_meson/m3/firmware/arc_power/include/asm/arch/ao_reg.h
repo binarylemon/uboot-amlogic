@@ -1,9 +1,7 @@
 #ifndef __ALWAYS_ON_REG_H_
 #define __ALWAYS_ON_REG_H_
 
-#if !defined(IO_AOBUS_BASE)
-  #warning(Please check the IO_AOBUS_BASE!)
-#endif
+#define IO_AOBUS_BASE 0xc8100000
 
 #define P_AO_RTI_STATUS_REG0         (IO_AOBUS_BASE | (0x00 << 10) | (0x00 << 2))
 #define P_AO_RTI_STATUS_REG1         (IO_AOBUS_BASE | (0x00 << 10) | (0x01 << 2))
