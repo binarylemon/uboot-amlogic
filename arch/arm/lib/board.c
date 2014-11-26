@@ -317,6 +317,10 @@ init_fnc_t *init_sequence[] = {
 	NULL,
 };
 
+#ifdef CONFIG_M8B
+extern void init_neon(void);
+#endif
+
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
 #include <asm/arch/timer.h>
 unsigned int spl_boot_end,lib_board_init_f_start,lib_board_init_f_end;
@@ -330,6 +334,9 @@ void board_init_f (ulong bootflag)
 	gd_t *id;
 	ulong addr, addr_sp;
 
+#ifdef CONFIG_M8B
+	init_neon();
+#endif
 	/* Pointer is writable since we allocated a register for it */
 	gd = (gd_t *) ((CONFIG_SYS_INIT_SP_ADDR) & ~0x07);
 	/* compiler optimization barrier needed for GCC >= 3.4 */

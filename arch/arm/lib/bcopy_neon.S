@@ -1,6 +1,25 @@
 
         .code 32
         .align 5
+        .globl init_neon 
+        .func
+init_neon:
+		MRC		p15, 0, r12, c1, c0, 2
+		ORR		r12, r12, #(3<<20)
+		ORR		r12, r12, #(3<<22)
+		BIC		r12, r12, #(3<<30)
+		MCR		p15, 0, r12, c1, c0, 2
+		ISB								
+		MOV		r12, #(1<<30)
+		MCR		p10, #7, r12, c8, c0, 0
+		MRC		p15, 0, r12, c1, c0, 0
+		BIC		r12, r12, #(1 << 1)	
+		MCR		p15, 0, r12, c1, c0, 0
+		bx		lr
+		.endfunc
+
+        .code 32
+        .align 5
         .globl bcopy_neon_align 
         .func
 bcopy_neon_align:

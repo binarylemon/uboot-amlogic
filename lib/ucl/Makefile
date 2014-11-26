@@ -25,7 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)libucl.o
 
-SOBJS-$(CONFIG_M8B)	= ucl_adler32_neon.o strlib.o
+#SOBJS-$(CONFIG_M8B)	= ucl_adler32_neon.o strlib.o
 
 COBJS-$(CONFIG_UCL) += $(patsubst %.c,%.o,$(wildcard *.c))
 

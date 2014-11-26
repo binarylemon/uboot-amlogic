@@ -65,10 +65,6 @@ static const unsigned char magic[8] =
 **************************************************************************/
 #define printf(a,...)
 
-#ifdef CONFIG_M8B
-extern void *memcpy_ucl(void * dest,const void *src,unsigned int count);
-extern void init_neon(void);
-#else
 static inline void * memcpy(void * dest,const void *src,unsigned int count)
     {
     
@@ -112,8 +108,6 @@ static inline void * memcpy(void * dest,const void *src,unsigned int count)
         return dest;
     }
 
-#endif
-
 static inline int memcmp(const void * cs,const void * ct,size_t count)
 {
 	const unsigned char *su1, *su2;
@@ -147,10 +141,6 @@ ucl_assert(int expr)
 #define UCL_DO8(buf,i)  UCL_DO4(buf,i); UCL_DO4(buf,i+4);
 #define UCL_DO16(buf,i) UCL_DO8(buf,i); UCL_DO8(buf,i+8);
 
-#ifdef CONFIG_M8B
-extern  ucl_uint32 *ucl_adler32_neon(const ucl_bytep buf, ucl_uint32 *s1, ucl_uint32 *s2, int k);
-#endif
-
 UCL_PUBLIC(ucl_uint32)
 ucl_adler32(ucl_uint32 adler, const ucl_bytep buf, ucl_uint len)
 {
@@ -165,20 +155,12 @@ ucl_adler32(ucl_uint32 adler, const ucl_bytep buf, ucl_uint len)
     {
         k = len < UCL_NMAX ? (int) len : UCL_NMAX;
         len -= k;
-	#ifndef CONFIG_M8B
         if (k >= 16) do
         {
             UCL_DO16(buf,0);
             buf += 16;
             k -= 16;
         } while (k >= 16);
-	#else
-		if (k >= 16) {
-			ucl_adler32_neon(buf, &s1, &s2, k);
-			buf += (k & ~0xf);
-			k = k % 16;
-		}
-	#endif
         if (k != 0) do
         {
             s1 += *buf++;
@@ -202,11 +184,7 @@ static ucl_uint xread(ucl_bytep f, ucl_voidp buf, ucl_uint len)
 	f += total_in;
 	
 	if(buf != f)
-	#ifdef CONFIG_M8B
-    	memcpy_ucl(buf, f, len);
-	#else
     	memcpy(buf, f, len);
-	#endif
     total_in += len;
     return len;
 }
@@ -250,11 +228,7 @@ static ucl_uint xwrite(ucl_bytep f, const ucl_voidp buf, ucl_uint len)
     	return 0;
     f += total_out;
 	if(f != buf)
-	#ifdef CONFIG_M8B
-        memcpy_ucl(f, buf, len);
-	#else
 		memcpy(f, buf, len);
-	#endif
 
     total_out += len;
     return len;
@@ -300,10 +274,6 @@ int uclDecompress(ucl_bytep op, ucl_uint32p o_len, ucl_bytep ip)
     ucl_uint in_len;
     ucl_uint out_len;
 
-#ifdef CONFIG_M8B
-	init_neon();
-#else
-#endif
     total_in = total_out = 0;
     *o_len = 0;
 
