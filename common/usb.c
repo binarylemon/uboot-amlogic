@@ -778,11 +778,11 @@ int usb_new_device(struct usb_device *dev)
 	int addr, err;
 	int tmp;
 	unsigned char tmpbuf[USB_BUFSIZ];
-
+	
 	/* We still haven't set the Address yet */
 	addr = dev->devnum;
 	dev->devnum = 0;
-
+	
 #ifdef CONFIG_LEGACY_USB_INIT_SEQ
 	/* this is the old and known way of initializing devices, it is
 	 * different than what Windows and Linux are doing. Windows and Linux
@@ -1167,6 +1167,11 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 	dev->children[port] = usb;
 	usb->parent = dev;
 	/* Run it through the hoops (find a driver, etc) */
+	if(usb->speed!=USB_SPEED_HIGH)
+	{
+		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
+		return;
+	}
 	if (usb_new_device(usb)) {
 		/* Woops, disable the port */
 		USB_HUB_PRINTF("hub: disabling port %d\n", port + 1);
