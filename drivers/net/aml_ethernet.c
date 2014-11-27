@@ -26,7 +26,6 @@
 #include <malloc.h>
 #include <common.h>
 #include <net.h>
-
 #include <asm/u-boot.h>
 #include <asm/cache.h>
 
@@ -550,7 +549,7 @@ static int eth_reset(struct _gStruct* emac_config)
 	int i, k, phyad;
 	unsigned int val,ori_ctl_val=0;
 	struct _gStruct* m=emac_config;
-
+	SET_CBUS_REG_MASK(HHI_GCLK_MPEG1,1<<3);
 	if(get_cpuid() >= 0x16){
 		/* make sure PHY power-on */
 		set_phy_mode();
@@ -886,7 +885,7 @@ static int aml_ethernet_init(struct eth_device * net_current, bd_t *bd)
 	struct _tx_desc * pTDesc;
 	unsigned char * bufptr;
 	int i;
-
+	SET_CBUS_REG_MASK(HHI_GCLK_MPEG1,1<<3);
 	if (g_nInitialized) {
 		return 0;
 	}
@@ -1011,6 +1010,7 @@ int aml_eth_init(bd_t *bis)
 	struct eth_device *dev;
 	dev = (struct eth_device *)malloc(sizeof(*dev));
 	memset(dev, 0, sizeof(*dev));
+	SET_CBUS_REG_MASK(HHI_GCLK_MPEG1,1<<3);
 	sprintf(dev->name, "Meson_Ethernet");
 	dev->init	= aml_ethernet_init;
 	dev->halt 	= aml_eth_halt;
