@@ -143,7 +143,7 @@
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
-	"cvbsmode=576cvbs\0" \
+	"cvbsmode=nocvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
 	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend  ramoops.mem_address=0x04e00000 ramoops.mem_size=0x100000 ramoops.record_size=0x8000 ramoops.console_size=0x4000\0" \
