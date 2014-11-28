@@ -78,7 +78,7 @@ void gate_init(void)
 	CLK_GATE_OFF(UART2);
 	
 	/* close audio in */
-	#if 1
+	#if 0
 	CLK_GATE_OFF(AUD_IN);
 	#endif
 	
