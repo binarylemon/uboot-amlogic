@@ -306,9 +306,9 @@ cpu_init_crit:
 	mrc	p15, 0, r0, c1, c0, 0
 	bic	r0, r0, #0x00003000	@ clear bits 13,12 (--VI-)
 	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
-#ifndef CONFIG_M8B
-	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align
-#endif
+@#ifndef CONFIG_M8B
+@	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align
+@#endif
 	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
 	mcr	p15, 0, r0, c1, c0, 0
 
