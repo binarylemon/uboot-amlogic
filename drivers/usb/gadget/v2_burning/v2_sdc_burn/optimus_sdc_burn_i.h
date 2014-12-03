@@ -77,5 +77,14 @@ int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfg);
 
 u64 get_data_parts_size(HIMAGE hImg);
 
+
+//declare for aml_sysrecovery
+int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiProgress, int needVerify);
+
+int optimus_burn_bootlader(HIMAGE hImg);
+
+int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn);
+
+
 #endif//#ifndef __OPTIMUS_SDC_BURN_I_H__
 

@@ -171,6 +171,7 @@ int optimus_set_burn_complete_flag(void);//set 'upgrade_step 1' after burnning s
 #define OPTIMUS_WORK_MODE_USB_PRODUCE     (0xefe6)
 #define OPTIMUS_WORK_MODE_SDC_UPDATE      (0xefe7)
 #define OPTIMUS_WORK_MODE_SDC_PRODUCE     (0xefe8)
+#define OPTIMUS_WORK_MODE_SYS_RECOVERY    (0xefe9)
 int optimus_work_mode_get(void);
 int optimus_work_mode_set(int workmode);
 
@@ -191,6 +192,7 @@ int optimus_enable_romboot_skip_boot(void);
 
 //ENV for auto jump into producing 
 #define _ENV_TIME_OUT_TO_AUTO_BURN "identifyWaitTime"
+#define AML_SYS_RECOVERY_PART      "aml_sysrecovery"
 
 #endif//ifndef __OPTIMUS_DOWNLOAD_H__
 

@@ -35,6 +35,8 @@ COBJS-y += v2_usb_burn/optimus_usb_burn.o v2_usb_burn/optimus_usb_update.o
 COBJS-$(CONFIG_UNIFY_KEY_MANAGE) += v2_common/optimus_download_key.o
 COBJS-$(CONFIG_SD_BURNING_SUPPORT_UI) += v2_common/optimus_progress_ui.o
 COBJS-$(CONFIG_SD_BURNING_SUPPORT_LED) += v2_sdc_burn/optimus_led.o
+COBJS-y += aml_sysrecovery/aml_sysrecovery.o
+COBJS-$(CONFIG_DETECT_SYS_RECOVERY_KEY) += aml_sysrecovery/cmd_detect_sys_recovery_key.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

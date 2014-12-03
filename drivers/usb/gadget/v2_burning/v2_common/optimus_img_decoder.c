@@ -19,10 +19,27 @@
 COMPILE_TYPE_CHK(128 == sizeof(ItemInfo), a);
 COMPILE_TYPE_CHK(64  == sizeof(AmlFirmwareImg_t), b);
 
+typedef struct _ImgSrcIf{
+        unsigned        devIf;             //mmc/usb/store
+        unsigned        devNo;          //0/1/2
+        unsigned        devAlignSz;     //64K for store
+        unsigned        reserv2Align64;
+        uint64_t        itemCurSeekOffsetInImg;//fread will auto seek the @readSz, but for STORE we must do it
+
+        char            partName[28];       //partIndex <= 28 (+4 if partIndex not used)
+        unsigned        partIndex;      //partIndex and part
+        unsigned char   resrv[512 - 32 - 24];
+}ImgSrcIf_t;
+
+COMPILE_TYPE_CHK(512  == sizeof(ImgSrcIf_t), bb);
+#define MAX_ITEM_NUM 48
+
 typedef struct _ImgInfo_s
 {
-    AmlFirmwareImg_t    imgHead;
-    ItemInfo            itemInfo[64];
+        AmlFirmwareImg_t    imgHead;//Must begin align 512, or store read wiill exception
+        ItemInfo            itemInfo[MAX_ITEM_NUM];
+
+        ImgSrcIf_t          imgSrcIf;
 
 }ImgInfo_t;
 
@@ -30,31 +47,52 @@ static int _hFile = -1;
 
 //open a Amlogic firmware image
 //return value is a handle
-HIMAGE image_open(const char* imgPath)
+HIMAGE image_open(const char* interface, const char* device, const char* part, const char* imgPath)
 {
     const int HeadSz = sizeof(ImgInfo_t);
     ImgInfo_t* hImg = NULL;
     int ret = 0;
+    ImgSrcIf_t* pImgSrcIf = NULL;
 
     hImg = (ImgInfo_t*)malloc(HeadSz);
     if(!hImg){
         DWN_ERR("Fail to malloc %d\n", HeadSz);
         return NULL;
     }
+    pImgSrcIf = &hImg->imgSrcIf;
+    memset(pImgSrcIf, 0, sizeof(ImgSrcIf_t));
 
-    int pFile = do_fat_fopen(imgPath);
-    if(pFile < 0){
-        DWN_ERR("Fail to open file %s\n", imgPath);
-        goto _err;
+    if(!strcmp("store", interface))
+    {
+            ret = store_read_ops((u8*)part, (u8*)&hImg->imgHead, IMG_OFFSET_IN_PART, HeadSz);
+            if(ret){
+                    DWN_ERR("Fail to read image header.\n");
+                    ret = __LINE__; goto _err;
+            }
+
+            pImgSrcIf->devIf = IMAGE_IF_TYPE_STORE;
+            pImgSrcIf->devAlignSz = 4*1024;//512;//OPTIMUS_DOWNLOAD_SLOT_SZ;
+            strcpy(pImgSrcIf->partName, part); 
     }
-    _hFile = pFile;
+    else
+    {
+            int pFile = do_fat_fopen(imgPath);
+            if(pFile < 0){
+                    DWN_ERR("Fail to open file %s\n", imgPath);
+                    goto _err;
+            }
+            _hFile = pFile;
 
-    ret = do_fat_fread(pFile, (u8*)hImg, HeadSz);
-    if(ret != HeadSz){
-        DWN_ERR("want to read %d, but %d\n", HeadSz, ret);
-        goto _err;
+            ret = do_fat_fread(pFile, (u8*)&hImg->imgHead, HeadSz);
+            if(ret != HeadSz){
+                    DWN_ERR("want to read %d, but %d\n", HeadSz, ret);
+                    goto _err;
+            }
+
+            pImgSrcIf->devAlignSz = do_fat_get_bytesperclust(pFile);
     }
 
+    
     if(IMAGE_MAGIC != hImg->imgHead.magic){
         DWN_ERR("error magic 0x%x\n", hImg->imgHead.magic);
         goto _err;
@@ -62,6 +100,10 @@ HIMAGE image_open(const char* imgPath)
     if(VERSION != hImg->imgHead.version){
         DWN_ERR("error verison 0x%x\n", hImg->imgHead.version);
         goto _err; 
+    }
+    if(MAX_ITEM_NUM < hImg->imgHead.itemNum){
+            DWN_ERR("max itemNum(%d)<actual itemNum (%d)\n", MAX_ITEM_NUM, hImg->imgHead.itemNum);
+            goto _err;
     }
 
     return hImg;
@@ -112,28 +154,41 @@ HIMAGEITEM image_item_open(HIMAGE hImg, const char* mainType, const char* subTyp
         return NULL;
     }
 
-    DWN_DBG("Item offset 0x%llx\n", pItem->offsetInImage);
-    i = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
-    if(i){
-        DWN_ERR("fail to seek, offset is 0x%x\n", (u32)pItem->offsetInImage);
-        return NULL;
+    if(IMAGE_IF_TYPE_STORE != imgInfo->imgSrcIf.devIf)
+    {
+            DWN_DBG("Item offset 0x%llx\n", pItem->offsetInImage);
+            i = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
+            if(i){
+                    DWN_ERR("fail to seek, offset is 0x%x\n", (u32)pItem->offsetInImage);
+                    return NULL;
+            }
     }
+    imgInfo->imgSrcIf.itemCurSeekOffsetInImg = pItem->offsetInImage;
     
     return pItem;
 }
 
 //Need this if item offset in the image file is not aligned to bytesPerCluster of FAT
-unsigned image_item_get_first_cluster_size(HIMAGEITEM hItem)
+unsigned image_item_get_first_cluster_size(HIMAGE hImg, HIMAGEITEM hItem)
 {
+    const ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
     ItemInfo* pItem = (ItemInfo*)hItem;
     unsigned itemSizeNotAligned = 0;
-    const unsigned fat_bytesPerCluste = do_fat_get_bytesperclust(_hFile);
+    const unsigned fat_bytesPerCluste = imgInfo->imgSrcIf.devAlignSz;
 
-    itemSizeNotAligned = pItem->offsetInImage % fat_bytesPerCluste;
+    itemSizeNotAligned = pItem->offsetInImage & (fat_bytesPerCluste - 1);
     itemSizeNotAligned = fat_bytesPerCluste - itemSizeNotAligned;
 
-    DWN_DBG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
+    DWN_MSG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
     return itemSizeNotAligned;
+}
+
+unsigned image_get_cluster_size(HIMAGEITEM hImg)
+{
+    const ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
+    const unsigned fat_bytesPerCluste = imgInfo->imgSrcIf.devAlignSz;
+
+    return fat_bytesPerCluste;
 }
 
 //close a item
@@ -161,12 +216,67 @@ int image_item_get_type(HIMAGEITEM hItem)
 //read item data, like standard fread
 int image_item_read(HIMAGE hImg, HIMAGEITEM hItem, void* pBuf, const __u32 wantSz)
 {
+    ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
     unsigned readSz = 0;
 
-    readSz = do_fat_fread(_hFile, pBuf, wantSz);
-    if(readSz != wantSz){
-        DWN_ERR("want to read 0x%x, but 0x%x\n", wantSz, readSz);
-        return __LINE__;
+    if(IMAGE_IF_TYPE_STORE == imgInfo->imgSrcIf.devIf)
+    {
+            unsigned char* part = (unsigned char*)imgInfo->imgSrcIf.partName;
+            const uint64_t offsetInPart = imgInfo->imgSrcIf.itemCurSeekOffsetInImg + IMG_OFFSET_IN_PART;
+            int rc = 0;
+            const unsigned storeBlkSz      = imgInfo->imgSrcIf.devAlignSz;
+            const unsigned offsetNotAlign = offsetInPart & (storeBlkSz - 1);
+            const unsigned sizeNotAlignInFirstBlk = storeBlkSz - offsetNotAlign;//in the the first block and its offset not aligned
+
+            //Attention: deal with the align issue in "optimus_burn_one_partition", then not need to modify "do_fat_fread"
+            if(offsetNotAlign)
+            {
+                    unsigned char* bufInABlk = NULL;
+                    const uint64_t readOffset = offsetInPart - offsetNotAlign;
+                    const unsigned bufLen = sizeNotAlignInFirstBlk < wantSz ? sizeNotAlignInFirstBlk : (wantSz);
+                    unsigned thisTotalReadSz = wantSz;
+
+                    DWN_MSG("offsetInPart %llx, wantSz=%x\n", offsetInPart, wantSz);
+                    bufInABlk = (u8*)malloc(storeBlkSz);
+                    rc = store_read_ops(part, bufInABlk, readOffset, storeBlkSz);
+                    if(rc){
+                            DWN_ERR("Fail to read: readOffset=%llx, storeBlkSz=%x\n", readOffset, storeBlkSz);
+                            free(bufInABlk);
+                            return __LINE__;
+                    }
+                    memcpy(pBuf, bufInABlk + offsetNotAlign, bufLen);
+                    thisTotalReadSz -= bufLen;
+                    pBuf            += bufLen/sizeof(void);
+                    free(bufInABlk);
+
+                    if(sizeNotAlignInFirstBlk < wantSz && offsetNotAlign)
+                    {
+                            rc = store_read_ops(part, (u8*)pBuf, (offsetInPart + sizeNotAlignInFirstBlk), thisTotalReadSz);
+                            if(rc){
+                                    DWN_ERR("Fail in store_read_ops to read %u at offset %llx.\n", wantSz, 
+                                                    offsetInPart + sizeNotAlignInFirstBlk);
+                                    return __LINE__;
+                            }
+                    }
+            }
+            else
+            {
+                    rc = store_read_ops(part, (u8*)pBuf, offsetInPart, wantSz);
+                    if(rc){
+                            DWN_ERR("Fail in store_read_ops to read %u at offset %llx.\n", wantSz, offsetInPart);
+                            return __LINE__;
+                    }
+            }
+
+            imgInfo->imgSrcIf.itemCurSeekOffsetInImg += wantSz;
+    }
+    else
+    {
+            readSz = do_fat_fread(_hFile, pBuf, wantSz);
+            if(readSz != wantSz){
+                    DWN_ERR("want to read 0x%x, but 0x%x\n", wantSz, readSz);
+                    return __LINE__;
+            }
     }
     
     return 0;
@@ -191,11 +301,15 @@ HIMAGEITEM get_item(HIMAGE hImg, int itemId)
     }
     DWN_MSG("get item [%s, %s] at %d\n", pItem->itemMainType, pItem->itemSubType, itemId);
 
-    ret = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
-    if(ret){
-        DWN_ERR("fail to seek, offset is 0x%x, ret=%d\n", (u32)pItem->offsetInImage, ret);
-        return NULL;
+    if(IMAGE_IF_TYPE_STORE != imgInfo->imgSrcIf.devIf)
+    {
+            ret = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
+            if(ret){
+                    DWN_ERR("fail to seek, offset is 0x%x, ret=%d\n", (u32)pItem->offsetInImage, ret);
+                    return NULL;
+            }
     }
+    imgInfo->imgSrcIf.itemCurSeekOffsetInImg = pItem->offsetInImage;
      
     return pItem;
 }
@@ -251,6 +365,10 @@ u64 get_data_parts_size(HIMAGE hImg)
 
         if(strcmp("PARTITION", main_type)) continue;
         if(!strcmp("bootloader", sub_type))continue;
+        if(!strcmp(AML_SYS_RECOVERY_PART, sub_type))
+        {
+                if(OPTIMUS_WORK_MODE_SYS_RECOVERY == optimus_work_mode_get())continue;
+        }
 
         dataPartsSz += image_get_item_size_by_index(hImg, i);
     }
@@ -283,22 +401,40 @@ _err:
     return ret;
 }
 
-int test_pack(const char* imgPath)
+int test_pack(const char* interface, const char* device, const char* part, const char* imgPath)
 {
     const int ImagBufLen = OPTIMUS_DOWNLOAD_SLOT_SZ;
-    char* pBuf = (char*)OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR;
+    char* pBuf = (char*)OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR + ImagBufLen;
     int ret = 0;
     int i = 0;
-    s64 fileSz = 0;
     HIMAGEITEM hItem = NULL;
 
-    fileSz = do_fat_get_fileSz(imgPath);
-    if(!fileSz){
-        DWN_ERR("file %s not exist\n", imgPath);
-        return __LINE__;
+    if(!strcmp("store", interface))
+    {
+            ret = run_command("store init 1", 0);
+            if(ret){
+                    DWN_ERR("Fail in init mmc, Does sdcard not plugged in?\n");
+                    return __LINE__;
+            }
     }
+    else
+    {
+            s64 fileSz = 0;
 
-    HIMAGE hImg = image_open(imgPath);
+            ret = run_command("mmcinfo", 0);
+            if(ret){
+                    DWN_ERR("Fail in init mmc, Does sdcard not plugged in?\n");
+                    return __LINE__;
+            }
+
+            fileSz = do_fat_get_fileSz(imgPath);
+            if(!fileSz){
+                    DWN_ERR("file %s not exist\n", imgPath);
+                    return __LINE__;
+            }
+    }
+    
+    HIMAGE hImg = image_open(interface, device, part, imgPath);
     if(!hImg){
         DWN_ERR("Fail to open image\n");
         return __LINE__;
@@ -317,23 +453,38 @@ int test_pack(const char* imgPath)
         }
 
         itemSz = image_item_get_size(hItem);
+        DWN_MSG("Item Sz is 0x%llx\n", itemSz);
+
+        unsigned wantSz = ImagBufLen > itemSz ? (unsigned)itemSz : ImagBufLen;
+        unsigned itemSizeNotAligned = 0;
+        char* readBuf = pBuf;
+        unsigned readSz = wantSz;
+
+        itemSizeNotAligned = image_item_get_first_cluster_size(hImg, hItem);
+        if(itemSizeNotAligned)
+        {
+                ret = image_item_read(hImg, hItem, readBuf, itemSizeNotAligned);
+                readSz = (wantSz > itemSizeNotAligned) ? (wantSz - itemSizeNotAligned) : 0;
+        }
+
+        if(readSz)
+        {
+                ret = image_item_read(hImg, hItem, readBuf + itemSizeNotAligned, readSz);
+                if(ret){
+                        DWN_ERR("fail to read item data\n");
+                        break;
+                }
+        }
+        
         fileType = image_item_get_type(hItem);
         if(IMAGE_ITEM_TYPE_SPARSE == fileType)
         {
-            unsigned wantSz = ImagBufLen > itemSz ? (unsigned)itemSz : ImagBufLen;
-
-            DWN_MSG("sparse packet\n");
-            ret = image_item_read(hImg, hItem, pBuf, wantSz);
-            if(ret){
-                DWN_ERR("fail to read item data\n");
-                break;
-            }
-
-            ret = optimus_simg_probe((const u8*)pBuf, wantSz);
-            if(!ret){
-                DWN_ERR("item data error, should sparse, but no\n");
-                break;
-            }
+                DWN_MSG("sparse packet\n");
+                ret = optimus_simg_probe((const u8*)pBuf, wantSz);
+                if(!ret){
+                        DWN_ERR("item data error, should sparse, but no\n");
+                        break;
+                }
         }
     }
 
@@ -350,9 +501,9 @@ int test_pack(const char* imgPath)
 int do_unpack(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     int rcode = 0;
-    const char* imgPath = argv[1];
+    const char* imgPath = "a";
 
-#if 0
+#if 1
     if(2 > argc)imgPath = "dt.img";
 #else
     if(2 > argc){
@@ -362,14 +513,7 @@ int do_unpack(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif//#if MYDBG
     DWN_MSG("argc %d, %s, %s\n", argc, argv[0], argv[1]);
 
-    //mmc info to ensure sdcard inserted and inited
-    rcode = run_command("mmcinfo", 0);
-    if(rcode){
-        DWN_ERR("Fail in init mmc, Does sdcard not plugged in?\n");
-        return __LINE__;
-    }
-
-    rcode = test_pack(imgPath);
+    rcode = test_pack("store", "0", "aml_sysrecovery", imgPath);
 
     DWN_MSG("rcode %d\n", rcode);
     return rcode;

@@ -43,6 +43,10 @@ int get_burn_parts_from_img(HIMAGE hImg, ConfigPara_t* pcfgPara)
             char* partName = pburnPartsCfg->burnParts[burnNum];
 
             if(!strcmp("bootloader", sub_type))continue;
+            if(!strcmp(AML_SYS_RECOVERY_PART, sub_type))
+            {
+                    if(OPTIMUS_WORK_MODE_SYS_RECOVERY == optimus_work_mode_get())continue;
+            }
 
             strcpy(partName, sub_type);
             pburnPartsCfg->bitsMap4BurnParts |= 1U<<burnNum;
@@ -116,7 +120,8 @@ _finish:
     return ret;
 }
 
-int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProgress)
+//.NeedVerify: Try to get verify file if .NeedVerify == 1
+static int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProgress, int NeedVerify)
 {
     int rcode = 0;
     s64 imgItemSz       = 0;
@@ -147,7 +152,7 @@ int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProg
 
     fileFmt = (IMAGE_ITEM_TYPE_SPARSE == image_item_get_type(hImgItem)) ? "sparse" : "normal";
 
-    itemSizeNotAligned = image_item_get_first_cluster_size(hImgItem);
+    itemSizeNotAligned = image_item_get_first_cluster_size(hImg, hImgItem);
     leftItemSz        -= itemSizeNotAligned;
     rcode = sdc_burn_buf_manager_init(partName, imgItemSz, fileFmt, itemSizeNotAligned);
     if(rcode){
@@ -172,7 +177,7 @@ int optimus_burn_one_partition(const char* partName, HIMAGE hImg, __hdle hUiProg
 		//If the item head is not alinged to FAT cluster, Read it firstly to speed up mmc read
         if(itemSizeNotAligned && !sequenceNo)
         {
-            DWN_DBG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
+            DWN_MSG("itemSizeNotAligned 0x%x\n", itemSizeNotAligned);
             rcode = image_item_read(hImg, hImgItem, downTransBuf - itemSizeNotAligned, itemSizeNotAligned);
             if(rcode){
                 DWN_ERR("fail in read data from item,rcode %d, len 0x%x, sequenceNo %d\n", rcode, itemSizeNotAligned, sequenceNo);
@@ -206,6 +211,9 @@ _finish:
     }
 
 #if 1
+    if(!NeedVerify){
+            return rcode;
+    }
     rcode = optimus_verify_partition(partName, hImg, _errInfo);
     if(ITEM_NOT_EXIST == rcode)
     {
@@ -222,7 +230,7 @@ _finish:
     return rcode;
 }
 
-int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiProgress)
+int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiProgress, int NeedVerify)
 {
     BurnParts_t* cfgParts = &pCfgPara->burnParts;
     int burnNum       = cfgParts->burn_num;
@@ -249,7 +257,7 @@ int optimus_sdc_burn_partitions(ConfigPara_t* pCfgPara, HIMAGE hImg, __hdle hUiP
     {
         const char* partName = cfgParts->burnParts[i];
 
-        rcode = optimus_burn_one_partition(partName, hImg, hUiProgress);
+        rcode = optimus_burn_one_partition(partName, hImg, hUiProgress, NeedVerify);
         if(rcode){
             DWN_ERR("Fail in burn part %s\n", partName);
             return __LINE__;
@@ -269,8 +277,9 @@ int optimus_sdc_burn_media_partition(const char* mediaImgPath, const char* verif
 int optimus_burn_bootlader(HIMAGE hImg)
 {
     int rcode = 0;
+    int NeedVerify = 1;
 
-    rcode = optimus_burn_one_partition("bootloader", hImg, NULL);
+    rcode = optimus_burn_one_partition("bootloader", hImg, NULL, NeedVerify);
     if(rcode){
         DWN_ERR("Fail when burn bootloader\n");
         return __LINE__;
@@ -280,7 +289,7 @@ int optimus_burn_bootlader(HIMAGE hImg)
 }
 
 //flag, 0 is burn completed, else burn failed
-static int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
+int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 {
     if(isFailed)
     {
@@ -414,7 +423,7 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
         optimus_led_show_in_process_of_burning();
     }
 
-    hImg = image_open(pkgPath);
+    hImg = image_open("mmc", "0", "1", pkgPath);
     if(!hImg){
         DWN_ERR("Fail to open image %s\n", pkgPath);
         ret = __LINE__; goto _finish;
@@ -454,7 +463,7 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
         ret = __LINE__; goto _finish;
     }
     
-    ret = optimus_sdc_burn_partitions(pSdcCfgPara, hImg, hUiProgress);
+    ret = optimus_sdc_burn_partitions(pSdcCfgPara, hImg, hUiProgress, 1);
     if(ret){
         DWN_ERR("Fail when burn partitions\n");
         ret = __LINE__; goto _finish;

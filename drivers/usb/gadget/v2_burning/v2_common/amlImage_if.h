@@ -42,16 +42,23 @@ typedef struct _AmlFirmwareImg_s
 #pragma pack(pop)
 
 
-
 typedef void* HIMAGE;
 typedef void* HIMAGEITEM;
 
 #define IMAGE_ITEM_TYPE_NORMAL  0
 #define IMAGE_ITEM_TYPE_SPARSE  0XFE
 
+enum {
+        IMAGE_IF_TYPE_MMC       = 0XEE,         //read amlogic burning package from 'mmc 0/1' 
+        IMAGE_IF_TYPE_USB             ,         //read amlogic burning package from 'usb 0'
+        IMAGE_IF_TYPE_STORE           ,         //read amlogic burning package using store interface
+};
+
+#define IMG_OFFSET_IN_PART      0
+
 //open a Amlogic firmware image
 //return value is a handle
-HIMAGE image_open(const char* imgPath);
+HIMAGE image_open(const char* interface, const char* device, const char* part, const char* imgPath);
 
 //check the image's crc32
 //return 0 when check ok,otherwise return -1
@@ -83,7 +90,8 @@ int image_item_read(HIMAGE hImg, HIMAGEITEM hItem, void* pBuf, const __u32 wantS
 //relocate the read pointer to read the item data, like standard fseek
 int image_item_seek(HIMAGE , HIMAGEITEM , __s64 , __u32 );
 
-unsigned image_item_get_first_cluster_size(HIMAGEITEM hItem);
+unsigned image_item_get_first_cluster_size(HIMAGE hImg, HIMAGEITEM hItem);
+unsigned image_get_cluster_size(HIMAGEITEM hImg);//Assert read offset and read size is multiple size of thsi unit
 
 int get_item_name(HIMAGE hImg, int itemId, const char** main_type, const char** sub_type);
 
