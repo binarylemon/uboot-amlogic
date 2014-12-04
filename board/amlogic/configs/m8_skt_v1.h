@@ -71,6 +71,11 @@
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
+//To disable L2 cache which can be used to speed up LZO decompress when bootm
+//It will get about 46ms saved(7MB lzo image,CPU=792MHz,DDR=792MHz,
+//90ms vs 136ms) when no CONFIG_DISABLE_L2_CACHE_BOOST
+//#define CONFIG_DISABLE_L2_CACHE_BOOST 1
+
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1

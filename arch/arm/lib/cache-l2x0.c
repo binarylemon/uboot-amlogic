@@ -173,3 +173,75 @@ void l2x0_disable()
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+#if defined(CONFIG_L2_CACHE_BOOST)
+void l2x0_disable_x(void)
+{
+
+#if defined(CONFIG_MESON_TRUSTZONE)
+	//#error "l2x0_disable_x() is not implement yet!"
+#else
+	if ((readl( L2X0_CTRL) & 1))
+	{
+		extern void dcache_flush(void);
+		dcache_flush();
+		l2x0_clean_inv_all();
+	    writel(0,  L2X0_CTRL);
+	}
+#endif //CONFIG_MESON_TRUSTZONE
+}
+void l2x0_enable_x(void)
+{
+#if defined(CONFIG_MESON_TRUSTZONE)
+	//#error "l2x0_enable_x() is not implement yet!"
+#else
+	__u32 aux;
+	
+	/*
+	 * Check if l2x0 controller is already enabled.
+	 * If you are booting from non-secure mode
+	 * accessing the below registers will fault.
+	 */
+	if (!(readl( L2X0_CTRL) & 1)) {
+
+		/* l2x0 controller is disabled */
+
+		//SCU setup
+		#define SCU_BASE 0xc4300000
+		writel(readl(SCU_BASE + 0x0) | 1, (SCU_BASE+0x0));
+		writel(0xF, (SCU_BASE+0x0C));
+		
+		//set latency
+		writel(0x71000007,L2X0_PREFETCH_CTRL);	
+		unsigned int data[3] = { 3, 3, 3 };
+		unsigned int tag[3] = { 2, 2, 2 };
+
+#define L2X0_LATENCY_CTRL_SETUP_SHIFT   (0)
+#define L2X0_LATENCY_CTRL_RD_SHIFT      (4)
+#define L2X0_LATENCY_CTRL_WR_SHIFT      (8)
+
+		writel(
+				((tag[0] - 1) << L2X0_LATENCY_CTRL_RD_SHIFT) |
+				((tag[1] - 1) << L2X0_LATENCY_CTRL_WR_SHIFT) |
+				((tag[2] - 1) << L2X0_LATENCY_CTRL_SETUP_SHIFT),
+				L2X0_TAG_LATENCY_CTRL);	
+		writel(
+				((data[0] - 1) << L2X0_LATENCY_CTRL_RD_SHIFT) |
+				((data[1] - 1) << L2X0_LATENCY_CTRL_WR_SHIFT) |
+				((data[2] - 1) << L2X0_LATENCY_CTRL_SETUP_SHIFT),
+				L2X0_DATA_LATENCY_CTRL);		
+
+		//set AUX
+		aux = readl(L2X0_AUX_CTRL);
+		aux &= 0xffffffff; //why need this mask?
+		aux |= 0x7ec80001;
+		writel(aux,L2X0_AUX_CTRL);
+
+		l2x0_inv_all();
+
+		/* enable L2X0 */
+		writel(1,  L2X0_CTRL);
+	}		
+#endif //CONFIG_MESON_TRUSTZONE
+}
+#endif //CONFIG_L2_CACHE_BOOST

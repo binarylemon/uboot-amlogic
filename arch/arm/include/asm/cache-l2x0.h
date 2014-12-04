@@ -32,7 +32,7 @@
 #define L2X0_LINE_DATA			(L2X0_BASE+0xF10)
 #define L2X0_LINE_TAG			(L2X0_BASE+0xF30)
 #define L2X0_DEBUG_CTRL			(L2X0_BASE+0xF40)
-
+#define L2X0_PREFETCH_CTRL      (L2X0_BASE+0xF60)
 
 
 void cache_sync(void);
