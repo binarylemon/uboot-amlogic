@@ -54,13 +54,13 @@ extern void uart_reset();
 extern void init_ddr_pll(void);
 extern void __udelay(int n);
 
-#if 0
 static void timer_init()
 {
 	//100uS stick timer a mode : periodic, timer a enable, timer e enable
-    setbits_le32(P_AO_TIMER_REG,0x1f);
+    //setbits_le32(P_AO_TIMER_REG,0x1f);
+    writel(readl(P_ISA_TIMER_MUX)|0x3,P_ISA_TIMER_MUX);
 }
-#endif
+
 
 unsigned  get_tick(unsigned base)
 {
@@ -243,6 +243,8 @@ inline void switch_32K_to_24M(void)
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
 #define pwr_ddr_off 
+
+
 void enter_power_down()
 {
 	//int i;
@@ -297,6 +299,7 @@ void enter_power_down()
 
 	if(p_arc_pwr_op->power_off_at_32K_2)
 		p_arc_pwr_op->power_off_at_32K_2();
+	
 
 	// gate off:  bit0: REMOTE;   bit3: UART
 #ifndef CONFIG_NON_32K
@@ -382,6 +385,8 @@ void enter_power_down()
         }while(1);
     }
 
+	copy_reboot_code();
+
 	writel(vcin_state,P_AO_RTI_STATUS_REG2);
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
@@ -410,7 +415,7 @@ int main(void)
 	unsigned cmd;
 	char c;
 	p_arc_pwr_op = &arc_pwr_op;
-//	timer_init();
+	timer_init();
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
 	writel(0,P_AO_RTI_STATUS_REG1);
 	f_serial_puts("sleep .......\n");
@@ -428,7 +433,7 @@ int main(void)
 		if(c == 't')
 		{
 			init_I2C();
-			copy_reboot_code();
+//			copy_reboot_code();
 			enter_power_down();
 			//test_arc_core();
 			break;

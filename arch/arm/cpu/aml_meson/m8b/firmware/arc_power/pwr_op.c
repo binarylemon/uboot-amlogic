@@ -819,6 +819,35 @@ void m8b_pwm_power_on_at_32K_1(void)
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
 }
 #endif 
+
+
+void timera_intr_init()
+{
+	writel(0xffffffff,P_AO_CPU_IRQ_IN0_INTR_STAT_CLR);
+	//enable timer a intr
+	writel(readl(P_AO_CPU_IRQ_IN0_INTR_MASK)|(1<<1),P_AO_CPU_IRQ_IN0_INTR_MASK);
+	writel(0x000f,P_ISA_TIMERA);//15us
+	writel((readl(P_ISA_TIMER_MUX)|(1<<16) | (1<<12)) & (~0x3),P_ISA_TIMER_MUX);//start timera, period
+
+	//set pinmux for testing simulate 32k clk
+	writel(readl(P_AO_RTI_PIN_MUX_REG) & ~(0x3 << 15), P_AO_RTI_PIN_MUX_REG);
+	writel(readl(P_AO_RTI_PIN_MUX_REG) | (0x1 << 18), P_AO_RTI_PIN_MUX_REG);
+	//bit 5 0: 32k crystal. 1: by pass
+	writel(readl(P_AO_RTC_ADDR0) |	(0x1 << 5), P_AO_RTC_ADDR0);
+}
+
+int Process_Cec_Clk_Irq()
+{
+	unsigned value = 0;
+	value = readl(P_AO_RTC_ADDR0);
+	if(value & (1<<4))
+		value &= (~(1<<4));
+	else
+		value |= 1<<4;
+	writel(value, P_AO_RTC_ADDR0); //toggle AO_RTC_ADDR0 bit[4]: rtc_test_clk.
+	return 0;
+}
+
 unsigned int detect_key(unsigned int flags)
 {
 #ifdef CONFIG_AML1218
@@ -845,12 +874,23 @@ unsigned int detect_key(unsigned int flags)
 #ifdef CONFIG_AML1218
     prev_status = aml1218_get_charge_status();
 #endif
+
+	timera_intr_init();
+
+/*	while(1)
+			{serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
+		f_serial_puts("    *^\n");
+//		udelay__(2000);
+		}
+*/
     do {
+	//	serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
+//		f_serial_puts("** \n");
         /*
          * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
-#ifdef CONFIG_AML1218
+#if 0
         power_status = aml1218_get_charge_status();
         if (power_status ^ prev_status) {
             if (flags == 0x87654321) {      // suspend from uboot
@@ -892,7 +932,6 @@ unsigned int detect_key(unsigned int flags)
             delay_cnt = 0;
         }
 #endif
-
 #ifdef CONFIG_IR_REMOTE_WAKEUP
         if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){
             break;
@@ -932,8 +971,7 @@ unsigned int detect_key(unsigned int flags)
                 break;
             }
 #endif
-
-    } while (!(readl(0xc8100088) & (1<<8)));            // power key
+    } while(!(readl(0xc8100088) & (1<<8)));            // power key
 
     writel(1<<8,0xc810008c);
     writel(gpio_sel0, 0xc8100084);
@@ -952,10 +990,10 @@ void arc_pwr_register(struct arc_pwr_op *pwr_op)
  #ifdef CONFIG_AML1218
  	pwr_op->power_off_at_24M    = aml1218_power_off_at_24M;
 	pwr_op->power_on_at_24M     = aml1218_power_on_at_24M;
-	pwr_op->power_off_at_32K_1  = aml1218_power_off_at_32K_1;
-	pwr_op->power_on_at_32K_1   = aml1218_power_on_at_32K_1;
-	pwr_op->power_off_at_32K_2  = aml1218_power_off_at_32K_2;
-	pwr_op->power_on_at_32K_2   = aml1218_power_on_at_32K_2;
+//	pwr_op->power_off_at_32K_1  = aml1218_power_off_at_32K_1;
+//	pwr_op->power_on_at_32K_1   = aml1218_power_on_at_32K_1;
+//	pwr_op->power_off_at_32K_2  = aml1218_power_off_at_32K_2;
+//	pwr_op->power_on_at_32K_2   = aml1218_power_on_at_32K_2;
 	pwr_op->power_off_ddr15     = 0;//aml1218_power_off_ddr15;
 	pwr_op->power_on_ddr15      = 0;//aml1218_power_on_ddr15;
 	pwr_op->shut_down           = aml1218_shut_down;
