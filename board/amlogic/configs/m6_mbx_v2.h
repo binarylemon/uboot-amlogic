@@ -16,7 +16,7 @@
 #define WRITE_TO_NAND_ENABLE
 
 #define CONFIG_IR_REMOTE
-#define CONFIG_DSP_VSYNC_INTERRUPT             1
+//#define CONFIG_DSP_VSYNC_INTERRUPT             1
 
 #define CONFIG_SECURITYKEY
 #ifdef CONFIG_SECURITYKEY
@@ -188,6 +188,7 @@
 	"loadaddr_misc=0x83000000\0" \
 	"usbtty=cdc_acm\0" \
 	"console=ttyS2,115200n8\0" \
+	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m6_mbx\0" \
 	"chipname=8726m6\0" \
 	"machid=4e27\0" \
@@ -230,7 +231,7 @@
 	"prepare= "\
 		"logo size ${outputmode};video dev open ${outputmode};video open; video clear;store read logo 0x83000000 0 800000;unpackimg 0x83000000;bmp scale ${bootup_offset} ${loadaddr};bmp display ${loadaddr}\0"\
 	"nandargs= "\
-            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${bootup_offset},${outputmode},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${fb_addr},${outputmode},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
         "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
@@ -249,7 +250,7 @@
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
         "imgread kernel recovery ${loadaddr}; bootm\0" \
-	"initargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,0x85100000,1080p\0" \
+	"initargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,${fb_addr},1080p\0" \
 	"storage=null\0" \
 	"factoryreset_wipe_data="\
         "echo ---wipe_data=${wipe_data}; "\
@@ -444,7 +445,7 @@
 #define CONFIG_AML_SUSPEND 1
 #define CONFIG_CEC_WAKE_UP 1
 
-#define CONFIG_DSP_VSYNC_INTERRUPT 		1
+//#define CONFIG_DSP_VSYNC_INTERRUPT 		1
 
 /*
  * Secure OS
