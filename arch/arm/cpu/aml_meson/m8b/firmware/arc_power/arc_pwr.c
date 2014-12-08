@@ -500,8 +500,11 @@ int main(void)
 	        f_serial_puts("arm boot succ\n");
 	        wait_uart_empty();
 				    
-		asm(".long 0x003f236f"); //add sync instruction.
-		asm("SLEEP");
+			asm(".long 0x003f236f"); //add sync instruction.
+			asm("flag 1");
+			asm("nop");
+			asm("nop");
+			asm("nop");
 	    }
 	    else
 	    {

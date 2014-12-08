@@ -830,8 +830,8 @@ void timera_intr_init()
 	writel((readl(P_ISA_TIMER_MUX)|(1<<16) | (1<<12)) & (~0x3),P_ISA_TIMER_MUX);//start timera, period
 
 	//set pinmux for testing simulate 32k clk
-	writel(readl(P_AO_RTI_PIN_MUX_REG) & ~(0x3 << 15), P_AO_RTI_PIN_MUX_REG);
-	writel(readl(P_AO_RTI_PIN_MUX_REG) | (0x1 << 18), P_AO_RTI_PIN_MUX_REG);
+//	writel(readl(P_AO_RTI_PIN_MUX_REG) & ~(0x3 << 15), P_AO_RTI_PIN_MUX_REG);
+//	writel(readl(P_AO_RTI_PIN_MUX_REG) | (0x1 << 18), P_AO_RTI_PIN_MUX_REG);
 	//bit 5 0: 32k crystal. 1: by pass
 	writel(readl(P_AO_RTC_ADDR0) |	(0x1 << 5), P_AO_RTC_ADDR0);
 }
@@ -848,6 +848,11 @@ int Process_Cec_Clk_Irq()
 	return 0;
 }
 
+void clean_irq_mask()
+{
+	writel(0x0,P_AO_CPU_IRQ_IN0_INTR_MASK);
+}
+
 unsigned int detect_key(unsigned int flags)
 {
 #ifdef CONFIG_AML1218
@@ -859,6 +864,7 @@ unsigned int detect_key(unsigned int flags)
 #endif
     int ret = FLAG_WAKEUP_PWRKEY;
 
+#ifndef CONFIG_CEC_WAKEUP
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
     backup_remote_register();
@@ -866,6 +872,7 @@ unsigned int detect_key(unsigned int flags)
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
 #endif // #ifndef CONFIG_NON_32K
+#endif
 #endif
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -883,14 +890,15 @@ unsigned int detect_key(unsigned int flags)
 //		udelay__(2000);
 		}
 */
+
     do {
-	//	serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
-//		f_serial_puts("** \n");
+		//serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
+		//f_serial_puts("** \n");
         /*
          * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
-#if 0
+#ifdef CONFIG_AML1218
         power_status = aml1218_get_charge_status();
         if (power_status ^ prev_status) {
             if (flags == 0x87654321) {      // suspend from uboot
@@ -973,10 +981,15 @@ unsigned int detect_key(unsigned int flags)
 #endif
     } while(!(readl(0xc8100088) & (1<<8)));            // power key
 
+	clean_irq_mask();
+	extern disable_irq();
+	disable_irq();
+
     writel(1<<8,0xc810008c);
     writel(gpio_sel0, 0xc8100084);
     writel(gpio_mask,0xc8100080);
 
+#ifndef CONFIG_CEC_WAKEUP
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #ifndef CONFIG_NON_32K
     resume_remote_register();

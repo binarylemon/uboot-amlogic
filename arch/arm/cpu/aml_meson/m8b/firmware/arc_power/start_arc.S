@@ -3,6 +3,8 @@
     .text
 ;; -- auto-vector space, jump to start of code ---------- 
 
+	.global enable_irq
+	.global disable_irq
 /*-------------------------------------------------------------- 
  * Save caller saved registers (scratch registers) ( r0 - r12 )
  * Registers are pushed / popped in the order defined in struct ptregs
@@ -129,8 +131,7 @@ clear_loop:
 	sr 18, [r12]
 	sr 1, [r11]  //p1 level
 	kflag 0x1e //set itr priority
-;flag 6
-	seti 
+	seti
 
 	.ifdef No_C_code
 	.else
@@ -178,4 +179,12 @@ RESTORE_CALLER_SAVED
 ;	j proc_irq
 
 	rtie
+
+
+enable_irq:
+	seti
+
+
+disable_irq:
+	clri
 
