@@ -884,6 +884,16 @@ unsigned int detect_key(unsigned int flags)
 
 	timera_intr_init();
 
+#ifdef CONFIG_CEC_WAKEUP
+    udelay__(10000);
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        cec_msg.log_addr = 4;
+        remote_cec_hw_reset();
+        cec_node_init();
+    }
+#endif
+
 /*	while(1)
 			{serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
 		f_serial_puts("    *^\n");
