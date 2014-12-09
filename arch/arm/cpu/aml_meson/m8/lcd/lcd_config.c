@@ -440,6 +440,8 @@ static void vclk_set_lcd(int lcd_type, unsigned long pll_reg, unsigned long vid_
 	
 	switch (pll_level) {
 		case 1: //<=1.7G
+			if (IS_MESON_M8M2_CPU) //special adjust for M8M2 vid2 pll 1.2G lock failed
+				pll_ctrl2 &= ~(0xf<<12);
 			pll_ctrl3 = (ss_level > 0) ? 0xca7e3823 : 0xca45b823;
 			od_fb = 0;
 			break;
