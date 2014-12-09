@@ -358,6 +358,14 @@ save
 //#define CONFIG_M6_TEST_CPU_SWITCH 1
 
 //#define CONFIG_DSP_VSYNC_INTERRUPT 		1
-
+#ifdef CONFIG_DSP_VSYNC_INTERRUPT
+/*if kernel3.10 is boot, AUDIO_DSP_START_PHY_ADDR must be defined, 
+ * if it not be defined the macro, when kernel3.10 is running, unknow problem can be generated.
+ * if kernel3.0 is boot, AUDIO_DSP_START_PHY_ADDR can't be defined or #define AUDIO_DSP_START_PHY_ADDR    0xa6000000
+ *  *  kernel3.0  #define AUDIO_DSP_START_PHY_ADDR    0xa6000000
+ *  *  kernel3.10 #define AUDIO_DSP_START_PHY_ADDR    0x9fd00000
+ * */
+//#define AUDIO_DSP_START_PHY_ADDR    0x9fd00000
+#endif 
 
 #endif //__CONFIG_M6_SKT_V1_H__

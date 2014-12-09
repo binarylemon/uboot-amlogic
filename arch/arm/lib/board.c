@@ -384,6 +384,16 @@ void board_init_f (ulong bootflag)
 	if(addr > 0x9FE00000)
 		addr = 0x9FE00000;
 #endif
+
+#ifdef AUDIO_DSP_START_PHY_ADDR 
+//arc run vsync code in 0x9FD00000 space,when kernel is kernel3.10,size is 1Mbyte
+	#if (AUDIO_DSP_START_PHY_ADDR == 0x9FD00000)
+	if(addr > 0x9FD00000)
+		addr = 0x9FD00000;
+	#endif
+#endif
+
+
 #ifdef CONFIG_LOGBUFFER
 #ifndef CONFIG_ALT_LB_ADDR
 	/* reserve kernel log buffer */

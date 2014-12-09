@@ -1,8 +1,8 @@
 
 #include <config.h>
+#include <common.h>
 #include <asm/arch/register.h>
 #include <asm/arch/io.h>
-
 #include <asm/arch/dsp_state.h>
 #include "dsp_firmware.dat"
 
@@ -14,9 +14,14 @@ extern int printf(const char *fmt, ...);
 #define S_1M					(S_1K*S_1K)
 //#define S_1M					(64*S_1K)
 
+/* * kernel3.0, dsp arc run at space addr 0xa6000000 
+ * * kernel3.10,dsp arc run at space addr 0x9fd00000, the addr should be define in xx_config.h 
+ * */
 #define AUDIO_DSP_MEM_SIZE		 S_1M
+#ifndef AUDIO_DSP_START_PHY_ADDR
 #define AUDIO_DSP_START_PHY_ADDR 0xa6000000
 //#define AUDIO_DSP_START_PHY_ADDR 0xd9000000
+#endif
 #define AUDIO_DSP_START_ADDR	AUDIO_DSP_START_PHY_ADDR//((SYS_MEM_START+SYS_MEM_SIZE)-AUDIO_DSP_MEM_SIZE)
 #define AUDIO_DSP_END_ADDR		((AUDIO_DSP_START_ADDR+AUDIO_DSP_MEM_SIZE))
 #define REG_MEM_SIZE					(S_1K*4)
@@ -50,6 +55,10 @@ static int dsp_start=0;
 int start_dsp(void)
 {
 	unsigned long clk;
+	char strargs[2048]={0};
+	char temp[128]={0};
+	char *pstr,*pstr2;
+	int n=0;
 
 	if(dsp_start)
 		return 0;
@@ -123,6 +132,39 @@ int start_dsp(void)
 	write_reg(P_AO_RTI_STATUS_REG0, DSP_REQUST_START);
 	printf("starting dsp...\n");
 	dsp_start=1;
+	
+	n+=sprintf(temp, "0x%x", AUDIO_DSP_START_PHY_ADDR);
+	strcat(temp,",");
+	n+=1;
+	n+=sprintf(&temp[n], "0x%x", AUDIO_DSP_MEM_SIZE);
+	strcpy(strargs, getenv("bootargs"));
+	pstr = strstr(strargs,"dsp_vsync=");
+	if(pstr == NULL){
+		strcat(strargs," dsp_vsync=");
+		strcat(strargs,temp);
+		setenv("bootargs", strargs);
+	}
+	else{
+		//printf("%s\n",pstr);
+		pstr2 = strchr(pstr,' ');
+		//printf("%s\n",pstr2);
+		if(pstr2 == NULL){
+			memset(pstr,0,strlen(pstr));
+			strcat(strargs,"dsp_vsync=");
+			strcat(strargs,temp);
+			setenv("bootargs", strargs);
+		}
+		else{
+			char tempstr[512]={0};
+			strcpy(tempstr,pstr2);
+			memset(pstr,0,strlen(pstr));
+			strcat(strargs,tempstr);
+			strcat(strargs," dsp_vsync=");
+			strcat(strargs,temp);
+			setenv("bootargs", strargs);
+		}
+	}
+	
 	return 0;
 }
 
