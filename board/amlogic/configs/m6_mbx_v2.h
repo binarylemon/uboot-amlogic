@@ -231,7 +231,7 @@
 	"prepare= "\
 		"logo size ${outputmode};video dev open ${outputmode};video open; video clear;store read logo 0x83000000 0 800000;unpackimg 0x83000000;bmp scale ${bootup_offset} ${loadaddr};bmp display ${loadaddr}\0"\
 	"nandargs= "\
-            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${fb_addr},${outputmode},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt vmalloc=256m mem=1024m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
+            "setenv bootargs root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 logo=osd1,loaded,${fb_addr},${outputmode},full androidboot.resolution=${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hlt mem=512m a9_clk_max=1512000000 vdachwswitch=${vdacswitchmode} hdmitx=${cecconfig}\0"\
 	"switch_bootmode="\
         "if test ${reboot_mode} = factory_reset; then run recovery; fi;"\
         "if test ${reboot_mode} = usb_burning; then run usb_burning; fi; "\
@@ -250,7 +250,7 @@
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
         "imgread kernel recovery ${loadaddr}; bootm\0" \
-	"initargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend vmalloc=256m mem=1024m logo=osd1,loaded,${fb_addr},1080p\0" \
+	"initargs=root=/dev/cardblksd2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 nohlt no_console_suspend mem=512m logo=osd1,loaded,${fb_addr},1080p\0" \
 	"storage=null\0" \
 	"factoryreset_wipe_data="\
         "echo ---wipe_data=${wipe_data}; "\
