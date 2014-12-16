@@ -64,9 +64,7 @@ _start:
 	b test_start
 	    ; reserved for arm reboot code. (0x280 bytes)
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .word 0
-    .word 0x39c
-    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -125,13 +123,30 @@ clear_loop:
 		bne clear_loop
 
 
+	mov r11, 0xc8100080
+	st 0, [r11]//clean intr mask
+	mov r11, 0xc810008c
+	st 0x0ffff, [r11]//clean intr status
+
 	mov r11, 0x206 //IRQ_PRIORITY
 	mov r12, 0x40b //IRQ_SELECT
 ;	mov r10, 0x40d //IRQ_TRIGGER set level or pulse interrupt
+	sr 19, [r12]
+	sr 0, [r11]  //p0 level
+	mov r10, proc_fiq
+	st r10, [0x4c]
+
 	sr 18, [r12]
 	sr 1, [r11]  //p1 level
-	kflag 0x1e //set itr priority
+	mov r10,proc_irq
+	st r10, [0x48]
+	kflag 0x2 //set itr priority
 	seti
+
+	mov r11, 0xa
+	lr r11,[r11]
+	mov r12,0xc8100004
+	st r11, [r12]
 
 	.ifdef No_C_code
 	.else
@@ -162,24 +177,50 @@ proc_irq:
 	
 SAVE_CALLER_SAVED
 	NOP
-	;BL		 read_int_ack
-
 	mov r0, 0xc1109844//clean intr status
 	mov r2,0xffffffff
 	st r2,[r0]
 ;	sync
-;	MOV 	 r10, r0
+;	MOV      r10, r0
 	NOP
-	bl Process_Cec_Clk_Irq		; irq5
+	bl Process_Cec_Clk_Irq          ; irq5
 	NOP
-;	MOV 	 r0, r10
+;	MOV      r0, r10
 	NOP
 
+/*
+	;BL		 read_int_ack
+	ld r2, [0xc810008c]
+	cmp r2,0
+	jne irq1
+
+	;mov r2,0xffffffff
+	st 0x2,[0xc1109844]
+
+	bl Process_Cec_Clk_Irq		; irq5
+	j irq2
+irq1:
+;	mov r0, 0xc810008c//clean intr status
+;	mov r2,0xffffffff
+	st  0x8,[0xc810008c]
+;	mov r0, 0xc8100004
+	mov r2, 0x1234abcd
+	st  r2,[0xc8100004]
+
+irq2:
+*/
 RESTORE_CALLER_SAVED
 ;	j proc_irq
-
 	rtie
 
+proc_fiq:
+SAVE_CALLER_SAVED
+	mov r2,0xffffffff
+	st  r2,[0xc810008c]//clean intr status
+	mov r2, 0x1234abcd
+	st  r2,[0xc8100004]
+RESTORE_CALLER_SAVED
+	rtie
 
 enable_irq:
 	seti

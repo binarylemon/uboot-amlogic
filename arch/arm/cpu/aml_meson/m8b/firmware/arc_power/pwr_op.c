@@ -826,6 +826,7 @@ void timera_intr_init()
 	writel(0xffffffff,P_AO_CPU_IRQ_IN0_INTR_STAT_CLR);
 	//enable timer a intr
 	writel(readl(P_AO_CPU_IRQ_IN0_INTR_MASK)|(1<<1),P_AO_CPU_IRQ_IN0_INTR_MASK);
+	//writel(readl(P_AO_CPU_IRQ_IN0_INTR_FIRQ_SEL)|(1<<1),P_AO_CPU_IRQ_IN0_INTR_FIRQ_SEL);// set timer a intr as fiq
 	writel(0x000f,P_ISA_TIMERA);//15us
 	writel((readl(P_ISA_TIMER_MUX)|(1<<16) | (1<<12)) & (~0x3),P_ISA_TIMER_MUX);//start timera, period
 
@@ -884,6 +885,18 @@ unsigned int detect_key(unsigned int flags)
 
 	timera_intr_init();
 
+/*	while(1)
+			{serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
+		f_serial_puts("    *^\n");
+//		udelay__(2000);
+		}
+*/
+	writel(readl(0xc8100084) | (1<<18) | (1<<16) | (0x3<<0),0xc8100084);
+	writel(1<<8,0xc810008c); //clear intr
+
+	writel(readl(0xc8100080) | (1<<24),0xc8100080);//set gpio intr as fiq
+	writel(readl(0xc8100080) | (1<<8),0xc8100080);//set gpio intr as fiq
+
 #ifdef CONFIG_CEC_WAKEUP
     udelay__(10000);
     if(hdmi_cec_func_config & 0x1){
@@ -893,14 +906,6 @@ unsigned int detect_key(unsigned int flags)
         cec_node_init();
     }
 #endif
-
-/*	while(1)
-			{serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
-		f_serial_puts("    *^\n");
-//		udelay__(2000);
-		}
-*/
-
     do {
 		//serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
 		//f_serial_puts("** \n");
@@ -989,6 +994,8 @@ unsigned int detect_key(unsigned int flags)
                 break;
             }
 #endif
+		if(readl(P_AO_RTI_STATUS_REG1) == 0x1234abcd)
+			break;//power key
     } while(!(readl(0xc8100088) & (1<<8)));            // power key
 
 	clean_irq_mask();

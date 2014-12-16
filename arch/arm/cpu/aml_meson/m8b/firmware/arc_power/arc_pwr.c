@@ -409,9 +409,11 @@ int main(void)
 	p_arc_pwr_op = &arc_pwr_op;
 	timer_init();
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
+
+	arc_param->serial_disable=0;
+	serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
 	writel(0,P_AO_RTI_STATUS_REG1);
 	f_serial_puts("sleep .......\n");
-	arc_param->serial_disable=0;
 
 	while(1){
 		
