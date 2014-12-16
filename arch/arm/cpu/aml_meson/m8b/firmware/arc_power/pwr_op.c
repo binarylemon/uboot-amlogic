@@ -865,7 +865,6 @@ unsigned int detect_key(unsigned int flags)
 #endif
     int ret = FLAG_WAKEUP_PWRKEY;
 
-#ifndef CONFIG_CEC_WAKEUP
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
     backup_remote_register();
@@ -873,7 +872,6 @@ unsigned int detect_key(unsigned int flags)
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
 #endif // #ifndef CONFIG_NON_32K
-#endif
 #endif
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -1006,7 +1004,6 @@ unsigned int detect_key(unsigned int flags)
     writel(gpio_sel0, 0xc8100084);
     writel(gpio_mask,0xc8100080);
 
-#ifndef CONFIG_CEC_WAKEUP
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #ifndef CONFIG_NON_32K
     resume_remote_register();
@@ -1020,10 +1017,12 @@ void arc_pwr_register(struct arc_pwr_op *pwr_op)
  #ifdef CONFIG_AML1218
  	pwr_op->power_off_at_24M    = aml1218_power_off_at_24M;
 	pwr_op->power_on_at_24M     = aml1218_power_on_at_24M;
-//	pwr_op->power_off_at_32K_1  = aml1218_power_off_at_32K_1;
-//	pwr_op->power_on_at_32K_1   = aml1218_power_on_at_32K_1;
-//	pwr_op->power_off_at_32K_2  = aml1218_power_off_at_32K_2;
-//	pwr_op->power_on_at_32K_2   = aml1218_power_on_at_32K_2;
+#ifndef CONFIG_NON_32K
+	pwr_op->power_off_at_32K_1  = aml1218_power_off_at_32K_1;
+	pwr_op->power_on_at_32K_1   = aml1218_power_on_at_32K_1;
+	pwr_op->power_off_at_32K_2  = aml1218_power_off_at_32K_2;
+	pwr_op->power_on_at_32K_2   = aml1218_power_on_at_32K_2;
+#endif
 	pwr_op->power_off_ddr15     = 0;//aml1218_power_off_ddr15;
 	pwr_op->power_on_ddr15      = 0;//aml1218_power_on_ddr15;
 	pwr_op->shut_down           = aml1218_shut_down;
