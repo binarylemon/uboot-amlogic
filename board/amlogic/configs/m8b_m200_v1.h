@@ -244,10 +244,12 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
-        "wipe_data=success\0"\
+	"wipe_data=success\0"\
+	"wipe_cache=success\0"\
 	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"cvbs_drv=0\0"\
 	"preboot="\
+        "run test_facreset;"\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
@@ -302,6 +304,13 @@
         "else " \
         	"  "\
         "fi;fi;fi;fi\0" \
+    "test_facreset="\
+        "if test ${wipe_data} = failed; then"\
+            "echo -wipe_data=${wipe_data}; run prepare; run storeargs; run recovery;"\
+        "fi; "\
+        "if test ${wipe_cache} = failed; then"\
+            "echo -wipe_cache=${wipe_cache}; run prepare; run storeargs; run recovery;"\
+        "fi; \0" \
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
