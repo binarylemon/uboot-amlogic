@@ -498,7 +498,6 @@
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
-#define CONFIG_NON_32K 1
 
 #define CONFIG_CMD_LOGO
 
