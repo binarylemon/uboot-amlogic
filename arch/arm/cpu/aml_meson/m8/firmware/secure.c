@@ -20,7 +20,8 @@
  *			 2. 2014.04.10 v0.2 check secure boot flag before decrypt 
  *			 3. 2014.06.26 v0.3 support image check
  *			 4. 2014.06.26 v0.4 support 2-RSA
-  *			 5. 2014.07.18 v0.5 unify secure boot for M8/M8B/M8M2
+ *			 5. 2014.07.18 v0.5 unify secure boot for M8/M8B/M8M2
+ *			 6. 2014.12.17 v0.6 support 2-RSA + usb boot
  *
  **************************************************************************************************************/
 
@@ -251,6 +252,7 @@ int aml_sec_boot_check(unsigned char *pSRC)
 	int nSPLLen = 32<<10;
 	unsigned char szCheck[36];
 	unsigned char szHash[32];
+	unsigned int  nBLKStart = ((unsigned int )aml_sec_boot_check) & (0xFFFF8000);
 
 	nRet = aml_m8_sec_boot_check(pSRC,0,0,0,0,&nState);
 	if(nRet || !(nState & (1<<7)))
@@ -271,7 +273,13 @@ int aml_sec_boot_check(unsigned char *pSRC)
 		unsigned char sz4[32];  //spl hash key
 	} aml_spl_blk;
 
-	aml_spl_blk *pblk = (aml_spl_blk *)(0xd9000000 + nSPLLen - 1152 );
+	switch(nBLKStart)
+	{
+	case 0xFFF8000:break;
+	default: nBLKStart = 0xD9000000;break;
+	}
+
+	aml_spl_blk *pblk = (aml_spl_blk *)(nBLKStart + nSPLLen - 1152 );
 
 	t_func_v3 fp_3 = (t_func_v3)g_action[g_nStep][3];
 	t_func_v4 fp_9 = (t_func_v4)g_action[g_nStep][9];
@@ -303,7 +311,7 @@ int aml_sec_boot_check(unsigned char *pSRC)
 		goto exit;
 	}
 
-	fp_9((int)(0xd9000000+pblk->nSPLStartOffset),pblk->splLenght,(int)szHash, 0 );
+	fp_9((int)(nBLKStart+pblk->nSPLStartOffset),pblk->splLenght,(int)szHash, 0 );
 
 	nRet = fp_11((int)pblk->sz4,(int)szHash,32);
 
