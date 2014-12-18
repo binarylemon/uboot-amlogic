@@ -881,8 +881,9 @@ unsigned int detect_key(unsigned int flags)
     prev_status = aml1218_get_charge_status();
 #endif
 
+#ifdef CONFIG_NON_32K
 	timera_intr_init();
-
+#endif
 /*	while(1)
 			{serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
 		f_serial_puts("    *^\n");
