@@ -671,26 +671,37 @@ R_SWITCH_BACK:
 		if(device_boot_flag == -1){
 			get_device_boot_flag();
 		}
-		if(device_boot_flag==NAND_BOOT_FLAG){	
-			sprintf(str, "amlnf  init  %d ",init_flag);
-			printf("command:	%s\n", str);
-                        device_boot_flag = NAND_BOOT_FLAG;		
+		if(device_boot_flag==NAND_BOOT_FLAG)
+		{				
+			if((init_flag >=STORE_BOOT_ERASE_PROTECT_CACHE)&&(init_flag <=STORE_BOOT_SCRUB_ALL)){
+				sprintf(str, "amlnf  init  %d ",init_flag);
+				run_command(str, 0);
+			}
+			
+			sprintf(str, "amlnf  init  %d ",0);
+			printf("command:	%s -> %d\n", str, init_flag);
+			device_boot_flag = NAND_BOOT_FLAG;
 			ret = run_command(str, 0);
 			if(ret != 0){
+#if	0
 				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
 				if(ret){
 					store_msg("nand cmd %s failed,ret=%d ",cmd,ret);
-				return -1;
+					return -1;
 				}
 				return 0;
+#else
+				return -1;
+#endif
 			}
 			return ret;
 		}
         else if((device_boot_flag==SPI_EMMC_FLAG)||(device_boot_flag==SPI_NAND_FLAG))
         {
+/*
 			if(device_boot_flag == -1)
             {
 				ret = run_command("sf probe 2", 0);
@@ -699,7 +710,7 @@ R_SWITCH_BACK:
 					return -1;
 				}
 				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
-                                        sprintf(str, "sf erase 0 0x%x", _SPI_FLASH_ERASE_SZ);
+					sprintf(str, "sf erase 0 0x%x", _SPI_FLASH_ERASE_SZ);
 					ret = run_command(str,0);
 				}
 				sprintf(str, "amlnf  init  %d ",init_flag);
@@ -735,19 +746,30 @@ R_SWITCH_BACK:
 				device_boot_flag = SPI_NAND_FLAG;		
 				return 0;
 			}
-			
+*/			
 			if(device_boot_flag == SPI_NAND_FLAG){
 				store_dbg("spi+nand , %s %d ",__func__,__LINE__);
-				sprintf(str, "amlnf  init  %d ",init_flag);
+				
+				if((init_flag >=STORE_BOOT_ERASE_PROTECT_CACHE)&&(init_flag <=STORE_BOOT_SCRUB_ALL)){
+					sprintf(str, "amlnf  init  %d ",init_flag);
+					run_command(str, 0);
+				}				
+				sprintf(str, "amlnf  init  %d ",0);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
-				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){
+#if	0				
+				if((ret == NAND_INIT_FAILED)&&(init_flag == STORE_BOOT_ERASE_ALL)){					
 					sprintf(str, "amlnf  init  %d ",4);	
 					ret = run_command(str, 0);
 				}
+#else
+				if(ret == NAND_INIT_FAILED){
+					return -1;				
+				}
+#endif
 				if((init_flag > STORE_BOOT_ERASE_PROTECT_CACHE) && (init_flag <= STORE_BOOT_SCRUB_ALL)){
 					ret = run_command("sf probe 2", 0);
-                                        sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
+					sprintf(str, "sf erase  0 0x%x", _SPI_FLASH_ERASE_SZ);
 					ret = run_command(str,0);
 				}
 			}

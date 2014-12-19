@@ -819,6 +819,9 @@ static int amlnf_init(struct platform_device *pdev)
 		}
 		goto exit_error0;
 	}
+	//only read id, quit myself.
+	if(flag == NAND_SCAN_ID_INIT)
+		goto exit_error0;		
 
 	ret = amlnf_logic_init(flag);
 	if(ret < 0){

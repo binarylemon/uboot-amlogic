@@ -767,7 +767,7 @@ int optimus_storage_init(int toErase)
 
         case 4://force erase all
             {
-                cmd = "store disprotect key; store disprotect fbbt; store disprotect hynix";
+                cmd = "store disprotect key; store disprotect hynix";
                 DWN_MSG("run cmd [%s]\n", cmd);
                 ret = run_command(cmd, 0);
                 if(ret){
