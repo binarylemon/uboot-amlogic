@@ -145,6 +145,7 @@ static int m6_rsa_dec_pub(int index,aml_intx *n,aml_intx *e,unsigned char *ct,in
 
 
 #if defined(CONFIG_M6_SECU_BOOT_2RSA)
+extern int sha2_sum( unsigned char outbuf[32],const unsigned char *pbuff, int nLen );
 int get_2RSA(int index,aml_intx *n,aml_intx *e, unsigned char *key,int keylen)
 {
 	int ret=-1;
@@ -177,7 +178,7 @@ int get_2RSA(int index,aml_intx *n,aml_intx *e, unsigned char *key,int keylen)
 		ret = 0;
 		
 		fp_02((int)key,(int)&szRSAPUK1[0],keylen);
-		int i;
+		//int i;
 	}
 	return ret;
 }
