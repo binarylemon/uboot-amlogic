@@ -2819,7 +2819,6 @@ int  bbt_valid_ops(struct amlnand_chip *aml_chip)
 			}
 		}
 	}else{
-		BUG();
 //		ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->shipped_bbtinfo),(unsigned char *)aml_chip->shipped_bbt_ptr,(unsigned char *)SHIPPED_BBT_HEAD_MAGIC, sizeof(struct shipped_bbt));
 //		if(ret < 0){
 //			aml_nand_msg("nand scan shipped info failed and ret:%d",ret);
