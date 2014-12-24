@@ -1386,8 +1386,8 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 
 	show_phydev_info();
 
-#if 1
-    phydev = NULL;
+#if 0
+   	phydev = NULL;
 	list_for_each_entry(phydev,&nphy_dev_list,list){
 		if(phydev!=NULL){
             aml_nand_dbg("----------------------------------------------------------------------------------------------------\n");
