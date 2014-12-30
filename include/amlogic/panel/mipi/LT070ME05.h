@@ -36,29 +36,32 @@
 #define MIPI_MODE_INIT      1    /** operation mode when init(0=video, 1=command) */
 #define MIPI_MODE_DISP      0    /** operation mode when display(0=video, 1=command) */
 #define LCD_EXTERN_INIT     0    /** if the init command size is large, should use lcd_extern init */
-//data_type,command,para_num,parameters...
+//******************** mipi command ********************//
+//format:  data_type, num, data....
+//special: data_type=0xff, num<0xff means delay ms, num=0xff means ending.
+//******************************************************//
 static unsigned char mipi_init_on_table[] = {//table size < 100
-    0x05,0x01,0,  //soft reset
+    0x05,1,0x01,   //soft reset
     0xff,5,        //delay 5ms
-    0x23,0xb0,1,0x00,  //MCAP
-    0x29,0xb4,1,0x0c,  //interface ID setting
-    0x29,0xb6,2,0x3a,0xd3, //DSI control
+    0x23,2,0xb0,0x00,  //MCAP
+    0x29,2,0xb4,0x0c,  //interface ID setting
+    0x29,3,0xb6,0x3a,0xd3, //DSI control
 
-    0x15,0x51,1,0xe6, //write display brightness
-    0x15,0x53,1,0x2c, //write control display
+    0x15,2,0x51,0xe6, //write display brightness
+    0x15,2,0x53,0x2c, //write control display
 
-    0x15,0x3a,1,0x77, //set pixel format
-    0x05,0x11,0, //sleep out
+    0x15,2,0x3a,0x77, //set pixel format
+    0x05,1,0x11, //sleep out
     0xff,120,    //delay 120ms
-    0x29,0xb3,5,0x14,0x08,0x00,0x22,0x00, //Interface setting
-    0x05,0x29,0, //display on
+    0x29,6,0xb3,0x14,0x08,0x00,0x22,0x00, //Interface setting
+    0x05,1,0x29, //display on
     0xff,30,     //delay 10ms
     0xff,0xff,   //ending flag
 };
 static unsigned char mipi_init_off_table[] = {//table size < 50
-    0x05,0x28,0, //display off
+    0x05,1,0x28, //display off
     0xff,10,     //delay 10ms
-    0x05,0x10,0, //sleep in
+    0x05,1,0x10, //sleep in
     0xff,10,     //delay 10ms
     0xff,0xff,   //ending flag
 };

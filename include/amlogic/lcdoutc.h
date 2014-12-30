@@ -181,6 +181,7 @@ typedef struct {
 } Lcd_Effect_t;
 
 //mipi-dsi config
+#define DSI_CMD_CNT_INDEX         1 //byte[1]
 #define DSI_INIT_ON_MAX           100
 #define DSI_INIT_OFF_MAX          30
 

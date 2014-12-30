@@ -12,7 +12,7 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
-#include <asm/arch-m8/aml_lcd_gpio.h>
+#include <asm/arch/aml_lcd_gpio.h>
 #include <amlogic/aml_lcd_extern.h>
 
 //#define LCD_EXT_DEBUG_INFO

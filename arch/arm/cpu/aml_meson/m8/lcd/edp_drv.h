@@ -1,5 +1,6 @@
 #ifndef EDP_DRV_H
 #define EDP_DRV_H
+#include <amlogic/lcdoutc.h>
 
 //********************************************************//
 // displayport host (tx) control

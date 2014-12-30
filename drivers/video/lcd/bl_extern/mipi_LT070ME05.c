@@ -95,9 +95,13 @@ static int get_bl_ext_config (char *dt_addr)
 }
 #endif
 
+//******************** mipi command ********************//
+//format:  data_type, num, data....
+//special: data_type=0xff, num<0xff means delay ms, num=0xff means ending.
+//******************************************************//
 static int bl_extern_set_level(unsigned int level)
 {
-    unsigned char payload[6]={0x15,0x51,1,0x00,0xff,0xff};
+    unsigned char payload[6]={0x15,2,0x51,0x00,0xff,0xff};
 
     bl_level = level;
     if (bl_status) {

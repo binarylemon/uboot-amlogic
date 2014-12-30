@@ -55,7 +55,6 @@ extern int  set_mio_mux(unsigned mux_index, unsigned mux_mask);
 extern void lcd_default_config_init(Lcd_Config_t *pConf);
 extern void backlight_default_config_init(Lcd_Bl_Config_t *bl_config);
 
-
 unsigned int lcd_print_flag = 0;
 unsigned int lcd_debug_flag = 0;
 void lcd_print(const char *fmt, ...)

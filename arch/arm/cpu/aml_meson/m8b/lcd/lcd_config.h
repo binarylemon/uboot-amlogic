@@ -9,7 +9,7 @@
 //lcd driver version
 //**********************************
 #define LCD_DRV_TYPE      "c8b"
-#define LCD_DRV_DATE      "20141113"
+#define LCD_DRV_DATE      "20141223"
 //**********************************
 
 /* for GAMMA_CNTL_PORT */
@@ -119,7 +119,6 @@ static const unsigned gamma_sel_table[3] = {
 /* for video encoder */
 	#define MIPI_DELAY				8
 	#define LVDS_DELAY				8
-	#define EDP_DELAY				8
 	#define TTL_DELAY				19
 
 //********************************************//

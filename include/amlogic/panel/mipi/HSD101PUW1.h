@@ -36,9 +36,12 @@
 #define MIPI_MODE_INIT      0    /** operation mode when init(0=video, 1=command) */
 #define MIPI_MODE_DISP      0    /** operation mode when display(0=video, 1=command) */
 #define LCD_EXTERN_INIT     0    /** if the init command size is large, should use lcd_extern init */
-//data_type,command,para_num,parameters...
+//******************** mipi command ********************//
+//format:  data_type, num, data....
+//special: data_type=0xff, num<0xff means delay ms, num=0xff means ending.
+//******************************************************//
 static unsigned char mipi_init_on_table[] = {//table size < 100
-    0x32,0x00,0, //turn on peripheral
+    0x32,0,      //turn on peripheral
     0xff,0xff,   //ending flag
 };
 static unsigned char mipi_init_off_table[] = {//table size < 50
