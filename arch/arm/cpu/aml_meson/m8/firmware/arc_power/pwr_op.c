@@ -649,6 +649,15 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(readl(0xc8100080) | (1<<8),0xc8100080);
 	writel(1<<8,0xc810008c); //clear intr
 */
+#ifdef CONFIG_CEC_WAKEUP
+    udelay__(10000);
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        cec_msg.log_addr = 4;
+        remote_cec_hw_reset();
+        cec_node_init();
+    }
+#endif
 	prev_status = get_charging_state();
     do {
         /*

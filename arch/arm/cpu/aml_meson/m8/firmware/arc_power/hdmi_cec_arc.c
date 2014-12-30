@@ -5,7 +5,67 @@
 #ifdef CONFIG_CEC_WAKEUP
 #include <cec_tx_reg.h>
 
-#define waiting_aocec_free()    while(readl(P_AO_CEC_RW_REG) & (1<<23))
+
+#ifdef CONFIG_NO_32K_XTAL
+
+static void gpiox_10_pin_mux_mask(void){
+    //GPIOX_10 pin mux masked expect PWM_E
+    writel(readl(P_PERIPHS_PIN_MUX_3) & (~(1<<22)), P_PERIPHS_PIN_MUX_3 ); //0x202f bit[22]: XTAL_32K_OUT 
+    writel(readl(P_PERIPHS_PIN_MUX_3) & (~(1<< 8)), P_PERIPHS_PIN_MUX_3 ); //0x202f bit[ 8]: Tsin_D0_B
+    writel(readl(P_PERIPHS_PIN_MUX_4) & (~(1<<23)), P_PERIPHS_PIN_MUX_4 ); //0x2030 bit[23]: SPI_MOSI
+    writel(readl(P_PERIPHS_PIN_MUX_6) & (~(1<<17)), P_PERIPHS_PIN_MUX_6 ); //0x2032 bit[17]: UART_CTS_B
+    writel(readl(P_PERIPHS_PIN_MUX_7) & (~(1<<31)), P_PERIPHS_PIN_MUX_7 ); //0x2033 bit[31]: PWM_VS
+    writel(readl(P_PERIPHS_PIN_MUX_9) |   (1<<19) , P_PERIPHS_PIN_MUX_9 ); //0x2035 bit[19]: PWM_E
+}
+
+static void pwm_e_config(void){
+    //PWM E config
+    writel(0x25ff25fe, P_PWM_PWM_E ); //0x21b0 bit[31:16]: PWM_E_HIGH counter
+                                      //0x21b0 bit[15: 0]: PWM_E_LOW counter
+    writel(readl(P_PWM_MISC_REG_EF) |   ( 0x1<<15), P_PWM_MISC_REG_EF ); //0x21b2 bit[15]   : PWM_E_CLK_EN
+    writel(readl(P_PWM_MISC_REG_EF) & (~(0x3f<<8)), P_PWM_MISC_REG_EF ); //0x21b2 bit[14: 8]: PWM_E_CLK_DIV
+    writel(readl(P_PWM_MISC_REG_EF) |   ( 0x2<<4 ), P_PWM_MISC_REG_EF ); //0x21b2 bit[5 : 4]: PWM_E_CLK_SEL :0x2 sleect fclk_div4:637.5M
+    writel(readl(P_PWM_MISC_REG_EF) |   ( 0x1<<0 ), P_PWM_MISC_REG_EF ); //0x21b2 bit[0]    : PWM_E_EN
+}
+
+void pwm_out_rtc_32k(void){
+    gpiox_10_pin_mux_mask(); //enable PWM_E pin mux
+    pwm_e_config();  //PWM E config   
+    //f_serial_puts("Set PWM_E out put RTC 32K!\n");
+}
+
+#endif
+
+int cec_strlen(char *p)
+{
+  int i=0;
+  while(*p++)i++;
+  return i;
+}
+
+void *cec_memcpy(void *memto, const void *memfrom, size_t size)
+{
+    if((memto == NULL) || (memfrom == NULL))
+        return NULL;
+    char *tempfrom = (char *)memfrom;
+    char *tempto = (char *)memto;
+    while(size -- > 0)
+        *tempto++ = *tempfrom++;
+    return memto;
+}
+
+#define waiting_aocec_free() \
+        do{\
+            unsigned long cnt = 0;\
+            while(readl(P_AO_CEC_RW_REG) & (1<<23))\
+            {\
+                if(5000 == cnt++)\
+                {\
+                    break;\
+                }\
+            }\
+        }while(0)
+
 unsigned long cec_rd_reg(unsigned long addr)
 {
     unsigned long data32;
@@ -66,6 +126,10 @@ void cec_arbit_bit_time_set(unsigned bit_set, unsigned time_set){//11bit:bit[10:
 
 void remote_cec_hw_reset(void)
 {
+#ifdef CONFIG_N200C_AOCEC_CRYSTAL_24M  
+    //pwm_out_rtc_32k();  //enable RTC 32k
+#endif
+
     //unsigned long data32;
     // Assert SW reset AO_CEC
     //data32  = 0;
@@ -264,24 +328,14 @@ void cec_give_deck_status(void)
 
 void cec_set_osd_name(void)
 {
-    unsigned char msg[13];
+    unsigned char msg[16];
+    unsigned char osd_len = cec_strlen(CEC_OSD_NAME);
     
-    //"Amlogic Mbx"
     msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
     msg[1] = CEC_OC_SET_OSD_NAME;
-    msg[2] = 'A';
-    msg[3] = 'm';
-    msg[4] = 'l';
-    msg[5] = 'o';
-    msg[6] = 'g';
-    msg[7] = 'i';
-    msg[8] = 'c';
-    msg[9] = ' ';
-    msg[10] = 'M';
-    msg[11] = 'b';
-    msg[12] = 'x';
+    cec_memcpy(&msg[2], CEC_OSD_NAME, osd_len);
     
-    remote_cec_ll_tx(msg, 13);
+    remote_cec_ll_tx(msg, osd_len + 2);
 }
 
 void cec_get_version(void)
