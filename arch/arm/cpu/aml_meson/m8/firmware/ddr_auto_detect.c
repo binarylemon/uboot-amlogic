@@ -329,6 +329,7 @@ void ddr_size_auto_detect(struct ddr_set * timing_reg){
 		serial_puts("\n");
 #endif
 		asm volatile("DSB"); /*sync ddr data*/
+		__udelay(1);
 		if(readl(PHYS_MEMORY_START) == DDR_SIZE_AUTO_DETECT_PATTERN){
 #if (DDR_DEBUG)
 			serial_puts("	find match size: ");
