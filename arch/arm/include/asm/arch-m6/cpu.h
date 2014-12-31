@@ -60,6 +60,11 @@
 //#define CONFIG_DCACHE_OFF    		1
 //#define CONFIG_ICACHE_OFF    		1
 
+#if !defined(CONFIG_DISABLE_L2_CACHE_BOOST)
+    #define CONFIG_L2_CACHE_BOOST 1
+#endif
+
+
 //#define CONFIG_EFUSE 1
 //#define CONFIG_AML_EFUSE_INIT_PLUS 1
 

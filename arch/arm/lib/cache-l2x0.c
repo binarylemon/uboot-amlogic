@@ -233,8 +233,7 @@ void l2x0_enable_x(void)
 
 		//set AUX
 		aux = readl(L2X0_AUX_CTRL);
-		aux &= 0xffffffff; //why need this mask?
-		aux |= 0x7ec80001;
+		aux |= 0x7ec00001;
 		writel(aux,L2X0_AUX_CTRL);
 
 		l2x0_inv_all();
