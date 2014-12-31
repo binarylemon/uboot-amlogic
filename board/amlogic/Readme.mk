@@ -209,24 +209,8 @@ endif
 	@echo config command: \"make g9tv_n300_v1_config\"
 
 	@echo =======================================================================
-	@echo The mark in board is "G9TV_N300_15G_V1"
-	@echo config command: \"make g9tv_n300_15G_v1_config\"
-
-	@echo =======================================================================
-	@echo The mark in board is "G9TV_N300_1G_V1"
-	@echo config command: \"make g9tv_n300_1G_v1_config\"
-	
-	@echo =======================================================================
 	@echo The mark in board is "G9TV_N301_V1"
 	@echo config command: \"make g9tv_n301_v1_config\"
-	
-	@echo =======================================================================
-	@echo The mark in board is "G9TV_N320_V1"
-	@echo config command: \"make g9tv_n320_v1_config\"
-
-	@echo =======================================================================
-	@echo The mark in board is "G9TV_PXP"
-	@echo config command: \"make g9tv_pxp_config\"
 
 	@echo
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)
