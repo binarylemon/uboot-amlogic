@@ -2903,7 +2903,7 @@ int  shipped_bbt_invalid_ops(struct amlnand_chip *aml_chip)
 #endif
   
 #ifdef CONFIG_SECURE_NAND
-	ret = amlnand_info_init(aml_chip, &(aml_chip->nand_secure),buf,SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
+	ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_secure),buf,(unsigned char *)SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
 		if(ret < 0){
 			aml_nand_msg("invalid nand secure_ptr\n");
 			goto exit_error0;
