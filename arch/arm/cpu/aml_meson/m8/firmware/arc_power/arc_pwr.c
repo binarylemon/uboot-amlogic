@@ -282,6 +282,14 @@ void enter_power_down()
 		if(p_arc_pwr_op->power_off_ddr15)
 			p_arc_pwr_op->power_off_ddr15();
 	}
+#ifdef CONFIG_CEC_WAKEUP
+    if(hdmi_cec_func_config & 0x1){
+        cec_power_on();
+        cec_msg.log_addr = 4;
+        remote_cec_hw_reset();  
+        cec_node_init();
+    }
+#endif 
 
 	if(0x11111112 == readl(0xc11081A8)){
 		wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);

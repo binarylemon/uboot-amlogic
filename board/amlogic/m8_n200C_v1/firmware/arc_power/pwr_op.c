@@ -20,17 +20,11 @@ void rn5t618_set_gpio(int gpio, int output);
 #endif
 
 #define CONFIG_IR_REMOTE_WAKEUP 1//for M8 MBox
-#ifndef CONFIG_CEC_WAKEUP
-#define CONFIG_CEC_WAKEUP       1//for CEC function
-#endif
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 #include "irremote2arc.c"
 #endif
 
-#ifdef CONFIG_CEC_WAKEUP
-#include <cec_tx_reg.h>
-#endif
 /*
  * i2c clock speed define for 32K and 24M mode
  */
@@ -249,10 +243,6 @@ void init_I2C()
 		serial_put_hex(v, 8);
 		f_serial_puts("Success.\n");
 	}
-#endif
-
-#ifndef CONFIG_NO_32K_XTAL
-    //pwm_out_rtc_32k();
 #endif
 }
 
@@ -782,15 +772,6 @@ unsigned int detect_key(unsigned int flags)
     //set the ir_remote to 32k mode at ARC
     init_custom_trigger();
 #endif
-#ifdef CONFIG_CEC_WAKEUP
-    udelay__(10000);
-    if(hdmi_cec_func_config & 0x1){
-        cec_power_on();
-        cec_msg.log_addr = 4;
-        remote_cec_hw_reset();
-        cec_node_init();
-    }
-#endif
 #endif
 
 //    writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -865,14 +846,6 @@ unsigned int detect_key(unsigned int flags)
 			exit_reason = 6;
 			break;
 		}
-#endif
-#ifdef CONFIG_CEC_WAKEUP
-        if(hdmi_cec_func_config & 0x1){
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
-            }
-        }
 #endif
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
