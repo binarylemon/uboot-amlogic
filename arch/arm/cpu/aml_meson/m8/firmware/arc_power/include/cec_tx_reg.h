@@ -1,6 +1,8 @@
 #ifndef _CEC_TX_REG_H
 #define _CEC_TX_REG_H
 
+#define CEC_OSD_NAME "Mbox"
+
 #define HDMI_ADDR_PORT 0x2000
 #define HDMI_DATA_PORT 0x2004
 #define HDMI_CNTL_PORT 0x2008
