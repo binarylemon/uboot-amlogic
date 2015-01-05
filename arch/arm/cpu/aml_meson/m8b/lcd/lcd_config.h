@@ -9,7 +9,7 @@
 //lcd driver version
 //**********************************
 #define LCD_DRV_TYPE      "c8b"
-#define LCD_DRV_DATE      "20141223"
+#define LCD_DRV_DATE      "20150105"
 //**********************************
 
 /* for GAMMA_CNTL_PORT */

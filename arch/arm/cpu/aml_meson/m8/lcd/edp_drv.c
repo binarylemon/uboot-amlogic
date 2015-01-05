@@ -281,8 +281,8 @@ static void dptx_set_MSA(EDP_MSA_t *vm)
     WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_VSWIDTH, vm->vsync_width);
     WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_HRES, vm->h_active);
     WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_VRES, vm->v_active);
-    WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_HSTART, vm->hsync_bp);
-    WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_VSTART, vm->vsync_bp);
+    WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_HSTART, (vm->hsync_bp + vm->hsync_width));
+    WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_VSTART, (vm->vsync_bp + vm->vsync_width));
     //WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_MISC0, ((vm->cformat << 1) | (1 << 0))); //always sync mode
     WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_MISC0, misc0_data);
     WRITE_DPTX_REG(EDP_TX_MAIN_STREAM_MISC1, 0x00000000);
@@ -2264,9 +2264,9 @@ static void edp_edid_timing_config(Lcd_Config_t *pConf, EDP_EDID_Data_Type_t *ed
 	pConf->lcd_timing.lcd_clk = (temp * pConf->lcd_basic.v_period / 10) * pConf->lcd_basic.h_period;
 	
 	pConf->lcd_timing.hsync_width = edid_data_parase->preferred_timing.h_pw;
-	pConf->lcd_timing.hsync_bp = edid_data_parase->preferred_timing.h_blank - edid_data_parase->preferred_timing.h_fp; //include pw
+	pConf->lcd_timing.hsync_bp = edid_data_parase->preferred_timing.h_blank - edid_data_parase->preferred_timing.h_fp - edid_data_parase->preferred_timing.h_pw; //without pw
 	pConf->lcd_timing.vsync_width = edid_data_parase->preferred_timing.v_pw;
-	pConf->lcd_timing.vsync_bp = edid_data_parase->preferred_timing.v_blank - edid_data_parase->preferred_timing.v_fp; //include pw
+	pConf->lcd_timing.vsync_bp = edid_data_parase->preferred_timing.v_blank - edid_data_parase->preferred_timing.v_fp - edid_data_parase->preferred_timing.v_pw; //without pw
 	
 	pConf->lcd_basic.h_active_area = edid_data_parase->preferred_timing.h_size;
 	pConf->lcd_basic.v_active_area = edid_data_parase->preferred_timing.v_size;

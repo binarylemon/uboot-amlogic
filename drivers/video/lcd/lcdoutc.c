@@ -1769,14 +1769,12 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			printf("faild to get bl_gpio_port_on_off\n");
 #ifdef GPIODV_28
 			bl_conf->gpio = GPIODV_28;
-			bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
-			bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 #endif
 #ifdef GPIOD_1
 			bl_conf->gpio = GPIOD_1;
+#endif
 			bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
 			bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
-#endif
 		}
 		else {
 			prop = container_of(propdata, struct fdt_property, data);

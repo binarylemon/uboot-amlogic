@@ -925,11 +925,11 @@ static void dsi_video_config(Lcd_Config_t *pConf)
 
     dsi_vid_config.hline =(pConf->lcd_basic.h_period * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;  // Rounded. Applicable for Period(pixclk)/Period(bytelaneclk)=9/16
     dsi_vid_config.hsa =(pConf->lcd_timing.hsync_width * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
-    dsi_vid_config.hbp =((pConf->lcd_timing.hsync_bp-pConf->lcd_timing.hsync_width) * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
+    dsi_vid_config.hbp =(pConf->lcd_timing.hsync_bp * cfg->factor_denominator + cfg->factor_numerator - 1) / cfg->factor_numerator;
 
     dsi_vid_config.vsa = pConf->lcd_timing.vsync_width;
-    dsi_vid_config.vbp = pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
-    dsi_vid_config.vfp = pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_basic.v_active;
+    dsi_vid_config.vbp = pConf->lcd_timing.vsync_bp;
+    dsi_vid_config.vfp = pConf->lcd_basic.v_period - pConf->lcd_basic.v_active - pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width;
     dsi_vid_config.vact = pConf->lcd_basic.v_active;
 
     lcd_print(" ============= VIDEO TIMING SETTING =============\n");

@@ -52,7 +52,12 @@ static int get_bl_ext_config (char *dt_addr)
 		if (propdata == NULL) {
 			printf("faild to get gpio_enable_on_off\n");
 			bl_extern->gpio_used = 1;
-			bl_extern->gpio = GPIODV_28; 
+#ifdef GPIODV_28
+			bl_extern->gpio = GPIODV_28;
+#endif
+#ifdef GPIOD_1
+			bl_extern->gpio = GPIOD_1;
+#endif
 			bl_extern->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
 			bl_extern->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 		}

@@ -1544,8 +1544,8 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 	else
 		de_vstart = (pConf->lcd_timing.video_on_line + pConf->lcd_basic.v_period - v_offset) % pConf->lcd_basic.v_period;
 	
-	hstart = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
-	hend = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp + pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;	
+	hstart = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp - pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;
+	hend = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
 	pConf->lcd_timing.hs_hs_addr = hstart;
 	pConf->lcd_timing.hs_he_addr = hend;
 	pConf->lcd_timing.hs_vs_addr = 0;
@@ -1558,8 +1558,8 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
 		vsync_h_phase = (hstart + pConf->lcd_basic.h_period + vsync_h_phase) % pConf->lcd_basic.h_period;
 	pConf->lcd_timing.vs_hs_addr = vsync_h_phase;
 	pConf->lcd_timing.vs_he_addr = vsync_h_phase;
-	vstart = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
-	vend = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp + pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
+	vstart = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
+	vend = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
 	pConf->lcd_timing.vs_vs_addr = vstart;
 	pConf->lcd_timing.vs_ve_addr = vend;
 	
@@ -1582,8 +1582,8 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
     else
         de_vstart = (pConf->lcd_basic.v_period - pConf->lcd_basic.v_active + v_offset) % pConf->lcd_basic.v_period;
 
-    hstart = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
-    hend = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp + pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;	
+    hstart = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp - pConf->lcd_timing.hsync_width) % pConf->lcd_basic.h_period;
+    hend = (de_hstart + pConf->lcd_basic.h_period - pConf->lcd_timing.hsync_bp) % pConf->lcd_basic.h_period;
     pConf->lcd_timing.hs_hs_addr = hstart;
     pConf->lcd_timing.hs_he_addr = hend;
     pConf->lcd_timing.hs_vs_addr = 0;
@@ -1596,8 +1596,8 @@ static void lcd_tcon_config(Lcd_Config_t *pConf)
         vsync_h_phase = (hstart + pConf->lcd_basic.h_period + vsync_h_phase) % pConf->lcd_basic.h_period;
     pConf->lcd_timing.vs_hs_addr = vsync_h_phase;
     pConf->lcd_timing.vs_he_addr = vsync_h_phase;
-    vstart = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
-    vend = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp + pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
+    vstart = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp - pConf->lcd_timing.vsync_width) % pConf->lcd_basic.v_period;
+    vend = (de_vstart + pConf->lcd_basic.v_period - pConf->lcd_timing.vsync_bp) % pConf->lcd_basic.v_period;
     pConf->lcd_timing.vs_vs_addr = vstart;
     pConf->lcd_timing.vs_ve_addr = vend;
 
