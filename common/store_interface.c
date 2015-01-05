@@ -678,7 +678,7 @@ R_SWITCH_BACK:
 				run_command(str, 0);
 			}
 			
-			sprintf(str, "amlnf  init  %d ",0);
+			sprintf(str, "amlnf  init  %d ",1);
 			printf("command:	%s -> %d\n", str, init_flag);
 			device_boot_flag = NAND_BOOT_FLAG;
 			ret = run_command(str, 0);
@@ -754,7 +754,7 @@ R_SWITCH_BACK:
 					sprintf(str, "amlnf  init  %d ",init_flag);
 					run_command(str, 0);
 				}				
-				sprintf(str, "amlnf  init  %d ",0);
+				sprintf(str, "amlnf  init  %d ",1);
 				store_dbg("command:	%s", str);
 				ret = run_command(str, 0);
 #if	0				
