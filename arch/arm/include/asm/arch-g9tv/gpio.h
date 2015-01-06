@@ -27,41 +27,30 @@ gpio_mode_t get_gpio_mode(gpio_bank_t bank, int bit);
 int set_gpio_val(gpio_bank_t bank, int bit, unsigned long val);
 unsigned long  get_gpio_val(gpio_bank_t bank, int bit);
 
-#define GPIOA_bank_bit0_27(bit)     (PREG_PAD_GPIO0)
-#define GPIOA_bit_bit0_27(bit)      (bit)
+#define GPIOX_bank_bit0_27(bit)     (PREG_PAD_GPIO4)
+#define GPIOX_bit_bit0_27(bit)      (bit)
 
-#define GPIOB_bank_bit0_23(bit)     (PREG_PAD_GPIO1)
-#define GPIOB_bit_bit0_23(bit)      (bit)
+#define GPIOBOOT_bank_bit0_18(bit)  (PREG_PAD_GPIO2)
+#define GPIOBOOT_bit_bit0_18(bit)   (bit)
 
-#define GPIOC_bank_bit0_15(bit)     (PREG_PAD_GPIO2)
-#define GPIOC_bit_bit0_15(bit)      (bit)
+#define GPIOH_bank_bit0_10(bit)     (PREG_PAD_GPIO1)
+#define GPIOH_bit_bit0_10(bit)      (bit + 16)
 
-#define GPIOAO_bank_bit0_11(bit)    (PREG_PAD_GPIOAO)
-#define GPIOAO_bit_bit0_11(bit)     (bit)
+#define GPIOZ_bank_bit0_20(bit)     (PREG_PAD_GPIO3)
+#define GPIOZ_bit_bit0_20(bit)      (bit)
 
-#define GPIOD_bank_bit0_9(bit)      (PREG_PAD_GPIO2)
-#define GPIOD_bit_bit0_9(bit)       (bit+16)
+#define GPIOW_bank_bit0_20(bit)     (PREG_PAD_GPIO0)
+#define GPIOW_bit_bit0_20(bit)      (bit)
 
-#define GPIOCARD_bank_bit0_8(bit)   (PREG_PAD_GPIO5)
-#define GPIOCARD_bit_bit0_8(bit)    (bit+23)
+#define GPIOAO_bank_bit0_13(bit)    (PREG_PAD_GPIOAO)
+#define GPIOAO_bit_bit0_13(bit)     (bit)
 
-#define GPIOBOOT_bank_bit0_17(bit)  (PREG_PAD_GPIO3)
-#define GPIOBOOT_bit_bit0_17(bit)   (bit)
+#define GPIOCARD_bank_bit0_8(bit)   (PREG_PAD_GPIO2)
+#define GPIOCARD_bit_bit0_8(bit)    (bit+20)
 
-#define GPIOX_bank_bit0_31(bit)     (PREG_PAD_GPIO4)
-#define GPIOX_bit_bit0_31(bit)      (bit)
+#define GPIOY_bank_bit0_13(bit)     (PREG_PAD_GPIO1)
+#define GPIOY_bit_bit0_13(bit)      (bit)
 
-#define GPIOX_bank_bit32_35(bit)    (PREG_PAD_GPIO3)
-#define GPIOX_bit_bit32_35(bit)     (bit+20)
-
-#define GPIOY_bank_bit0_22(bit)     (PREG_PAD_GPIO5)
-#define GPIOY_bit_bit0_22(bit)      (bit)
-
-#define GPIOZ_bank_bit0_12(bit)     (PREG_PAD_GPIO6)
-#define GPIOZ_bit_bit0_12(bit)      (bit)
-
-#define GPIOP_bank_bit0_7(bit)     (PREG_PAD_GPIO1)
-#define GPIOP_bit_bit0_7(bit)      (bit+23)
 
 /**
  * enable gpio edge interrupt
@@ -96,146 +85,153 @@ extern int gpio_direction_output(unsigned gpio, int value);
 extern void gpio_set_value(unsigned gpio, int value);
 extern int gpio_get_value(unsigned gpio);
 typedef enum {
-	GPIOAO_0=0,
-	GPIOAO_1=1,
-	GPIOAO_2=2,
-	GPIOAO_3=3,
-	GPIOAO_4=4,
-	GPIOAO_5=5,
-	GPIOAO_6=6,
-	GPIOAO_7=7,
-	GPIOAO_8=8,
-	GPIOAO_9=9,
-	GPIOAO_10=10,
-	GPIOAO_11=11,
-	GPIOAO_12=12,
-	GPIOAO_13=13,
-	GPIOH_0=14,
-	GPIOH_1=15,
-	GPIOH_2=16,
-	GPIOH_3=17,
-	GPIOH_4=18,
-	GPIOH_5=19,
-	GPIOH_6=20,
-	GPIOH_7=21,
-	GPIOH_8=22,
-	GPIOH_9=23,
-	BOOT_0=24,
-	BOOT_1=25,
-	BOOT_2=26,
-	BOOT_3=27,
-	BOOT_4=28,
-	BOOT_5=29,
-	BOOT_6=30,
-	BOOT_7=31,
-	BOOT_8=32,
-	BOOT_9=33,
-	BOOT_10=34,
-	BOOT_11=35,
-	BOOT_12=36,
-	BOOT_13=37,
-	BOOT_14=38,
-	BOOT_15=39,
-	BOOT_16=40,
-	BOOT_17=41,
-	BOOT_18=42,
-	CARD_0=43,
-	CARD_1=44,
-	CARD_2=45,
-	CARD_3=46,
-	CARD_4=47,
-	CARD_5=48,
-	CARD_6=49,
-	GPIODV_0=50,
-	GPIODV_1=51,
-	GPIODV_2=52,
-	GPIODV_3=53,
-	GPIODV_4=54,
-	GPIODV_5=55,
-	GPIODV_6=56,
-	GPIODV_7=57,
-	GPIODV_8=58,
-	GPIODV_9=59,
-	GPIODV_10=60,
-	GPIODV_11=61,
-	GPIODV_12=62,
-	GPIODV_13=63,
-	GPIODV_14=64,
-	GPIODV_15=65,
-	GPIODV_16=66,
-	GPIODV_17=67,
-	GPIODV_18=68,
-	GPIODV_19=69,
-	GPIODV_20=70,
-	GPIODV_21=71,
-	GPIODV_22=72,
-	GPIODV_23=73,
-	GPIODV_24=74,
-	GPIODV_25=75,
-	GPIODV_26=76,
-	GPIODV_27=77,
-	GPIODV_28=78,
-	GPIODV_29=79,
-	GPIOY_0=80,
-	GPIOY_1=81,
-	GPIOY_2=82,
-	GPIOY_3=83,
-	GPIOY_4=84,
-	GPIOY_5=85,
-	GPIOY_6=86,
-	GPIOY_7=87,
-	GPIOY_8=88,
-	GPIOY_9=89,
-	GPIOY_10=90,
-	GPIOY_11=91,
-	GPIOY_12=92,
-	GPIOY_13=93,
-	GPIOY_14=94,
-	GPIOY_15=95,
-	GPIOY_16=96,
-	GPIOX_0=97,
-	GPIOX_1=98,
-	GPIOX_2=99,
-	GPIOX_3=100,
-	GPIOX_4=101,
-	GPIOX_5=102,
-	GPIOX_6=103,
-	GPIOX_7=104,
-	GPIOX_8=105,
-	GPIOX_9=106,
-	GPIOX_10=107,
-	GPIOX_11=108,
-	GPIOX_12=109,
-	GPIOX_13=110,
-	GPIOX_14=111,
-	GPIOX_15=112,
-	GPIOX_16=113,
-	GPIOX_17=114,
-	GPIOX_18=115,
-	GPIOX_19=116,
-	GPIOX_20=117,
-	GPIOX_21=118,
-	DIF_TTL_0_P=119,
-	DIF_TTL_0_N=120,
-	DIF_TTL_1_P=121,
-	DIF_TTL_1_N=122,
-	DIF_TTL_2_P=123,
-	DIF_TTL_2_N=124,
-	DIF_TTL_3_P=125,
-	DIF_TTL_3_N=126,
-	DIF_TTL_4_P=127,
-	DIF_TTL_4_N=128,
-	HDMI_TTL_0_P=129,
-	HDMI_TTL_0_N=130,
-	HDMI_TTL_1_P=131,
-	HDMI_TTL_1_N=132,
-	HDMI_TTL_2_P=133,
-	HDMI_TTL_2_N=134,
-	HDMI_TTL_CK_P=135,
-	HDMI_TTL_CK_N=136,
-	GPIO_BSD_EN=137,
-	GPIO_TEST_N=138,
-	GPIO_MAX=139,
+	GPIOX_0		=	0,
+	GPIOX_1		=	1,
+	GPIOX_2		=	2,
+	GPIOX_3		=	3,
+	GPIOX_4		=	4,
+	GPIOX_5		=	5,
+	GPIOX_6		=	6,
+	GPIOX_7		=	7,
+	GPIOX_8		=	8,
+	GPIOX_9		=	9,
+	GPIOX_10	=	10,
+	GPIOX_11	=	11,
+	GPIOX_12	=	12,
+	GPIOX_13	=	13,
+	GPIOX_14	=	14,
+	GPIOX_15	=	15,
+	GPIOX_16	=	16,
+	GPIOX_17	=	17,
+	GPIOX_18	=	18,
+	GPIOX_19	=	19,
+	GPIOX_20	=	20,
+	GPIOX_21	=	21,
+	GPIOX_22	=	22,
+	GPIOX_23	=	23,
+	GPIOX_24	=	24,
+	GPIOX_25	=	25,
+	GPIOX_26	=	26,
+	GPIOX_27	=	27,
+
+	BOOT_0		=	28,
+	BOOT_1		=	29,
+	BOOT_2		=	30,
+	BOOT_3		=	31,
+	BOOT_4		=	32,
+	BOOT_5		=	33,
+	BOOT_6		=	34,
+	BOOT_7		=	35,
+	BOOT_8		=	36,
+	BOOT_9		=	37,
+	BOOT_10		=	38,
+	BOOT_11		=	39,
+	BOOT_12		=	40,
+	BOOT_13		=	41,
+	BOOT_14		=	42,
+	BOOT_15		=	43,
+	BOOT_16		=	44,
+	BOOT_17		=	45,
+	BOOT_18		=	46,
+
+	GPIOH_0		=	47,
+	GPIOH_1		=	48,
+	GPIOH_2		=	49,
+	GPIOH_3		=	50,
+	GPIOH_4		=	51,
+	GPIOH_5		=	52,
+	GPIOH_6		=	53,
+	GPIOH_7		=	54,
+	GPIOH_8		=	55,
+	GPIOH_9		=	56,
+	GPIOH_10	=	57,
+
+	GPIOZ_0		=	58,
+	GPIOZ_1		=	59,
+	GPIOZ_2		=	60,
+	GPIOZ_3		=	61,
+	GPIOZ_4		=	62,
+	GPIOZ_5		=	63,
+	GPIOZ_6		=	64,
+	GPIOZ_7		=	65,
+	GPIOZ_8		=	66,
+	GPIOZ_9		=	67,
+	GPIOZ_10	=	68,
+	GPIOZ_11	=	69,
+	GPIOZ_12	=	70,
+	GPIOZ_13	=	71,
+	GPIOZ_14	=	72,
+	GPIOZ_15	=	73,
+	GPIOZ_16	=	74,
+	GPIOZ_17	=	75,
+	GPIOZ_18	=	76,
+	GPIOZ_19	=	77,
+	GPIOZ_20	=	78,
+
+	GPIOW_0		=	79,
+	GPIOW_1		=	80,
+	GPIOW_2		=	81,
+	GPIOW_3		=	82,
+	GPIOW_4		=	83,
+	GPIOW_5		=	84,
+	GPIOW_6		=	85,
+	GPIOW_7		=	86,
+	GPIOW_8		=	87,
+	GPIOW_9		=	88,
+	GPIOW_10	=	89,
+	GPIOW_11	=	90,
+	GPIOW_12	=	91,
+	GPIOW_13	=	92,
+	GPIOW_14	=	93,
+	GPIOW_15	=	94,
+	GPIOW_16	=	95,
+	GPIOW_17	=	96,
+	GPIOW_18	=	97,
+	GPIOW_19	=	98,
+	GPIOW_20	=	99,
+
+	GPIOAO_0	=	100,
+	GPIOAO_1	=	101,
+	GPIOAO_2	=	102,
+	GPIOAO_3	=	103,
+	GPIOAO_4	=	104,
+	GPIOAO_5	=	105,
+	GPIOAO_6	=	106,
+	GPIOAO_7	=	107,
+	GPIOAO_8	=	108,
+	GPIOAO_9	=	109,
+	GPIOAO_10	=	110,
+	GPIOAO_11	=	111,
+	GPIOAO_12	=	112,
+	GPIOAO_13	=	113,
+
+	CARD_0		=	114,
+	CARD_1		=	115,
+	CARD_2		=	116,
+	CARD_3		=	117,
+	CARD_4		=	118,
+	CARD_5		=	119,
+	CARD_6		=	120,
+	CARD_7		=	121,
+	CARD_8		=	122,
+
+	GPIOY_0		=	123,
+	GPIOY_1		=	124,
+	GPIOY_2		=	125,
+	GPIOY_3		=	126,
+	GPIOY_4		=	127,
+	GPIOY_5		=	128,
+	GPIOY_6		=	129,
+	GPIOY_7		=	130,
+	GPIOY_8		=	131,
+	GPIOY_9		=	132,
+	GPIOY_10	=	133,
+	GPIOY_11	=	134,
+	GPIOY_12	=	135,
+	GPIOY_13	=	136,
+
+	GPIO_TEST_N =   137,
+	GPIO_MAX	=	138,
 }gpio_t;
 
 #endif
