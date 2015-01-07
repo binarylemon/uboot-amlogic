@@ -713,10 +713,10 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	no_rb = license & LICENSE_NAND_USE_RB_PIN ? 0 : 1;
 #endif
 	    // pull up enable
-	setbits_le32(P_PAD_PULL_UP_EN_REG2, 0x84ff);
+	setbits_le32(P_PAD_PULL_UP_EN_REG2, 0x85ff);
 
     // pull direction, dqs pull down
-	setbits_le32(P_PAD_PULL_UP_REG2, 0x0400);
+	setbits_le32(P_PAD_PULL_UP_REG2, 0x0500);
 	
 	//default CE0 is enable
 	setbits_le32(P_PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
