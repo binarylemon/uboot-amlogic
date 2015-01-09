@@ -64,7 +64,7 @@ static void inline  nand_get_chip(void )
 
 #ifdef CONFIG_NAND_AML_M8
 	// pull up enable
-	   SET_CBUS_REG_MASK(PAD_PULL_UP_EN_REG2, 0x85fe);	//leave bit0 for bsd_en
+	   SET_CBUS_REG_MASK(PAD_PULL_UP_EN_REG2, 0x85ff);
 	// pull direction, dqs pull down
 	   SET_CBUS_REG_MASK(PAD_PULL_UP_REG2, 0x0500);
 	   SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
