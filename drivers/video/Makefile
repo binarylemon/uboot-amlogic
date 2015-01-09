@@ -61,7 +61,6 @@ COBJS-$(CONFIG_VIDEO_AML) += aml_video.o \
 	osd/osd_hw.o
 endif
 COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/aml_lcd.o
-COBJS-$(CONFIG_VIDEO_AMLLCD) += lcd/lcdoutc.o
 COBJS-$(CONFIG_AML_LCD_EXTERN) += lcd/lcd_extern/lcd_extern.o
 COBJS-$(CONFIG_AML_LCD_EXTERN_I2C_TC101) += lcd/lcd_extern/i2c_tc101.o
 COBJS-$(CONFIG_AML_LCD_EXTERN_EDP_ANX6345) += lcd/lcd_extern/edp_anx6345.o

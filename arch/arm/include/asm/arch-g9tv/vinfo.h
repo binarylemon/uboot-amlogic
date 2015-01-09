@@ -28,25 +28,67 @@
 //the MSB is represent vmode set by logo
 #define	VMODE_LOGO_BIT_MASK	0x8000	
 #define	VMODE_MODE_BIT_MASK	0xff		
+
 typedef enum {
     VMODE_480I  = 0,
-    VMODE_480CVBS,		
+    VMODE_480I_RPT  ,
+    VMODE_480CVBS,
     VMODE_480P  ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION    
+    VMODE_480P_59HZ,// for framerate automation 480p 59.94hz
+#endif   
+    VMODE_480P_RPT  ,
     VMODE_576I   ,
+    VMODE_576I_RPT  ,
     VMODE_576CVBS   ,
     VMODE_576P  ,
+    VMODE_576P_RPT  ,
     VMODE_720P  ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+	VMODE_720P_59HZ , // for framerate automation 720p 59.94hz
+#endif
     VMODE_1080I ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+    VMODE_1080I_59HZ , // for framerate automation 1080i 59.94hz
+#endif   
     VMODE_1080P ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+	VMODE_1080P_59HZ , // for framerate automation 1080p 59.94hz
+#endif
     VMODE_720P_50HZ ,
     VMODE_1080I_50HZ ,
     VMODE_1080P_50HZ ,
     VMODE_1080P_24HZ ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+	VMODE_1080P_23HZ , // for framerate automation 1080p 23.97hz
+#endif
+    VMODE_4K2K_30HZ ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+	VMODE_4K2K_29HZ , // for framerate automation 4k2k 29.97hz
+#endif
+    VMODE_4K2K_25HZ ,
+    VMODE_4K2K_24HZ ,
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
+	VMODE_4K2K_23HZ , // for framerate automation 4k2k 23.97hz
+#endif
+    VMODE_4K2K_SMPTE,
+    VMODE_4K2K_FAKE_5G,   // timing same as 4k2k30hz, Vsync from 30hz to 50hz
+    VMODE_4K2K_60HZ,	  // timing same as 4k2k30hz, Vsync from 30hz to 60hz
+    VMODE_4K2K_60HZ_Y420,
+    VMODE_4K2K_50HZ,	  // timing same as 4k2k25hz, Vsync from 25hz to 50hz
+    VMODE_4K2K_50HZ_Y420,
+    VMODE_4K2K_5G,
     VMODE_VGA,
     VMODE_SVGA,
     VMODE_XGA,
     VMODE_SXGA,
-    VMODE_LCD	,
+    VMODE_WSXGA,
+    VMODE_FHDVGA,
+    VMODE_LCD,
+    VMODE_LVDS_1080P,
+    VMODE_LVDS_1080P_50HZ,
+    VMODE_LVDS_768P,
+    VMODE_VX1_4K2K_60HZ,
     VMODE_MAX,
     VMODE_INIT_NULL,
     VMODE_MASK = 0xFF,

@@ -29,7 +29,7 @@
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
-//#define CONFIG_VIDEO_AMLLCD
+#define CONFIG_VIDEO_AMLLCD
 #define LCD_BPP LCD_COLOR16
 
 //Enable switch boot mode
@@ -174,12 +174,12 @@
 	"boardname=g9tv_board\0" \
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
-	"outputmode=1080p\0" \
+	"outputmode=lvds1080p\0" \
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
-    "video_dev=tvout\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"video_dev=panel\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
@@ -211,10 +211,10 @@
 		"\0"\
     \
     "storeargs="\
-        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded \0"\
+        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded vmode=${outputmode} \0"\
     \
     "prepare="\
-        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
+        "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "bmp display ${bootup_offset}; "\
         "\0"\

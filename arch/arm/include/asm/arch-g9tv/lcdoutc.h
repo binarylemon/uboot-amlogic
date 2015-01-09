@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
  *
  * Author:  Tim Yao <timyao@amlogic.com>
- * Modify:  Evoke Zhang <evoke.zhang@amlogic.com>
+ *
  */
 
 #ifndef LCDOUTC_H
@@ -25,7 +25,6 @@
 #include <common.h>
 #include <linux/list.h>
 #include <amlogic/aml_lcd.h>
-#include <asm/arch/aml_lcd_gpio.h>
 
 /* for GAMMA_CNTL_PORT */
    /// GAMMA VCOM POL
@@ -122,204 +121,88 @@
    #define LCD_RES                  3
    #define LCD_LVDS_PORT_SWP        2
    #define LCD_PACK_RVS             1
-   #define LCD_PACK_LITTLE          0   
-   
-/* for video encoder */
-	#define MIPI_DELAY				2
-	#define LVDS_DELAY				8
-	#define EDP_DELAY				8
-	#define TTL_DELAY				19
-
-//********************************************//
-// for clk parameter auto generation
-//********************************************//
-//**** clk parameters bit ***/
-	#define PLL_CTRL_LOCK			31
-	#define PLL_CTRL_EN				30
-	#define PLL_CTRL_RST			29
-	#define PLL_CTRL_OD				9	//[10:9]
-	#define PLL_CTRL_N				24	//[28:24]
-	#define PLL_CTRL_M				0	//[8:0]
-
-	#define DIV_CTRL_EDP_DIV1		24	//[26:24]
-	#define DIV_CTRL_EDP_DIV0		20	//[23:20]
-	#define DIV_CTRL_DIV_POST		12	//[14:12]
-	#define DIV_CTRL_LVDS_CLK_EN	11
-	#define DIV_CTRL_PHY_CLK_DIV2	10
-	#define DIV_CTRL_POST_SEL		8	//[9:8]
-	#define	DIV_CTRL_DIV_PRE		4	//[6:4]
-
-	#define CLK_CTRL_AUTO			31
-	#define CLK_TEST_FLAG			30
-	#define CLK_CTRL_FRAC			16	//[27:16]
-	#define CLK_CTRL_LEVEL			12	//[14:12]
-	//#define CLK_CTRL_PLL_SEL		10
-	//#define CLK_CTRL_DIV_SEL		9
-	#define CLK_CTRL_VCLK_SEL		8
-	#define CLK_CTRL_SS				4	//[7:4]
-	#define CLK_CTRL_XD				0	//[3:0]
-	
-	#define PLL_WAIT_LOCK_CNT		200
-
-/**** clk frequency limit ***/
-	/* PLL */
-	#define FIN_FREQ				(24 * 1000)
-	#define PLL_M_MIN				2
-	#define PLL_M_MAX				511
-	#define PLL_N_MIN				1
-	#define PLL_N_MAX				1
-	
-	#define PLL_FREF_MIN			(5 * 1000)
-	#define PLL_FREF_MAX			(25 * 1000)
-	#define PLL_VCO_MIN				(1200 * 1000)
-	#define PLL_VCO_MAX				(3000 * 1000)
-	/* MIPI-DSI PHY */
-	#define MIPI_PHY_MAX_CLK_IN		(1000 * 1000)
-	/* VID_DIV */
-	#define DIV_PRE_MAX_CLK_IN		(1500 * 1000)
-	#define DIV_POST_MAX_CLK_IN		(1000 * 1000)
-	/* CRT_VIDEO */
-	#define CRT_VID_MAX_CLK_IN		(1300 * 1000)
-	/* ENCL */
-	#define ENCL_MAX_CLK_IN			(333 * 1000)
-	/* lcd interface video clk */
-	#define MIPI_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
-	#define LVDS_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
-	#define EDP_MAX_VID_CLK_IN		(235 * 1000)
-	#define TTL_MAX_VID_CLK_IN		ENCL_MAX_CLK_IN
-	/* clk max error */
-	#define MAX_ERROR				(2 * 1000)
-
-#define CRT_VID_DIV_MAX				15
-#define OD_SEL_MAX					4
-#define DIV_PRE_SEL_MAX				6
-#define EDP_DIV0_SEL_MAX			15
-#define EDP_DIV1_SEL_MAX			8
-
-static const unsigned od_table[OD_SEL_MAX] = {1,2,4,8};
-static const unsigned div_pre_table[DIV_PRE_SEL_MAX] = {1,2,3,4,5,6};
-static const unsigned edp_div0_table[EDP_DIV0_SEL_MAX]={1,2,3,4,5,7,8,9,11,13,17,19,23,29,31};
-static const unsigned edp_div1_table[EDP_DIV1_SEL_MAX]={1,2,4,5,6,7,9,13};
-//********************************************//
-	
-/* for lcd power on/off config */
-typedef enum
-{
-    LCD_POWER_TYPE_CPU = 0,
-    LCD_POWER_TYPE_PMU,
-	LCD_POWER_TYPE_SIGNAL,
-	LCD_POWER_TYPE_INITIAL,
-    LCD_POWER_TYPE_MAX,
-} Lcd_Power_Type_t;
-#define LCD_POWER_TYPE_NULL			LCD_POWER_TYPE_MAX
+   #define LCD_PACK_LITTLE          0
 
 typedef enum
 {
-	LCD_POWER_PMU_GPIO0 = 0,
-	LCD_POWER_PMU_GPIO1,
-	LCD_POWER_PMU_GPIO2,
-	LCD_POWER_PMU_GPIO3,
-	LCD_POWER_PMU_GPIO4,
-	LCD_POWER_PMU_GPIO_MAX,
-} Lcd_Power_Pmu_Gpio_t;
-
-#define	LCD_POWER_GPIO_OUTPUT_LOW	0
-#define	LCD_POWER_GPIO_OUTPUT_HIGH	1
-#define	LCD_POWER_GPIO_INPUT		2
-
-static const char* lcd_power_type_table[]={
-	"cpu",
-	"pmu",
-	"signal",
-	"init",
-	"null",
-};
-
-static const char* lcd_power_pmu_gpio_table[]={
-	"GPIO0",
-	"GPIO1",
-	"GPIO2",
-	"GPIO3",
-	"GPIO4",
-	"null",
-}; 
-
-typedef enum
-{
-	LCD_DIGITAL_MIPI = 0,
-	LCD_DIGITAL_LVDS = 1,
-	LCD_DIGITAL_EDP = 2,
-	LCD_DIGITAL_TTL = 3,
-	//LCD_DIGITAL_MINILVDS = 4,
-	LCD_TYPE_MAX,
+    LCD_NULL = 0,
+    LCD_DIGITAL_TTL,
+    LCD_DIGITAL_LVDS,
+    LCD_DIGITAL_MINILVDS,
+    LCD_DIGITAL_VBYONE,
+    LCD_TYPE_MAX,
 } Lcd_Type_t;
 
-static const char* lcd_type_table[]={
-	"MIPI",
-	"LVDS",
-	"eDP",
-	"TTL",
-	//"miniLVDS",
-	"invalid",
-};
-
-static const char* lcd_type_table_match[]={
-	"mipi",
-	"lvds",
-	"edp",
-	"ttl",
-	//"minilvds",
-	"invalid",
-};
-
-#define SS_LEVEL_MAX	5
-static const char *lcd_ss_level_table[]={
-	"0",
-	"0.5%",
-	"1%",
-	"1.5%",
-	"2%",
-};
-
-#define PANEL_MODEL_DEFAULT	"Panel_Default"
 typedef struct {
-	char *model_name;
+    int channel_num;
+    int hv_sel;
+    int tcon_1st_hs_addr;
+    int tcon_1st_he_addr;
+    int tcon_1st_vs_addr;
+    int tcon_1st_ve_addr;
+    int tcon_2nd_hs_addr;
+    int tcon_2nd_he_addr;
+    int tcon_2nd_vs_addr;
+    int tcon_2nd_ve_addr;
+} Mlvds_Tcon_Config_t;
+
+typedef struct {
+	unsigned int lvds_prem_ctl;
+    unsigned int lvds_swing_ctl;
+    unsigned int lvds_vcm_ctl;
+    unsigned int lvds_ref_ctl;
+    unsigned int lvds_phy_ctl0;
+    unsigned int lvds_fifo_wr_mode;
+} Lvds_Phy_Control_t;
+
+typedef struct {
+    int mlvds_insert_start;
+    int total_line_clk;
+    int test_dual_gate;
+    //int test_bit_num;
+    int test_pair_num;
+//  int set_mlvds_pinmux;
+    int phase_select;
+    int TL080_phase;
+    //Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
+    //Lvds_Phy_Control_t *lvds_phy_control;
+    int scan_function;
+} Mlvds_Config_t;
+
+typedef struct {
+    int lvds_repack;
+    int pn_swap;
+    int dual_port;
+    int port_reverse;
+    //int bit_num;
+    //Lvds_Phy_Control_t *lvds_phy_control;
+} Lvds_Config_t;
+
+// Refer to LCD Spec
+typedef struct {
     u16 h_active;   	// Horizontal display area
     u16 v_active;     	// Vertical display area
     u16 h_period;       // Horizontal total period time
     u16 v_period;       // Vertical total period time
-    u32 screen_ratio_width;      // screen aspect ratio width 
-    u32 screen_ratio_height;     // screen aspect ratio height 
-    u32 h_active_area;/* screen physical width in "mm" unit */
-    u32 v_active_area;/* screen physical height in "mm" unit */
+    u16 screen_ratio_width;      // screen aspect ratio width
+    u16 screen_ratio_height;     // screen aspect ratio height
+    u32 screen_actual_width;/* screen physical width in "mm" unit */
+    u32 screen_actual_height;/* screen physical height in "mm" unit */
 
-    Lcd_Type_t lcd_type;
+    Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
     u16 lcd_bits;         // 6 or 8 bits
-	u16 lcd_bits_option;  //option=0, means the panel only support one lcd_bits option
 }Lcd_Basic_t;
 
 typedef struct {
+	//u16 clk_source;		 /*video pll clock, must be multiple of 12, from 384~744*/
     u32 pll_ctrl;        /* video PLL settings */
     u32 div_ctrl;        /* video pll div settings */
-	u32 clk_ctrl;        /* video clock settings */  //[20]clk_auto, [19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
-	u32 lcd_clk;		/* lcd clock*/
+	u32 clk_ctrl;        /* video clock settings */  //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
     u16 sync_duration_num;
     u16 sync_duration_den;
-	
+
 	u16 video_on_pixel;
     u16 video_on_line;
-	
-	u16 hsync_width;
-	u16 hsync_bp;
-	u16 vsync_width;
-	u16 vsync_bp;
-	u16 hvsync_valid;
-	u16 de_hstart;
-	u16 de_vstart;
-	u16 de_valid;
-	u32 vsync_h_phase; //[31]sign [15:0]value
-	u32 h_offset;
-	u32 v_offset;
 
     u16 sth1_hs_addr;
     u16 sth1_he_addr;
@@ -331,28 +214,29 @@ typedef struct {
     u16 oeh_vs_addr;
     u16 oeh_ve_addr;
 
-    //u16 vcom_hswitch_addr;
-    //u16 vcom_vs_addr;
-    //u16 vcom_ve_addr;
+    u16 vcom_hswitch_addr;
+    u16 vcom_vs_addr;
+    u16 vcom_ve_addr;
 
-    //u16 cpv1_hs_addr;
-    //u16 cpv1_he_addr;
-    //u16 cpv1_vs_addr;
-    //u16 cpv1_ve_addr;
+    u16 cpv1_hs_addr;
+    u16 cpv1_he_addr;
+    u16 cpv1_vs_addr;
+    u16 cpv1_ve_addr;
 
     u16 stv1_hs_addr;
     u16 stv1_he_addr;
     u16 stv1_vs_addr;
     u16 stv1_ve_addr;
 
-    //u16 oev1_hs_addr;
-    //u16 oev1_he_addr;
-    //u16 oev1_vs_addr;
-    //u16 oev1_ve_addr;
+    u16 oev1_hs_addr;
+    u16 oev1_he_addr;
+    u16 oev1_vs_addr;
+    u16 oev1_ve_addr;
 
     u16 pol_cntl_addr;
     u16 inv_cnt_addr;
     u16 tcon_misc_sel_addr;
+    u16 dual_port_cntl_addr;
 } Lcd_Timing_t;
 
 // Fine Effect Tune
@@ -362,85 +246,24 @@ typedef struct {
 
     u16 rgb_base_addr;
     u16 rgb_coeff_addr;
-	u16 dith_user;
     u16 dith_cntl_addr;
 
-	u32 vadj_brightness;
-	u32 vadj_contrast;
-	u32 vadj_saturation;
-	
-	unsigned char gamma_revert;
-	u16 gamma_r_coeff;
-	u16 gamma_g_coeff;
-	u16 gamma_b_coeff;
+    s16 brightness[33];
+    s16 contrast[33];
+    s16 saturation[33];
+    s16 hue[33];
+
     u16 GammaTableR[256];
     u16 GammaTableG[256];
     u16 GammaTableB[256];
 } Lcd_Effect_t;
 
-//mipi dsi config
-#define DSI_INIT_ON_MAX              100
-#define DSI_INIT_OFF_MAX             30
-
-#define BIT_OPERATION_MODE_INIT      0
-#define BIT_OPERATION_MODE_DISP      4
-#define BIT_TRANS_CTRL_CLK           0
-#define BIT_TRANS_CTRL_SWITCH        4 //[5:4]
-typedef struct DSI_Config_s{
-    unsigned char lane_num;
-    unsigned int bit_rate_max;
-    unsigned int bit_rate_min;
-    unsigned int bit_rate;
-    unsigned int factor_denominator;
-    unsigned int factor_numerator;
-    unsigned int hline;
-    unsigned int hsa;
-    unsigned int hbp;
-    unsigned int vsa;
-    unsigned int vbp;
-    unsigned int vfp;
-    unsigned int vact;
-
-    unsigned int venc_data_width;
-    unsigned int dpi_data_format;
-    unsigned int venc_fmt;
-    unsigned int operation_mode;  //mipi-dsi operation mode: video, command. [4]display , [0]init
-    unsigned int transfer_ctrl;  //[0]LP mode auto stop clk lane, [5:4]phy switch between LP and HS
-    unsigned char video_mode_type;  //burst, non-burst(sync pulse, sync event)
-
-    unsigned char *dsi_init_on;
-    unsigned char *dsi_init_off;
-    unsigned char lcd_extern_init;
-}DSI_Config_t;
-
 typedef struct {
-	unsigned char link_user;
-	unsigned char lane_count;
-	unsigned char link_rate;
-	unsigned char link_adaptive;
-	unsigned char vswing;
-	unsigned char preemphasis;
-	unsigned int bit_rate;
-} EDP_Config_t;
-
-typedef struct {
-	unsigned lvds_vswing;
-	unsigned lvds_repack_user;
-	unsigned lvds_repack;
-	unsigned pn_swap;
-} LVDS_Config_t;
-
-typedef struct {
-	unsigned char rb_swap;
-	unsigned char bit_swap;
-} TTL_Config_t;
-
-typedef struct {
-	DSI_Config_t *mipi_config;
-	LVDS_Config_t *lvds_config;
-	EDP_Config_t *edp_config;
-	TTL_Config_t *ttl_config;
-} Lcd_Control_Config_t;
+	Lvds_Config_t *lvds_config;
+	Mlvds_Config_t *mlvds_config;
+	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
+	Lvds_Phy_Control_t *lvds_phy_control;
+} Lvds_Mlvds_Config_t;
 
 typedef enum {
     OFF = 0,
@@ -449,111 +272,23 @@ typedef enum {
 
 // Power Control
 typedef struct {
-	unsigned char type;
-	int gpio;
-	unsigned short value;
-	unsigned short delay;
-} Lcd_Power_Config_t;
-
-#define LCD_POWER_CTRL_STEP_MAX		15
-typedef struct {
-	Lcd_Power_Config_t power_on_uboot;
-	Lcd_Power_Config_t power_off_uboot;
-	Lcd_Power_Config_t power_on_config[LCD_POWER_CTRL_STEP_MAX];
-	Lcd_Power_Config_t power_off_config[LCD_POWER_CTRL_STEP_MAX];
-	int power_on_step;
-	int power_off_step;
+    int cur_bl_level;
+    void (*power_ctrl)(Bool_t status);
+    void (*backlight_ctrl)(Bool_t status);
+    unsigned (*get_bl_level)(void);
+    void (*set_bl_level)(unsigned bl_level);
+    int (*lcd_suspend)(void *args);
+    int (*lcd_resume)(void *args);
 } Lcd_Power_Ctrl_t;
 
 typedef struct {
     Lcd_Basic_t lcd_basic;
     Lcd_Timing_t lcd_timing;
     Lcd_Effect_t lcd_effect;
-	Lcd_Control_Config_t lcd_control;
+	Lvds_Mlvds_Config_t lvds_mlvds_config;
 	Lcd_Power_Ctrl_t lcd_power_ctrl;
 } Lcd_Config_t;
 
-Lcd_Config_t lcd_config_dft;
-
-//****************************************//
-// backlight control
-//****************************************//
-#define BL_LEVEL_MAX_DFT   			255
-#define BL_LEVEL_MIN_DFT   			10
-#define BL_LEVEL_OFF				1
-
-#define BL_LEVEL_MID_DFT    		128
-#define BL_LEVEL_MID_MAPPED_DFT		102
-
-#define BL_LEVEL_DFT				128
-
-typedef enum {
-	BL_CTL_GPIO = 0,
-	BL_CTL_PWM_NEGATIVE = 1,
-	BL_CTL_PWM_POSITIVE = 2,
-	BL_CTL_PWM_COMBO = 3,
-	BL_CTL_EXTERN = 4,
-	BL_CTL_MAX = 5,
-} BL_Ctrl_Method_t;
-
-static const char* bl_ctrl_method_table[]={
-	"gpio",
-	"pwm_negative",
-	"pwm_positive",
-	"pwm_combo",
-	"extern",
-	"null",
-};
-
-typedef enum {
-	BL_PWM_A = 0,
-	BL_PWM_B,
-	BL_PWM_C,
-	BL_PWM_D,
-	BL_PWM_MAX,
-} BL_PWM_t;
-
-typedef struct {
-	unsigned level_default;
-	unsigned level_mid;
-	unsigned level_mid_mapping;
-	unsigned level_min;
-	unsigned level_max;
-	unsigned short power_on_delay;
-	unsigned char method;
-	int gpio;
-	unsigned dim_max;
-	unsigned dim_min;
-	unsigned char pwm_port;
-	unsigned char pwm_gpio_used;
-	unsigned pwm_cnt;
-	unsigned pwm_pre_div;
-	unsigned pwm_max;
-	unsigned pwm_min;
-	
-	unsigned combo_level_switch;
-	unsigned char combo_high_port;
-	unsigned char combo_high_method;
-	unsigned char combo_low_port;
-	unsigned char combo_low_method;
-	unsigned combo_high_cnt;
-	unsigned combo_high_pre_div;
-	unsigned combo_high_duty_max;
-	unsigned combo_high_duty_min;
-	unsigned combo_low_cnt;
-	unsigned combo_low_pre_div;
-	unsigned combo_low_duty_max;
-	unsigned combo_low_duty_min;
-	
-	unsigned pinmux_set_num;
-	unsigned pinmux_set[5][2];
-	unsigned pinmux_clr_num;
-	unsigned pinmux_clr[5][2];
-} Lcd_Bl_Config_t;
-
-Lcd_Bl_Config_t bl_config_dft;
-//*************************************//
-
-extern void mdelay(unsigned long msec);
+Lcd_Config_t lcd_config;
 
 #endif /* LCDOUTC_H */

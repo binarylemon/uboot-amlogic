@@ -41,8 +41,6 @@
 #define VPU_REG_OFFSET(reg)  ((reg) << 2)
 #define VPU_REG_ADDR(reg)	 (IO_VPU_BUS_BASE + VPU_REG_OFFSET(reg))
 
-#define VCBUS_REG_OFFSET(reg)  ((reg) << 2)
-#define VCBUS_REG_ADDR(reg)      (IO_VPU_BUS_BASE + VCBUS_REG_OFFSET(reg))
 
 #define APB_REG_OFFSET(reg)  (reg)
 #define APB_REG_ADDR(reg)	 (IO_APB_BUS_BASE + APB_REG_OFFSET(reg))
