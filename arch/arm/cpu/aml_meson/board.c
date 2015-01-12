@@ -40,7 +40,11 @@ static void update_ddr_mmu_table(void)
 	for(nIndex = m6_offset ; nIndex < 0xc00;++nIndex)
 	{
 		if(nIndex< (ddr_size_ind + m6_offset))
+#ifdef CONFIG_MESON_TRUSTZONE
+			nSetting = (nIndex<<20)|(SEC_PROT_RW_RW | SEC_WB | SEC_S);
+#else
 			nSetting = (nIndex<<20)|(SEC_PROT_RW_RW | SEC_WB);
+#endif
 		else
 			nSetting = 0;
 		*(pVMMUTable+nIndex) = nSetting;
