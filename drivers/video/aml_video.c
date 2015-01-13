@@ -399,7 +399,15 @@ int video_scale_bitmap(void)
 	{
 		osd_index = 1;
 	}
+#ifdef CONFIG_OSD_SUPERSCALE_ENABLE
+	if ((aml_gdev.fb_width*2 != aml_gdev.winSizeX) || (aml_gdev.fb_height*2 != aml_gdev.winSizeY)) {
+		osd_enable_hw(1, osd_index);
+		return (-1);
+	}
+	osd_free_scale_mode_hw(osd_index, 2);
+#else
 	osd_free_scale_mode_hw(osd_index, 1);
+#endif
 	osd_set_free_scale_axis_hw(osd_index, 0,0,aml_gdev.fb_width-1,aml_gdev.fb_height-1);
 	osd_set_window_axis_hw(osd_index, 0,0,aml_gdev.winSizeX-1,aml_gdev.winSizeY-1);
 	osd_free_scale_enable_hw(osd_index, 0x10001);

@@ -70,6 +70,8 @@
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
 #define CONFIG_AML_HDMI_TX 1
+#define CONFIG_OSD_SCALE_ENABLE 1
+#define CONFIG_OSD_SUPERSCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -181,14 +183,16 @@
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
     "video_dev=tvout\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"display_width=3840\0" \
+	"display_height=2160\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"fb_width=1920\0" \
+	"fb_height=1080\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -222,7 +226,7 @@
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; "\
+        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\
