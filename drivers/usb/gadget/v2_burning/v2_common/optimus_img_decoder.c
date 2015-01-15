@@ -11,13 +11,11 @@
  */
 #include "../v2_burning_i.h"
 
-#define IMAGE_MAGIC	                0x27b51956	 /* Image Magic Number		*/
-#define VERSION                     0x0001
-
 #define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]
 //FIMXE:
-COMPILE_TYPE_CHK(128 == sizeof(ItemInfo), a);
-COMPILE_TYPE_CHK(64  == sizeof(AmlFirmwareImg_t), b);
+COMPILE_TYPE_CHK(128 == sizeof(ItemInfo_V1), _op_a);
+COMPILE_TYPE_CHK(576 == sizeof(ItemInfo_V2), __op_a2);
+COMPILE_TYPE_CHK(64  == sizeof(AmlFirmwareImg_t), __op_b);
 
 typedef struct _ImgSrcIf{
         unsigned        devIf;             //mmc/usb/store
@@ -36,12 +34,25 @@ COMPILE_TYPE_CHK(512  == sizeof(ImgSrcIf_t), bb);
 
 typedef struct _ImgInfo_s
 {
-        AmlFirmwareImg_t    imgHead;//Must begin align 512, or store read wiill exception
-        ItemInfo            itemInfo[MAX_ITEM_NUM];
-
         ImgSrcIf_t          imgSrcIf;
+        AmlFirmwareImg_t    imgHead;//Must begin align 512, or store read wiill exception
+        union               ItemInfo_u{
+                            ItemInfo_V1 v1[MAX_ITEM_NUM];
+                            ItemInfo_V2 v2[MAX_ITEM_NUM];
+        }itemInfo;
 
 }ImgInfo_t;
+
+typedef struct _AmlFirmwareItem0_s
+{
+    __u32           itemId;
+    __u32           fileType;           //image file type, sparse and normal
+    __u64           curoffsetInItem;    //current offset in the item
+    __u64           offsetInImage;      //item offset in the image
+    __u64           itemSz;             //item size in the image
+    const char*     itemMainType;
+    const char*     itemSubType;
+}ItemInfo;
 
 static int _hFile = -1;
 
@@ -49,21 +60,18 @@ static int _hFile = -1;
 //return value is a handle
 HIMAGE image_open(const char* interface, const char* device, const char* part, const char* imgPath)
 {
-    const int HeadSz = sizeof(ImgInfo_t);
-    ImgInfo_t* hImg = NULL;
+    const int HeadSz = sizeof(ImgInfo_t) - sizeof(ImgSrcIf_t);
+    ImgInfo_t* hImg = (ImgInfo_t*)OPTIMUS_BURN_PKG_HEAD_BUF_ADDR;
     int ret = 0;
     ImgSrcIf_t* pImgSrcIf = NULL;
+    unsigned imgVer = 0;
 
-    hImg = (ImgInfo_t*)malloc(HeadSz);
-    if(!hImg){
-        DWN_ERR("Fail to malloc %d\n", HeadSz);
-        return NULL;
-    }
     pImgSrcIf = &hImg->imgSrcIf;
     memset(pImgSrcIf, 0, sizeof(ImgSrcIf_t));
 
     if(!strcmp("store", interface))
     {
+            DWN_DBG("imgHead=0x%x, hImg=%p\n", (unsigned)&hImg->imgHead, hImg);
             ret = store_read_ops((u8*)part, (u8*)&hImg->imgHead, IMG_OFFSET_IN_PART, HeadSz);
             if(ret){
                     DWN_ERR("Fail to read image header.\n");
@@ -92,15 +100,16 @@ HIMAGE image_open(const char* interface, const char* device, const char* part, c
             pImgSrcIf->devAlignSz = do_fat_get_bytesperclust(pFile);
     }
 
-    
     if(IMAGE_MAGIC != hImg->imgHead.magic){
         DWN_ERR("error magic 0x%x\n", hImg->imgHead.magic);
         goto _err;
     }
-    if(VERSION != hImg->imgHead.version){
+    imgVer = hImg->imgHead.version;
+    if(AML_FRMWRM_VER_V1 !=  imgVer && AML_FRMWRM_VER_V2 != imgVer){
         DWN_ERR("error verison 0x%x\n", hImg->imgHead.version);
         goto _err; 
     }
+    DWN_MSG("image version [0x%8x]\n", imgVer);
     if(MAX_ITEM_NUM < hImg->imgHead.itemNum){
             DWN_ERR("max itemNum(%d)<actual itemNum (%d)\n", MAX_ITEM_NUM, hImg->imgHead.itemNum);
             goto _err;
@@ -108,7 +117,6 @@ HIMAGE image_open(const char* interface, const char* device, const char* part, c
 
     return hImg;
 _err:
-    free(hImg); 
     return NULL;
 }
 
@@ -121,10 +129,51 @@ int image_close(HIMAGE hImg)
     if(_hFile >= 0)do_fat_fclose(_hFile), _hFile = -1;
 
     if(hImg){
-        free(hImg); 
         hImg = NULL;
     }
     return 0;
+}
+
+static const ItemInfo* image_item_get_item_info_byid(HIMAGE hImg, const int itemIndex)
+{
+        ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
+        const unsigned imgVer = imgInfo->imgHead.version;
+        static ItemInfo theItem;
+
+        switch(imgVer)
+        {
+                case AML_FRMWRM_VER_V2:
+                        {
+                                ItemInfo_V2* pItem = &imgInfo->itemInfo.v2[itemIndex];
+                                theItem.itemMainType    = pItem->itemMainType;
+                                theItem.itemSubType     = pItem->itemSubType;
+                                theItem.itemSz          = pItem->itemSz;
+                                theItem.offsetInImage   = pItem->offsetInImage;
+                                theItem.curoffsetInItem = pItem->curoffsetInItem;
+                                theItem.fileType        = pItem->fileType;
+                                theItem.itemId          = pItem->itemId;
+                        }
+                        break;
+
+                case AML_FRMWRM_VER_V1:
+                        {
+                                ItemInfo_V1* pItem = &imgInfo->itemInfo.v1[itemIndex];
+                                theItem.itemMainType    = pItem->itemMainType;
+                                theItem.itemSubType     = pItem->itemSubType;
+                                theItem.itemSz          = pItem->itemSz;
+                                theItem.offsetInImage   = pItem->offsetInImage;
+                                theItem.curoffsetInItem = pItem->curoffsetInItem;
+                                theItem.fileType        = pItem->fileType;
+                                theItem.itemId          = pItem->itemId;
+                        }
+                        break;
+
+                default:
+                        DWN_ERR("Exception, imgVer=0x%x\n", imgVer);
+                        return NULL;
+        }
+
+        return &theItem;
 }
 
 //open a item in the image
@@ -132,17 +181,23 @@ int image_close(HIMAGE hImg)
 //@mainType, @subType: main type and subtype to index the item, such as ["IMAGE", "SYSTEM"]
 HIMAGEITEM image_item_open(HIMAGE hImg, const char* mainType, const char* subType)
 {
-    ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
-    const int itemNr = imgInfo->imgHead.itemNum;
-    ItemInfo* pItem = imgInfo->itemInfo;
+    ImgInfo_t* imgInfo          = (ImgInfo_t*)hImg;
+    const int itemNr            = imgInfo->imgHead.itemNum;
+    const ItemInfo*      pItem  = NULL;
     int i = 0;
 
-    for (; i < itemNr ;i++, pItem++)
+    for (; i < itemNr ;i++)
     {
-        if (!strcmp(mainType, pItem->itemMainType) && !strcmp(subType, pItem->itemSubType))
-        {
-            break;
-        }
+            pItem = image_item_get_item_info_byid(hImg, i);
+            if(!pItem){
+                    DWN_ERR("Fail to get item at index %d\n", i);
+                    return NULL;
+            }
+
+            if (!strcmp(mainType, pItem->itemMainType) && !strcmp(subType, pItem->itemSubType))
+            {
+                    break;
+            }
     }
     if(i >= itemNr){
         DWN_ERR("Can't find item [%s, %s]\n", mainType, subType);
@@ -165,7 +220,7 @@ HIMAGEITEM image_item_open(HIMAGE hImg, const char* mainType, const char* subTyp
     }
     imgInfo->imgSrcIf.itemCurSeekOffsetInImg = pItem->offsetInImage;
     
-    return pItem;
+    return (HIMAGEITEM)pItem;
 }
 
 //Need this if item offset in the image file is not aligned to bytesPerCluster of FAT
@@ -293,8 +348,13 @@ HIMAGEITEM get_item(HIMAGE hImg, int itemId)
 {
     int ret = 0;
     ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
-    ItemInfo* pItem    = imgInfo->itemInfo + itemId;
+    const ItemInfo* pItem    = NULL;
 
+    pItem = image_item_get_item_info_byid(hImg, itemId);
+    if(!pItem){
+            DWN_ERR("Fail to get item at index %d\n", itemId);
+            return NULL;
+    }
     if(itemId != pItem->itemId){
         DWN_ERR("itemid %d err, should %d\n", pItem->itemId, itemId);
         return NULL;
@@ -311,14 +371,18 @@ HIMAGEITEM get_item(HIMAGE hImg, int itemId)
     }
     imgInfo->imgSrcIf.itemCurSeekOffsetInImg = pItem->offsetInImage;
      
-    return pItem;
+    return (HIMAGEITEM)pItem;
 }
 
 int get_item_name(HIMAGE hImg, int itemId, const char** main_type, const char** sub_type)
 {
-    ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
-    ItemInfo* pItem    = imgInfo->itemInfo + itemId;
+    const ItemInfo* pItem    = NULL;
 
+    pItem = image_item_get_item_info_byid(hImg, itemId);
+    if(!pItem){
+            DWN_ERR("Fail to get item at index %d\n", itemId);
+            return __LINE__;
+    }
     if(itemId != pItem->itemId){
         DWN_ERR("itemid %d err, should %d\n", pItem->itemId, itemId);
         return __LINE__;
@@ -333,9 +397,13 @@ int get_item_name(HIMAGE hImg, int itemId, const char** main_type, const char** 
 
 __u64 image_get_item_size_by_index(HIMAGE hImg, const int itemId)
 {
-    ImgInfo_t* imgInfo = (ImgInfo_t*)hImg;
-    ItemInfo* pItem    = imgInfo->itemInfo + itemId;
+    const ItemInfo* pItem    = NULL;
 
+    pItem = image_item_get_item_info_byid(hImg, itemId);
+    if(!pItem){
+            DWN_ERR("Fail to get item at index %d\n", itemId);
+            return 0;
+    }
     if(itemId != pItem->itemId){
         DWN_ERR("itemid %d err, should %d\n", pItem->itemId, itemId);
         return __LINE__;

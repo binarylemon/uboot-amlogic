@@ -89,9 +89,13 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_SPARSE_IMG_FILL_VAL_BUF         (OPTIMUS_DOWNLOAD_SPARSE_INFO_FOR_VERIFY + OPTIMUS_DOWNLOAD_SPS_VERIFY_BACK_INFO_SZ)
 #define OPTIMUS_SPARSE_IMG_FILL_BUF_SZ          OPTIMUS_DOWNLOAD_SLOT_SZ
 
-//[Buffer 5] This buffer is used to cache logo resources for upgrading
+//[Buffer 5] This buffer to cache header of burning package when not usb burning
+#define OPTIMUS_BURN_PKG_HEAD_BUF_ADDR          (OPTIMUS_SPARSE_IMG_FILL_VAL_BUF + OPTIMUS_SPARSE_IMG_FILL_BUF_SZ)
+#define OPTIMUS_BURN_PKG_HEAD_BUF_SZ            (1U<<20)//1M should be enough!
+
+//[Buffer 6] This buffer is used to cache logo resources for upgrading
 ////buffer to display logo, 10M used now
-#define OPTIMUS_DOWNLOAD_DISPLAY_BUF            (OPTIMUS_SPARSE_IMG_FILL_VAL_BUF + OPTIMUS_DOWNLOAD_SLOT_SZ)
+#define OPTIMUS_DOWNLOAD_DISPLAY_BUF            (OPTIMUS_BURN_PKG_HEAD_BUF_ADDR + OPTIMUS_BURN_PKG_HEAD_BUF_SZ)
 #define OPTIMUS_DOWNLOAD_BUF_FREE_USE           (OPTIMUS_DOWNLOAD_DISPLAY_BUF + (10U<<20))//free buffer not used by downloading, 2 + 64 + 2 + 10 
 
 #define OPTIMUS_VFAT_IMG_WRITE_BACK_SZ          (OPTIMUS_DOWNLOAD_SLOT_SZ*1)//update complete alogrithm if change it
