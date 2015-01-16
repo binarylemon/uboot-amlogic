@@ -78,10 +78,13 @@ static void inline  nand_get_chip(void )
 }
 static void inline nand_release_chip(void)
 {
+	NFC_SEND_CMD_STANDBY(5);
 #ifdef CONFIG_NAND_AML_M8
 	//CLEAR_CBUS_REG_MASK(PAD_PULL_UP_EN_REG2, 0xf); //do not clear pull-up regs to keep cs0 high level.
 	//CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG2, 0x0400);
-	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
+	//CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
+	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x33f<<18) | (1<<17)));	//do not release cs0 & cs1
+	//todo make nand enter standby.
 #else
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5, ((1<<7) | (1 << 8) | (1 << 9)));
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3fF<<18) | (0X3 << 16)));

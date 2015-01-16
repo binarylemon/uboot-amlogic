@@ -533,6 +533,8 @@ struct hw_controller{
 	
 	void	(*get_usr_byte)(struct hw_controller *controller, unsigned char *oob_buf, unsigned char byte_num);		
 	void	(*set_usr_byte)(struct hw_controller *controller, unsigned char *oob_buf, unsigned char byte_num);
+	void	(*enter_standby)(struct hw_controller *controller);
+	
 };
 
 /*** nand chip operation function ***/
