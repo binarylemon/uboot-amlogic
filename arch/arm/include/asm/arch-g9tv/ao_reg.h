@@ -82,6 +82,8 @@
 #define P_AO_AHB2DDR_CNTL 		AOBUS_REG_ADDR(AO_AHB2DDR_CNTL)
 #define AO_TIMEBASE_CNTL			((0x00 << 10) | (0x19 << 2))
 #define P_AO_TIMEBASE_CNTL			AOBUS_REG_ADDR(AO_TIMEBASE_CNTL)
+#define AO_CRT_CLK_CNTL1			((0x00 << 10) | (0x1a << 2))
+#define P_AO_CRT_CLK_CNTL1			AOBUS_REG_ADDR(AO_CRT_CLK_CNTL1)
 #define AO_IRQ_MASK_FIQ_SEL ((0x00 << 10) | (0x20 << 2)) 	///../ucode/c_always_on_pointer.h:48
 #define P_AO_IRQ_MASK_FIQ_SEL 		AOBUS_REG_ADDR(AO_IRQ_MASK_FIQ_SEL)
 #define AO_IRQ_GPIO_REG ((0x00 << 10) | (0x21 << 2)) 	///../ucode/c_always_on_pointer.h:49

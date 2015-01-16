@@ -40,18 +40,17 @@ typedef enum
   ldr active = 9000 /31.25 = 288 
 */
 static const reg_remote RDECODEMODE_NEC[] ={
-	{P_AO_MF_IR_DEC_LDR_ACTIVE,477<<16 | 400<<0}, // NEC leader 9500us,max 477: (477* timebase = 31.25) = 9540 ;min 400 = 8000us
-	{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0}, // leader idle
-	{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16|110<<0},  // leader repeat
-	{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 }, // logic '0' or '00'
-	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},  // sys clock boby time.base time = 20 body frame 108ms
-	{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},  // logic '1' or '01'
-	{P_AO_MF_IR_DEC_REG1,0x9f40}, // boby long decode (8-13)
-	{P_AO_MF_IR_DEC_REG2,0x0},  // hard decode mode
-	{P_AO_MF_IR_DEC_DURATN2,0},
-	{P_AO_MF_IR_DEC_DURATN3,0},
-	{CONFIG_END,            0      }
-
+        {P_AO_MF_IR_DEC_LDR_ACTIVE,350<<16 |260<<0},
+        {P_AO_MF_IR_DEC_LDR_IDLE, 200<<16 | 120<<0}, 
+        {P_AO_MF_IR_DEC_LDR_REPEAT,100<<16 |70<<0},
+        {P_AO_MF_IR_DEC_BIT_0,50<<16|20<<0 },
+        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)}, 
+        {P_AO_MF_IR_DEC_STATUS,(100<<20)|(45<<10)},
+        {P_AO_MF_IR_DEC_REG1,0x600fdf00},
+        {P_AO_MF_IR_DEC_REG2,0x0},
+        {P_AO_MF_IR_DEC_DURATN2,0},
+        {P_AO_MF_IR_DEC_DURATN3,0},
+        {CONFIG_END,            0 }
 };
 
 static const reg_remote RDECODEMODE_DUOKAN[] =

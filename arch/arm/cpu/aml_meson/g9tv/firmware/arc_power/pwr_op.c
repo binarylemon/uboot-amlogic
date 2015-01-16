@@ -214,18 +214,76 @@ void init_I2C()
 
 }
 
-void g9tv_power_off_at_24M()
+#ifdef CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE
+static int vcck_pwm_on(void)
+{
+	writel(readl(P_AO_RTI_PIN_MUX_REG)|(1 << 29),P_AO_RTI_PIN_MUX_REG); // set GPIO_AO_12 to PWM_F
+	writel(readl(P_PWM_MISC_REG_EF)&~(0x7f << 16),P_PWM_MISC_REG_EF); //pwm_f_clk_div
+	writel(readl(P_PWM_MISC_REG_EF)&~(0x3 << 6),P_PWM_MISC_REG_EF); //pwm_f_clk_sel
+	writel(readl(P_PWM_MISC_REG_EF)|(0x1 << 23),P_PWM_MISC_REG_EF); //pwm_f_clk_en
+	writel(readl(P_PWM_MISC_REG_EF)|(0x1 << 1),P_PWM_MISC_REG_EF); //enable pwm_f
+  
+    return 0;
+}
+
+static int pwm_duty_cycle_set(int duty_high,int duty_total)
+{
+    int pwm_reg=0;
+
+    writel(readl(P_PWM_MISC_REG_EF)&~(0x7f << 16),P_PWM_MISC_REG_EF); //pwm_f_clk_div
+    if(duty_high > duty_total){
+		duty_high = duty_total;
+        printf_arc("error: duty_high larger than duty_toral !!!\n");
+    }
+  	writel((duty_high << 16) | (duty_total - duty_high),P_PWM_PWM_F); //pwm_f_clk_div
+    __udelay(10000);
+    pwm_reg = readl(P_PWM_PWM_F);
+
+#if 1
+    printf_arc("duty_high=0x");
+    serial_put_hex(duty_high, 16);
+    printf_arc("\n");
+
+    printf_arc("P_PWM_PWM_F=0x");
+    serial_put_hex(pwm_reg, 32);
+    printf_arc("\n");
+#endif
+
+    return 0;
+}
+
+int g9tv_pwm_set_vddEE_voltage(int voltage)
+{
+    int duty_high = 0;
+	
+    vcck_pwm_on();
+	//duty_high = (28-(voltage-860) / 10);
+    duty_high = (28 - (((voltage - 860)*103) >> 10));
+    pwm_duty_cycle_set(duty_high,28);
+
+    return 0;
+}
+#endif
+
+void chip_power_off_at_24M()
 {
 	writel(readl(P_PERIPHS_PIN_MUX_10)&~(1 << 11),P_PERIPHS_PIN_MUX_10);
 	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
+ #ifdef CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE
+	g9tv_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);
+ #endif
+	
 }
 
-void g9tv_power_on_at_24M()
+void chip_power_on_at_24M()
 {
 	writel(readl(P_PERIPHS_PIN_MUX_10)&~(1 << 11),P_PERIPHS_PIN_MUX_10);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
+#ifdef CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE
+	g9tv_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
+#endif
 }
 
 unsigned int g9tv_ref_wakeup(unsigned int flags)
@@ -316,8 +374,8 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 void arc_pwr_register(struct arc_pwr_op *pwr_op)
 {
 //    printf_arc("%s\n", __func__);
-	pwr_op->power_off_at_24M    = g9tv_power_off_at_24M;
-	pwr_op->power_on_at_24M     	= g9tv_power_on_at_24M;
+	pwr_op->power_off_at_24M    = chip_power_off_at_24M;
+	pwr_op->power_on_at_24M     = chip_power_on_at_24M;
 
 	pwr_op->power_off_at_32K_1  = 0;
 	pwr_op->power_on_at_32K_1   = 0;

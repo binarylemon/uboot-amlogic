@@ -194,13 +194,12 @@ void restart_arm()
 
 static void switch_to_rtc()
 {
-	//if(0x11111112 != readl(0xc11081A8))//M8M2 do not switch ao to 32k via P_AO_RTI_PWR_CNTL_REG0
-		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
+	
 }
 static void switch_to_81()
 {
-	//if(0x11111112 != readl(0xc11081A8))
-		writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<8)),P_AO_RTI_PWR_CNTL_REG0);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(1<<8)),P_AO_RTI_PWR_CNTL_REG0);
 }
 
 
@@ -208,16 +207,22 @@ static void switch_to_81()
 inline void switch_24M_to_32K(void)
 {
 	// ee use 32k, So interrup status can be accessed.
-	writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);	
+	//writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
+	f_serial_puts("switch_24M_to_32K ...\n");
+ 	wait_uart_empty();
+	writel(readl(P_AO_CRT_CLK_CNTL1)&(~0xfff)|(1<<11)|(1<<10), P_AO_CRT_CLK_CNTL1);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x3<<10)), P_AO_RTI_PWR_CNTL_REG0);
 	switch_to_rtc();
+	writel(readl(P_AO_CRT_CLK_CNTL1)|0x2ed, P_AO_CRT_CLK_CNTL1);  //24m / 750 = 32k
 	udelay__(100);
 }
 
 inline void switch_32K_to_24M(void)
 {
-	switch_to_81();
 	// ee go back to clk81
-	writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
+	switch_to_81();
+	writel(readl(P_AO_CRT_CLK_CNTL1)&(~(1<<10)), P_AO_CRT_CLK_CNTL1);
+	//writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
 	udelay__(100);
 }
 
@@ -254,7 +259,7 @@ void enter_power_down()
 
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
-//	switch_24M_to_32K();
+	switch_24M_to_32K();
 
 	if(p_arc_pwr_op->power_off_at_32K_1)
 		p_arc_pwr_op->power_off_at_32K_1();
@@ -271,9 +276,10 @@ void enter_power_down()
 			p_arc_pwr_op->power_off_ddr15();
 	}
 
-	wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
-	if(wdt_flag)
-		writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
+	//wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
+	//if(wdt_flag)
+	//	writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
+
 #if 1
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
 #else
@@ -304,7 +310,7 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_32K_1();
 
 
-//	switch_32K_to_24M();
+	switch_32K_to_24M();
 
 
 	// power on even more domains
