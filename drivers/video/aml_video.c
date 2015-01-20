@@ -11,6 +11,8 @@
 #include <bmp_layout.h>
 #include <amlogic/aml_tv.h>
 #include <amlogic/vinfo.h>
+#include <malloc.h>
+
 
 GraphicDevice aml_gdev;
 
@@ -383,7 +385,106 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 	return (0);
 }
 
+int my_atoi(const char *str){
+    int result = 0;
+    int signal = 1;
+	
+    if((*str >= '0' && *str<='9') || *str == '-' || *str == '+'){
+        if(*str == '-' || *str == '+'){  
+            if(*str=='-')
+                signal = -1; 
+            str++;
+        } 
+    }else 
+		return 0;
+	
+    while(*str >= '0' && *str <= '9')
+        result = result * 10 + (*str++ -'0');
+
+	return signal * result;
+}
+
 #ifdef CONFIG_OSD_SCALE_ENABLE
+int getenv_int(char *env, int def){
+    if (getenv(env) == NULL) {
+		//printf("bmp scale:  def=%d\n", def);
+        return def;
+    } else {
+    	//printf("bmp scale:   %s=%s\n", env, getenv(env));
+        return my_atoi(getenv(env));
+    }
+}
+
+int* get_window_axis(void) {
+    char *mode = getenv("outputmode");
+    int* axis = (int *)malloc(4*4);
+
+    if (strcmp(mode, "480i") == 0 || strcmp(mode, "480cvbs") == 0) {
+        axis[0] = getenv_int("480ioutputx", 0);
+        axis[1] = getenv_int("480ioutputy", 0);
+        axis[2] = getenv_int("480ioutputwidth", 719);
+        axis[3] = getenv_int("480ioutputheight", 479);
+    } else if (strcmp(mode, "480p") == 0) {
+        axis[0] = getenv_int("480poutputx", 0);
+        axis[1] = getenv_int("480poutputy", 0);
+        axis[2] = getenv_int("480poutputwidth", 719);
+        axis[3] = getenv_int("480poutputheight", 479);
+    } else if (strcmp(mode, "576i") == 0 || strcmp(mode, "576cvbs") == 0) {
+        axis[0] = getenv_int("576ioutputx", 0);
+        axis[1] = getenv_int("576ioutputy", 0);
+        axis[2] = getenv_int("576ioutputwidth", 719);
+        axis[3] = getenv_int("576ioutputheight", 575);
+    } else if (strcmp(mode, "576p") == 0) {
+        axis[0] = getenv_int("576poutputx", 0);
+        axis[1] = getenv_int("576poutputy", 0);
+        axis[2] = getenv_int("576poutputwidth", 719);
+        axis[3] = getenv_int("576poutputheight", 575);
+    } else if (strcmp(mode, "720p") == 0 || strcmp(mode, "720p50hz") == 0) {
+        axis[0] = getenv_int("720poutputx", 0);
+        axis[1] = getenv_int("720poutputy", 0);
+        axis[2] = getenv_int("720poutputwidth", 1279);
+        axis[3] = getenv_int("720poutputheight", 719);
+    } else if (strcmp(mode, "1080i") == 0 || strcmp(mode, "1080i50hz") == 0) { 
+        axis[0] = getenv_int("1080ioutputx", 0);
+        axis[1] = getenv_int("1080ioutputy", 0);
+        axis[2] = getenv_int("1080ioutputwidth", 1919);
+        axis[3] = getenv_int("1080ioutputheight", 1079);
+    } else if (strcmp(mode, "4k2k24hz") == 0) {
+        axis[0] = getenv_int("4k2k24hz_x", 0);
+        axis[1] = getenv_int("4k2k24hz_y", 0);
+        axis[2] = getenv_int("4k2k24hz_width", 3839);
+        axis[3] = getenv_int("4k2k24hz_height", 2159);
+    } else if (strcmp(mode, "4k2k25hz") == 0) {
+        axis[0] = getenv_int("4k2k25hz_x", 0);
+        axis[1] = getenv_int("4k2k25hz_y", 0);
+        axis[2] = getenv_int("4k2k25hz_width", 3839);
+        axis[3] = getenv_int("4k2k25hz_height", 2159);
+    } else if (strcmp(mode, "4k2k30hz") == 0) {
+        axis[0] = getenv_int("4k2k30hz_x", 0);
+        axis[1] = getenv_int("4k2k30hz_y", 0);
+        axis[2] = getenv_int("4k2k30hz_width", 3839);
+        axis[3] = getenv_int("4k2k30hz_height", 2159);
+    } else if (strcmp(mode, "4k2ksmpte") == 0) {
+        axis[0] = getenv_int("4k2ksmpte_x", 0);
+        axis[1] = getenv_int("4k2ksmpte_y", 0);
+        axis[2] = getenv_int("4k2ksmpte_width", 4095);
+        axis[3] = getenv_int("4k2ksmpte_height", 2159);
+    } else if (strcmp(mode, "1080p") == 0 || strcmp(mode, "1080p50hz") == 0 || strcmp(mode, "1080p24hz") == 0) {
+        axis[0] = getenv_int("1080poutputx", 0);
+        axis[1] = getenv_int("1080poutputy", 0);
+        axis[2] = getenv_int("1080poutputwidth", 1919);
+        axis[3] = getenv_int("1080poutputheight", 1079);
+    } else {
+        axis[0] = getenv_int("1080poutputx", 0);
+        axis[1] = getenv_int("1080poutputy", 0);
+        axis[2] = getenv_int("1080poutputwidth", 1919);
+        axis[3] = getenv_int("1080poutputheight", 1079);
+    }
+    //printf("bmp scale:  mode=%s , x=%d, y=%d, w=%d, h=%d\n", mode, axis[0], axis[1], axis[2], axis[3]);
+    return axis;
+}
+
+
 int video_scale_bitmap(void)
 {
 //	printf("video_scale_bitmap src width is %d, height is %d, dst width is %d, dst height is %d\n",
@@ -391,6 +492,7 @@ int video_scale_bitmap(void)
 	char *layer_str = NULL;
 	int osd_index = -1;
 	layer_str = getenv ("display_layer");
+	int *axis = get_window_axis();
 	if(strcmp(layer_str, "osd1") == 0)
 	{
 		osd_index = 0;
@@ -409,7 +511,8 @@ int video_scale_bitmap(void)
 	osd_free_scale_mode_hw(osd_index, 1);
 #endif
 	osd_set_free_scale_axis_hw(osd_index, 0,0,aml_gdev.fb_width-1,aml_gdev.fb_height-1);
-	osd_set_window_axis_hw(osd_index, 0,0,aml_gdev.winSizeX-1,aml_gdev.winSizeY-1);
+	osd_set_window_axis_hw(osd_index,axis[0],axis[1],axis[0]+axis[2]-1,axis[1]+axis[3]-1);
+	free(axis);
 	osd_free_scale_enable_hw(osd_index, 0x10001);
 	osd_enable_hw(1, osd_index);
 	return (1);
