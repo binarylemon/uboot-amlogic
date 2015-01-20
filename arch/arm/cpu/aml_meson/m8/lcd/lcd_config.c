@@ -57,6 +57,36 @@ static const char *edp_link_rate_string_table[]={
     "invalid",
 };
 
+#define LVDS_VSWING_LEVEL_MAX  5
+static unsigned int lvds_vswing_ctrl[] = {
+//vswing_ctrl   level   voltage
+    0x028,      //0      0.2V
+    0x048,      //1      0.4V
+    0x088,      //2      0.6V
+    0x0c8,      //3      0.8V
+    0x0f8,      //4      1.2V
+};
+
+#define EDP_VSWING_LEVEL_MAX  4
+static unsigned int edp_vswing_ctrl[] = {//[7:4]swing b:800mv, step 50mv
+//vswing_ctrl   level   voltage
+    0x8018,     //0      0.4V
+    0x8088,     //1      0.6V
+    0x80c8,     //2      0.8V
+    0x80f8,     //3      1.2V
+};
+
+#define EDP_PREEM_LEVEL_MAX  4
+#if 0
+static unsigned int edp_preemphasis_ctrl[] = { //to do
+//preemp_ctrl   level   amplitude
+    0x0,        //0      0db
+    0x0,        //1      3.5db
+    0x0,        //2      6db
+    0x0,        //3      9.5db
+};
+#endif
+
 static void print_lcd_driver_version(void)
 {
     printf("lcd driver version: %s%s\n\n", LCD_DRV_DATE, LCD_DRV_TYPE);
@@ -269,7 +299,7 @@ static void write_gamma_table(u16 *data, u32 rgb_mask, u16 gamma_coeff, u32 gamm
 		lcd_gamma_init_err = 1;
 }
 
-static void set_gamma_table_lcd(unsigned gamma_en)
+static void set_gamma_table_lcd(unsigned int gamma_en)
 {
 	lcd_print("%s\n", __FUNCTION__);
 	lcd_gamma_init_err = 0;
@@ -795,39 +825,12 @@ static void select_edp_link_config(Lcd_Config_t *pConf)
 
 void edp_phy_config_update(unsigned char vswing_tx, unsigned char preemp_tx)
 {
-    unsigned vswing_ctrl, preemphasis_ctrl;
-
     vswing_tx =  get_edp_config_index(&edp_vswing_table[0], vswing_tx);
+    vswing_tx = (vswing_tx >= EDP_VSWING_LEVEL_MAX) ? (EDP_VSWING_LEVEL_MAX - 1) : vswing_tx;
     preemp_tx =  get_edp_config_index(&edp_preemphasis_table[0], preemp_tx);
-    switch (vswing_tx) {
-        case 0: //0.4V
-            vswing_ctrl = 0x8018; //0x8038;
-            break;
-        case 1: //0.6V
-            vswing_ctrl = 0x8088;
-            break;
-        case 2: //0.8V
-            vswing_ctrl = 0x80c8;
-            break;
-        case 3: //1.2V
-            vswing_ctrl = 0x80f8;
-            break;
-        default:
-            vswing_ctrl = 0x80f8;
-            break;
-    }
+    preemp_tx = (preemp_tx >= EDP_PREEM_LEVEL_MAX) ? (EDP_PREEM_LEVEL_MAX - 1) : preemp_tx;
 
-    switch (preemp_tx) {
-        case 0: //0db
-        case 1: //3.5db
-        case 2: //6db
-        case 3: //9.5db
-        default:
-            preemphasis_ctrl = 0x0; //to do
-            break;
-    }
-
-    WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, vswing_ctrl);
+    WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, edp_vswing_ctrl[vswing_tx]);
     printf("edp link adaptive update: vswing_level=%u, preemphasis_level=%u\n", vswing_tx, preemp_tx);
 }
 
@@ -841,10 +844,10 @@ static void lcd_config_edp_edid_load(void)
             WRITE_LCD_CBUS_REG(HHI_EDP_APB_CLK_CNTL_M8M2, (1 << 7) | (2 << 0)); //fclk_div5---fixed 510M, div to 170M, edp apb clk
 
         WRITE_LCD_CBUS_REG(HHI_DSI_LVDS_EDP_CNTL0, LCD_DIGITAL_EDP);    //dphy select by interface
-        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x8018);//[7:4]swing b:800mv, step 50mv
+        WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, edp_vswing_ctrl[0]);//[7:4]swing b:800mv, step 50mv
         WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, ((0x6 << 16) | (0xf5d7 << 0)));
         WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, ((0xc2b2 << 16) | (0x600 << 0)));//0xd2b0fe00);
-        WRITE_LCD_CBUS_REG_BITS(HHI_DIF_CSI_PHY_CNTL3, 0x10, 11, 5); //enable AUX channel
+        WRITE_LCD_CBUS_REG_BITS(HHI_DIF_CSI_PHY_CNTL3, EDP_LANE_AUX, BIT_DPHY_LANE, 5); //enable AUX channel
         lcd_Conf->lcd_power_ctrl.power_ctrl(ON);
         edp_edid_pre_enable();
 
@@ -919,7 +922,7 @@ static void set_control_ttl(Lcd_Config_t *pConf)
 
 static void init_phy_lvds(Lcd_Config_t *pConf)
 {
-	unsigned swing_ctrl;
+	unsigned int swing_level;
 	lcd_print("%s\n", __FUNCTION__);
 	
 	WRITE_LCD_REG(LVDS_SER_EN, 0xfff);	//Enable the serializers
@@ -928,28 +931,9 @@ static void init_phy_lvds(Lcd_Config_t *pConf)
 	WRITE_LCD_REG(LVDS_PHY_CNTL1, 0xff00);
 	WRITE_LCD_REG(LVDS_PHY_CNTL4, 0x007f);
 	
-	//WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, 0x00000348);
-	switch (pConf->lcd_control.lvds_config->lvds_vswing) {
-		case 0:
-			swing_ctrl = 0x028;
-			break;
-		case 1:
-			swing_ctrl = 0x048;
-			break;
-		case 2:
-			swing_ctrl = 0x088;
-			break;
-		case 3:
-			swing_ctrl = 0x0c8;
-			break;
-		case 4:
-			swing_ctrl = 0x0f8;
-			break;
-		default:
-			swing_ctrl = 0x048;
-			break;
-	}
-	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, swing_ctrl);
+	swing_level = (pConf->lcd_control.lvds_config->lvds_vswing >= LVDS_VSWING_LEVEL_MAX) ? (LVDS_VSWING_LEVEL_MAX - 1) : pConf->lcd_control.lvds_config->lvds_vswing;
+	
+	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, lvds_vswing_ctrl[swing_level]);
 	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, 0x000665b7);
 	WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, 0x84070000);
 }
@@ -965,28 +949,12 @@ static void init_phy_mipi(Lcd_Config_t *pConf)
 
 static void init_phy_edp(Lcd_Config_t *pConf)
 {
-    unsigned swing_ctrl;
+    unsigned char swing_level;
     lcd_print("%s\n", __FUNCTION__);
 
-    switch (pConf->lcd_control.edp_config->vswing) {
-        case 0:	//0.4V
-            swing_ctrl = 0x8018;
-            break;
-        case 1:	//0.6V
-            swing_ctrl = 0x8088;
-            break;
-        case 2:	//0.8V
-            swing_ctrl = 0x80c8;
-            break;
-        case 3:	//1.2V
-            swing_ctrl = 0x80f8;
-            break;
-        default:
-            swing_ctrl = 0x8018;
-            break;
-    }
+    swing_level = (pConf->lcd_control.edp_config->vswing >= EDP_VSWING_LEVEL_MAX) ? (EDP_VSWING_LEVEL_MAX - 1) : pConf->lcd_control.edp_config->vswing;
 
-    WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, swing_ctrl);//[7:4]swing b:800mv, step 50mv
+    WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL1, edp_vswing_ctrl[swing_level]);//[7:4]swing b:800mv, step 50mv
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL2, ((0x6 << 16) | (0xf5d7 << 0)));
     WRITE_LCD_CBUS_REG(HHI_DIF_CSI_PHY_CNTL3, ((0xc2b2 << 16) | (0x600 << 0)));//0xd2b0fe00);
 }
@@ -1094,75 +1062,47 @@ static void _enable_vsync_interrupt(void)
 	}
 }
 
-static void lcd_test(unsigned num)
+#define LCD_ENC_TST_NUM_MAX    8
+static const char *lcd_enc_tst_str[] = {
+	"None",        //0
+	"Color Bar",   //1
+	"Thin Line",   //2
+	"Dot Grid",    //3
+	"Gray",        //4
+	"Red",         //5
+	"Green",       //6
+	"Blue",        //7
+};
+
+static unsigned int lcd_enc_tst[][6] = {
+//tst_mode,  Y,       Cb,     Cr,    tst_en, vfifo_en
+  {0,       0x200,   0x200,  0x200,   0,      1},  //0
+  {1,       0x200,   0x200,  0x200,   1,      0},  //1
+  {2,       0x200,   0x200,  0x200,   1,      0},  //2
+  {3,       0x200,   0x200,  0x200,   1,      0},  //3
+  {0,       0x200,   0x200,  0x200,   1,      0},  //4
+  {0,       0x130,   0x153,  0x3fd,   1,      0},  //5
+  {0,       0x256,   0x0ae,  0x055,   1,      0},  //6
+  {0,       0x074,   0x3fd,  0x1ad,   1,      0},  //7
+};
+
+static void lcd_test(unsigned int num)
 {
-	switch (num) {
-		case 0:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0x8);
-			printf("disable bist pattern (1~7: show different test pattern)\n");
-			break;
-		case 1:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 1);
-			WRITE_LCD_REG(ENCL_TST_CLRBAR_STRT, lcd_Conf->lcd_timing.video_on_pixel);
-			WRITE_LCD_REG(ENCL_TST_CLRBAR_WIDTH, (lcd_Conf->lcd_basic.h_active / 9));
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 1: Color Bar (0: disable test pattern)\n");
-			break;
-		case 2:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 2);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 2: Thin Line (0: disable test pattern)\n");
-			break;
-		case 3:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 3);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 3: Dot Grid (0: disable test pattern)\n");
-			break;
-		case 4:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 0);
-			WRITE_LCD_REG(ENCL_TST_Y, 0x200);
-			WRITE_LCD_REG(ENCL_TST_CB, 0x200);
-			WRITE_LCD_REG(ENCL_TST_CR, 0x200);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 4: Gray (0: disable test pattern)\n");
-			break;
-		case 5:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 0);
-			WRITE_LCD_REG(ENCL_TST_Y, 0);
-			WRITE_LCD_REG(ENCL_TST_CB, 0);
-			WRITE_LCD_REG(ENCL_TST_CR, 0x3ff);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 5: Red (0: disable test pattern)\n");
-			break;
-		case 6:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 0);
-			WRITE_LCD_REG(ENCL_TST_Y, 0x3ff);
-			WRITE_LCD_REG(ENCL_TST_CB, 0);
-			WRITE_LCD_REG(ENCL_TST_CR, 0);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 6: Green (0: disable test pattern)\n");
-			break;
-		case 7:
-			WRITE_LCD_REG(ENCL_VIDEO_MODE_ADV, 0);
-			WRITE_LCD_REG(ENCL_TST_MDSEL, 0);
-			WRITE_LCD_REG(ENCL_TST_Y, 0);
-			WRITE_LCD_REG(ENCL_TST_CB, 0x3ff);
-			WRITE_LCD_REG(ENCL_TST_CR, 0);
-			WRITE_LCD_REG(ENCL_TST_EN, 1);
-			printf("show test pattern 7: Blue (0: disable test pattern)\n");
-			break;
-		default:
-			printf("un-support pattern num\n");
-			printf("video dev test 1~7: show different test pattern\n");
-			printf("video dev test 0: disable test pattern\n");
-			break;
-	}
+	num = (num >= LCD_ENC_TST_NUM_MAX) ? 0 : num;
+	
+	WRITE_LCD_REG(ENCL_TST_MDSEL, lcd_enc_tst[num][0]);
+	WRITE_LCD_REG(ENCL_TST_Y, lcd_enc_tst[num][1]);
+	WRITE_LCD_REG(ENCL_TST_CB, lcd_enc_tst[num][2]);
+	WRITE_LCD_REG(ENCL_TST_CR, lcd_enc_tst[num][3]);
+	WRITE_LCD_REG(ENCL_TST_CLRBAR_STRT, lcd_Conf->lcd_timing.video_on_pixel);
+	WRITE_LCD_REG(ENCL_TST_CLRBAR_WIDTH, (lcd_Conf->lcd_basic.h_active / 9));
+	WRITE_LCD_REG(ENCL_TST_EN, lcd_enc_tst[num][4]);
+	WRITE_LCD_REG_BITS(ENCL_VIDEO_MODE_ADV, lcd_enc_tst[num][5], 3, 1);
+	
+	if (num > 0)
+		printf("show test pattern %d: %s (0: disable test pattern)\n", num, lcd_enc_tst_str[num]);
+	else
+		printf("disable test pattern (1~7: show different test pattern)\n");
 }
 
 static void print_lcd_clk_info(void)
@@ -1626,7 +1566,7 @@ static void lcd_control_config_pre(Lcd_Config_t *pConf)
     }
 
     ss_level = ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf);
-    ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX-1) : ss_level);
+    ss_level = ((ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX - 1) : ss_level);
 
     switch (pConf->lcd_basic.lcd_type) {
         case LCD_DIGITAL_MIPI:
