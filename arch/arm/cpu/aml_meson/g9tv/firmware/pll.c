@@ -143,9 +143,11 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	
 	//MPLL init
 	//FIXED PLL/Multi-phase PLL, fixed to 2.55GHz
+	Wr_cbus(HHI_MPLL_CNTL3, 0x00010007);
 	PLL_ENTER_RESET_BIT29(HHI_MPLL_CNTL);	//set reset bit to 1
+	__udelay(200);
 	Wr_cbus(HHI_MPLL_CNTL2, CFG_MPLL_CNTL_2 );
-	Wr_cbus(HHI_MPLL_CNTL3, CFG_MPLL_CNTL_3 );
+	Wr_cbus(HHI_MPLL_CNTL3, CFG_MPLL_CNTL_3 );	
 	Wr_cbus(HHI_MPLL_CNTL4, CFG_MPLL_CNTL_4 );
 	Wr_cbus(HHI_MPLL_CNTL5, CFG_MPLL_CNTL_5 );
 	Wr_cbus(HHI_MPLL_CNTL6, CFG_MPLL_CNTL_6 );
@@ -154,7 +156,8 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr_cbus(HHI_MPLL_CNTL9, CFG_MPLL_CNTL_9 );
 	PLL_SETUP(HHI_MPLL_CNTL, plls->mpll_cntl);	//2.55G, FIXED
 	PLL_RELEASE_RESET_BIT29(HHI_MPLL_CNTL);	//set reset bit to 0
-
+	__udelay(800);
+	Wr_cbus(HHI_MPLL_CNTL4, Rd_cbus(HHI_MPLL_CNTL4)|(1<<14));
 	//PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
 	n_pll_try_times=0;
 	do{
