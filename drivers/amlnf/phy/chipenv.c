@@ -74,9 +74,31 @@ static int amlnand_oops_handle(struct amlnand_chip *aml_chip, int flag)
 	unsigned erase_shift, write_shift, pages_per_blk;
 	int  start_blk,total_blk, ret = 0;
 	int percent=0, percent_complete = -1;
-	
-	aml_nand_dbg("amlnand_oops_handle!!! ");
+	unsigned char *buf = NULL;
+	unsigned int buf_size = MAX(CONFIG_SECURE_SIZE,CONFIG_KEYSIZE);
 
+	buf = aml_nand_malloc(buf_size);
+	if(!buf){
+	  aml_nand_msg("aml_sys_info_init : malloc failed");
+	}
+	memset(buf,0x0,buf_size);		
+	
+#ifdef CONFIG_SECURITYKEY
+	ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_key),buf,(unsigned char *)KEY_INFO_HEAD_MAGIC, CONFIG_KEYSIZE);
+	if(ret < 0){
+		aml_nand_msg("invalid nand key\n");
+		goto exit_error0;
+	}
+#endif
+
+#ifdef CONFIG_SECURE_NAND
+	ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_secure),buf,(unsigned char *)SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
+	if(ret < 0){
+		aml_nand_msg("invalid nand secure_ptr\n");
+		goto exit_error0;
+	}
+#endif	
+	
 	erase_shift = ffs(flash->blocksize) - 1;
 	write_shift =  ffs(flash->pagesize) - 1;
 	erase_len = ((uint64_t)(flash->chipsize*controller->chip_num))<<20;
@@ -159,7 +181,11 @@ static int amlnand_oops_handle(struct amlnand_chip *aml_chip, int flag)
 				aml_nand_msg("nand erasing %d %% --%d %% complete",percent,percent+10);
 		}
 	}
-
+exit_error0:
+	if(buf){
+		kfree(buf);
+		buf = NULL;
+	}	
 	return ret;
 }
 
@@ -2844,15 +2870,16 @@ int  shipped_bbt_invalid_ops(struct amlnand_chip *aml_chip)
 	// nand_arg_info * nand_key = &aml_chip->nand_key;  
 	//nand_arg_info  * nand_secure= &aml_chip->nand_secure;
 	unsigned char *buf = NULL;
-	unsigned int buf_size = MAX(CONFIG_SECURE_SIZE,CONFIG_KEYSIZE);
 	int  ret = 0;
+#if 0	
+	unsigned int buf_size = MAX(CONFIG_SECURE_SIZE,CONFIG_KEYSIZE);
 
 	buf = aml_nand_malloc(buf_size);
 	if(!buf){
 	  aml_nand_msg("aml_sys_info_init : malloc failed");
 	}
 	memset(buf,0x0,buf_size);
-
+#endif
 /*
 	clean nand case!!!!!
 */
