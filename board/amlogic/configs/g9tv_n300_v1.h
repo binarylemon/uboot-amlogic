@@ -76,6 +76,7 @@
 #define CONFIG_OSD_SUPERSCALE_ENABLE 1
 
 //Enable storage devices
+#define CONFIG_CMD_CPU_TEMP
 #define CONFIG_CMD_SF    1
 #if defined(CONFIG_CMD_SF)
 	#define SPI_WRITE_PROTECT  1

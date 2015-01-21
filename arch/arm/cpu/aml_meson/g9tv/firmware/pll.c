@@ -126,9 +126,13 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 			Wr_cbus(HHI_SYS_PLL_CNTL2,CFG_SYS_PLL_CNTL_2);
 			Wr_cbus(HHI_SYS_PLL_CNTL3,CFG_SYS_PLL_CNTL_3);
 			Wr_cbus(HHI_SYS_PLL_CNTL4,CFG_SYS_PLL_CNTL_4);
+			Wr_cbus(HHI_MPLL_CNTL4, Rd_cbus(HHI_MPLL_CNTL4)|(0<<3));
 			Wr_cbus(HHI_SYS_PLL_CNTL5,CFG_SYS_PLL_CNTL_5);
 			PLL_SETUP(HHI_SYS_PLL_CNTL, plls->sys_pll_cntl);
+			__udelay(200);	
 			PLL_RELEASE_RESET_BIT29(HHI_SYS_PLL_CNTL);
+			__udelay(200);	
+			Wr_cbus(HHI_MPLL_CNTL4, Rd_cbus(HHI_MPLL_CNTL4)|(1<<3));
 
 			PLL_LOCK_CHECK(n_pll_try_times,1);
 
@@ -143,9 +147,21 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	
 	//MPLL init
 	//FIXED PLL/Multi-phase PLL, fixed to 2.55GHz
+	serial_puts("Multi-phase PLL, fixed to 2.55GHz\n");
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL2));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL3));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL4));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL5));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL6));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL7));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL8));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL9));
 	Wr_cbus(HHI_MPLL_CNTL3, 0x00010007);
 	PLL_ENTER_RESET_BIT29(HHI_MPLL_CNTL);	//set reset bit to 1
-	__udelay(200);
+	__udelay(200);	
+
+	serial_puts("Multi-phase PLL, fixed to 2.55GHz\n");
 	Wr_cbus(HHI_MPLL_CNTL2, CFG_MPLL_CNTL_2 );
 	Wr_cbus(HHI_MPLL_CNTL3, CFG_MPLL_CNTL_3 );	
 	Wr_cbus(HHI_MPLL_CNTL4, CFG_MPLL_CNTL_4 );
@@ -155,9 +171,23 @@ SPL_STATIC_FUNC void pll_init(struct pll_clk_settings * plls)
 	Wr_cbus(HHI_MPLL_CNTL8, CFG_MPLL_CNTL_8 );
 	Wr_cbus(HHI_MPLL_CNTL9, CFG_MPLL_CNTL_9 );
 	PLL_SETUP(HHI_MPLL_CNTL, plls->mpll_cntl);	//2.55G, FIXED
+
+	serial_puts("Multi-phase PLL, fixed to 2.55GHz\n");
 	PLL_RELEASE_RESET_BIT29(HHI_MPLL_CNTL);	//set reset bit to 0
-	__udelay(800);
+
+	__udelay(800);	
+	serial_puts("Multi-phase PLL, fixed to 2.55GHz\n");
 	Wr_cbus(HHI_MPLL_CNTL4, Rd_cbus(HHI_MPLL_CNTL4)|(1<<14));
+	serial_puts("Multi-phase PLL, fixed to 2.55GHz end\n");
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL2));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL3));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL4));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL5));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL6));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL7));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL8));
+	serial_put_dword(Rd_cbus(HHI_MPLL_CNTL9));
 	//PLL_WAIT_FOR_LOCK(HHI_MPLL_CNTL); //need bandgap reset?
 	n_pll_try_times=0;
 	do{
