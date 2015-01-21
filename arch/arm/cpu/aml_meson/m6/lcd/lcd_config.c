@@ -596,7 +596,6 @@ static void set_tcon_mlvds(Lcd_Config_t *pConf)
 
 static void set_lcd_spread_spectrum(int ss_level)
 {
-	unsigned pll_ctrl2, pll_ctrl3, pll_ctrl4;
 	lcd_print("%s.\n", __FUNCTION__);
 	
 	ss_level = (ss_level >= SS_LEVEL_MAX) ? (SS_LEVEL_MAX - 1) : ss_level;
