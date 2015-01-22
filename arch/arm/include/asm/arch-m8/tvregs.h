@@ -1407,8 +1407,8 @@ static struct tvregs_set_t tvregsTab[] = {
 
 static const tvinfo_t tvinfoTab[] = {
     {.tvmode = TVMODE_480I, .xres =  720, .yres =  480, .id = "480i"},
-    {.xres =  720, .yres =  480, .id = "480cvbs"},
-    {.xres =  720, .yres =  480, .id = "480p"},
+    {.tvmode = TVMODE_480CVBS, .xres =  720, .yres =  480, .id = "480cvbs"},
+    {.tvmode = TVMODE_480P, .xres =  720, .yres =  480, .id = "480p"},
     {.tvmode = TVMODE_576I, .xres =  720, .yres =  576, .id = "576i"},
     {.tvmode = TVMODE_576CVBS, .xres =  720, .yres =  576, .id = "576cvbs"},
     {.tvmode = TVMODE_576P, .xres =  720, .yres =  576, .id = "576p"},
