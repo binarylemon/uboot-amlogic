@@ -775,6 +775,7 @@ static void inline  nand_get_chip(void )
 }
 static void inline nand_release_chip(void)
 {
+    NFC_SEND_CMD_STANDBY(5);
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_5, ((1<<7) | (1 << 8) | (1 << 9)));
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3fF<<18) | (0X3 << 16)));
 }
