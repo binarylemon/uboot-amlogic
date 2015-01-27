@@ -69,6 +69,7 @@
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
 
+#define CONFIG_CMD_CPU_TEMP
 //Enable storage devices
 #define CONFIG_CMD_SF    1
 #if defined(CONFIG_CMD_SF)
