@@ -1183,15 +1183,11 @@ static const reg_t tvregs_xga_1024x768[] = {
 // Using tvmode as index
 static struct tvregs_set_t tvregsTab[] = {
     {TVMODE_480I, tvregs_480i,        },
-    {TVMODE_480I_RPT, tvregs_480i,        },// For REPEAT MODE use, ENC setting is same
     {TVMODE_480CVBS, tvregs_480cvbs,     },
     {TVMODE_480P, tvregs_480p,        },
-    {TVMODE_480P_RPT, tvregs_480p,        },// For REPEAT MODE use, ENC setting is same
     {TVMODE_576I, tvregs_576i,        },
-    {TVMODE_576I_RPT, tvregs_576i,        },// For REPEAT MODE use, ENC setting is same
     {TVMODE_576CVBS, tvregs_576cvbs,     },
     {TVMODE_576P, tvregs_576p,        },
-    {TVMODE_576P_RPT, tvregs_576p,        },// For REPEAT MODE use, ENC setting is same
     {TVMODE_720P, tvregs_720p,        },
     {TVMODE_1080I, tvregs_1080i,       },//Adjust tvregs_* sequences and match the enum define in tvmode.h
     {TVMODE_1080P, tvregs_1080p,       },
@@ -1215,15 +1211,11 @@ static struct tvregs_set_t tvregsTab[] = {
 
 static const tvinfo_t tvinfoTab[] = {
     {.tvmode = TVMODE_480I, .xres =  720, .yres =  480, .id = "480i"},
-    {.tvmode = TVMODE_480I_RPT, .xres =  720, .yres =  480, .id = "480i_rpt"},
     {.tvmode = TVMODE_480CVBS, .xres =  720, .yres =  480, .id = "480cvbs"},
     {.tvmode = TVMODE_480P, .xres =  720, .yres =  480, .id = "480p"},
-    {.tvmode = TVMODE_480P_RPT, .xres =  720, .yres =  480, .id = "480p_rpt"},
     {.tvmode = TVMODE_576I, .xres =  720, .yres =  576, .id = "576i"},
-    {.tvmode = TVMODE_576I_RPT, .xres =  720, .yres =  576, .id = "576i_rpt"},
     {.tvmode = TVMODE_576CVBS, .xres =  720, .yres =  576, .id = "576cvbs"},
     {.tvmode = TVMODE_576P, .xres =  720, .yres =  576, .id = "576p"},
-    {.tvmode = TVMODE_576P_RPT, .xres =  720, .yres =  576, .id = "576p_prt"},
     {.tvmode = TVMODE_720P, .xres = 1280, .yres =  720, .id = "720p"},
     {.tvmode = TVMODE_1080I, .xres = 1920, .yres = 1080, .id = "1080i"},
     {.tvmode = TVMODE_1080P, .xres = 1920, .yres = 1080, .id = "1080p"},
