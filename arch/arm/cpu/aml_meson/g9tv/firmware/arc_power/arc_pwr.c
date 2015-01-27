@@ -208,22 +208,22 @@ inline void switch_24M_to_32K(void)
 {
 	// ee use 32k, So interrup status can be accessed.
 	//writel(readl(P_HHI_MPEG_CLK_CNTL)|(1<<9),P_HHI_MPEG_CLK_CNTL);
-	f_serial_puts("switch_24M_to_32K ...\n");
- 	wait_uart_empty();
+    //f_serial_puts("switch_24M_to_32K ...\n");
+    //wait_uart_empty();
 	writel(readl(P_AO_CRT_CLK_CNTL1)&(~0xfff)|(1<<11)|(1<<10), P_AO_CRT_CLK_CNTL1);
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x3<<10)), P_AO_RTI_PWR_CNTL_REG0);
 	switch_to_rtc();
 	writel(readl(P_AO_CRT_CLK_CNTL1)|0x2ed, P_AO_CRT_CLK_CNTL1);  //24m / 750 = 32k
-	udelay__(100);
+//	udelay__(100);
 }
 
 inline void switch_32K_to_24M(void)
 {
 	// ee go back to clk81
 	switch_to_81();
-	writel(readl(P_AO_CRT_CLK_CNTL1)&(~(1<<10)), P_AO_CRT_CLK_CNTL1);
+//	writel(readl(P_AO_CRT_CLK_CNTL1)&(~(1<<10)), P_AO_CRT_CLK_CNTL1);
 	//writel(readl(P_HHI_MPEG_CLK_CNTL)&(~(0x1<<9)),P_HHI_MPEG_CLK_CNTL);
-	udelay__(100);
+//	udelay__(100);
 }
 
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
@@ -246,20 +246,25 @@ void enter_power_down()
 
 //	store_restore_plls(0);
 
-	ddr_self_refresh();
+//	ddr_self_refresh();
 
  	f_serial_puts("CPU off...\n");
  	wait_uart_empty();
 	cpu_off();
 	f_serial_puts("CPU off done\n");
 	wait_uart_empty();
- 	if(p_arc_pwr_op->power_off_at_24M)
-		p_arc_pwr_op->power_off_at_24M();
-
 
 //	while(readl(0xc8100000) != 0x13151719)
 //	{}
+	wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
+	if(wdt_flag)
+		writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
+	
 	switch_24M_to_32K();
+	
+	if(p_arc_pwr_op->power_off_at_24M)
+		p_arc_pwr_op->power_off_at_24M();
+
 
 	if(p_arc_pwr_op->power_off_at_32K_1)
 		p_arc_pwr_op->power_off_at_32K_1();
@@ -296,11 +301,11 @@ void enter_power_down()
 			p_arc_pwr_op->power_on_ddr15();
 	}
 	
-	if(wdt_flag){	
-		writel((6*7812|((1<<16)-1))|(1<<29),P_WATCHDOG_TC);
-	}
-
-// gate on:  bit0: REMOTE;   bit3: UART
+	//if(wdt_flag){	
+	//	writel((6*7812|((1<<16)-1))|(1<<29),P_WATCHDOG_TC);
+	//}
+	
+	// gate on:  bit0: REMOTE;	 bit3: UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);
 
 	if(p_arc_pwr_op->power_on_at_32K_2)
@@ -317,15 +322,16 @@ void enter_power_down()
 	if(p_arc_pwr_op->power_on_at_24M)
 		p_arc_pwr_op->power_on_at_24M();
 
- 	uart_reset();
-	f_serial_puts("step 8: ddr resume\n");
-	wait_uart_empty();
-	ddr_resume();
+	uart_reset();
+	
+	//f_serial_puts("step 8: ddr resume\n");
+	//wait_uart_empty();
+	//ddr_resume();
 
-	f_serial_puts("restore pll\n");
-	wait_uart_empty();
-//	store_restore_plls(1);//Before switch back to clk81, we need set PLL
-
+	//f_serial_puts("restore pll\n");
+	//wait_uart_empty();
+	//store_restore_plls(1);//Before switch back to clk81, we need set PLL
+	
     if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
         /*
          * power off system before ARM is restarted
@@ -349,8 +355,8 @@ void enter_power_down()
         //writel(0,P_AO_RTI_STATUS_REG2);
         writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0);
         clrbits_le32(P_HHI_SYS_CPU_CLK_CNTL,1<<19);
-        writel(10,0xc1109904);
-        writel(1<<19|3<<24,0xc1109900);
+		writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<4),P_AO_RTI_PWR_CNTL_REG0); //enable watchdog
+		writel(readl(P_WATCHDOG_TC)|((1<<19)|(3<<24)),P_WATCHDOG_TC);
         do{udelay__(200);f_serial_puts("wait reset...\n");wait_uart_empty();}while(1);
     }
 }

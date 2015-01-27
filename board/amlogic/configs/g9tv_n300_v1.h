@@ -9,7 +9,6 @@
 #define PWM_F                               6
 #define CONFIG_VDDEE_PWM                    PWM_F
 
-#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    860 //VDDEE voltage when suspend, must have
 
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
