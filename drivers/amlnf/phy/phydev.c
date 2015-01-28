@@ -185,7 +185,7 @@ static int nand_read(struct amlnand_phydev *phydev)
 
 		ret = operation->read_page(aml_chip);
 		if( (ops_para->ecc_err) || (ret<0)){			
-			aml_nand_msg("nand phy read failed at devops->addr : %llx", devops->addr);			
+			aml_nand_msg("nand phy read failed at devops->addr %llx, glb %llx", devops->addr, addr);
 			break;
 		}
 					
@@ -623,7 +623,8 @@ static int nand_test_block(struct amlnand_phydev *phydev)
     do{
     ret = operation->read_page(aml_chip);
     if( (ops_para->ecc_err) || (ret<0)){            
-        aml_nand_msg("nand phy read failed at devops->addr : %llx", devops->addr);          
+        //aml_nand_msg("nand phy read failed at devops->addr : %llx", devops->addr);          
+		aml_nand_msg("nand phy read failed at devops->addr %llx, glb %llx", devops->addr, addr);
         goto exit;
     }
     ops_para->page_addr += phydev->writesize;

@@ -123,6 +123,30 @@ static int get_reg_value_hynix(struct hw_controller *controller,  unsigned char 
 
 	return NAND_SUCCESS;
 }
+static int dummy_read(struct hw_controller *controller, unsigned char chipnr)
+{
+	//struct amlnand_chip *aml_chip = controller->aml_chip;
+	//struct nand_flash *flash = &(aml_chip->flash);	
+	int i, ret = 0;
+	ret = controller->quene_rb(controller, chipnr);
+	if(ret){
+		aml_nand_msg("quene rb failed chipnr:%d", chipnr);
+		return -NAND_FAILED;
+	}
+
+	controller->cmd_ctrl(controller, NAND_CMD_READ0, NAND_CTRL_CLE);
+	for (i = 0; i < 5; i++)
+	    controller->cmd_ctrl(controller, 0x0, NAND_CTRL_ALE);
+	controller->cmd_ctrl(controller, NAND_CMD_READSTART, NAND_CTRL_CLE);
+	
+	ret = controller->quene_rb(controller, chipnr);
+	if(ret){
+		aml_nand_msg("quene rb failed chipnr:%d", chipnr);
+		return -NAND_FAILED;
+	}
+
+	return 0;
+}
 
 static int set_reg_value_hynix(struct hw_controller *controller,  unsigned char *buf, unsigned char *addr, 
 						unsigned char chipnr, unsigned char cnt)
@@ -819,6 +843,8 @@ static int enslc_exit_hynix(struct hw_controller *controller)
 			aml_nand_msg("set slc_info reg value failed for chip[%d]", i);
 		}
 		udelay(2);
+		//dummy read to disable e-slc mode.
+		dummy_read(controller, i);
 	}
 
 	return ret;
