@@ -305,10 +305,10 @@
         	"  "\
         "fi;fi;fi;fi\0" \
     "test_facreset="\
-        "if test ${wipe_data} = failed; then"\
+        "if test ${wipe_data} = failed; then "\
             "echo -wipe_data=${wipe_data}; run prepare; run storeargs; run recovery;"\
         "fi; "\
-        "if test ${wipe_cache} = failed; then"\
+        "if test ${wipe_cache} = failed; then "\
             "echo -wipe_cache=${wipe_cache}; run prepare; run storeargs; run recovery;"\
         "fi; \0" \
     \
