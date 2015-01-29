@@ -280,9 +280,11 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
-        "wipe_data=success\0"\
+	"wipe_data=successful\0"\
+	"wipe_cache=successful\0"\
 	"cvbs_drv=0\0"\
 	"preboot="\
+        "run factory_reset_poweroff_protect;"\
         "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
         "if itest ${upgrade_step} == 1; then  "\
             "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
@@ -361,6 +363,15 @@
 				"else "\
 					"echo no recovery in flash; "\
 				"fi;\0" \
+    \
+    "factory_reset_poweroff_protect="\
+        "echo wipe_data=${wipe_data}; echo wipe_cache=${wipe_cache};"\
+        "if test ${wipe_data} = failed; then "\
+            "run prepare; run storeargs; run recovery;"\
+        "fi; "\
+        "if test ${wipe_cache} = failed; then "\
+            "run prepare; run storeargs; run recovery;"\
+        "fi; \0" \
     \
 	"usb_burning=update 1000\0" \
         "try_auto_burn=update 700 750;\0"\
