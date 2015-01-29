@@ -20,13 +20,14 @@
 #endif
 #define LCD_EXTERN_DEVICE  "lcd_extern_device"
 
-#define LCD_EXT_NAME_LEN_MAX		50
+#ifdef CONFIG_OF_LIBFDT
 int get_lcd_extern_dt_data(char * dt_addr, char *of_node, struct lcd_extern_config_t *pdata)
 {
 	int val;
 	int nodeoffset;
 	char * propdata;
 	int ret;
+	
 	nodeoffset = fdt_path_offset(dt_addr, of_node);
 	if(nodeoffset < 0) {
 		printf("dts: not find  node %s.\n",of_node);
@@ -34,18 +35,20 @@ int get_lcd_extern_dt_data(char * dt_addr, char *of_node, struct lcd_extern_conf
 	}
 	propdata =(char *)fdt_getprop(dt_addr, nodeoffset, "dev_name", NULL);
 	if (propdata == NULL) {
-		propdata = "aml_lcd_extern";
-		printf("faild to get dev_name\n");
-	}
-	pdata->name = (char *)malloc(sizeof(char)*LCD_EXT_NAME_LEN_MAX);
-	if (pdata->name == NULL) {
-		printf("[get_lcd_extern_dt_data]: Not enough memory\n");
+		printf("faild to get dev_name, use default name: %s\n", pdata->name);
 	}
 	else {
-		memset(pdata->name, 0, LCD_EXT_NAME_LEN_MAX);
-		strcpy(pdata->name, propdata);
-		printf("load lcd_extern in dtb: %s\n", pdata->name);
+		pdata->name = (char *)malloc(sizeof(char)*LCD_EXT_NAME_LEN_MAX);
+		if (pdata->name == NULL) {
+			printf("[get_lcd_extern_dt_data]: Not enough memory\n");
+		}
+		else {
+			memset(pdata->name, 0, LCD_EXT_NAME_LEN_MAX);
+			strcpy(pdata->name, propdata);
+			printf("load lcd_extern in dtb: %s\n", pdata->name);
+		}
 	}
+	
 	propdata =(char *)fdt_getprop(dt_addr, nodeoffset, "type", NULL);
 	if(propdata == NULL){
 		pdata->type = LCD_EXTERN_MAX;
@@ -141,3 +144,4 @@ int get_lcd_extern_dt_data(char * dt_addr, char *of_node, struct lcd_extern_conf
 	
 	return 0;
 }
+#endif

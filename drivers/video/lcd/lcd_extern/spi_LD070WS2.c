@@ -59,18 +59,6 @@ static unsigned char spi_off_table[][2] = {
     {0xff,0xff},
 };
 
-static int get_spi_LD070WS2_config(char *dt_addr)
-{
-	char *of_node = LCD_EXTERN_DEVICE_NODE;
-	struct lcd_extern_config_t *pdata = &lcd_ext_config;
-	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
-		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
-    	return -1;
-	}
-	return 0;
-}
-
-
 static void set_lcd_csb(unsigned v)
 {
     aml_lcd_gpio_set(lcd_ext_config.spi_cs, v);
@@ -154,7 +142,7 @@ static int lcd_extern_spi_init(void)
         i++;
     }
     DBG_PRINT("%s\n", __FUNCTION__);
-	return 0;
+    return 0;
 }
 
 static int lcd_extern_spi_off(void)
@@ -179,6 +167,20 @@ static int lcd_extern_spi_off(void)
     DBG_PRINT("%s\n", __FUNCTION__);
     mdelay(10);
     spi_gpio_off();
+    return 0;
+}
+
+static int get_lcd_extern_config(char *dt_addr)
+{
+#ifdef CONFIG_OF_LIBFDT
+	char *of_node = LCD_EXTERN_DEVICE_NODE;
+	struct lcd_extern_config_t *pdata = &lcd_ext_config;
+	
+	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
+		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+		return -1;
+	}
+#endif
 	return 0;
 }
 
@@ -191,7 +193,7 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = lcd_extern_spi_off,
     .init_on_cmd_8 = NULL,
     .init_off_cmd_8 = NULL,
-	.get_lcd_ext_config = get_spi_LD070WS2_config,
+    .get_lcd_ext_config = get_lcd_extern_config,
 };
 
 struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)

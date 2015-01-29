@@ -24,6 +24,7 @@
 
 #include <common.h>
 #include <linux/list.h>
+#include <asm/arch/cpu.h>
 #include <amlogic/aml_lcd.h>
 #include <asm/arch/aml_lcd_gpio.h>
 
@@ -345,6 +346,10 @@ typedef enum {
 	BL_PWM_B,
 	BL_PWM_C,
 	BL_PWM_D,
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+	BL_PWM_E,
+	BL_PWM_F,
+#endif
 	BL_PWM_MAX,
 } BL_PWM_t;
 

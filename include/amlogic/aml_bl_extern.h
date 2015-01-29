@@ -16,16 +16,6 @@ struct aml_bl_extern_pinmux_t {
 	unsigned mux;
 };
 
-//global API
-struct aml_bl_extern_driver_t {
-	char *name;
-	Bl_Extern_Type_t type;
-	int (*power_on) (void);
-	int (*power_off)(void);
-	int (*set_level)(unsigned int level);
-	int (*get_bl_ext_config)(char *dt_addr);
-};
-
 #define BL_EXTERN_GPIO_NONE GPIO_MAX
 struct bl_extern_config_t {
 	char *name;
@@ -45,6 +35,17 @@ struct bl_extern_config_t {
 	unsigned int level_max;
 };
 
+//global API
+struct aml_bl_extern_driver_t {
+	char *name;
+	Bl_Extern_Type_t type;
+	int (*power_on) (void);
+	int (*power_off)(void);
+	int (*set_level)(unsigned int level);
+	char *dt_addr;
+	int (*get_bl_ext_config)(void);
+};
+
 extern void udelay(unsigned long usec);
 extern void mdelay(unsigned long msec);
 
@@ -53,7 +54,6 @@ extern void mdelay(unsigned long msec);
 
 #ifdef CONFIG_AML_BL_EXTERN
 extern struct aml_bl_extern_driver_t* aml_bl_extern_get_driver(void);
-
 extern void get_bl_level(struct bl_extern_config_t *bl_ext_cfg);
 #endif
 

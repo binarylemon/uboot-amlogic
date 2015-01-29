@@ -1,8 +1,51 @@
 #include <common.h>
-#include <asm/arch/register.h>
-#include <asm/arch/lcd_reg.h>
+#include <asm/arch/reg_addr.h>
+#include <asm/arch/gpio.h>
 #include <asm/arch/aml_lcd_gpio.h>
 
+//#define LCD_GPIO_USE_SYS_API
+
+#ifdef LCD_GPIO_USE_SYS_API
+extern int gpio_amlogic_name_to_num(const char *name);
+int aml_lcd_gpio_name_map_num(const char *name)
+{
+	//printf("gpio name: %s\n", name);
+	return gpio_amlogic_name_to_num(name);
+}
+
+int aml_lcd_gpio_set(int gpio, int flag)
+{
+	//printf("gpio: %d = %d\n", gpio, flag);
+	switch (flag) {
+		case LCD_GPIO_OUTPUT_LOW:
+		case LCD_GPIO_OUTPUT_HIGH:
+			gpio_direction_output(gpio, flag);
+			break;
+		case LCD_GPIO_INPUT:
+			gpio_direction_input(gpio);
+			break;
+		default:
+			printf("Wrong GPIO value: %d\n", flag);
+	}
+	return 0;
+}
+
+int aml_lcd_gpio_input_get(int gpio)
+{
+	//printf("gpio: %d\n", gpio);
+	return gpio_get_value(gpio);
+}
+#else
+typedef struct aml_lcd_gpio_s {
+	unsigned int bank;
+	unsigned int offset;
+} aml_lcd_gpio_t;
+
+#define LCD_GPIO_NAME_MAP_USE_SYS_API
+
+#ifdef LCD_GPIO_NAME_MAP_USE_SYS_API
+extern int gpio_amlogic_name_to_num(const char *name);
+#else
 static const char* aml_lcd_gpio_type_table[]={
 	"GPIOAO_0",
 	"GPIOAO_1",
@@ -144,10 +187,27 @@ static const char* aml_lcd_gpio_type_table[]={
 	"GPIO_BSD_EN",
 	"GPIO_TEST_N",
 	"GPIO_MAX",
-}; 
+};
+#endif
+
+static unsigned int aml_lcd_gpio_group_ctrl[][6] = {
+	//oen_reg,             oen_bit,  out_reg,            out_bit,  in_reg,            in_bit
+	{P_AO_GPIO_O_EN_N,      0,       P_AO_GPIO_O_EN_N,   16,       P_AO_GPIO_I,        0, }, //GPIOAO
+	{P_PREG_PAD_GPIO3_EN_N, 19,      P_PREG_PAD_GPIO3_O, 19,       P_PREG_PAD_GPIO3_I, 19,}, //GPIOH
+	{P_PREG_PAD_GPIO3_EN_N, 0,       P_PREG_PAD_GPIO3_O, 0,        P_PREG_PAD_GPIO3_I, 0, }, //BOOT
+	{P_PREG_PAD_GPIO0_EN_N, 22,      P_PREG_PAD_GPIO0_O, 22,       P_PREG_PAD_GPIO0_I, 22,}, //CARD
+	{P_PREG_PAD_GPIO2_EN_N, 0,       P_PREG_PAD_GPIO2_O, 0,        P_PREG_PAD_GPIO2_I, 0, }, //GPIODV
+	{P_PREG_PAD_GPIO1_EN_N, 0,       P_PREG_PAD_GPIO1_O, 0,        P_PREG_PAD_GPIO1_I, 0, }, //GPIOY
+	{P_PREG_PAD_GPIO0_EN_N, 0,       P_PREG_PAD_GPIO0_O, 0,        P_PREG_PAD_GPIO0_I, 0, }, //GPIOX
+	{P_PREG_PAD_GPIO4_EN_N, 12,      P_PREG_PAD_GPIO4_O, 12,       P_PREG_PAD_GPIO4_I, 12,}, //DIF_TTL
+	{P_PREG_PAD_GPIO4_EN_N, 22,      P_PREG_PAD_GPIO4_O, 22,       P_PREG_PAD_GPIO4_I, 22,}, //HDMI_TTL
+};
 
 int aml_lcd_gpio_name_map_num(const char *name)
 {
+#ifdef LCD_GPIO_NAME_MAP_USE_SYS_API
+	return gpio_amlogic_name_to_num(name);
+#else
 	int i;
 	
 	for(i = 0; i < GPIO_MAX; i++) {
@@ -159,70 +219,135 @@ int aml_lcd_gpio_name_map_num(const char *name)
 		i = -1;
 	}
 	return i;
+#endif
 }
-int aml_lcd_gpio_set(int gpio, int flag)
+
+static int aml_lcd_gpio_bank_offset(int gpio, struct aml_lcd_gpio_s *gpio_s)
 {
-	int gpio_bank, gpio_bit;
+	int ret = 0;
 	
 	if ((gpio>=GPIOAO_0) && (gpio<=GPIOAO_13)) {
-		printf("don't support GPIOAO Port yet\n");
-		return -2;
+		gpio_s->bank = 0;
+		gpio_s->offset = gpio - GPIOAO_0;
 	}
 	else if ((gpio>=GPIOH_0) && (gpio<=GPIOH_9)) {
-		gpio_bit = gpio - GPIOH_0 + 19;
-		gpio_bank = PREG_PAD_GPIO3_EN_N;	//0x2015
+		gpio_s->bank = 1;
+		gpio_s->offset = gpio - GPIOH_0;
 	}
 	else if ((gpio>=BOOT_0) && (gpio<=BOOT_18)) {
-		gpio_bit = gpio - BOOT_0;
-		gpio_bank = PREG_PAD_GPIO3_EN_N;	//0x2015
+		gpio_s->bank = 2;
+		gpio_s->offset = gpio - BOOT_0;
 	}
 	else if ((gpio>=CARD_0) && (gpio<=CARD_6)) {
-		gpio_bit = gpio - CARD_0 + 22;
-		gpio_bank = PREG_PAD_GPIO0_EN_N;	//0x200c
+		gpio_s->bank = 3;
+		gpio_s->offset = gpio - CARD_0;
 	}
 	else if ((gpio>=GPIODV_0) && (gpio<=GPIODV_29)) {
-		gpio_bit = gpio - GPIODV_0;
-		gpio_bank = PREG_PAD_GPIO2_EN_N;	//0x2012
+		gpio_s->bank = 4;
+		gpio_s->offset = gpio - GPIODV_0;
 	}
 	else if ((gpio>=GPIOY_0) && (gpio<=GPIOY_16)) {
-		gpio_bit = gpio - GPIOY_0;
-		gpio_bank = PREG_PAD_GPIO1_EN_N;	//0x200f
+		gpio_s->bank = 5;
+		gpio_s->offset = gpio - GPIOY_0;
 	}
 	else if ((gpio>=GPIOX_0) && (gpio<=GPIOX_21)) {
-		gpio_bit = gpio - GPIOX_0;
-		gpio_bank = PREG_PAD_GPIO0_EN_N;	//0x200c
+		gpio_s->bank = 6;
+		gpio_s->offset = gpio - GPIOX_0;
 	}
 	else if ((gpio>=DIF_TTL_0_P) && (gpio<=DIF_TTL_4_N)) {
-		gpio_bit = gpio - DIF_TTL_0_P + 12;
-		gpio_bank = PREG_PAD_GPIO4_EN_N;	//0x2018
+		gpio_s->bank = 7;
+		gpio_s->offset = gpio - DIF_TTL_0_P;
 	}
 	else if ((gpio>=HDMI_TTL_0_P) && (gpio<=HDMI_TTL_CK_N)) {
-		gpio_bit = gpio - HDMI_TTL_0_P + 22;
-		gpio_bank = PREG_PAD_GPIO4_EN_N;	//0x2018
+		gpio_s->bank = 8;
+		gpio_s->offset = gpio - HDMI_TTL_0_P;
 	}
 	else if (gpio==GPIO_BSD_EN) {
-		printf("don't support GPIOAO Port yet\n");
-		return -2;
+		printf("don't support GPIO_BSD_EN Port\n");
+		ret = -2;
 	}
 	else if (gpio==GPIO_TEST_N) {
-		printf("don't support GPIOAO Port yet\n");
-		return -2;
+		printf("don't support GPIO_TEST_N Port\n");
+		ret = -2;
 	}
 	else {
 		printf("Wrong GPIO Port number: %d\n", gpio);
-		return -1;
+		ret = -1;
 	}
 	
-	if (flag == LCD_GPIO_OUTPUT_LOW) {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank+1, 0, gpio_bit, 1);
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 0, gpio_bit, 1);
-	}
-	else if (flag == LCD_GPIO_OUTPUT_HIGH) {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank+1, 1, gpio_bit, 1);
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 0, gpio_bit, 1);
-	}
-	else {
-		WRITE_LCD_CBUS_REG_BITS(gpio_bank, 1, gpio_bit, 1);
+	return ret;
+}
+
+int aml_lcd_gpio_set(int gpio, int flag)
+{
+	struct aml_lcd_gpio_s gpio_s;
+	int ret = 0;
+	
+	ret = aml_lcd_gpio_bank_offset(gpio, &gpio_s);
+	if (ret == 0) {
+		if (flag == LCD_GPIO_OUTPUT_LOW) {
+			aml_clr_reg32_mask(aml_lcd_gpio_group_ctrl[gpio_s.bank][2], (1 << (aml_lcd_gpio_group_ctrl[gpio_s.bank][3] + gpio_s.offset)));
+			aml_clr_reg32_mask(aml_lcd_gpio_group_ctrl[gpio_s.bank][0], (1 << (aml_lcd_gpio_group_ctrl[gpio_s.bank][1] + gpio_s.offset)));
+		}
+		else if (flag == LCD_GPIO_OUTPUT_HIGH) {
+			aml_set_reg32_mask(aml_lcd_gpio_group_ctrl[gpio_s.bank][2], (1 << (aml_lcd_gpio_group_ctrl[gpio_s.bank][3] + gpio_s.offset)));
+			aml_clr_reg32_mask(aml_lcd_gpio_group_ctrl[gpio_s.bank][0], (1 << (aml_lcd_gpio_group_ctrl[gpio_s.bank][1] + gpio_s.offset)));
+		}
+		else {
+			aml_set_reg32_mask(aml_lcd_gpio_group_ctrl[gpio_s.bank][0], (1 << (aml_lcd_gpio_group_ctrl[gpio_s.bank][1] + gpio_s.offset)));
+		}
 	}
 	return 0;
 }
+
+int aml_lcd_gpio_input_get(int gpio)
+{
+	struct aml_lcd_gpio_s gpio_s;
+	int ret = 0;
+	
+	ret = aml_lcd_gpio_bank_offset(gpio, &gpio_s);
+	if (ret == 0)
+		ret = aml_get_reg32_bits(aml_lcd_gpio_group_ctrl[gpio_s.bank][4], (aml_lcd_gpio_group_ctrl[gpio_s.bank][5] + gpio_s.offset), 1);
+	return ret;
+}
+#endif
+
+#define AML_LCD_PINMUX_NUM    11
+static unsigned int aml_lcd_pinmux_reg[] = {
+	P_PERIPHS_PIN_MUX_0,
+	P_PERIPHS_PIN_MUX_1,
+	P_PERIPHS_PIN_MUX_2,
+	P_PERIPHS_PIN_MUX_3,
+	P_PERIPHS_PIN_MUX_4,
+	P_PERIPHS_PIN_MUX_5,
+	P_PERIPHS_PIN_MUX_6,
+	P_PERIPHS_PIN_MUX_7,
+	P_PERIPHS_PIN_MUX_8,
+	P_PERIPHS_PIN_MUX_9,
+	P_AO_RTI_PIN_MUX_REG,
+};
+
+int aml_lcd_pinmux_set(unsigned int mux_index, unsigned int mux_mask)
+{
+	if (mux_index < AML_LCD_PINMUX_NUM) {
+		aml_set_reg32_mask(aml_lcd_pinmux_reg[mux_index], mux_mask);
+		return 0;
+	}
+	else {
+		printf("[error]: wrong pinmux index %d\n", mux_index);
+		return -1;
+	}
+}
+
+int aml_lcd_pinmux_clr(unsigned int mux_index, unsigned int mux_mask)
+{
+	if (mux_index < AML_LCD_PINMUX_NUM) {
+		aml_clr_reg32_mask(aml_lcd_pinmux_reg[mux_index], mux_mask);
+		return 0;
+	}
+	else {
+		printf("[error]: wrong pinmux index %d\n", mux_index);
+		return -1;
+	}
+}
+

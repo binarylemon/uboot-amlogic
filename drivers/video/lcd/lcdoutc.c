@@ -34,6 +34,7 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
 #include <asm/arch/lcd_reg.h>
+#include <asm/arch/aml_lcd_gpio.h>
 #ifdef CONFIG_OF_LIBFDT
 #include <libfdt.h>
 #endif
@@ -50,8 +51,6 @@
 
 #define PANEL_NAME		"panel"
 
-extern int  clear_mio_mux(unsigned mux_index, unsigned mux_mask);
-extern int  set_mio_mux(unsigned mux_index, unsigned mux_mask);
 extern void lcd_default_config_init(Lcd_Config_t *pConf);
 extern void backlight_default_config_init(Lcd_Bl_Config_t *bl_config);
 
@@ -185,14 +184,22 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+						break;
+#endif
 					default:
 						break;
 				}
 				for (i=0; i<pDev->bl_config->pinmux_clr_num; i++) {
-					clear_mio_mux(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
+					aml_lcd_pinmux_clr(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
 				}
 				for (i=0; i<pDev->bl_config->pinmux_set_num; i++) {
-					set_mio_mux(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
+					aml_lcd_pinmux_set(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
 				}
 				mdelay(20);
 				if (pDev->bl_config->pwm_gpio_used)
@@ -212,6 +219,14 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_high_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->combo_high_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_high_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+						break;
+#endif
 					default:
 						break;
 				}
@@ -228,14 +243,22 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_low_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->combo_low_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_low_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
+						break;
+#endif
 					default:
 						break;
 				}
 				for (i=0; i<pDev->bl_config->pinmux_clr_num; i++) {
-					clear_mio_mux(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
+					aml_lcd_pinmux_clr(pDev->bl_config->pinmux_clr[i][0], pDev->bl_config->pinmux_clr[i][1]);
 				}
 				for (i=0; i<pDev->bl_config->pinmux_set_num; i++) {
-					set_mio_mux(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
+					aml_lcd_pinmux_set(pDev->bl_config->pinmux_set[i][0], pDev->bl_config->pinmux_set[i][1]);
 				}
 				break;
 			case BL_CTL_EXTERN:
@@ -286,6 +309,14 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+						break;
+#endif
 					default:
 						break;
 				}
@@ -304,6 +335,14 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+						break;
+#endif
 					default:
 						break;
 				}
@@ -320,6 +359,14 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
+						break;
+#endif
 					default:
 						break;
 				}
@@ -399,6 +446,14 @@ static void set_lcd_backlight_level(unsigned level)
 				case BL_PWM_D:
 					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 					break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+				case BL_PWM_E:
+					WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+					break;
+				case BL_PWM_F:
+					WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+					break;
+#endif
 				default:
 					break;
 			}
@@ -427,6 +482,14 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+						break;
+#endif
 					default:
 						break;
 				}
@@ -454,6 +517,14 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+						break;
+#endif
 					default:
 						break;
 				}
@@ -481,6 +552,14 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+						break;
+#endif
 					default:
 						break;
 				}
@@ -508,6 +587,14 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+					case BL_PWM_E:
+						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+						break;
+					case BL_PWM_F:
+						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+						break;
+#endif
 					default:
 						break;
 				}
@@ -848,11 +935,14 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 	char* propdata;
 	char propname[LCD_MODEL_LEN_MAX];
 	int i, j;
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct aml_lcd_extern_driver_t *lcd_ext_driver;
+#endif 
 	
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
 	if(nodeoffset < 0) {
 		printf("dts: not find /lcd node %s.\n",fdt_strerror(nodeoffset));
-		return ret;
+		return -1;
 	}
 	
 	lcd_model = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_model_name", NULL);
@@ -860,7 +950,7 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 	nodeoffset = fdt_path_offset(dt_addr, propname);
 	if(nodeoffset < 0) {
 		printf("dts: not find %s node %s.\n", propname, fdt_strerror(nodeoffset));
-		return ret;
+		return -1;
 	}
 	
 	lcd_model = (char *)fdt_getprop(dt_addr, nodeoffset, "model_name", NULL);
@@ -1116,7 +1206,23 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		}
 		lcd_print("max_lane_count = %d\n", pConf->lcd_control.edp_config->max_lane_count);
 	}
-
+	
+#ifdef CONFIG_AML_LCD_EXTERN
+	lcd_ext_driver = aml_lcd_extern_get_driver();
+	if (lcd_ext_driver == NULL) {
+		printf("no lcd_extern driver\n");
+	}
+	else {
+		if (lcd_ext_driver->get_lcd_ext_config){
+			ret = lcd_ext_driver->get_lcd_ext_config(dt_addr);
+			if (ret)
+				printf("[lcd_extern] get_lcd_ext_config error\n");
+			else
+				lcd_print("%s get_lcd_ext_config\n", lcd_ext_driver->name);
+		}
+	}
+#endif
+	
 	return ret;
 }
 
@@ -1705,6 +1811,9 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	const char * str;
 	unsigned pwm_freq, pwm_cnt, pwm_pre_div, tmp;
 	int len;
+#ifdef CONFIG_AML_BL_EXTERN
+	struct aml_bl_extern_driver_t *bl_extern_driver;
+#endif
 	
 	nodeoffset = fdt_path_offset(dt_addr, "/backlight");
 	if(nodeoffset < 0) {
@@ -1788,8 +1897,8 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			else if (strncmp(str, "0", 1) == 0)
 				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_LOW;
 			else
-				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;	
-					
+				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
+			
 			p += strlen(p) + 1;
 			str = p;
 			if (strncmp(str, "2", 1) == 0)
@@ -1797,9 +1906,9 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			else if (strncmp(str, "1", 1) == 0)
 				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_HIGH;
 			else
-				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;				
+				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 		}
-
+		
 		lcd_print("bl gpio =%d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on,bl_conf->gpio_off);
 		
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_dim_max_min", NULL);
@@ -1834,6 +1943,12 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->pwm_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->pwm_port = BL_PWM_D;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+			else if (strcmp(str, "PWM_E") == 0)
+				bl_conf->pwm_port = BL_PWM_E;
+			else if (strcmp(str, "PWM_F") == 0)
+				bl_conf->pwm_port = BL_PWM_F;
+#endif
 			
 			p += strlen(p) + 1;
 			str = p;
@@ -1848,16 +1963,14 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port_on_off", NULL);
 			if (propdata == NULL) {
 				printf("faild to get bl_gpio_port_on_off\n");
-	#ifdef GPIODV_28
-				bl_conf->gpio = GPIODV_28;
-				bl_conf->gpio_on = 1;
-				bl_conf->gpio_off = 0;
-	#endif
-	#ifdef GPIOD_1
+#ifdef GPIOD_1
 				bl_conf->gpio = GPIOD_1;
-				bl_conf->gpio_on = 1;
-				bl_conf->gpio_off = 0;
-	#endif
+#endif
+#ifdef GPIODV_28
+				bl_conf->gpio = GPIODV_28;
+#endif
+				bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
+				bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 			}
 			else {
 				prop = container_of(propdata, struct fdt_property, data);
@@ -1867,20 +1980,20 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				p += strlen(p) + 1;
 				str = p;
 				if (strncmp(str, "2", 1) == 0)
-						bl_conf->gpio_on = 2;
+					bl_conf->gpio_on = LCD_POWER_GPIO_INPUT;
 				else if (strncmp(str, "0", 1) == 0)
-						bl_conf->gpio_on = 0;
+					bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_LOW;
 				else
-						bl_conf->gpio_on = 1;	
+					bl_conf->gpio_on = LCD_POWER_GPIO_OUTPUT_HIGH;
 					
 				p += strlen(p) + 1;
 				str = p;
 				if (strncmp(str, "2", 1) == 0)
-						bl_conf->gpio_off = 2;
+					bl_conf->gpio_off = LCD_POWER_GPIO_INPUT;
 				else if (strncmp(str, "1", 1) == 0)
-						bl_conf->gpio_off = 1;
+					bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_HIGH;
 				else
-						bl_conf->gpio_off = 0;
+					bl_conf->gpio_off = LCD_POWER_GPIO_OUTPUT_LOW;
 			}
 			lcd_print("bl gpio = %d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on, bl_conf->gpio_off);
 		}
@@ -1950,6 +2063,12 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->combo_high_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->combo_high_port = BL_PWM_D;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+			else if (strcmp(str, "PWM_E") == 0)
+				bl_conf->pwm_port = BL_PWM_E;
+			else if (strcmp(str, "PWM_F") == 0)
+				bl_conf->pwm_port = BL_PWM_F;
+#endif
 			
 			p += strlen(p) + 1;
 			str = p;
@@ -1958,7 +2077,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			else
 				bl_conf->combo_high_method = BL_CTL_PWM_POSITIVE;
 		}
-		lcd_print("bl pwm_combo high port: %s(%u)\n", str, bl_conf->combo_high_port);
+		lcd_print("bl pwm_combo high port: %s(%u)\n", propdata, bl_conf->combo_high_port);
 		lcd_print("bl pwm_combo high method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_high_method], bl_conf->combo_high_method);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_low_port_method", NULL);
 		if(propdata == NULL){
@@ -1979,6 +2098,12 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->combo_low_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->combo_low_port = BL_PWM_D;
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+			else if (strcmp(str, "PWM_E") == 0)
+				bl_conf->pwm_port = BL_PWM_E;
+			else if (strcmp(str, "PWM_F") == 0)
+				bl_conf->pwm_port = BL_PWM_F;
+#endif
 			
 			p += strlen(p) + 1;
 			str = p;
@@ -1987,7 +2112,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			else
 				bl_conf->combo_low_method = BL_CTL_PWM_POSITIVE;
 		}
-		lcd_print("bl pwm_combo low port: %s(%u)\n", str, bl_conf->combo_low_port);
+		lcd_print("bl pwm_combo low port: %s(%u)\n", propdata, bl_conf->combo_low_port);
 		lcd_print("bl pwm_combo low method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_low_method], bl_conf->combo_low_method);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_freq_duty_max_min", NULL);
 		if(propdata == NULL){
@@ -2037,6 +2162,24 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->combo_low_duty_max = (bl_conf->combo_low_cnt * bl_para[1] / 100);
 		bl_conf->combo_low_duty_min = (bl_conf->combo_low_cnt * bl_para[2] / 100);
 		lcd_print("bl pwm_combo low freq=%uHz, duty_max=%u\%, duty_min=%u\%\n", pwm_freq, bl_para[1], bl_para[2]);
+	}
+	else if (bl_conf->method == BL_CTL_EXTERN) {
+#ifdef CONFIG_AML_BL_EXTERN
+		bl_extern_driver = aml_bl_extern_get_driver();
+		if (bl_extern_driver == NULL) {
+			printf("no bl_extern driver\n");
+		}
+		else {
+			bl_extern_driver->dt_addr = dt_addr;
+			if (bl_extern_driver->get_bl_ext_config) {
+				ret = bl_extern_driver->get_bl_ext_config();
+				if (ret)
+					printf("[bl_extern] get_bl_ext_config error\n");
+				else
+					lcd_print("%s get_bl_ext_config\n", bl_extern_driver->name);
+			}
+		}
+#endif
 	}
 	
 	//get backlight pinmux for pwm
@@ -2225,20 +2368,24 @@ static void lcd_config_assign(Lcd_Config_t *pConf)
 
 int lcd_probe(void)
 {
+	int ret = 0;
 #ifdef CONFIG_AML_LCD_EXTERN
-	struct aml_lcd_extern_driver_t *lcd_ext_driver;
-#endif 
-    pDev = (lcd_dev_t *)malloc(sizeof(lcd_dev_t));
-    if (!pDev) {
-        printf("[lcd]: Not enough memory.\n");
-        return -1;
-    }
+	struct aml_lcd_extern_driver_t *lcd_extern_driver;
+#endif
+#ifdef CONFIG_AML_BL_EXTERN
+	struct aml_bl_extern_driver_t *bl_extern_driver;
+#endif
+	
+	pDev = (lcd_dev_t *)malloc(sizeof(lcd_dev_t));
+	if (!pDev) {
+		printf("[lcd]: Not enough memory.\n");
+		return -1;
+	}
 	prepare_lcd_debug();
 	dts_ready = 0;	//prepare dts_ready flag, default no dts
+	
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
-	int ret;
-	
 #ifdef CONFIG_DTB_LOAD_ADDR
 	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
 #else
@@ -2268,7 +2415,37 @@ int lcd_probe(void)
 			return 1;
 		}
 		lcd_default_config_init(pDev->pConf);
+#ifdef CONFIG_AML_LCD_EXTERN
+		lcd_extern_driver = aml_lcd_extern_get_driver();
+		if (lcd_extern_driver == NULL) {
+			printf("no lcd_extern driver\n");
+		}
+		else {
+			if (lcd_extern_driver->get_lcd_ext_config) {
+				ret = lcd_extern_driver->get_lcd_ext_config();
+				if (ret)
+					printf("[lcd_extern] get_lcd_ext_config error\n");
+				else
+					lcd_print("%s get_lcd_ext_config\n", lcd_extern_driver->name);
+			}
+		}
+#endif
 		backlight_default_config_init(pDev->bl_config);
+#ifdef CONFIG_AML_BL_EXTERN
+		bl_extern_driver = aml_bl_extern_get_driver();
+		if (bl_extern_driver == NULL) {
+			printf("no bl_extern driver\n");
+		}
+		else {
+			if (bl_extern_driver->get_bl_ext_config) {
+				ret = bl_extern_driver->get_bl_ext_config();
+				if (ret)
+					printf("[bl_extern] get_bl_ext_config error\n");
+				else
+					lcd_print("%s get_bl_ext_config\n", bl_extern_driver->name);
+			}
+		}
+#endif
 		printf("load default lcd model: %s\n", pDev->pConf->lcd_basic.model_name);
 	}
 	else {
@@ -2279,18 +2456,6 @@ int lcd_probe(void)
 		_get_lcd_default_config(pDev->pConf);
 		_get_lcd_power_config(pDev->pConf);
 		_get_lcd_backlight_config(pDev->bl_config);
-#ifdef CONFIG_AML_LCD_EXTERN
-		lcd_ext_driver = aml_lcd_extern_get_driver();
-		if (lcd_ext_driver == NULL) {
-			printf("no lcd_extern driver\n");
-		}
-		else {
-			if (lcd_ext_driver->get_lcd_ext_config){
-				lcd_ext_driver->get_lcd_ext_config(dt_addr);
-				lcd_print("%s get_lcd_ext_config\n", lcd_ext_driver->name);
-			}
-		}
-#endif 		
 #endif
 	}
 	
@@ -2302,7 +2467,8 @@ int lcd_probe(void)
 	_lcd_init(pDev->pConf);
 	if (lcd_print_flag > 0)
 		print_lcd_info();
-	return 0;
+	
+	return ret;
 }
 
 int lcd_remove(void)

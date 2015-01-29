@@ -32,6 +32,11 @@
 #define LCD_EXTERN_TYPE			LCD_EXTERN_I2C
 #define LCD_EXTERN_I2C_BUS		AML_I2C_MASTER_B
 
+struct lcd_extern_edp_config {
+	int lane_num;
+	int bits;
+	int link_rate;
+};
 
 static unsigned aml_i2c_bus_tmp;
 static struct aml_lcd_extern_driver_t lcd_ext_driver;
@@ -46,69 +51,6 @@ static struct lcd_extern_edp_config edp_parameter= {
 	.link_rate = 0x0a, //1.62G: 0X06, 2.7G: 0x0a, 5.4G: 0x14
 };
 extern int aml_i2c_xfer_slow(struct i2c_msg *msgs, int num);
-
-static int get_edp_anx6345_config(char *dt_addr)
-{
-	int nodeoffset;
-	char * propdata;
-	int ret;
-	int value;
-	char *of_node = LCD_EXTERN_DEVICE_NODE;
-	struct lcd_extern_config_t *pdata = &lcd_ext_config;
-	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
-		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
-    	return -1;
-	}
-	nodeoffset = fdt_path_offset(dt_addr, of_node);
-	if(nodeoffset < 0) {
-		printf("dts: not find  node %s.\n",LCD_EXTERN_NAME);
-		return ret;
-	}
-	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lane_num", NULL);
-	if(propdata == NULL){
-		edp_parameter.lane_num = 1;
-		printf("faild to get %s lane_num\n", LCD_EXTERN_NAME);
-	}
-	else {
-		edp_parameter.lane_num = (unsigned short)(be32_to_cpup((u32*)propdata));
-	}
-	DBG_PRINT ("lane_num =%d\n", edp_parameter.lane_num);
-	
-	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bits", NULL);
-	if(propdata == NULL){
-		edp_parameter.bits = 0x00;
-		printf("faild to get %s bits\n", LCD_EXTERN_NAME);
-	}
-	else {
-		value = (unsigned short)(be32_to_cpup((u32*)propdata));
-		if (value == 0)
-			edp_parameter.bits = 0x00;
-		else if  (value == 1)
-			edp_parameter.bits = 0x10;
-		else
-			edp_parameter.bits = 0x00;
-	}
-	DBG_PRINT ("bits =%d\n", edp_parameter.bits);
-	
-	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "link_rate", NULL);
-	if(propdata == NULL){
-		edp_parameter.link_rate = 0x0a;
-		printf("faild to get %s link_rate\n", LCD_EXTERN_NAME);
-	}
-	else {
-		value = (unsigned short)(be32_to_cpup((u32*)propdata));
-		if (value == 0)
-			edp_parameter.link_rate = 0x06;
-		else if (value == 1)
-			edp_parameter.link_rate = 0x0a;
-		else if (value == 2)
-			edp_parameter.link_rate = 0x14;
-		else 
-			edp_parameter.link_rate = 0x0a;
-	}	
-	DBG_PRINT ("link_rate =0x%02x\n", edp_parameter.link_rate);	
-	return ret;
-}
 
 static int aml_lcd_i2c_write(unsigned i2caddr, unsigned char *buff, unsigned len)
 {
@@ -252,7 +194,7 @@ static int  anx6345_reg_write(unsigned char reg, unsigned char value)
     return ret;
 }
 
-static int  anx6345_init(void)
+static void anx6345_initialize(void)
 {
 	unsigned lane_num;
 	unsigned link_rate;
@@ -393,6 +335,87 @@ static int  anx6345_init(void)
 	SP_TX_Write_Reg(0x70, 0x82, 0x33);
   
     printf("%s\n", __FUNCTION__);
+}
+
+#ifdef LCD_EXT_DEBUG_INFO
+static unsigned char DP_TX_Read_Reg(unsigned char addr, unsigned char reg)
+{
+	int ret;
+	unsigned char *data;
+	data = &reg;
+	addr =addr >>1;
+	ret = aml_lcd_i2c_read(addr, data, 1);
+	if(ret <0)
+		return -1;
+	else 
+		return *data;
+}
+
+static void test_clk(void)
+{
+	unsigned char val;
+	val = DP_TX_Read_Reg(0x70, 0x80);	//clk detect
+	DBG_PRINT("clk detect: %2x\n", val);
+	
+	val = DP_TX_Read_Reg(0x70, 0x81);	//clk change
+	DBG_PRINT("clk change: %2x\nwait for 100ms...\n", val);	
+	
+	SP_TX_Write_Reg(0x70, 0x81, 0x40);
+	mdelay(100);
+	val = DP_TX_Read_Reg(0x70, 0x81);	//clk change
+	DBG_PRINT("clk change: %2x\n\n", val);
+}
+
+static void test_anx9804(void)
+{
+	unsigned char val;
+	DBG_PRINT("\nenter anx9804 test.\n");
+	
+	test_clk();
+	
+	val = DP_TX_Read_Reg(0x72, 0x23);	//video status
+	DBG_PRINT("video status: %2x\n\n", val);
+	
+	val = DP_TX_Read_Reg(0x72, 0x24);	//total lines low
+	DBG_PRINT("total lines low: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x25);	//total lines high
+	DBG_PRINT("total lines high: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x26);	//active lines low
+	DBG_PRINT("active lines low: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x27);	//active lines high
+	DBG_PRINT("active lines high: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x29);	//vertical sync width
+	DBG_PRINT("vsync width: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x2a);	//vertical back porch
+	DBG_PRINT("vertical back porch: %2x\n\n", val);
+	
+	val = DP_TX_Read_Reg(0x72, 0x2b);	//total pixels low
+	DBG_PRINT("total pixels low: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x2c);	//total pixels high
+	DBG_PRINT("total pixels high: %2x\n", val);
+	val = DP_TX_Read_Reg(0x72, 0x2d);	//active pixels low
+	DBG_PRINT("active pixels low: %2x\n", val);	
+	val = DP_TX_Read_Reg(0x72, 0x2e);	//active pixels high
+	DBG_PRINT("active pixels high: %2x\n", val);
+	val = DP_TX_Read_Reg(0x72, 0x31);	//horizon sync width low
+	DBG_PRINT("hsync width low: %2x\n", val);
+	val = DP_TX_Read_Reg(0x72, 0x32);	//horizon sync width high
+	DBG_PRINT("hsync width high: %2x\n", val);
+	val = DP_TX_Read_Reg(0x72, 0x33);	//horizon back porch low
+	DBG_PRINT("horizon back porch low: %2x\n", val);
+	val = DP_TX_Read_Reg(0x72, 0x34);	//horizon back porch high
+	DBG_PRINT("horizon back porch high: %2x\n\n", val);
+}
+#endif
+
+static int  anx6345_init(void)
+{
+	anx6345_initialize();
+	
+#ifdef LCD_EXT_DEBUG_INFO
+	test_anx9804();
+#endif
+	
 	return 0;
 }
 
@@ -454,6 +477,7 @@ static int aml_lcd_extern_init(void)
     aml_lcd_extern_port_init();
     aml_lcd_extern_change_i2c_bus(lcd_ext_config.i2c_bus);
     ret =  anx6345_init();
+    aml_lcd_extern_change_i2c_bus(aml_i2c_bus_tmp);
     
     return ret;
 }
@@ -473,6 +497,72 @@ static int aml_lcd_extern_remove(void)
     return ret;
 }
 
+#ifdef CONFIG_OF_LIBFDT
+static int get_lcd_extern_config(char *dt_addr)
+{
+	int nodeoffset;
+	char * propdata;
+	int ret;
+	int value;
+	char *of_node = LCD_EXTERN_DEVICE_NODE;
+	struct lcd_extern_config_t *pdata = &lcd_ext_config;
+	
+	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
+		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+    	return -1;
+	}
+	nodeoffset = fdt_path_offset(dt_addr, of_node);
+	if(nodeoffset < 0) {
+		printf("dts: not find  node %s.\n",LCD_EXTERN_NAME);
+		return ret;
+	}
+	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lane_num", NULL);
+	if(propdata == NULL){
+		edp_parameter.lane_num = 1;
+		printf("faild to get %s lane_num\n", LCD_EXTERN_NAME);
+	}
+	else {
+		edp_parameter.lane_num = (unsigned short)(be32_to_cpup((u32*)propdata));
+	}
+	DBG_PRINT ("lane_num =%d\n", edp_parameter.lane_num);
+	
+	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bits", NULL);
+	if(propdata == NULL){
+		edp_parameter.bits = 0x00;
+		printf("faild to get %s bits\n", LCD_EXTERN_NAME);
+	}
+	else {
+		value = (unsigned short)(be32_to_cpup((u32*)propdata));
+		if (value == 0)
+			edp_parameter.bits = 0x00;
+		else if  (value == 1)
+			edp_parameter.bits = 0x10;
+		else
+			edp_parameter.bits = 0x00;
+	}
+	DBG_PRINT ("bits =%d\n", edp_parameter.bits);
+	
+	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "link_rate", NULL);
+	if(propdata == NULL){
+		edp_parameter.link_rate = 0x0a;
+		printf("faild to get %s link_rate\n", LCD_EXTERN_NAME);
+	}
+	else {
+		value = (unsigned short)(be32_to_cpup((u32*)propdata));
+		if (value == 0)
+			edp_parameter.link_rate = 0x06;
+		else if (value == 1)
+			edp_parameter.link_rate = 0x0a;
+		else if (value == 2)
+			edp_parameter.link_rate = 0x14;
+		else 
+			edp_parameter.link_rate = 0x0a;
+	}	
+	DBG_PRINT ("link_rate =0x%02x\n", edp_parameter.link_rate);	
+	return ret;
+}
+#endif
+
 static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .name = LCD_EXTERN_NAME,
     .type = LCD_EXTERN_TYPE,
@@ -482,80 +572,12 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = aml_lcd_extern_remove,
     .init_on_cmd_8 = NULL,
     .init_off_cmd_8 = NULL,
-	.get_lcd_ext_config = get_edp_anx6345_config,
+#ifdef CONFIG_OF_LIBFDT
+    .get_lcd_ext_config = get_lcd_extern_config,
+#endif
 };
 
 struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)
 {
     return &lcd_ext_driver;
-}
-
-static unsigned char DP_TX_Read_Reg(unsigned char addr, unsigned char reg)
-{
-	int ret;
-	unsigned char *data;
-	data = &reg;
-	addr =addr >>1;
-	ret = aml_lcd_i2c_read(addr, data, 1);
-	if(ret <0)
-		return -1;
-	else 
-		return *data;
-}
-
-void test_clk(void)
-{
-	unsigned char val;
-	val = DP_TX_Read_Reg(0x70, 0x80);	//clk detect
-	DBG_PRINT("clk detect: %2x\n", val);
-	
-	val = DP_TX_Read_Reg(0x70, 0x81);	//clk change
-	DBG_PRINT("clk change: %2x\nwait for 100ms...\n", val);	
-	
-	SP_TX_Write_Reg(0x70, 0x81, 0x40);
-	mdelay(100);
-	val = DP_TX_Read_Reg(0x70, 0x81);	//clk change
-	DBG_PRINT("clk change: %2x\n\n", val);
-}
-
-void test_anx9804(void)
-{
-	unsigned char val;
-	DBG_PRINT("\nenter anx9804 test.\n");
-	
-	test_clk();
-	
-	val = DP_TX_Read_Reg(0x72, 0x23);	//video status
-	DBG_PRINT("video status: %2x\n\n", val);
-	
-	val = DP_TX_Read_Reg(0x72, 0x24);	//total lines low
-	DBG_PRINT("total lines low: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x25);	//total lines high
-	DBG_PRINT("total lines high: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x26);	//active lines low
-	DBG_PRINT("active lines low: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x27);	//active lines high
-	DBG_PRINT("active lines high: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x29);	//vertical sync width
-	DBG_PRINT("vsync width: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x2a);	//vertical back porch
-	DBG_PRINT("vertical back porch: %2x\n\n", val);
-	
-	val = DP_TX_Read_Reg(0x72, 0x2b);	//total pixels low
-	DBG_PRINT("total pixels low: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x2c);	//total pixels high
-	DBG_PRINT("total pixels high: %2x\n", val);
-	val = DP_TX_Read_Reg(0x72, 0x2d);	//active pixels low
-	DBG_PRINT("active pixels low: %2x\n", val);	
-	val = DP_TX_Read_Reg(0x72, 0x2e);	//active pixels high
-	DBG_PRINT("active pixels high: %2x\n", val);
-	val = DP_TX_Read_Reg(0x72, 0x31);	//horizon sync width low
-	DBG_PRINT("hsync width low: %2x\n", val);
-	val = DP_TX_Read_Reg(0x72, 0x32);	//horizon sync width high
-	DBG_PRINT("hsync width high: %2x\n", val);
-	val = DP_TX_Read_Reg(0x72, 0x33);	//horizon back porch low
-	DBG_PRINT("horizon back porch low: %2x\n", val);
-	val = DP_TX_Read_Reg(0x72, 0x34);	//horizon back porch high
-	DBG_PRINT("horizon back porch high: %2x\n\n", val);
-	aml_lcd_extern_change_i2c_bus(aml_i2c_bus_tmp);
 }
