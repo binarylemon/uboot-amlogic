@@ -171,6 +171,8 @@ struct efuse_chip_identify_t{
 	efuse_socchip_type_e type;
 };
 static const struct efuse_chip_identify_t efuse_chip_hw_info[]={
+	{.chiphw_mver=0x1e, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_G9TV},      //G9BB ok
+	{.chiphw_mver=28, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_G9TV},      //G9TV ok
 	{.chiphw_mver=27, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M8BABY},      //M8BABY ok
 	{.chiphw_mver=26, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M6TVD},      //M6TVD ok
 	{.chiphw_mver=25, .chiphw_subver=0, .chiphw_thirdver=0, .type=EFUSE_SOC_CHIP_M8},      //M8 ok
@@ -242,6 +244,11 @@ static int efuse_checkversion(char *buf)
 				case EFUSE_SOC_CHIP_M8BABY:
 					if((ver != M8_EFUSE_VERSION_SERIALNUM_V1)&&
 						ver != M8_EFUSE_VERSION_SERIALNUM_V2_2RSA){
+						ver = -1;
+					}
+					break;
+				case EFUSE_SOC_CHIP_G9TV:
+					if(ver != G9TV_EFUSE_VERSION_SERIALNUM_V1){
 						ver = -1;
 					}
 					break;
@@ -374,6 +381,9 @@ static int efuse_getinfo_byPOS(unsigned pos, efuseinfo_item_t *info)
 			break;
 		case EFUSE_SOC_CHIP_M6TVD:
 			versionPOS = M6TVD_EFUSE_VERSION_OFFSET;
+			break;
+		case EFUSE_SOC_CHIP_G9TV:
+			versionPOS = G9TV_EFUSE_VERSION_OFFSET;
 			break;
 		case EFUSE_SOC_CHIP_UNKNOW:
 		default:
@@ -666,6 +676,15 @@ int efuse_set_versioninfo(efuseinfo_item_t *info)
 			info->bch_reverse = M6TVD_EFUSE_VERSION_BCH_REVERSE;
 			ret = 0;
 			break;
+		case EFUSE_SOC_CHIP_G9TV:
+			info->offset = G9TV_EFUSE_VERSION_OFFSET;
+			info->data_len = G9TV_EFUSE_VERSION_DATA_LEN;
+			info->enc_len = G9TV_EFUSE_VERSION_ENC_LEN;
+			info->bch_en = G9TV_EFUSE_VERSION_BCH_EN;
+			info->we = 1;
+			info->bch_reverse = G9TV_EFUSE_VERSION_BCH_REVERSE;
+			ret = 0;
+			break;
 		case EFUSE_SOC_CHIP_UNKNOW:
 		default:
 			printf("efuse: soc is error\n");
@@ -797,6 +816,8 @@ unsigned efuse_readcustomerid(void)
 		case EFUSE_SOC_CHIP_M8BABY:
 			break;
 		case EFUSE_SOC_CHIP_M6TVD:
+			break;
+		case EFUSE_SOC_CHIP_G9TV:
 			break;
 		case EFUSE_SOC_CHIP_UNKNOW:
 		default:
@@ -946,6 +967,8 @@ int efuse_aml_init_plus(void)
 	}
 	else if(soc_type == EFUSE_SOC_CHIP_M6TVD ){
 	}
+	else if(soc_type == EFUSE_SOC_CHIP_G9TV){
+	}
 #endif
 	return nRet;
 }
@@ -1023,6 +1046,8 @@ int efuse_read_intlItem(char *intl_item,char *buf,int size)
 			}
 			break;
 		case EFUSE_SOC_CHIP_M6TVD:
+			break;
+		case EFUSE_SOC_CHIP_G9TV:
 			break;
 		case EFUSE_SOC_CHIP_UNKNOW:
 		default:
