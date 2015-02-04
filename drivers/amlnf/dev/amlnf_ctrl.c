@@ -386,6 +386,7 @@ void get_sys_clk_rate(int * rate)
 		*rate = clk_get_rate(sys_clk);
 	#else
 		*rate = get_clk81();
+		*rate = *rate/1000000;
 	#endif
 #endif
 
