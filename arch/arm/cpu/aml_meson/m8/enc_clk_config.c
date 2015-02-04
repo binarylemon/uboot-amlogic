@@ -63,8 +63,8 @@ static void set_hpll_clk_out(unsigned clk)
     aml_write_reg32_op(P_HHI_VID2_PLL_CNTL2, 0x430a800);       // internal LDO share with HPLL & VIID PLL
     switch(clk){
         case 2971:
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c84000);
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xce49c022);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69d84e00);
+            aml_write_reg32_op(P_HHI_VID_PLL_CNTL3, 0xca46c023);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL4, 0x4123b100);
             aml_write_reg32_op(P_HHI_VID2_PLL_CNTL2,0x0431a800);
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00012385);
@@ -73,7 +73,6 @@ static void set_hpll_clk_out(unsigned clk)
             WAIT_FOR_PLL_LOCKED(P_HHI_VID_PLL_CNTL);
             h_delay();
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL5, 0x00016385);   // optimise HPLL VCO 2.97GHz performance
-            aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c84e00);
             break;
         case 2970:
             aml_write_reg32_op(P_HHI_VID_PLL_CNTL2, 0x69c84000);
