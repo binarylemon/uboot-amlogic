@@ -141,23 +141,6 @@ static void setup_net_chip(void)
 	eth_reg0.b.eth_urgent = 0;
 WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);// rgmii mode
 #endif
-#ifdef CONFIG_M201_COSTDOWN
-	/* open interl pll & ethernet output clock*/
-	SET_CBUS_REG_MASK(0x10a5,1<<27);
-        SET_CBUS_REG_MASK(0x108a,0xb803);
-        SET_CBUS_REG_MASK(HHI_MPLL_CNTL9,0x5c666);
-       
-        SET_CBUS_REG_MASK(0x2050,0x7d00);
-        udelay(2000);
-	/* setup ethernet mode */
-	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
-	
-	/* hardware reset ethernet phy : gpioh_4 connect phyreset pin*/
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_EN_N, 1 << 23);
-	CLEAR_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
-	udelay(2000);
-	SET_CBUS_REG_MASK(PREG_PAD_GPIO3_O, 1 << 23);
-#endif
 	/* setup ethernet mode */
 	CLEAR_CBUS_REG_MASK(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
 	/* hardware reset ethernet phy : gpioh_4 connect phyreset pin*/

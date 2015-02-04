@@ -123,7 +123,7 @@ static void setup_net_chip(void)
 #ifdef RMII_PHY_INTERFACE
 	/* setup ethernet pinmux use gpioz(5-14) */
 	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_6,0xff7f);
-	eth_reg0.d32 = 0;
+	eth_reg0.d32 = 0x1000;
 	eth_reg0.b.phy_intf_sel = 0;
 	eth_reg0.b.data_endian = 0;
 	eth_reg0.b.desc_endian = 0;
