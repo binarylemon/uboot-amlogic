@@ -1044,10 +1044,10 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 						break;
 					}
 					else {
-						if ((be32_to_cpup((((u32*)propdata)+i+2))) > 0xffff)
+						if ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) > DSI_INIT_ON_MAX)
 							break;
 						else
-							i = i + 3 + ((be32_to_cpup((((u32*)propdata)+i+2))) & 0xff);
+							i = i + (DSI_CMD_CNT_INDEX+1) + ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) & 0xff);
 					}
 				}
 				i = (i > DSI_INIT_ON_MAX) ? DSI_INIT_ON_MAX : i;
@@ -1080,10 +1080,10 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 						break;
 					}
 					else {
-						if ((be32_to_cpup((((u32*)propdata)+i+2))) > 0xffff)
+						if ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) > DSI_INIT_OFF_MAX)
 							break;
 						else
-							i = i + 3 + ((be32_to_cpup((((u32*)propdata)+i+2))) & 0xff);
+							i = i + (DSI_CMD_CNT_INDEX+1) + ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) & 0xff);
 					}
 				}
 				i = (i > DSI_INIT_OFF_MAX) ? DSI_INIT_OFF_MAX : i;
