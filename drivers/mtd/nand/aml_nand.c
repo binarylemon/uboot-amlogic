@@ -571,6 +571,22 @@ uint8_t aml_nand_get_reg_value_hynix(struct aml_nand_chip *aml_chip,  uint8_t *b
 
 	return 0;
 }
+static int dummy_read(struct aml_nand_chip *aml_chip, unsigned char chipnr)
+{
+	struct nand_chip *chip = &aml_chip->chip;
+	struct mtd_info *mtd = &aml_chip->mtd;	
+	int i, ret = 0;
+	ret = aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
+
+    aml_chip->aml_nand_command(aml_chip, NAND_CMD_READ0, -1, -1, chipnr);
+	for (i = 0; i < 5; i++)
+        chip->cmd_ctrl(mtd, 0x0, NAND_CTRL_CHANGE | NAND_NCE | NAND_ALE);
+    aml_chip->aml_nand_command(aml_chip, NAND_CMD_READSTART, -1, -1, chipnr);
+	
+    ret = aml_chip->aml_nand_wait_devready(aml_chip, chipnr);
+
+	return 0;
+}
 
 uint8_t aml_nand_set_reg_value_hynix(struct aml_nand_chip *aml_chip,  uint8_t *buf, uint8_t *addr, int chipnr, int cnt)
 {
@@ -917,6 +933,8 @@ void aml_nand_exit_enslc_mode_hynix(struct mtd_info *mtd)
 
 			aml_nand_set_reg_value_hynix(aml_chip, &aml_chip->new_nand_info.slc_program_info.reg_default_value[i][0], &aml_chip->new_nand_info.slc_program_info.reg_addr[0], i, aml_chip->new_nand_info.slc_program_info.reg_cnt);
 		}
+        //dummy read
+        dummy_read(aml_chip,i);
 	}
 	//chip->select_chip(mtd, -1);
 
