@@ -29,7 +29,7 @@ static void serial_put_dec_nothing(unsigned int data){
 	return;
 }
 
-#if 0
+#if 1
     #define hx_serial_puts serial_puts
 	#define hx_serial_put_hex serial_put_hex
 #else
@@ -299,7 +299,7 @@ writel((zqcr&0x7ffff), P_DDR0_PUB_ZQ0PR);
 }
 
 		writel((1<<1)|((readl(P_DDR0_PUB_ZQCR))&0xfffffffe), P_DDR0_PUB_ZQCR);
-		writel(timing_set->t_pub_dxccr, P_DDR0_PUB_DXCCR);
+		writel(timing_set->t_pub_dxccr, P_DDR0_PUB_DXCCR);// .t_pub_dxccr = 4|(0xc4<<5)|(3<<19),
 		writel(readl(P_DDR0_PUB_ACBDLR0) | (timing_set->t_pub_acbdlr0), P_DDR0_PUB_ACBDLR0);  //place before write level
 
 		//initialization PHY.
@@ -690,6 +690,14 @@ writel((zqcr&0x7ffff), P_DDR1_PUB_ZQ0PR);
 		hx_serial_puts("Aml log : DDR1 - PLL,DCAL,RST,ZCAL done\n");
 	}
 
+#ifdef CONFIG_DDR_BDL_DEBUG
+if(ddr_channel_0_power){
+writel(0x16, P_DDR0_PUB_ACBDLR0); //ck
+}
+if(ddr_channel_1_power){
+writel(0x9, P_DDR1_PUB_ACBDLR0); //ck
+}
+#endif
 	//===============================================
 	//DRAM INIT
 	if(ddr_channel_0_power){
@@ -1045,8 +1053,10 @@ writel((zqcr&0x7ffff), P_DDR1_PUB_ZQ0PR);
 #else
 		writel((0x7f<<9)|(readl(P_DDR0_PUB_PGCR3)), P_DDR0_PUB_PGCR3);
 #endif
+#ifndef CONFIG_DDR_ZQ_POWER_ON
 		writel(readl(P_DDR0_PUB_ZQCR) | (0x4), P_DDR0_PUB_ZQCR);
 		__udelay(1);
+#endif
 		//writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);
 		//__udelay(1);
 	}
@@ -1056,16 +1066,21 @@ writel((zqcr&0x7ffff), P_DDR1_PUB_ZQ0PR);
 #else
 		writel((0x7f<<9)|(readl(P_DDR1_PUB_PGCR3)), P_DDR1_PUB_PGCR3);
 #endif
+#ifndef CONFIG_DDR_ZQ_POWER_ON
 		writel(readl(P_DDR1_PUB_ZQCR) | (0x4), P_DDR1_PUB_ZQCR);
 		__udelay(1);
+#endif
 		//writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL);
 		//__udelay(1);
 	}
 
 #ifdef CONFIG_DDR_BDL_DEBUG
+writel(4|(0x01<<5)|(3<<19), P_DDR0_PUB_DXCCR);// .t_pub_dxccr = 4|(0xc4<<5)|(3<<19),
+writel(4|(0x01<<5)|(3<<19), P_DDR1_PUB_DXCCR);// .t_pub_dxccr = 4|(0xc4<<5)|(3<<19),
 
-writel(0x14, P_DDR0_PUB_ACBDLR0); //ck
-/*
+
+//writel(0x08, P_DDR0_PUB_ACBDLR0); //ck
+///*
 writel(0x0, P_DDR0_PUB_ACBDLR1);//ras cas we
 writel(0x0, P_DDR0_PUB_ACBDLR2);//ba0 ba1 ba2
 writel(0x0, P_DDR0_PUB_ACBDLR3);//cs0
@@ -1076,7 +1091,7 @@ writel(0x04040404, P_DDR0_PUB_ACBDLR6);//a0 a1 a2 a3
 writel(0x04040404, P_DDR0_PUB_ACBDLR7);//a4 a5 a6 a7
 writel(0x08080808, P_DDR0_PUB_ACBDLR8);//a8 a9 a10 a11
 writel(0x08080808, P_DDR0_PUB_ACBDLR9);//a12 a13 a14 a15
-*/
+//*/
 if((timing_set->t_pctl_mcfg) & (1<<3)) 
 {
 writel(0x16161616, P_DDR0_PUB_ACBDLR1);//ras cas we
@@ -1156,7 +1171,13 @@ writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
 }
 else
 {
-/*
+ #ifdef CONFIG_DDR_READ_BDL_DEBUG
+writel(timing_set->t_pub_ddr0_dx0bdlr2, P_DDR0_PUB_DX0BDLR2);//write dqs
+writel(timing_set->t_pub_ddr0_dx1bdlr2, P_DDR0_PUB_DX1BDLR2);//write dqs
+writel(timing_set->t_pub_ddr0_dx2bdlr2, P_DDR0_PUB_DX2BDLR2);//write dqs
+writel(timing_set->t_pub_ddr0_dx3bdlr2, P_DDR0_PUB_DX3BDLR2);//write dqs
+
+ /*
 writel(timing_set->t_pub_ddr0_dx0bdlr3, P_DDR0_PUB_DX0BDLR3);//d0 d1 d2 d3 read
 writel(timing_set->t_pub_ddr0_dx0bdlr4, P_DDR0_PUB_DX0BDLR4);//d4 d5 d6 d7
 writel(timing_set->t_pub_ddr0_dx0bdlr5, P_DDR0_PUB_DX0BDLR5);//dm dsr dsrn
@@ -1188,22 +1209,41 @@ writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
 temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xff );
 temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
 writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+#else 
+/*
+temp_bdl=(readl(P_DDR0_PUB_DX0LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR0_PUB_DX0LCDLR1);
+
+temp_bdl=(readl(P_DDR0_PUB_DX1LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR0_PUB_DX1LCDLR1);
+
+temp_bdl=(readl(P_DDR0_PUB_DX2LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
+
+temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+*/
+#endif
 }
 
-writel(0x10, P_DDR1_PUB_ACBDLR0); //ck
-/*
+//writel(0x18, P_DDR1_PUB_ACBDLR0); //ck
+///*
 
-writel(0x0, P_DDR1_PUB_ACBDLR1);//ras cas we
-writel(0x0, P_DDR1_PUB_ACBDLR2);//ba0 ba1 ba2
-writel(0x0, P_DDR1_PUB_ACBDLR3);//cs0
-writel(0x0, P_DDR1_PUB_ACBDLR4);//odt
-writel(0x04, P_DDR1_PUB_ACBDLR5);//cke
+writel(0x2, P_DDR1_PUB_ACBDLR1);//ras cas we
+writel(0x2, P_DDR1_PUB_ACBDLR2);//ba0 ba1 ba2
+writel(0x2, P_DDR1_PUB_ACBDLR3);//cs0
+writel(0x2, P_DDR1_PUB_ACBDLR4);//odt
+writel(0x06, P_DDR1_PUB_ACBDLR5);//cke
 
-writel(0x04040404, P_DDR1_PUB_ACBDLR6);//a0 a1 a2 a3
-writel(0x04040404, P_DDR1_PUB_ACBDLR7);//a4 a5 a6 a7
-writel(0x08080808, P_DDR1_PUB_ACBDLR8);//a8 a9 a10 a11
-writel(0x08080808, P_DDR1_PUB_ACBDLR9);//a12 a13 a14 a15
-*/
+writel(0x06060606, P_DDR1_PUB_ACBDLR6);//a0 a1 a2 a3
+writel(0x06060606, P_DDR1_PUB_ACBDLR7);//a4 a5 a6 a7
+writel(0x0a0a0a0a, P_DDR1_PUB_ACBDLR8);//a8 a9 a10 a11
+writel(0x0a0a0a0a, P_DDR1_PUB_ACBDLR9);//a12 a13 a14 a15
+//*/
 if((timing_set->t_pctl_mcfg) & (1<<3)) //DDR0, DDR1 same setting?
 {
 writel(0x16161616, P_DDR1_PUB_ACBDLR1);//ras cas we
@@ -1283,6 +1323,29 @@ writel(temp_bdl,P_DDR1_PUB_DX3LCDLR1);
 }
 else
 {
+ #ifdef CONFIG_DDR_READ_BDL_DEBUG
+
+ writel(timing_set->t_pub_ddr1_dx0bdlr2, P_DDR1_PUB_DX0BDLR2);//write dqs
+writel(timing_set->t_pub_ddr1_dx1bdlr2, P_DDR1_PUB_DX1BDLR2);//write dqs
+writel(timing_set->t_pub_ddr1_dx2bdlr2, P_DDR1_PUB_DX2BDLR2);//write dqs
+writel(timing_set->t_pub_ddr1_dx3bdlr2, P_DDR1_PUB_DX3BDLR2);//write dqs
+
+temp_bdl=(readl(P_DDR1_PUB_DX0LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR1_PUB_DX0LCDLR1);
+
+temp_bdl=(readl(P_DDR1_PUB_DX1LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR1_PUB_DX1LCDLR1);
+
+temp_bdl=(readl(P_DDR1_PUB_DX2LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR1_PUB_DX2LCDLR1);
+
+temp_bdl=(readl(P_DDR1_PUB_DX3LCDLR1) &0xff );
+temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
+writel(temp_bdl,P_DDR1_PUB_DX3LCDLR1);
+
 /*
 writel(timing_set->t_pub_ddr1_dx0bdlr3, P_DDR1_PUB_DX0BDLR3);//d0 d1 d2 d3 read
 writel(timing_set->t_pub_ddr1_dx0bdlr4, P_DDR1_PUB_DX0BDLR4);//d4 d5 d6 d7
@@ -1300,6 +1363,8 @@ writel(timing_set->t_pub_ddr1_dx3bdlr3, P_DDR1_PUB_DX3BDLR3);//d0 d1 d2 d3
 writel(timing_set->t_pub_ddr1_dx3bdlr4, P_DDR1_PUB_DX3BDLR4);//d4 d5 d6 d7
 writel(timing_set->t_pub_ddr1_dx3bdlr5, P_DDR1_PUB_DX3BDLR5);//dm dsr dsrn
 */
+#else
+/*
 temp_bdl=(readl(P_DDR1_PUB_DX0LCDLR1) &0xff );
 temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
 writel(temp_bdl,P_DDR1_PUB_DX0LCDLR1);
@@ -1315,6 +1380,8 @@ writel(temp_bdl,P_DDR1_PUB_DX2LCDLR1);
 temp_bdl=(readl(P_DDR1_PUB_DX3LCDLR1) &0xff );
 temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
 writel(temp_bdl,P_DDR1_PUB_DX3LCDLR1);
+*/
+#endif
 }
 
 

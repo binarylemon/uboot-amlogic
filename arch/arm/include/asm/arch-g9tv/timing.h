@@ -25,6 +25,19 @@ struct ddr_set{
 	unsigned       t_pub_dxccr;	  //PUB DXCCR
 
 	unsigned       t_pub_acbdlr0; //PUB ACBDLR0
+	   unsigned       t_pub_ddr0_dx0bdlr0;
+	   unsigned       t_pub_ddr0_dx0bdlr1;
+	   unsigned       t_pub_ddr0_dx0bdlr2;
+          unsigned       t_pub_ddr0_dx1bdlr0;
+	   unsigned       t_pub_ddr0_dx1bdlr1;
+	   unsigned       t_pub_ddr0_dx1bdlr2;
+          unsigned       t_pub_ddr0_dx2bdlr0;
+	   unsigned       t_pub_ddr0_dx2bdlr1;
+	   unsigned       t_pub_ddr0_dx2bdlr2;
+          unsigned       t_pub_ddr0_dx3bdlr0;
+	   unsigned       t_pub_ddr0_dx3bdlr1;
+	   unsigned       t_pub_ddr0_dx3bdlr2;
+	   
           unsigned       t_pub_ddr0_dx0bdlr3;
 	   unsigned       t_pub_ddr0_dx0bdlr4;
 	   unsigned       t_pub_ddr0_dx0bdlr5;
@@ -37,6 +50,18 @@ struct ddr_set{
           unsigned       t_pub_ddr0_dx3bdlr3;
 	   unsigned       t_pub_ddr0_dx3bdlr4;
 	   unsigned       t_pub_ddr0_dx3bdlr5;
+	   unsigned       t_pub_ddr1_dx0bdlr0;
+	   unsigned       t_pub_ddr1_dx0bdlr1;
+	   unsigned       t_pub_ddr1_dx0bdlr2;
+          unsigned       t_pub_ddr1_dx1bdlr0;
+	   unsigned       t_pub_ddr1_dx1bdlr1;
+	   unsigned       t_pub_ddr1_dx1bdlr2;
+          unsigned       t_pub_ddr1_dx2bdlr0;
+	   unsigned       t_pub_ddr1_dx2bdlr1;
+	   unsigned       t_pub_ddr1_dx2bdlr2;
+          unsigned       t_pub_ddr1_dx3bdlr0;
+	   unsigned       t_pub_ddr1_dx3bdlr1;
+	   unsigned       t_pub_ddr1_dx3bdlr2;
 
 	   unsigned       t_pub_ddr1_dx0bdlr3;
 	   unsigned       t_pub_ddr1_dx0bdlr4;

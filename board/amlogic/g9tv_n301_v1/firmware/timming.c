@@ -212,7 +212,7 @@ static struct ddr_set __ddr_setting={
 			  (0 << 2) |	//[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
 			  				// and is ignored for mDDR/LPDDR2 and DDR3
 	          (1 << 5) |    //[B5] ddr3en: 1: ddr3 protocal; 0 : ddr2 protocal
-	         (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
+	      //   (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
 	          (((((CFG_DDR_FAW+CFG_DDR_RRD-1)/CFG_DDR_RRD)-4)&0x3)<<18) | //[B19,B18] tfaw_cfg
 	                          	   //tFAW= (4 + MCFG.tfaw_cfg)*tRRD - MCFG1.tfaw_cfg_offset
 	                          	   // 0:tFAW=4*tRRD - mcfg1.tfaw_cfg_offset 
@@ -227,37 +227,48 @@ static struct ddr_set __ddr_setting={
 			  //tFAW= (4 + MCFG.tfaw_cfg)*tRRD - tfaw_cfg_offset
 			  ,
 
-	.t_pub_zq0pr = 0x39, //0x19
+	.t_pub_zq0pr = 0x49, //0x19
 	//.t_pub_zq0pr = 0x35,
 	.t_pub_dxccr = 4|(0xf7<<5)|(3<<19),
 
 	//.t_pub_acbdlr0 = 0,
 	.t_pub_acbdlr0 = 0x14,
-	.t_pub_ddr0_dx0bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr0_dx0bdlr4=0x0b0b0b0b,
+	.t_pub_ddr0_dx0bdlr3=0x07070707 ,
+       .t_pub_ddr0_dx0bdlr4=0x07070707,
 	   .t_pub_ddr0_dx0bdlr5=0x00000000,
-	.t_pub_ddr0_dx1bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr0_dx1bdlr4=0x0b0b0b0b,
+	.t_pub_ddr0_dx1bdlr3=0x07070707 ,
+       .t_pub_ddr0_dx1bdlr4=0x07070707,
 	   .t_pub_ddr0_dx1bdlr5=0x00000000,
-	.t_pub_ddr0_dx2bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr0_dx2bdlr4=0x0b0b0b0b,
+	.t_pub_ddr0_dx2bdlr3=0x07070707 ,
+       .t_pub_ddr0_dx2bdlr4=0x07070707,
 	   .t_pub_ddr0_dx2bdlr5=0x00000000,
-	.t_pub_ddr0_dx3bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr0_dx3bdlr4=0x0b0b0b0b,
+	.t_pub_ddr0_dx3bdlr3=0x07070707 ,
+       .t_pub_ddr0_dx3bdlr4=0x07070707,
 	   .t_pub_ddr0_dx3bdlr5=0x00000000,
+
+      .t_pub_ddr0_dx0bdlr2=0x07070707 ,
+       .t_pub_ddr0_dx1bdlr2=0x07070707,
+	 .t_pub_ddr0_dx2bdlr2=0x07070707,
+	  .t_pub_ddr0_dx3bdlr2=0x07070707,
 	
-	.t_pub_ddr1_dx0bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr1_dx0bdlr4=0x0b0b0b0b,
+	.t_pub_ddr1_dx0bdlr3=0x07070707 ,
+       .t_pub_ddr1_dx0bdlr4=0x07070707,
 	   .t_pub_ddr1_dx0bdlr5=0x00000000,
-	.t_pub_ddr1_dx1bdlr3=0x0b0b0b0b,
-       .t_pub_ddr1_dx1bdlr4=0x0b0b0b0b,
+	.t_pub_ddr1_dx1bdlr3=0x07070707,
+       .t_pub_ddr1_dx1bdlr4=0x07070707,
 	   .t_pub_ddr1_dx1bdlr5=0x00000000,
-	.t_pub_ddr1_dx2bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr1_dx2bdlr4=0x0b0b0b0b,
+	.t_pub_ddr1_dx2bdlr3=0x07070707 ,
+       .t_pub_ddr1_dx2bdlr4=0x07070707,
 	   .t_pub_ddr1_dx2bdlr5=0x00000000,
-	.t_pub_ddr1_dx3bdlr3=0x0b0b0b0b ,
-       .t_pub_ddr1_dx3bdlr4=0x0b0b0b0b,
+	.t_pub_ddr1_dx3bdlr3=0x07070707 ,
+       .t_pub_ddr1_dx3bdlr4=0x07070707,
 	   .t_pub_ddr1_dx3bdlr5=0x00000000,
+
+ .t_pub_ddr1_dx0bdlr2=0x07070707 ,
+       .t_pub_ddr1_dx1bdlr2=0x07070707,
+	 .t_pub_ddr1_dx2bdlr2=0x07070707,
+	  .t_pub_ddr1_dx3bdlr2=0x07070707,
+	
 	   
 	
 	.t_pub_dcr = 0x8b,
@@ -274,7 +285,7 @@ static struct ddr_set __ddr_setting={
 			(0 << 0 ),    //[B1,B0]burst length	:  00: fixed BL8; 01: 4 or 8 on the fly; 10:fixed BL4; 11: reserved
 				                    						      
        	[1]=(0 << 9)|(0<< 6)|(1 << 2)|	//RTT (B9,B6,B2) 000 ODT disable;001:RZQ/4= 60;010: RZQ/2;011:RZQ/6;100:RZQ/12;101:RZQ/8
-           	(0 << 5)|(0 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
+           	(0 << 5)|(1 << 1) |			//DIC(B5,B1) 00: Reserved for RZQ/6; 01:RZQ/7= 34;10,11 Reserved
 		#ifdef CONFIG_ENABLE_WRITE_LEVELING
 	            (1 << 7)|     // Write leveling enable
 		#endif
