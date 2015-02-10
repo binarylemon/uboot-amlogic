@@ -633,9 +633,9 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
-    backup_remote_register();
+ //   backup_remote_register();
     //set the ir_remote to 32k mode at ARC
-    init_custom_trigger();
+ //   init_custom_trigger();
 #endif
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -650,7 +650,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(1<<8,0xc810008c); //clear intr
 */
 #ifdef CONFIG_CEC_WAKEUP
-    udelay__(10000);
+//    udelay__(10000);
     if(hdmi_cec_func_config & 0x1){
         cec_power_on();
         cec_msg.log_addr = 4;
@@ -664,6 +664,15 @@ unsigned int rn5t618_detect_key(unsigned int flags)
          * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
+#ifdef CONFIG_CEC_WAKEUP
+        if(hdmi_cec_func_config & 0x1){
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
+        }
+#endif
+	#ifndef CONFIG_ALWAYS_POWER_ON		/* only for tablet */
 	    power_status = get_charging_state();
         if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
             ret = FLAG_WAKEUP_PWROFF;
@@ -714,6 +723,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
             }
             delay_cnt = 0;
         }
+	#endif		/* CONFIG_ALWAYS_POWER_ON */
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 		if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){
@@ -724,6 +734,13 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 			break;
 		}
 #endif
+
+	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {
+            exit_reason = 7;
+			ret = FLAG_WAKEUP_ALARM;
+            break;
+        }
+
 #ifdef CONFIG_CEC_WAKEUP
         if(hdmi_cec_func_config & 0x1){
           cec_handler();	
@@ -762,7 +779,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(gpio_mask,0xc8100080);
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
-	resume_remote_register();
+//	resume_remote_register();
 #endif
 
     return ret;

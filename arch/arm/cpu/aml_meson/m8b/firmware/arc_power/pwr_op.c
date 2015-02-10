@@ -897,7 +897,7 @@ unsigned int detect_key(unsigned int flags)
 	writel(readl(0xc8100080) | (1<<8),0xc8100080);//set gpio intr as fiq
 
 #ifdef CONFIG_CEC_WAKEUP
-    udelay__(10000);
+//    udelay__(10000);
     if(hdmi_cec_func_config & 0x1){
         cec_power_on();
         cec_msg.log_addr = 4;
@@ -912,7 +912,16 @@ unsigned int detect_key(unsigned int flags)
          * when extern power status has changed, we need break
          * suspend loop and resume system.
          */
+#ifdef CONFIG_CEC_WAKEUP
+        if(hdmi_cec_func_config & 0x1){
+          cec_handler();	
+          if(cec_msg.cec_power == 0x1){  //cec power key
+                break;
+            }
+        }
+#endif
 #ifdef CONFIG_AML1218
+	#ifndef CONFIG_ALWAYS_POWER_ON		/* only for tablet */
         power_status = aml1218_get_charge_status();
         if (power_status ^ prev_status) {
             if (flags == 0x87654321) {      // suspend from uboot
@@ -953,6 +962,7 @@ unsigned int detect_key(unsigned int flags)
             }
             delay_cnt = 0;
         }
+	#endif		/* CONFIG_ALWAYS_POWER_ON */
 #endif
 #ifdef CONFIG_IR_REMOTE_WAKEUP
         if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){

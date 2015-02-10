@@ -1,6 +1,8 @@
 #ifndef _CEC_TX_REG_H
 #define _CEC_TX_REG_H
 
+#define CEC_OSD_NAME "Mbox"
+
 #define HDMI_ADDR_PORT 0x2000
 #define HDMI_DATA_PORT 0x2004
 #define HDMI_CNTL_PORT 0x2008
@@ -579,6 +581,7 @@ unsigned int repeat;
 unsigned long hdmi_cec_func_config;
 void cec_node_init(void);
 void cec_power_on(void);
+void cec_off(void);
 unsigned int cec_handler(void);
 void remote_cec_hw_reset(void);
 unsigned char remote_cec_ll_rx(void);

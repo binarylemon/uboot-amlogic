@@ -262,20 +262,23 @@ void enter_power_down()
     f_serial_puts("CEC M8:uboot: P_AO_DEBUG_REG0:\n");
     serial_put_hex(hdmi_cec_func_config,32);
     f_serial_puts("\n");
+    if(hdmi_cec_func_config & 0x1){
+        cec_off();
+    }
 #endif
  	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
-	switch_24M_to_32K();
+//	switch_24M_to_32K();
 
-	if(p_arc_pwr_op->power_off_at_32K_1)
-		p_arc_pwr_op->power_off_at_32K_1();
+//	if(p_arc_pwr_op->power_off_at_32K_1)
+//		p_arc_pwr_op->power_off_at_32K_1();
 
-	if(p_arc_pwr_op->power_off_at_32K_2)
-		p_arc_pwr_op->power_off_at_32K_2();
+//	if(p_arc_pwr_op->power_off_at_32K_2)
+//		p_arc_pwr_op->power_off_at_32K_2();
 
 	// gate off:  bit0: REMOTE;   bit3: UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x8)),P_AO_RTI_GEN_CNTL_REG0);
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)&(~(0x8)),P_AO_RTI_GEN_CNTL_REG0);
 
 	if(uboot_cmd_flag == 0x87654321)//u-boot suspend cmd flag
 	{
@@ -316,16 +319,16 @@ void enter_power_down()
 	}
 
 // gate on:  bit0: REMOTE;   bit3: UART
-	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);
+//	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);
 
-	if(p_arc_pwr_op->power_on_at_32K_2)
-		p_arc_pwr_op->power_on_at_32K_2();
+//	if(p_arc_pwr_op->power_on_at_32K_2)
+//		p_arc_pwr_op->power_on_at_32K_2();
 
-	if(p_arc_pwr_op->power_on_at_32K_1)
-		p_arc_pwr_op->power_on_at_32K_1();
+//	if(p_arc_pwr_op->power_on_at_32K_1)
+//		p_arc_pwr_op->power_on_at_32K_1();
 
 
-	switch_32K_to_24M();
+//	switch_32K_to_24M();
 
 
 	// power on even more domains
