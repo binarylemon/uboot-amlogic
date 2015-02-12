@@ -1158,7 +1158,7 @@ void C_Entry(HDMI_Video_Codes_t vic)
     hdmi_tx_enc(vic);
     aml_write_reg32(P_VPU_HDMI_FMT_CTRL,(((TX_INPUT_COLOR_FORMAT==HDMI_COLOR_FORMAT_420)?2:0)  << 0) | // [ 1: 0] hdmi_vid_fmt. 0=444; 1=convert to 422; 2=convert to 420.
                          (2                                                     << 2) | // [ 3: 2] chroma_dnsmp. 0=use pixel 0; 1=use pixel 1; 2=use average.
-                         (((TX_COLOR_DEPTH==HDMI_COLOR_DEPTH_24B)? 1:0)         << 4) | // [    4] dith_en. 1=enable dithering before HDMI TX input.
+                         (0                                                     << 4) | // [    4] dith_en. 1=enable dithering before HDMI TX input.
                          (0                                                     << 5) | // [    5] hdmi_dith_md: random noise selector.
                          (0                                                     << 6)); // [ 9: 6] hdmi_dith10_cntl.
     if(mode420 == 1) {
