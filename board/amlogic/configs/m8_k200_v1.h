@@ -443,7 +443,11 @@
 //----------------------------------------------------------------------
 //Please set the M8 CPU clock(unit: MHz)
 //legal value: 600, 792, 996, 1200,1440
+#if defined(CONFIG_CPU_792M)
+#define M8_CPU_CLK          (792)
+#else
 #define M8_CPU_CLK 		    (1200)
+#endif
 #define CONFIG_SYS_CPU_CLK	(M8_CPU_CLK)
 //----------------------------------------------------------------------
 
