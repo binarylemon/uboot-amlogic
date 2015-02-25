@@ -6,6 +6,7 @@
 
 #define CONFIG_POWER_SPL
 #define PWM_E                               5
+#define CONFIG_PWM_VCCK_VOLTAGE            1130   //VCCK voltage when boot, must have
 #define CONFIG_VCCK_PWM                     PWM_E
 #define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
 #define PWM_F                               6
