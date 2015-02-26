@@ -1514,7 +1514,7 @@ void power_init(int init_mode)
     __udelay(1000);
 
 #ifdef CONFIG_PWM_VCCK_VOLTAGE
-	pwm_e_set_vcck_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
+	pwm_e_set_vcck_voltage(CONFIG_PWM_VCCK_VOLTAGE);
 #endif
 
     serial_puts("PMU:"PMU_NAME"\n");
