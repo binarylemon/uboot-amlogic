@@ -500,19 +500,21 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 				size = nand->size;
 				printf("whole chip.\n");
 			}
-		}
-		else
-		{
-			/* skip first two or three arguments, look for offset and size */
-			if ((strcmp(cmd, "erase") == 0) && (argc < 3))
+			else
 			{
-				goto usage;
+				/* skip first two or three arguments, look for offset and size */
+				if ((strcmp(cmd, "erase") == 0) && (argc < 3))
+				{
+					goto usage;
+				}
+				if ((arg_off_size(argc - o, argv + o, nand, &off, &size) != 0))
+				{
+					return  1;
+				}
 			}
-                    if ((arg_off_size(argc - o, (char **)(argv + o), nand, &off, &size) != 0))
-                    {
-                        return  1;
-                    }
 		}
+		else 
+			goto usage;
 
 		memset(&opts, 0, sizeof(opts));
 		opts.offset = off;
