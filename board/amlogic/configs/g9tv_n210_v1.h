@@ -1,5 +1,5 @@
-#ifndef __CONFIG_G9TV_N300_V1_H__
-#define __CONFIG_G9TV_N300_V1_H__
+#ifndef __CONFIG_G9TV_N210_V1_H__
+#define __CONFIG_G9TV_N210_V1_H__
 
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
@@ -61,12 +61,14 @@
 
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
-#ifdef CONFIG_ACS
-#define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
-#else
-#define CONFIG_TPL_BOOT_ID_ADDR       		(&reboot_mode)//pass boot_id, spl->uboot
-#endif// #ifdef CONFIG_ACS
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card 
+#define CONFIG_SD_BURNING_SUPPORT_LED    1//1 then using led flickering states changing to show burning states when sdcard burning
+#define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #endif// #if CONFIG_AML_V2_USBTOOL
+
+#define CONFIG_UNIFY_KEY_MANAGE 1
+#define CONFIG_CMD_PWM  1
 
 //Enable storage devices
 #define CONFIG_CMD_NAND  1
@@ -74,6 +76,8 @@
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
 #define CONFIG_AML_HDMI_TX 1
+
+#define CONFIG_CMD_CPU_TEMP
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -171,7 +175,7 @@
 
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
+	"us_delay_step=1\0" \
 	"loadaddr=0x12000000\0" \
 	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
@@ -181,18 +185,23 @@
 	"boardname=g9tv_board\0" \
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
+	"hdmimode=1080p\0" \
+	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
-	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
-	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
-    "video_dev=tvout\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"vdac_config=0x10\0" \
+	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend ramoops.mem_address=0x04e00000 ramoops.mem_size=0x100000 ramoops.record_size=0x8000 ramoops.console_size=0x4000\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
+	"video_dev=tvout\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x15100000\0" \
+	"fb_width=1280\0"\
+	"fb_height=720\0"\
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -200,82 +209,108 @@
 	"p1start=1400000\0" \
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
-	"powermode=on\0" \
-	"pstandby=on\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
-	"lcd_reverse=0\0" \
-	"osd_reverse=n\0" \
-	"panel_reverse=n\0" \
-	"suspend=off\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
-	"sdcburncfg=aml_sdc_burn.ini\0"\
+    "wipe_data=successful\0"\
+	"cvbs_drv=0\0"\
+	"upgrade_check="\
+                "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
+                "if itest ${upgrade_step} == 1; then  "\
+                    "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
+                "fi; "\
+		"\0"\
 	"preboot="\
+		"run upgrade_check;"\
 		"run prepare; "\
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
-		"run switch_bootmode\0" \
-		\
-    "storeargs="\
-        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
-    \
-    "prepare="\
-        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
-        "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; "\
+                "run storeargs;"\
+                "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+                "run update_key; " \
+		"run switch_bootmode;" \
+         "\0"\
+        "update_key="\
+                "saradc open 0; " \
+                "if saradc get_in_range 0 0x50; then " \
+                    "msleep 50; " \
+                    "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
+                "fi;" \
         "\0"\
-	\
-	"storeboot="\
-        "echo Booting...; "\
-        "imgread kernel boot ${loadaddr};"\
-        "bootm;"\
-        "run recovery\0" \
-    \
-    "switch_bootmode="\
-		"if test ${reboot_mode} = normal; then "\
-			"run storeargs; "\
-		"else if test ${reboot_mode} = factory_reset; then "\
-			"run recovery; "\
-		"else if test ${reboot_mode} = update; then "\
-			"run update; "\
-		"else if test ${reboot_mode} = usb_burning; then "\
-			"run usb_burning; "\
-		"else "\
-			"run storeargs; "\
-		"fi; fi; fi; fi;\0" \
-		\
-	"recovery="\
-		"echo enter recovery;"\
-		"if imgread kernel recovery ${loadaddr}; then "\
-			"bootm;"\
+   	"update="\
+                /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+                "run usb_burning; "\
+                "if mmcinfo; then "\
+                    "if fatexist mmc 0 ${sdcburncfg}; then "\
+                                "run sdc_burning; "\
+                    "else "\
+                        "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+                        "run recovery;"\
+                    "fi;"\
+                "else "\
+                    "run recovery;"\
+                "fi;\0"\
+            \
+          "storeargs="\
+                "setenv bootargs ${initargs} cvbsdrv=${cvbs_drv} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+            \
+	"switch_bootmode="\
+                "if test ${reboot_mode} = factory_reset; then "\
+                        "run recovery;"\
+                "else if test ${reboot_mode} = update; then "\
+                        "run update;"\
+                "else if test ${reboot_mode} = usb_burning; then "\
+                        "run usb_burning;"\
+                "else if test ${wipe_data} = failed; then "\
+                        "echo wipe_data=${wipe_data}; run recovery;"\
+                "else if test ${reboot_mode} = charging; then "\
+                        "run try_auto_burn;"\
+                "else " \
+                        "  "\
+                "fi;fi;fi;fi;fi;\0" \
+            \
+            "prepare="\
+                "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
+                "imgread pic logo bootup ${loadaddr_logo}; "\
+                "bmp display ${bootup_offset}; bmp scale;"\
+                "\0"\
+                \
+            "storeboot="\
+                        "secukey auto;" \
+                        "secukey write keyexample 1234567890; "\
+                "echo Booting...; "\
+                "if unifykey get usid; then  "\
+                    "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+                "fi;"\
+                "if unifykey get mac; then  "\
+                    "setenv bootargs ${bootargs} mac=${mac};"\
+                "fi;"\
+                "imgread kernel boot ${loadaddr};"\
+                "bootm;"\
+                "run recovery\0" \
+                    \
+            "recovery="\
+                "echo enter recovery;"\
+                "if mmcinfo; then "\
+                    "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
+                "fi; "\
+                "if usb start 0; then "\
+                        "if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+                        "if fatload usb 0 ${loadaddr} recovery.img; then bootm; fi;"\
+                "fi;"\
+                "if imgread kernel recovery ${loadaddr}; then "\
+                        "bootm; "\
 		"else "\
 			"echo no recovery in flash; "\
-		"fi\0" \
-		\
-	"update="\
-		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
-		"echo update...; "\
-		"if mmcinfo; then "\
-			"if fatexist mmc 0 ${sdcburncfg}; then "\
-				"sdc_burn ${sdcburncfg}; "\
-			"else "\
-				"if fatload mmc 0 ${loadaddr} aml_autoscript; then "\
-					"autoscr ${loadaddr}; "\
-				"fi; "\
-				"if fatload mmc 0 ${loadaddr} recovery.img; then "\
-				"bootm; fi; "\
-			"fi;"\
-		"fi;"\
-		"if imgread kernel recovery ${loadaddr}; then "\
-			"bootm; "\
-		"else "\
-			"echo no recovery in flash; "\
-		"fi\0" \
-		\
+		 "fi;\0" \
+            \
+            "usb_burning=update 1000\0" \
+            "try_auto_burn=update 700 750;\0"\
+            "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 #define CONFIG_BOOTCOMMAND   "run storeboot"
 
@@ -299,8 +334,8 @@
 
 #else
 
-//#define CONFIG_SPI_BOOT 1
-#define CONFIG_MMC_BOOT
+#define CONFIG_SPI_BOOT 1
+//#define CONFIG_MMC_BOOT
 //#define CONFIG_NAND_BOOT 1
 
 #ifdef CONFIG_NAND_BOOT
@@ -330,9 +365,6 @@
 #endif
 
 #endif
-
-//enable auto update env--> defenv;save;
-#define CONFIG_AUTO_UPDATE_ENV 1
 
 //----------------------------------------------------------------------
 //Please set the CPU clock(unit: MHz)
@@ -390,9 +422,11 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
+#define CONFIG_CMD_IMGPACK 1
 
 //L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
@@ -442,4 +476,4 @@
 
 #define CONFIG_UBOOT_BUILD_VERSION_INFO 1
 
-#endif //__CONFIG_G9TV_N300_V1_H__
+#endif //__CONFIG_G9TV_N210_V1_H__
