@@ -180,7 +180,7 @@ static int amlnand_chip_scan(struct amlnand_chip *aml_chip)
 		}else
 		aml_nand_msg("detected %d NAND chips",controller->chip_num);		
 	}
-#if 0
+#if 1
 	if (controller->onfi_mode) {
 		operation->set_onfi_para(aml_chip, (unsigned char *)&(controller->onfi_mode), ONFI_TIMING_ADDR);
 		operation->get_onfi_para(aml_chip, onfi_features, ONFI_TIMING_ADDR);
