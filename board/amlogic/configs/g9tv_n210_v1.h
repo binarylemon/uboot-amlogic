@@ -225,7 +225,7 @@
 	"upgrade_check="\
                 "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
                 "if itest ${upgrade_step} == 1; then  "\
-                    "defenv_reserve_env; setenv upgrade_step 2; saveenv;"\
+                    "defenv; setenv upgrade_step 2; saveenv;"\
                 "fi; "\
 		"\0"\
 	"preboot="\
