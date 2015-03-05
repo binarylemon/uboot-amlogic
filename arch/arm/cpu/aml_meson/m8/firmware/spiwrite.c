@@ -11,6 +11,8 @@ SPL_STATIC_FUNC void spi_pinmux_init(void)
 
 }
 
+#if 0
+
 STATIC_PREFIX int SPI_page_program(unsigned * addr_source, unsigned spi_addr, int byte_length)
 {
    //unsigned temp;
@@ -70,6 +72,9 @@ STATIC_PREFIX int SPI_sector_erase(unsigned addr )
   
   return 0;
 }
+#endif
+
+
 STATIC_PREFIX void spi_init(void)
 {
     spi_pinmux_init();
@@ -84,7 +89,7 @@ STATIC_PREFIX void spi_erase(void)
     serial_puts("\nErase..");
     SPI_sector_erase(0);
 }
-#endif
+
 static void spi_disable_write_protect(void)
 {
     unsigned char statusValue;
@@ -129,3 +134,5 @@ STATIC_PREFIX void spi_program(unsigned dest,unsigned src,unsigned size)
     serial_puts("\nEnd..\n");
 
 }
+#endif
+
