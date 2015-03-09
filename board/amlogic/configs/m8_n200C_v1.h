@@ -533,7 +533,8 @@
 #define CONFIG_CMD_RANDOM
 /* secure storage support both spi and emmc */
 #define CONFIG_SECURE_MMC
-//#define CONFIG_SPI_NOR_SECURE_STORAGE
+#define CONFIG_SPI_NOR_SECURE_STORAGE
+#define CONFIG_SECURE_NAND
 #endif // CONFIG_SECURE_STORAGE_BURNED
 
 #endif //CONFIG_MESON_TRUSTZONE
