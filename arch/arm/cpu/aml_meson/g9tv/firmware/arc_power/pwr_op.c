@@ -225,10 +225,13 @@ void chip_power_off_at_24M()
 	
   	//f_serial_puts("close stb...\n");
  	//wait_uart_empty();
-	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 11),P_AO_RTI_PIN_MUX_REG); //close stb
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 10),P_AO_RTI_PIN_MUX_REG); //close stb
 	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
 
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1 << 9)),P_AO_RTI_PIN_MUX_REG); //close ddr
+	writel(readl(P_AO_GPIO_O_EN_N)&(~(1 << 19)),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&(~(1 << 3)),P_AO_GPIO_O_EN_N);
 	//f_serial_puts("open Isolation \n");
 	//wait_uart_empty();
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x3 << 3),P_AO_RTI_PWR_CNTL_REG0 );  //open Isolation
@@ -239,8 +242,12 @@ void chip_power_off_at_24M()
 
 void chip_power_on_at_24M()
 {
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 9),P_AO_RTI_PIN_MUX_REG); //open ddr
+	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 19),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 3),P_AO_GPIO_O_EN_N);
+
 	//wait_uart_empty();
-	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 11),P_AO_RTI_PIN_MUX_REG);  //open stb
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 10),P_AO_RTI_PIN_MUX_REG);  //open stb
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
 	//udelay__(500);
@@ -281,8 +288,7 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 	saradc_enable();
 #endif	
 
-    writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
-    writel(readl(P_AO_RTI_PULL_UP_REG)|(1 << 3)|(1<<19),P_AO_RTI_PULL_UP_REG);
+
 
     do {
         if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
