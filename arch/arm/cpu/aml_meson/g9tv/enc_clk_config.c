@@ -111,7 +111,7 @@ static void set_hdmitx_sys_clk(void)
 static void set_hpll_clk_out(unsigned clk)
 {
     check_clk_config(clk);
-    printk("config HPLL\n");
+    printk("config HPLL = %d\n", clk);
     switch(clk){
     case 2970:
         aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL, 0x5000023d);
@@ -136,6 +136,20 @@ static void set_hpll_clk_out(unsigned clk)
         aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL, 0x00000266);
         aml_set_reg32_bits(P_HHI_HDMI_PLL_CNTL, 0x5, 28, 3);  //reset hpll
         aml_set_reg32_bits(P_HHI_HDMI_PLL_CNTL, 0x4, 28, 3);
+        printk("waiting HPLL lock\n");
+        WAIT_FOR_PLL_LOCKED(P_HHI_HDMI_PLL_CNTL);
+        break;
+    case 1080:
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL, 0x5000022d);
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL2, 0x00890000);
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL3, 0x135c5091);
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL4, 0x801da72c);
+        // P_HHI_HDMI_PLL_CNTL5
+        // 0x71c86900 for div2 disable inside PLL2 of HPLL
+        // 0x71486900 for div2s enable inside PLL2 of HPLL
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL5, 0x71c86900);
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL6, 0x00000e55);
+        aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL, 0x4000022d);
         printk("waiting HPLL lock\n");
         WAIT_FOR_PLL_LOCKED(P_HHI_HDMI_PLL_CNTL);
         break;
@@ -376,6 +390,8 @@ static void hpll_load_en(void)
 // mode viu_path viu_type hpll_clk_out od1 od2 od3
 // vid_pll_div vid_clk_div hdmi_tx_pixel_div encp_div enci_div encl_div vdac0_div
 static hw_enc_clk_val_t setting_enc_clk_val[] = {
+    {VMODE_480CVBS,		   1, VIU_ENCI, 1080, 2, 4, 4, CLK_UTIL_VID_PLL_DIV_1, 5, 1, 1, 1, -1, 1},
+    {VMODE_576CVBS,		   1, VIU_ENCI, 1080, 2, 4, 4, CLK_UTIL_VID_PLL_DIV_1, 5, 1, 1, 1, -1, 1},
     {VMODE_1080P,          1, VIU_ENCP, 2970, 1, 2, 2, CLK_UTIL_VID_PLL_DIV_5, 1, 1, 1, -1, -1, -1},
     {VMODE_1080P_50HZ,     1, VIU_ENCP, 2970, 1, 2, 2, CLK_UTIL_VID_PLL_DIV_5, 1, 1, 1, -1, -1, -1},
     {VMODE_4K2K_30HZ,      1, VIU_ENCP, 2970, 1, 1, 1, CLK_UTIL_VID_PLL_DIV_5, 2, 1, 1, -1, -1, -1},

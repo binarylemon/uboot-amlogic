@@ -159,6 +159,7 @@
 	#define CONFIG_USB_XHCI_AMLOGIC 1
 #endif //#if defined(CONFIG_CMD_USB)
 
+#define CONFIG_ENABLE_CVBS 1
  
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 

@@ -214,9 +214,12 @@ void cvbs_config_vdac(unsigned int flag, unsigned int cfg)
 	return ;
 
 }
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8) && (!defined(CONFIG_AML_G9TV))
+
+#if defined(CONFIG_ENABLE_CVBS)
 static void cvbs_cntl_output(unsigned int open)
 {
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
+
 	unsigned int cntl0=0, cntl1=0;
 	
 	if( open == 0 )// close
@@ -237,6 +240,7 @@ static void cvbs_cntl_output(unsigned int open)
 		WRITE_MPEG_REG(HHI_VDAC_CNTL1, cntl1);
 		WRITE_MPEG_REG(HHI_VDAC_CNTL0, cntl0);
 	}
+#endif
 
 	return ;
 }
@@ -596,7 +600,7 @@ int tv_out_open(int mode)
 		m6_enable_vdac_hw_switch(mode);
 #endif
 
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8) && (!defined(CONFIG_AML_G9TV))
+#if defined(CONFIG_ENABLE_CVBS)
 		cvbs_cntl_output(0);
 #endif
 
@@ -616,10 +620,12 @@ int tv_out_open(int mode)
 		cvbs_performance_enhancement(mode);
 #endif
 
-#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8) && (!defined(CONFIG_AML_G9TV))
+#if defined(CONFIG_ENABLE_CVBS)
 		if( (mode==VMODE_480CVBS) || (mode==VMODE_576CVBS) )
 		{
+#if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8) && (!defined(CONFIG_AML_G9TV))
 			WRITE_MPEG_REG(HHI_GCLK_OTHER, READ_MPEG_REG(HHI_GCLK_OTHER) | (0x1<<10) | (0x1<<8)); //enable CVBS GATE, DAC_CLK:bit[10] = 1;VCLK2_ENCI:bit[8] = 1;
+#endif
 			cvbs_cntl_output(1);
 		}
 #endif
