@@ -118,38 +118,74 @@ void udelay__(int i)
 
 #define delay_1s() delay_tick(TICK_OF_ONE_SECOND);
 
+#ifdef CONFIG_MESON_TRUSTZONE
+volatile unsigned char temp_arm_base[620];
+#endif
+
 //volatile unsigned * arm_base=(volatile unsigned *)0x8000;
-void copy_reboot_code()
+void copy_reboot_code(volatile unsigned int * temp_base)
 {
 	int i;
 	int code_size;
 #ifdef CONFIG_MESON_TRUSTZONE
-	volatile unsigned char* pcode = *(int *)(0x0004);//appf_arc_code_memory[1]
+	volatile unsigned char* pcode = &temp_base[1];//appf_arc_code_memory[1]
 	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
-
-	code_size = *(int *)(0x0008);//appf_arc_code_memory[2]
+	code_size = temp_base[0];//appf_arc_code_memory[2]
 #else
 	volatile unsigned char* pcode = (volatile unsigned char*)arm_reboot;
 	volatile unsigned char * arm_base = (volatile unsigned char *)0x0000;
-
 	code_size = sizeof(arm_reboot);
 #endif
+
+	/* copy new code for ARM restart */
+	for (i = 0; i < code_size; i++)
+	{
+/*	 	f_serial_puts("[ ");
+		serial_put_hex(*arm_base,8);
+		f_serial_puts(" , ");
+		serial_put_hex(*pcode,8);
+		f_serial_puts(" ]  ");
+*/
+		if (i != 32 && i != 33 && i != 34 && i != 35) /* skip firmware's reboot entry address. */
+			*arm_base = *pcode;
+
+		pcode++;
+		arm_base++;
+	}
+}
+
+#ifdef CONFIG_MESON_TRUSTZONE
+void copy_reboot_code_temp(volatile unsigned char * arm_base, unsigned int size)
+{
+	int i;
+	int code_size;
+
+	volatile unsigned char* pcode = *(int *)(0x0004);//appf_arc_code_memory[1]
+	code_size = *(int *)(0x0008);//appf_arc_code_memory[2]
+
+	*(unsigned int *)arm_base = code_size;
+	arm_base+=4;
+
+	if (size - 4 < code_size) {
+		f_serial_puts("Error: arm_reboot[] is too small!\n");
+		return;
+	}
 	//copy new code for ARM restart
-	for(i = 0; i < code_size; i++)
+	for (i = 0; i < code_size; i++)
 	{
 /*	 	f_serial_puts("[ ");
 		serial_put_hex(*arm_base,8);
 	 	f_serial_puts(" , ");
 		serial_put_hex(*pcode,8);
 	 	f_serial_puts(" ]  ");
-	*/ 	
-		
-		if(i != 32 && i != 33 && i != 34 && i != 35) //skip firmware's reboot entry address.
-				*arm_base = *pcode;
+*/
+		*arm_base = *pcode;
+
 		pcode++;
 		arm_base++;
 	}
 }
+#endif
 
 unsigned int PWR_A9_MEM_PD[2];
 #define P_AO_RTI_PWR_A9_MEM_PD0 0xc81000F4
@@ -363,22 +399,24 @@ void enter_power_down()
 	wait_uart_empty();
 	store_restore_plls(1);//Before switch back to clk81, we need set PLL
 
-    if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
-        /*
-         * power off system before ARM is restarted
-         */
-        f_serial_puts("no extern power shutdown\n");
-	    wait_uart_empty();
-        p_arc_pwr_op->shut_down();
-        do{
-            udelay__(2000 * 100);
-            f_serial_puts("wait shutdown...\n");
-            wait_uart_empty();
-        }while(1);
-    }
-
-	copy_reboot_code();
-
+	if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
+		/*
+		 * power off system before ARM is restarted
+		 */
+		f_serial_puts("no extern power shutdown\n");
+		wait_uart_empty();
+		p_arc_pwr_op->shut_down();
+		do {
+			udelay__(2000 * 100);
+			f_serial_puts("wait shutdown...\n");
+			wait_uart_empty();
+		}while(1);
+	}
+#ifdef CONFIG_MESON_TRUSTZONE
+	copy_reboot_code(temp_arm_base);
+#else
+	copy_reboot_code(NULL);
+#endif
 	writel(vcin_state,P_AO_RTI_STATUS_REG2);
 	f_serial_puts("restart arm\n");
 	wait_uart_empty();
@@ -428,6 +466,10 @@ int main(void)
 		{
 			init_I2C();
 //			copy_reboot_code();
+#ifdef CONFIG_MESON_TRUSTZONE
+			copy_reboot_code_temp(temp_arm_base, sizeof(temp_arm_base));
+#endif
+
 			enter_power_down();
 			//test_arc_core();
 			break;
