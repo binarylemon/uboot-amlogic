@@ -932,7 +932,7 @@ static void hdmi_tvenc_set(HDMI_Video_Codes_t vic)
                              (0                                 << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
                              (0                                 << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
                              (0                                 << 4) | // [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
-                             (((TX_INPUT_COLOR_FORMAT==0)?1:0)  << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
+                             (4                                 << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
                                                                         //                          0=output CrYCb(BRG);
                                                                         //                          1=output YCbCr(RGB);
                                                                         //                          2=output YCrCb(RBG);
@@ -956,7 +956,7 @@ static void hdmi_tvenc_set(HDMI_Video_Codes_t vic)
                              (HSYNC_POLARITY                    << 2) | // [    2] inv_hsync. 1=Invert Hsync polarity.
                              (VSYNC_POLARITY                    << 3) | // [    3] inv_vsync. 1=Invert Vsync polarity.
                              (0                                 << 4) | // [    4] inv_dvi_clk. 1=Invert clock to external DVI, (clock invertion exists at internal HDMI).
-                             (((TX_INPUT_COLOR_FORMAT==0)?1:0)  << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
+                             (4                                 << 5) | // [ 7: 5] data_comp_map. Input data is CrYCb(BRG), map the output data to desired format:
                                                                         //                          0=output CrYCb(BRG);
                                                                         //                          1=output YCbCr(RGB);
                                                                         //                          2=output YCrCb(RBG);
