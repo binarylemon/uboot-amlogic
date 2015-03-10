@@ -212,7 +212,7 @@
 		"\0"\
     \
     "storeargs="\
-        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded vmode=${outputmode} \0"\
+        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded vmode=${outputmode} \0"\
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\

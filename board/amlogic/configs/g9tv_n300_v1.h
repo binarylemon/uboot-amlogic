@@ -223,7 +223,7 @@
 		"run switch_bootmode\0" \
 		\
     "storeargs="\
-        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
+        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
