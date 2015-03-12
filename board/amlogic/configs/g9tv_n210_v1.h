@@ -92,11 +92,11 @@
 #define CONFIG_CMD_SARADC 1
 
 //Enable  saradc wake up for arc 
-#define CONFIG_SARADC_WAKEUP_FOR_ARC 1
-#define CONFIG_SARADC_CHANEL_CNT 0
-#define CONFIG_SARADC_KEY_TOLERANCE 0x14
-#define CONFIG_SARADC_POWER_UP_KEY_VAL1 0x0
-#define CONFIG_SARADC_POWER_UP_KEY_VAL2 0xfff 
+//#define CONFIG_SARADC_WAKEUP_FOR_ARC 1
+//#define CONFIG_SARADC_CHANEL_CNT 0
+//#define CONFIG_SARADC_KEY_TOLERANCE 0x14
+//#define CONFIG_SARADC_POWER_UP_KEY_VAL1 0x0
+//#define CONFIG_SARADC_POWER_UP_KEY_VAL2 0xfff
 
 //Enable ir remote wake up for arc 
 #define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc  
@@ -212,6 +212,8 @@
 	"p1start=1400000\0" \
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
+	"powermode=on\0" \
+	"pstandby=on\0" \
 	"bootstart=0\0" \
 	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
