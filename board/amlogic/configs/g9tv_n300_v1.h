@@ -86,11 +86,11 @@
 #define CONFIG_CMD_SARADC 1
 
 //Enable  saradc wake up for arc 
-//#define CONFIG_SARADC_WAKEUP_FOR_ARC 1
-//#define CONFIG_SARADC_CHANEL_CNT 0
-//#define CONFIG_SARADC_KEY_TOLERANCE 0x14
-//#define CONFIG_SARADC_POWER_UP_KEY_VAL1 0x0
-//#define CONFIG_SARADC_POWER_UP_KEY_VAL2 0xfff 
+#define CONFIG_SARADC_WAKEUP_FOR_ARC 1
+#define CONFIG_SARADC_CHANEL_CNT 0
+#define CONFIG_SARADC_SAMPLE_TIME_MAX 20
+#define CONFIG_SARADC_KEY_TOLERANCE 40
+#define CONFIG_SARADC_POWER_UP_KEY_VAL 10
 
 //Enable ir remote wake up for arc 
 #define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc  

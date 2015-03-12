@@ -285,7 +285,8 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 #endif
 
 #ifdef	CONFIG_SARADC_WAKEUP_FOR_ARC
-	saradc_enable();
+	saradc_init();
+	adc_start_sample(0);
 #endif	
 
 
@@ -309,10 +310,13 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 #endif
 
 #ifdef	CONFIG_SARADC_WAKEUP_FOR_ARC
+	if (is_adc_finished()) {
 		if(1 == adc_detect_key()){
 			exit_reason = 6;
 			break;
 		}
+		adc_start_sample(0);
+	}
 #endif	
 
 
