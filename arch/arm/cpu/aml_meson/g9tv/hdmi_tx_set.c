@@ -1,4 +1,4 @@
-#include <common.h>
+include <common.h>
 #include <asm/io.h>
 #include <asm/arch/register.h>
 #include <asm/arch/reg_addr.h>
@@ -42,17 +42,7 @@ static void hdmi_tvenc_set(HDMI_Video_Codes_t vic);
 
 static int mode420 = 1;
 
-static void hdelay(int us)
-{
-    int i;
-    while(us--) {
-        i = 10000;
-        while(i--);
-    }
-}
-
-#define mdelay(i)   hdelay(i)
-#define msleep(i)   hdelay(i)
+#define mdelay(i)   udelay(i*1000)
 
 /*
  * HDMI reg read/write operation
@@ -1112,7 +1102,7 @@ static void set_tmds_clk_div40(unsigned int div40)
     }
 
     hdmitx_wr_reg(HDMITX_TOP_TMDS_CLK_PTTN_CNTL, 0x1);            // 0xc
-    msleep(10);
+    mdelay(10);
     hdmitx_wr_reg(HDMITX_TOP_TMDS_CLK_PTTN_CNTL, 0x2);            // 0xc
 }
 
@@ -1126,11 +1116,11 @@ static void power_switch_to_vpu_hdmi(int pwr_ctrl)
         // power up memories
         for(i = 0; i < 32; i++) {
             aml_set_reg32_bits(P_HHI_VPU_MEM_PD_REG0, 0, i, 1);
-            msleep(10);
+            mdelay(10);
         }
         for(i = 0; i < 32; i++) {
             aml_set_reg32_bits(P_HHI_VPU_MEM_PD_REG1, 0, i, 1);
-            msleep(10);
+            mdelay(10);
         }
         for(i = 8; i < 16; i++) {
             aml_set_reg32_bits(P_HHI_MEM_PD_REG0, 0, i, 8); // MEM-PD
@@ -1195,7 +1185,7 @@ void C_Entry(HDMI_Video_Codes_t vic)
         set_tmds_clk_div40(0);
     }
     hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 0, 3, 1);
-    msleep(1);
+    mdelay(1);
     hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 1, 3, 1);
 }
 
@@ -1326,3 +1316,91 @@ void hdmitx_csc_config (unsigned char input_color_format,
     data32 |= (csc_scale    << 0);  // [1:0] cscscale
     hdmitx_wr_reg(HDMITX_DWC_CSC_SCALE,         data32);
 }   /* hdmitx_csc_config */
+
+int hdmitx_get_hpd_state(void)
+{
+    aml_set_reg32_bits(P_PAD_PULL_UP_REG1, 0, 21, 1);
+    mdelay(10);
+    return !!(aml_read_reg32(P_PREG_PAD_GPIO1_I) & (1 << 21));
+}
+
+/*
+ * Note: read 8 Bytes of EDID data every time
+ */
+static int read_edid_8bytes(unsigned char *rx_edid, unsigned char addr)
+{
+    unsigned int i = 0;
+    unsigned int timeout = 0;
+    // Program SLAVE/SEGMENT/ADDR
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SLAVE, 0x50);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGADDR, 0x30);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGPTR, 0);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_ADDRESS, addr & 0xff);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_OPERATION, 1 << 3);
+    timeout = 0;
+    while ((!(hdmitx_rd_reg(HDMITX_DWC_IH_I2CM_STAT0) & (1 << 1))) && (timeout < 3)) {
+        mdelay(2);
+        timeout++;
+    }
+    if (timeout == 3) {
+        printk("ddc timeout\n");
+        return 0;
+    }
+    hdmitx_wr_reg(HDMITX_DWC_IH_I2CM_STAT0, 1 << 1);        // clear INT
+    // Read back 8 bytes
+    for (i = 0; i < 8; i ++) {
+        rx_edid[i] = hdmitx_rd_reg(HDMITX_DWC_I2CM_READ_BUFF0 + i);
+    }
+    return 1;
+}
+
+static void ddc_init(void)
+{
+    unsigned int data32 = 0;
+//--------------------------------------------------------------------------
+// Configure E-DDC interface
+//--------------------------------------------------------------------------
+    aml_set_reg32_bits(P_PAD_PULL_UP_EN_REG1, 0, 19, 2);    // Disable GPIOH_3/4 pull-up/down
+    aml_set_reg32_bits(P_PAD_PULL_UP_REG1, 0, 19, 2);
+    aml_set_reg32_bits(P_PREG_PAD_GPIO1_EN_N, 3, 2, 2);     // GPIOH_3/4 input
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_1, 3, 24, 2);      // Mux DDC SDA/SCL
+
+    data32  = 0;
+    data32 |= (0    << 6);  // [  6] read_req_mask
+    data32 |= (0    << 2);  // [  2] done_mask
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_INT,      data32);
+
+    data32  = 0;
+    data32 |= (0    << 6);  // [  6] nack_mask
+    data32 |= (0    << 2);  // [  2] arbitration_error_mask
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_CTLINT,   data32);
+
+    data32  = 0;
+    data32 |= (0    << 3);  // [  3] i2c_fast_mode: 0=standard mode; 1=fast mode.
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_DIV,      data32);
+
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_1,    0);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_0,    0x60);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_LCNT_1,    0);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_LCNT_0,    0x71);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_FS_SCL_HCNT_1,    0);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_FS_SCL_HCNT_0,    0x0f);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_FS_SCL_LCNT_1,    0);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_FS_SCL_LCNT_0,    0x20);
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SDA_HOLD,         0x08);
+
+    data32  = 0;
+    data32 |= (0    << 5);  // [  5] updt_rd_vsyncpoll_en
+    data32 |= (0    << 4);  // [  4] read_request_en  // scdc
+    data32 |= (0    << 0);  // [  0] read_update
+    hdmitx_wr_reg(HDMITX_DWC_I2CM_SCDC_UPDATE,  data32);
+}
+
+int hdmitx_read_edid(unsigned char *buf, unsigned char addr, unsigned char size)
+{
+    ddc_init();
+    if ((addr + size) > 256)
+        return 0;
+    return read_edid_8bytes(buf, addr);
+}
+
