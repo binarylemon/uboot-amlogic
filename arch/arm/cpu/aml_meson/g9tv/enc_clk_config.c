@@ -343,7 +343,8 @@ static void hpll_load_initial(void)
     aml_write_reg32_d(P_HHI_VIID_CLK_CNTL, 0);          //104b mw c110412c 0
     aml_write_reg32_d(P_HHI_VIID_CLK_DIV, 0x101);       //104a mw c1104128 101
     aml_write_reg32_d(P_HHI_VID_LOCK_CLK_CNTL, 0x80);   //10f2 mw c11043c8 80
-    aml_write_reg32_d(P_HHI_VPU_CLK_CNTL, 0x100);       //106f mw c11041bc 100
+    //remove vpu clk setting here, because it is initial in vpu driver
+    //aml_write_reg32_d(P_HHI_VPU_CLK_CNTL, 0x100);       //106f mw c11041bc 100
     aml_write_reg32_d(P_AO_RTI_GEN_PWR_SLEEP0, 0x0);    //  mw c81000e8 0
     aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL6, 0x255);     //10cd mw c1104334 255
     aml_write_reg32_d(P_VPU_CLK_GATE, 0xffff);          //2723 mw d0109c8c ffff
@@ -364,7 +365,8 @@ static void hpll_load_initial(void)
     aml_write_reg32_d(P_HHI_VIID_CLK_CNTL, 0x0);      // 0x104b       mw c110412c 0
     aml_write_reg32_d(P_HHI_VIID_CLK_DIV, 0x101);     // 0x104a       mw c1104128 101
     aml_write_reg32_d(P_HHI_VID_LOCK_CLK_CNTL, 0x80); // 0x10f2       mw c11043c8 80
-    aml_write_reg32_d(P_HHI_VPU_CLK_CNTL, 0x100);     // 0x106f       mw c11041bc 100
+    //remove vpu clk setting here, because it is initial in vpu driver
+    //aml_write_reg32_d(P_HHI_VPU_CLK_CNTL, 0x100);     // 0x106f       mw c11041bc 100
     aml_write_reg32_d(0xc81000e8, 0);                   // ??           mw c81000e8 0
     aml_write_reg32_d(P_HHI_HDMI_PLL_CNTL6, 0x255);   // 0x10cd       mw c1104334 255
     aml_write_reg32_d(P_VPU_CLK_GATE, 0xffff);        // 0x2723       mw d0109c8c ffff
