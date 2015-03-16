@@ -101,10 +101,10 @@
 //Enable ir remote wake up for arc 
 #define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc  
 #define CONFIG_IR_REMOTE_USE_PROTOCOL 0         // 0:nec  1:duokan  2:Toshiba 3:rca
-#define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 3
-#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0xEF10FE01 //amlogic tv ir --- power
-#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0xF30CFE01 //amlogic tv ir --- ch+
-#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xF20DFE01 //amlogic tv ir --- ch-
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 1
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0xE51AFB04 //amlogic mbox ir --- power
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0xFFFFFFFF
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xFFFFFFFF
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4 0xFFFFFFFF
 
 #define CONFIG_EFUSE 1
