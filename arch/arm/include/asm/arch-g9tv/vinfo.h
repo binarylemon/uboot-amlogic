@@ -26,23 +26,19 @@
 #define VINFO_H
 
 //the MSB is represent vmode set by logo
-#define	VMODE_LOGO_BIT_MASK	0x8000	
-#define	VMODE_MODE_BIT_MASK	0xff		
+#define	VMODE_LOGO_BIT_MASK	0x8000
+#define	VMODE_MODE_BIT_MASK	0xff
 
 typedef enum {
     VMODE_480I  = 0,
-    VMODE_480I_RPT  ,
     VMODE_480CVBS,
     VMODE_480P  ,
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION    
+#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
     VMODE_480P_59HZ,// for framerate automation 480p 59.94hz
-#endif   
-    VMODE_480P_RPT  ,
+#endif
     VMODE_576I   ,
-    VMODE_576I_RPT  ,
     VMODE_576CVBS   ,
     VMODE_576P  ,
-    VMODE_576P_RPT  ,
     VMODE_720P  ,
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
 	VMODE_720P_59HZ , // for framerate automation 720p 59.94hz
@@ -50,7 +46,7 @@ typedef enum {
     VMODE_1080I ,
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
     VMODE_1080I_59HZ , // for framerate automation 1080i 59.94hz
-#endif   
+#endif
     VMODE_1080P ,
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
 	VMODE_1080P_59HZ , // for framerate automation 1080p 59.94hz
