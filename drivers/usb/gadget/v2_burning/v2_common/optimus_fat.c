@@ -39,31 +39,42 @@
 extern int disk_read (__u32 startblock, __u32 getsize, __u8 * bufptr);
 extern int device_boot_flag;
 
+int optimus_sdc_burn_switch_to_extmmc(void)
+{
+        static struct mmc *mmc = NULL;
+
+        //Attention: So far the work flow of sdc_burn or sdc_update after store_init(0), so device_boot_flag is setup yet!
+        if(SPI_EMMC_FLAG != device_boot_flag && EMMC_BOOT_FLAG != device_boot_flag){
+                return 0;
+        }
+
+        if(!mmc)
+        {
+                mmc = find_mmc_device(0);
+                if(!mmc){
+                        FAT_ERROR("Fail to find mmc 0 device");
+                        return __LINE__;
+                }
+        }
+        if(mmc_init(mmc)){
+                FAT_ERROR("Fail to init mmc 0 device");
+                return __LINE__;
+        }
+
+        return 0;
+}
+
 static int v2_ext_mmc_read(__u32 startblock, __u32 nBlk, __u8 * bufptr)
 {
     int ret = 0;
     char* usb_update = getenv("usb_update");
     if(strcmp(usb_update,"1"))
     {
-        //Attention: So far the work flow of sdc_burn or sdc_update after store_init(0), so device_boot_flag is setup yet!
-        if((device_boot_flag == SPI_EMMC_FLAG) || (device_boot_flag == EMMC_BOOT_FLAG))
-        {
-           	static struct mmc *mmc = NULL;
-
-        	if(!mmc)
-        	{
-            	mmc = find_mmc_device(0);
-            	if(!mmc){
-                	FAT_ERROR("Fail to find mmc 0 device");
-                	return __LINE__;
-            	}
-        	}
-        	ret = mmc_init(mmc);
-        	if(ret){
-            	FAT_ERROR("Fail to init mmc 0 device");
-            	return __LINE__;
-        	}
-    	}
+            ret = optimus_sdc_burn_switch_to_extmmc();
+            if(ret){
+                    FAT_ERROR("failed in switch to extmmc.\n");
+                    return __LINE__;
+            }
     }
 
     ret = disk_read(startblock, nBlk, bufptr);
@@ -624,7 +635,7 @@ __attribute__ ((__aligned__(__alignof__(dir_entry))))
 __u8 _do_fat_read_block[MAX_CLUSTSIZE];
 
 
-#define FILE_MAX 1
+#define FILE_MAX 2
 struct _fs_info
 {
     fsdata datablock;
@@ -647,21 +658,29 @@ struct file
 
 static struct file files[FILE_MAX];
 static struct _fs_info fs_info[FILE_MAX];
-static int _fd = -1;
+static int _fd[FILE_MAX] = {0};
+#define OPTIMUS_FD_MAGIC        (0XEFE80025) 
+#define OPTIMUS_INVAL_FD        (-1)
 
 static int get_fd(void)
 {
-    if(_fd >= 0)
-        return -1;
+        int index = 0;
 
-    _fd = 0;
-    return _fd;
+        for(; index < FILE_MAX; ++index){
+                if(OPTIMUS_FD_MAGIC != _fd[index]){//fd not used
+                        _fd[index] = OPTIMUS_FD_MAGIC;
+                        return index;
+                }
+        }
+
+        return OPTIMUS_INVAL_FD;
 } 
 
-static void put_fd(int fd)
+static void put_fd(int fd_index)
 {
-    if(fd>=0)
-        _fd = -1;
+    if(fd_index>=0)
+        _fd[fd_index] = 0;
+    return;
 } 
 
 /* wherehence: 0 to seek from start of file; 1 to seek from current position from file */
@@ -1196,6 +1215,7 @@ s64 do_fat_get_fileSz(const char* imgItemPath)
     }
     else
     {
+            optimus_sdc_burn_switch_to_extmmc();
 	sprintf(cmdBuf, "fatexist mmc 0 %s", imgItemPath);
     }
 	/*SDC_DBG("to run cmd [%s]\n", cmdBuf);*/

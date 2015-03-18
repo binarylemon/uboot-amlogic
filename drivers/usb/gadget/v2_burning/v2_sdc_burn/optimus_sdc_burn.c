@@ -353,6 +353,195 @@ static int sdc_burn_dtb_load(HIMAGE hImg)
     return rc;
 }
 
+#if CONFIG_SUPPORT_SDC_KEYBURN
+//fetch the keys names which need be burned from item[conf, keys]
+static int sdc_burn_get_user_key_names(HIMAGE hImg, const char* **pKeysName, unsigned* keysNum)
+{
+        int rc = 0;
+        HIMAGEITEM hImgItem = NULL;
+        unsigned itemSz = 0;
+        unsigned char* thisReadBuf     = (unsigned char*)OPTIMUS_SPARSE_IMG_FILL_VAL_BUF;//This buf is not used and not need reuse when burning keys
+        const unsigned thisReadBufSz   = (OPTIMUS_SPARSE_IMG_FILL_BUF_SZ >> 1);
+        const char* *keysName = (const char**)(thisReadBuf + thisReadBufSz);
+
+        hImgItem = image_item_open(hImg, "conf", "keys");
+        if(!hImgItem){
+                DWN_ERR("Fail to open keys.conf\n");
+                return ITEM_NOT_EXIST;
+        }
+
+        itemSz = (unsigned)image_item_get_size(hImgItem);
+        if(!itemSz){
+                DWN_ERR("Item size 0\n");
+                image_item_close(hImgItem); return __LINE__;
+        }
+
+        rc = image_item_read(hImg, hImgItem, thisReadBuf, itemSz);
+        if(rc){
+                DWN_ERR("Failed at item read, rc = %d\n", rc);
+                image_item_close(hImgItem); return __LINE__;
+        }
+        image_item_close(hImgItem);
+
+        if(itemSz >= thisReadBufSz){
+                DWN_ERR("itemSz(0x%x) of keys.conf too large, > max 0x%x.\n", itemSz, thisReadBufSz);
+                return __LINE__;
+        }
+
+        rc = _optimus_parse_buf_2_lines((char*)thisReadBuf, itemSz, keysName, keysNum, 16);
+        if(rc){
+                DWN_ERR("Fail in parse buf_2_lines\n");
+                return __LINE__;
+        }
+
+        rc = _optimus_abandon_ini_comment_lines((char**)keysName, *keysNum);
+
+        *pKeysName = keysName;
+        return rc;
+}
+
+//check key is burned yet --> need  keyOverWrite -->can_write 
+static int sdc_check_key_need_to_burn(const char* keyName, const int keyOverWrite)
+{
+        int rc = 0;
+        char _cmd[96];
+        
+        sprintf(_cmd, "aml_key_burn misc is_burned %s", keyName);
+        rc = run_command(_cmd, 0);
+        if(rc < 0){
+                DWN_ERR("Fail in check key is_burned\n");
+                return -__LINE__;
+        }
+        DWN_MSG("key[%s] is %s burned\n", keyName, rc ? "NOT" : "DO");
+        if(rc){//not success
+                return 1;//need burn as not burned yet.
+        }
+        if(!keyOverWrite){
+                DWN_MSG("User choose not to overwrite the key\n");
+                return 0;
+        }
+
+        sprintf(_cmd, "aml_key_burn misc can_write %s", keyName);
+        rc = run_command(_cmd, 0);
+        if(rc){
+                DWN_ERR("Fail in check key[%s] is_burned\n", keyName);
+                return -__LINE__;
+        }
+        DWN_MSG("key[%s] is %s can_write\n", keyName, rc ? "NOT" : "DO");
+        return !rc;
+}
+
+//burn the amlogic keys like USB_Burning_Tool
+static int sdc_burn_aml_keys(HIMAGE hImg, const int keyOverWrite)
+{
+        int rc = 0;
+        const char* *keysName = NULL;
+        unsigned keysNum = 0; 
+        const char** pCurKeysName = NULL;
+        unsigned index = 0;
+
+        rc = run_command("aml_key_burn probe vfat sdc", 0);
+        if(rc){
+                DWN_ERR("Fail in probe for aml_key_burn\n");
+                return __LINE__;
+        }
+
+        {
+                unsigned random32 = 0;
+                unsigned seed = 0;
+                char cmd[96];
+
+                random32 = seed = get_utimer(0) + 12345;//make it random
+                /*random32 = random_u32(seed);*/
+                DWN_MSG("random value is 0x%x\n", random32);
+                sprintf(cmd, "aml_key_burn init 0x%x", random32);
+
+                rc = run_command(cmd, 0);
+                if(rc){
+                        DWN_ERR("Fail in cmd[%s]\n", cmd);
+                        return __LINE__;
+                }
+        }
+        
+        rc = sdc_burn_get_user_key_names(hImg, &keysName, &keysNum);
+        if(ITEM_NOT_EXIST != rc && rc){
+                DWN_ERR("Fail to parse keys.conf, rc =%d\n", rc);
+                return __LINE__;
+        }
+        DWN_MSG("keys.conf:\n");
+        for(index = 0; index < keysNum; ++index)printf("\tkey[%d]\t%s\n", index, keysName[index]);
+
+        rc =  optimus_sdc_keysprovider_init();
+        if(rc){
+                DWN_ERR("Fail in optimus_sdc_keysprovider_init\n");
+                return __LINE__;
+        }
+
+        pCurKeysName = keysName;
+        for(index = 0; index < keysNum; ++index)
+        {
+                const char* const keyName = *pCurKeysName++;
+
+                if(!keyName)continue;
+                DWN_MSG("\n");
+                DWN_MSG("Now to burn key <---- [%s] ----> %d \n", keyName, index);
+                rc = sdc_check_key_need_to_burn(keyName, keyOverWrite);
+                if(rc < 0){
+                        DWN_ERR("Fail when when check stauts for key(%s)\n", keyName);
+                        return __LINE__;
+                }
+                if(!rc)continue;//not need to burn this key
+                
+                //0, init the key license parser
+                const void* pHdle = NULL;
+                rc = optimus_sdc_keysprovider_open(keyName, &pHdle);
+                if(rc){
+                        DWN_ERR("Fail in init license for key[%s]\n", keyName);
+                        return __LINE__;
+                }
+
+                //1,using cmd_keysprovider to read a key to memory
+                u8* keyValue = (u8*)OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR;
+                unsigned keySz = OPTIMUS_DOWNLOAD_SLOT_SZ;//buffer size
+                rc = optimus_sdc_keysprovider_get_keyval(pHdle, keyValue, &keySz);
+                if(rc){
+                        DWN_ERR("Fail to get value for key[%s]\n", keyName);
+                        return __LINE__;
+                }
+
+                //3, burn the key
+                rc = optimus_keysburn_onekey(keyName, (u8*)keyValue, keySz);
+                if(rc){
+                        DWN_ERR("Fail in burn the key[%s] at addr=%p, sz=%d\n", keyName, keyValue, keySz);
+                        return __LINE__;
+                }
+
+                //3,report burn result to cmd_keysprovider
+                rc = optimus_sdc_keysprovider_update_license(pHdle);
+                if(rc){
+                        DWN_ERR("Fail in update license for key[%s]\n", keyName);
+                        return __LINE__;
+                }
+        }
+
+        rc = optimus_sdc_keysprovider_exit();
+        if(rc){
+                DWN_ERR("Fail in optimus_sdc_keysprovider_exit\n");
+                return __LINE__;
+        }
+
+        rc = run_command("aml_key_burn uninit", 0);
+        if(rc){
+                DWN_ERR("Fail in uninit for aml_key_burn\n");
+                return __LINE__;
+        }
+
+        return 0; 
+}
+#else
+#define sdc_burn_aml_keys(fmt...)     0
+#endif// #if CONFIG_SUPPORT_SDC_KEYBURN
+
 int optimus_burn_with_cfg_file(const char* cfgFile)
 {
     extern ConfigPara_t g_sdcBurnPara ;
@@ -373,30 +562,12 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     {
         if(is_bootloader_old())
         {
-#if ROM_BOOT_SKIP_BOOT_ENABLED
-            optimus_enable_romboot_skip_boot();
-#else
             DWN_MSG("To erase OLD bootloader !\n");
             ret = optimus_erase_bootloader(NULL);
             if(ret){
                 DWN_ERR("Fail to erase bootloader\n");
                 ret = __LINE__; goto _finish;
             }
-
-            //As env also depended on flash init, don't use it if skip_boot supported
-#if 0//Check reboot_mode == meson_sdc_burner_reboot instead of env 'upgrade_step'
-            ret = setenv("upgrade_step", "0");
-            if(ret){
-                DWN_ERR("Fail set upgrade_step to def value 0\n");
-                ret = __LINE__; goto _finish;
-            }
-            ret = run_command("saveenv", 0);
-            if(ret){
-                DWN_ERR("Fail to saveenv before reset\n");
-                ret = __LINE__; goto _finish;
-            }
-#endif//#if 0
-#endif// #if ROM_BOOT_SKIP_BOOT_ENABLED
 
 #if defined(CONFIG_VIDEO_AMLLCD)
             //axp to low power off LCD, no-charging
@@ -449,26 +620,38 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
     }
     optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_IMAGE_OPEN_OK);
 
-    ret = optimus_storage_init(pSdcCfgPara->custom.eraseFlash);
+    int hasBootloader = 0;
+    u64 datapartsSz = optimus_img_decoder_get_data_parts_size(hImg, &hasBootloader);
+
+    int eraseFlag = pSdcCfgPara->custom.eraseFlash;
+    if(!datapartsSz){
+            eraseFlag = 0;
+            DWN_MSG("Disable erase as data parts size is 0\n");
+    }
+    ret = optimus_storage_init(eraseFlag);
     if(ret){
         DWN_ERR("Fail to init stoarge for sdc burn\n");
         return __LINE__;
     }
 
     optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
-    ret = optimus_progress_ui_set_smart_mode(hUiProgress, get_data_parts_size(hImg), 
-                UPGRADE_STEPS_FOR_BURN_DATA_PARTS_IN_PKG(!pSdcCfgPara->burnEx.bitsMap.mediaPath));
-    if(ret){
-        DWN_ERR("Fail to set smart mode\n");
-        ret = __LINE__; goto _finish;
+
+    if(datapartsSz)
+    {
+            ret = optimus_progress_ui_set_smart_mode(hUiProgress, datapartsSz, 
+                            UPGRADE_STEPS_FOR_BURN_DATA_PARTS_IN_PKG(!pSdcCfgPara->burnEx.bitsMap.mediaPath));
+            if(ret){
+                    DWN_ERR("Fail to set smart mode\n");
+                    ret = __LINE__; goto _finish;
+            }
+
+            ret = optimus_sdc_burn_partitions(pSdcCfgPara, hImg, hUiProgress, 1);
+            if(ret){
+                    DWN_ERR("Fail when burn partitions\n");
+                    ret = __LINE__; goto _finish;
+            }
     }
     
-    ret = optimus_sdc_burn_partitions(pSdcCfgPara, hImg, hUiProgress, 1);
-    if(ret){
-        DWN_ERR("Fail when burn partitions\n");
-        ret = __LINE__; goto _finish;
-    }
-
     if(pSdcCfgPara->burnEx.bitsMap.mediaPath)//burn media image
     {
         const char* mediaPath = pSdcCfgPara->burnEx.mediaPath;
@@ -477,22 +660,34 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
         if(ret){
             DWN_ERR("Fail to burn media partition with image %s\n", mediaPath);
             optimus_storage_exit();
-            return __LINE__;
+            ret = __LINE__;goto _finish;
         }
     }
     optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STPES_AFTER_BURN_DATA_PARTS_OK);
 
-#if 1
-    //burn bootloader
-    ret = optimus_burn_bootlader(hImg);
+    //TO burn nandkey/securekey/efusekey
+    ret = sdc_burn_aml_keys(hImg, pSdcCfgPara->custom.keyOverwrite);
     if(ret){
-        DWN_ERR("Fail in burn bootloader\n");
-        goto _finish;
+            DWN_ERR("Fail in sdc_burn_aml_keys\n");
+            ret = __LINE__;goto _finish;
     }
-    ret = optimus_set_burn_complete_flag();
-    if(ret){
-        DWN_ERR("Fail in set_burn_complete_flag\n");
-        ret = __LINE__; goto _finish;
+
+#if 1
+    if(hasBootloader)
+    {//burn bootloader
+            ret = optimus_burn_bootlader(hImg);
+            if(ret){
+                    DWN_ERR("Fail in burn bootloader\n");
+                    goto _finish;
+            }
+            else
+            {//update bootloader ENV only when bootloader image is burned
+                    ret = optimus_set_burn_complete_flag();
+                    if(ret){
+                            DWN_ERR("Fail in set_burn_complete_flag\n");
+                            ret = __LINE__; goto _finish;
+                    }
+            }
     }
 #endif
     optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK);

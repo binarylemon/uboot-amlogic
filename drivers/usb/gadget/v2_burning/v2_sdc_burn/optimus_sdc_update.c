@@ -27,7 +27,7 @@ typedef int __hFileHdl;
 static char _errInfo[512] = "";
 
 //default is mmc 0:1, i.e, part 1 of first registered mmc device
-int device_probe(const char* interface, const char* inPart)
+int optimus_device_probe(const char* interface, const char* inPart)
 {
 	block_dev_desc_t *dev_desc=NULL;
 	int dev=0;
@@ -297,7 +297,7 @@ int do_sdc_update(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
         return __LINE__;
     }
 #else
-    rcode = device_probe("mmc", "0");
+    rcode = optimus_device_probe("mmc", "0");
     if(rcode){
         SDC_ERR("Fail to detect device mmc 0\n");
         return __LINE__;

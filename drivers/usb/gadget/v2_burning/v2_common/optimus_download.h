@@ -110,6 +110,7 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_KEY_DECRYPT_BUF                 OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW//buffer for decrypt the key
 #define OPTIMUS_KEY_DECRYPT_BUF_SZ              OPTIMUS_DOWNLOAD_SLOT_SZ              
 
+#define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]
 #define COMPILE_TIME_ASSERT(expr)       typedef char assert_type[(expr) ? 1 : -1]
 
 #define OPT_DOWN_OK     0
@@ -154,7 +155,7 @@ void do_fat_fclose(int fd);
 s64 do_fat_get_fileSz(const char* imgItemPath);
 int do_fat_fseek(int fd, const __u64 offset, int wherehence);
 unsigned do_fat_get_bytesperclust(int fd);
-int device_probe(const char* interface, const char* inPart);
+int optimus_device_probe(const char* interface, const char* inPart);
 
 //<0 if failed, 0 is normal, 1 is sparse, others reserved
 int do_fat_get_file_format(const char* imgFilePath, unsigned char* pbuf, const unsigned bufSz);

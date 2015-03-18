@@ -35,9 +35,15 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
     const char* UpgradeLogoAddr = (const char*)OPTIMUS_DOWNLOAD_DISPLAY_BUF;
     char env_buf[32];
 
-    sprintf(env_buf, "unpackimg 0x%p", UpgradeLogoAddr);
-    DWN_MSG("%s\n", env_buf);
-    if(1)
+    //imgread res logo ${loadaddr_misc}; 
+    sprintf(env_buf, "imgread res logo 0x%p", UpgradeLogoAddr);
+    ret = run_command(env_buf, 0);
+
+    if(!ret){
+            sprintf(env_buf, "unpackimg 0x%p", UpgradeLogoAddr);
+            ret = run_command(env_buf, 0);
+    }
+    if(ret)
     {//Failed to load logo resources from memory, then Load it from package
         unsigned imgItemSz = 0;
         HIMAGEITEM hItem = NULL;

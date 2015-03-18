@@ -30,6 +30,7 @@ COBJS-y += aml_v2_burning.o
 COBJS-y += v2_common/optimus_download.o v2_common/optimus_buffer_manager.o v2_common/optimus_simg2img.o 
 COBJS-y += v2_common/optimus_progress.o v2_common/optimus_img_decoder.o v2_common/optimus_fat.o
 COBJS-y += v2_sdc_burn/optimus_sdc_update.o v2_sdc_burn/optimus_sdc_burn.o v2_sdc_burn/optimus_ini_parser.o 
+COBJS-y += v2_sdc_burn/optimus_ini__aml_sdc_burn.o
 COBJS-y += v2_usb_tool/optimus_core.o v2_usb_tool/optimus_transform.o 
 COBJS-y += v2_usb_burn/optimus_usb_burn.o v2_usb_burn/optimus_usb_update.o
 COBJS-$(CONFIG_UNIFY_KEY_MANAGE) += v2_common/optimus_download_key.o
@@ -37,6 +38,8 @@ COBJS-$(CONFIG_SD_BURNING_SUPPORT_UI) += v2_common/optimus_progress_ui.o
 COBJS-$(CONFIG_SD_BURNING_SUPPORT_LED) += v2_sdc_burn/optimus_led.o
 COBJS-y += aml_sysrecovery/aml_sysrecovery.o
 COBJS-$(CONFIG_DETECT_SYS_RECOVERY_KEY) += aml_sysrecovery/cmd_detect_sys_recovery_key.o
+COBJS-$(CONFIG_SUPPORT_SDC_KEYBURN) += v2_sdc_burn/sdc_burnkeys/optimus_key_burn.o 
+COBJS-$(CONFIG_SUPPORT_SDC_KEYBURN) += v2_sdc_burn/sdc_burnkeys/sdc_keysprovider.o v2_sdc_burn/sdc_burnkeys/sdc_bootPart_license.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

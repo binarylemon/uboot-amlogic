@@ -76,7 +76,7 @@ if(usb_start_count==0)
         return __LINE__;
     }
 #else
-    rcode = device_probe("usb", "0");
+    rcode = optimus_device_probe("usb", "0");
 /*
 	if(rcode){
         SDC_ERR("Fail to detect device usb 0\n");

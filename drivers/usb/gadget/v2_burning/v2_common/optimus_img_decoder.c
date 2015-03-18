@@ -11,7 +11,6 @@
  */
 #include "../v2_burning_i.h"
 
-#define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]
 //FIMXE:
 COMPILE_TYPE_CHK(128 == sizeof(ItemInfo_V1), _op_a);
 COMPILE_TYPE_CHK(576 == sizeof(ItemInfo_V2), __op_a2);
@@ -413,13 +412,14 @@ __u64 image_get_item_size_by_index(HIMAGE hImg, const int itemId)
     return pItem->itemSz;
 }
 
-u64 get_data_parts_size(HIMAGE hImg)
+u64 optimus_img_decoder_get_data_parts_size(HIMAGE hImg, int* hasBootloader)
 {
     int i = 0;
     int ret = 0;
     u64 dataPartsSz = 0;
     const int totalItemNum = get_total_itemnr(hImg);
 
+    *hasBootloader = 0;
     for (i = 0; i < totalItemNum; i++) 
     {
         const char* main_type = NULL;
@@ -431,8 +431,11 @@ u64 get_data_parts_size(HIMAGE hImg)
             return __LINE__;
         }
 
-        if(strcmp("PARTITION", main_type)) continue;
-        if(!strcmp("bootloader", sub_type))continue;
+        if(strcmp("PARTITION", main_type)){ continue; }
+        if(!strcmp("bootloader", sub_type)){
+                *hasBootloader = 1; 
+                continue;
+        }
         if(!strcmp(AML_SYS_RECOVERY_PART, sub_type))
         {
                 if(OPTIMUS_WORK_MODE_SYS_RECOVERY == optimus_work_mode_get())continue;

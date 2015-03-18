@@ -238,6 +238,7 @@ int decrypt_hdcp_license_to_raw_value(const char* keyName, const u8* keyVal, con
 
             return EINVAL;
         }
+        DWN_MSG("Verify hdcp key with sha1sum OK\n");
 
         *keyRealValLen = licLen;
         return 0;
@@ -499,6 +500,7 @@ int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char*
 }
 
 //key command: 1, key init seed_in_str; 2, key uninit
+//argv[0] can be 'key' from usb tool, or 'aml_key_burn/misc' from sdc_burn
 int v2_key_command(const int argc, char * const argv[], char *info)
 {
     const char* keyCmd = argv[1];
@@ -508,7 +510,8 @@ int v2_key_command(const int argc, char * const argv[], char *info)
 
     DWN_DBG("argc=%d, argv[%s, %s, %s, %s]\n", argc, argv[0], argv[1], argv[2], argv[3]);
     if(argc < 2){
-        printf("argc < 2, key sub-command init/uninit read/write/query not found\n");
+        sprintf(info, "argc < 2, need key subcmd\n");
+        DWN_ERR(info);
         return __LINE__;
     }
 

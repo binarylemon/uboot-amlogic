@@ -110,7 +110,10 @@ static int optimus_sysrec_burn_package_from_partition(const char* partName, cons
         }
         optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
 
-        ret = optimus_progress_ui_set_smart_mode(hUiProgress, get_data_parts_size(hImg), 
+        int hasBootloader = 0;
+        u64 datapartsSz = optimus_img_decoder_get_data_parts_size(hImg, &hasBootloader);
+        DWN_MSG("datapartsSz=[%8u]MB\n", (unsigned)(datapartsSz >> 20));
+        ret = optimus_progress_ui_set_smart_mode(hUiProgress, datapartsSz, 
                         UPGRADE_STEPS_FOR_BURN_DATA_PARTS_IN_PKG(!pSdcCfgPara->burnEx.bitsMap.mediaPath));
         if(ret){
                 DWN_ERR("Fail to set smart mode\n");
@@ -130,16 +133,18 @@ static int optimus_sysrec_burn_package_from_partition(const char* partName, cons
         optimus_sysrec_clear_usr_data_parts();
 #endif// #if CONFIG_AML_SYS_RECOVERY_CLEAR_USR_DATA
 #if 1
-        //burn bootloader
-        ret = optimus_burn_bootlader(hImg);
-        if(ret){
-                DWN_ERR("Fail in burn bootloader\n");
-                goto _finish;
-        }
-        ret = optimus_set_burn_complete_flag();
-        if(ret){
-                DWN_ERR("Fail in set_burn_complete_flag\n");
-                ret = __LINE__; goto _finish;
+        if(hasBootloader)
+        {//burn bootloader
+                ret = optimus_burn_bootlader(hImg);
+                if(ret){
+                        DWN_ERR("Fail in burn bootloader\n");
+                        goto _finish;
+                }
+                ret = optimus_set_burn_complete_flag();
+                if(ret){
+                        DWN_ERR("Fail in set_burn_complete_flag\n");
+                        ret = __LINE__; goto _finish;
+                }
         }
 #endif
         optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK);
