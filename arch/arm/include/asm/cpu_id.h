@@ -11,6 +11,7 @@
 #define MESON_CPU_ID_IN_REG_M6TVD	0x1a
 #define MESON_CPU_ID_IN_REG_M8BABY	0x1b
 #define MESON_CPU_ID_IN_REG_G9TV	0x1c
+#define MESON_CPU_ID_IN_REG_G9BABY	0x1d
 
 /*cpu long id stored inside chip, only for m8x*/
 #define MESON_CPU_ID_IN_REG_M8_REVA		0x11111111

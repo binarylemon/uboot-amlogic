@@ -10,6 +10,9 @@
 #if CONFIG_AML_MESON==0
 #error please define CONFIG_AML_MESON
 #endif
+
+#define CONFIG_AML_A5 1
+
 //U boot code control
 
 /*  Silent print function by Lawrence.Mok

@@ -93,7 +93,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	unsigned pinmux_2 = readl(P_PERIPHS_PIN_MUX_2);
 	
 		
-#if (MESON_CPU_TYPE == MESON_CPU_TYPE_G9TV)
+#if ((MESON_CPU_TYPE == MESON_CPU_TYPE_G9TV) ||(MESON_CPU_TYPE == MESON_CPU_TYPE_G9BABY ))
 
 	// clear sdio pinmux
 	setbits_le32(P_PREG_PAD_GPIO2_O,0x3f<<20);
@@ -210,7 +210,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
     serial_put_dec(get_utimer(nTEBegin));
     serial_puts(" us\n");
 
-#if defined(CONFIG_M8B) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)
+#if defined(CONFIG_AML_A5) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)
     asm volatile ("ldr	sp, =(0x12000000)");
     //serial_puts("aml log : set SP to 0x12000000\n");
 #endif
@@ -263,7 +263,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	writel(0,P_AO_RTI_STATUS_REG0);
 #endif
 
-#if defined(CONFIG_M8B) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)
+#if defined(CONFIG_AML_A5) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)
 
     unsigned int fpAddr = CONFIG_SYS_TEXT_BASE;
 

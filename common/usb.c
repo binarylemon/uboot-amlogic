@@ -54,6 +54,7 @@
 #include <compiler.h>
 #include <errno.h>
 #include <usb.h>
+#include <asm/arch/usb.h>
 #ifdef CONFIG_4xx
 #include <asm/4xx_pci.h>
 #endif
@@ -104,6 +105,7 @@ int usb_init(void)
 	struct usb_device *dev;
 	int i, start_index = 0;
 	int ret;
+	int usb_count = get_usb_count();
 
 	dev_index = 0;
 	asynch_allowed = 1;
@@ -116,7 +118,7 @@ int usb_init(void)
 	}
 
 	/* init low_level USB */
-	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
+	for (i = 0; i < usb_count; i++) {
 		/* init low_level USB */
 		printf("USB%d:   ", i);
 		ret = usb_lowlevel_init(i, USB_INIT_HOST, &ctrl);
@@ -145,11 +147,13 @@ int usb_init(void)
 
 		if (start_index == dev_index)
 			puts("No USB Device found\n");
-		else
+		else{
 			printf("%d USB Device(s) found\n",
 				dev_index - start_index);
-
-		usb_started = 1;
+			usb_started = 1;
+			break;	
+		}
+		
 	}
 
 	debug("scan end\n");

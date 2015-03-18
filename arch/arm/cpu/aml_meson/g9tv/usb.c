@@ -44,9 +44,9 @@ int board_usb_stop(int mode,int index)
 	return 0;
 }
 
+int usb_index = 0;
 void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
 {
-	static int usb_index = 0;
 
 	if(mode < 0 || mode >= BOARD_USB_MODE_MAX || !usb_cfg)
 		return ;
@@ -61,3 +61,9 @@ void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
 	printf("register usb cfg[%d][%d] = %p\n",mode,(mode==BOARD_USB_MODE_HOST)?usb_index:0,usb_cfg);
 	return;
 }
+
+int get_usb_count(void)
+{
+    return  usb_index;
+}
+
