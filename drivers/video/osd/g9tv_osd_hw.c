@@ -374,10 +374,6 @@ void vsync_isr(void)
 	unsigned  int  scan_line_number = 0;
 	unsigned  char output_type=0;
 
-	char *layer_str;
-	int osd_index = -1;
-	layer_str = getenv ("display_layer");
-
 	output_type=readl(P_VPU_VIU_VENC_MUX_CTRL)&0x3;
 	osd_hw.scan_mode= SCAN_MODE_PROGRESSIVE;
 	switch(output_type)
@@ -392,17 +388,9 @@ void vsync_isr(void)
 			break;
 	}
 
-	if (strcmp(layer_str, "osd1") == 0) {
-		osd_index = 0;
-	} else if (strcmp(layer_str,"osd2") == 0) {
-		osd_index = 1;
-	}
 
-	if (osd_hw.free_scale_enable[osd_index])
-	{
-		if (osd_hw.free_scale_mode[osd_index] == 0) {
-			osd_hw.scan_mode= SCAN_MODE_PROGRESSIVE;
-		}
+	if (osd_hw.free_scale_enable[OSD1] || osd_hw.free_scale_enable[OSD2]) {
+		osd_hw.scan_mode= SCAN_MODE_PROGRESSIVE;
 	}
 
 	if (osd_hw.scan_mode== SCAN_MODE_INTERLACE)
