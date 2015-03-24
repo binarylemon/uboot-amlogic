@@ -794,7 +794,9 @@ static int amlnf_init(struct platform_device *pdev)
 #ifndef AML_NAND_UBOOT
 	unsigned flag = 0;
 #endif
-
+#if ((MESON_CPU_TYPE == MESON_CPU_TYPE_G9BABY) || (MESON_CPU_TYPE == MESON_CPU_TYPE_G9TV))
+	return -1;
+#endif //
 	
 	INIT_LIST_HEAD (&nphy_dev_list);
 	INIT_LIST_HEAD (&nlogic_dev_list);
