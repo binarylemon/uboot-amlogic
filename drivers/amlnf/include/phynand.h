@@ -11,8 +11,8 @@
 #endif
 //#define CONFIG_OF
 
-#define NAND_COMPATIBLE_REGION     1
-#define NAND_RESERVED_REGION	       1
+#define NAND_COMPATIBLE_REGION     2
+#define NAND_RESERVED_REGION	   1
 #define NAND_ADDNEW_REGION	       1
 #define NAND_BUG_FIX_REGION	       4
 
@@ -118,6 +118,7 @@ typedef union nand_core_clk {
 #define 	KEY_INFO_HEAD_MAGIC				"nkey"
 #define 	SECURE_INFO_HEAD_MAGIC 			"nsec"
 #define 	ENV_INFO_HEAD_MAGIC 			"nenv"
+#define 	PHY_PARTITION_HEAD_MAGIC 		"phyp"
 
 #define 	FBBT_COPY_NUM  						1
 
@@ -634,6 +635,19 @@ struct dev_para{
 	unsigned option;
 };
 
+struct _phy_partition{
+	const char name[MAX_DEVICE_NAME_LEN];
+	uint64_t phy_off;    
+	uint64_t phy_len;
+    uint64_t logic_len;
+};
+
+struct phy_partition_info{
+	unsigned int crc;
+	struct _phy_partition partition[MAX_DEVICE_NUM];	
+	unsigned char dev_num;
+};
+
 struct nand_config{
 	unsigned int crc;
 	struct dev_para dev_para[MAX_DEVICE_NUM];	
@@ -706,6 +720,7 @@ struct amlnand_chip {
 	
 	nand_arg_info 	config_msg;
 	struct nand_config * config_ptr;
+    struct phy_partition_info* phy_part_ptr;
 
 	nand_arg_info    nand_bbtinfo;	
 	 nand_arg_info  shipped_bbtinfo;	
@@ -714,6 +729,7 @@ struct amlnand_chip {
 	 nand_arg_info  nand_key;
 	nand_arg_info  nand_secure;
 	nand_arg_info  uboot_env;
+    nand_arg_info  nand_phy_partition;
 #ifndef AML_NAND_UBOOT	
 	struct pinctrl *nand_pinctrl;
 	struct pinctrl_state *nand_pinstate;
@@ -751,6 +767,7 @@ extern int amlnand_save_info_by_name(struct amlnand_chip *aml_chip,unsigned char
 extern int amlnand_read_info_by_name(struct amlnand_chip *aml_chip,unsigned char * info,unsigned char * buf,unsigned char * name,unsigned size);
 extern int aml_secure_init(struct amlnand_chip *aml_chip);
 extern int amlnand_info_init(struct amlnand_chip *aml_chip,unsigned char * info,unsigned char * buf,unsigned char *name,unsigned size);
+unsigned int aml_info_checksum(unsigned char *data,int lenth);
 #ifndef AML_NAND_UBOOT
 extern  void   nand_get_chip(void *aml_chip);
 extern void  nand_release_chip(void *aml_chip);
