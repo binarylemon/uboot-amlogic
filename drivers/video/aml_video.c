@@ -420,70 +420,70 @@ int* get_window_axis(void) {
     int* axis = (int *)malloc(4*4);
 
     if (strcmp(mode, "480i") == 0 || strcmp(mode, "480cvbs") == 0) {
-        axis[0] = getenv_int("480ioutputx", 0);
-        axis[1] = getenv_int("480ioutputy", 0);
-        axis[2] = getenv_int("480ioutputwidth", 720);
-        axis[3] = getenv_int("480ioutputheight", 480);
+        axis[0] = getenv_int("480i_x", 0);
+        axis[1] = getenv_int("480i_y", 0);
+        axis[2] = getenv_int("480i_w", 720);
+        axis[3] = getenv_int("480i_h", 480);
     } else if (strcmp(mode, "480p") == 0) {
-        axis[0] = getenv_int("480poutputx", 0);
-        axis[1] = getenv_int("480poutputy", 0);
-        axis[2] = getenv_int("480poutputwidth", 720);
-        axis[3] = getenv_int("480poutputheight", 480);
+        axis[0] = getenv_int("480p_x", 0);
+        axis[1] = getenv_int("480p_y", 0);
+        axis[2] = getenv_int("480p_w", 720);
+        axis[3] = getenv_int("480p_h", 480);
     } else if (strcmp(mode, "576i") == 0 || strcmp(mode, "576cvbs") == 0) {
-        axis[0] = getenv_int("576ioutputx", 0);
-        axis[1] = getenv_int("576ioutputy", 0);
-        axis[2] = getenv_int("576ioutputwidth", 720);
-        axis[3] = getenv_int("576ioutputheight", 576);
+        axis[0] = getenv_int("576i_x", 0);
+        axis[1] = getenv_int("576i_y", 0);
+        axis[2] = getenv_int("576i_w", 720);
+        axis[3] = getenv_int("576i_h", 576);
     } else if (strcmp(mode, "576p") == 0) {
-        axis[0] = getenv_int("576poutputx", 0);
-        axis[1] = getenv_int("576poutputy", 0);
-        axis[2] = getenv_int("576poutputwidth", 720);
-        axis[3] = getenv_int("576poutputheight", 576);
+        axis[0] = getenv_int("576p_x", 0);
+        axis[1] = getenv_int("576p_y", 0);
+        axis[2] = getenv_int("576p_w", 720);
+        axis[3] = getenv_int("576p_h", 576);
     } else if (strcmp(mode, "720p") == 0 || strcmp(mode, "720p50hz") == 0) {
-        axis[0] = getenv_int("720poutputx", 0);
-        axis[1] = getenv_int("720poutputy", 0);
-        axis[2] = getenv_int("720poutputwidth", 1280);
-        axis[3] = getenv_int("720poutputheight", 720);
+        axis[0] = getenv_int("720p_x", 0);
+        axis[1] = getenv_int("720p_y", 0);
+        axis[2] = getenv_int("720p_w", 1280);
+        axis[3] = getenv_int("720p_h", 720);
     } else if (strcmp(mode, "1080i") == 0 || strcmp(mode, "1080i50hz") == 0) { 
-        axis[0] = getenv_int("1080ioutputx", 0);
-        axis[1] = getenv_int("1080ioutputy", 0);
-        axis[2] = getenv_int("1080ioutputwidth", 1920);
-        axis[3] = getenv_int("1080ioutputheight", 1080);
+        axis[0] = getenv_int("1080i_x", 0);
+        axis[1] = getenv_int("1080i_y", 0);
+        axis[2] = getenv_int("1080i_w", 1920);
+        axis[3] = getenv_int("1080i_h", 1080);
     } else if (strcmp(mode, "4k2k24hz") == 0) {
         axis[0] = getenv_int("4k2k24hz_x", 0);
         axis[1] = getenv_int("4k2k24hz_y", 0);
-        axis[2] = getenv_int("4k2k24hz_width", 3840);
-        axis[3] = getenv_int("4k2k24hz_height", 2160);
+        axis[2] = getenv_int("4k2k24hz_w", 3840);
+        axis[3] = getenv_int("4k2k24hz_h", 2160);
     } else if (strcmp(mode, "4k2k25hz") == 0) {
         axis[0] = getenv_int("4k2k25hz_x", 0);
         axis[1] = getenv_int("4k2k25hz_y", 0);
-        axis[2] = getenv_int("4k2k25hz_width", 3840);
-        axis[3] = getenv_int("4k2k25hz_height", 2160);
+        axis[2] = getenv_int("4k2k25hz_w", 3840);
+        axis[3] = getenv_int("4k2k25hz_h", 2160);
     } else if (strcmp(mode, "4k2k30hz") == 0) {
         axis[0] = getenv_int("4k2k30hz_x", 0);
         axis[1] = getenv_int("4k2k30hz_y", 0);
-        axis[2] = getenv_int("4k2k30hz_width", 3840);
-        axis[3] = getenv_int("4k2k30hz_height", 2160);
+        axis[2] = getenv_int("4k2k30hz_w", 3840);
+        axis[3] = getenv_int("4k2k30hz_h", 2160);
     }  else if (strcmp(mode, "4k2k60hz420") == 0) {
         axis[0] = getenv_int("4k2k60hz420_x", 0);
         axis[1] = getenv_int("4k2k60hz420_y", 0);
-        axis[2] = getenv_int("4k2k60hz420_width", 3840);
-        axis[3] = getenv_int("4k2k60hz420_height", 2160);
+        axis[2] = getenv_int("4k2k60hz420_w", 3840);
+        axis[3] = getenv_int("4k2k60hz420_h", 2160);
     } else if (strcmp(mode, "4k2ksmpte") == 0) {
         axis[0] = getenv_int("4k2ksmpte_x", 0);
         axis[1] = getenv_int("4k2ksmpte_y", 0);
-        axis[2] = getenv_int("4k2ksmpte_width", 4096);
-        axis[3] = getenv_int("4k2ksmpte_height", 2160);
+        axis[2] = getenv_int("4k2ksmpte_w", 4096);
+        axis[3] = getenv_int("4k2ksmpte_h", 2160);
     } else if (strcmp(mode, "1080p") == 0 || strcmp(mode, "1080p50hz") == 0 || strcmp(mode, "1080p24hz") == 0) {
-        axis[0] = getenv_int("1080poutputx", 0);
-        axis[1] = getenv_int("1080poutputy", 0);
-        axis[2] = getenv_int("1080poutputwidth", 1920);
-        axis[3] = getenv_int("1080poutputheight", 1080);
+        axis[0] = getenv_int("1080p_x", 0);
+        axis[1] = getenv_int("1080p_y", 0);
+        axis[2] = getenv_int("1080p_w", 1920);
+        axis[3] = getenv_int("1080p_h", 1080);
     } else {
-        axis[0] = getenv_int("1080poutputx", 0);
-        axis[1] = getenv_int("1080poutputy", 0);
-        axis[2] = getenv_int("1080poutputwidth", 1920);
-        axis[3] = getenv_int("1080poutputheight", 1080);
+        axis[0] = getenv_int("1080p_x", 0);
+        axis[1] = getenv_int("1080p_y", 0);
+        axis[2] = getenv_int("1080p_w", 1920);
+        axis[3] = getenv_int("1080p_h", 1080);
     }
     //printf("bmp scale:  mode=%s , x=%d, y=%d, w=%d, h=%d\n", mode, axis[0], axis[1], axis[2], axis[3]);
     return axis;
