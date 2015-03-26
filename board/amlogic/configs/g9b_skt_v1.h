@@ -58,6 +58,7 @@
 #define CONFIG_VIDEO_AMLTVOUT 1
 #define CONFIG_AML_HDMI_TX 1
 
+#define CONFIG_CMD_CPU_TEMP
 //Enable storage devices
 #define CONFIG_CMD_SF    1
 #if defined(CONFIG_CMD_SF)

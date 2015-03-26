@@ -58,6 +58,7 @@
 #define CONFIG_VIDEO_AMLTVOUT 1
 #define CONFIG_AML_HDMI_TX 1
 
+#define CONFIG_CMD_CPU_TEMP
 //Enable storage devices
 #define CONFIG_CMD_SF    1
 #if defined(CONFIG_CMD_SF)
@@ -287,7 +288,7 @@
 #define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK           792 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK           636 //696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_ONE_CHANNEL_DDR0_ONLY
 #define  CONFIG_CMD_DDR_TEST

@@ -17,7 +17,7 @@ int do_read_efuse(int ppos,int *flag,int *temp,int *TS_C, int print)
     char buf[2];
     int ret;
     int cpu = 0;
-    char *cpu_str[] = {"M8", "M8M2", "M8Baby", "G9TV"};
+    char *cpu_str[] = {"M8", "M8M2", "M8Baby", "G9TV", "G9TVBaby"};
     *flag=0;
     buf[0]=0;buf[1]=0;
     //read efuse tsc,flag
@@ -48,6 +48,13 @@ int do_read_efuse(int ppos,int *flag,int *temp,int *TS_C, int print)
         *temp=(*temp&0x7fff)>>5;
         cpu = 2;
     } else if (IS_MESON_G9TV_CPU) {
+        *temp=buf[1];
+        *temp=(*temp<<8)|buf[0];
+        *TS_C=*temp&0x1f;
+        *flag=(*temp&0x8000)>>15;
+        *temp=(*temp&0x7fff)>>5;
+        cpu = 3;
+    } else if (IS_MESON_G9TVBABY_CPU) {
         *temp=buf[1];
         *temp=(*temp<<8)|buf[0];
         *TS_C=*temp&0x1f;
@@ -104,7 +111,10 @@ static int do_read_temp(cmd_tbl_t *cmdtp, int flag1, int argc, char * const argv
                 tempa=(10*(adc-temp))/32 + 27;
             } else if (IS_MESON_G9TV_CPU){
                 tempa=(10*(adc-temp))/34 + 27;
-            } else {
+            } else if (IS_MESON_G9TVBABY_CPU){
+                tempa=(10*(adc-temp))/34 + 27;
+            }
+              else {
                 printf("CPU type unknow\n");
                 return -1;
             }

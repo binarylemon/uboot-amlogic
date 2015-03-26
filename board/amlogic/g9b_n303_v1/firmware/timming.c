@@ -212,7 +212,7 @@ static struct ddr_set __ddr_setting={
 			  (0 << 2) |	//[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
 			  				// and is ignored for mDDR/LPDDR2 and DDR3
 	          (1 << 5) |    //[B5] ddr3en: 1: ddr3 protocal; 0 : ddr2 protocal
-	    //      (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
+	          (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
 	          (((((CFG_DDR_FAW+CFG_DDR_RRD-1)/CFG_DDR_RRD)-4)&0x3)<<18) | //[B19,B18] tfaw_cfg
 	                          	   //tFAW= (4 + MCFG.tfaw_cfg)*tRRD - MCFG1.tfaw_cfg_offset
 	                          	   // 0:tFAW=4*tRRD - mcfg1.tfaw_cfg_offset 
