@@ -359,7 +359,7 @@
 //#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK          912//864//792// 720 //792//696 //768  //792// (636)
+#define CONFIG_DDR_CLK          768//864//792// 720 //792//696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12
 #define  CONFIG_CMD_DDR_TEST
