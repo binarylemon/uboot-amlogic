@@ -233,6 +233,10 @@ endif
 	@echo config command: \"make g9b_skt_v1_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "G9BABY_N302_V1"
+	@echo config command: \"make g9b_n302_v1_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "G9BABY_N303_V1"
 	@echo config command: \"make g9b_n303_v1_config\"
 
