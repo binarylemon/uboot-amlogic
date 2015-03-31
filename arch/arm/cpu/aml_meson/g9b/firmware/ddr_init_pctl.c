@@ -443,6 +443,22 @@ writel((zqcr&0x7ffff), P_DDR0_PUB_ZQ0PR);
 		hx_serial_puts("Aml log : DDR0 - PLL,DCAL,RST,ZCAL done\n");
 	}
 
+	#ifdef CONFIG_DDR_FINE_TUNE_ADD_N303
+	if (ddr_channel_0_power) {
+writel(0x0, P_DDR0_PUB_ACBDLR0); //ck
+writel((0x55<<16)|((readl(P_DDR0_PUB_PGCR3))&(~(0xff<<16))), P_DDR0_PUB_PGCR3);
+writel(0x1a, P_DDR0_PUB_ACLCDLR); //720 1f  792 13  756 16
+
+	}
+	#else
+		if (ddr_channel_0_power) {
+//writel(0x1f, P_DDR0_PUB_ACBDLR0); //ck
+writel((0xaa<<16)|((readl(P_DDR0_PUB_PGCR3))&(~(0xff<<16))), P_DDR0_PUB_PGCR3);
+//writel(0x16, P_DDR0_PUB_ACLCDLR);
+
+	}
+#endif
+
 	//===============================================
 	//DRAM INIT
 	if(ddr_channel_0_power){
@@ -646,7 +662,7 @@ writel((zqcr&0x7ffff), P_DDR0_PUB_ZQ0PR);
 	}
 #ifdef CONFIG_DDR_BDL_DEBUG
 
-writel(0x14, P_DDR0_PUB_ACBDLR0); //ck
+//writel(0x1f, P_DDR0_PUB_ACBDLR0); //ck
 /*
 writel(0x0, P_DDR0_PUB_ACBDLR1);//ras cas we
 writel(0x0, P_DDR0_PUB_ACBDLR2);//ba0 ba1 ba2
@@ -659,19 +675,21 @@ writel(0x04040404, P_DDR0_PUB_ACBDLR7);//a4 a5 a6 a7
 writel(0x08080808, P_DDR0_PUB_ACBDLR8);//a8 a9 a10 a11
 writel(0x08080808, P_DDR0_PUB_ACBDLR9);//a12 a13 a14 a15
 */
+///*
 if((timing_set->t_pctl_mcfg) & (1<<3)) 
 {
-writel(0x16161616, P_DDR0_PUB_ACBDLR1);//ras cas we
-writel(0x16161616, P_DDR0_PUB_ACBDLR2);//ba0 ba1 ba2
+writel(0x1a1a1a1a, P_DDR0_PUB_ACBDLR1);//ras cas we
+writel(0x1f1f1f1f, P_DDR0_PUB_ACBDLR2);//ba0 ba1 ba2
 writel(0x0, P_DDR0_PUB_ACBDLR3);//cs0
 writel(0, P_DDR0_PUB_ACBDLR4);//odt
 writel(0, P_DDR0_PUB_ACBDLR5);//cke
 
-writel(0x16161616, P_DDR0_PUB_ACBDLR6);//a0 a1 a2 a3
-writel(0x16161616, P_DDR0_PUB_ACBDLR7);//a4 a5 a6 a7
-writel(0x16161616, P_DDR0_PUB_ACBDLR8);//a8 a9 a10 a11
+writel(0x04040404, P_DDR0_PUB_ACBDLR6);//a0 a1 a2 a3
+writel(0x08080808, P_DDR0_PUB_ACBDLR7);//a4 a5 a6 a7
+writel(0x12121212, P_DDR0_PUB_ACBDLR8);//a8 a9 a10 a11
 writel(0x16161616, P_DDR0_PUB_ACBDLR9);//a12 a13 a14 a15
 }
+//*/
 /*
 writel(0x00000000, P_DDR0_PUB_DX0BDLR0);//d0 d1 d2 d3
 writel(0x00000000, P_DDR0_PUB_DX0BDLR1);//d4 d5 d6 d7
@@ -755,6 +773,7 @@ writel(timing_set->t_pub_ddr0_dx3bdlr3, P_DDR0_PUB_DX3BDLR3);//d0 d1 d2 d3
 writel(timing_set->t_pub_ddr0_dx3bdlr4, P_DDR0_PUB_DX3BDLR4);//d4 d5 d6 d7
 writel(timing_set->t_pub_ddr0_dx3bdlr5, P_DDR0_PUB_DX3BDLR5);//dm dsr dsrn
 */
+/*
 temp_bdl=(readl(P_DDR0_PUB_DX0LCDLR1) &0xff );
 temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
 writel(temp_bdl,P_DDR0_PUB_DX0LCDLR1);
@@ -770,11 +789,68 @@ writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
 temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xff );
 temp_bdl=((temp_bdl<<24)|(temp_bdl<<16)|(temp_bdl<<8)|(temp_bdl<<0));
 writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+*/
+#if defined( CONFIG_DDR_DQS_TUNE_T826_SOC_SZ_N302)
+temp_bdl=(readl(P_DDR0_PUB_DX0LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x050500; //0x040404
+//temp_bdl=temp_bdl+0x040400; //0x040404
+writel(temp_bdl,P_DDR0_PUB_DX0LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX1LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040401;
+writel(temp_bdl,P_DDR0_PUB_DX1LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX2LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x050500;
+writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040402;
+writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+
+#elif defined( CONFIG_DDR_DQS_TUNE_T828_SOC_SZ_N303)
+
+temp_bdl=(readl(P_DDR0_PUB_DX0LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040405; //0x040404
+//temp_bdl=temp_bdl+0x040400; //0x040404
+writel(temp_bdl,P_DDR0_PUB_DX0LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX1LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040405;
+writel(temp_bdl,P_DDR0_PUB_DX1LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX2LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040405;
+writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040405;
+writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+#else
+
+temp_bdl=(readl(P_DDR0_PUB_DX0LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040402; //0x040404
+//temp_bdl=temp_bdl+0x040400; //0x040404
+writel(temp_bdl,P_DDR0_PUB_DX0LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX1LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040402;
+writel(temp_bdl,P_DDR0_PUB_DX1LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX2LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040402;
+writel(temp_bdl,P_DDR0_PUB_DX2LCDLR1);
+temp_bdl=(readl(P_DDR0_PUB_DX3LCDLR1) &0xffffff );
+temp_bdl=temp_bdl-0x040402;
+writel(temp_bdl,P_DDR0_PUB_DX3LCDLR1);
+
+#endif
+
+
+
+
+
 }
 
 #endif
 
-//jiaxing debug
+#ifdef CONFIG_DDR_DQS_TUNE_T828_SOC_SZ_N303
+//writel(4|(0xf7<<5)|(3<<19), P_DDR0_PUB_DXCCR);// .t_pub_dxccr = 4|(0xf7<<5)|(3<<19), 2layer board
+//writel(4|(0x01<<5)|(3<<19), P_DDR0_PUB_DXCCR);// .t_pub_dxccr = 4|(0xc4<<5)|(3<<19), 4layer board
+//jiaxing debug use pcb 2layer should add resister improve dqs read noise.
+#endif
 //writel((readl(P_DDR0_PUB_DSGCR))&(~(0x3<<06)), P_DDR0_PUB_DSGCR); //eanble gate extension  dqs gate can help to bit deskew also
 //writel((readl(P_DDR1_PUB_DSGCR))&(~(0x3<<06)), P_DDR1_PUB_DSGCR);
 //	writel((readl(P_DDR0_PUB_DXCCR))&(~(0xFF<<05)), P_DDR0_PUB_DXCCR);

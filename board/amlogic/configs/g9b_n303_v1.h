@@ -288,7 +288,7 @@
 #define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK           636 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK          720 // 696//720//792 //696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_ONE_CHANNEL_DDR0_ONLY
 #define  CONFIG_CMD_DDR_TEST
@@ -296,6 +296,8 @@
 /*DDR capactiy support 512MB, 1GB, 1.5GB, 2GB, 3GB*/
 #define CONFIG_DDR_SIZE          1024 //MB. Legal value: 512, 1024, 1536, 2048, 3072
 #define CONFIG_DDR_BDL_DEBUG
+#define CONFIG_DDR_FINE_TUNE_ADD_N303
+#define CONFIG_DDR_DQS_TUNE_T828_SOC_SZ_N303
 
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_CHANNEL_AUTO_DETECT	//ddr channel setting auto detect
