@@ -83,8 +83,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #if (MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8)
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
-	
-#if (MESON_CPU_TYPE != MESON_CPU_TYPE_MESON8B)//reg[14] is PWM_C pinmux enable/disable in m8baby,remove MESON_CPU_TYPE_MESON8B for PWM_C disabled.
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_MESON8B)
+	//GPIOAO_12:disable pwm_c on s805 board.
+	writel(readl(0xc8100014) & ~0x4000,0xc8100014);
+#else
 	//TDO enable
 	writel(readl(0xc8100014)|0x4000,0xc8100014);
 #endif
