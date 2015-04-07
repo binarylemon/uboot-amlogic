@@ -9,7 +9,6 @@
 #define PWM_F                               6
 #define CONFIG_VDDEE_PWM                    PWM_F
 
-
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN
@@ -229,6 +228,7 @@
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
+        "osd_reverse_operate; "\
         "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\

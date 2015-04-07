@@ -217,6 +217,7 @@
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
+        "osd_reverse_operate; "\
         "bmp display ${bootup_offset}; "\
         "\0"\
 	\

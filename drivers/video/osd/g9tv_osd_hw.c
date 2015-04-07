@@ -1576,7 +1576,7 @@ static void  osd2_update_color_mode(void)
 {
 	u32  data32=0;
 	data32= (osd_hw.scan_mode== SCAN_MODE_INTERLACE)? 2 : 0;
-	data32 |=readl(P_VIU_OSD2_BLK0_CFG_W0)&0x7040;
+	data32 |=readl(P_VIU_OSD2_BLK0_CFG_W0)&0x30007040;
 	data32 |= osd_hw.fb_gem[OSD2].canvas_idx << 16 ;
 	data32 |= OSD_DATA_LITTLE_ENDIAN	 <<15 ;
     	data32 |= osd_hw.color_info[OSD2]->hw_colormat<< 2;	
