@@ -144,7 +144,7 @@
 	"bootm_low=0x00000000\0" \
 	"bootm_size=0x80000000\0" \
 	"boardname=g9baby_board\0" \
-	"outputmode=1080p\0" \
+	"outputmode=1080p50hz\0" \
 	"chipname=g9baby\0" \
 	"initrd_high=60000000\0" \
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend logo=osd0,1080p,loaded \0" \
@@ -156,7 +156,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x3a000000\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
