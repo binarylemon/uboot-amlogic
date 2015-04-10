@@ -14,6 +14,9 @@
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
+//#define CONFIG_INSTABOOT
+//#define CONFIG_MUTE_PRINT
+
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN
@@ -265,6 +268,7 @@
     \
 	"recovery="\
         "echo enter recovery;"\
+        "setenv bootargs ${bootargs} wipeinstaboot;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\

@@ -380,7 +380,9 @@ int printf(const char *fmt, ...)
 	va_end(args);
 
 	/* Print the string */
+#ifndef CONFIG_MUTE_PRINT
 	puts(printbuffer);
+#endif
 	return i;
 }
 

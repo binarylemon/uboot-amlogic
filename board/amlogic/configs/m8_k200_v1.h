@@ -8,6 +8,9 @@
 
 #define CONFIG_SECURITYKEY
 
+//#define CONFIG_INSTABOOT
+//#define CONFIG_MUTE_PRINT
+
 #ifndef CONFIG_M8
 #define CONFIG_M8
 #endif // ifndef CONFIG_M8
@@ -261,7 +264,7 @@
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x07900000\0" \
 	"fb_width=1280\0"\
 	"fb_height=720\0"\
 	"partnum=2\0" \
@@ -355,6 +358,7 @@
     \
 	"recovery="\
         "echo enter recovery;"\
+        "setenv bootargs ${bootargs} wipeinstaboot;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\

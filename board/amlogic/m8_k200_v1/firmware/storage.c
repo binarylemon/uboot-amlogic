@@ -23,6 +23,13 @@ struct partitions partition_table[]={
 			.size = 32*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
+#ifdef CONFIG_INSTABOOT
+		{
+			.name = "instaboot",
+			.size = 1024*SZ_1M,
+			.mask_flags = STORE_CODE,
+		},
+#endif
 		{
 			.name = "boot",
 			.size = 32*SZ_1M,
