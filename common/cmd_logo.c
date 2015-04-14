@@ -42,6 +42,11 @@ static int do_logo_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
             height = 2160;    
             fbw = 1920;
             fbh = 1080;
+        } else if ((strncmp(mode, "4k2k50hz", 8) == 0) || (strncmp(mode, "4k2k60hz", 8) == 0)) {
+            width = 3840;
+            height = 2160;
+            fbw = 1920;
+            fbh = 1080;
         } else {
             width = 1920;
             height = 1080;
