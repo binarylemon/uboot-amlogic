@@ -98,6 +98,29 @@ int board_eth_init(bd_t *bis)
 }
 #endif /* (CONFIG_CMD_NET) */
 
+#ifdef CONFIG_SWITCH_BOOT_MODE
+void set_regs_bandwidth(void)
+{
+	aml_write_reg32(P_VPU_VDIN_ASYNC_HOLD_CTRL, 0x80408040);
+	aml_set_reg32_bits(P_VPU_VD1_MMC_CTRL, 1, 12 ,1);		 // 		  arb0
+	aml_set_reg32_bits(P_VPU_VD2_MMC_CTRL, 1, 12 ,1);		 // 		  arb0
+	aml_set_reg32_bits(P_VPU_DI_IF1_MMC_CTRL, 1, 12 ,1);	 // 		  arb0
+	aml_set_reg32_bits(P_VPU_DI_MEM_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
+	aml_set_reg32_bits(P_VPU_DI_INP_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
+	aml_set_reg32_bits(P_VPU_DI_MTNRD_MMC_CTRL, 1, 12 ,1);  // 		  arb0
+	aml_set_reg32_bits(P_VPU_DI_CHAN2_MMC_CTRL, 0, 12 ,1);  // 		  arb1
+	aml_set_reg32_bits(P_VPU_DI_MTNWR_MMC_CTRL, 0, 12 ,1);  // 		  arb1
+	aml_set_reg32_bits(P_VPU_DI_NRWR_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
+	aml_set_reg32_bits(P_VPU_DI_DIWR_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
+}
+int switch_boot_mode(void)
+{
+	printf("######### switch_boot_mode ##########\n");
+
+	set_regs_bandwidth();
+	return 0;
+}
+#endif
 u32 get_board_rev(void)
 {
  
@@ -379,21 +402,6 @@ void board_ir_init(void)
 }
 #endif
 
-void set_regs_bandwidth(void)
-{
-	aml_write_reg32(P_VPU_VDIN_ASYNC_HOLD_CTRL, 0x80408040);
-	aml_set_reg32_bits(P_VPU_VD1_MMC_CTRL, 1, 12 ,1);		 // 		  arb0
-	aml_set_reg32_bits(P_VPU_VD2_MMC_CTRL, 1, 12 ,1);		 // 		  arb0
-	aml_set_reg32_bits(P_VPU_DI_IF1_MMC_CTRL, 1, 12 ,1);	 // 		  arb0
-	aml_set_reg32_bits(P_VPU_DI_MEM_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
-	aml_set_reg32_bits(P_VPU_DI_INP_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
-	aml_set_reg32_bits(P_VPU_DI_MTNRD_MMC_CTRL, 1, 12 ,1);  // 		  arb0
-	aml_set_reg32_bits(P_VPU_DI_CHAN2_MMC_CTRL, 0, 12 ,1);  // 		  arb1
-	aml_set_reg32_bits(P_VPU_DI_MTNWR_MMC_CTRL, 0, 12 ,1);  // 		  arb1
-	aml_set_reg32_bits(P_VPU_DI_NRWR_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
-	aml_set_reg32_bits(P_VPU_DI_DIWR_MMC_CTRL, 0, 12 ,1);	 // 		  arb1
-}
-
 int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
@@ -419,7 +427,7 @@ int board_init(void)
 #if defined(CONFIG_VLSI_EMULATOR)
 		   run_command("video dev open 1080p", 0);
 #endif
-	set_regs_bandwidth();
+
 
 	return 0;
 }
