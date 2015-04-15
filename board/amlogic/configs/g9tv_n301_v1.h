@@ -84,9 +84,9 @@
 //Enable  saradc wake up for arc 
 #define CONFIG_SARADC_WAKEUP_FOR_ARC 1
 #define CONFIG_SARADC_CHANEL_CNT 0
-#define CONFIG_SARADC_KEY_TOLERANCE 0x14
-#define CONFIG_SARADC_POWER_UP_KEY_VAL1 0x0
-#define CONFIG_SARADC_POWER_UP_KEY_VAL2 0xfff 
+#define CONFIG_SARADC_SAMPLE_TIME_MAX 20
+#define CONFIG_SARADC_KEY_TOLERANCE 40
+#define CONFIG_SARADC_POWER_UP_KEY_VAL 10
 
 //Enable ir remote wake up for arc 
 #define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc  
@@ -164,6 +164,8 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
+#define CONFIG_NO_LCD_INIT_IN_BOARDC	1
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x12000000\0" \
@@ -187,6 +189,8 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x7a000000\0" \
+	"fb_width=1920\0" \
+	"fb_height=1080\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -201,24 +205,27 @@
 	"bootpath=u-boot.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"lcd_reverse=0\0" \
+	"osd_reverse=n\0" \
+	"panel_reverse=n\0" \
 	"suspend=off\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"preboot="\
-		"echo preboot...;" \
-		"run prepare;"\
-		"run storeargs;"\
-		"\0"\
-    \
+		"run prepare; "\
+		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
+		"run switch_bootmode\0" \
+		\
     "storeargs="\
-        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded vmode=${outputmode} \0"\
+        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
     \
     "prepare="\
-        "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\
+        "logo size ${outputmode}; video open; video clear; video dev enable;"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "osd_reverse_operate; "\
-        "bmp display ${bootup_offset}; "\
+        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\
@@ -227,20 +234,47 @@
         "bootm;"\
         "run recovery\0" \
     \
+    "switch_bootmode="\
+		"if test ${reboot_mode} = normal; then "\
+			"run storeargs; "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"run recovery; "\
+		"else if test ${reboot_mode} = update; then "\
+			"run update; "\
+		"else if test ${reboot_mode} = usb_burning; then "\
+			"run usb_burning; "\
+		"else "\
+			"run storeargs; "\
+		"fi; fi; fi; fi;\0" \
+		\
 	"recovery="\
-        "echo enter recovery;"\
-        "if usb start; then "\
-            "if fatload usb 0 ${loadaddr} recovery.img; then bootm;fi;"\
-        "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
+		"echo enter recovery;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm;"\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
 	"update="\
-        "echo update...; "\
-        "if usb start; then "\
-            "if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
-    \
+		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+		"echo update...; "\
+		"if mmcinfo; then "\
+			"if fatexist mmc 0 ${sdcburncfg}; then "\
+				"sdc_burn ${sdcburncfg}; "\
+			"else "\
+				"if fatload mmc 0 ${loadaddr} aml_autoscript; then "\
+					"autoscr ${loadaddr}; "\
+				"fi; "\
+				"if fatload mmc 0 ${loadaddr} recovery.img; then "\
+				"bootm; fi; "\
+			"fi;"\
+		"fi;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm; "\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
 
 #define CONFIG_BOOTCOMMAND   "run storeboot"
 

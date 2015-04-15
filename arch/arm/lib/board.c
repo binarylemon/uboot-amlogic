@@ -1033,9 +1033,11 @@ extern int amlnf_init(struct platform_device *pdev);
 
 	AML_LOG_TE("board");
 
-#ifdef CONFIG_VIDEO_AMLLCD
-	puts("LCD Initialize:   \n");
-	aml_lcd_init();
+#ifdef	CONFIG_VIDEO_AMLLCD
+	#ifndef CONFIG_NO_LCD_INIT_IN_BOARDC
+		puts("LCD Initialize:   \n");
+		aml_lcd_init();
+	#endif
 #endif
 
 #ifdef TEST_UBOOT_BOOT_SPEND_TIME
