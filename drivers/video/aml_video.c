@@ -464,11 +464,16 @@ int* get_window_axis(void) {
         axis[1] = getenv_int("4k2k30hz_y", 0);
         axis[2] = getenv_int("4k2k30hz_w", 3840);
         axis[3] = getenv_int("4k2k30hz_h", 2160);
-    }  else if (strcmp(mode, "4k2k60hz420") == 0) {
-        axis[0] = getenv_int("4k2k60hz420_x", 0);
-        axis[1] = getenv_int("4k2k60hz420_y", 0);
-        axis[2] = getenv_int("4k2k60hz420_w", 3840);
-        axis[3] = getenv_int("4k2k60hz420_h", 2160);
+    }  else if (strcmp(mode, "4k2k50hz420") == 0) {
+        axis[0] = getenv_int("4k2k420_x", 0);
+        axis[1] = getenv_int("4k2k420_y", 0);
+        axis[2] = getenv_int("4k2k420_w", 3840);
+        axis[3] = getenv_int("4k2k420_h", 2160);
+    } else if (strcmp(mode, "4k2k60hz420") == 0) {
+        axis[0] = getenv_int("4k2k420_x", 0);
+        axis[1] = getenv_int("4k2k420_y", 0);
+        axis[2] = getenv_int("4k2k420_w", 3840);
+        axis[3] = getenv_int("4k2k420_h", 2160);
     } else if (strcmp(mode, "4k2ksmpte") == 0) {
         axis[0] = getenv_int("4k2ksmpte_x", 0);
         axis[1] = getenv_int("4k2ksmpte_y", 0);
