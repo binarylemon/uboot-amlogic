@@ -466,68 +466,23 @@ static struct enc_reg_set enc_1080i60hz_set[] = {
 
 static struct enc_reg_set enc_1080p24hz_set[] = {
     {P_VENC_VDAC_SETTING,          0xff,  },
-    {P_VENC_DVI_SETTING,           0x000d,},
-    {P_ENCP_VIDEO_MAX_PXCNT,       2749,  },
-    {P_ENCP_VIDEO_MAX_LNCNT,       1124,  },
-    /* horizontal timing settings */
-    {P_ENCP_VIDEO_HSPULS_BEGIN,    44,  },//1980
-    {P_ENCP_VIDEO_HSPULS_END,      132,    },
-    {P_ENCP_VIDEO_HSPULS_SWITCH,   44,    },
 
-    //DE position in horizontal
-    {P_ENCP_VIDEO_HAVON_BEGIN,     271,   },
-    {P_ENCP_VIDEO_HAVON_END,       2190,  },
-
-    //ditital hsync positon in horizontal
-    {P_ENCP_VIDEO_HSO_BEGIN,       79 ,    },
-    {P_ENCP_VIDEO_HSO_END,         123,  },
-
-    /* vsync horizontal timing */
-    {P_ENCP_VIDEO_VSPULS_BEGIN,    220,   },
-    {P_ENCP_VIDEO_VSPULS_END,      2140,  },
-
-    /* vertical timing settings */
-    {P_ENCP_VIDEO_VSPULS_BLINE,    0,     },
-    {P_ENCP_VIDEO_VSPULS_ELINE,    4,     },//35
-    {P_ENCP_VIDEO_EQPULS_BLINE,    0,     },
-    {P_ENCP_VIDEO_EQPULS_ELINE,    4,     },//35
-    {P_ENCP_VIDEO_VAVON_BLINE,     41,    },
-    {P_ENCP_VIDEO_VAVON_ELINE,     1120,  },
-
-    //adjust the hsync & vsync start point and end point
-    {P_ENCP_VIDEO_VSO_BEGIN,       79,  },
-    {P_ENCP_VIDEO_VSO_END,         79,  },
-
-    //adjust the vsync start line and end line
-    {P_ENCP_VIDEO_VSO_BLINE,       0,     },
-    {P_ENCP_VIDEO_VSO_ELINE,       5,     },
-
-    {P_ENCP_VIDEO_YFP1_HTIME,      271,   },
-    {P_ENCP_VIDEO_YFP2_HTIME,      2190,  },
-    {P_VENC_VIDEO_PROG_MODE,       0x100, },
-    {P_ENCP_VIDEO_MODE,            0x4040,},
-    {P_ENCP_VIDEO_MODE_ADV,        0x0018,},
-
-    {P_ENCP_VIDEO_SYNC_MODE,       0x7, }, //bit[15:8] -- adjust the vsync vertical position
-
-    {P_ENCP_VIDEO_YC_DLY,          0,     },      //Y/Cb/Cr delay
-
-    {P_ENCP_VIDEO_RGB_CTRL, 2,},       // enable sync on B
-
-    {P_VENC_SYNC_ROUTE,            0,     },
-    {P_VENC_INTCTRL,               0x200, },
-    {P_ENCP_VFIFO2VD_CTL,               0,     },
-    {P_VENC_VDAC_FIFO_CTRL,        0x1000,},
-    {P_VENC_VDAC_SETTING,          0,     },
-    {P_VPU_VIU_VENC_MUX_CTRL,      0x000a,},
-    {P_ENCP_DACSEL_0,              0x3102,},
-    {P_ENCP_DACSEL_1,              0x0054,},
-    {P_VENC_VDAC_DACSEL0,          0x0001,},
-    {P_VENC_VDAC_DACSEL1,          0x0001,},
-    {P_VENC_VDAC_DACSEL2,          0x0001,},
-    {P_VENC_VDAC_DACSEL3,          0x0001,},
-    {P_VENC_VDAC_DACSEL4,          0x0001,},
-    {P_VENC_VDAC_DACSEL5,          0x0001,},
+    {P_ENCI_VIDEO_EN,              0,     },
+    {P_ENCP_VIDEO_EN,              0,     },
+    {P_ENCP_VIDEO_MODE, 0x4040,},
+    {P_ENCP_VIDEO_MODE_ADV, 0x18,},
+    {P_ENCP_VIDEO_MAX_PXCNT, 0xABD,},
+    {P_ENCP_VIDEO_MAX_LNCNT, 0x464,},
+    {P_ENCP_VIDEO_HAVON_BEGIN, 0xC0,},
+    {P_ENCP_VIDEO_HAVON_END, 0x83F,},
+    {P_ENCP_VIDEO_VAVON_BLINE, 0x29,},
+    {P_ENCP_VIDEO_VAVON_ELINE, 0x460,},
+    {P_ENCP_VIDEO_HSO_BEGIN, 0x0,},
+    {P_ENCP_VIDEO_HSO_END, 0x2C,},
+    {P_ENCP_VIDEO_VSO_BEGIN, 0x1E,},
+    {P_ENCP_VIDEO_VSO_END, 0x32,},
+    {P_ENCP_VIDEO_VSO_BLINE, 0x0,},
+    {P_ENCP_VIDEO_VSO_ELINE, 0x5,},
     {P_ENCI_VIDEO_EN,              0,     },
     {P_ENCP_VIDEO_EN,              1,     },
     {MREG_END_MARKER,            0      }
@@ -536,76 +491,24 @@ static struct enc_reg_set enc_1080p24hz_set[] = {
 static struct enc_reg_set enc_1080p50hz_set[] = {
     {P_VENC_VDAC_SETTING,          0xff,  },
 
-    {P_ENCP_VIDEO_FILT_CTRL,       0x1052,},
+    {P_ENCI_VIDEO_EN,              0,     },
+    {P_ENCP_VIDEO_EN,              0,     },
 
-    // bit 13    1          (delayed prog_vs)
-    // bit 5:4:  2          (pixel[0])
-    // bit 3:    1          invert vsync or not
-    // bit 2:    1          invert hsync or not
-    // bit1:     1          (select viu sync)
-    // bit0:     1          (progressive)
-    {P_VENC_DVI_SETTING,           0x000d,},
-    {P_ENCP_VIDEO_MAX_PXCNT,       2639,  },
-    {P_ENCP_VIDEO_MAX_LNCNT,       1124,  },
-    /* horizontal timing settings */
-    {P_ENCP_VIDEO_HSPULS_BEGIN,    44,  },//1980
-    {P_ENCP_VIDEO_HSPULS_END,      132,    },
-    {P_ENCP_VIDEO_HSPULS_SWITCH,   44,    },
+    {P_ENCP_VIDEO_MODE, 0x4040,},
+    {P_ENCP_VIDEO_MODE_ADV, 0x18,},
+    {P_ENCP_VIDEO_MAX_PXCNT, 0xA4F,},
+    {P_ENCP_VIDEO_MAX_LNCNT, 0x464,},
+    {P_ENCP_VIDEO_HAVON_BEGIN, 0xC0,},
+    {P_ENCP_VIDEO_HAVON_END, 0x83F,},
+    {P_ENCP_VIDEO_VAVON_BLINE, 0x29,},
+    {P_ENCP_VIDEO_VAVON_ELINE, 0x460,},
+    {P_ENCP_VIDEO_HSO_BEGIN, 0x0,},
+    {P_ENCP_VIDEO_HSO_END, 0x2C,},
+    {P_ENCP_VIDEO_VSO_BEGIN, 0x1E,},
+    {P_ENCP_VIDEO_VSO_END, 0x32,},
+    {P_ENCP_VIDEO_VSO_BLINE, 0x0,},
+    {P_ENCP_VIDEO_VSO_ELINE, 0x5,},
 
-    //DE position in horizontal
-    {P_ENCP_VIDEO_HAVON_BEGIN,     271,   },
-    {P_ENCP_VIDEO_HAVON_END,       2190,  },
-
-    //ditital hsync positon in horizontal
-    {P_ENCP_VIDEO_HSO_BEGIN,       79 ,    },
-    {P_ENCP_VIDEO_HSO_END,         123,  },
-
-    /* vsync horizontal timing */
-    {P_ENCP_VIDEO_VSPULS_BEGIN,    220,   },
-    {P_ENCP_VIDEO_VSPULS_END,      2140,  },
-
-    /* vertical timing settings */
-    {P_ENCP_VIDEO_VSPULS_BLINE,    0,     },
-    {P_ENCP_VIDEO_VSPULS_ELINE,    4,     },//35
-    {P_ENCP_VIDEO_EQPULS_BLINE,    0,     },
-    {P_ENCP_VIDEO_EQPULS_ELINE,    4,     },//35
-    {P_ENCP_VIDEO_VAVON_BLINE,     41,    },
-    {P_ENCP_VIDEO_VAVON_ELINE,     1120,  },
-
-    //adjust the hsync & vsync start point and end point
-    {P_ENCP_VIDEO_VSO_BEGIN,       79,  },
-    {P_ENCP_VIDEO_VSO_END,         79,  },
-
-    //adjust the vsync start line and end line
-    {P_ENCP_VIDEO_VSO_BLINE,       0,     },
-    {P_ENCP_VIDEO_VSO_ELINE,       5,     },
-
-    {P_ENCP_VIDEO_YFP1_HTIME,      271,   },
-    {P_ENCP_VIDEO_YFP2_HTIME,      2190,  },
-    {P_VENC_VIDEO_PROG_MODE,       0x100, },
-    {P_ENCP_VIDEO_MODE,            0x4040,},
-    {P_ENCP_VIDEO_MODE_ADV,        0x0018,},
-
-    {P_ENCP_VIDEO_SYNC_MODE,       0x7, }, //bit[15:8] -- adjust the vsync vertical position
-
-    {P_ENCP_VIDEO_YC_DLY,          0,     },      //Y/Cb/Cr delay
-
-    {P_ENCP_VIDEO_RGB_CTRL, 2,},       // enable sync on B
-
-    {P_VENC_SYNC_ROUTE,            0,     },
-    {P_VENC_INTCTRL,               0x200, },
-    {P_ENCP_VFIFO2VD_CTL,               0,     },
-    {P_VENC_VDAC_FIFO_CTRL,        0x1000,},
-    {P_VENC_VDAC_SETTING,          0,     },
-    {P_VPU_VIU_VENC_MUX_CTRL,      0x000a,},
-    {P_ENCP_DACSEL_0,              0x3102,},
-    {P_ENCP_DACSEL_1,              0x0054,},
-    {P_VENC_VDAC_DACSEL0,          0x0001,},
-    {P_VENC_VDAC_DACSEL1,          0x0001,},
-    {P_VENC_VDAC_DACSEL2,          0x0001,},
-    {P_VENC_VDAC_DACSEL3,          0x0001,},
-    {P_VENC_VDAC_DACSEL4,          0x0001,},
-    {P_VENC_VDAC_DACSEL5,          0x0001,},
     {P_ENCI_VIDEO_EN,              0,     },
     {P_ENCP_VIDEO_EN,              1,     },
     {MREG_END_MARKER,       MREG_END_MARKER},
@@ -1078,10 +981,42 @@ const reg_t tvenc_regs_1080i60hz[] = {
 };
 
 const reg_t tvenc_regs_1080p24hz[] = {
+    {P_ENCP_DVI_HSO_BEGIN, 0x2,},
+    {P_ENCP_DVI_HSO_END, 0x2E,},
+    {P_ENCP_DVI_VSO_BLINE_EVN, 0x0,},
+    {P_ENCP_DVI_VSO_BLINE_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_ELINE_EVN, 0x5,},
+    {P_ENCP_DVI_VSO_ELINE_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_BEGIN_EVN, 0x2,},
+    {P_ENCP_DVI_VSO_BEGIN_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_END_EVN, 0x2,},
+    {P_ENCP_DVI_VSO_END_ODD, 0x0,},
+    {P_ENCP_DE_H_BEGIN, 0xC2,},
+    {P_ENCP_DE_H_END, 0x842,},
+    {P_ENCP_DE_V_BEGIN_EVEN, 0x29,},
+    {P_ENCP_DE_V_END_EVEN, 0x461,},
+    {P_ENCP_DE_V_BEGIN_ODD, 0x0,},
+    {P_ENCP_DE_V_END_ODD, 0x0,},
     {MREG_END_MARKER,     MREG_END_MARKER},
 };
 
 const reg_t tvenc_regs_1080p50hz[] = {
+    {P_ENCP_DVI_HSO_BEGIN, 0x2,},
+    {P_ENCP_DVI_HSO_END, 0x2E,},
+    {P_ENCP_DVI_VSO_BLINE_EVN, 0x0,},
+    {P_ENCP_DVI_VSO_BLINE_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_ELINE_EVN, 0x5,},
+    {P_ENCP_DVI_VSO_ELINE_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_BEGIN_EVN, 0x2,},
+    {P_ENCP_DVI_VSO_BEGIN_ODD, 0x0,},
+    {P_ENCP_DVI_VSO_END_EVN, 0x2,},
+    {P_ENCP_DVI_VSO_END_ODD, 0x0,},
+    {P_ENCP_DE_H_BEGIN, 0xC2,},
+    {P_ENCP_DE_H_END, 0x842,},
+    {P_ENCP_DE_V_BEGIN_EVEN, 0x29,},
+    {P_ENCP_DE_V_END_EVEN, 0x461,},
+    {P_ENCP_DE_V_BEGIN_ODD, 0x0,},
+    {P_ENCP_DE_V_END_ODD, 0x0,},
     {MREG_END_MARKER,     MREG_END_MARKER},
 };
 
