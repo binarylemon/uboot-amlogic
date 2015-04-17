@@ -236,13 +236,21 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	// load secureOS
 #ifdef CONFIG_MESON_TRUSTZONE
 	if(load_secureos()){
+#ifdef CONFIG_BL31
+		serial_puts("\nload BL31 fail,now reset the chip");
+#else
 		serial_puts("\nload secureOS fail,now reset the chip");
+#endif
 		ovFlag = 1;		
 		AML_WATCH_DOG_START();
 	}
 	else{		
 		ovFlag = 0;
+#ifdef CONFIG_BL31
+		serial_puts("\nBL31 System Started\n");
+#else
 		serial_puts("\nOV System Started\n");
+#endif
 		serial_wait_tx_empty();    
 	}
 #endif	

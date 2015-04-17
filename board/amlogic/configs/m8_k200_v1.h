@@ -112,7 +112,9 @@
 #define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
+#ifndef CONFIG_BL31
 #define CONFIG_CMD_SUSPEND 1
+#endif
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
@@ -509,7 +511,9 @@
 #define CONFIG_CMD_IMGPACK 1
 
 //M8 secure boot disable
-//#define CONFIG_AML_DISABLE_CRYPTO_UBOOT 1
+#ifdef CONFIG_BL31
+#define CONFIG_AML_DISABLE_CRYPTO_UBOOT 1
+#endif
 
 //M8 L1 cache enable for uboot decompress speed up
 #define CONFIG_AML_SPL_L1_CACHE_ON	1
@@ -519,7 +523,9 @@
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
+#ifndef CONFIG_BL31
 #define CONFIG_AML_SUSPEND 1
+#endif
 
 #define CONFIG_CMD_LOGO
 
@@ -535,6 +541,12 @@
  */
 #ifdef CONFIG_MESON_TRUSTZONE
 
+#ifdef CONFIG_BL31
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+#define SECUREOS_KEY_BASE_ADDR 0x06100000
+#define SECURE_OS_DECOMPRESS_ADDR 0x06200000
+
+#else  // CONFIG_BL31
 #define CONFIG_MESON_SECUREARGS  1
 //#define CONFIG_MESON_SECURE_HDCP 1
 #define CONFIG_JOIN_UBOOT_SECUREOS 1
@@ -553,6 +565,7 @@
 #define CONFIG_SPI_NOR_SECURE_STORAGE
 #endif // CONFIG_SECURE_STORAGE_BURNED
 
+#endif  // CONFIG_BL31
 #endif //CONFIG_MESON_TRUSTZONE
 
 #endif //__CONFIG_M8_K200_V1_H__

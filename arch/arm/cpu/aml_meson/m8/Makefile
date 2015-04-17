@@ -42,7 +42,11 @@ endif
 endif
 
 ifdef CONFIG_MESON_TRUSTZONE
+ifdef CONFIG_BL31
+COBJS += bl31_apis.o
+else
 COBJS += trustzone.o
+endif
 endif
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c) $(COBJS-y:.o=.c)

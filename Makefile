@@ -401,8 +401,18 @@ ALL += $(obj)u-boot.hex
 endif
 
 ifeq ($(CONFIG_JOIN_UBOOT_SECUREOS),y)
+ifeq ($(CONFIG_BL31),y)
+ifeq ($(SOC), m8)
+SECURE_OS_BIN ?= secure_os/m8m2-secmon-ucl.bin
+else
+SECURE_OS_BIN ?= secure_os/$(SOC)-secmon-ucl.bin
+endif
+UBOOT_SECURE_OS := $(obj)uboot-secmon.bin
+else
 SECURE_OS_BIN ?= secure_os/otzone-ucl.bin
 UBOOT_SECURE_OS := $(obj)uboot-secureos.bin
+endif
+
 ALL += $(UBOOT_SECURE_OS)
 endif
 

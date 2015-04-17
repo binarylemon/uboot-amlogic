@@ -56,7 +56,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <amlogic/aml_pmu.h>
 #endif
 #endif
-#ifdef CONFIG_MESON_TRUSTZONE
+#if defined(CONFIG_MESON_TRUSTZONE) && (CONFIG_AML_SUSPEND)
 #include <arc_code.dat>
 #endif
 #if defined(AML_UBOOT_LOG_PROFILE)
