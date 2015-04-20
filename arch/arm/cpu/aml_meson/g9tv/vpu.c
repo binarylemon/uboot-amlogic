@@ -308,7 +308,6 @@ int vpu_probe(void)
 	get_vpu_config();
 	set_vpu_defconf();
 	set_vpu_clk(vpu_config.clk_level);
-
 	return 0;
 }
 
