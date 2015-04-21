@@ -306,6 +306,21 @@ static void lcd_io_init(void)
 	//set_backlight_level(DEFAULT_BL_LEVEL);
 }
 
+static int lvds_boot_para_setup(void)
+{
+	char *lcd_reverse = getenv("lcd_reverse");
+	if (!strcmp(lcd_reverse,"1")) {
+		setenv("osd_reverse","all,true");
+		setenv("panel_reverse","1");
+		//saveenv();
+	} else {
+		setenv("osd_reverse","n");
+		setenv("panel_reverse","n");
+		//saveenv();
+	}
+	return 0;
+}
+
 void lcd_enable(void)
 {
 	printf("%s\n", __FUNCTION__);
@@ -316,7 +331,7 @@ void lcd_enable(void)
 	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 0);
 	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
 	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
-
+	lvds_boot_para_setup();
 	lcd_sync_duration(&lcd_config);
 	lcd_video_adjust(&lcd_config);
 	lcd_io_init();

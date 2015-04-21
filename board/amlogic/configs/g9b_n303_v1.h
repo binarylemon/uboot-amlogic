@@ -5,7 +5,7 @@
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 #define CONFIG_POWER_SPL
-#define CONFIG_PWM_VDDEE_VOLTAGE            1050   //VDDEE voltage when boot, must have
+#define CONFIG_PWM_VDDEE_VOLTAGE            1070   //VDDEE voltage when boot, must have
 #define PWM_F                               6
 #define CONFIG_VDDEE_PWM                    PWM_F
 
@@ -34,6 +34,9 @@
 
 //Enable switch boot mode
 #define CONFIG_SWITCH_BOOT_MODE
+#define CONFIG_POWER_MODE
+
+#define PWRKEY_WAKEUP_FLAGE 0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag.
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -58,8 +61,6 @@
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
-//#define CONFIG_VIDEO_AMLTVOUT 1
-//#define CONFIG_AML_HDMI_TX 1
 
 #define CONFIG_CMD_CPU_TEMP
 //Enable storage devices
@@ -139,7 +140,9 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
+#define CONFIG_NO_LCD_INIT_IN_BOARDC	1
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x12000000\0" \
 	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
@@ -147,10 +150,10 @@
 	"bootm_low=0x00000000\0" \
 	"bootm_size=0x80000000\0" \
 	"boardname=g9baby_board\0" \
-	"outputmode=1080p\0" \
+	"outputmode=1080p50hz\0" \
 	"chipname=g9baby\0" \
 	"initrd_high=60000000\0" \
-	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend logo=osd1,1080p,loaded vmode=${outputmode} \0" \
+	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
      "initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
 	"video_dev=panel\0" \
 	"display_width=1920\0" \
@@ -161,6 +164,8 @@
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
 	"fb_addr=0x3a000000\0" \
+	"fb_width=1920\0" \
+	"fb_height=1080\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -168,55 +173,86 @@
 	"p1start=1400000\0" \
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
+	"powermode=on\0" \
+	"pstandby=on\0" \
 	"bootstart=0\0" \
 	"bootsize=60000\0" \
 	"bootpath=u-boot.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"lcd_reverse=0\0" \
+	"osd_reverse=n\0" \
+	"panel_reverse=n\0" \
+	"suspend=off\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"preboot="\
-		"echo preboot...;" \
 		"run prepare; "\
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
-        "run switch_bootmode\0" \
+		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
+		"run switch_bootmode\0" \
+		\
+    "storeargs="\
+        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
     \
     "prepare="\
-        "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\
+        "logo size ${outputmode}; video open; video clear; video dev enable;"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "osd_reverse_operate; "\
-        "bmp display ${bootup_offset}; "\
+        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
-   	"update="\
-   		"echo update...; "\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
-    \
-	"switch_bootmode="\
-		"echo switch_bootmode...;" \
-		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
-            "\0"\
-    \
 	"storeboot="\
         "echo Booting...; "\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
+    "switch_bootmode="\
+		"if test ${reboot_mode} = normal; then "\
+			"run storeargs; "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"run recovery; "\
+		"else if test ${reboot_mode} = update; then "\
+			"run storeargs; "\
+			"run update; "\
+		"else if test ${reboot_mode} = usb_burning; then "\
+			"run usb_burning; "\
+		"else "\
+			"run storeargs; "\
+		"fi; fi; fi; fi;\0" \
+		\
 	"recovery="\
-        "echo enter recovery;"\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-        "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
+		"echo enter recovery;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm;"\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
+	"update="\
+		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+		"echo update...; "\
+		"if mmcinfo; then "\
+			"if fatexist mmc 0 ${sdcburncfg}; then "\
+				"sdc_burn ${sdcburncfg}; "\
+			"else "\
+				"if fatload mmc 0 ${loadaddr} aml_autoscript; then "\
+					"autoscr ${loadaddr}; "\
+				"fi; "\
+				"if fatload mmc 0 ${loadaddr} recovery.img; then "\
+				"bootm; fi; "\
+			"fi;"\
+		"fi;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm; "\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
 
-
-#define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"
+#define CONFIG_BOOTCOMMAND   "run storeboot"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
@@ -270,11 +306,13 @@
 
 #endif
 
+//enable auto update env--> defenv;save;
+#define CONFIG_AUTO_UPDATE_ENV 1
 
 //----------------------------------------------------------------------
 //Please set the CPU clock(unit: MHz)
 //legal value: 600, 792, 996, 1200
-#define CPU_CLK 		    (792)
+#define CPU_CLK 		    (1200)
 #define CONFIG_SYS_CPU_CLK	(CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -290,7 +328,7 @@
 //#define CONFIG_DDR_LOW_POWER_DISABLE 1
 
 //For DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
-#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
+//#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
 #define CONFIG_DDR_CLK          720 // 696//720//792 //696 //768  //792// (636)
@@ -379,4 +417,5 @@
    #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif
 
+#define CONFIG_UBOOT_BUILD_VERSION_INFO 1
 #endif //__CONFIG_G9BABY_N303_V1_H__

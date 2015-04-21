@@ -244,6 +244,7 @@
 		"else if test ${reboot_mode} = factory_reset; then "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
+			"run storeargs; "\
 			"run update; "\
 		"else if test ${reboot_mode} = usb_burning; then "\
 			"run usb_burning; "\
