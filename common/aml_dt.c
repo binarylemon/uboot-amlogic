@@ -82,7 +82,7 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 		for(i = 0; i < AML_DT_ID_VARI_TOTAL; i++)
 			dt_info[i] = (char *)malloc(sizeof(char)*aml_each_id_length);
 		unsigned int dtb_match_num = 0xffff;
-		unsigned int x = 0, y = 0; //loop counter
+		unsigned int x = 0, y = 0, z = 0; //loop counter
 		unsigned int read_data;
 		for(i = 0; i < dt_total; i++){
 			for(x = 0; x < AML_DT_ID_VARI_TOTAL; x++){
@@ -95,16 +95,33 @@ unsigned int get_multi_dt_entry(unsigned int fdt_addr){
 					dt_info[x][y+2] = (read_data >> 8) & 0xff;
 					dt_info[x][y+3] = (read_data >> 0) & 0xff;
 				}
+				for (z=0; z<aml_each_id_length; z++) {
+					/*fix string with \0*/
+					if (0x20 == (uint)dt_info[x][z]) {
+						dt_info[x][z] = '\0';
+					}
+				}
+				//printf("dt_info[x]: %s\n", dt_info[x]);
+				//printf("strlen(dt_info[x]): %d\n", strlen(dt_info[x]));
 			}
 			if(dt_tool_version == 1)
 				printf("        dtb %d soc: %.4s   plat: %.4s   vari: %.4s\n", i, (char *)(dt_info[0]), (char *)(dt_info[1]), (char *)(dt_info[2]));
 			else if(dt_tool_version == 2)
 				printf("        dtb %d soc: %.16s   plat: %.16s   vari: %.16s\n", i, (char *)(dt_info[0]), (char *)(dt_info[1]), (char *)(dt_info[2]));
-			if(!strncmp(tokens[0], (char *)(dt_info[0]), strlen(tokens[0])) && \
-				!strncmp(tokens[1], (char *)(dt_info[1]), strlen(tokens[1])) && \
-				!strncmp(tokens[2], (char *)(dt_info[2]), strlen(tokens[2]))){
+			uint match_str_counter = 0;
+			for (z=0; z<AML_DT_ID_VARI_TOTAL; z++) {
+				/*must match 3 strings*/
+				if (!strncmp(tokens[z], (char *)(dt_info[z]), strlen(tokens[z])) && \
+					(strlen(tokens[z]) == strlen(dt_info[z])))
+					match_str_counter++;
+			}
+			if (match_str_counter == AML_DT_ID_VARI_TOTAL) {
 				//printf("Find match dtb\n");
 				dtb_match_num = i;
+			}
+			for (z=0; z<AML_DT_ID_VARI_TOTAL; z++) {
+				/*clear data for next loop*/
+				memset(dt_info[z], 0, sizeof(aml_each_id_length));
 			}
 		}
 		/*clean malloc memory*/
