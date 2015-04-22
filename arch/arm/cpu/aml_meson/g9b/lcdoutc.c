@@ -934,7 +934,7 @@ static void set_pll_vbyone(Lcd_Config_t *pConf)
 	//int hdmi_clk_out;
 	int hdmi_vx1_clk_od1;
 	int pclk_div;
-	int phy_di
+	int phy_div;
 	int xd;
 	int minlane;
 	lane = 8;//lane_num;
