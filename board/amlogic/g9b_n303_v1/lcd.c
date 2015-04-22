@@ -118,9 +118,9 @@ static void lcd_power_ctrl(Bool_t status)
 	if (status) {
 		//GPIOA27 -> LCD_PWR_EN#: 1  lcd 3.3v
 #ifdef CONFIG_AML_PMU
-		amlogic_gpio_direction_output(GPIOH_10,1);
+		amlogic_gpio_direction_output(GPIOH_9,1);
 #else
-		amlogic_gpio_direction_output(GPIOH_10,1);
+		amlogic_gpio_direction_output(GPIOH_9,1);
 #endif
 
 		mdelay(50);
@@ -129,9 +129,9 @@ static void lcd_power_ctrl(Bool_t status)
 		backlight_power_ctrl(OFF);
 		mdelay(50);
 #ifdef CONFIG_AML_PMU
-		amlogic_gpio_direction_output(GPIOH_10,0);
+		amlogic_gpio_direction_output(GPIOH_9,0);
 #else
-		amlogic_gpio_direction_output(GPIOH_10,0);
+		amlogic_gpio_direction_output(GPIOH_9,0);
 #endif
 
 		mdelay(50);
