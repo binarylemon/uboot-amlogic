@@ -105,6 +105,11 @@ void *video_hw_init (void)
 	aml_gdev.fg = fg;
 	aml_gdev.bg = bg;
 
+	if (!strcmp(getenv("lcd_reverse"),"1")) {
+		setenv("osd_reverse","all,true");
+		setenv("panel_reverse","1");
+		saveenv();
+	}
 	//different method with other video gdfIndex
 	//if((color_format_index < ARRAY_SIZE(default_color_format_array)) && (default_color_format_array[color_format_index] != INVALID_BPP_ITEM))
 	if((color_format_index < ARRAY_SIZE(default_color_format_array)) && (default_color_format_array[color_format_index].color_index != COLOR_INDEX_NULL))

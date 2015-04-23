@@ -42,6 +42,7 @@
 
 #define VSYNCOSD_WR_MPEG_REG(a,b) writel(b, P_##a)
 #define VSYNCOSD_WR_MPEG_REG_BITS(a,b,c,d) setreg_bits(P_##a,b,c,d)
+#define VSYNCOSD_CLR_MPEG_REG_MASK(adr,  _mask) clrreg_mask(P_##adr, _mask)
 
 //#define  FIQ_VSYNC
 
@@ -56,6 +57,7 @@ static void   osd2_update_coef(void);
 static void   osd2_update_disp_freescale_enable(void);
 static  void  osd2_update_disp_scale_enable(void);
 static  void  osd2_update_disp_3d_mode(void);
+static void   osd2_update_disp_osd_reverse(void);
 
 static  void  osd1_update_color_mode(void);
 static  void  osd1_update_enable(void);
@@ -68,6 +70,7 @@ static void   osd1_update_coef(void);
 static void   osd1_update_disp_freescale_enable(void);
 static  void  osd1_update_disp_scale_enable(void);
 static  void  osd1_update_disp_3d_mode(void);
+static void   osd1_update_disp_osd_reverse(void);
 
 static hw_para_t  osd_hw;
 //static unsigned long 	lock_flags;
@@ -84,6 +87,7 @@ static update_func_t hw_func_array[HW_OSD_COUNT][HW_REG_INDEX_MAX]={
 		osd1_update_disp_geometry,
 		osd1_update_disp_scale_enable,
 		osd1_update_disp_freescale_enable,
+		osd1_update_disp_osd_reverse,
 	},
 	{
 		osd2_update_color_mode,
@@ -96,6 +100,7 @@ static update_func_t hw_func_array[HW_OSD_COUNT][HW_REG_INDEX_MAX]={
 		osd2_update_disp_geometry,
 		osd2_update_disp_scale_enable,
 		osd2_update_disp_freescale_enable,
+		osd2_update_disp_osd_reverse,
 	},
 };
 
@@ -723,6 +728,11 @@ void osd_setup(	u32 xoffset,
 			add_to_update_list(index,DISP_GEOMETRY);
 		}
 	}
+	if (!strcmp( getenv("osd_reverse"),"all,true"))
+	{
+		osd_hw.osd_reverse[index] = ENABLE;
+		add_to_update_list(index,DISP_OSD_REVERSE);
+	}
 	mdelay(16);
 	vsync_isr();
 	osd_wait_vsync_hw();
@@ -1077,6 +1087,14 @@ void osd_enable_3d_mode_hw(int index,int enable)
 								osd_hw.mode_3d[index].origin_scale.v_enable);
 	}
 }
+void osd_set_osd_reverse_hw(u32 index, u32 reverse)
+{
+	osd_hw.osd_reverse[index] = reverse;
+	add_to_update_list(index,DISP_OSD_REVERSE);
+	mdelay(16);
+	vsync_isr();
+	osd_wait_vsync_hw();
+}
 void osd_enable_hw(int enable ,int index )
 {
 	_debug("\n");
@@ -1085,6 +1103,26 @@ void osd_enable_hw(int enable ,int index )
 	mdelay(16);
 	vsync_isr();
 	osd_wait_vsync_hw();
+}
+
+static void osd1_update_disp_osd_reverse(void)
+{
+	if (osd_hw.osd_reverse[OSD1]) {
+		VSYNCOSD_WR_MPEG_REG_BITS (VIU_OSD1_BLK0_CFG_W0, 3, 28, 2);
+	}else{
+		VSYNCOSD_CLR_MPEG_REG_MASK (VIU_OSD1_BLK0_CFG_W0, 3<<28);
+	}
+	remove_from_update_list(OSD1, DISP_OSD_REVERSE);
+}
+
+static void osd2_update_disp_osd_reverse(void)
+{
+	if (osd_hw.osd_reverse[OSD2]) {
+		VSYNCOSD_WR_MPEG_REG_BITS (VIU_OSD2_BLK0_CFG_W0, 3, 28, 2);
+	}else{
+		VSYNCOSD_CLR_MPEG_REG_MASK (VIU_OSD2_BLK0_CFG_W0, 3<<28);
+	}
+	remove_from_update_list(OSD2, DISP_OSD_REVERSE);
 }
 
 void osd_set_2x_scale_hw(u32 index,u16 h_scale_enable,u16 v_scale_enable)
@@ -2113,6 +2151,7 @@ void osd_init_hw(void)
 	osd_hw.free_scale[OSD2].vfs_enable=0;
 	osd_hw.free_scale[OSD2].vfs_enable=0;
 	osd_hw.free_scale_mode[OSD1] = osd_hw.free_scale_mode[OSD2] = 0;
+	osd_hw.osd_reverse[OSD1] = osd_hw.osd_reverse[OSD2] = 0;
 
 #if defined(CONFIG_AML_MESON_8)
 	writel(0x00000000, P_HHI_VPU_MEM_PD_REG0);	

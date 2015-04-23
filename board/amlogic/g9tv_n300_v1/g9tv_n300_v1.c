@@ -611,26 +611,6 @@ U_BOOT_CMD(
 	"          - no clock index will measure all clock"
 );
 
-static int do_osd_reverse_operate(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	char *osdReverse = getenv("osd_reverse");
-	if (!strcmp(osdReverse, "all,true"))
-	{
-		writel(readl(P_VIU_OSD2_BLK0_CFG_W0) | 0x30000000,P_VIU_OSD2_BLK0_CFG_W0);
-	}
-	else if (!strcmp(osdReverse, "n"))
-	{
-		writel(readl(P_VIU_OSD2_BLK0_CFG_W0) & 0xcfffffff,P_VIU_OSD2_BLK0_CFG_W0);
-	}
-	return 0;
-}
-
-U_BOOT_CMD(
-	osd_reverse_operate,	2,	0,	do_osd_reverse_operate,
-	"osd_reverse_operate",
-	"osd_reverse_operate\n"
-);
-
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
 /*following key value are test with board 

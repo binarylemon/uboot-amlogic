@@ -130,6 +130,7 @@ typedef  struct {
 	u32 			block_windows[HW_OSD_COUNT][HW_OSD_BLOCK_REG_COUNT];
 	u32 			block_mode[HW_OSD_COUNT];
 	u32			free_scale_mode[HW_OSD_COUNT];
+	u32			osd_reverse[HW_OSD_COUNT];
 	hw_list_t	 	reg[HW_OSD_COUNT][HW_REG_INDEX_MAX];
 	u32			field_out_en;
 }hw_para_t;
