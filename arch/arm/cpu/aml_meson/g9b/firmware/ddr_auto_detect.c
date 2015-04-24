@@ -1,39 +1,18 @@
-#define DDR_DEBUG 0
 
 #if defined(CONFIG_AML_EXT_PGM)
 
-void print_ddr_channel(void){}
 void print_ddr_size(unsigned int size){}
 void print_ddr_mode(void){}
 
 #else
-void print_ddr_size(unsigned int size);
-void print_ddr_mode(void);
-#if defined(CONFIG_DDR_CHANNEL_AUTO_DETECT) || defined(CONFIG_DDR_MODE_AUTO_DETECT) || defined(CONFIG_DDR_SIZE_AUTO_DETECT)
-unsigned int set_dmc_row(unsigned int dmc, unsigned int channel0, unsigned int channel1);
-unsigned int get_ddr_channel(unsigned int dmc);
-unsigned int get_ddr_channel_num(unsigned int dmc);
-unsigned int get_ddr_bus_width(unsigned int dmc);
-unsigned int get_ddr_bank_set(unsigned int dmc);
-unsigned int dtar_reset(struct ddr_set * timing_reg);
-#endif
-#ifdef CONFIG_DDR_MODE_AUTO_DETECT
-int ddr_mode_auto_detect(struct ddr_set * timing_reg);
-#endif
-#ifdef CONFIG_DDR_SIZE_AUTO_DETECT
-void ddr_size_auto_detect(struct ddr_set * timing_reg);
-#endif
-
-void print_ddr_size(unsigned int size){
+void print_ddr_size(unsigned int size)
+{
 	//serial_puts("DDR size: ");
 	unsigned int mem_size = size >> 20; //MB
-	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10) : serial_put_dec(mem_size);
-	(((mem_size>>9)&0x1)&&((mem_size)>=1024)) ? serial_puts(".5") : 0;
+	(mem_size) >= 1024 ? serial_put_dec(mem_size >> 10):serial_put_dec(mem_size);
 	(mem_size) >= 1024 ? serial_puts("GB"):serial_puts("MB");
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
-	serial_puts("(auto)");
-//#else
-//	serial_puts("\n");
+	serial_puts(" (auto)");
 #endif
 }
 
@@ -44,6 +23,8 @@ void print_ddr_mode(void){
 			serial_puts("Not Set"); break;
 		case CFG_DDR_BUS_WIDTH_32BIT:
 			serial_puts("32 bit mode"); break;
+		//case CFG_DDR_16BIT_LANE02:
+		//	serial_puts("16 bit mode lane0+2"); break;
 		case CFG_DDR_BUS_WIDTH_16BIT_LANE01:
 			serial_puts("16 bit mode lane0+1"); break;
 	}
@@ -52,152 +33,6 @@ void print_ddr_mode(void){
 #else
 	serial_puts("\n");
 #endif
-}
-#endif
-
-#if defined(CONFIG_DDR_CHANNEL_AUTO_DETECT) || defined(CONFIG_DDR_MODE_AUTO_DETECT) || defined(CONFIG_DDR_SIZE_AUTO_DETECT)
-unsigned int set_dmc_row(unsigned int dmc, unsigned int channel0, unsigned int channel1){
-	dmc = dmc & ( 0xfffff3f3 ); /*clear row size bit*/
-	dmc = dmc | ((channel0 & 0x3) << 2) | ((channel1 & 0x3) << 10);
-	return dmc;
-}
-#if 0
-unsigned int get_ddr_channel(unsigned int dmc){/*return 1 channel or 2 channels*/
-	/*return b'01: ddr0 only, b'10: ddr1 only, b'11: ddr0+ddr1*/
-	if(((dmc>>26)&0x3) == 0x3){/*one channe;*/
-		if(((dmc >> 24) & 0x1))
-			return 0x2; /*b'10*/ /*ddr 1 only*/
-		else
-			return 0x1; /*b'01*/ /*ddr 0 only*/
-	}
-	else
-		return 0x3; /*b'11*/ /*ddr 0 + ddr 1*/
-}
-#endif
-unsigned int get_ddr_channel_num(unsigned int dmc){
-	unsigned int chl_switch = (dmc>>26)&0x3;
-	unsigned int sub_switch = (dmc>>24)&0x1;
-	if(0x0 == chl_switch)/*2 channel switch bit12*/
-		return CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12;
-	else if(0x1 == chl_switch)/*2 channel switch bit8*/
-		return CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8;
-	else if(0x2 == chl_switch){
-		if(0 == sub_switch)
-			return CFG_DDR_TWO_CHANNEL_DDR0_LOW;
-		else
-			return CFG_DDR_TWO_CHANNEL_DDR1_LOW;
-	}
-	else if(0x3 == chl_switch){
-		if(0 == sub_switch)
-			return CFG_DDR_ONE_CHANNEL_DDR0_ONLY;
-		else
-			return CFG_DDR_ONE_CHANNEL_DDR1_ONLY;
-	}
-	return 0;
-}
-
-unsigned int get_ddr_bus_width(unsigned int dmc){
-	if(((dmc>>7)&0x1) == 0x1)
-		return 0x1; /*16bit mode*/
-	else
-		return 0x0; /*other case, 32bit mode*/
-}
-
-unsigned int get_ddr_bank_set(unsigned int dmc){
-	return ((dmc>>5)&0x1);
-}
-
-unsigned int dtar_reset(struct ddr_set * timing_reg){
-	/*set correct row_bits and dtar address back to reg*/
-	unsigned int ddr0_row_size, ddr0_row_bits, ddr1_row_size, ddr1_row_bits;
-	unsigned int bus_width = get_ddr_bus_width(timing_reg->t_mmc_ddr_ctrl);
-	unsigned int ddr_channel_num = get_ddr_channel_num(timing_reg->t_mmc_ddr_ctrl);
-	unsigned int ddr0_size, ddr1_size;
-	ddr0_size = (ddr_channel_num==CFG_DDR_ONE_CHANNEL_DDR0_ONLY)||(ddr_channel_num==CFG_DDR_ONE_CHANNEL_DDR1_ONLY)?(timing_reg->phy_memory_size):(timing_reg->phy_memory_size>>1);
-	ddr1_size = (ddr_channel_num==CFG_DDR_ONE_CHANNEL_DDR0_ONLY)||(ddr_channel_num==CFG_DDR_ONE_CHANNEL_DDR1_ONLY)?(timing_reg->phy_memory_size):(timing_reg->phy_memory_size>>1);
-	ddr0_row_bits = GET_DDR_ROW_BITS(ddr0_size, bus_width);
-	ddr0_row_size = GET_DDR_ROW_SIZE(ddr0_row_bits);
-	ddr1_row_bits = GET_DDR_ROW_BITS(ddr1_size, bus_width);
-	ddr1_row_size = GET_DDR_ROW_SIZE(ddr1_row_bits);
-	timing_reg->t_mmc_ddr_ctrl = set_dmc_row(timing_reg->t_mmc_ddr_ctrl, ddr0_row_size, ddr1_row_size);
-	unsigned int dtar_addr_0_offset=0, dtar_addr_1_offset=0, dtar_addr_0, dtar_addr_1;
-	unsigned int ddr_channel_switch=0;
-	switch(ddr_channel_num){
-		case CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12:
-			ddr_channel_switch = 0x0;
-			dtar_addr_0_offset = 0; dtar_addr_1_offset = 1<<12; break;
-		case CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8:
-			ddr_channel_switch = 0x1;
-			dtar_addr_0_offset = 0; dtar_addr_1_offset = 1<<8; break;
-		case CFG_DDR_TWO_CHANNEL_DDR0_LOW:
-			ddr_channel_switch = 0x2;
-			dtar_addr_0_offset = 0; dtar_addr_1_offset = ddr0_size; break;
-		case CFG_DDR_TWO_CHANNEL_DDR1_LOW:
-			ddr_channel_switch = 0x2;
-			dtar_addr_0_offset = ddr0_size; dtar_addr_1_offset = 0-dtar_addr_0_offset;break;
-		case CFG_DDR_ONE_CHANNEL_DDR0_ONLY:
-		case CFG_DDR_ONE_CHANNEL_DDR1_ONLY:
-			ddr_channel_switch = 0x3;
-			dtar_addr_0_offset = 0; dtar_addr_1_offset = 0; break;
-		default: break;
-	}
-#if (DDR_DEBUG)
-	serial_puts("	ddr_channel_num: ");
-	serial_put_hex(ddr_channel_num, 32);
-	serial_puts("\n");
-	serial_puts("	ddr0_size: ");
-	serial_put_hex(ddr0_size, 32);
-	serial_puts("\n");
-	serial_puts("	ddr1_size: ");
-	serial_put_hex(ddr1_size, 32);
-	serial_puts("\n");
-	serial_puts("	dtar_addr_0_offset: ");
-	serial_put_hex(dtar_addr_0_offset, 32);
-	serial_puts("\n");
-	serial_puts("	dtar_addr_1_offset: ");
-	serial_put_hex(dtar_addr_1_offset, 32);
-	serial_puts("\n");
-#endif
-	dtar_addr_0 = CONFIG_DDR_DTAR_ADDR_BASE + dtar_addr_0_offset;
-	dtar_addr_1 = dtar_addr_0 + dtar_addr_1_offset;
-#if (DDR_DEBUG)
-	serial_puts("re-calculate dtar.\n");
-	serial_puts("	dtar0_addr: ");
-	serial_put_hex(dtar_addr_0, 32);
-	serial_puts("\n");
-	serial_puts("	dtar1_addr: ");
-	serial_put_hex(dtar_addr_1, 32);
-	serial_puts("\n");
-#endif
-
-	writel(timing_reg->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);
-	timing_reg->t_pub0_dtar	= ((0x0 + DDR_DTAR_DTCOL_GET(dtar_addr_0, CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width))| \
-		(DDR_DTAR_DTROW_GET(dtar_addr_0, ddr0_row_bits,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width) <<12)| \
-		(DDR_DTAR_BANK_GET(dtar_addr_0, ddr0_row_bits,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width) << 28));
-	timing_reg->t_pub1_dtar	= ((0x0 + DDR_DTAR_DTCOL_GET(dtar_addr_1, CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width))| \
-		(DDR_DTAR_DTROW_GET(dtar_addr_1, ddr1_row_bits,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width) <<12)| \
-		(DDR_DTAR_BANK_GET(dtar_addr_1, ddr1_row_bits,CONFIG_DDR1_COL_BITS,CONFIG_DDR_BANK_SET,ddr_channel_switch,bus_width) << 28));
-
-	//enable pctl clk
-	writel(readl(P_DDR0_CLK_CTRL) | 0x1, P_DDR0_CLK_CTRL);
-	writel(readl(P_DDR1_CLK_CTRL) | 0x1, P_DDR1_CLK_CTRL);
-	__udelay(1000);
-
-	writel((0x0  + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR0);
-	writel((0x08 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR1);
-	writel((0x10 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR2);
-	writel((0x18 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR3);
-	__udelay(10);
-	writel((0x0  + timing_reg->t_pub1_dtar), P_DDR1_PUB_DTAR0);
-	writel((0x08 + timing_reg->t_pub1_dtar), P_DDR1_PUB_DTAR1);
-	writel((0x10 + timing_reg->t_pub1_dtar), P_DDR1_PUB_DTAR2);
-	writel((0x18 + timing_reg->t_pub1_dtar), P_DDR1_PUB_DTAR3);
-	__udelay(10);
-
-	//disable pctl clk
-	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);
-	writel(readl(P_DDR1_CLK_CTRL) & (~1), P_DDR1_CLK_CTRL);
-	return 0;
 }
 #endif
 
@@ -212,7 +47,7 @@ int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 #else
 	int try_times = 1;
 #endif
-	for(; try_times <= 2; try_times++){
+	for (; try_times <= 3; try_times++) {
 		cfg_ddr_mode = try_times;
 		ret = ddr_init(timing_reg);
 		if(!ret){
@@ -226,30 +61,77 @@ int ddr_mode_auto_detect(struct ddr_set * timing_reg){
 }
 #endif
 
+#if defined(CONFIG_DDR_MODE_AUTO_DETECT) || defined(CONFIG_DDR_SIZE_AUTO_DETECT)
+unsigned int set_dmc_row(unsigned int dmc, unsigned int channel0, unsigned int channel1){
+	dmc = dmc & ( 0xfffff3f3 ); /*clear row size bit*/
+	dmc = dmc | ((channel0 & 0x3) << 2) | ((channel1 & 0x3) << 10);
+	return dmc;
+}
+#endif
+
 /*Following code is for DDR SIZE AUTO DETECT*/
 #define DDR_SIZE_AUTO_DETECT_DEBUG 0
 #ifdef CONFIG_DDR_SIZE_AUTO_DETECT
 #define DDR_SIZE_AUTO_DETECT_PATTERN	0xABCDEF00
+#define MEMORY_ROW_BITS(mem_size, mode_16bit) ((mem_size >> 29) + (mode_16bit ? 14:13))
+#define MEMORY_ROW_BITS_DMC_REG(mem_size, mode_16bit) \
+	(MEMORY_ROW_BITS(mem_size, mode_16bit) > 15)?(0):(MEMORY_ROW_BITS(mem_size, mode_16bit) - 12)
+#define MEMORY_ROW_BITS_DMC_REG_SIMP(row_bits) ((row_bits > 15)?(0):(row_bits- 12))
 void ddr_size_auto_detect(struct ddr_set * timing_reg){
 /*
-  memory size auto detect function
-  please make sure ddr capacity of each channel are equal,
-  that means doesn't support 1.5G 3G etc auto detection. 
+memory size auto detect function support:
+32bit max 2GB
+16bit max 1GB
 */
+	/*enable pctl clk*/
+	writel(readl(P_DDR0_CLK_CTRL) | 0x1, P_DDR0_CLK_CTRL);
+	__udelay(1000);
+#if DDR_SIZE_AUTO_DETECT_DEBUG //debug info
+	serial_puts("timing_reg->t_pub0_dtar: ");
+	serial_put_hex(timing_reg->t_pub0_dtar, 32);
+	serial_puts("\n");
+	serial_puts("P_DDR0_PUB_DTAR0: ");
+	serial_put_hex(readl(P_DDR0_PUB_DTAR0), 32);
+	serial_puts("\n");
+	serial_puts("timing_reg->t_mmc_ddr_ctrl: ");
+	serial_put_hex(timing_reg->t_mmc_ddr_ctrl, 32);
+	serial_puts("\n");
+	serial_puts("P_DMC_DDR_CTRL: ");
+	serial_put_hex(readl(P_DMC_DDR_CTRL), 32);
+	serial_puts("\n");
+	serial_puts("DT_ADDR: ");
+	serial_put_hex(CONFIG_DDR0_DTAR_ADDR, 32);
+	serial_puts("\n");
+	serial_puts("GET_DT_ADDR: ");
+	serial_put_hex(GET_DT_ADDR(readl(P_DDR0_PUB_DTAR0), readl(P_DMC_DDR_CTRL), 0), 32);
+	serial_puts("\n");
+#endif
+
+	//row_size of 16bit and 32bit mode are different
+	unsigned int mem_mode = 0;
+	if (cfg_ddr_mode > CFG_DDR_BUS_WIDTH_32BIT)
+		mem_mode = 1;
+
 	/*set max row size, then use "ROW ADDRESS MASK" to detect memory size*/
 	timing_reg->t_mmc_ddr_ctrl = set_dmc_row(timing_reg->t_mmc_ddr_ctrl, 0x0, 0x0);
 	unsigned int dmc_reg_setting = timing_reg->t_mmc_ddr_ctrl;//readl(P_MMC_DDR_CTRL);
 	writel(dmc_reg_setting, P_DMC_DDR_CTRL);
 
+#if DDR_SIZE_AUTO_DETECT_DEBUG //debug info
+	serial_puts("new P_DMC_DDR_CTRL: ");
+	serial_put_hex(readl(P_DMC_DDR_CTRL), 32);
+	serial_puts("\n");
+#endif
+
 	/*start detection*/
 	unsigned int row_mask_bit_offset = 25; /*just start from a little row size*/
 	unsigned int cur_mask_addr = 0;
 	int loop = 0;
-	for(loop = 0; ; loop++){
+	for (loop = 0; ; loop++) {
 		cur_mask_addr = (1 << (row_mask_bit_offset + loop));
 		writel(0, PHYS_MEMORY_START);
 		writel(DDR_SIZE_AUTO_DETECT_PATTERN, cur_mask_addr);
-#if (DDR_DEBUG)
+#if (DDR_SIZE_AUTO_DETECT_DEBUG)
 		serial_puts("	write address: ");
 		serial_put_hex(cur_mask_addr, 32);
 		serial_puts("	with 0xABCDEF00\n	read(0): ");
@@ -258,34 +140,63 @@ void ddr_size_auto_detect(struct ddr_set * timing_reg){
 #endif
 		asm volatile("DSB"); /*sync ddr data*/
 		__udelay(1);
-		if(readl(PHYS_MEMORY_START) == DDR_SIZE_AUTO_DETECT_PATTERN){
-#if (DDR_DEBUG)
-			serial_puts("	find match size: ");
+		if (readl(PHYS_MEMORY_START) == DDR_SIZE_AUTO_DETECT_PATTERN) {
+#if (DDR_SIZE_AUTO_DETECT_DEBUG)
+			serial_puts("	find match address(not ddr size): ");
 			serial_put_hex(cur_mask_addr, 32);
 			serial_puts("\n");
 #endif
 			break;
 		}
-		if(cur_mask_addr>=0x80000000){
-			serial_puts("DDR size auto detect failed! Reset...\n: ");
-			AML_WATCH_DOG_START();
-			while(1);
+		if (cur_mask_addr >= (0x20000000 >> mem_mode)) {
+			/*32bit max 2GB, 16bit max 1GB*/
+			break;
 		}
 	}
 
-	/*calculate real memory size*/
-	unsigned int mem_size_offset = 0;
-	unsigned int bus_width = get_ddr_bus_width(dmc_reg_setting);
-	mem_size_offset = ((dmc_reg_setting >> 26) & 0x3)==0x2?2:1;
-	cur_mask_addr = cur_mask_addr << (mem_size_offset + (((dmc_reg_setting>>5)&0x1)?0:1) - (bus_width?1:0));
+	cur_mask_addr = cur_mask_addr << 1; /*it's a fixed multiplier according to the phy*/
+	//print_ddr_size(cur_mask_addr);
 
-#if (DDR_DEBUG)
-	serial_puts("	cur_mask_addr: ");
-	serial_put_hex(cur_mask_addr, 32);
+	/*Get corresponding row_bits setting and write back to DMC reg*/
+	unsigned int cur_row_bits = MEMORY_ROW_BITS((cur_mask_addr), mem_mode);
+	unsigned int cur_row_bit_dmc = MEMORY_ROW_BITS_DMC_REG_SIMP(cur_row_bits);
+	timing_reg->t_mmc_ddr_ctrl = ((timing_reg->t_mmc_ddr_ctrl & (~(3<<2))) | (cur_row_bit_dmc<<2) | ((cur_row_bit_dmc<<10)));
+	writel(timing_reg->t_mmc_ddr_ctrl, P_DMC_DDR_CTRL);
+	__udelay(10);
+
+	/*refer g9tv/ddr_auto_detect.c*/
+	timing_reg->t_pub0_dtar	= ((0x0 + (DDR_DTAR_DTCOL_GET(CONFIG_DDR0_DTAR_ADDR,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,0x3,mem_mode)))|\
+		((DDR_DTAR_DTROW_GET(CONFIG_DDR0_DTAR_ADDR,cur_row_bits,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,0x3,mem_mode)) << 12)|\
+		((DDR_DTAR_BANK_GET(CONFIG_DDR0_DTAR_ADDR,cur_row_bits,CONFIG_DDR0_COL_BITS,CONFIG_DDR_BANK_SET,0x3,mem_mode)) << 28));
+	writel((0x0  + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR0);
+	writel((0x08 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR1);
+	writel((0x10 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR2);
+	writel((0x18 + timing_reg->t_pub0_dtar), P_DDR0_PUB_DTAR3);
+	__udelay(10);
+#if DDR_SIZE_AUTO_DETECT_DEBUG	//debug info
+	serial_puts("cur_row_bits: ");
+	serial_put_hex(cur_row_bits, 32);
+	serial_puts("\n");
+	serial_puts("cur_row_bit_dmc: ");
+	serial_put_hex(cur_row_bit_dmc, 32);
+	serial_puts("\n");
+	serial_puts("P_DMC_DDR_CTRL: ");
+	serial_put_hex(readl(P_DMC_DDR_CTRL), 32);
+	serial_puts("\n");
+	serial_puts("timing_reg->t_mmc_ddr_ctrl: ");
+	serial_put_hex(timing_reg->t_mmc_ddr_ctrl, 32);
+	serial_puts("\n");
+	serial_puts("timing_reg->t_pub0_dtar: ");
+	serial_put_hex(timing_reg->t_pub0_dtar, 32);
+	serial_puts("\n");
+	serial_puts("GET_DT_ADDR: ");
+	serial_put_hex(GET_DT_ADDR((readl(P_DDR0_PUB_DTAR0)), (readl(P_DMC_DDR_CTRL)), 0), 32);
 	serial_puts("\n");
 #endif
 
-	timing_reg->phy_memory_size = cur_mask_addr;
-	dtar_reset(timing_reg);
+	timing_reg->phy_memory_size = (cur_mask_addr);
+
+	/*disable pctl clk*/
+	writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);
 }
 #endif
