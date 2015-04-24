@@ -248,5 +248,9 @@ endif
 	@echo The mark in board is "G9BABY_PXP"
 	@echo config command: \"make g9b_pxp_config\"
 
+	@echo =======================================================================
+	@echo The mark in board is "G9BABY_N304_V1"
+	@echo config command: \"make g9b_n304_v1_config\"
+
 	@echo
 sinclude $(wildcard $(SRCTREE)/customer/board/Readme.mk)
