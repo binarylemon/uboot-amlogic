@@ -903,6 +903,14 @@ unsigned int detect_key(unsigned int flags)
         cec_msg.log_addr = 4;
         remote_cec_hw_reset();
         cec_node_init();
+
+        // Notice RX to sleep
+        if (hdmi_cec_func_config & (1 << CEC_FUNC_MASK)) {
+            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
+            cec_inactive_source();
+            if (hdmi_cec_func_config & (1 << AUTO_POWER_ON_MASK))
+                cec_set_standby();
+        }
     }
 #endif
     do {

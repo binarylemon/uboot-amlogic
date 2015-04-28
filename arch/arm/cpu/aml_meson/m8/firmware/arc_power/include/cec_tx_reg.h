@@ -470,7 +470,7 @@
 //#define	CEC_OC_GIVE_SYSTEM_AUDIO_MODE_STATUS 	0x7D
 //#define	CEC_OC_GIVE_TUNER_DEVICE_STATUS 		0x08
 #define	CEC_OC_IMAGE_VIEW_ON 					0x04
-//#define	CEC_OC_INACTIVE_SOURCE 					0x9D
+#define	CEC_OC_INACTIVE_SOURCE 					0x9D
 #define	CEC_OC_MENU_REQUEST 					0x8D
 #define	CEC_OC_MENU_STATUS 						0x8E
 //#define	CEC_OC_PLAY 							0x41
@@ -497,7 +497,7 @@
 #define	CEC_OC_SET_STREAM_PATH 					0x86
 //#define	CEC_OC_SET_SYSTEM_AUDIO_MODE 			0x72
 //#define	CEC_OC_SET_TIMER_PROGRAM_TITLE 			0x67
-//#define	CEC_OC_STANDBY 							0x36
+#define	CEC_OC_STANDBY 							0x36
 //#define	CEC_OC_SYSTEM_AUDIO_MODE_REQUEST 		0x70
 //#define	CEC_OC_SYSTEM_AUDIO_MODE_STATUS 		0x7E
 //#define	CEC_OC_TEXT_VIEW_ON 					0x0D
@@ -514,7 +514,7 @@
 //#define	CEC_OC_VENDOR_REMOTE_BUTTON_UP 			0x8B
 
 /*CEC UI MASK*/                               
-#define CEC_FUNC_MSAK                        0
+#define CEC_FUNC_MASK                        0
 #define ONE_TOUCH_PLAY_MASK                  1
 #define ONE_TOUCH_STANDBY_MASK               2
 #define AUTO_POWER_ON_MASK                   3
@@ -590,6 +590,8 @@ void cec_wr_reg(unsigned long addr, unsigned long data);
 unsigned long cec_rd_reg(unsigned long addr);
 void cec_arbit_bit_time_set(unsigned bit_set, unsigned time_set);
 //void cec_give_device_power_status(void);
+void cec_inactive_source(void);
+void cec_set_standby(void);
 
 extern void udelay(int i);
 

@@ -271,9 +271,8 @@ void cec_set_stream_path(void)
     unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xff;
     unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xff;
          
-    if((hdmi_cec_func_config >> CEC_FUNC_MSAK) & 0x1){    
-        if((hdmi_cec_func_config >> AUTO_POWER_ON_MASK) & 0x1)
-        {    
+    if ((hdmi_cec_func_config >> CEC_FUNC_MASK) & 0x1) {
+        if ((hdmi_cec_func_config >> AUTO_POWER_ON_MASK) & 0x1) {
             //cec_imageview_on();
             if ((phy_addr_ab == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) && (phy_addr_cd == cec_msg.buf[cec_msg.rx_read_pos].msg[3]) )  {    
                 unsigned char msg[4];
@@ -336,6 +335,29 @@ void cec_menu_status_smp(void)
     remote_cec_ll_tx(msg, 3);     
 }
 
+void cec_inactive_source(void)
+{
+    unsigned char msg[4];
+    unsigned char phy_addr_ab = (readl(P_AO_DEBUG_REG1) >> 8) & 0xff;
+    unsigned char phy_addr_cd = readl(P_AO_DEBUG_REG1) & 0xff;
+
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_TV_ADDR;
+    msg[1] = CEC_OC_INACTIVE_SOURCE;
+    msg[2] = phy_addr_ab;
+    msg[3] = phy_addr_cd;
+
+    remote_cec_ll_tx(msg, 4);
+}
+
+void cec_set_standby(void)
+{
+    unsigned char msg[2];
+    msg[0] = ((cec_msg.log_addr & 0xf) << 4) | CEC_BROADCAST_ADDR;
+    msg[1] = CEC_OC_STANDBY;
+
+    remote_cec_ll_tx(msg, 2);
+}
+
 void cec_give_deck_status(void)
 {
     unsigned char msg[3];
@@ -385,8 +407,7 @@ unsigned int cec_handle_message(void)
     cec_dbg_print("cec_msg.rx_read_pos:0x",cec_msg.rx_read_pos);
 
     // process messages from tv polling and cec devices 
-    if((hdmi_cec_func_config>>CEC_FUNC_MSAK) & 0x1)
-    {    
+    if ((hdmi_cec_func_config>>CEC_FUNC_MASK) & 0x1) {
         cec_dbg_print("@@cec_msg.rx_read_pos:0x",cec_msg.rx_read_pos);
         switch (opcode) {
         case CEC_OC_GET_CEC_VERSION:
@@ -411,7 +432,7 @@ unsigned int cec_handle_message(void)
             cec_report_device_power_status();
             break;
         case CEC_OC_USER_CONTROL_PRESSED:
-            if(((hdmi_cec_func_config>>CEC_FUNC_MSAK) & 0x1) && ((hdmi_cec_func_config>>AUTO_POWER_ON_MASK) & 0x1) &&
+            if (((hdmi_cec_func_config>>CEC_FUNC_MASK) & 0x1) && ((hdmi_cec_func_config>>AUTO_POWER_ON_MASK) & 0x1) &&
 				((0x40 == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) || (0x6d == cec_msg.buf[cec_msg.rx_read_pos].msg[2])
 				|| (0x09 == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) ))
                 cec_msg.cec_power = 0x1;
