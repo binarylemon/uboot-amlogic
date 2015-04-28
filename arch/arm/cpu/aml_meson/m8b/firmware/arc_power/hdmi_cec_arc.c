@@ -282,10 +282,10 @@ void cec_set_stream_path(void)
                 msg[3] = phy_addr_cd;
                
                 remote_cec_ll_tx(msg, 4);
+                cec_msg.cec_power = 0x1;
             }else{
                 cec_rx_read_pos_plus();
             }
-			cec_msg.cec_power = 0x1;
         }else{
             cec_rx_read_pos_plus();
         }
