@@ -260,7 +260,7 @@
         "if itest ${upgrade_step} == 4; then  "\
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
-        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run check_rebootmode;"\
         "if test ${reboot_mode} = suspend_off; then suspend;fi;"\
         "run prepare;"\
         "run storeargs;"\
@@ -348,6 +348,10 @@
 				"else "\
 					"echo no recovery in flash; "\
 				"fi;\0" \
+    \
+    "check_rebootmode="\
+		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};"\
+		"if test ${reboot_mode} = factory_reset; then defenv; saveenv; fi\0" \
     \
 	"usb_burning=update 1000\0" \
         "try_auto_burn=update 700 750;\0"\
