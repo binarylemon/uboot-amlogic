@@ -510,12 +510,16 @@ void rn5t618_power_off_at_24M()
     i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
     i2c_pmu_write_b(0x0012, 0x40);                      // enable watchdog
 #endif
+    reg_ldo_rtc &= ~(0x10);
+    i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // close ext DCDC 3.3v
     printf_arc("enter 32K\n");
 }
 
 void rn5t618_power_on_at_24M()                                          // need match power sequence of  power_off_at_24M
 {
     printf_arc("enter 24MHz. reason:");
+    reg_ldo_rtc |= 0x10;
+    i2c_pmu_write_b(0x0045, reg_ldo_rtc);               // open ext DCDC 3.3v
 
 #if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
     i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
