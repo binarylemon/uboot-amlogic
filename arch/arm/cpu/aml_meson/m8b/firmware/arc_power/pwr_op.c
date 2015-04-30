@@ -900,7 +900,6 @@ unsigned int detect_key(unsigned int flags)
 //    udelay__(10000);
     if(hdmi_cec_func_config & 0x1){
         cec_power_on();
-        cec_msg.log_addr = 4;
         remote_cec_hw_reset();
         cec_node_init();
 
