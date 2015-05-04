@@ -40,6 +40,11 @@
 #define RTC_READ					0x82000033
 #define RTC_WRITE				0x82000034
 
+/* Sys suspend*/
+#define SUSPEND_INIT			0x82000040
+#define SUSPEND_FIRMWARE 	0x82000041
+#define SUSPEND_FIRMWARE_UBOOT		0x82000042
+
 /* Secure OS defines */
 #define SECURE_OS_COMPRESS_ADDR                 0x0E000000
 #define SECURE_OS_ACS_SRAM_ADDR                 0xD9000200
