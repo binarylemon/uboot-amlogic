@@ -20,10 +20,6 @@ int optimus_burn_package_in_usb(const char* sdc_cfg_file)
 {
     int rcode = 0;
 
-#if defined(CONFIG_AML_MESON_8)
-        AML_WATCH_DOG_DISABLE(); //disable watchdog
-#endif//#ifdef CONFIG_AML_MESON_8
-
     DWN_MSG("usb start\n");
     rcode = run_command("usb start", 0);
     if(rcode){

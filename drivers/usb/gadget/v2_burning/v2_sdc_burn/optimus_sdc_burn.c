@@ -705,9 +705,9 @@ int optimus_burn_package_in_sdmmc(const char* sdc_cfg_file)
 {
     int rcode = 0;
 
-#if defined(CONFIG_AML_MESON_8)
+#if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE)
         AML_WATCH_DOG_DISABLE(); //disable watchdog
-#endif//#ifdef CONFIG_AML_MESON_8
+#endif// #if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE)
 
     DWN_MSG("mmcinfo\n");
     rcode = run_command("mmcinfo", 0);

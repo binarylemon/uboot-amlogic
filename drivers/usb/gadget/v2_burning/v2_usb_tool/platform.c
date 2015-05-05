@@ -14,7 +14,7 @@
 #error "platform is not m6 or m8!!"
 #endif//#if 
 
-#if defined CONFIG_AML_G9TV
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_G9TV)
 #define PREI_USB_PHY_2_REG_BASE 0xc8022020
 #define PREI_USB_PHY_3_REG_BASE 0xc8022080
 
@@ -111,6 +111,9 @@ static void set_usb_phy_config(int cfg)
     usb_r0_t usb_r0;
     usb_r4_t usb_r4;
 
+    if (!IS_CLK_GATE_ON(USB0)) {
+            SET_CBUS_REG_MASK(GCLK_REG_USB0, GCLK_MASK_USB0);
+    }
     /*printf("%s %d\n", __func__, __LINE__);*/
     cfg = cfg;//avoid compiler warning
     /**P_RESET1_REGISTER = (1<<2);//usb reset*/
@@ -156,8 +159,8 @@ void close_usb_phy_clock(int cfg)
    cfg = 1 : INT clock
   */
 
-#if 0
-#define PREI_USB_PHY_A_REG_BASE       0xC1108400  //0x2100
+#if (MESON_CPU_TYPE == MESON_CPU_TYPE_G9BABY)
+#define PREI_USB_PHY_A_REG_BASE       0xC8022000  //0x2100
 #define PREI_USB_PHY_B_REG_BASE       0xC1108420	//0X2108
 #else
 #define PREI_USB_PHY_A_REG_BASE       P_USB_ADDR0
@@ -231,7 +234,7 @@ typedef union usb_ctrl_data {
     } b;
 } usb_ctrl_data_t;
 
-#if defined(CONFIG_AML_MESON_8)
+#if defined(CONFIG_AML_MESON_8) || (MESON_CPU_TYPE == MESON_CPU_TYPE_G9BABY)
 static void set_usb_phy_config(int cfg)
 {
     const int time_dly = 500;
@@ -240,7 +243,7 @@ static void set_usb_phy_config(int cfg)
     usb_ctrl_data_t control;
 
     /*CLK_GATE_ON(USB0);*/
-    if(!IS_CLK_GATE_ON(USB0)){
+    if (!IS_CLK_GATE_ON(USB0)) {
             SET_CBUS_REG_MASK(GCLK_REG_USB0, GCLK_MASK_USB0);
     }
     /*printf("%s %d\n", __func__, __LINE__);*/

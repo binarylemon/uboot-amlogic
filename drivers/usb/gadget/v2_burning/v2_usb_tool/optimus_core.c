@@ -27,9 +27,9 @@ int v2_usbburning(unsigned timeout)
                 return __LINE__;
         }
 
-#if defined(CONFIG_AML_MESON_8)
+#if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE)
         AML_WATCH_DOG_DISABLE(); //disable watchdog
-#endif// #if defined(CONFIG_AML_MESON_8)
+#endif// #if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE)
 
         while(1)
         {

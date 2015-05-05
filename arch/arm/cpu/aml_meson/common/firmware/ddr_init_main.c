@@ -141,9 +141,9 @@ static int _usb_ucl_decompress(unsigned char* compressData, unsigned char* decom
 
 static unsigned _ddr_init_main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 {
-#if defined(CONFIG_AML_MESON_8)
+#if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE) && 0
         AML_WATCH_DOG_SET(5000); //5s for ddr_init
-#endif// #if defined(CONFIG_AML_MESON_8)
+#endif// #if (MESON_CPU_TYPE_MESON8 <= MESON_CPU_TYPE)
 	//setbits_le32(0xda004000,(1<<0));	//TEST_N enable: This bit should be set to 1 as soon as possible during the Boot process to prevent board changes from placing the chip into a production test mode
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
