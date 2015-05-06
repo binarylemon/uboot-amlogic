@@ -67,8 +67,4 @@ enum hdmi_audio_packet {
     HDMI_AUDIO_PACKET_HBR = 0x09,
 };
 
-int hdmitx_get_hpd_state(void);
-// Read size edid data from addr, save to buf, return 1 means successful
-int hdmitx_read_edid(unsigned char *buf, unsigned char addr, unsigned char size);
-
 #endif
