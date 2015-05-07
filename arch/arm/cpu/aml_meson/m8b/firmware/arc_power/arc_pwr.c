@@ -283,7 +283,8 @@ inline void switch_32K_to_24M(void)
 
 void enter_power_down()
 {
-	//int i;
+	//set GPIODV_29  to 1
+    writel( (readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_O)) | (1<<29) ), CBUS_REG_ADDR(PREG_PAD_GPIO2_O) );
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned int vcin_state = 0;
 
@@ -534,6 +535,9 @@ int main(void)
 	    else if(c=='r')
 	    {
 	        f_serial_puts("arm boot succ\n");
+	        //set GPIODV_29 to 0
+	        writel( (readl(CBUS_REG_ADDR(PREG_PAD_GPIO2_O)) & ~(1<<29) ), CBUS_REG_ADDR(PREG_PAD_GPIO2_O) );
+
 	        wait_uart_empty();
 				    
 			asm(".long 0x003f236f"); //add sync instruction.
