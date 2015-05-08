@@ -261,7 +261,6 @@
             "defenv; setenv upgrade_step 2; saveenv;"\
         "fi; "\
         "run check_rebootmode;"\
-        "if test ${reboot_mode} = suspend_off; then suspend;fi;"\
         "run prepare;"\
         "run storeargs;"\
         "run update_key; " \
@@ -332,7 +331,7 @@
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
-        "run recovery\0" \
+        "run recovery;\0" \
     \
 	"recovery="\
         "echo enter recovery;"\
@@ -351,7 +350,11 @@
     \
     "check_rebootmode="\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};"\
-		"if test ${reboot_mode} = factory_reset; then defenv; saveenv; fi\0" \
+		"if test ${reboot_mode} = suspend_off; then "\
+			"suspend; "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+			"defenv; "\
+		"fi;fi;\0" \
     \
 	"usb_burning=update 1000\0" \
         "try_auto_burn=update 700 750;\0"\

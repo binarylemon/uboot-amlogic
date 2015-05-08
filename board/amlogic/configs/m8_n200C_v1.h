@@ -370,7 +370,7 @@
     \
     "check_rebootmode="\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};"\
-		"if test ${reboot_mode} = factory_reset; then defenv; saveenv; fi\0" \
+		"if test ${reboot_mode} = factory_reset; then defenv; fi;\0" \
     \
 	"usb_burning=update 1000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"

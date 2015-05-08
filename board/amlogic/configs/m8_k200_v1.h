@@ -373,7 +373,7 @@
     \
     "check_rebootmode="\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};"\
-		"if test ${reboot_mode} = factory_reset; then defenv; saveenv; fi\0" \
+		"if test ${reboot_mode} = factory_reset; then defenv; fi;\0" \
     \
     "factory_reset_poweroff_protect="\
         "echo wipe_data=${wipe_data}; echo wipe_cache=${wipe_cache};"\
