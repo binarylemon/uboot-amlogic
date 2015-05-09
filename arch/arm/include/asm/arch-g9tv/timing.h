@@ -228,7 +228,7 @@ struct pll_clk_settings{
 //FIXED PLL/Multi-phase PLL	= 2.55g(FIXED)
 #define CFG_MPLL_CNTL_2 (0x59C80000)
 #define CFG_MPLL_CNTL_3 (0xCA45B822)
-#define CFG_MPLL_CNTL_4 (0x00018007)
+#define CFG_MPLL_CNTL_4 (0x00010007)
 #define CFG_MPLL_CNTL_5 (0xB5500E1A)
 #define CFG_MPLL_CNTL_6 (0xF4454545)
 #define CFG_MPLL_CNTL_7 (0)
