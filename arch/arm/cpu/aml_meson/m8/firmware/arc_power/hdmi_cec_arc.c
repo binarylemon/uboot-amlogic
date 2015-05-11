@@ -46,6 +46,24 @@ void pwm_out_rtc_32k(void){
 
 #endif
 
+struct cec_tx_msg_t {
+    unsigned char buf[16];
+    unsigned char retry;
+    unsigned char len;
+};
+
+#define CEX_TX_MSG_BUF_NUM      8
+#define CEC_TX_MSG_BUF_MASK     (CEX_TX_MSG_BUF_NUM - 1)
+
+struct cec_tx_msg {
+    struct cec_tx_msg_t msg[CEX_TX_MSG_BUF_NUM];
+    unsigned int send_idx;
+    unsigned int queue_idx;
+};
+
+struct cec_tx_msg cec_tx_msgs = {};
+
+
 int cec_strlen(char *p)
 {
     int i=0;
@@ -146,10 +164,14 @@ void cec_arbit_bit_time_set(unsigned bit_set, unsigned time_set){//11bit:bit[10:
 
 void cec_hw_buf_clear()
 {
+    cec_wr_reg(CEC_RX_MSG_CMD, RX_DISABLE);
+    cec_wr_reg(CEC_TX_MSG_CMD, TX_ABORT);
     cec_wr_reg(CEC_RX_CLEAR_BUF, 1);
     cec_wr_reg(CEC_TX_CLEAR_BUF, 1);
+    udelay__(100);
     cec_wr_reg(CEC_RX_CLEAR_BUF, 0);
     cec_wr_reg(CEC_TX_CLEAR_BUF, 0);
+    udelay__(100);
     cec_wr_reg(CEC_RX_MSG_CMD, RX_NO_OP);
     cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
 }
@@ -171,6 +193,7 @@ void remote_cec_hw_reset(void)
     writel(0x1, P_AO_CEC_GEN_CNTL);
     // Enable gated clock (Normal mode).
     writel(readl(P_AO_CEC_GEN_CNTL) | (1<<1), P_AO_CEC_GEN_CNTL);
+    udelay__(100);
     // Release SW reset
     writel(readl(P_AO_CEC_GEN_CNTL) & ~(1<<0), P_AO_CEC_GEN_CNTL);
 
@@ -214,7 +237,37 @@ void cec_buf_clear(void)
     for (i = 0; i < 16; i++)
         cec_msg.buf[cec_msg.rx_read_pos].msg[i] = 0;
 }
-int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
+
+void cec_tx_buf_init(void)
+{
+    int i, j;
+    for (j = 0; j < CEX_TX_MSG_BUF_NUM; j++) {
+        for (i = 0; i < 16; i++) {
+            cec_tx_msgs.msg[j].buf[i] = 0;
+        }
+        cec_tx_msgs.msg[j].retry = 0;
+        cec_tx_msgs.msg[j].len = 0;
+    }
+}
+
+int cec_queue_tx_msg(unsigned char *msg, unsigned char len)
+{
+    int s_idx, q_idx;
+
+    s_idx = cec_tx_msgs.send_idx;
+    q_idx = cec_tx_msgs.queue_idx;
+    if (((q_idx + 1) & CEC_TX_MSG_BUF_MASK) == s_idx) {
+        cec_dbg_prints("tx buffer full, abort msg\n");
+        return -1;
+    }
+    if (len && msg) {
+        cec_memcpy(cec_tx_msgs.msg[q_idx].buf, msg, len);
+        cec_tx_msgs.msg[q_idx].len = len;
+        cec_tx_msgs.queue_idx = (q_idx + 1) & CEC_TX_MSG_BUF_MASK;
+    }
+}
+
+int cec_triggle_tx(unsigned char *msg, unsigned char len)
 {
     int i;
 
@@ -229,12 +282,17 @@ int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
         //cec_dbg_print("tx op:0x", msg[1]);
         cec_wr_reg(CEC_TX_MSG_LENGTH, len-1);
         cec_wr_reg(CEC_TX_MSG_CMD, TX_REQ_CURRENT);//TX_REQ_NEXT
-        cec_buf_clear();
-        cec_rx_read_pos_plus();
         return 0;
-    } else {
-        //cec_dbg_print("can't send;retry:tx op:0x", msg[1]);
     }
+    return -1;
+}
+
+int remote_cec_ll_tx(unsigned char *msg, unsigned char len)
+{
+    int s_idx, q_idx;
+
+    cec_queue_tx_msg(msg, len);
+    cec_triggle_tx(msg, len);
 
     return 0;
 }
@@ -280,7 +338,7 @@ int ping_cec_ll_tx(unsigned char *msg, unsigned char len)
             break;
         }
 
-        if (cec_rd_reg(CEC_TX_MSG_STATUS) == TX_ERROR) {
+        if (reg == TX_ERROR) {
             ret = TX_ERROR;
             cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
             cec_dbg_prints("ping_cec_ll_tx:TX_ERROR\n")
@@ -296,6 +354,7 @@ int ping_cec_ll_tx(unsigned char *msg, unsigned char len)
         if (reg != TX_BUSY) {
             break;
         }
+        udelay__(50);
     }
 
     return ret;
@@ -356,14 +415,8 @@ void cec_set_stream_path(void)
 
                 remote_cec_ll_tx(msg, 4);
                 cec_msg.cec_power = 0x1;
-            } else {
-                cec_rx_read_pos_plus();
             }
-        } else {
-            cec_rx_read_pos_plus();
         }
-    } else {
-        cec_rx_read_pos_plus();
     }
 }
 
@@ -392,18 +445,16 @@ void cec_feature_abort(void)
         msg[3] = CEC_UNRECONIZED_OPCODE;
 
         remote_cec_ll_tx(msg, 4);
-    } else {
-        cec_rx_read_pos_plus();
     }
 }
 
-void cec_menu_status_smp(void)
+void cec_menu_status_smp(int menu_status)
 {
     unsigned char msg[3];
 
     msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_TV_ADDR;
     msg[1] = CEC_OC_MENU_STATUS;
-    msg[2] = DEVICE_MENU_ACTIVE;
+    msg[2] = menu_status;
 
     remote_cec_ll_tx(msg, 3);
 }
@@ -464,24 +515,16 @@ void cec_get_version(void)
         msg[1] = CEC_OC_CEC_VERSION;
         msg[2] = CEC_VERSION_14A;
         remote_cec_ll_tx(msg, 3);
-    } else {
-        cec_rx_read_pos_plus();
     }
 }
 
 unsigned int cec_handle_message(void)
 {
     unsigned char    opcode;
-    //if( (readl(P_AO_DEBUG_REG0) & (1 << 4)) || (!cec_msg.buf[cec_msg.rx_read_pos].msg[0]) )
-    //    return 1;
+
     opcode = cec_msg.buf[cec_msg.rx_read_pos].msg[1];
 
-    //cec_dbg_print("cec_msg.rx_write_pos:0x",cec_msg.rx_write_pos);
-    //cec_dbg_print("cec_msg.rx_read_pos:0x",cec_msg.rx_read_pos);
-
-    // process messages from tv polling and cec devices
     if ((hdmi_cec_func_config>>CEC_FUNC_MASK) & 0x1) {
-        //cec_dbg_print("@@cec_msg.rx_read_pos:0x",cec_msg.rx_read_pos);
         switch (opcode) {
         case CEC_OC_GET_CEC_VERSION:
             cec_get_version();
@@ -509,25 +552,22 @@ unsigned int cec_handle_message(void)
                 ((0x40 == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) || (0x6d == cec_msg.buf[cec_msg.rx_read_pos].msg[2])
                 || (0x09 == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) ))
                 cec_msg.cec_power = 0x1;
-            cec_rx_read_pos_plus();
             //cec_dbg_print("key:0x", cec_msg.rx_read_pos);
             break;
         case CEC_OC_MENU_REQUEST:
-            cec_menu_status_smp();
+            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
             break;
         default:
-            cec_rx_read_pos_plus();
             break;
         }
-
-    } else {
-        cec_rx_read_pos_plus();
     }
+    cec_rx_read_pos_plus();
     return 0;
 }
 
 unsigned int cec_handler(void)
 {
+    unsigned char s_idx, q_idx;
     if (0xf == cec_rd_reg(CEC_RX_NUM_MSG)) {
         cec_wr_reg(CEC_RX_CLEAR_BUF, 0x1);
         cec_wr_reg(CEC_RX_CLEAR_BUF, 0x0);
@@ -540,12 +580,12 @@ unsigned int cec_handler(void)
     case RX_DONE:
         if (1 == cec_rd_reg(CEC_RX_NUM_MSG)) {
             remote_cec_ll_rx();
-                if ((cec_msg.log_addr == (0xf & cec_msg.buf[cec_msg.rx_write_pos].msg[0])) && (0x44 == cec_msg.buf[cec_msg.rx_write_pos].msg[1])
-                && ((0x40 == cec_msg.buf[cec_msg.rx_write_pos].msg[2]) || (0x6d == cec_msg.buf[cec_msg.rx_write_pos].msg[2])))
-                {
-                    cec_msg.cec_power = 0x1;
-                    //goto out;
-                }
+            if ((cec_msg.log_addr == (0xf & cec_msg.buf[cec_msg.rx_write_pos].msg[0])) && (0x44 == cec_msg.buf[cec_msg.rx_write_pos].msg[1])
+            && ((0x40 == cec_msg.buf[cec_msg.rx_write_pos].msg[2]) || (0x6d == cec_msg.buf[cec_msg.rx_write_pos].msg[2])))
+            {
+                cec_msg.cec_power = 0x1;
+                //goto out;
+            }
             (cec_msg.rx_write_pos == cec_msg.rx_buf_size - 1) ? (cec_msg.rx_write_pos = 0) : (cec_msg.rx_write_pos++);
         }
         cec_wr_reg(CEC_RX_MSG_CMD,  RX_ACK_CURRENT);
@@ -559,7 +599,6 @@ unsigned int cec_handler(void)
             remote_cec_hw_reset();
         } else {
             cec_dbg_prints("TX_other\n");
-
             cec_wr_reg(CEC_RX_MSG_CMD,  RX_ACK_CURRENT);
             cec_wr_reg(CEC_RX_MSG_CMD, RX_NO_OP);
         }
@@ -568,31 +607,58 @@ unsigned int cec_handler(void)
         break;
     }
 
-    if ( cec_msg.rx_read_pos != cec_msg.rx_write_pos) {
+  //cec_dbg_print("tx_send_idx:", cec_tx_msgs.send_idx);
+  //cec_dbg_print(" queue_idx:", cec_tx_msgs.queue_idx);
+  //f_serial_puts("\n");
+    switch (cec_rd_reg(CEC_TX_MSG_STATUS)) {
+    case TX_DONE:
+        cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
+        cec_dbg_prints("@TX_DONE\n");
+        cec_tx_msgs.send_idx = (cec_tx_msgs.send_idx + 1) & CEC_TX_MSG_BUF_MASK;
+        s_idx = cec_tx_msgs.send_idx;
+        if (cec_tx_msgs.send_idx != cec_tx_msgs.queue_idx) {
+            cec_triggle_tx(cec_tx_msgs.msg[s_idx].buf,
+                           cec_tx_msgs.msg[s_idx].len);
+        } else {
+            cec_dbg_prints("@TX_FINISHED\n");
+        }
+        break;
+    case TX_ERROR:
+        cec_dbg_prints("@TX_ERROR\n");
+        if (RX_ERROR == cec_rd_reg(CEC_RX_MSG_STATUS)) {
+            cec_dbg_prints("@RX_ERROR\n");
+            remote_cec_hw_reset();
+        } else {
+            cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
+            s_idx = cec_tx_msgs.send_idx;
+            if (cec_tx_msgs.msg[s_idx].retry < 5) {
+                cec_tx_msgs.msg[s_idx].retry++;
+                cec_triggle_tx(cec_tx_msgs.msg[s_idx].buf,
+                               cec_tx_msgs.msg[s_idx].len);
+            } else {
+                cec_dbg_prints("TX retry too much, abort msg\n");
+                cec_tx_msgs.send_idx = (cec_tx_msgs.send_idx + 1) & CEC_TX_MSG_BUF_MASK;
+            }
+        }
+        //writel(P_AO_DEBUG_REG0, (readl(P_AO_DEBUG_REG0) & ~(1 << 4)));
+        break;
+
+     case TX_IDLE:
+      //cec_dbg_prints("@TX_IDLE\n");
+        s_idx = cec_tx_msgs.send_idx;
+        if (cec_tx_msgs.send_idx != cec_tx_msgs.queue_idx) {    // triggle tx if idle
+            cec_triggle_tx(cec_tx_msgs.msg[s_idx].buf,
+                           cec_tx_msgs.msg[s_idx].len);
+        }
+        break;
+
+     default:
+        break;
+    }
+    if (cec_msg.rx_read_pos != cec_msg.rx_write_pos) {
         cec_handle_message();
     }
 
-        switch (cec_rd_reg(CEC_TX_MSG_STATUS)) {
-        case TX_DONE:
-            //cec_buf_clear();
-            //(cec_msg.rx_read_pos == cec_msg.rx_buf_size - 1) ? (cec_msg.rx_read_pos = 0) : (cec_msg.rx_read_pos++);
-            cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
-            cec_dbg_prints("@TX_DONE\n");
-            break;
-        case TX_ERROR:
-            if (RX_ERROR == cec_rd_reg(CEC_RX_MSG_STATUS)) {
-                cec_dbg_prints("@RX_ERROR\n");
-                remote_cec_hw_reset();
-            } else {
-                cec_dbg_prints("@RX other\n");
-                cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
-            }
-            //writel(P_AO_DEBUG_REG0, (readl(P_AO_DEBUG_REG0) & ~(1 << 4)));
-            break;
-         default:
-            break;
-        }
-//out:
     return 0;
 }
 
@@ -621,9 +687,14 @@ void cec_node_init(void)
     cec_msg.len = 0;
     cec_msg.cec_power = 0;
     cec_msg.test = 0x0;
+    cec_tx_msgs.send_idx = 0;
+    cec_tx_msgs.queue_idx = 0;
+    cec_tx_buf_init();
     cec_buf_clear();
     cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
     cec_hw_buf_clear();
+    cec_wr_reg(CEC_LOGICAL_ADDR0, 0xf);
+    udelay__(100);
     cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | 0xf);
     /*
      * use kernel cec logic address to detect which logic address is the
@@ -645,6 +716,7 @@ void cec_node_init(void)
         tx_stat = ping_cec_ll_tx(msg, 1);
         if (tx_stat == TX_BUSY) {   // can't get cec bus
             retry++;
+            remote_cec_hw_reset();
             if (retry >= 5) {
                 cec_dbg_print("retry too much, log_addr:0x", probe[i]);
                 f_serial_puts("\n");
@@ -656,13 +728,16 @@ void cec_node_init(void)
             alloc_ok = 1;
             cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
             cec_hw_buf_clear();
+            cec_wr_reg(CEC_LOGICAL_ADDR0, probe[i]);
+            udelay__(100);
             cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | probe[i]);
             cec_msg.log_addr = probe[i];
             cec_dbg_print("Set cec log_addr:0x", cec_msg.log_addr);
+            cec_dbg_print(", ADDR0:", cec_rd_reg(CEC_LOGICAL_ADDR0));
             f_serial_puts("\n");
             break;
         } else if (tx_stat == TX_DONE) {
-            cec_dbg_print("sombody takes cec log_addr:0x", cec_msg.log_addr);
+            cec_dbg_print("sombody takes cec log_addr:0x", probe[i]);
             f_serial_puts("\n");
         }
     }
@@ -671,7 +746,7 @@ void cec_node_init(void)
         f_serial_puts("CEC allocate logic address failed\n");
     } else {
         // delay a short time for other device allocate logic address
-        udelay__(50 *1000);
+        udelay__(20 *1000);
     }
 }
 
