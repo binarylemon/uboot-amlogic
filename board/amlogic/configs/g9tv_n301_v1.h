@@ -177,9 +177,11 @@
 	"boardname=g9tv_board\0" \
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
-	"outputmode=1080p50hz\0" \
+	"outputmode=1080p60hz\0" \
+	"panel_type=lvds_0\0" \
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=panel\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -393,6 +395,8 @@
 #define CONFIG_OF_LIBFDT	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
+
+#define CONFIG_DT_PRELOAD 1
 
 
 //L1 cache enable for uboot decompress speed up

@@ -49,8 +49,18 @@ vidinfo_t tv_info;
 #define VIDEO_ON_PIXEL  80
 #define VIDEO_ON_LINE   32
 
-extern int  video_dac_enable(unsigned char enable_mask);
-extern int  video_dac_disable(void);
+int  video_dac_enable(unsigned char enable_mask)
+{
+	CLEAR_CBUS_REG_MASK(VENC_VDAC_SETTING, enable_mask&0x1f);
+	return 0;
+}
+
+int  video_dac_disable(void)
+{
+	SET_CBUS_REG_MASK(VENC_VDAC_SETTING, 0x1f);
+	return 0;
+}
+
 
 //\\temp
 //static void tv_sync_duration(Lcd_Config_t *pConf)

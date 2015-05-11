@@ -489,6 +489,11 @@ int* get_window_axis(void) {
         axis[1] = getenv_int("1080p_y", 0);
         axis[2] = getenv_int("1080p_w", 1920);
         axis[3] = getenv_int("1080p_h", 1080);
+    } else if ((strcmp(mode, "768p50hz") == 0) || (strcmp(mode, "768p60hz") == 0) ){
+        axis[0] = getenv_int("768p_x", 0);
+        axis[1] = getenv_int("768p_y", 0);
+        axis[2] = getenv_int("768p_width", 1366);
+        axis[3] = getenv_int("768p_height", 768);
     } else {
         axis[0] = getenv_int("1080p_x", 0);
         axis[1] = getenv_int("1080p_y", 0);
