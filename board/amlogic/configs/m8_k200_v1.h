@@ -8,6 +8,11 @@
 
 #define CONFIG_SECURITYKEY
 
+/* Bootloader Control Block function
+   That is used for recovery and the bootloader to talk to each other
+  */
+//#define CONFIG_BOOTLOADER_CONTROL_BLOCK
+
 //#define CONFIG_INSTABOOT
 //#define CONFIG_MUTE_PRINT
 
@@ -346,6 +351,7 @@
 		"secukey auto;" \
 		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\
+        "run bcb_cmd; "\
         "if unifykey get usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
         "fi;"\
@@ -358,6 +364,7 @@
     \
 	"recovery="\
         "echo enter recovery;"\
+        "run bcb_cmd; "\
         "setenv bootargs ${bootargs} wipeinstaboot;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
@@ -383,6 +390,9 @@
         "if test ${wipe_cache} = failed; then "\
             "run prepare; run storeargs; run recovery;"\
         "fi; \0" \
+    \
+    "bcb_cmd="\
+        "bcb uboot-command; \0" \
     \
 	"usb_burning=update 1000\0" \
         "try_auto_burn=update 700 750;\0"\

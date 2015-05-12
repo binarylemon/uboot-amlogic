@@ -138,6 +138,7 @@ COBJS-$(CONFIG_CMD_ITEST) += cmd_itest.o
 COBJS-$(CONFIG_CMD_JFFS2) += cmd_jffs2.o
 COBJS-$(CONFIG_CMD_CRAMFS) += cmd_cramfs.o
 COBJS-$(CONFIG_CMD_LICENSE) += cmd_license.o
+COBJS-y += cmd_bcb.o
 COBJS-y += cmd_load.o
 COBJS-$(CONFIG_LOGBUFFER) += cmd_log.o
 COBJS-$(CONFIG_ID_EEPROM) += cmd_mac.o
