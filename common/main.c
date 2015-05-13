@@ -287,7 +287,7 @@ static __inline__ int abortboot(int bootdelay)
 #if defined(CONFIG_VLSI_EMULATOR)
 	#define BOOT_DELAY_UNIT_US (100)
 #else
-	#define BOOT_DELAY_UNIT_US (10000)
+	#define BOOT_DELAY_UNIT_US (1000)
 #endif //CONFIG_VLSI_EMULATOR
 
 	if((!delay_us) ||(delay_us > BOOT_DELAY_UNIT_US))

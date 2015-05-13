@@ -29,6 +29,9 @@
 #include <fdt.h>
 #include <libfdt.h>
 #include <fdt_support.h>
+#ifdef CONFIG_INSTABOOT
+#include <amlogic/instaboot.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -271,7 +274,9 @@ static int bootm_linux_fdt(int machid, bootm_headers_t *images)
 	fixup_memory_node(*of_flat_tree);
 
 	fdt_initrd(*of_flat_tree, *initrd_start, *initrd_end, 1);
-
+#ifdef CONFIG_INSTABOOT
+	fdt_instaboot(*of_flat_tree);
+#endif
 	announce_and_cleanup();
 
 	kernel_entry(0, machid, *of_flat_tree);
