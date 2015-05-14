@@ -207,6 +207,7 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
+        "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
