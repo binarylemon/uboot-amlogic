@@ -655,18 +655,10 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 */
 #ifdef CONFIG_CEC_WAKEUP
 //    udelay__(10000);
-    if(hdmi_cec_func_config & 0x1){
+    if (hdmi_cec_func_config & 0x1) {
         cec_power_on();
         remote_cec_hw_reset();
         cec_node_init();
-
-        // Notice RX to sleep
-        if (hdmi_cec_func_config & (1 << CEC_FUNC_MASK)) {
-            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
-            cec_inactive_source();
-            if (hdmi_cec_func_config & (1 << AUTO_POWER_ON_MASK))
-                cec_set_standby();
-        }
     }
 #endif
 	prev_status = get_charging_state();
@@ -676,11 +668,16 @@ unsigned int rn5t618_detect_key(unsigned int flags)
          * suspend loop and resume system.
          */
 #ifdef CONFIG_CEC_WAKEUP
-        if(hdmi_cec_func_config & 0x1){
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
+        if (cec_msg.log_addr) {
+            if (hdmi_cec_func_config & 0x1) {
+                cec_handler();
+                if (cec_msg.cec_power == 0x1) {  //cec power key
+                    exit_reason = 0xcec;
+                    break;
+                }
             }
+        } else {
+            cec_node_init();
         }
 #endif
 	#ifndef CONFIG_ALWAYS_POWER_ON		/* only for tablet */
@@ -753,11 +750,16 @@ unsigned int rn5t618_detect_key(unsigned int flags)
         }
 
 #ifdef CONFIG_CEC_WAKEUP
-        if(hdmi_cec_func_config & 0x1){
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
+        if (cec_msg.log_addr) {
+            if (hdmi_cec_func_config & 0x1) {
+                cec_handler();
+                if (cec_msg.cec_power == 0x1) {  //cec power key
+                    exit_reason = 0xcec;
+                    break;
+                }
             }
+        } else {
+            cec_node_init();
         }
 #endif
 

@@ -222,6 +222,7 @@ int cec_queue_tx_msg(unsigned char *msg, unsigned char len)
     q_idx = cec_tx_msgs.queue_idx;
     if (((q_idx + 1) & CEC_TX_MSG_BUF_MASK) == s_idx) {
         cec_dbg_prints("tx buffer full, abort msg\n");
+        cec_reset_addr();   // something wrong with tx if buffer is full
         return -1;
     }
     if (len && msg) {
@@ -528,9 +529,20 @@ unsigned int cec_handle_message(void)
     return 0;
 }
 
+void cec_reset_addr(void)
+{
+    remote_cec_hw_reset();
+    cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
+    cec_hw_buf_clear();
+    cec_wr_reg(CEC_LOGICAL_ADDR0, cec_msg.log_addr);
+    udelay__(100);
+    cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | cec_msg.log_addr);
+}
+
 unsigned int cec_handler(void)
 {
     unsigned char s_idx, q_idx;
+    static int busy_count = 0;
     if (0xf == cec_rd_reg(CEC_RX_NUM_MSG)) {
         cec_wr_reg(CEC_RX_CLEAR_BUF, 0x1);
         cec_wr_reg(CEC_RX_CLEAR_BUF, 0x0);
@@ -559,7 +571,7 @@ unsigned int cec_handler(void)
         cec_dbg_prints("RX_ERROR\n");
         if (TX_ERROR == cec_rd_reg(CEC_TX_MSG_STATUS)) {
             cec_dbg_prints("TX_ERROR\n");
-            remote_cec_hw_reset();
+            cec_reset_addr();
         } else {
             cec_dbg_prints("TX_other\n");
             cec_wr_reg(CEC_RX_MSG_CMD,  RX_ACK_CURRENT);
@@ -585,12 +597,14 @@ unsigned int cec_handler(void)
         } else {
             cec_dbg_prints("@TX_FINISHED\n");
         }
+        busy_count = 0;
         break;
+
     case TX_ERROR:
         cec_dbg_prints("@TX_ERROR\n");
         if (RX_ERROR == cec_rd_reg(CEC_RX_MSG_STATUS)) {
             cec_dbg_prints("@RX_ERROR\n");
-            remote_cec_hw_reset();
+            cec_reset_addr();
         } else {
             cec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
             s_idx = cec_tx_msgs.send_idx;
@@ -604,6 +618,7 @@ unsigned int cec_handler(void)
             }
         }
         //writel(P_AO_DEBUG_REG0, (readl(P_AO_DEBUG_REG0) & ~(1 << 4)));
+        busy_count = 0;
         break;
 
      case TX_IDLE:
@@ -612,6 +627,16 @@ unsigned int cec_handler(void)
         if (cec_tx_msgs.send_idx != cec_tx_msgs.queue_idx) {    // triggle tx if idle
             cec_triggle_tx(cec_tx_msgs.msg[s_idx].buf,
                            cec_tx_msgs.msg[s_idx].len);
+        }
+        busy_count = 0;
+        break;
+
+    case TX_BUSY:
+        busy_count++;
+        if (busy_count >= 2000) {
+            f_serial_puts("busy too long, reset hw\n");
+            cec_reset_addr();
+            busy_count = 0;
         }
         break;
 
@@ -627,89 +652,101 @@ unsigned int cec_handler(void)
 
 void cec_node_init(void)
 {
-    int i, alloc_ok = 0, tx_stat;
+    static int i = 0;
+    static unsigned int retry = 0;
+    static int regist_devs = 0;
+    static enum _cec_log_dev_addr_e *probe = NULL;
+
+    int tx_stat;
     unsigned char msg[1];
-    unsigned int retry = 0;
-    /*
-     * just commented, maybe can use random delay to detect logic address
-     */
-  //unsigned int rand = readl(P_RAND64_ADDR0);
-  //unsigned int delay = rand & 0x3;
     unsigned int kern_log_addr = (readl(P_AO_DEBUG_REG1) >> 16) & 0xf;
     enum _cec_log_dev_addr_e player_dev[3][3] =
         {{CEC_PLAYBACK_DEVICE_1_ADDR, CEC_PLAYBACK_DEVICE_2_ADDR, CEC_PLAYBACK_DEVICE_3_ADDR},
          {CEC_PLAYBACK_DEVICE_2_ADDR, CEC_PLAYBACK_DEVICE_3_ADDR, CEC_PLAYBACK_DEVICE_1_ADDR},
          {CEC_PLAYBACK_DEVICE_3_ADDR, CEC_PLAYBACK_DEVICE_1_ADDR, CEC_PLAYBACK_DEVICE_2_ADDR}};
-    enum _cec_log_dev_addr_e *probe = NULL;
 
-    cec_msg.rx_read_pos = 0;
-    cec_msg.rx_write_pos = 0;
-    cec_msg.rx_buf_size = 16;
-
-    cec_msg.power_status = 1;
-    cec_msg.len = 0;
-    cec_msg.cec_power = 0;
-    cec_msg.test = 0x0;
-    cec_tx_msgs.send_idx = 0;
-    cec_tx_msgs.queue_idx = 0;
-    cec_tx_buf_init();
-    cec_buf_clear();
-    cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
-    cec_hw_buf_clear();
-    cec_wr_reg(CEC_LOGICAL_ADDR0, 0xf);
-    udelay__(100);
-    cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | 0xf);
-    /*
-     * use kernel cec logic address to detect which logic address is the
-     * started one to allocate.
-     */
-    cec_dbg_print("kern log_addr:0x", kern_log_addr);
-    f_serial_puts("\n");
-    for (i = 0; i < 3; i++) {
-        if (kern_log_addr == player_dev[i][0]) {
-            probe = player_dev[i];
-            break;
-        }
+    if (retry >= 12) {  // retry all device addr
+        cec_msg.log_addr = 0x0f;
+        f_serial_puts("failed on retried all possible address\n");
+        return ;
     }
     if (probe == NULL) {
-        probe = player_dev[0];
-    }
-    for (i = 0; i < 3; i++) {
-        msg[0] = (probe[i]<<4) | probe[i];
-        tx_stat = ping_cec_ll_tx(msg, 1);
-        if (tx_stat == TX_BUSY) {   // can't get cec bus
-            retry++;
-            remote_cec_hw_reset();
-            if (retry >= 5) {
-                cec_dbg_print("retry too much, log_addr:0x", probe[i]);
-                f_serial_puts("\n");
-                retry = 0;
-            } else {
-                i -= 1;
+        cec_msg.rx_read_pos = 0;
+        cec_msg.rx_write_pos = 0;
+        cec_msg.rx_buf_size = 16;
+
+        cec_msg.power_status = 1;
+        cec_msg.len = 0;
+        cec_msg.cec_power = 0;
+        cec_msg.test = 0x0;
+        cec_tx_msgs.send_idx = 0;
+        cec_tx_msgs.queue_idx = 0;
+        cec_tx_buf_init();
+        cec_buf_clear();
+        cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
+        cec_hw_buf_clear();
+        cec_wr_reg(CEC_LOGICAL_ADDR0, 0xf);
+        udelay__(100);
+        cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | 0xf);
+        /*
+         * use kernel cec logic address to detect which logic address is the
+         * started one to allocate.
+         */
+        cec_dbg_print("kern log_addr:0x", kern_log_addr);
+        f_serial_puts("\n");
+        for (i = 0; i < 3; i++) {
+            if (kern_log_addr == player_dev[i][0]) {
+                probe = player_dev[i];
+                break;
             }
-        } else if (tx_stat == TX_ERROR) {
-            alloc_ok = 1;
-            cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
-            cec_hw_buf_clear();
-            cec_wr_reg(CEC_LOGICAL_ADDR0, probe[i]);
-            udelay__(100);
-            cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | probe[i]);
-            cec_msg.log_addr = probe[i];
-            cec_dbg_print("Set cec log_addr:0x", cec_msg.log_addr);
-            cec_dbg_print(", ADDR0:", cec_rd_reg(CEC_LOGICAL_ADDR0));
+        }
+        if (probe == NULL) {
+            probe = player_dev[0];
+        }
+        i = 0;
+    }
+
+    msg[0] = (probe[i]<<4) | probe[i];
+    tx_stat = ping_cec_ll_tx(msg, 1);
+    if (tx_stat == TX_BUSY) {   // can't get cec bus
+        retry++;
+        remote_cec_hw_reset();
+        if (!(retry & 0x03)) {
+            cec_dbg_print("retry too much, log_addr:0x", probe[i]);
             f_serial_puts("\n");
-            break;
-        } else if (tx_stat == TX_DONE) {
-            cec_dbg_print("sombody takes cec log_addr:0x", probe[i]);
-            f_serial_puts("\n");
+        } else {
+            i -= 1;
+        }
+    } else if (tx_stat == TX_ERROR) {
+        cec_wr_reg(CEC_LOGICAL_ADDR0, 0);
+        cec_hw_buf_clear();
+        cec_wr_reg(CEC_LOGICAL_ADDR0, probe[i]);
+        udelay__(100);
+        cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | probe[i]);
+        cec_msg.log_addr = probe[i];
+        cec_dbg_print("Set cec log_addr:0x", cec_msg.log_addr);
+        cec_dbg_print(", ADDR0:", cec_rd_reg(CEC_LOGICAL_ADDR0));
+        f_serial_puts("\n");
+        if (hdmi_cec_func_config & (1 << CEC_FUNC_MASK)) {
+            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
+            cec_inactive_source();
+        }
+        return ;
+    } else if (tx_stat == TX_DONE) {
+        cec_dbg_print("sombody takes cec log_addr:0x", probe[i]);
+        f_serial_puts("\n");
+        regist_devs |= (1 << i);
+        retry += (4 - (retry & 0x03));
+        if (regist_devs == 0x07) {
+            // No avilable logical address
+            cec_msg.log_addr = 0x0f;
+            cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | 0xf);
+            f_serial_puts("CEC allocate logic address failed\n");
         }
     }
-    if (alloc_ok == 0) {
-        cec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | 0xf);
-        f_serial_puts("CEC allocate logic address failed\n");
-    } else {
-        // delay a short time for other device allocate logic address
-        udelay__(20 *1000);
+    i++;
+    if (i == 3) {
+        i = 0;
     }
 }
 

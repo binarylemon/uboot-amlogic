@@ -827,7 +827,7 @@ void timera_intr_init()
 	//enable timer a intr
 	writel(readl(P_AO_CPU_IRQ_IN0_INTR_MASK)|(1<<1),P_AO_CPU_IRQ_IN0_INTR_MASK);
 	//writel(readl(P_AO_CPU_IRQ_IN0_INTR_FIRQ_SEL)|(1<<1),P_AO_CPU_IRQ_IN0_INTR_FIRQ_SEL);// set timer a intr as fiq
-	writel(0x000f,P_ISA_TIMERA);//15us
+	writel(0x000e,P_ISA_TIMERA);//15us
 	writel((readl(P_ISA_TIMER_MUX)|(1<<16) | (1<<12)) & (~0x3),P_ISA_TIMER_MUX);//start timera, period
 
 	//set pinmux for testing simulate 32k clk
@@ -898,18 +898,10 @@ unsigned int detect_key(unsigned int flags)
 
 #ifdef CONFIG_CEC_WAKEUP
 //    udelay__(10000);
-    if(hdmi_cec_func_config & 0x1){
+    if (hdmi_cec_func_config & 0x1) {
         cec_power_on();
         remote_cec_hw_reset();
         cec_node_init();
-
-        // Notice RX to sleep
-        if (hdmi_cec_func_config & (1 << CEC_FUNC_MASK)) {
-            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
-            cec_inactive_source();
-            if (hdmi_cec_func_config & (1 << AUTO_POWER_ON_MASK))
-                cec_set_standby();
-        }
     }
 #endif
     do {
@@ -920,11 +912,16 @@ unsigned int detect_key(unsigned int flags)
          * suspend loop and resume system.
          */
 #ifdef CONFIG_CEC_WAKEUP
-        if(hdmi_cec_func_config & 0x1){
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
+        if (cec_msg.log_addr) {
+            if (hdmi_cec_func_config & 0x1) {
+                cec_handler();
+                if (cec_msg.cec_power == 0x1) {  //cec power key
+                    exit_reason = 0xcec;
+                    break;
+                }
             }
+        } else {
+            cec_node_init();
         }
 #endif
 #ifdef CONFIG_AML1218
@@ -981,11 +978,16 @@ unsigned int detect_key(unsigned int flags)
 		}
 #endif
 #ifdef CONFIG_CEC_WAKEUP
-        if(hdmi_cec_func_config & 0x1){
-          cec_handler();	
-          if(cec_msg.cec_power == 0x1){  //cec power key
-                break;
+        if (cec_msg.log_addr) {
+            if (hdmi_cec_func_config & 0x1) {
+				cec_handler();
+                if (cec_msg.cec_power == 0x1) {  //cec power key
+					exit_reason = 0xcec;
+					break;
+				}
             }
+        } else {
+            cec_node_init();
         }
 #endif
 
