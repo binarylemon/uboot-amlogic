@@ -248,12 +248,6 @@ void _set_panel_info(void)
 	panel_info.vd_color_fg	= simple_strtoul(getenv("display_color_fg"), NULL, 0);
 	panel_info.vd_color_bg	= simple_strtoul(getenv("display_color_bg"), NULL, 0);
 
-	//temp for 1366 *768
-	if (!strcmp(getenv("outputmode"),"768p60hz") || !strcmp(getenv("outputmode"),"768p50hz")) {
-		panel_info.vl_col = 1366;
-		panel_info.vl_row = 768;
-	}
-
 	printf("panel_info:width x height = %ux%u\n", panel_info.vl_col, panel_info.vl_row);
 	printf("panel_info:vl_bpix = %u\n", panel_info.vl_bpix);
 }

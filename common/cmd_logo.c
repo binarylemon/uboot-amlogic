@@ -48,8 +48,8 @@ static int do_logo_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
             fbw = 1920;
             fbh = 1080;
         } else if ((strncmp(mode, "768p50hz", 8) == 0) || (strncmp(mode, "768p60hz", 8) == 0)) {
-            width = 1920;
-            height = 1080;
+            width = 1366;
+            height = 768;
             fbw = 1920;
             fbh = 1080;
         } else {
