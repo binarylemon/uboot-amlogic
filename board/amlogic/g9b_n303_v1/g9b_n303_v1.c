@@ -431,6 +431,27 @@ int board_init(void)
 
 	return 0;
 }
+//for osd & video reverse
+static int do_lcd_reverse_operate(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (!strcmp(getenv("lcd_reverse"),"1")) {
+		setenv("osd_reverse","all,true");
+		setenv("panel_reverse","1");
+		//saveenv();
+	}else {
+		setenv("osd_reverse","n");
+		setenv("panel_reverse","n");
+		//saveenv();
+	}
+
+	return 0;
+}
+
+U_BOOT_CMD(
+	lcd_reverse_operate,2,0,do_lcd_reverse_operate,
+	"osd_reverse_operate",
+	"osd_reverse_operate\n"
+);
 
 #ifdef CONFIG_NAND_AML_M3 //temp test
 //#include <amlogic/nand/platform.h>

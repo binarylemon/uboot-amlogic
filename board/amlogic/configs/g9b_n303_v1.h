@@ -197,7 +197,10 @@
         "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse}\0"\
     \
     "prepare="\
-        "logo size ${outputmode}; video open; video clear; video dev enable;"\
+        "logo size ${outputmode};"\
+        "lcd_reverse_operate;"\
+        "video open; video clear;"\
+        "video dev enable;"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "bmp display ${bootup_offset}; "\
         "\0"\

@@ -512,7 +512,6 @@ int board_init(void)
     writel(0x16d016d, P_PWM_PWM_E);
     writel((readl(P_PWM_MISC_REG_EF) & ~(0xFF << 8)) | 0x8001, P_PWM_MISC_REG_EF);
 #endif
-
     //default power on 24M
     writel(readl(P_PERIPHS_PIN_MUX_10)&~(1 << 11),P_PERIPHS_PIN_MUX_10);
     writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 18),P_AO_GPIO_O_EN_N);
@@ -520,6 +519,28 @@ int board_init(void)
 
     return 0;
 }
+
+//for osd & video reverse
+static int do_lcd_reverse_operate(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    if (!strcmp(getenv("lcd_reverse"),"1")) {
+        setenv("osd_reverse","all,true");
+        setenv("panel_reverse","1");
+        //saveenv();
+    }else {
+        setenv("osd_reverse","n");
+        setenv("panel_reverse","n");
+        //saveenv();
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+    lcd_reverse_operate,2,0,do_lcd_reverse_operate,
+    "osd_reverse_operate",
+    "osd_reverse_operate\n"
+);
 
 #ifdef CONFIG_NAND_AML_M3 //temp test
 //#include <amlogic/nand/platform.h>

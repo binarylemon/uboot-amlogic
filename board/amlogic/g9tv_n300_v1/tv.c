@@ -110,23 +110,6 @@ static void tv_power_off(void)
     //power_off_lcd();
 }
 
-static int lvds_boot_para_setup(void)
-{
-    char *lcd_reverse = getenv("lcd_reverse");
-
-    if(!strcmp(lcd_reverse,"1")) {
-        setenv("osd_reverse","all,true");
-        setenv("panel_reverse","1");
-        //saveenv();
-    } else {
-        setenv("osd_reverse","n");
-        setenv("panel_reverse","n");
-        //saveenv();
-    }
-
-    return 0;
-}
-
 static void tv_enable(void)
 {
 	debug("%s\n", __FUNCTION__);
@@ -137,7 +120,6 @@ static void tv_enable(void)
 	tv_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 10);
 	tv_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
 	tv_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
-	lvds_boot_para_setup();	
 //\\temp
 //	tv_sync_duration(&lcd_config);
 	
