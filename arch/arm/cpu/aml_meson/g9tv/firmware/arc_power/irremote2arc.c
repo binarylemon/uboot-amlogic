@@ -70,15 +70,15 @@ static const reg_remote RDECODEMODE_DUOKAN[] =
 
 static const reg_remote RDECODEMODE_TOSHIBA[] =
 {
-	{P_AO_MF_IR_DEC_LDR_ACTIVE,260<<16 | 200<<0},//TOSHIBA leader 9000us
-	{P_AO_MF_IR_DEC_LDR_IDLE, 260<<16 | 200<<0},// leader idle
-	{P_AO_MF_IR_DEC_LDR_REPEAT,140<<16|100<<0}, // leader repeat
-	{P_AO_MF_IR_DEC_BIT_0,60<<16|40<<0 },// logic '0' or '00'      
-	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},         
-	{P_AO_MF_IR_DEC_STATUS,120<<20|100<<10},// logic '1' or '01'      
-	{P_AO_MF_IR_DEC_REG1,0x9f40}, // boby long decode (8-13)
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,175<<16 | 130<<0},//TOSHIBA leader 9000us
+	{P_AO_MF_IR_DEC_LDR_IDLE, 175<<16 | 130<<0},// leader idle
+	{P_AO_MF_IR_DEC_LDR_REPEAT,200<<16|1220<<0}, // leader repeat
+	{P_AO_MF_IR_DEC_BIT_0,50<<16|20<<0 },// logic '0' or '00'
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)},
+	{P_AO_MF_IR_DEC_STATUS,100<<20|55<<10},// logic '1' or '01'
+	{P_AO_MF_IR_DEC_REG1,0x600fdf00}, // boby long decode (8-13)
 	//{P_AO_MF_IR_DEC_REG1,0xbe40},// boby long decode (8-13)
-	{P_AO_MF_IR_DEC_REG2,0x5}, // hard decode mode
+	{P_AO_MF_IR_DEC_REG2,0x0}, // hard decode mode
 	{P_AO_MF_IR_DEC_DURATN2,0},
 	{P_AO_MF_IR_DEC_DURATN3,0},
 	{CONFIG_END,            0      }
