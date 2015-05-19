@@ -68,6 +68,7 @@
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
+#define CONFIG_OSD_SCALE_ENABLE 1
 
 #define CONFIG_CMD_CPU_TEMP
 //Enable storage devices
