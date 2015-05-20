@@ -31,18 +31,20 @@ typedef enum
 }ddmode_t;
 #define CONFIG_END 0xffffffff
 /*
-  bit0 = 1120/31.25 = 36 
+  bit0 = 1120/31.25 = 36
   bit1 = 2240 /31.25 = 72
-  2500 /31.25  = 80 
+  2500 /31.25  = 80
   ldr_idle = 4500  /31.25 =144
-  ldr active = 9000 /31.25 = 288 
+  ldr active = 9000 /31.25 = 288
 */
+
+#ifndef CONFIG_NON_32K
 static const reg_remote RDECODEMODE_NEC[] ={
         {P_AO_MF_IR_DEC_LDR_ACTIVE,320<<16 |260<<0},
-        {P_AO_MF_IR_DEC_LDR_IDLE, 200<<16 | 120<<0}, 
+        {P_AO_MF_IR_DEC_LDR_IDLE, 200<<16 | 120<<0},
         {P_AO_MF_IR_DEC_LDR_REPEAT,100<<16 |70<<0},
         {P_AO_MF_IR_DEC_BIT_0,50<<16|20<<0 },
-        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)}, 
+        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)},
         {P_AO_MF_IR_DEC_STATUS,(100<<20)|(45<<10)},
         {P_AO_MF_IR_DEC_REG1,0x600fdf00},
         {P_AO_MF_IR_DEC_REG2,0x0},
@@ -64,7 +66,36 @@ static const reg_remote RDECODEMODE_DUOKAN[] =
 	{P_AO_MF_IR_DEC_DURATN3,0},
 	{CONFIG_END,            0      }
 };
-
+#else
+static const reg_remote RDECODEMODE_NEC[] =
+{
+	{P_AO_MF_IR_DEC_LDR_ACTIVE, 477<<16 | 400<<0},
+	{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0},
+	{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16 |110<<0},
+	{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 },
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
+	{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},
+	{P_AO_MF_IR_DEC_REG1,0x9f40},
+	{P_AO_MF_IR_DEC_REG2,0x0},
+	{P_AO_MF_IR_DEC_DURATN2,0},
+	{P_AO_MF_IR_DEC_DURATN3,0},
+	{CONFIG_END,            0 }
+};
+static const reg_remote RDECODEMODE_DUOKAN[] =
+{
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,53<<16 | 50<<0}, // NEC leader 9500us,max 477: (477* timebase = 31.25) = 9540 ;min 400 = 8000us
+	{P_AO_MF_IR_DEC_LDR_IDLE, 31<<16 | 25<<0}, // leader idle
+	{P_AO_MF_IR_DEC_LDR_REPEAT,30<<16|26<<0},  // leader repeat
+	{P_AO_MF_IR_DEC_BIT_0,61<<16|55<<0 }, // logic '0' or '00'
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0x5DC<<12)|0x13},  // sys clock boby time.base time = 20 body frame 108ms
+	{P_AO_MF_IR_DEC_STATUS,(76<<20)|(69<<10)},  // logic '1' or '01'
+	{P_AO_MF_IR_DEC_REG1,0x9300}, // boby long decode (8-13)
+	{P_AO_MF_IR_DEC_REG2,0x10b},  // hard decode mode
+	{P_AO_MF_IR_DEC_DURATN2,91<<16| 79<<0},
+	{P_AO_MF_IR_DEC_DURATN3,111<<16 | 99<<0},
+	{CONFIG_END,            0      }
+};
+#endif
 static const reg_remote *remoteregsTab[] =
 {
 	RDECODEMODE_NEC,
@@ -74,11 +105,15 @@ void setremotereg(const reg_remote *r)
 {
 	writel(r->val, r->reg);
 }
-int set_remote_mode(int mode){
+
+int set_remote_mode(int mode)
+{
 	const reg_remote *reg;
 	reg = remoteregsTab[mode];
+
 	while(CONFIG_END != reg->reg)
 		setremotereg(reg++);
+
 	return 0;
 }
 unsigned backup_AO_RTI_PIN_MUX_REG;
@@ -88,6 +123,10 @@ unsigned backup_AO_IR_DEC_LDR_ACTIVE;
 unsigned backup_AO_IR_DEC_LDR_IDLE;
 unsigned backup_AO_IR_DEC_BIT_0;
 unsigned bakeup_P_AO_IR_DEC_LDR_REPEAT;
+unsigned backup_P_AO_MF_IR_DEC_STATUS;
+unsigned backup_P_AO_MF_IR_DEC_REG2;
+unsigned backup_P_AO_MF_IR_DEC_DURATN2;
+unsigned backup_P_AO_MF_IR_DEC_DURATN3;
 
 /*****************************************************************
 **
@@ -100,12 +139,17 @@ unsigned bakeup_P_AO_IR_DEC_LDR_REPEAT;
 void backup_remote_register(void)
 {
 	backup_AO_RTI_PIN_MUX_REG = readl(P_AO_RTI_PIN_MUX_REG);
-    backup_AO_IR_DEC_REG0 = readl(P_AO_MF_IR_DEC_REG0);
-    backup_AO_IR_DEC_REG1 = readl(P_AO_MF_IR_DEC_REG1);
-    backup_AO_IR_DEC_LDR_ACTIVE = readl(P_AO_MF_IR_DEC_LDR_ACTIVE);
-    backup_AO_IR_DEC_LDR_IDLE = readl(P_AO_MF_IR_DEC_LDR_IDLE);
-    backup_AO_IR_DEC_BIT_0 = readl(P_AO_MF_IR_DEC_BIT_0);
-    bakeup_P_AO_IR_DEC_LDR_REPEAT = readl(P_AO_MF_IR_DEC_LDR_REPEAT);
+	backup_AO_IR_DEC_REG0 = readl(P_AO_MF_IR_DEC_REG0);
+	backup_AO_IR_DEC_REG1 = readl(P_AO_MF_IR_DEC_REG1);
+	backup_AO_IR_DEC_LDR_ACTIVE = readl(P_AO_MF_IR_DEC_LDR_ACTIVE);
+	backup_AO_IR_DEC_LDR_IDLE = readl(P_AO_MF_IR_DEC_LDR_IDLE);
+	backup_AO_IR_DEC_BIT_0 = readl(P_AO_MF_IR_DEC_BIT_0);
+	bakeup_P_AO_IR_DEC_LDR_REPEAT = readl(P_AO_MF_IR_DEC_LDR_REPEAT);
+	backup_P_AO_MF_IR_DEC_STATUS =readl(P_AO_MF_IR_DEC_STATUS);
+	backup_P_AO_MF_IR_DEC_REG2 = readl(P_AO_MF_IR_DEC_REG2);
+	backup_P_AO_MF_IR_DEC_DURATN2 = readl(P_AO_MF_IR_DEC_DURATN2);
+	backup_P_AO_MF_IR_DEC_DURATN3 = readl(P_AO_MF_IR_DEC_DURATN3);
+
 }
 
 void resume_remote_register(void)
@@ -117,6 +161,10 @@ void resume_remote_register(void)
 	writel(backup_AO_IR_DEC_LDR_IDLE,P_AO_MF_IR_DEC_LDR_IDLE);
 	writel(backup_AO_IR_DEC_BIT_0,P_AO_MF_IR_DEC_BIT_0);
 	writel(bakeup_P_AO_IR_DEC_LDR_REPEAT,P_AO_MF_IR_DEC_LDR_REPEAT);
+	writel(backup_P_AO_MF_IR_DEC_STATUS,P_AO_MF_IR_DEC_STATUS);
+	writel(backup_P_AO_MF_IR_DEC_REG2,P_AO_MF_IR_DEC_REG2);
+	writel(backup_P_AO_MF_IR_DEC_DURATN2,P_AO_MF_IR_DEC_DURATN2);
+	writel(backup_P_AO_MF_IR_DEC_DURATN3,P_AO_MF_IR_DEC_DURATN3);
 
 	readl(P_AO_MF_IR_DEC_FRAME);//abandon last key
 }

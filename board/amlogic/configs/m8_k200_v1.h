@@ -118,7 +118,7 @@
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
-//#define CONFIG_IR_REMOTE 1
+#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
 #define CONFIG_CMD_NET   1

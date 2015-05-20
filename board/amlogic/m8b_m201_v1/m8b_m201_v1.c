@@ -449,18 +449,20 @@ typedef enum
 }ddmode_t;
 #define CONFIG_END 0xffffffff
 /*
-  bit0 = 1120/31.25 = 36 
+  bit0 = 1120/31.25 = 36
   bit1 = 2240 /31.25 = 72
-  2500 /31.25  = 80 
+  2500 /31.25  = 80
   ldr_idle = 4500  /31.25 =144
-  ldr active = 9000 /31.25 = 288 
+  ldr active = 9000 /31.25 = 288
 */
+
+#ifndef CONFIG_NON_32K
 static const reg_remote RDECODEMODE_NEC[] ={
         {P_AO_MF_IR_DEC_LDR_ACTIVE,477<<16 |400<<0},
-        {P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0}, 
+        {P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0},
         {P_AO_MF_IR_DEC_LDR_REPEAT,130<<16 |110<<0},
         {P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 },
-        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13}, 
+        {P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
         {P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},
         {P_AO_MF_IR_DEC_REG1,0x9f40},
         {P_AO_MF_IR_DEC_REG2,0x0},
@@ -482,6 +484,36 @@ static const reg_remote RDECODEMODE_DUOKAN[] =
 	{P_AO_MF_IR_DEC_DURATN3,0},
 	{CONFIG_END,            0      }
 };
+#else
+static const reg_remote RDECODEMODE_NEC[] =
+{
+	{P_AO_MF_IR_DEC_LDR_ACTIVE, 477<<16 | 400<<0},
+	{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0},
+	{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16 |110<<0},
+	{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 },
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
+	{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},
+	{P_AO_MF_IR_DEC_REG1,0x9f40},
+	{P_AO_MF_IR_DEC_REG2,0x0},
+	{P_AO_MF_IR_DEC_DURATN2,0},
+	{P_AO_MF_IR_DEC_DURATN3,0},
+	{CONFIG_END,            0 }
+};
+static const reg_remote RDECODEMODE_DUOKAN[] =
+{
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,53<<16 | 50<<0}, // NEC leader 9500us,max 477: (477* timebase = 31.25) = 9540 ;min 400 = 8000us
+	{P_AO_MF_IR_DEC_LDR_IDLE, 31<<16 | 25<<0}, // leader idle
+	{P_AO_MF_IR_DEC_LDR_REPEAT,30<<16|26<<0},  // leader repeat
+	{P_AO_MF_IR_DEC_BIT_0,61<<16|55<<0 }, // logic '0' or '00'
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0x5DC<<12)|0x13},  // sys clock boby time.base time = 20 body frame 108ms
+	{P_AO_MF_IR_DEC_STATUS,(76<<20)|(69<<10)},  // logic '1' or '01'
+	{P_AO_MF_IR_DEC_REG1,0x9300}, // boby long decode (8-13)
+	{P_AO_MF_IR_DEC_REG2,0x10b},  // hard decode mode
+	{P_AO_MF_IR_DEC_DURATN2,91<<16| 79<<0},
+	{P_AO_MF_IR_DEC_DURATN3,111<<16 | 99<<0},
+	{CONFIG_END,            0      }
+};
+#endif
 
 static const reg_remote *remoteregsTab[] =
 {
