@@ -365,7 +365,7 @@
 	"recovery="\
         "echo enter recovery;"\
         "run bcb_cmd; "\
-        "setenv bootargs ${bootargs} wipeinstaboot;"\
+        "wipeisb;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\

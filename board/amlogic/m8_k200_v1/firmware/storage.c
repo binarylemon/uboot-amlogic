@@ -26,7 +26,7 @@ struct partitions partition_table[]={
 #ifdef CONFIG_INSTABOOT
 		{
 			.name = "instaboot",
-			.size = 1024*SZ_1M,
+			.size = 512*SZ_1M,
 			.mask_flags = STORE_CODE,
 		},
 #endif

@@ -268,7 +268,7 @@
     \
 	"recovery="\
         "echo enter recovery;"\
-        "setenv bootargs ${bootargs} wipeinstaboot;"\
+        "wipeisb;"\
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
