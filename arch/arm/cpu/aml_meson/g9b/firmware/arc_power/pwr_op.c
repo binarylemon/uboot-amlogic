@@ -216,16 +216,36 @@ void init_I2C()
 
 void g9tv_power_off_at_24M()
 {
-	writel(readl(P_PERIPHS_PIN_MUX_10)&~(1 << 11),P_PERIPHS_PIN_MUX_10);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 29), P_AO_RTI_PIN_MUX_REG);  //close vdde_pwm
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 21), P_AO_RTI_PIN_MUX_REG);
+	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 28), P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 12), P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 10),P_AO_RTI_PIN_MUX_REG); //close stb
 	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&(~(1 << 9)),P_AO_RTI_PIN_MUX_REG); //close ddr
+	writel(readl(P_AO_GPIO_O_EN_N)&(~(1 << 19)),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&(~(1 << 3)),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x3 << 3),P_AO_RTI_PWR_CNTL_REG0 );  //open Isolation
+	udelay__(200);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&~(0x1 << 9),P_AO_RTI_PWR_CNTL_REG0 );
+	udelay__(200);
 }
 
 void g9tv_power_on_at_24M()
 {
-	writel(readl(P_PERIPHS_PIN_MUX_10)&~(1 << 11),P_PERIPHS_PIN_MUX_10);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 9),P_AO_RTI_PIN_MUX_REG); //open ddr
+	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 19),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 3),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 10),P_AO_RTI_PIN_MUX_REG);  //open stb
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 18),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 2),P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 29), P_AO_RTI_PIN_MUX_REG);  //vdde pwm
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 21), P_AO_RTI_PIN_MUX_REG);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 28), P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 12), P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(0x1 << 9),P_AO_RTI_PWR_CNTL_REG0 ); //close Isolation
+	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&~(0x3 << 3),P_AO_RTI_PWR_CNTL_REG0 );
 }
 
 unsigned int g9tv_ref_wakeup(unsigned int flags)

@@ -694,7 +694,7 @@ pub_init_ddr1:
 		
 	}
 
-	
+	#if 0
 	/*DDR1*/
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
 	{
@@ -754,7 +754,7 @@ pub_init_ddr1:
 
 		
 	}
-
+	#endif
 	// Monitor DFI initialization status.
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)
 	{
@@ -764,7 +764,7 @@ pub_init_ddr1:
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
 	{
-		while(!(readl(P_DDR1_PCTL_DFISTSTAT0) & 1)) {} //DDR1
+		//while(!(readl(P_DDR1_PCTL_DFISTSTAT0) & 1)) {} //DDR1
 		hx_serial_puts("Aml log : DDR1 - DFI status check done\n");
 	}
 
@@ -773,7 +773,7 @@ pub_init_ddr1:
 		writel(1, P_DDR0_PCTL_POWCTL);				//DDR 0	
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
-		writel(1, P_DDR1_PCTL_POWCTL);				//DDR 1
+		//writel(1, P_DDR1_PCTL_POWCTL);				//DDR 1
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -783,7 +783,7 @@ pub_init_ddr1:
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
-		while(!(readl(P_DDR1_PCTL_POWSTAT) & 1) ) {}
+		//while(!(readl(P_DDR1_PCTL_POWSTAT) & 1) ) {}
 		hx_serial_puts("Aml log : DDR1 - PCTL power up\n");
 	}
 
@@ -876,13 +876,13 @@ pub_init_ddr1:
 		writel(UPCTL_CMD_CONFIG, P_DDR0_PCTL_SCTL); //DDR 0
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
-		writel(UPCTL_CMD_CONFIG, P_DDR1_PCTL_SCTL); //DDR 1
+		//writel(UPCTL_CMD_CONFIG, P_DDR1_PCTL_SCTL); //DDR 1
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET) //DDR 0
 		while(!(readl(P_DDR0_PCTL_STAT) & 1)) {}
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		while(!(readl(P_DDR1_PCTL_STAT) & 1)) {}
+		//while(!(readl(P_DDR1_PCTL_STAT) & 1)) {}
 
 	
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
@@ -920,7 +920,7 @@ pub_init_ddr1:
 			
 	}
 
-
+#if 0
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		//DDR 1 DFI
@@ -954,19 +954,19 @@ pub_init_ddr1:
 		DDR1_SUSPEND_LOAD(_PUB_DTAR3);
 			
 	}
-
+#endif
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)
 		writel(1,P_DDR0_PCTL_CMDTSTATEN);			//DDR 0
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
-		writel(1,P_DDR1_PCTL_CMDTSTATEN);			//DDR 0
+		//writel(1,P_DDR1_PCTL_CMDTSTATEN);			//DDR 0
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		while(!(readl(P_DDR0_PCTL_CMDTSTAT) & 0x1)) {}
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		while(!(readl(P_DDR1_PCTL_CMDTSTAT) & 0x1)) {}
+	//	while(!(readl(P_DDR1_PCTL_CMDTSTAT) & 0x1)) {}
 
 
 	hx_serial_puts("Aml log : HX DDR PUB training begin:\n");
@@ -981,14 +981,14 @@ pub_init_ddr1:
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0	
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1	
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 		
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 	
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 	
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -1000,7 +1000,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR0 - PLL,DCAL,RST,ZCAL done\n");
 	}
-		
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)		//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000000f) && 
@@ -1011,7 +1011,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - PLL,DCAL,RST,ZCAL done\n");
 	}
-
+#endif
 	//===============================================
 	//DRAM INIT
 	nTempVal =	PUB_PIR_DRAMRST | PUB_PIR_DRAMINIT ;
@@ -1020,13 +1020,13 @@ pub_init_ddr1:
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -1038,7 +1038,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR0 - DRAM INIT done\n");
 	}
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000001f) &&
@@ -1049,21 +1049,21 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - DRAM INIT done\n");
 	}
-
+#endif
 	//===============================================	
 	//WL init
 	nTempVal =	PUB_PIR_WL ;
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0	
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 0
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 0
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -1075,7 +1075,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR0 - WL done\n");
 	}
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000003f) && 
@@ -1086,21 +1086,21 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - WL done\n");
 	}
-	
+#endif
 	//===============================================	
 	//DQS Gate training
 	nTempVal =	PUB_PIR_QSGATE ;
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 0
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 0
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
@@ -1113,7 +1113,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR0 - DQS done\n");
 	}
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x8000007f) &&
@@ -1124,21 +1124,21 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - DQS done\n");
 	}
-
+#endif
 	//===============================================	
 	//Write leveling ADJ
 	nTempVal =	PUB_PIR_WLADJ ;
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 	
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -1158,7 +1158,7 @@ pub_init_ddr1:
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	//HX DDR init code
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x800000ff) &&
@@ -1172,7 +1172,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - WLADJ done\n");
 	}
-
+#endif
 	//===============================================	
 	//Data bit deskew & data eye training
 	nTempVal =	PUB_PIR_RDDSKW | PUB_PIR_WRDSKW | PUB_PIR_RDEYE | PUB_PIR_WREYE;
@@ -1180,14 +1180,14 @@ pub_init_ddr1:
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(nTempVal|PUB_PIR_INIT, P_DDR0_PUB_PIR); //DDR 0
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//writel(nTempVal|PUB_PIR_INIT, P_DDR1_PUB_PIR); //DDR 1
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 	{
@@ -1204,7 +1204,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR0 - BIT deskew & data eye done\n");
 	}
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
 	{
 		while((readl(P_DDR1_PUB_PGSR0) != 0x80000fff) && 
@@ -1221,7 +1221,7 @@ pub_init_ddr1:
 		}
 		hx_serial_puts("Aml log : DDR1 - BIT deskew & data eye done\n");
 	}
-
+#endif
 	//===============================================
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET) //DDR 0
@@ -1230,24 +1230,24 @@ pub_init_ddr1:
 		DDR0_SUSPEND_LOAD(_PUB_PGCR0);
 	}
 	
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET) //DDR 1
-	{
-		DDR1_SUSPEND_LOAD(_PUB_PGCR3);
-		DDR1_SUSPEND_LOAD(_PUB_PGCR0);
-	}
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET) //DDR 1
+	//{
+		//DDR1_SUSPEND_LOAD(_PUB_PGCR3);
+	//	DDR1_SUSPEND_LOAD(_PUB_PGCR0);
+//	}
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		DDR0_SUSPEND_LOAD(_PUB_DXCCR);
 
-	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-		DDR1_SUSPEND_LOAD(_PUB_DXCCR);
+	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
+		//DDR1_SUSPEND_LOAD(_PUB_DXCCR);
 	
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0
 		writel(UPCTL_CMD_GO, P_DDR0_PCTL_SCTL); //DDR 0 
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1	
-		writel(UPCTL_CMD_GO, P_DDR1_PCTL_SCTL); //DDR 1
+		//writel(UPCTL_CMD_GO, P_DDR1_PCTL_SCTL); //DDR 1
 
 	//if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0	
 	{
@@ -1256,10 +1256,10 @@ pub_init_ddr1:
 	}
 
 	//if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1
-	{
-		while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {}
-		hx_serial_puts("Aml log : DDR1 - PCTL enter run state\n");
-	}
+	//{
+	//	while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_ACCESS ) {}
+		//hx_serial_puts("Aml log : DDR1 - PCTL enter run state\n");
+	//}
 
 
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET)	//DDR 0	
@@ -1285,7 +1285,7 @@ pub_init_ddr1:
 			hx_serial_puts("\n\n");		
 	    }
 	}
-
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET)	//DDR 1	
 	{
 
@@ -1310,14 +1310,14 @@ pub_init_ddr1:
 			hx_serial_puts("\n\n");			
 		}
 	}
+#endif
 
-#if 0
 	if(CONFIG_DDR1_ONLY != nDDR_CHN_SET) //DDR 0
 	{
 		DDR0_SUSPEND_LOAD(_PUB_ZQCR);
 		writel(readl(P_DDR0_CLK_CTRL) & (~1), P_DDR0_CLK_CTRL);  //for power pctl gate clk save EE power	
 	}
-	
+#if 0
 	if(CONFIG_DDR0_ONLY != nDDR_CHN_SET) //DDR 1
 	{
 		DDR1_SUSPEND_LOAD(_PUB_ZQCR);
@@ -1400,13 +1400,13 @@ static void hx_ddr_resume(void)
 	case CONFIG_DDR0_ONLY:
 		{
 			//close DDR-1
-			writel(UPCTL_CMD_SLEEP, P_DDR1_PCTL_SCTL);
-			while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_LOW_POWER ) {}
+			//writel(UPCTL_CMD_SLEEP, P_DDR1_PCTL_SCTL);
+		//	while ((readl(P_DDR1_PCTL_STAT) & UPCTL_STAT_MASK ) != UPCTL_STAT_LOW_POWER ) {}
 
-			writel(1<<29, P_DDR1_PUB_PLLCR);
+			//writel(1<<29, P_DDR1_PUB_PLLCR);
 			__udelayx(1);
-			writel((1<<2)|(1<<6)|(1<<4),
-				P_DDR1_CLK_CTRL);
+		//	writel((1<<2)|(1<<6)|(1<<4),
+		//		P_DDR1_CLK_CTRL);
 
 			writel(readl(P_DDR0_CLK_CTRL) & (~1),
 				P_DDR0_CLK_CTRL);
