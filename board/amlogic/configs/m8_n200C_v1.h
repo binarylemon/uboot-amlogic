@@ -333,9 +333,11 @@
         	"run usb_burning;"\
         "else if test ${wipe_data} = failed; then "\
         	"echo wipe_data=${wipe_data}; run recovery;"\
+        "else if test ${reboot_mode} = charging; then "\
+                "run try_auto_burn; "\
         "else " \
         	"  "\
-        "fi;fi;fi;fi\0" \
+        "fi;fi;fi;fi;fi\0" \
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
@@ -349,6 +351,9 @@
         "echo Booting...; "\
         "if unifykey get usid; then  "\
             "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
+        "if unifykey get mac; then  "\
+            "setenv bootargs ${bootargs} mac=${mac};"\
         "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
@@ -373,6 +378,7 @@
 		"if test ${reboot_mode} = factory_reset; then defenv; fi;\0" \
     \
 	"usb_burning=update 1000\0" \
+        "try_auto_burn=update 700 750;\0"\
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 
