@@ -408,13 +408,6 @@ void cec_set_stream_path(void)
         if ((hdmi_cec_func_config >> AUTO_POWER_ON_MASK) & 0x1) {
             //cec_imageview_on();
             if ((phy_addr_ab == cec_msg.buf[cec_msg.rx_read_pos].msg[2]) && (phy_addr_cd == cec_msg.buf[cec_msg.rx_read_pos].msg[3]) )  {
-                unsigned char msg[4];
-                msg[0] = ((cec_msg.log_addr & 0xf) << 4)| CEC_BROADCAST_ADDR;
-                msg[1] = CEC_OC_ACTIVE_SOURCE;
-                msg[2] = phy_addr_ab;
-                msg[3] = phy_addr_cd;
-
-                remote_cec_ll_tx(msg, 4);
                 cec_msg.cec_power = 0x1;
             }
         }
@@ -764,10 +757,6 @@ void cec_node_init(void)
         cec_dbg_print("Set cec log_addr:0x", cec_msg.log_addr);
         cec_dbg_print(", ADDR0:", cec_rd_reg(CEC_LOGICAL_ADDR0));
         f_serial_puts("\n");
-        if (hdmi_cec_func_config & (1 << CEC_FUNC_MASK)) {
-            cec_menu_status_smp(DEVICE_MENU_INACTIVE);
-            cec_inactive_source();
-        }
         return ;
     } else if (tx_stat == TX_DONE) {
         cec_dbg_print("sombody takes cec log_addr:0x", probe[i]);
