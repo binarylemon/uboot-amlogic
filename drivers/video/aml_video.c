@@ -479,6 +479,16 @@ int* get_window_axis(void) {
         axis[1] = getenv_int("4k2ksmpte_y", 0);
         axis[2] = getenv_int("4k2ksmpte_w", 4096);
         axis[3] = getenv_int("4k2ksmpte_h", 2160);
+    } else if (strcmp(mode, "4k2k50hz") == 0) {
+        axis[0] = getenv_int("4k2k50hz_x", 0);
+        axis[1] = getenv_int("4k2k50hz_y", 0);
+        axis[2] = getenv_int("4k2k50hz_w", 3840);
+        axis[3] = getenv_int("4k2k50hz_h", 2160);
+    } else if (strcmp(mode, "4k2k60hz") == 0) {
+        axis[0] = getenv_int("4k2k60hz_x", 0);
+        axis[1] = getenv_int("4k2k60hz_y", 0);
+        axis[2] = getenv_int("4k2k60hz_w", 3840);
+        axis[3] = getenv_int("4k2k60hz_h", 2160);
     } else if (strcmp(mode, "1080p") == 0 || strcmp(mode, "1080p50hz") == 0 || strcmp(mode, "1080p24hz") == 0) {
         axis[0] = getenv_int("1080p_x", 0);
         axis[1] = getenv_int("1080p_y", 0);
@@ -487,15 +497,15 @@ int* get_window_axis(void) {
     } else if ((strcmp(mode, "768p50hz") == 0) || (strcmp(mode, "768p60hz") == 0) ){
         axis[0] = getenv_int("768p_x", 0);
         axis[1] = getenv_int("768p_y", 0);
-        axis[2] = getenv_int("768p_width", 1366);
-        axis[3] = getenv_int("768p_height", 768);
+        axis[2] = getenv_int("768p_w", 1366);
+        axis[3] = getenv_int("768p_h", 768);
     } else {
         axis[0] = getenv_int("1080p_x", 0);
         axis[1] = getenv_int("1080p_y", 0);
         axis[2] = getenv_int("1080p_w", 1920);
         axis[3] = getenv_int("1080p_h", 1080);
     }
-    //printf("bmp scale:  mode=%s , x=%d, y=%d, w=%d, h=%d\n", mode, axis[0], axis[1], axis[2], axis[3]);
+    printf("bmp scale:  mode=%s , x=%d, y=%d, w=%d, h=%d\n", mode, axis[0], axis[1], axis[2], axis[3]);
     return axis;
 }
 
