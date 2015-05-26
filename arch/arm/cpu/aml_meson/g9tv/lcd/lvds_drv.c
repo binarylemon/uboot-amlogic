@@ -135,7 +135,7 @@ static void vclk_set_encl_lvds(int lvds_ports, int hpll_clk, int hpll_od,int hdm
 	unsigned int xd;
 
 	if (lvds_ports < 2) {
-		printf("lvds clk : %x %x \n",hpll_clk,hpll_od);
+		printf("lcd: lvds clk: hpll_clk=%x hpll_od%x \n",hpll_clk,hpll_od);
 		if (set_hpll_pll(hpll_clk, hpll_od,hdmi_pll_cntl5)) {
 			printf("Unsupported hpll_pll out frequency!\n");
 			return;
@@ -146,7 +146,7 @@ static void vclk_set_encl_lvds(int lvds_ports, int hpll_clk, int hpll_od,int hdm
 		if (lvds_ports == 1) //dual port
 			vx1_phy_div = vx1_phy_div*2;
 	}else if (lvds_ports >= 2) {
-		printf("Quad-LVDS is not supported!\n");
+		printf("lcd error :Quad-LVDS is not supported!\n");
 		return;
 	}
 
@@ -185,7 +185,7 @@ static void set_pll_lvds(Lcd_Config_t *pConf)
 
 unsigned int  lvds_init(Lcd_Config_t *pConf)
 {
-	printf("lvds mode is selected!\n");
+	printf("lcd: lvds mode is selected!\n");
 	set_pll_lvds(pConf);
 	venc_set_lvds(pConf);
 	set_control_lvds(pConf);

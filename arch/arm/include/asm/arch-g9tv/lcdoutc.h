@@ -224,9 +224,32 @@ typedef struct {
 	//MLVDS_Tcon_Config_t *mlvds_tcon_config;
 } Lcd_Control_Config_t;
 
+//****panel power control only for uboot ***//
+typedef struct {
+	unsigned int gpio;
+	unsigned short on_value;
+	unsigned short off_value;
+	unsigned short panel_on_delay;
+	unsigned short panel_off_delay;
+} Panel_Power_Config_t;
 
-//*******************************************//
+// Power Control
+typedef struct {
+	Panel_Power_Config_t *panel_power;
+} Lcd_Power_Ctrl_t;
 
+typedef struct {
+    Lcd_Basic_t lcd_basic;
+    Lcd_Timing_t lcd_timing;
+	Lcd_Control_Config_t lcd_control;
+    //Lcd_Effect_t lcd_effect;
+	Lcd_Power_Ctrl_t lcd_power_ctrl;
+} Lcd_Config_t;
+
+Lcd_Config_t lcd_config_dft;
+
+
+//===============backlight control config===================//
 //****Backlight pwm control only for uboot ***//
 typedef enum {
     OFF = 0,
@@ -243,29 +266,28 @@ typedef enum {
 	BL_PWM_MAX,
 } BL_PWM_t;
 
+//****backlight pwm control only for uboot ***//
 typedef struct {
-	unsigned pwm_port;
+	unsigned pwm_freq;			/** backlight control pwm frequency(unit: Hz) */
+	unsigned pwm_duty_max;			/** brightness diminig duty_max(unit: %, positive logic) */
+	unsigned pwm_duty_min; 			/** brightness diminig duty_min(unit: %, positive logic) */
+
 	unsigned level_default;
 	unsigned level_min;
 	unsigned level_max;
+
+	unsigned pwm_port;
 	unsigned pwm_cnt;
 	unsigned pwm_pre_div;
 	unsigned pwm_max;
 	unsigned pwm_min;
-} Lcd_Bl_Config_t;
+	unsigned pwm_positive;
 
-Lcd_Bl_Config_t bl_config_dft;
-
-//********************************//
-
-//****panel power control only for uboot ***//
-typedef struct {
-	unsigned int gpio;
-	unsigned short on_value;
-	unsigned short off_value;
-	unsigned short panel_on_delay;
-	unsigned short panel_off_delay;
-} Panel_Power_Config_t;
+	unsigned pinmux_set_num;
+	unsigned pinmux_set[15][2];
+	unsigned pinmux_clr_num;
+	unsigned pinmux_clr[15][2];
+} Bl_Pwm_Config_t;
 
 //****backlight power control only for uboot ***//
 typedef struct {
@@ -276,24 +298,19 @@ typedef struct {
 	unsigned short bl_off_delay;
 } Bl_Power_Config_t;
 
-
-// Power Control
 typedef struct {
-	Panel_Power_Config_t *panel_power;
-	Bl_Power_Config_t    *bl_power;
-} Lcd_Power_Ctrl_t;
+	Bl_Power_Config_t bl_power;
+	Bl_Pwm_Config_t   bl_pwm;
+} Lcd_Bl_Config_t;
 
+Lcd_Bl_Config_t bl_config_dft;
+
+
+//============lcd & backlight config=================//
 typedef struct {
-    Lcd_Basic_t lcd_basic;
-    Lcd_Timing_t lcd_timing;
-
-	Lcd_Control_Config_t lcd_control;
-    //Lcd_Effect_t lcd_effect;
-
-	Lcd_Power_Ctrl_t lcd_power_ctrl;
-} Lcd_Config_t;
-
-Lcd_Config_t lcd_config_dft;
+	Lcd_Config_t 	*pConf;
+	Lcd_Bl_Config_t *bl_config;
+} lcd_dev_t;
 
 typedef struct {
 	const char *panel_type;
@@ -350,9 +367,30 @@ typedef struct {
 	unsigned short bl_off_value;
 	unsigned short bl_on_delay;
 	unsigned short bl_off_delay;
+
+	unsigned pwm_port;
+	unsigned pwm_freq;
+	unsigned pwm_duty_max;
+	unsigned pwm_duty_min;
+	unsigned pwm_positive;
+
+	unsigned level_default;
+	unsigned level_min;
+	unsigned level_max;
+
 }Ext_Lcd_Config_t;
 
 #define LCD_TYPE_MAX 	15
+
+
+//#define __DBG__LCD__
+#ifdef __DBG__LCD__
+#define lcd_printf(fmt,args...) do { printf("[lcd]:FILE:%s:[%d],"fmt"",\
+                                                 __FILE__,__LINE__,## args);} \
+                                         while (0)
+#else
+#define lcd_printf(fmt,args...)
+#endif
 
 
 #endif /* LCDOUTC_H */

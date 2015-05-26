@@ -182,7 +182,7 @@ static void set_control_vbyone(Lcd_Config_t *pConf)
                   vin_bpp   = 0;
                   break;
         default:
-            printf( "Error VBYONE_COLOR_FORMAT!\n");
+            printf("lcd error:VBYONE_COLOR_FORMAT!\n");
                   return;
 	}
     // clock seting for VX1
@@ -202,7 +202,7 @@ static void set_control_vbyone(Lcd_Config_t *pConf)
    // aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3,3,8,2);
 
     // set Vbyone
-    printf("VbyOne Configuration ......\n");
+    printf("lcd: VbyOne Configuration ......\n");
     //set_vbyone_vfmt(vin_color,vin_bpp);
     aml_set_reg32_bits(P_VBO_VIN_CTRL, vin_color, VBO_VIN_PACK_BIT,VBO_VIN_PACK_WID);
     aml_set_reg32_bits(P_VBO_VIN_CTRL, vin_bpp,   VBO_VIN_BPP_BIT,VBO_VIN_BPP_WID);
@@ -238,13 +238,10 @@ static void set_control_vbyone(Lcd_Config_t *pConf)
 
     //force vencl clk enable, otherwise, it might auto turn off by mipi DSI
     //WRITE_VCBUS_REG_BITS(VPU_MISC_CTRL, 1, 0, 1);
-
-	printf("VbyOne is In Normal Status ......\n");
 }
 
 static void venc_set_vbyone(Lcd_Config_t *pConf)
 {
-	printf("%s\n", __FUNCTION__);
 	aml_write_reg32(P_ENCL_VIDEO_EN, 0);
 
 	//int havon_begin = 80;
@@ -325,7 +322,7 @@ static void set_pll_vbyone(Lcd_Config_t *pConf)
     //hdmi_vx1_clk_od1 = 1;
 
 	if (lane < minlane) {
-		printf("VX1 cannot support this configuration!\n");
+		printf("lcd error: VX1 cannot support this configuration!\n");
 		return;
 	}
 
@@ -345,7 +342,7 @@ static void set_pll_vbyone(Lcd_Config_t *pConf)
     //}
 
    pclk_div = (((byte == 3) ? 30:40)*100)/minlane;
-   printf("vbyone byte:%d, lane:%d, pclk:%d, phy_div:%d \n", byte, lane, pclk_div, phy_div);
+   printf("lcd: vbyone byte=%d, lane=%d, pclk=%d, phy_div=%d \n", byte, lane, pclk_div, phy_div);
    //configure vid_clk_div_top
    if (byte == 3) {
 	   if (pclk_div == 375) {
@@ -398,7 +395,7 @@ static void set_pll_vbyone(Lcd_Config_t *pConf)
 
 unsigned int vbyone_init(Lcd_Config_t *pConf)
 {
-	printf("vx1 mode is selected!\n");
+	printf("lcd: vx1 mode is selected!\n");
 	set_pll_vbyone(pConf);
 	venc_set_vbyone(pConf);
 	set_control_vbyone(pConf);

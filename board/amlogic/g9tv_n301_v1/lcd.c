@@ -17,6 +17,7 @@
  *
  * Author:  Elvis Yu <elvis.yu@amlogic.com>
  *
+ * Modify: <jiaming.huang@amlogic.com>
  *
  */
 
@@ -36,59 +37,64 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x500404ad,0x00414400,0x71486900,44,2156,0,1079,2100,2164,3,5,
 		8,1,0,1,1,0x3,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
-		GPIOY_6,1,0,50,50,},
+		GPIOY_6,1,0,50,50,
+		BL_PWM_B,180,100,25,1,60,10,255},
 		
 		{/*lvds : 1920x1080@50hz 8bit pixel clk@74.25mhz 2prot*/
 		"lvds_1",LCD_DIGITAL_LVDS,1920,1080,2200,1350,148,41,
 		0x500404ad,0x00414400,0x71486900,44,2156,0,1079,2100,2164,3,5,
 		8,1,0,1,1,0x3,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
-		GPIOY_6,1,0,50,50,},
+		GPIOY_6,1,0,50,50,
+		BL_PWM_B,180,100,25,1,128,10,255},
 
 		{/*AUO: T320XVN02.9 lvds : 1366x768@60hz 8bit pixel clk@80mhz 1port*/
 		"lvds_2",LCD_DIGITAL_LVDS,1366,768,1648,810,280,42,
 		0x5000068c,0x00454400,0x71c86900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,20,20,
-		GPIOY_6,1,0,450,10,},
+		GPIOY_6,1,0,450,10,
+		BL_PWM_B,180,100,25,1,128,10,255},
 
 		{/*BOE: HV320WHB-N80 lvds : 1366x768@60hz 8bit pixel clk@74.25mhz 1port*/
 		"lvds_3",LCD_DIGITAL_LVDS,1366,768,1560,806,190,30,
 		0x500404ad,0x00454400,0x71486900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,15,500,
-		GPIOY_6,1,0,200,200,},
+		GPIOY_6,1,0,200,200,
+		BL_PWM_B,180,100,25,1,128,10,255},
 
 		{/*PANDA: TPT315B5-0TU3A.Q lvds : 1366x768@60hz 8bit pixel clk@82mhz 1port*/
 		"lvds_4",LCD_DIGITAL_LVDS,1366,768,1696,806,300,38,
 		0x5000068c,0x00454400,0x71c86900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
-		GPIOY_6,1,0,600,200,},
+		GPIOY_6,1,0,600,200,
+		BL_PWM_B,180,100,25,1,128,10,255},
 
 	//==============For vx1==============//
 		{/*BOE: HV550QU2-305 vx1 : 3840x2160@60hz 8lane pixel clk@74.5mhz */
-		"vbyone_0",LCD_DIGITAL_VBYONE,3840,2160,4400,2250,557,90,
+		"vbyone_0",LCD_DIGITAL_VBYONE,3840,2160,4400,2250,90,560,
 		Rsv_val,Rsv_val,Rsv_val,47,80,47,80,47,47,3,9,
 		8,4,2,4,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
-		GPIOY_6,1,0,50,50,},
+		GPIOY_6,1,0,50,50,
+		BL_PWM_B,180,100,25,1,128,10,255},
 
 		{/*vx1 : 3840x2160@50hz 8lane pixel clk@74.5mhz */
 		"vbyone_1",LCD_DIGITAL_VBYONE,3840,2160,4980,2250,1437,90,
 		Rsv_val,Rsv_val,Rsv_val,47,80,47,80,47,47,3,9,
 		8,4,2,4,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
-		GPIOY_6,1,0,50,50,},
+		GPIOY_6,1,0,50,50,
+		BL_PWM_B,180,100,25,1,128,10,255},
 };
-
-
 
 
 //**** Special parameters just for Vbyone ***//
 static Vbyone_Config_t lcd_vbyone_config={
-	.lane_count = 8,	//lane;
-	.byte		= 4,	//byte;
+	.lane_count = 8,	//lane:  1/2/4/6/8 lanes;
+	.byte		= 4,	//byte:  3/4/5 bytes;
 	.region		= 2,	//region
 	.color_fmt	= 4,	//color_fmt
 };
@@ -106,21 +112,11 @@ static Lvds_Config_t lcd_lvds_config={
 //****panel power control only for uboot ***//
 static Panel_Power_Config_t lcd_panel_power =
 {
-	.gpio		=	GPIOH_10,
-	.on_value	=	1,
-	.off_value	=	0,
-	.panel_on_delay		=	50,
-	.panel_off_delay	=	50
-};
-
-//****panel power control only for uboot ***//
-static Bl_Power_Config_t lcd_bl_power =
-{
-	.gpio		=	GPIOY_6,
-	.on_value	=	1,
-	.off_value	=	0,
-	.bl_on_delay	=	50,
-	.bl_off_delay	=	50
+	.gpio		=	GPIOH_10,		/** panel power control gpio port */
+	.on_value	=	1,				/** panel power on gpio out value*/
+	.off_value	=	0,				/** panel power off gpio out value*/
+	.panel_on_delay		=	50,		/** panel power on delay time (unit: ms)*/
+	.panel_off_delay	=	50 		/** panel power off delay time (unit: ms)*/
 };
 
 Lcd_Config_t lcd_config_dft =
@@ -161,64 +157,59 @@ Lcd_Config_t lcd_config_dft =
 
 	.lcd_power_ctrl = {
 		.panel_power	=	&lcd_panel_power,
-		.bl_power		=	& lcd_bl_power,
+	},
+};
+
+//**** backlight PWM pinmux setting ***//
+const static const unsigned bl_pwm_pinmux_set[][2] = {{9, 0x2000000}};             //set pwm pinmux : {reg,bit}
+const static const unsigned bl_pwm_pinmux_clr[][2] = {{3, 0x20},{9, 0x4000001},{5, 0x4000000},{10, 0x280000}}; //clear other pinmux:{reg, bit}
+
+//****Backlight level control only for uboot ***//
+Lcd_Bl_Config_t bl_config_dft = {
+	.bl_power = {
+		.gpio		=	GPIOY_6,          /** backlight power control gpio port */
+		.on_value	=	1,                /** backlight power on gpio output high*/
+		.off_value	=	0,                /** backlight power off gpio output low*/
+		.bl_on_delay	=	50,           /** backlight power on delay time (unit: ms)*/
+		.bl_off_delay	=	50            /** backlight power off delay time (unit: ms)*/
+	},
+	.bl_pwm = {
+		.pwm_port = BL_PWM_B,             /** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
+		.pwm_freq = 180,				/** backlight control pwm frequency(unit: Hz) */
+		.pwm_duty_max = 100,			/** brightness diminig duty_max(unit: %, positive logic) */
+		.pwm_duty_min = 25,				/** brightness diminig duty_min(unit: %, positive logic) */
+		.pwm_positive = 1,				/** brightness pwm polarity   1: positive 0: negative */
+
+		.level_default = 128,            /** default brightness level */
+		.level_min = 10,                 /** brightness level max, must match the rootfs setting*/
+		.level_max = 255,                /** brightness level min, must match the rootfs setting*/
+
 	},
 };
 
 
-// backlight control
-//*********************************************//
-#define BL_PWM_PORT			BL_PWM_B	/** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-#define BL_LEVEL_DEFAULT		128			/** default brightness level */
-#define BL_LEVEL_MAX			255			/** brightness level max, must match the rootfs setting*/
-#define BL_LEVEL_MIN			10			/** brightness level min, must match the rootfs setting*/
-
-
-//****Backlight level control only for uboot ***//
-Lcd_Bl_Config_t bl_config_dft = {
-	.pwm_port = BL_PWM_PORT,
-	.level_default = BL_LEVEL_DEFAULT,
-	.level_min = BL_LEVEL_MIN,
-	.level_max = BL_LEVEL_MAX,
-};
-
-//**********************************************//
-// backlight control
-//*********************************************//
-//**** define backlight PWM control ***//
-#define	BL_PWM_FREQ			300000	/** backlight control pwm frequency(unit: Hz) */
-#define BL_PWM_MAX         	100		/** brightness diminig duty_max(unit: %, positive logic) */
-#define BL_PWM_MIN         	25		/** brightness diminig duty_min(unit: %, positive logic) */
-#define FIN_FREQ				(24 * 1000)  /*XTAL frequency (unit: MHz)*/
-
-void backlight_default_config_init(Lcd_Bl_Config_t *bl_config)
+void set_backlight_default_pinmux(Lcd_Bl_Config_t *bl_config)
 {
-	int i;
-	unsigned bl_freq, pwm_cnt, pwm_pre_div;
+	unsigned int i;
 
-	bl_freq = ((BL_PWM_FREQ >= (FIN_FREQ * 500)) ? (FIN_FREQ * 500) : BL_PWM_FREQ);
+	if ( ARRAY_SIZE(bl_pwm_pinmux_set) > ARRAY_SIZE(bl_config->bl_pwm.pinmux_set) ||
+		ARRAY_SIZE(bl_pwm_pinmux_clr) > ARRAY_SIZE(bl_config->bl_pwm.pinmux_clr)) {
+		printf("error: out of pinmux range !! \n");
+		return;
+	}
+	bl_config->bl_pwm.pinmux_set_num   = ARRAY_SIZE(bl_pwm_pinmux_set);
+	bl_config->bl_pwm.pinmux_clr_num   = ARRAY_SIZE(bl_pwm_pinmux_clr);
 
-	for (i=0; i<0x7f; i++) {
-		pwm_pre_div = i;
-		pwm_cnt = FIN_FREQ * 1000 / (pwm_pre_div + 1) / bl_freq - 2;
-		if (pwm_cnt <= 0xffff)
-			break;
+	for (i=0; i<ARRAY_SIZE(bl_pwm_pinmux_set); i++) {
+		bl_config->bl_pwm.pinmux_set[i][0] = bl_pwm_pinmux_set[i][0];
+		bl_config->bl_pwm.pinmux_set[i][1] = bl_pwm_pinmux_set[i][1];
 	}
 
-	bl_config->pwm_cnt = pwm_cnt;
-	bl_config->pwm_pre_div = pwm_pre_div;
-	bl_config->pwm_max = pwm_cnt * BL_PWM_MAX / 100;
-	bl_config->pwm_min = pwm_cnt * BL_PWM_MIN / 100;
-
-//===================================
-//set pinmux
-
-
-
-//===================================
+	for (i=0; i<ARRAY_SIZE(bl_pwm_pinmux_clr); i++) {
+		bl_config->bl_pwm.pinmux_clr[i][0] = bl_pwm_pinmux_clr[i][0];
+		bl_config->bl_pwm.pinmux_clr[i][1] = bl_pwm_pinmux_clr[i][1];
+	}
 }
-
-
 
 //*************************For osd show logo***************************//
 vidinfo_t panel_info =

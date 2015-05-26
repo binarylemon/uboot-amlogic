@@ -15,7 +15,7 @@ int set_hpll_pll(int hpll_clk, int hpll_od,int hdmi_pll_cntl5)
 	aml_write_reg32(P_HHI_HDMI_PLL_CNTL, hpll_clk & (~(1<<28)));
 	//aml_set_reg32_bits(P_HHI_HDMI_PLL_CNTL2,od1,18,2); //no used ,bit[18:19]
 
-	printf("Wait 10us for phy_clk stable!\n");
+	//printf("Wait 10us for phy_clk stable!\n");
 	udelay(10); // delay 10uS to wait clock is stable
 
 	return 0;
@@ -35,7 +35,7 @@ void clocks_set_vid_clk_div(int div_sel)
 	int shift_val = 0;
 	int shift_sel = 0;
 
-	printf("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
+	printf("lcd: %s[%d] div = %d\n", __func__, __LINE__, div_sel);
 	// Disable the output clock
 	aml_set_reg32_bits(P_HHI_VID_PLL_CLK_DIV, 0, 19, 1);
 	aml_set_reg32_bits(P_HHI_VID_PLL_CLK_DIV, 0, 15, 1);
