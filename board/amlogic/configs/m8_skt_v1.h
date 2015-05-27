@@ -6,28 +6,47 @@
 
 #define CONFIG_SECURITYKEY
 
+#ifndef CONFIG_M8
+#define CONFIG_M8
+#endif // ifndef CONFIG_M8
 //#define	CONFIG_VLSI_EMULATOR 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN
-#define PORT_C_CARD_TYPE            CARD_TYPE_UNKNOWN // CARD_TYPE_MMC/CARD_TYPE_SD
+#define PORT_C_CARD_TYPE            CARD_TYPE_MMC // otherwise CARD_TYPE_SD
 
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+//UART A Section
+//#define CONFIG_UART_A_FUNCTION_ADD
+
+
+//#define CONFIG_SECURESTORAGEKEY
+#ifdef CONFIG_SECURESTORAGEKEY
+#ifndef CONFIG_RANDOM_GENERATE
+#define CONFIG_RANDOM_GENERATE
+#endif
+#endif
+
+//#define CONFIG_SECURITYKEY
+#ifdef CONFIG_SECURITYKEY
+#define CONFIG_AML_NAND_KEY
+#endif
+
+#define  CONFIG_AML_GATE_INIT	1
 #define CONFIG_NEXT_NAND
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-//#define CONFIG_AML_I2C      1
 
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-//#define LCD_BPP LCD_COLOR16
+#define LCD_BPP LCD_COLOR16
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -41,6 +60,10 @@
 
 #if CONFIG_AML_V2_USBTOOL
 #define CONFIG_SHA1
+#define CONFIG_AUTO_START_SD_BURNING     1//1 then auto detect whether or not jump into sdc_burning when boot from external mmc card
+#define CONFIG_SD_BURNING_SUPPORT_LED    1//1 then using led flickering states changing to show burning states when sdcard burning
+#define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
+#define CONFIG_SD_BURNING_SUPPORT_UI     1//have bmp display to indicate burning state when sdcard burning
 #ifdef CONFIG_ACS
 #define CONFIG_TPL_BOOT_ID_ADDR       		(0xD9000000U + 4)//pass boot_id, spl->uboot
 #else
@@ -54,10 +77,21 @@
 #define CONFIG_CMD_BMP 1
 #define CONFIG_VIDEO_AMLTVOUT 1
 #define CONFIG_AML_HDMI_TX  1
-//#define CONFIG_OSD_SCALE_ENABLE 1
+#define CONFIG_OSD_SCALE_ENABLE 1
+
+#if defined(CONFIG_VIDEO_AMLTVOUT)
+#define CONFIG_CVBS_PERFORMANCE_COMPATIBILITY_SUPPORT	1
+
+#define CONFIG_CVBS_CHINASARFT		0x0
+#define CONFIG_CVBS_CHINATELECOM	0x1
+#define CONFIG_CVBS_CHINAMOBILE		0x2
+#define CONFIG_CVBS_PERFORMANCE_ACTIVED	CONFIG_CVBS_CHINASARFT
+
+#endif
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
+
 #if defined(CONFIG_CMD_SF)
 	#define SPI_WRITE_PROTECT  1
 	#define CONFIG_CMD_MEMORY  1
@@ -65,16 +99,12 @@
 
 //Amlogic SARADC support
 //#define CONFIG_SARADC 1
+//#define CONFIG_CMD_SARADC
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
-
-//To disable L2 cache which can be used to speed up LZO decompress when bootm
-//It will get about 46ms saved(7MB lzo image,CPU=792MHz,DDR=792MHz,
-//90ms vs 136ms) when no CONFIG_DISABLE_L2_CACHE_BOOST
-//#define CONFIG_DISABLE_L2_CACHE_BOOST 1
 
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
@@ -94,7 +124,72 @@
 	#define CONFIG_NETMASK         255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
 
-#define CONFIG_CMD_CPU_TEMP
+//I2C definitions
+//#define CONFIG_AML_I2C			1
+#ifdef CONFIG_AML_I2C
+#define CONFIG_CMD_I2C			1
+#define HAS_AO_MODULE
+#define CONFIG_SYS_I2C_SPEED	400000
+#endif	//#ifdef CONFIG_AML_I2C
+
+//#define CONFIG_CMD_AML
+//#define CONFIG_CMD_CPU_TEMP
+/*
+ * PMU definitions, all PMU devices must be include involved
+ * in CONFIG_PLATFORM_HAS_PMU
+ */
+//#define CONFIG_PLATFORM_HAS_PMU
+#ifdef CONFIG_PLATFORM_HAS_PMU
+
+#define CONFIG_RN5T618
+#ifdef CONFIG_RN5T618
+//#define CONFIG_UBOOT_BATTERY_PARAMETER_TEST         // uboot can do battery curve test
+//#define CONFIG_UBOOT_BATTERY_PARAMETERS             // uboot can get battery parameters from dts
+#define CONFIG_ALWAYS_POWER_ON                      // if platform without battery, must have
+#define CONFIG_DISABLE_POWER_KEY_OFF                // disable power off PMU by long press power key
+
+/*
+ * under some cases default voltage of PMU output is
+ * not suitable for application, so you should take care
+ * of the following macros which defined initial voltage
+ * of each power domain when in SPL stage of uboot.
+ */
+#define CONFIG_POWER_SPL                            // init power for all domians, must have
+#define CONFIG_VCCK_VOLTAGE             1100        // CPU core voltage when boot, must have
+#define CONFIG_VDDAO_VOLTAGE            1150        // VDDAO voltage when boot, must have
+#define CONFIG_DDR_VOLTAGE              1500        // DDR voltage when boot, must have
+
+#define CONFIG_VDDIO_AO28               2900        // VDDIO_AO28 voltage when boot, option
+#define CONFIG_VDDIO_AO18               1800        // VDDIO_AO18 voltage when boot, option
+#define CONFIG_RTC_0V9                   900        // RTC_0V9 voltage when boot, option
+#define CONFIG_VDD_LDO                  2700        // VDD_LDO voltage when boot, option
+#define CONFIG_VCC1V8                   1800        // VCC1.8v voltage when boot, option
+#define CONFIG_VCC2V8                   2850        // VCC2.8v voltage when boot, option
+#define CONFIG_AVDD1V8                  1800        // AVDD1.8V voltage when boot, option
+
+/*
+ * set to 1 if you want decrease voltage of VDDAO when suspend
+ */
+#define CONFIG_VDDAO_VOLTAGE_CHANGE     1
+#ifdef CONFIG_VDDAO_VOLTAGE_CHANGE
+#define CONFIG_VDDAO_SUSPEND_VOLTAGE    825         // voltage of VDDAO when suspend
+#endif /* CONFIG_VDDAO_VOLTAGE_CHANGE */
+
+/*
+ * DCDC mode switch when suspend
+ */
+#define CONFIG_DCDC_PFM_PMW_SWITCH      1
+#define CONFIG_POWEROFF_VCCX2
+#endif /* CONFIG_RN5T618 */
+
+#else
+#define CONFIG_PWM_POWER 1
+#define CONFIG_NO_32K_XTAL 1
+#define CONFIG_POWER_SPL
+#define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
+#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    1100	 //VDDEE voltage when suspend, must have
+
+#endif /* CONFIG_PLATFORM_HAS_PMU */
 
 #define CONFIG_SDIO_B1   1
 #define CONFIG_SDIO_A    1
@@ -121,26 +216,17 @@
 	#define CONFIG_USB_DWC_OTG_294	1
 #endif //#if defined(CONFIG_CMD_USB)
 
+#define CONFIG_ENABLE_CVBS 1
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS 
 //#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
-
-//#define CONFIG_IMPROVE_UCL_DEC   1
-
-#ifdef CONFIG_IMPROVE_UCL_DEC
-#define UCL_DEC_EN_IDCACHE        1
-#define UCL_DEC_EN_IDCACHE_FINE_TUNE  1
-#endif
-
-#define CONFIG_SYS_GBL_DATA_SIZE	128	/* bytes reserved for */
 
 #define CONFIG_CMD_AUTOSCRIPT
 
 #define CONFIG_CMD_REBOOT 1
 #define CONFIG_PREBOOT 
 
-#define  CONFIG_AML_GATE_INIT	1
 
 /* Environment information */
 #define CONFIG_BOOTDELAY	1
@@ -154,14 +240,17 @@
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
 	"bootm_size=0x80000000\0" \
+	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
+	"get_dt=checkhw\0" \
 	"initrd_high=60000000\0" \
 	"hdmimode=1080p\0" \
 	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
 	"vdac_config=0x10\0" \
 	"initargs=init=/init console=ttyS0,115200n8 no_console_suspend\0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
@@ -181,42 +270,77 @@
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
+	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+        "wipe_data=success\0"\
+	"cvbs_drv=0\0"\
 	"preboot="\
+        "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
+        "if itest ${upgrade_step} == 1; then  "\
+            "defenv; setenv upgrade_step 2; saveenv;"\
+        "fi; "\
+        "run check_rebootmode;"\
         "run prepare;"\
         "run storeargs;"\
-        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
+        "run update_key; " \
         "run switch_bootmode\0" \
     \
+    "update_key="\
+        "saradc open 0; " \
+        "if saradc get_in_range 0 0x50; then " \
+            "msleep 50; " \
+            "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
+        "fi\0" \
+    \
    	"update="\
-   		"echo update...; "\
+        /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+        "run usb_burning; "\
         "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
+            "if fatexist mmc 0 ${sdcburncfg}; then "\
+                "run sdc_burning; "\
+            "else "\
+                "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
+                "run recovery;"\
+            "fi;"\
+        "else "\
+            "run recovery;"\
+        "fi;\0"\
     \
    	"storeargs="\
-        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
+        "setenv bootargs ${initargs} cvbsdrv=${cvbs_drv} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${cecconfig}\0"\
     \
 	"switch_bootmode="\
-		"echo switch_bootmode...;" \
-		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
-            "\0"\
+        "if test ${reboot_mode} = factory_reset; then "\
+                "run recovery;"\
+        "else if test ${reboot_mode} = update; then "\
+                "run update;"\
+        "else if test ${reboot_mode} = usb_burning; then "\
+                "run usb_burning;"\
+        "else if test ${wipe_data} = failed; then "\
+                "echo wipe_data=${wipe_data}; run recovery;"\
+        "else " \
+                "  "\
+        "fi;fi;fi;fi\0" \
     \
-	"prepare="\
+    "prepare="\
         "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\
+		"secukey auto;" \
+		"secukey write keyexample 1234567890; "\
         "echo Booting...; "\
+        "if unifykey get usid; then  "\
+            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
+        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
@@ -226,9 +350,21 @@
         "if mmcinfo; then "\
             "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
         "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
-
+        "if usb start 0; then "\
+                "if fatload usb 0 ${loadaddr} recovery.img; then bootm; fi;"\
+        "fi;"\
+	      "if imgread kernel recovery ${loadaddr}; then "\
+	        "bootm; "\
+				"else "\
+					"echo no recovery in flash; "\
+				"fi;\0" \
+    \
+    "check_rebootmode="\
+		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};"\
+		"if test ${reboot_mode} = factory_reset; then defenv; fi;\0" \
+    \
+	"usb_burning=update 1000\0" \
+    "sdc_burning=sdc_burn ${sdcburncfg}\0"
 
 
 #define CONFIG_BOOTCOMMAND   "run storeboot"
@@ -286,10 +422,14 @@
 #endif
 
 
+//wifi wake up
+//#define CONFIG_WIFI_WAKEUP 1
+//#define CONFIG_NET_WIFI
+
 //----------------------------------------------------------------------
 //Please set the M8 CPU clock(unit: MHz)
-//legal value: 600, 792, 996, 1200
-#define M8_CPU_CLK 		    (792)
+//legal value: 600, 792, 996, 1200,1440
+#define M8_CPU_CLK 		    (1200)
 #define CONFIG_SYS_CPU_CLK	(M8_CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -308,7 +448,7 @@
 //#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK           792 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK           636 //696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT //m8 doesn't support
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12
 
@@ -340,35 +480,27 @@
 
 /* Pass open firmware flat tree*/
 #define CONFIG_OF_LIBFDT	1
+#define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
 #define CONFIG_ANDROID_IMG	1
 
 #define CONFIG_CMD_IMGPACK 1
-//M8 L1 cache enable for uboot decompress speed up
-#define CONFIG_AML_SPL_L1_CACHE_ON	1
-
-//DDR pre-init setting
-//#define CONFIG_AML_DDR_PRESET 1
 
 //M8 secure boot disable
 //#define CONFIG_AML_DISABLE_CRYPTO_UBOOT 1
 
-//M8 encrypt img
-//#define CONFIG_AML_CRYPTO_IMG	1
+//M8 L1 cache enable for uboot decompress speed up
+#define CONFIG_AML_SPL_L1_CACHE_ON	1
 
-//To use RSA2048 key aml-rsa-key.k2a
-//#define CONFIG_AML_RSA_2048 1
-
-//#define CONFIG_AML_SECU_BOOT_V2_2RSA 1
 
 /*-----------------------------------------------------------------------
  * power down
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
-//#define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 
 #define CONFIG_CMD_LOGO
+
 
 /*
 * CPU switch test for uboot
@@ -376,24 +508,30 @@
 //#define CONFIG_M8_TEST_CPU_SWITCH 1
 
 
-#if defined(CONFIG_VLSI_EMULATOR)
-   #undef CFG_M8_DDR3_2GB
+/*
+ * Secure OS
+ */
+#ifdef CONFIG_MESON_TRUSTZONE
 
-   #undef CONFIG_BOOTCOMMAND
-   #define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
+#define CONFIG_MESON_SECUREARGS  1
+//#define CONFIG_MESON_SECURE_HDCP 1
+#define CONFIG_JOIN_UBOOT_SECUREOS 1
+#define SECUREOS_KEY_BASE_ADDR 0x06100000
+#define SECURE_OS_DECOMPRESS_ADDR 0x06200000
+#define CONFIG_SECURE_STORAGE_BURNED
+#ifdef CONFIG_SECURE_STORAGE_BURNED
+#define CONFIG_MESON_STORAGE_BURN 1
+#define CONFIG_MESON_STORAGE_DEBUG
+#define CONFIG_SECURESTORAGEKEY
+#define CONFIG_RANDOM_GENERATE
+#define CONFIG_CMD_SECURESTORE
+#define CONFIG_CMD_RANDOM
+/* secure storage support both spi and emmc */
+#define CONFIG_SECURE_MMC
+#define CONFIG_SPI_NOR_SECURE_STORAGE
+#define CONFIG_SECURE_NAND
+#endif // CONFIG_SECURE_STORAGE_BURNED
 
-   #define CFG_M8_DDR3_1GB
-   #define CONFIG_M8_NO_DDR_PUB_VT_CHECK 1
-
-   #undef CONFIG_CMD_AUTOSCRIPT
-
-   #undef CONFIG_CMD_REBOOT
-   #undef CONFIG_PREBOOT
-
-   #undef CONFIG_AML_SUSPEND
-   #undef CONFIG_CMD_SUSPEND
-   
-#endif
-
+#endif //CONFIG_MESON_TRUSTZONE
 
 #endif //__CONFIG_M8_SKT_V1_H__
