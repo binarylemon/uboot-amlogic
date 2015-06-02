@@ -329,6 +329,9 @@
         "if unifykey get mac; then  "\
             "setenv bootargs ${bootargs} mac=${mac}  androidboot.mac=${mac};"\
         "fi;"\
+        "if unifykey get deviceid; then  "\
+            "setenv bootargs ${bootargs} androidboot.deviceid=${deviceid};"\
+        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery;\0" \
