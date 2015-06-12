@@ -307,6 +307,9 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	static char * dt_addr;
 	int parent_offset;
 	char* propdata;
+	char *sel;
+	char propname[30];
+	int child_offset;
 
 #ifdef CONFIG_DT_PRELOAD
 #ifdef CONFIG_DTB_LOAD_ADDR
@@ -319,6 +322,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 		return 0;
 	}
 #endif
+
 	lcd_printf("\n");
 	parent_offset = fdt_path_offset(dt_addr, "/backlight");
 	if (parent_offset < 0) {
@@ -326,7 +330,20 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 		return 0;
 	}
 
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_en_gpio", NULL);
+	char *panel_type = getenv("panel_type");
+	if (panel_type == NULL) {
+		printf("lcd error: no panel_type use defult lcd config\n ");
+		return 0;
+	}
+	sel = strchr(panel_type,'_');
+	sprintf(propname,"/backlight/%s%s","backlight", sel);
+	child_offset = fdt_path_offset(dt_addr, propname);
+	if (child_offset < 0) {
+		printf("lcd error: dts: not find /backlight/%s  node %s.\n",panel_type,fdt_strerror(child_offset));
+		return 0;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_en_gpio", NULL);
 	int blacklight_power_pin;
 	blacklight_power_pin = gpioname_to_pin(propdata);
 	if (blacklight_power_pin<0) {
@@ -343,7 +360,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	lcd_printf("dtd_bl:panel_power_pin: %s--%d \n",propdata,bl_config->bl_power.gpio);
 
 
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_en_on", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_en_on", NULL);
 	if (propdata == NULL) {
 		printf("lcd error: faild to get backlight/bl_en_on \n");
 		return 0;
@@ -355,7 +372,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	lcd_printf("dtd_bl:off_value = %d \n",bl_config->bl_power.off_value);
 
 
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_power_on_delay", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_power_on_delay", NULL);
 	if (propdata == NULL) {
 		printf("lcd error: faild to get backlight/bl_power_on_delay \n");
 		return 0;
@@ -365,7 +382,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	lcd_printf("dtd_bl:bl_on_delay = %d \n",bl_config->bl_power.bl_on_delay);
 
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_power_off_delay", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_power_off_delay", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_power_off_delay \n");
 		 return 0;
@@ -374,7 +391,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 }
 	 lcd_printf("dtd_bl:bl_off_delay = %d \n",bl_config->bl_power.bl_off_delay);
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_pwm_port", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_port", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_pwm_port \n");
 		 return 0;
@@ -395,7 +412,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 lcd_printf("dtd_bl:pwm_port = %d \n",bl_config->bl_pwm.pwm_port);
 
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "pwm_positive", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_positive", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/pwm_positive\n");
 		 return 0;
@@ -405,7 +422,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 lcd_printf("dtd_bl:pwm_positive = %d \n",bl_config->bl_pwm.pwm_positive);
 
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_pwm_freq", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_freq", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_pwm_freq \n");
 		 return 0;
@@ -414,7 +431,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 }
 	 lcd_printf("dtd_bl:pwm_freq = %d \n",bl_config->bl_pwm.pwm_freq);
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_pwm_duty_max_min", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_duty_max_min", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_pwm_duty_max_min \n");
 		 return 0;
@@ -425,7 +442,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 lcd_printf("dtd_bl:pwm_duty_max = %d \n",bl_config->bl_pwm.pwm_duty_max);
 	 lcd_printf("dtd_bl:pwm_duty_min = %d \n",bl_config->bl_pwm.pwm_duty_min);
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_level_default_uboot", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_level_default_uboot", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_level_default_uboot\n");
 		 return 0;
@@ -435,7 +452,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	 lcd_printf("dtd_bl:level_default = %d \n",bl_config->bl_pwm.level_default);
 
 
-	 propdata = (char *)fdt_getprop(dt_addr, parent_offset, "bl_level_max_min", NULL);
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_level_max_min", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_level_max_min \n");
 		 return 0;
