@@ -101,6 +101,8 @@
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
+#define CONFIG_CMD_SUSPEND_NO_VIDEO_DEV_OP 1
+
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
@@ -216,6 +218,17 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"sdcburncfg=aml_sdc_burn.ini\0"\
+	"afterboot="\
+		"echo after switch boot mode...;" \
+		"run showlogo;"\
+		"\0"\
+	\
+	"showlogo="\
+		"logo size ${outputmode}; video open; video clear; video dev enable;"\
+		"imgread pic logo bootup ${loadaddr_logo}; "\
+		"bmp display ${bootup_offset}; bmp scale;"\
+		"\0"\
+	\
 	"preboot="\
 		"run prepare; "\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
@@ -225,12 +238,7 @@
         "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse} panel_type=${panel_type}\0"\
     \
     "prepare="\
-        "logo size ${outputmode};"\
         "lcd_reverse_operate;"\
-        "video open; video clear;"\
-        "video dev enable;"\
-        "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; bmp scale;"\
         "\0"\
 	\
 	"storeboot="\

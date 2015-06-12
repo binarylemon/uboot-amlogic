@@ -232,13 +232,20 @@ void set_regs_bandwidth(void)
 }
 int switch_boot_mode(void)
 {
-	printf("######### switch_boot_mode ##########\n");
+    printf("######### switch_boot_mode ##########\n");
 #ifdef CONFIG_AUTO_UPDATE_ENV
-	auto_update_env();
+    auto_update_env();
 #endif
-	switch_boot_mode_power();
-	set_regs_bandwidth();
-	return 0;
+    switch_boot_mode_power();
+    set_regs_bandwidth();
+
+    // handle after switch boot mode
+    char *p = NULL;
+    if ((p = getenv ("afterboot")) != NULL) {
+        run_command (p, 0);
+    }
+
+    return 0;
 }
 
 #endif
