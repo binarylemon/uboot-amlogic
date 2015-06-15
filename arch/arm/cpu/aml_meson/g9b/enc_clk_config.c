@@ -380,7 +380,9 @@ static void set_vdac0_div(unsigned div)
 // vid_pll_div vid_clk_div hdmi_tx_pixel_div encp_div enci_div encl_div vdac0_div
 static hw_enc_clk_val_t setting_enc_clk_val[] = {
     {VMODE_480I,           1, VIU_ENCI, 4320, 4, 4, 1, CLK_UTIL_VID_PLL_DIV_5, 1, 2, -1, 2, -1, -1},
+    {VMODE_480CVBS,        1, VIU_ENCI, 2970, 1, 1, 1, CLK_UTIL_VID_PLL_DIV_5, 22, 1, 1, 1, -1, 1},
     {VMODE_576I,           1, VIU_ENCI, 4320, 4, 4, 1, CLK_UTIL_VID_PLL_DIV_5, 1, 2, -1, 2, -1, -1},
+    {VMODE_576CVBS,        1, VIU_ENCI, 2970, 1, 1, 1, CLK_UTIL_VID_PLL_DIV_5, 22, 1, 1, 1, -1, 1},
     {VMODE_576P,           1, VIU_ENCP, 4320, 4, 4, 1, CLK_UTIL_VID_PLL_DIV_5, 1, 2, 1, -1, -1, -1},
     {VMODE_480P,           1, VIU_ENCP, 4320, 4, 4, 1, CLK_UTIL_VID_PLL_DIV_5, 1, 2, 1, -1, -1, -1},
     {VMODE_720P_50HZ,      1, VIU_ENCP, 2970, 4, 1, 1, CLK_UTIL_VID_PLL_DIV_5, 1, 2, 1, -1, -1, -1},
