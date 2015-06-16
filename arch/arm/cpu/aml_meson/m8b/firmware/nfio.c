@@ -50,10 +50,13 @@
 /* static struct nand_page0_info_t *page0_info = (NAND_TEMP_BUF+384)-sizeof(nand_page0_info_t); */
 static struct nand_retry_t nand_retry;
 
-/* ** ECC mode 7, dma 528 bytes(data+parity), short mode , with scramble */
-/* ** Default large page mode and without RB PIN, 4 ecc units */
-#define DEFAULT_ECC_MODE  ((1<<23) | (1<<22) | (2<<20) | (1<<19) | (1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
-/* #define	NAND_RETRY_ROMCODE */
+/*add-20150612*/
+static unsigned char m_nand_chip_id[6];
+
+//** ECC mode 7, dma 528 bytes(data+parity), short mode , with scramble
+//** Default large page mode and without RB PIN, 4 ecc units
+#define DEFAULT_ECC_MODE  ((1<<23) |(1<<22) | (2<<20) |(1<<19) |(1<<17)|(7<<14)|(1<<13)|(48<<6)|1)
+#define	NAND_RETRY_ROMCODE
 
 extern void memset(void *, int, int);
 
@@ -131,25 +134,46 @@ STATIC_PREFIX short nfio_reset(int no_rb)
 	/* reset OK */
 	return 0;
 }
+static unsigned char nand_read_a_byte(void)
+{
+	writel((CE0 | DRD | 0 ), P_NAND_CMD);
 
+	writel((CE0 | IDLE | 10), P_NAND_CMD);
+	writel((CE0 | IDLE | 0), P_NAND_CMD);
+	writel((CE0 | IDLE | 0), P_NAND_CMD);
+	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
+
+	return readb(P_NAND_BUF)&0xff;
+}
 STATIC_PREFIX short nfio_read_id(void)
 {
+	int i;
 	writel((CE0 | IDLE | 0), P_NAND_CMD);
 	writel((CE0 | CLE | 0x90), P_NAND_CMD);
 	writel((CE0 | IDLE | 3), P_NAND_CMD);
 	writel((CE0 | ALE | 0), P_NAND_CMD);
 	writel((CE0 | IDLE | 3), P_NAND_CMD);
-	writel((CE0 | DRD | 4), P_NAND_CMD);
-
-
-	writel((CE0 | IDLE | 0), P_NAND_CMD);
-	writel((CE0 | IDLE | 0), P_NAND_CMD);
-
 
 	while ((readl(P_NAND_CMD)>>22&0x1f) > 0);
 
-	nand_retry.id = readb(P_NAND_BUF)&0xff;
+	//nand_retry.id = readb(P_NAND_BUF)&0xff;
+	for (i=0;i<6;i++) {
+		m_nand_chip_id[i] =  nand_read_a_byte();
+	}
+	nand_retry.id = m_nand_chip_id[0];
 	return 0;
+}
+
+static int is_sandisk_19nm_id(void)
+{
+	int ret=0;
+	if (NAND_MFR_SANDISK == m_nand_chip_id[0]) {
+		if(m_nand_chip_id[5] == 0x50 ||\
+			m_nand_chip_id[5] == 0x57){
+			ret = 1;
+		}
+	}
+	return ret;
 }
 #ifdef NAND_RETRY_ROMCODE
 
@@ -217,12 +241,12 @@ void read_retry_toshiba(int retry, int *cmd)
 		}
 	}
 
-	/* exit and check rb */
-	if (retry == 0xff) {
+	// exit and check rb
+    if (retry == 0xff) {
 		cmd[i++] = (CE0 | CLE  | 0xff);
-		cmd[i++] = (CE0 | IDLE | 2);        /* Twb */
+		cmd[i++] = (CE0 | IDLE | 2);        //Twb
 
-		if (nand_retry.no_rb) {
+        if (nand_retry.no_rb) {
 			cmd[i++] = (CE0 | CLE  | 0x70);
 			cmd[i++] = (CE0 | IDLE | 2);
 			cmd[i++] = (IO6 | RB   | 16);
@@ -234,12 +258,322 @@ void read_retry_toshiba(int retry, int *cmd)
 
 	cmd[i] = 0;
 }
+struct sandisk_retry_info{
+	//unsigned char	flag;
+	//unsigned char	default_flag;
+	//unsigned char     info_save_blk;
+	unsigned char	reg_cnt_lp;
 
-/* sandisk retry ------------------------------------------ */
-/* 0    : activation + retry 0. */
-/* 1~20 : valid retry, otherwise no action. */
-/* 21, 0xff : exit */
-/* loop from 0 to 21, total 22. */
+	unsigned char	retry_cnt_lp;
+	unsigned char	retry_stage;
+
+	unsigned char	cur_cnt_lp[MAX_CHIP_NUM];
+	unsigned char	cur_cnt_up[MAX_CHIP_NUM];
+
+	unsigned char	reg_addr_lp[READ_RETRY_REG_NUM];
+};
+
+static struct sandisk_retry_info sandisk_read_retry_info;
+
+static void retry_a19_sandisk_val_init(struct sandisk_retry_info *retry_info)
+{
+	retry_info->reg_cnt_lp = 4;
+	retry_info->retry_cnt_lp = 36;
+	retry_info->retry_stage = 0;
+
+	retry_info->reg_addr_lp[0] = 0x11;
+	retry_info->cur_cnt_up[0] = 0x0;
+}
+
+static void cmd_queue_nand_write_byte(int ce,int *cmd,int *const cnt,unsigned char data)
+{
+	cmd[(*cnt)++] = (ce | IDLE | 10);
+	cmd[(*cnt)++] = (ce | DWR | data);
+	cmd[(*cnt)++] = (ce | IDLE | 10);
+	cmd[(*cnt)++] = (ce | IDLE | 0);
+	cmd[(*cnt)++] = (ce | IDLE | 0);
+}
+
+static void cmd_queue_nand_rb(int ce,int *cmd, int *const cnt, const int mode)
+{
+	if (mode>>23&1) { // data
+		cmd[(*cnt)++] = ce | IDLE;
+		cmd[(*cnt)++] = ce | CLE | 0x70;
+		cmd[(*cnt)++] = ce | IDLE | 5;
+		cmd[(*cnt)++] = IO6 | RB | 16;
+		cmd[(*cnt)++] = ce | IDLE | 2;
+		cmd[(*cnt)++] = ce | IDLE | 0;
+	}
+	else { // port
+		cmd[(*cnt)++] = ce | IDLE;
+		cmd[(*cnt)++] = ce | RB | 16;
+		cmd[(*cnt)++] = ce | IDLE | 2;
+	}
+}
+
+static void cmd_queue_nand_write_addr(int ce,int *cmd, int *const cnt,  char addr)
+{
+	cmd[(*cnt)++] = (ce | IDLE | 2);
+	cmd[(*cnt)++] = (ce | ALE | addr);
+	cmd[(*cnt)++] = (ce | IDLE | 2);
+}
+
+
+const char a19_sandisk_offs_val_lp[2][36][4]={
+	/*lower page read */
+	{{0x7c,0x00,0x00,0x00},	/*low 01*/
+	{0x04,0x00,0x7C,0x00},	/*low 02*/
+	{0x78,0x00,0x78,0x00},	/*low 03*/
+	{0x08,0x00,0x00,0x00},	/*low 04*/
+	{0x00,0x00,0x7C,0x00},	/*low 05*/
+	{0x7c,0x00,0x78,0x00},	/*low 06*/
+	{0x00,0x00,0x74,0x00},	/*low 07*/
+	{0x00,0x00,0x00,0x00},	/*low 08*/
+	{0x00,0x00,0x7C,0x00},	/*low 09*/
+	{0x00,0x00,0x78,0x00},	/*low 10*/
+	{0x00,0x00,0x74,0x00},	/*low 11*/
+	{0x00,0x00,0x70,0x00},	/*low 12*/
+	{0x00,0x00,0x04,0x00},	/*low 13*/
+	{0x00,0x00,0x00,0x00},	/*low 14*/
+	{0x0C,0x00,0x7C,0x00},	/*low 15*/
+	{0x0C,0x00,0x78,0x00},	/*low 16*/
+	{0x10,0x00,0x00,0x00},	/*low 17*/
+	{0x10,0x00,0x04,0x00},	/*low 18*/
+	{0x0C,0x00,0x04,0x00},	/*low 19*/
+	{0x10,0x00,0x04,0x00},	/*low 20*/
+	{0x14,0x00,0x08,0x00},	/*low 21*/
+	{0x18,0x00,0x0c,0x00},	/*low 22*/
+	{0x0C,0x00,0x04,0x00},	/*low 23*/
+	{0x78,0x00,0x78,0x00},	/*low 24*/
+	{0x78,0x00,0x74,0x00},	/*low 25*/
+	{0x78,0x00,0x70,0x00},	/*low 26*/
+	{0x78,0x00,0x6C,0x00},	/*low 27*/
+	{0x78,0x00,0x78,0x00},	/*low 28*/
+	{0x78,0x00,0x74,0x00},	/*low 29*/
+	{0x74,0x00,0x6c,0x00},	/*low 30*/
+	{0x78,0x00,0x70,0x00},	/*low 31*/
+	{0x78,0x00,0x70,0x00},	/*low 32*/
+	{0x78,0x00,0x6c,0x00},	/*low 33*/
+	{0x78,0x00,0x68,0x00},	/*low 34*/
+	{0x74,0x00,0x6C,0x00},	/*low 35*/
+	{0x74,0x00,0x68,0x00},},/*low 36*/
+	/*upper page read */
+	{{0x00,0x00,0x00,0x7c},	/*up 01*/
+	{0x00,0x00,0x00,0x78},	/*up 02*/
+	{0x00,0x00,0x00,0x74},	/*up 03*/
+	{0x00,0x7C,0x00,0x7c},	/*up 04*/
+	{0x00,0x7c,0x00,0x78},	/*up 05*/
+	{0x00,0x7c,0x00,0x74},	/*up 06*/
+	{0x00,0x7c,0x00,0x70},	/*up 07*/
+	{0x00,0x78,0x00,0x7c},	/*up 08*/
+	{0x00,0x78,0x00,0x78},	/*up 09*/
+	{0x00,0x78,0x00,0x74},	/*up 10*/
+	{0x00,0x78,0x00,0x70},	/*up 11*/
+	{0x00,0x78,0x00,0x6c},	/*up 12*/
+	{0x00,0x04,0x00,0x00},	/*up 13*/
+	{0x00,0x04,0x00,0x7c},	/*up 14*/
+	{0x00,0x04,0x00,0x78},	/*up 15*/
+	{0x00,0x04,0x00,0x74},	/*up 16*/
+	{0x00,0x08,0x00,0x7c},	/*up 17*/
+	{0x00,0x08,0x00,0x00},	/*up 18*/
+	{0x00,0x0C,0x00,0x04},	/*up 19*/
+	{0x00,0x0C,0x00,0x00},	/*up 20*/
+	{0x00,0x10,0x00,0x00},	/*up 21*/
+	{0x00,0x14,0x00,0x00},	/*up 22*/
+	{0x00,0x0C,0x00,0x7C},	/*up 23*/
+	{0x00,0x74,0x00,0x74},	/*up 24*/
+	{0x00,0x74,0x00,0x70},	/*up 25*/
+	{0x00,0x74,0x00,0x6c},	/*up 26*/
+	{0x00,0x74,0x00,0x68},	/*up 27*/
+	{0x00,0x70,0x00,0x74},	/*up 28*/
+	{0x00,0x70,0x00,0x70},	/*up 29*/
+	{0x00,0x70,0x00,0x68},	/*up 30*/
+	{0x00,0x70,0x00,0x6C},	/*up 31*/
+	{0x00,0x6C,0x00,0x6C},	/*up 32*/
+	{0x00,0x6C,0x00,0x68},	/*up 33*/
+	{0x00,0x6C,0x00,0x64},	/*up 34*/
+	{0x00,0x68,0x00,0x68},	/*up 35*/
+	{0x00,0x68,0x00,0x64},}	/*up 36*/
+};
+
+static void  retry_a19_sandisk_test_mode_init(int ce,int *cmd, int *const cnt)
+{
+	cmd[(*cnt)++] = (ce | CLE | NAND_CMD_SANDISK_TEST_MODE1);
+	cmd[(*cnt)++] = (ce | IDLE | 2);
+	cmd[(*cnt)++] = (ce | CLE | NAND_CMD_SANDISK_TEST_MODE2);
+	cmd[(*cnt)++] = (ce | IDLE | 2);
+	cmd[(*cnt)++] = (ce | CLE | NAND_CMD_SANDISK_TEST_MODE_ACCESS);
+	cmd_queue_nand_write_addr(ce,cmd,cnt,0x00);
+}
+static void retry_a19_sandisk_set_cmd(struct sandisk_retry_info *retry_info,int *cmd,unsigned read_page,unsigned ext)
+{
+	int i=0;
+	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
+	unsigned pages_per_blk, tmp_page;
+	int cur_cnt,j;
+	int page_info = 0;
+	char const *p_val;
+	tmp_page = read_page;
+	pages_per_blk = page0_info->pages_in_block;
+	if (((tmp_page != 0) && (tmp_page % 2) == 0) || (tmp_page == (pages_per_blk - 1)))
+		page_info =  1;
+	cur_cnt = retry_info->cur_cnt_up[0];
+
+	p_val = (char const *)(&a19_sandisk_offs_val_lp[page_info][cur_cnt][0]);
+
+	/*rb*/
+	cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+	cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_SET_VALUE);
+	cmd[i++] = (CE0 | IDLE | 2);
+
+
+	cmd[i++] = (CE0 | ALE | retry_info->reg_addr_lp[0]);
+	cmd[i++] = (CE0 | IDLE | 10);
+
+	for (j=0;j<retry_info->reg_cnt_lp;j++) {
+		cmd_queue_nand_write_byte(CE0,cmd,&i,p_val[j]);
+		cmd[i++] = (CE0 | IDLE | 10);
+	}
+	/*rb*/
+	cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+	switch (retry_info->retry_stage) {
+	case 0:
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_RETRY_STA);
+	break;
+	case 1:
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_RETRY_STA);
+		cmd[i++] = (CE0 | IDLE | 5);
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_DSP_ON);
+	break;
+	case 2:
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_DSP_OFF);
+		cmd[i++] = (CE0 | IDLE | 5);
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_RETRY_STA);
+	break;
+	case 3:
+		/*rb*/
+		cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+		retry_a19_sandisk_test_mode_init(CE0,cmd,&i);
+		//cmd[i++] = (CE0 | DWR | 0x01);
+		cmd_queue_nand_write_byte(CE0,cmd,&i,0x01);
+		cmd[i++] = (CE0 | IDLE | 10);
+
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_TEST_MODE_ACCESS);
+
+		cmd_queue_nand_write_addr(CE0,cmd,&i,0x23);
+
+		//cmd[i++] = (CE0 | DWR | 0xc0);
+		cmd_queue_nand_write_byte(CE0,cmd,&i,0xc0);
+		cmd[i++] = (CE0 | IDLE | 10);
+		/*rb*/
+		cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+		/**/
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_DSP_OFF);
+		cmd[i++] = (CE0 | IDLE | 5);
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_RETRY_STA);
+		cmd[i++] = (CE0 | IDLE | 5);
+		cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_DSP_ON);
+	break;
+
+	default:
+		break;
+	}
+	cmd[i] = 0;
+	cur_cnt++;
+    if (cur_cnt > (retry_info->retry_cnt_lp - 1)) {
+	    retry_info->retry_stage++;
+	    retry_info->cur_cnt_up[0] = 0;
+	}
+	else{
+		retry_info->cur_cnt_up[0] = cur_cnt;
+	}
+
+/*	serial_puts("star retry\ncmd:");
+	serial_put_hex(i,8);
+	serial_puts("cnt: ");
+	serial_put_hex(cur_cnt,8);
+	serial_puts("stage: ");
+	serial_put_hex(retry_info->retry_stage,8);
+	serial_putc('\n');	*/
+}
+
+static void read_retry_a19_sandisk(int *cmd,unsigned read_page,unsigned ext)
+{
+	retry_a19_sandisk_set_cmd(&sandisk_read_retry_info,cmd, read_page,ext);
+}
+
+
+static int  read_retry_exit_a19_sandisk(struct sandisk_retry_info *retry_info,unsigned ext)
+{
+	int i=0, cmd[128]={0};
+	int j;
+	/*rb*/
+	cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+	/* reset the retry stage */
+	retry_info->retry_stage = 0;
+	retry_info->cur_cnt_lp[0] = 0;
+	retry_info->cur_cnt_up[0] = 0;
+
+	/*rb*/
+	//cmd_queue_nand_rb(CE0,cmd,&i,1);
+	cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_SET_VALUE);
+	cmd[i++] = (CE0 | IDLE | 2);
+
+
+	cmd[i++] = (CE0 | ALE | retry_info->reg_addr_lp[0]);
+	cmd[i++] = (CE0 | IDLE | 10);
+
+	for (j=0;j<retry_info->reg_cnt_lp;j++) {
+		cmd_queue_nand_write_byte(CE0,cmd,&i,0x00);
+		cmd[i++] = (CE0 | IDLE | 10);
+	}
+
+	/*rb*/
+	cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+	retry_a19_sandisk_test_mode_init(CE0,cmd,&i);
+
+	//cmd[i++] = (CE0 | DWR | 0x01);
+	cmd_queue_nand_write_byte(CE0,cmd,&i,0x01);
+	cmd[i++] = (CE0 | IDLE | 10);
+
+	cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_TEST_MODE_ACCESS);
+
+	cmd_queue_nand_write_addr(CE0,cmd,&i,0x23);
+
+	cmd_queue_nand_write_byte(CE0,cmd,&i,0x40);
+	cmd[i++] = (CE0 | IDLE | 10);
+
+	cmd[i++] = (CE0 | CLE | NAND_CMD_SANDISK_TEST_MODE_ACCESS);
+
+	cmd_queue_nand_write_addr(CE0,cmd,&i,0x00);
+
+	cmd_queue_nand_write_byte(CE0,cmd,&i,0x00);
+	cmd[i++] = (CE0 | IDLE | 10);
+
+	/*rb*/
+	cmd_queue_nand_rb(CE0,cmd,&i,ext);
+
+	cmd[i] = 0;
+
+	i=0;
+	while ((readl(P_NAND_CMD)>>22&0x1f)<0x1f && cmd[i] != 0) {
+		writel(cmd[i++], P_NAND_CMD);
+	}
+
+	nfio_reset(ext>>23&1);
+	return 0;
+}
+// sandisk retry ------------------------------------------
+// 0    : activation + retry 0.
+// 1~20 : valid retry, otherwise no action.
+// 21, 0xff : exit
+// loop from 0 to 21, total 22.
 void read_retry_sandisk(int retry, int *cmd)
 {
 	int i, k;
@@ -394,15 +728,15 @@ void read_retry_samsung(int retry, int *cmd)
 /* can be used to enable slc mode or read retry. */
 void read_retry_user(int retry, int *cmd)
 {
-	static int pcmd;
-	nand_cmd_t *p = (nand_cmd_t *)(NAND_TEMP_BUF + sizeof(nand_page0_cfg_t));
+	static int pcmd = 0;
+	struct nand_cmd_t *p = (struct nand_cmd_t *)(NAND_TEMP_BUF + sizeof(struct nand_page0_cfg_t));
 	int i;
 
-	if (retry == 0xff) retry = 0;
-	if (retry == 0) pcmd = 0;
+    if (retry == 0xff) retry = 0;
+    if (retry == 0) pcmd = 0;
 
 	i = 0;
-	while (p[pcmd].type != 0) {
+    while (p[pcmd].type != 0) {
 		cmd[i++] = CE0 | (p[pcmd].type<<14) | (p[pcmd].val);
 		pcmd++;
 	}
@@ -412,54 +746,58 @@ void read_retry_user(int retry, int *cmd)
 
 void read_retry_efuse(int retry, int *cmd)
 {
-	nand_cmd_t p[8];
+ /*   nand_cmd_t p[8];
 	int i, pcmd;
 
-	efuse_read((unsigned *)p, EFUSE_NAND_EXTRA_CMD, 16);
+	efuse_read( (unsigned *)p, EFUSE_NAND_EXTRA_CMD, 16 );
 
 	i = 0;
 	pcmd = 0;
-	while (pcmd < 8 && p[pcmd].type != 0) {
+    while (pcmd < 8 && p[pcmd].type != 0) {
 		cmd[i++] = CE0 | (p[pcmd].type<<14) | (p[pcmd].val);
 		pcmd++;
 	}
-	cmd[i] = 0;
+	cmd[i] = 0;*/
 }
-
-void nfio_read_retry(int mode)
+void nfio_read_retry(int mode,unsigned read_page, unsigned ext)
 {
-	static int retry;
-	int i, cmd[128];
+	static int retry = 0;
+	int i, cmd[128]={0};
 
-	if (nand_retry.max == 0)
+    if (nand_retry.max == 0)
 		return;
 
-	/* pre and post. */
-	if (mode == 0)
+	// pre and post.
+    if (mode == 0)
 		retry = 0;
 	else if (mode == 2)
 		retry = 0xff;
 
-	switch (nand_retry.id) {
-		case NAND_MFR_MICRON:
-			read_retry_micron(retry, cmd);
-			break;
+    switch (nand_retry.id) {
+	case NAND_MFR_MICRON:
+		read_retry_micron(retry, cmd);
+		break;
 
-		case NAND_MFR_TOSHIBA:
-			read_retry_toshiba(retry, cmd);
-			break;
+	case NAND_MFR_TOSHIBA:
+		read_retry_toshiba(retry, cmd);
+		break;
 
-		case NAND_MFR_HYNIX:
-			read_retry_hynix(retry, cmd);
-			break;
+	case NAND_MFR_HYNIX:
+		read_retry_hynix(retry, cmd);
+		break;
 
-		case NAND_MFR_SAMSUNG:
-			read_retry_samsung(retry, cmd);
-			break;
+	case NAND_MFR_SAMSUNG:
+		read_retry_samsung(retry, cmd);
+		break;
 
-		case NAND_MFR_SANDISK:
+	case NAND_MFR_SANDISK:
+		if (is_sandisk_19nm_id()) {
+			read_retry_a19_sandisk(cmd,read_page,ext);
+		}
+		else{
 			read_retry_sandisk(retry, cmd);
-			break;
+		}
+		break;
 
 		case NAND_MFR_USER:
 			read_retry_user(retry, cmd);
@@ -478,7 +816,7 @@ void nfio_read_retry(int mode)
 	}
 }
 #else
-void nfio_read_retry(int mode)
+void nfio_read_retry(int mode,unsigned read_page,unsigned ext)
 {
 
 }
@@ -486,7 +824,7 @@ void nfio_read_retry(int mode)
 
 STATIC_PREFIX short nfio_page_read_hwctrl(unsigned src, unsigned mem, unsigned char *oob_buf, unsigned ext)
 {
-	/* int i; */
+	/*int i;*/
 	int k, ecc_mode, short_mode, short_size, pages, page_size;
 	unsigned long info_adr = NAND_INFO_BUF;
 	volatile unsigned long long *info_buf = (volatile unsigned long long *)NAND_INFO_BUF;
@@ -677,16 +1015,23 @@ page_retry:
 	ret = nfio_page_read_hwctrl(read_page, mem, oob_buf, ext);
 	if (ret == ERROR_NAND_ECC) {
 		serial_puts("nand read page addr=0x");
-		serial_put_hex(read_page, 32);
+		serial_put_hex(read_page,32);
 		serial_puts(" ecc err\n");
 
-		/* read retry */
-		if (ret == ERROR_NAND_ECC) {
-			if (retry_cnt < nand_retry.max) {
+		// read retry
+        if (ret == ERROR_NAND_ECC) {
+            if (retry_cnt < nand_retry.max) {
 				retry_cnt++;
-				nfio_read_retry(1);
-				goto page_retry;
+				nfio_read_retry(1,read_page, ext);
+			goto page_retry;
 			}
+		}
+	}
+
+	if (retry_cnt)
+	{
+		if (is_sandisk_19nm_id()) {
+			read_retry_exit_a19_sandisk(&sandisk_read_retry_info, ext);
 		}
 	}
 
@@ -701,10 +1046,10 @@ page_retry:
 STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 {
 	int ecc_mode, short_mode, short_size, pages, page_size;
-	/* unsigned por_cfg = romboot_info->por_cfg; */
-	unsigned ret = 0;/* , fsm; */
-	unsigned partition_num  = 0;/* , rand_mode = 0; */
-	/* unsigned a2h_cmd_flag = 0; */
+	/*unsigned por_cfg = romboot_info->por_cfg;*/
+	unsigned ret = 0;/*, fsm;*/
+	unsigned partition_num  = 0;/*, rand_mode = 0;*/
+	/*unsigned a2h_cmd_flag = 0;*/
 	unsigned nand_dma_mode = DEFAULT_ECC_MODE;
 #ifdef NAND_RETRY_ROMCODE
 	unsigned license = 0;
@@ -715,7 +1060,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	struct nand_page0_cfg_t *cfg = (struct nand_page0_cfg_t *)NAND_TEMP_BUF;
 
 #ifdef NAND_RETRY_ROMCODE
-	efuse_read(&license, EFUSE_LICENSE_OFFSET, sizeof(license));
+//	efuse_read(&license,EFUSE_LICENSE_OFFSET,sizeof(license));
 
 	toggle_mode = (license&0x7) == POR_1ST_NAND_TOG ? 2:0;
 	no_rb = license & LICENSE_NAND_USE_RB_PIN ? 0 : 1;
@@ -775,49 +1120,87 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	nand_retry.no_rb = no_rb;
 
 #ifdef NAND_RETRY_ROMCODE
-	if (license & LICENSE_NAND_EXTRA_CMD)
+    if ( license & LICENSE_NAND_EXTRA_CMD )
 		nand_retry.id = NAND_MFR_EFUSE;
+ #if 0
+	// set efuse bit to enable read retry
+    if ( license & LICENSE_NAND_ENABLE_RETRY ) {
 
-	/* set efuse bit to enable read retry */
-	if (license & LICENSE_NAND_ENABLE_RETRY) {
-
-		switch (nand_retry.id) {
-			case NAND_MFR_MICRON:
-				nand_retry.max = 8;
-				break;
-			case NAND_MFR_TOSHIBA:
-				nand_retry.max = 8;
-				break;
-			case NAND_MFR_SAMSUNG:
-				nand_retry.max = 15;
-				break;
-			case NAND_MFR_SANDISK:
-				nand_retry.max = 22;
-				break;
-			case NAND_MFR_HYNIX:
-			case NAND_MFR_FUJITSU:
-			case NAND_MFR_NATIONAL:
-			case NAND_MFR_RENESAS:
-			case NAND_MFR_STMICRO:
-			case NAND_MFR_AMD:
-			case NAND_MFR_INTEL:
-				nand_retry.max = 0;
-				break;
-			case NAND_MFR_EFUSE:
-				nand_retry.max = 1;
-				break;
-			default:
-				serial_puts("nand init unknown mfr id");
-				/* OUT_PUT(nand_retry.id); */
-				nand_retry.max = 0;
-				break;
+        switch (nand_retry.id) {
+		case NAND_MFR_MICRON :
+			nand_retry.max = 8;
+			break;
+		case NAND_MFR_TOSHIBA :
+			 nand_retry.max = 8;
+			break;
+		case NAND_MFR_SAMSUNG :
+			 nand_retry.max = 15;
+			break;
+		case NAND_MFR_SANDISK :
+			 nand_retry.max = 22;
+			break;
+		case NAND_MFR_HYNIX :
+		case NAND_MFR_FUJITSU :
+		case NAND_MFR_NATIONAL :
+		case NAND_MFR_RENESAS :
+		case NAND_MFR_STMICRO :
+		case NAND_MFR_AMD :
+		case NAND_MFR_INTEL :
+			 nand_retry.max = 0;
+			break;
+		case NAND_MFR_EFUSE :
+			 nand_retry.max = 1;
+			break;
+		default :
+			serial_puts( "nand init unknown mfr id" );
+			//OUT_PUT(nand_retry.id);
+			 nand_retry.max = 0;
+			break;
 		}
 	}
 	else {
 		nand_retry.max = 0;
 	}
+#else
+	switch (nand_retry.id) {
+		case NAND_MFR_MICRON :
+			nand_retry.max = 8;
+			break;
+		case NAND_MFR_TOSHIBA :
+			 nand_retry.max = 8;
+			break;
+		case NAND_MFR_SAMSUNG :
+			 nand_retry.max = 15;
+			break;
+		case NAND_MFR_SANDISK :
+			 nand_retry.max = 22;
+			 if (is_sandisk_19nm_id())
+			 {
+				nand_retry.max = 36*4;
+				serial_puts("sandisk\n");
+				retry_a19_sandisk_val_init(&sandisk_read_retry_info);
+				read_retry_exit_a19_sandisk(&sandisk_read_retry_info,ext);
+			 }
+			break;
+		case NAND_MFR_HYNIX :
+		case NAND_MFR_FUJITSU :
+		case NAND_MFR_NATIONAL :
+		case NAND_MFR_RENESAS :
+		case NAND_MFR_STMICRO :
+		case NAND_MFR_AMD :
+		case NAND_MFR_INTEL :
+			 nand_retry.max = 0;
+			break;
+		case NAND_MFR_EFUSE :
+			 nand_retry.max = 1;
+			break;
+		default :
+			serial_puts( "nand init unknown mfr id" );
+			 nand_retry.max = 0;
+			break;
+		}
 #endif
-
+#endif
 #if defined(CONFIG_AML_SPL_L1_CACHE_ON)
 	memset((void *)NAND_TEMP_BUF, 0, 384);
 	flush_dcache_range(NAND_TEMP_BUF, NAND_TEMP_BUF+384);

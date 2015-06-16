@@ -412,4 +412,5 @@ extern int amlnf_logic_init(unsigned flag);
 extern int amlnf_dev_init(unsigned flag);
 extern  int is_phydev_off_adjust(void); 
 extern  int get_adjust_block_num(void);
+extern int aml_nftl_show_dev(void);
 #endif

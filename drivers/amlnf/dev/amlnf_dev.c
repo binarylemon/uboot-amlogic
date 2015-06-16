@@ -755,7 +755,7 @@ struct amlnand_phydev *aml_phy_get_dev(char * name)
 	struct amlnand_phydev * phy_dev = NULL;
 	
 	list_for_each_entry(phy_dev, &nphy_dev_list, list){
-			if(!strncmp((char*)phy_dev->name, name, MAX_DEVICE_NAME_LEN)){
+			if (!strncmp((char*)phy_dev->name, name, strlen(name))) {
 				aml_nand_dbg("nand get phy dev %s ",name);
 				return phy_dev;
 			}
@@ -772,7 +772,7 @@ struct amlnf_dev* aml_nftl_get_dev(char * name)
 	struct amlnf_dev * nf_dev = NULL;
 
 	list_for_each_entry(nf_dev, &nf_dev_list, list){
-		if(!strncmp((char*)nf_dev->name, name, strlen(nf_dev->name))){
+		if (!strncmp((char*)nf_dev->name, name, strlen(name))) {
 			aml_nand_dbg("nand get nftl dev %s ",name);
 			return nf_dev;
 		}
@@ -781,6 +781,18 @@ struct amlnf_dev* aml_nftl_get_dev(char * name)
 	aml_nand_msg("nand get nftl dev %s  failed",name);
 	
 	return NULL;
+}
+
+int aml_nftl_show_dev(void)
+{
+	struct amlnf_dev * nf_dev = NULL;
+	int i = 0;
+	aml_nand_msg("Show device list:\n");
+	list_for_each_entry(nf_dev, &nf_dev_list, list){
+		aml_nand_msg("num:%d name:%10s,size:0x%llx,offset:0x%llx",i++,nf_dev->name,\
+			nf_dev->size_sector*512,nf_dev->offset_sector*512);
+	}
+	return i;
 }
 #endif
 

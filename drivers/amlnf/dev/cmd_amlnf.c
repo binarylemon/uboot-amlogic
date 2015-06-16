@@ -294,8 +294,16 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		return 0;
 	}
 
-
-	if((strcmp(cmd, "read_byte") == 0) ||(strcmp(cmd, "write_byte") == 0)){
+	if (strcmp(cmd, "device") == 0)
+	{
+		if (!aml_nftl_show_dev())
+		{
+			aml_nand_msg("can not get dev");
+			return -1;
+		}
+		return 0;
+	}
+	if ((strcmp(cmd, "read_byte") == 0) ||(strcmp(cmd, "write_byte") == 0)) {
 
 		if(argc < 6){
 			goto usage;
