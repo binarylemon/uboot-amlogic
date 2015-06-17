@@ -39,10 +39,15 @@ struct partitions partition_table[MAX_PART_NUM]={
 			.mask_flags = STORE_CACHE,
 		},
 		{
-            .name = "param",
-            .size = 128*SZ_1M,
-            .mask_flags = STORE_CODE,
-        },
+			.name = "param",
+			.size = 128*SZ_1M,
+			.mask_flags = STORE_CODE,
+		},
+		{
+			.name = "cri_data",
+			.size = 16*SZ_1M,
+			.mask_flags = STORE_DATA,
+		},
 		{
 			.name = "data",
 			.size = NAND_PART_SIZE_FULL,
