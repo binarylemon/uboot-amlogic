@@ -17,7 +17,7 @@ extern void meson_pm_suspend(void);
 
 static int do_suspend (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-#if !defined(CONFIG_M6TV) && !defined(CONFIG_CMD_SUSPEND_NO_VIDEO_DEV_OP)
+#if !defined(CONFIG_M6TV) && !defined(CONFIG_SUSPEN_NO_INIT_LCD)
 	run_command("video dev bl_off",1);
 	run_command("video dev disable",1);
 #endif
