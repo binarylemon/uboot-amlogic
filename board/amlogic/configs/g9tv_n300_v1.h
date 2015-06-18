@@ -36,7 +36,7 @@
 #define CONFIG_SWITCH_BOOT_MODE
 #define CONFIG_POWER_MODE
 
-#define PWRKEY_WAKEUP_FLAGE      0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag. 
+#define PWRKEY_WAKEUP_FLAGE      0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag.
 
 //Enable Auto update script
 #define CONFIG_AML_AUTOSCRIPT
@@ -85,22 +85,22 @@
 #define CONFIG_SARADC     1
 #define CONFIG_CMD_SARADC 1
 
-//Enable  saradc wake up for arc 
+//Enable  saradc wake up for arc
 #define CONFIG_SARADC_WAKEUP_FOR_ARC 1
 #define CONFIG_SARADC_CHANEL_CNT 0
 #define CONFIG_SARADC_SAMPLE_TIME_MAX 20
 #define CONFIG_SARADC_KEY_TOLERANCE 40
 #define CONFIG_SARADC_POWER_UP_KEY_VAL 10
 
-//Enable ir remote wake up for arc 
-#define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc  
+//Enable ir remote wake up for arc
+#define CONFIG_IR_REMOTE_WAKEUP 1               // enable ir remote for arc
 #define CONFIG_IR_REMOTE_USE_PROTOCOL 0         // 0:nec  1:duokan  2:Toshiba 3:rca
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 3
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0xEF10FE01 //amlogic tv ir --- power
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0xF30CFE01 //amlogic tv ir --- ch+
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xF20DFE01 //amlogic tv ir --- ch-
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4 0xFFFFFFFF
-
+//#define STANDBY_24M 24					//standby into 24M,if not define, into 32K
 #define CONFIG_UNIFY_KEY_MANAGE 1
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
@@ -155,13 +155,13 @@
 #endif //#if defined(CONFIG_CMD_USB)
 
 #define CONFIG_UCL 1
-#define CONFIG_SELF_COMPRESS 
+#define CONFIG_SELF_COMPRESS
 //#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
 
 #define CONFIG_CMD_AUTOSCRIPT
 
 #define CONFIG_CMD_REBOOT 1
-#define CONFIG_PREBOOT 
+#define CONFIG_PREBOOT
 
 #define  CONFIG_AML_GATE_INIT	1
 
@@ -311,26 +311,26 @@
 
 #ifdef CONFIG_NAND_BOOT
 	#define CONFIG_AMLROM_NANDBOOT 1
-#endif 
+#endif
 
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
-	#define CONFIG_CMD_SAVEENV	
+	#define CONFIG_CMD_SAVEENV
 	#define CONFIG_ENV_SECT_SIZE		0x10000
 	#define CONFIG_ENV_OFFSET           0x1f0000
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+    #define CONFIG_SYS_MMC_ENV_DEV        0
+	#define CONFIG_ENV_OFFSET       0x1000000
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
@@ -390,8 +390,8 @@
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 //#define DDR_SCRAMBE_ENABLE  1
 
-#define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */
+#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 

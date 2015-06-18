@@ -134,8 +134,8 @@ void copy_reboot_code()
 	 	f_serial_puts(" , ");
 		serial_put_hex(*pcode,8);
 	 	f_serial_puts(" ]  ");
-	*/ 	
-		
+	*/
+
 		if(i != 32 && i != 33 && i != 34 && i != 35) //skip firmware's reboot entry address.
 				*arm_base = *pcode;
 		pcode++;
@@ -153,7 +153,7 @@ static void cpu_off()
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL1) | (0x1<<30),P_HHI_SYS_CPU_CLK_CNTL1);
 
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL) | (0x7<<16) | (0x7<<28),P_HHI_SYS_CPU_CLK_CNTL);
-	
+
 	udelay__(100);
 	//A9_TOPCLAMP
 	writel(readl(P_AO_RTI_PWR_A9_CNTL0) | (1<<13),P_AO_RTI_PWR_A9_CNTL0);
@@ -165,29 +165,29 @@ static void cpu_off()
 void restart_arm()
 {
 
-//	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
-// l2 sram sleep
+	//	writel(0x1234abcd,P_AO_RTI_STATUS_REG2);
+	// l2 sram sleep
 	writel(readl(P_AO_RTI_PWR_A9_CNTL1) & (~(0x1 << 0)),P_AO_RTI_PWR_A9_CNTL1);
 
 	writel(readl(P_RESET4_REGISTER) | (1<<0) | (1<<3), P_RESET4_REGISTER);
-    writel(readl(P_RESET2_REGISTER) | (1<<12),  P_RESET2_REGISTER);
-    writel(readl(P_RESET3_REGISTER) | (1<<7), P_RESET3_REGISTER);
-	
-// enable rom boot clock
-	writel(readl(P_HHI_GCLK_MPEG1) | (1<<31), P_HHI_GCLK_MPEG1);	
-// Remap AHB-Lite so AHB_SRAM is at address 0x0000
+	writel(readl(P_RESET2_REGISTER) | (1<<12),  P_RESET2_REGISTER);
+	writel(readl(P_RESET3_REGISTER) | (1<<7), P_RESET3_REGISTER);
+
+	// enable rom boot clock
+	writel(readl(P_HHI_GCLK_MPEG1) | (1<<31), P_HHI_GCLK_MPEG1);
+	// Remap AHB-Lite so AHB_SRAM is at address 0x0000
 	writel(0x0001,P_AHB_ARBDEC_REG);
 
-//signals from AO domain to the Everything Else domain are isolated
-//	writel(readl(P_AO_RTI_PWR_CNTL_REG0)& (~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
-//	A9_TOPCLAMP
+	//signals from AO domain to the Everything Else domain are isolated
+	//	writel(readl(P_AO_RTI_PWR_CNTL_REG0)& (~(1<<4)),P_AO_RTI_PWR_CNTL_REG0);
+	//	A9_TOPCLAMP
 	writel(readl(P_AO_RTI_PWR_A9_CNTL0) & (~(1<<13)),P_AO_RTI_PWR_A9_CNTL0);
 
-// release reset assert on u_axi_matrix (pl301)
-// reset u_axi_matrix
+	// release reset assert on u_axi_matrix (pl301)
+	// reset u_axi_matrix
 	writel(readl(P_AO_RTI_PWR_A9_CNTL1) | (1<<1), P_AO_RTI_PWR_A9_CNTL1);
 
-// deassert reset
+	// deassert reset
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL) & (~((0x7<<16) | (0x7<<28))), P_HHI_SYS_CPU_CLK_CNTL);
 	writel(readl(P_HHI_SYS_CPU_CLK_CNTL1) & (~(0x1<<30)),P_HHI_SYS_CPU_CLK_CNTL1);
 }
@@ -195,7 +195,7 @@ void restart_arm()
 static void switch_to_rtc()
 {
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)|(1<<8),P_AO_RTI_PWR_CNTL_REG0);
-	
+
 }
 static void switch_to_81()
 {
@@ -213,7 +213,11 @@ inline void switch_24M_to_32K(void)
 	writel(readl(P_AO_CRT_CLK_CNTL1)&(~0xfff)|(1<<11)|(1<<10), P_AO_CRT_CLK_CNTL1);
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&(~(0x3<<10)), P_AO_RTI_PWR_CNTL_REG0);
 	switch_to_rtc();
+#ifndef STANDBY_24M
 	writel(readl(P_AO_CRT_CLK_CNTL1)|0x2ed, P_AO_CRT_CLK_CNTL1);  //24m / 750 = 32k
+#else
+	writel(readl(P_AO_CRT_CLK_CNTL1)&(~0x3ff), P_AO_CRT_CLK_CNTL1);  //24m
+#endif
 //	udelay__(100);
 }
 
@@ -228,7 +232,7 @@ inline void switch_32K_to_24M(void)
 
 #define v_outs(s,v) {f_serial_puts(s);serial_put_hex(v,32);f_serial_puts("\n"); wait_uart_empty();}
 
-#define pwr_ddr_off 
+#define pwr_ddr_off
 void enter_power_down()
 {
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
@@ -259,9 +263,17 @@ void enter_power_down()
 	wdt_flag=readl(P_WATCHDOG_TC)&(1<<19);
 	if(wdt_flag)
 		writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
-	
+
+#ifndef STANDBY_24M
+	f_serial_puts("STANDBY 32K \n");
+	wait_uart_empty();
+
+#else
+	f_serial_puts("STANDBY 24M \n");
+	wait_uart_empty();
+#endif
 	switch_24M_to_32K();
-	
+
 	if(p_arc_pwr_op->power_off_at_24M)
 		p_arc_pwr_op->power_off_at_24M();
 
@@ -300,11 +312,11 @@ void enter_power_down()
 		if(p_arc_pwr_op->power_on_ddr15)
 			p_arc_pwr_op->power_on_ddr15();
 	}
-	
-	//if(wdt_flag){	
+
+	//if(wdt_flag){
 	//	writel((6*7812|((1<<16)-1))|(1<<29),P_WATCHDOG_TC);
 	//}
-	
+
 	// gate on:  bit0: REMOTE;	 bit3: UART
 	writel(readl(P_AO_RTI_GEN_CNTL_REG0)|0x8,P_AO_RTI_GEN_CNTL_REG0);
 
@@ -323,7 +335,7 @@ void enter_power_down()
 		p_arc_pwr_op->power_on_at_24M();
 
 	uart_reset();
-	
+
 	//f_serial_puts("step 8: ddr resume\n");
 	//wait_uart_empty();
 	ddr_resume();
@@ -331,7 +343,7 @@ void enter_power_down()
 	//f_serial_puts("restore pll\n");
 	//wait_uart_empty();
 	//store_restore_plls(1);//Before switch back to clk81, we need set PLL
-	
+
     if (uboot_cmd_flag == 0x87654321 && (vcin_state == FLAG_WAKEUP_PWROFF)) {
         /*
          * power off system before ARM is restarted
@@ -380,7 +392,7 @@ int main(void)
 	arc_param->serial_disable=0;
 
 	while(1){
-		
+
 		cmd = readl(P_AO_RTI_STATUS_REG0);
 		if(cmd == 0)
 		{
@@ -410,7 +422,7 @@ int main(void)
 		writel(0,P_AO_RTI_STATUS_REG0);
 	}
 
-	
+
 //	asm("SLEEP");
 
 
@@ -435,7 +447,7 @@ int main(void)
 	            f_serial_puts(" arm boot fail\n\n");
 	            wait_uart_empty();
 	            #endif
-	            #if 0 //power down 
+	            #if 0 //power down
 	            cmd = readl(P_AO_GPIO_O_EN_N);
 	            cmd &= ~(1<<6);
 	            cmd &= ~(1<<22);
@@ -457,7 +469,7 @@ int main(void)
 	    {
 	        f_serial_puts("arm boot succ\n");
 	        wait_uart_empty();
-				    
+
 		asm(".long 0x003f236f"); //add sync instruction.
 		asm("SLEEP");
 	    }
@@ -467,7 +479,7 @@ int main(void)
 	        serial_put_hex(cmd,32);
 	        f_serial_puts(" arm unkonw state\n");
 	        wait_uart_empty();
-			
+
 	        #endif
 	    }
 	    //cmd='f';
@@ -486,8 +498,7 @@ void store_restore_plls(int flag)
 {
     int i;
 
-    if(!flag)
-    {
+	if (!flag) {
 		pll_settings[0]=readl(P_HHI_SYS_PLL_CNTL);
 		pll_settings[1]=readl(P_HHI_SYS_PLL_CNTL2);
 		pll_settings[2]=readl(P_HHI_SYS_PLL_CNTL3);
@@ -498,8 +509,8 @@ void store_restore_plls(int flag)
 			mpll_settings[i]=readl(P_HHI_MPLL_CNTL + 4*i);
 
 		return;
-    }    
-    
+	}
+
 #define M8_PLL_ENTER_RESET(pll) \
 	writel((1<<29), pll);
 
@@ -540,7 +551,7 @@ void store_restore_plls(int flag)
 
 	//SYS PLL init
 	do{
-		//BANDGAP reset for SYS_PLL,MPLL lock fail		
+		//BANDGAP reset for SYS_PLL,MPLL lock fail
 		writel_reg_bits(P_HHI_MPLL_CNTL6,0,26,1);
 		udelay__(10);
 		writel_reg_bits(P_HHI_MPLL_CNTL6,1,26,1);
