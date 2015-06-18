@@ -1877,6 +1877,7 @@
 #define HHI_HDMI_PLL_CNTL4                         0x10cb
 #define HHI_HDMI_PLL_CNTL5                         0x10cc
 #define HHI_HDMI_PLL_CNTL6                         0x10cd
+#define HHI_HDMI_PLL_CNTL_I                        0x10ce
 #define HHI_DSI_LVDS_EDP_CNTL0                     0x10d1
 #define HHI_DSI_LVDS_EDP_CNTL1                     0x10d2
 #define HHI_CSI_PHY_CNTL0                          0x10d3
