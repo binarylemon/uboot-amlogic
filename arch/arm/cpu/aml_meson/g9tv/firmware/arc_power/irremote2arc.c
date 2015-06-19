@@ -40,6 +40,7 @@ typedef enum
   ldr active = 9000 /31.25 = 288
 */
 #ifndef STANDBY_24M
+//32K
 static const reg_remote RDECODEMODE_NEC[] ={
         {P_AO_MF_IR_DEC_LDR_ACTIVE,350<<16 |260<<0},
         {P_AO_MF_IR_DEC_LDR_IDLE, 200<<16 | 120<<0},
@@ -53,39 +54,7 @@ static const reg_remote RDECODEMODE_NEC[] ={
         {P_AO_MF_IR_DEC_DURATN3,0},
         {CONFIG_END,            0 }
 };
-#else
-static const reg_remote RDECODEMODE_NEC[] ={
-{P_AO_MF_IR_DEC_LDR_ACTIVE,477<<16 |400<<0},
-{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0},
-{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16 |110<<0},
-{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 },
-{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
-{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},
-{P_AO_MF_IR_DEC_REG1,0x9f50},
-{P_AO_MF_IR_DEC_REG2,0x0},
-{P_AO_MF_IR_DEC_DURATN2,0},
-{P_AO_MF_IR_DEC_DURATN3,0},
-{CONFIG_END,            0 }
-};
-#endif
-
-static const reg_remote RDECODEMODE_DUOKAN[] =
-{
-	{P_AO_MF_IR_DEC_LDR_ACTIVE,53<<16 | 50<<0},
-	{P_AO_MF_IR_DEC_LDR_IDLE, 31<<16 | 25<<0},
-	{P_AO_MF_IR_DEC_LDR_REPEAT,30<<16 | 26<<0},
-	{P_AO_MF_IR_DEC_BIT_0,61<<16 | 55<<0 },
-	{P_AO_MF_IR_DEC_REG0,3<<28 |(0x5DC<<12)| 0x13}, //body frame 30ms
-	{P_AO_MF_IR_DEC_STATUS,(76<<20) | 69<<10},
-	{P_AO_MF_IR_DEC_REG1,0x9300},
-	{P_AO_MF_IR_DEC_REG2,0x10b},
-	{P_AO_MF_IR_DEC_DURATN2,91<<16 | 79<<0},
-	{P_AO_MF_IR_DEC_DURATN3,111<<16 | 99<<0},
-	{CONFIG_END,            0      }
-};
-
-static const reg_remote RDECODEMODE_TOSHIBA[] =
-{
+static const reg_remote RDECODEMODE_TOSHIBA[] ={
 	{P_AO_MF_IR_DEC_LDR_ACTIVE,175<<16 | 130<<0},//TOSHIBA leader 9000us
 	{P_AO_MF_IR_DEC_LDR_IDLE, 175<<16 | 130<<0},// leader idle
 	{P_AO_MF_IR_DEC_LDR_REPEAT,200<<16|1220<<0}, // leader repeat
@@ -99,9 +68,77 @@ static const reg_remote RDECODEMODE_TOSHIBA[] =
 	{P_AO_MF_IR_DEC_DURATN3,0},
 	{CONFIG_END,            0      }
 };
+static const reg_remote RDECODEMODE_DUOKAN[] ={
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,},
+	{P_AO_MF_IR_DEC_LDR_IDLE, },
+	{P_AO_MF_IR_DEC_LDR_REPEAT,},
+	{P_AO_MF_IR_DEC_BIT_0,},
+	{P_AO_MF_IR_DEC_REG0,}, //body frame 30ms
+	{P_AO_MF_IR_DEC_STATUS,},
+	{P_AO_MF_IR_DEC_REG1,},
+	{P_AO_MF_IR_DEC_REG2,},
+	{P_AO_MF_IR_DEC_DURATN2,},
+	{P_AO_MF_IR_DEC_DURATN3,},
+	{CONFIG_END,            0      }
+};
+static const reg_remote RDECODEMODE_RCA[] ={
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,},//rca leader 4000us,200* timebase
+	{P_AO_MF_IR_DEC_LDR_IDLE, },// leader idle 400
+	{P_AO_MF_IR_DEC_LDR_REPEAT,}, // leader repeat
+	{P_AO_MF_IR_DEC_BIT_0, },// logic '0' or '00' 1500us
+	{P_AO_MF_IR_DEC_REG0,},  // sys clock boby time.base time = 20 body frame
+	{P_AO_MF_IR_DEC_STATUS,}, // logic '1' or '01'	 2500us
+	{P_AO_MF_IR_DEC_REG1,},// boby long decode (8-13) //framn len = 24bit
+	/*it may get the wrong customer value and key value from register if the value is set to 0x4,so the register value must set to 0x104*/
+	{P_AO_MF_IR_DEC_REG2,},
+	{P_AO_MF_IR_DEC_DURATN2,},
+	{P_AO_MF_IR_DEC_DURATN3,},
+	{CONFIG_END,            0      }
+};
 
-static const reg_remote RDECODEMODE_RCA[] =
-{
+
+#else
+//24M
+static const reg_remote RDECODEMODE_NEC[] ={
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,477<<16 |400<<0},
+	{P_AO_MF_IR_DEC_LDR_IDLE, 248<<16 | 202<<0},
+	{P_AO_MF_IR_DEC_LDR_REPEAT,130<<16 |110<<0},
+	{P_AO_MF_IR_DEC_BIT_0,60<<16|48<<0 },
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
+	{P_AO_MF_IR_DEC_STATUS,(111<<20)|(100<<10)},
+	{P_AO_MF_IR_DEC_REG1,0x9f50},
+	{P_AO_MF_IR_DEC_REG2,0x0},
+	{P_AO_MF_IR_DEC_DURATN2,0},
+	{P_AO_MF_IR_DEC_DURATN3,0},
+	{CONFIG_END,            0 }
+};
+static const reg_remote RDECODEMODE_DUOKAN[] ={
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,53<<16 | 50<<0},
+	{P_AO_MF_IR_DEC_LDR_IDLE, 31<<16 | 25<<0},
+	{P_AO_MF_IR_DEC_LDR_REPEAT,30<<16 | 26<<0},
+	{P_AO_MF_IR_DEC_BIT_0,61<<16 | 55<<0 },
+	{P_AO_MF_IR_DEC_REG0,3<<28 |(0x5DC<<12)| 0x13}, //body frame 30ms
+	{P_AO_MF_IR_DEC_STATUS,(76<<20) | 69<<10},
+	{P_AO_MF_IR_DEC_REG1,0x9300},
+	{P_AO_MF_IR_DEC_REG2,0x10b},
+	{P_AO_MF_IR_DEC_DURATN2,91<<16 | 79<<0},
+	{P_AO_MF_IR_DEC_DURATN3,111<<16 | 99<<0},
+	{CONFIG_END,            0      }
+};
+static const reg_remote RDECODEMODE_TOSHIBA[] ={
+	{P_AO_MF_IR_DEC_LDR_ACTIVE,263<<16 |194<<0},
+	{P_AO_MF_IR_DEC_LDR_IDLE, 263<<16 | 194<<0},
+	{P_AO_MF_IR_DEC_LDR_REPEAT,263<<16 |194<<0},
+	{P_AO_MF_IR_DEC_BIT_0,60<<16|40<<0 },
+	{P_AO_MF_IR_DEC_REG0,3<<28|(0xFA0<<12)|0x13},
+	{P_AO_MF_IR_DEC_STATUS,(124<<20)|(100<<10)},
+	{P_AO_MF_IR_DEC_REG1,0x9f50},
+	{P_AO_MF_IR_DEC_REG2,0x5},
+	{P_AO_MF_IR_DEC_DURATN2,0},
+	{P_AO_MF_IR_DEC_DURATN3,0},
+	{CONFIG_END,            0 }
+};
+static const reg_remote RDECODEMODE_RCA[] ={
 	{P_AO_MF_IR_DEC_LDR_ACTIVE,((unsigned)250<<16) | ((unsigned)160<<0)},//rca leader 4000us,200* timebase
 	{P_AO_MF_IR_DEC_LDR_IDLE, 250<<16 | 160<<0},// leader idle 400
 	{P_AO_MF_IR_DEC_LDR_REPEAT,250<<16|160<<0}, // leader repeat
@@ -115,6 +152,10 @@ static const reg_remote RDECODEMODE_RCA[] =
 	{P_AO_MF_IR_DEC_DURATN3,0},
 	{CONFIG_END,            0      }
 };
+
+#endif
+
+
 
 static const reg_remote *remoteregsTab[] =
 {
