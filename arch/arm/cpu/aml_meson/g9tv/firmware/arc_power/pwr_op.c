@@ -315,7 +315,12 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 			exit_reason = 6;
 			break;
 		}
-		adc_start_sample(0);
+		//adc_start_sample(0);
+#ifdef ADC_KEY_CHANEL
+		 adc_start_sample(ADC_KEY_CHANEL);
+#else
+		 adc_start_sample(0);
+#endif
 	}
 #endif	
 
