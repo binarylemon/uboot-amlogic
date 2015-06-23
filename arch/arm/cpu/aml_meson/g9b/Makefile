@@ -22,7 +22,14 @@ COBJS-$(CONFIG_AML_RTC)+=aml_rtc_setting.o
 COBJS-$(CONFIG_USB_DWC_OTG_HCD) += usb.o
 
 COBJS-$(CONFIG_VPU_PRESET) += vpu.o
-COBJS-$(CONFIG_VIDEO_AMLLCD) += lcdoutc.o
+
+COBJS-$(CONFIG_VIDEO_AMLLCD) += aml_lcd_gpio.o
+
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcdoutc.o
+
+COBJS-$(CONFIG_VIDEO_AMLLCD_TABLET) += lcd_tablet/lcdoutc.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TABLET) += lcd_tablet/lcd_config.o
+
 COBJS-$(CONFIG_AML_GATE_INIT) += gate_init.o
 COBJS += hdmi_tx_hdcp.o
 COBJS-$(CONFIG_AML_HDMI_TX) += hdmi_tx_set.o hdmi_tx_tvenc.o enc_clk_config.o

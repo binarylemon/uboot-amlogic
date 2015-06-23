@@ -498,12 +498,13 @@ static int aml_lcd_extern_remove(void)
 }
 
 #ifdef CONFIG_OF_LIBFDT
-static int get_lcd_extern_config(char *dt_addr)
+static int get_lcd_extern_config(void)
 {
 	int nodeoffset;
 	char * propdata;
 	int ret;
 	int value;
+	char *dt_addr = lcd_ext_driver.dt_addr;
 	char *of_node = LCD_EXTERN_DEVICE_NODE;
 	struct lcd_extern_config_t *pdata = &lcd_ext_config;
 	
@@ -572,6 +573,7 @@ static struct aml_lcd_extern_driver_t lcd_ext_driver = {
     .power_off = aml_lcd_extern_remove,
     .init_on_cmd_8 = NULL,
     .init_off_cmd_8 = NULL,
+    .dt_addr = NULL,
 #ifdef CONFIG_OF_LIBFDT
     .get_lcd_ext_config = get_lcd_extern_config,
 #endif

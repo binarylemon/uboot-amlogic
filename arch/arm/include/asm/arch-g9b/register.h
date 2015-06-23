@@ -4891,7 +4891,7 @@
    #define  RD_RDY            3     //Read Only
    #define  GAMMA_TR          2     //RW
    #define  GAMMA_SET         1     //RW
-   #define  GAMMA_EN          0     //RW
+//   #define  GAMMA_EN          0     //RW
 #define GAMMA_DATA_PORT                            0x1481
 #define GAMMA_ADDR_PORT                            0x1482
    #define  H_RD              12
@@ -4916,8 +4916,8 @@
    #define   TCON_VS_SEL      4
    #define   TCON_HS_SEL      3
    #define   DE_POL           2
-   #define   VS_POL           1
-   #define   HS_POL           0
+//   #define   VS_POL           1
+//   #define   HS_POL           0
 #define DITH_CNTL_ADDR                             0x1488
    #define  DITH10_EN         10
    #define  DITH8_EN          9

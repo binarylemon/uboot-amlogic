@@ -84,9 +84,12 @@ typedef enum {
 	LCD_POWER_PMU_GPIO_MAX,
 } Lcd_Power_Pmu_Gpio_t;
 
-#define	LCD_POWER_GPIO_OUTPUT_LOW	0
-#define	LCD_POWER_GPIO_OUTPUT_HIGH	1
-#define	LCD_POWER_GPIO_INPUT		2
+#define LCD_POWER_GPIO_OUTPUT_LOW	0
+#define LCD_POWER_GPIO_OUTPUT_HIGH	1
+#define LCD_POWER_GPIO_INPUT		2
+#define LCD_GPIO_OUTPUT_LOW	0
+#define LCD_GPIO_OUTPUT_HIGH	1
+#define LCD_GPIO_INPUT		2
 
 typedef enum {
 	LCD_DIGITAL_MIPI = 0,
@@ -228,6 +231,9 @@ typedef struct {
 	unsigned lvds_repack_user;
 	unsigned lvds_repack;
 	unsigned pn_swap;
+	unsigned dual_port;
+	unsigned port_swap;
+	unsigned port_sel;
 } LVDS_Config_t;
 
 typedef struct {

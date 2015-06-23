@@ -30,6 +30,7 @@
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
+//#define CONFIG_VIDEO_AMLLCD_TABLET
 #define LCD_BPP LCD_COLOR16
 
 //Enable switch boot mode

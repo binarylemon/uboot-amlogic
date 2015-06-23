@@ -37,7 +37,8 @@ struct aml_lcd_extern_driver_t {
 	unsigned char *init_off_cmd_8;
 	//unsigned short *init_on_cmd_16;
 	//unsigned short *init_off_cmd_16;
-	int (*get_lcd_ext_config)(char *dt_addr);
+	char *dt_addr;
+	int (*get_lcd_ext_config)(void);
 };
 
 extern void udelay(unsigned long usec);

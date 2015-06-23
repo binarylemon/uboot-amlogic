@@ -25,8 +25,6 @@
 #include <malloc.h>
 #include <asm/arch/io.h>
 #include <asm/arch/vinfo.h>
-#include <asm/arch/lcdoutc.h>
-#ifdef CONFIG_LCD_TYPE_MID_VALID
 #include <amlogic/aml_lcd.h>
 #include <amlogic/vinfo.h>
 #include <amlogic/lcdoutc.h>
@@ -51,7 +49,7 @@
 
 #define PANEL_NAME		"panel"
 
-extern void lcd_default_config_init(Lcd_Config_t *pConf);
+extern void lcd_default_config_init(Lcd_Config_t *pconf);
 extern void backlight_default_config_init(Lcd_Bl_Config_t *bl_config);
 
 unsigned int lcd_print_flag = 0;
@@ -100,7 +98,7 @@ static const char* bl_ctrl_method_table[]={
 #endif
 
 typedef struct {
-	Lcd_Config_t *pConf;
+	Lcd_Config_t *pconf;
 	Lcd_Bl_Config_t *bl_config;
 	vinfo_t lcd_info;
 } lcd_dev_t;
@@ -158,7 +156,7 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 	int ret;
 #endif
 
-	if( status == ON ) {
+	if (status == ON) {
 		mdelay(pDev->bl_config->power_on_delay);
 
 		switch (pDev->bl_config->method) {
@@ -184,14 +182,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#endif
 					default:
 						break;
 				}
@@ -219,14 +215,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_high_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->combo_high_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_high_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#endif
 					default:
 						break;
 				}
@@ -243,14 +237,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, (READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_low_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->combo_low_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, (READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->combo_low_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
 						break;
-#endif
 					default:
 						break;
 				}
@@ -309,14 +301,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#endif
 					default:
 						break;
 				}
@@ -335,14 +325,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#endif
 					default:
 						break;
 				}
@@ -359,14 +347,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_CD, READ_LCD_CBUS_REG(PWM_MISC_REG_CD) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 15) | (1<<0)));  //disable pwm_clk & pwm port
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_MISC_REG_EF, READ_LCD_CBUS_REG(PWM_MISC_REG_EF) & ~((1 << 23) | (1<<1)));  //disable pwm_clk & pwm port
 						break;
-#endif
 					default:
 						break;
 				}
@@ -417,10 +403,6 @@ static void set_lcd_backlight_level(unsigned level)
 		level = ((level - pDev->bl_config->level_min) * (pDev->bl_config->level_mid_mapping - pDev->bl_config->level_min)) / (pDev->bl_config->level_mid - pDev->bl_config->level_min) + pDev->bl_config->level_min;
 
 	switch (pDev->bl_config->method) {
-		case BL_CTL_GPIO:
-			level = pDev->bl_config->dim_min - ((level - pDev->bl_config->level_min) * (pDev->bl_config->dim_min - pDev->bl_config->dim_max)) / (pDev->bl_config->level_max - pDev->bl_config->level_min);
-			WRITE_LCD_CBUS_REG_BITS(LED_PWM_REG0, level, 0, 4);
-			break;
 		case BL_CTL_PWM_NEGATIVE:
 		case BL_CTL_PWM_POSITIVE:
 			level = (pDev->bl_config->pwm_max - pDev->bl_config->pwm_min) * (level - pDev->bl_config->level_min) / (pDev->bl_config->level_max - pDev->bl_config->level_min) + pDev->bl_config->pwm_min;
@@ -446,14 +428,12 @@ static void set_lcd_backlight_level(unsigned level)
 				case BL_PWM_D:
 					WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 					break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 				case BL_PWM_E:
 					WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
 					break;
 				case BL_PWM_F:
 					WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
 					break;
-#endif
 				default:
 					break;
 			}
@@ -482,14 +462,12 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
 						break;
-#endif
 					default:
 						break;
 				}
@@ -517,14 +495,12 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
 						break;
-#endif
 					default:
 						break;
 				}
@@ -552,14 +528,12 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
 						break;
-#endif
 					default:
 						break;
 				}
@@ -587,14 +561,12 @@ static void set_lcd_backlight_level(unsigned level)
 					case BL_PWM_D:
 						WRITE_LCD_CBUS_REG(PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
 						break;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 					case BL_PWM_E:
 						WRITE_LCD_CBUS_REG(PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
 						break;
 					case BL_PWM_F:
 						WRITE_LCD_CBUS_REG(PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
 						break;
-#endif
 					default:
 						break;
 				}
@@ -643,11 +615,11 @@ static int lcd_power_ctrl(Bool_t status)
 
 	lcd_print("%s(): %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
 	if (status) {
-		if (pDev->pConf->lcd_power_ctrl.power_on_uboot.type < LCD_POWER_TYPE_MAX) {
+		if (pDev->pconf->lcd_power_ctrl.power_on_uboot.type < LCD_POWER_TYPE_MAX) {
 			lcd_print("lcd_power_on_uboot\n");
-			switch (pDev->pConf->lcd_power_ctrl.power_on_uboot.type) {
+			switch (pDev->pconf->lcd_power_ctrl.power_on_uboot.type) {
 				case LCD_POWER_TYPE_CPU:
-					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_on_uboot.value);
+					aml_lcd_gpio_set(pDev->pconf->lcd_power_ctrl.power_on_uboot.gpio, pDev->pconf->lcd_power_ctrl.power_on_uboot.value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -656,11 +628,11 @@ static int lcd_power_ctrl(Bool_t status)
 						printf("no pmu driver\n");
 					}
 					else if (pmu_driver->pmu_set_gpio) {
-						if (pDev->pConf->lcd_power_ctrl.power_on_uboot.value == LCD_GPIO_OUTPUT_LOW) {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_on_uboot.gpio, 0);
+						if (pDev->pconf->lcd_power_ctrl.power_on_uboot.value == LCD_GPIO_OUTPUT_LOW) {
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_on_uboot.gpio, 0);
 						}
 						else {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_on_uboot.gpio, 1);
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_on_uboot.gpio, 1);
 						}
 					}
 #endif
@@ -668,14 +640,14 @@ static int lcd_power_ctrl(Bool_t status)
 				default:
 					break;
 			}
-			if (pDev->pConf->lcd_power_ctrl.power_on_uboot.delay > 0)
-				mdelay(pDev->pConf->lcd_power_ctrl.power_on_uboot.delay);
+			if (pDev->pconf->lcd_power_ctrl.power_on_uboot.delay > 0)
+				mdelay(pDev->pconf->lcd_power_ctrl.power_on_uboot.delay);
 		}
-		for (i=0; i<pDev->pConf->lcd_power_ctrl.power_on_step; i++) {
+		for (i=0; i<pDev->pconf->lcd_power_ctrl.power_on_step; i++) {
 			lcd_print("%s %s step %d\n", __FUNCTION__, (status ? "ON" : "OFF"), i+1);
-			switch (pDev->pConf->lcd_power_ctrl.power_on_config[i].type) {
+			switch (pDev->pconf->lcd_power_ctrl.power_on_config[i].type) {
 				case LCD_POWER_TYPE_CPU:
-					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_on_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_on_config[i].value);
+					aml_lcd_gpio_set(pDev->pconf->lcd_power_ctrl.power_on_config[i].gpio, pDev->pconf->lcd_power_ctrl.power_on_config[i].value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -684,20 +656,20 @@ static int lcd_power_ctrl(Bool_t status)
 						printf("no pmu driver\n");
 					}
 					else if (pmu_driver->pmu_set_gpio) {
-						if (pDev->pConf->lcd_power_ctrl.power_on_config[i].value == LCD_GPIO_OUTPUT_LOW) {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_on_config[i].gpio, 0);
+						if (pDev->pconf->lcd_power_ctrl.power_on_config[i].value == LCD_GPIO_OUTPUT_LOW) {
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_on_config[i].gpio, 0);
 						}
 						else {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_on_config[i].gpio, 1);
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_on_config[i].gpio, 1);
 						}
 					}
 #endif
 					break;
 				case LCD_POWER_TYPE_SIGNAL:
-					if (pDev->pConf->lcd_power_ctrl.ports_ctrl == NULL)
+					if (pDev->pconf->lcd_power_ctrl.ports_ctrl == NULL)
 						lcd_print("no lcd_ports_ctrl\n");
 					else
-						pDev->pConf->lcd_power_ctrl.ports_ctrl(ON);
+						pDev->pconf->lcd_power_ctrl.ports_ctrl(ON);
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
@@ -716,21 +688,21 @@ static int lcd_power_ctrl(Bool_t status)
 					printf("lcd power ctrl ON step %d is null.\n", i+1);
 					break;
 			}
-			if (pDev->pConf->lcd_power_ctrl.power_on_config[i].delay > 0)
-				mdelay(pDev->pConf->lcd_power_ctrl.power_on_config[i].delay);
+			if (pDev->pconf->lcd_power_ctrl.power_on_config[i].delay > 0)
+				mdelay(pDev->pconf->lcd_power_ctrl.power_on_config[i].delay);
 		}
-		if (pDev->pConf->lcd_power_ctrl.power_ctrl_video)
-			ret = pDev->pConf->lcd_power_ctrl.power_ctrl_video(ON);
+		if (pDev->pconf->lcd_power_ctrl.power_ctrl_video)
+			ret = pDev->pconf->lcd_power_ctrl.power_ctrl_video(ON);
 	}
 	else {
 		mdelay(30);
-		if (pDev->pConf->lcd_power_ctrl.power_ctrl_video)
-			ret = pDev->pConf->lcd_power_ctrl.power_ctrl_video(OFF);
-		for (i=0; i<pDev->pConf->lcd_power_ctrl.power_off_step; i++) {
+		if (pDev->pconf->lcd_power_ctrl.power_ctrl_video)
+			ret = pDev->pconf->lcd_power_ctrl.power_ctrl_video(OFF);
+		for (i=0; i<pDev->pconf->lcd_power_ctrl.power_off_step; i++) {
 			lcd_print("%s %s step %d\n", __FUNCTION__, (status ? "ON" : "OFF"), i+1);
-			switch (pDev->pConf->lcd_power_ctrl.power_off_config[i].type) {
+			switch (pDev->pconf->lcd_power_ctrl.power_off_config[i].type) {
 				case LCD_POWER_TYPE_CPU:
-					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_config[i].gpio, pDev->pConf->lcd_power_ctrl.power_off_config[i].value);
+					aml_lcd_gpio_set(pDev->pconf->lcd_power_ctrl.power_off_config[i].gpio, pDev->pconf->lcd_power_ctrl.power_off_config[i].value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -739,20 +711,20 @@ static int lcd_power_ctrl(Bool_t status)
 						printf("no pmu driver\n");
 					}
 					else if (pmu_driver->pmu_set_gpio) {
-						if (pDev->pConf->lcd_power_ctrl.power_off_config[i].value == LCD_GPIO_OUTPUT_LOW) {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_off_config[i].gpio, 0);
+						if (pDev->pconf->lcd_power_ctrl.power_off_config[i].value == LCD_GPIO_OUTPUT_LOW) {
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_off_config[i].gpio, 0);
 						}
 						else {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_off_config[i].gpio, 1);
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_off_config[i].gpio, 1);
 						}
 					}
 #endif
 					break;
 				case LCD_POWER_TYPE_SIGNAL:
-					if (pDev->pConf->lcd_power_ctrl.ports_ctrl == NULL)
+					if (pDev->pconf->lcd_power_ctrl.ports_ctrl == NULL)
 						lcd_print("no lcd_ports_ctrl\n");
 					else
-						pDev->pConf->lcd_power_ctrl.ports_ctrl(OFF);
+						pDev->pconf->lcd_power_ctrl.ports_ctrl(OFF);
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
@@ -771,14 +743,14 @@ static int lcd_power_ctrl(Bool_t status)
 					printf("lcd power ctrl OFF step %d is null.\n", i+1);
 					break;
 			}
-			if (pDev->pConf->lcd_power_ctrl.power_off_config[i].delay > 0)
-				mdelay(pDev->pConf->lcd_power_ctrl.power_off_config[i].delay);
+			if (pDev->pconf->lcd_power_ctrl.power_off_config[i].delay > 0)
+				mdelay(pDev->pconf->lcd_power_ctrl.power_off_config[i].delay);
 		}
-		if (pDev->pConf->lcd_power_ctrl.power_off_uboot.type < LCD_POWER_TYPE_MAX) {
+		if (pDev->pconf->lcd_power_ctrl.power_off_uboot.type < LCD_POWER_TYPE_MAX) {
 			lcd_print("lcd_power_off_uboot\n");
-			switch (pDev->pConf->lcd_power_ctrl.power_off_uboot.type) {
+			switch (pDev->pconf->lcd_power_ctrl.power_off_uboot.type) {
 				case LCD_POWER_TYPE_CPU:
-					aml_lcd_gpio_set(pDev->pConf->lcd_power_ctrl.power_off_uboot.gpio, pDev->pConf->lcd_power_ctrl.power_off_uboot.value);
+					aml_lcd_gpio_set(pDev->pconf->lcd_power_ctrl.power_off_uboot.gpio, pDev->pconf->lcd_power_ctrl.power_off_uboot.value);
 					break;
 				case LCD_POWER_TYPE_PMU:
 #ifdef CONFIG_PLATFORM_HAS_PMU
@@ -787,11 +759,11 @@ static int lcd_power_ctrl(Bool_t status)
 						printf("no pmu driver\n");
 					}
 					else if (pmu_driver->pmu_set_gpio) {
-						if (pDev->pConf->lcd_power_ctrl.power_off_uboot.value == LCD_GPIO_OUTPUT_LOW) {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_off_uboot.gpio, 0);
+						if (pDev->pconf->lcd_power_ctrl.power_off_uboot.value == LCD_GPIO_OUTPUT_LOW) {
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_off_uboot.gpio, 0);
 						}
 						else {
-							pmu_driver->pmu_set_gpio(pDev->pConf->lcd_power_ctrl.power_off_uboot.gpio, 1);
+							pmu_driver->pmu_set_gpio(pDev->pconf->lcd_power_ctrl.power_off_uboot.gpio, 1);
 						}
 					}
 #endif
@@ -799,8 +771,8 @@ static int lcd_power_ctrl(Bool_t status)
 				default:
 					break;
 			}
-			if (pDev->pConf->lcd_power_ctrl.power_off_uboot.delay > 0)
-				mdelay(pDev->pConf->lcd_power_ctrl.power_off_uboot.delay);
+			if (pDev->pconf->lcd_power_ctrl.power_off_uboot.delay > 0)
+				mdelay(pDev->pconf->lcd_power_ctrl.power_off_uboot.delay);
 		}
 	}
 	printf("%s(): %s finished.\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -812,9 +784,9 @@ static int lcd_set_current_vmode(vmode_t mode)
 {
 	if (mode != VMODE_LCD)
 		return -1;
-	
+
 	WRITE_LCD_REG(VPP_POSTBLEND_H_SIZE, pDev->lcd_info.width);
-	pDev->pConf->lcd_misc_ctrl.module_enable();
+	pDev->pconf->lcd_misc_ctrl.module_enable();
 	if (VMODE_INIT_NULL == pDev->lcd_info.mode)
 		pDev->lcd_info.mode = VMODE_LCD;
 	else
@@ -826,25 +798,25 @@ static void _init_vout(lcd_dev_t *pDev)
 {
     pDev->lcd_info.name = PANEL_NAME;
     pDev->lcd_info.mode = VMODE_INIT_NULL;
-    pDev->lcd_info.width = pDev->pConf->lcd_basic.h_active;
-    pDev->lcd_info.height = pDev->pConf->lcd_basic.v_active;
-    pDev->lcd_info.field_height = pDev->pConf->lcd_basic.v_active;
-    pDev->lcd_info.aspect_ratio_num = pDev->pConf->lcd_basic.screen_ratio_width;
-    pDev->lcd_info.aspect_ratio_den = pDev->pConf->lcd_basic.screen_ratio_height;
-    pDev->lcd_info.screen_real_width= pDev->pConf->lcd_basic.h_active_area;
-    pDev->lcd_info.screen_real_height= pDev->pConf->lcd_basic.v_active_area;
-    pDev->lcd_info.sync_duration_num = pDev->pConf->lcd_timing.sync_duration_num;
-    pDev->lcd_info.sync_duration_den = pDev->pConf->lcd_timing.sync_duration_den;
+    pDev->lcd_info.width = pDev->pconf->lcd_basic.h_active;
+    pDev->lcd_info.height = pDev->pconf->lcd_basic.v_active;
+    pDev->lcd_info.field_height = pDev->pconf->lcd_basic.v_active;
+    pDev->lcd_info.aspect_ratio_num = pDev->pconf->lcd_basic.screen_ratio_width;
+    pDev->lcd_info.aspect_ratio_den = pDev->pconf->lcd_basic.screen_ratio_height;
+    pDev->lcd_info.screen_real_width= pDev->pconf->lcd_basic.h_active_area;
+    pDev->lcd_info.screen_real_height= pDev->pconf->lcd_basic.v_active_area;
+    pDev->lcd_info.sync_duration_num = pDev->pconf->lcd_timing.sync_duration_num;
+    pDev->lcd_info.sync_duration_den = pDev->pconf->lcd_timing.sync_duration_den;
 }
 
-static void _lcd_init(Lcd_Config_t *pConf)
+static void _lcd_init(Lcd_Config_t *pconf)
 {
 #ifdef CONFIG_PLATFORM_HAS_PMU
 	struct aml_pmu_driver *pmu_driver;
 	int battery_percent;
 #endif
 
-	lcd_config_init(pConf);
+	lcd_config_init(pconf);
 if (pDev->bl_config->level_default == pDev->bl_config->level_min) {
 		set_lcd_backlight_level(pDev->bl_config->level_min);
 	}
@@ -872,10 +844,10 @@ if (pDev->bl_config->level_default == pDev->bl_config->level_min) {
 }
 
 #ifdef CONFIG_OF_LIBFDT
-static void lcd_setup_gamma_table(Lcd_Config_t *pConf, unsigned int rgb_flag)
+static void lcd_setup_gamma_table(Lcd_Config_t *pconf, unsigned int rgb_flag)
 {
 	int i;
-	
+
 	const unsigned short gamma_adjust[256] = {
 		0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
 		32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
@@ -887,26 +859,26 @@ static void lcd_setup_gamma_table(Lcd_Config_t *pConf, unsigned int rgb_flag)
 		224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 	};
 
-	if (rgb_flag == 0) {	//r
+	if (rgb_flag == 0) { //r
 		for (i=0; i<256; i++) {
-			pConf->lcd_effect.GammaTableR[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableR[i] = gamma_adjust[i] << 2;
 		}
 	}
-	else if (rgb_flag == 1) {	//g
+	else if (rgb_flag == 1) { //g
 		for (i=0; i<256; i++) {
-			pConf->lcd_effect.GammaTableG[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableG[i] = gamma_adjust[i] << 2;
 		}
 	}
-	else if (rgb_flag == 2) {	//b
+	else if (rgb_flag == 2) { //b
 		for (i=0; i<256; i++) {
-			pConf->lcd_effect.GammaTableB[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableB[i] = gamma_adjust[i] << 2;
 		}
 	}
-	else if (rgb_flag == 3) {	//rgb
+	else if (rgb_flag == 3) { //rgb
 		for (i=0; i<256; i++) {
-			pConf->lcd_effect.GammaTableR[i] = gamma_adjust[i] << 2;
-			pConf->lcd_effect.GammaTableG[i] = gamma_adjust[i] << 2;
-			pConf->lcd_effect.GammaTableB[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableR[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableG[i] = gamma_adjust[i] << 2;
+			pconf->lcd_effect.GammaTableB[i] = gamma_adjust[i] << 2;
 		}
 	}
 }
@@ -916,9 +888,9 @@ static void lcd_setup_gamma_table(Lcd_Config_t *pConf, unsigned int rgb_flag)
 static int aml_lcd_pmu_gpio_name_map_num(const char *name)
 {
 	int index;
-	
-	for(index = 0; index < LCD_POWER_PMU_GPIO_MAX; index++) {
-		if(!strcmp(name, lcd_power_pmu_gpio_table[index]))
+
+	for (index = 0; index < LCD_POWER_PMU_GPIO_MAX; index++) {
+		if (!strcmp(name, lcd_power_pmu_gpio_table[index]))
 			break;
 	}
 	return index;
@@ -927,296 +899,166 @@ static int aml_lcd_pmu_gpio_name_map_num(const char *name)
 
 #ifdef CONFIG_OF_LIBFDT
 #define LCD_MODEL_LEN_MAX    30
-static int _get_lcd_model_timing(Lcd_Config_t *pConf)
+static int _get_lcd_model_timing(Lcd_Config_t *pconf)
 {
 	int ret=0;
 	int nodeoffset;
 	char* lcd_model;
 	char* propdata;
 	char propname[LCD_MODEL_LEN_MAX];
-	int i, j;
+	int i;
 #ifdef CONFIG_AML_LCD_EXTERN
 	struct aml_lcd_extern_driver_t *lcd_ext_driver;
-#endif 
-	
+#endif
+
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
-	if(nodeoffset < 0) {
+	if (nodeoffset < 0) {
 		printf("dts: not find /lcd node %s.\n",fdt_strerror(nodeoffset));
 		return -1;
 	}
-	
+
 	lcd_model = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_model_name", NULL);
 	if (lcd_model == NULL) {
 		lcd_model = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_model_config", NULL);
 	}
 	sprintf(propname, "/%s", lcd_model);
 	nodeoffset = fdt_path_offset(dt_addr, propname);
-	if(nodeoffset < 0) {
+	if (nodeoffset < 0) {
 		printf("dts: not find %s node %s.\n", propname, fdt_strerror(nodeoffset));
 		return -1;
 	}
-	
+
 	lcd_model = (char *)fdt_getprop(dt_addr, nodeoffset, "model_name", NULL);
 	if (lcd_model == NULL) {
 		printf("faild to get model_name\n");
 		lcd_model = PANEL_MODEL_DEFAULT;
 	}
-	pConf->lcd_basic.model_name = (char *)malloc(sizeof(char)*LCD_MODEL_LEN_MAX);
-	if (pConf->lcd_basic.model_name == NULL) {
+	pconf->lcd_basic.model_name = (char *)malloc(sizeof(char)*LCD_MODEL_LEN_MAX);
+	if (pconf->lcd_basic.model_name == NULL) {
 		printf("[_get_lcd_model_timing]: Not enough memory\n");
 	}
 	else {
-		memset(pConf->lcd_basic.model_name, 0, LCD_MODEL_LEN_MAX);
-		strcpy(pConf->lcd_basic.model_name, lcd_model);
-		printf("\nload lcd model in dts: %s\n", pConf->lcd_basic.model_name);
+		memset(pconf->lcd_basic.model_name, 0, LCD_MODEL_LEN_MAX);
+		strcpy(pconf->lcd_basic.model_name, lcd_model);
+		printf("\nload lcd model in dts: %s\n", pconf->lcd_basic.model_name);
 	}
-	
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "interface", NULL);
 	if (propdata == NULL) {
 		printf("faild to get lcd_type!\n");
-		pConf->lcd_basic.lcd_type = LCD_TYPE_MAX;
+		pconf->lcd_basic.lcd_type = LCD_TYPE_MAX;
 	}
 	else {
-		for(i = 0; i < LCD_TYPE_MAX; i++) {
-			if(!strncmp(propdata, lcd_type_table[i], 3))
+		for (i = 0; i < LCD_TYPE_MAX; i++) {
+			if (!strncmp(propdata, lcd_type_table[i], 3))
 				break;
 		}
-		pConf->lcd_basic.lcd_type = i;
+		pconf->lcd_basic.lcd_type = i;
 	}
-	lcd_print("lcd_type = %s(%u)\n", lcd_type_table[pConf->lcd_basic.lcd_type], pConf->lcd_basic.lcd_type);
+	lcd_print("lcd_type = %s(%u)\n", lcd_type_table[pconf->lcd_basic.lcd_type], pconf->lcd_basic.lcd_type);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "active_area", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get active_area\n");
 	}
 	else {
-		pConf->lcd_basic.h_active_area = be32_to_cpup((u32*)propdata);
-		pConf->lcd_basic.v_active_area = be32_to_cpup((((u32*)propdata)+1));
-		pConf->lcd_basic.screen_ratio_width = be32_to_cpup((u32*)propdata);
-		pConf->lcd_basic.screen_ratio_height = be32_to_cpup((((u32*)propdata)+1));
+		pconf->lcd_basic.h_active_area = be32_to_cpup((u32*)propdata);
+		pconf->lcd_basic.v_active_area = be32_to_cpup((((u32*)propdata)+1));
+		pconf->lcd_basic.screen_ratio_width = be32_to_cpup((u32*)propdata);
+		pconf->lcd_basic.screen_ratio_height = be32_to_cpup((((u32*)propdata)+1));
 	}
-	lcd_print("h_active_area = %umm, v_active_area = %umm\n", pConf->lcd_basic.h_active_area, pConf->lcd_basic.v_active_area);
+	lcd_print("h_active_area = %umm, v_active_area = %umm\n", pconf->lcd_basic.h_active_area, pconf->lcd_basic.v_active_area);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_bits_option", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get lcd_bits_option\n");
 	}
 	else {
-		pConf->lcd_basic.lcd_bits = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_basic.lcd_bits_option = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_basic.lcd_bits = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_basic.lcd_bits_option = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 	}
-	lcd_print("lcd_bits = %u, lcd_bits_option = %u\n", pConf->lcd_basic.lcd_bits, pConf->lcd_basic.lcd_bits_option);
-	
+	lcd_print("lcd_bits = %u, lcd_bits_option = %u\n", pconf->lcd_basic.lcd_bits, pconf->lcd_basic.lcd_bits_option);
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "resolution", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get resolution\n");
 	}
 	else {
-		pConf->lcd_basic.h_active = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_basic.v_active = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_basic.h_active = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_basic.v_active = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "period", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get period\n");
 	}
 	else {
-		pConf->lcd_basic.h_period = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_basic.v_period = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_basic.h_period = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_basic.v_period = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 	}
-	lcd_print("h_active = %u, v_active =%u, h_period = %u, v_period = %u\n", pConf->lcd_basic.h_active, pConf->lcd_basic.v_active, pConf->lcd_basic.h_period, pConf->lcd_basic.v_period);
-	
+	lcd_print("h_active = %u, v_active =%u, h_period = %u, v_period = %u\n", pconf->lcd_basic.h_active, pconf->lcd_basic.v_active, pconf->lcd_basic.h_period, pconf->lcd_basic.v_period);
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "clock_hz_pol", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get clock_hz_pol\n");
 	}
 	else {
-		pConf->lcd_timing.lcd_clk = be32_to_cpup((u32*)propdata);
-		pConf->lcd_timing.pol_ctrl = (be32_to_cpup((((u32*)propdata)+1)) << POL_CTRL_CLK);
+		pconf->lcd_timing.lcd_clk = be32_to_cpup((u32*)propdata);
+		pconf->lcd_timing.pol_ctrl = (be32_to_cpup((((u32*)propdata)+1)) << POL_CTRL_CLK);
 	}
-	lcd_print("pclk = %uHz, pol=%u\n", pConf->lcd_timing.lcd_clk, (pConf->lcd_timing.pol_ctrl >> POL_CTRL_CLK) & 1);
+	lcd_print("pclk = %uHz, pol=%u\n", pconf->lcd_timing.lcd_clk, (pconf->lcd_timing.pol_ctrl >> POL_CTRL_CLK) & 1);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "hsync_width_backporch", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get hsync_width_backporch\n");
 	}
 	else {
-		pConf->lcd_timing.hsync_width = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_timing.hsync_bp = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_timing.hsync_width = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_timing.hsync_bp = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 	}
-	lcd_print("hsync width = %u, backporch = %u\n", pConf->lcd_timing.hsync_width, pConf->lcd_timing.hsync_bp);
+	lcd_print("hsync width = %u, backporch = %u\n", pconf->lcd_timing.hsync_width, pconf->lcd_timing.hsync_bp);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "vsync_width_backporch", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get vsync_width_backporch\n");
 	}
 	else {
-		pConf->lcd_timing.vsync_width = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_timing.vsync_bp = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_timing.vsync_width = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_timing.vsync_bp = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
 	}
-	lcd_print("vsync width = %u, backporch = %u\n", pConf->lcd_timing.vsync_width, pConf->lcd_timing.vsync_bp);
+	lcd_print("vsync width = %u, backporch = %u\n", pconf->lcd_timing.vsync_width, pconf->lcd_timing.vsync_bp);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "pol_hsync_vsync", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get pol_hsync_vsync\n");
 	}
 	else {
-		pConf->lcd_timing.pol_ctrl = (pConf->lcd_timing.pol_ctrl & ~((1 << POL_CTRL_HS) | (1 << POL_CTRL_VS))) | ((be32_to_cpup((u32*)propdata) << POL_CTRL_HS) | (be32_to_cpup((((u32*)propdata)+1)) << POL_CTRL_VS));
+		pconf->lcd_timing.pol_ctrl = (pconf->lcd_timing.pol_ctrl & ~((1 << POL_CTRL_HS) | (1 << POL_CTRL_VS))) | ((be32_to_cpup((u32*)propdata) << POL_CTRL_HS) | (be32_to_cpup((((u32*)propdata)+1)) << POL_CTRL_VS));
 	}
-	lcd_print("pol hsync = %u, vsync = %u\n", (pConf->lcd_timing.pol_ctrl >> POL_CTRL_HS) & 1, (pConf->lcd_timing.pol_ctrl >> POL_CTRL_VS) & 1);
-	
+	lcd_print("pol hsync = %u, vsync = %u\n", (pconf->lcd_timing.pol_ctrl >> POL_CTRL_HS) & 1, (pconf->lcd_timing.pol_ctrl >> POL_CTRL_VS) & 1);
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "vsync_horizontal_phase", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 		lcd_print("faild to get vsync_horizontal_phase\n");
-		pConf->lcd_timing.vsync_h_phase =0;
+		pconf->lcd_timing.vsync_h_phase =0;
 	}
 	else {
-		pConf->lcd_timing.vsync_h_phase = ((((be32_to_cpup((u32*)propdata)) & 0x1) << 31) | (((be32_to_cpup((((u32*)propdata)+1)))&0xffff) << 0));
+		pconf->lcd_timing.vsync_h_phase = ((((be32_to_cpup((u32*)propdata)) & 0x1) << 31) | (((be32_to_cpup((((u32*)propdata)+1)))&0xffff) << 0));
 	}
-	lcd_print("vsync_h_phase = %u, sign = %u\n", (pConf->lcd_timing.vsync_h_phase&0xffff),(pConf->lcd_timing.vsync_h_phase>>31));
+	lcd_print("vsync_h_phase = %u, sign = %u\n", (pconf->lcd_timing.vsync_h_phase&0xffff),(pconf->lcd_timing.vsync_h_phase>>31));
 
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_MIPI) {
-		DSI_Config_t *cfg = pConf->lcd_control.mipi_config;
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_lane_num", NULL);
-		if(propdata == NULL){
-			printf("faild to get dsi_lane_num\n");
-			cfg->lane_num = 4;
+	if (pconf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
+		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dual_port", NULL);
+		if (propdata == NULL) {
+			printf("failed to get dual_port\n");
+			pconf->lcd_control.lvds_config->dual_port = 0;
 		} else {
-			cfg->lane_num = (unsigned char)(be32_to_cpup((u32*)propdata));
+			pconf->lcd_control.lvds_config->dual_port = be32_to_cpup((u32*)propdata);
 		}
-		lcd_print("dsi_lane_num= %d\n",  cfg->lane_num);
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_bit_rate_max", NULL);
-		if(propdata == NULL){
-			printf("faild to get dsi_bit_rate_max\n");
-			cfg->bit_rate_max = 0;
-		} 
-		else {
-			cfg->bit_rate_max = (be32_to_cpup((u32*)propdata));
-		}
-		lcd_print("dsi bit_rate max = %dMHz\n", cfg->bit_rate_max);
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "pclk_lanebyteclk_factor", NULL);
-		if(propdata == NULL){
-			printf("faild to get pclk_lanebyteclk_factor\n");
-			cfg->factor_numerator = 0;
-		} 
-		else {
-			 cfg->factor_numerator= (be32_to_cpup((u32*)propdata));
-		}
-		cfg->factor_denominator = 10;
-		lcd_print("pclk_lanebyteclk factor = %d\n", cfg->factor_numerator);
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_operation_mode", NULL);
-		if(propdata == NULL){
-			printf("faild to get dsi_operation_mode\n");
-			 cfg->operation_mode = ((1 << BIT_OPERATION_MODE_INIT) | (0 << BIT_OPERATION_MODE_DISP));
-		} 
-		else {
-			cfg->operation_mode= (((be32_to_cpup((u32*)propdata)) << BIT_OPERATION_MODE_INIT) | ((be32_to_cpup((((u32*)propdata)+1))) << BIT_OPERATION_MODE_DISP));
-		}
-		lcd_print("dsi_operation_mode init=%d, display=%d\n", ((cfg->operation_mode>>BIT_OPERATION_MODE_INIT) & 1), ((cfg->operation_mode>>BIT_OPERATION_MODE_DISP) & 1));
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_transfer_ctrl", NULL);
-		if(propdata == NULL){
-			printf("faild to get dsi_transfer_ctrl\n");
-			 cfg->transfer_ctrl = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH));
-		} 
-		else {
-			cfg->transfer_ctrl= (((be32_to_cpup((u32*)propdata)) << BIT_TRANS_CTRL_CLK) | ((be32_to_cpup((((u32*)propdata)+1))) << BIT_TRANS_CTRL_SWITCH));
-		}
-		lcd_print("dsi_transfer_ctrl clk=%d, switch=%d\n", ((cfg->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1), ((cfg->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 1));
-		//detect dsi init on table
-		if (pConf->lcd_control.mipi_config->dsi_init_on != NULL) {
-			propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_init_on", NULL);
-			if(propdata == NULL){
-				printf("faild to get dsi_init_on\n");
-			}
-			else {
-				i = 0;
-				while(i < DSI_INIT_ON_MAX) {
-					if ((be32_to_cpup((((u32*)propdata)+i))) == 0xff) {
-						if ((be32_to_cpup((((u32*)propdata)+i+1))) == 0xff) {
-							i += 2;
-							break;
-						}
-						i += 2;
-					}
-					else if (((be32_to_cpup((((u32*)propdata)+i))) & 0xf) == 0x0) {
-						printf("get dsi_init_on wrong data_type: 0x%02x\n", (be32_to_cpup((((u32*)propdata)+i))));
-						break;
-					}
-					else {
-						if ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) > DSI_INIT_ON_MAX)
-							break;
-						else
-							i = i + (DSI_CMD_CNT_INDEX+1) + ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) & 0xff);
-					}
-				}
-				i = (i > DSI_INIT_ON_MAX) ? DSI_INIT_ON_MAX : i;
-				lcd_print("dsi_init_on: ");
-				for (j=0; j<i; j++) {
-					cfg->dsi_init_on[j] = (unsigned char)((be32_to_cpup((((u32*)propdata)+j))) & 0xff);
-					lcd_print("0x%02x ", cfg->dsi_init_on[j]);
-				}
-				lcd_print("\n");
-			}
-		}
-		//detect dsi init off table
-		if (pConf->lcd_control.mipi_config->dsi_init_off != NULL) {
-			propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dsi_init_off", NULL);
-			if(propdata == NULL){
-				printf("faild to get dsi_init_off\n");
-			}
-			else {
-				i = 0;
-				while(i < DSI_INIT_OFF_MAX) {
-					if ((be32_to_cpup((((u32*)propdata)+i))) == 0xff) {
-						if ((be32_to_cpup((((u32*)propdata)+i+1))) == 0xff) {
-							i += 2;
-							break;
-						}
-						i += 2;
-					}
-					else if (((be32_to_cpup((((u32*)propdata)+i))) & 0xf) == 0x0) {
-						printf("get dsi_init_off wrong data_type: 0x%02x\n", (be32_to_cpup((((u32*)propdata)+i))));
-						break;
-					}
-					else {
-						if ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) > DSI_INIT_OFF_MAX)
-							break;
-						else
-							i = i + (DSI_CMD_CNT_INDEX+1) + ((be32_to_cpup((((u32*)propdata)+i+DSI_CMD_CNT_INDEX))) & 0xff);
-					}
-				}
-				i = (i > DSI_INIT_OFF_MAX) ? DSI_INIT_OFF_MAX : i;
-				lcd_print("dsi_init_off: ");
-				for (j=0; j<i; j++) {
-					cfg->dsi_init_off[j] = (unsigned char)((be32_to_cpup((((u32*)propdata)+j))) & 0xff);
-					lcd_print("0x%02x ", cfg->dsi_init_off[j]);
-				}
-				lcd_print("\n");
-			}
-		}
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_extern_init", NULL);
-		if(propdata == NULL){
-			printf("faild to get lcd_extern_init\n");
-			cfg->lcd_extern_init = 0;
-		}
-		else {
-			cfg->lcd_extern_init = (unsigned char)(be32_to_cpup((u32*)propdata));
-		}
-		lcd_print("lcd_extern_init = %d\n", cfg->lcd_extern_init);
+		lcd_print("dual_port = %d\n", pconf->lcd_control.lvds_config->dual_port);
 	}
-	else if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_EDP) {
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "max_lane_count", NULL);
-		if(propdata == NULL){
-			printf("faild to get max_lane_count\n");
-			pConf->lcd_control.edp_config->max_lane_count = 4;
-		}
-		else {
-			pConf->lcd_control.edp_config->max_lane_count = (unsigned char)(be32_to_cpup((u32*)propdata));
-		}
-		lcd_print("max_lane_count = %d\n", pConf->lcd_control.edp_config->max_lane_count);
-	}
-	
+
 #ifdef CONFIG_AML_LCD_EXTERN
 	lcd_ext_driver = aml_lcd_extern_get_driver();
 	if (lcd_ext_driver == NULL) {
 		printf("no lcd_extern driver\n");
 	} else {
 		lcd_ext_driver->dt_addr = dt_addr;
-		if (lcd_ext_driver->get_lcd_ext_config){
+		if (lcd_ext_driver->get_lcd_ext_config) {
 			ret = lcd_ext_driver->get_lcd_ext_config();
 			if (ret)
 				printf("[lcd_extern] get_lcd_ext_config error\n");
@@ -1225,308 +1067,252 @@ static int _get_lcd_model_timing(Lcd_Config_t *pConf)
 		}
 	}
 #endif
-	
+
 	return ret;
 }
 
-static int _get_lcd_default_config(Lcd_Config_t *pConf)
+static int _get_lcd_default_config(Lcd_Config_t *pconf)
 {
 	int ret=0;
 	int nodeoffset;
 	char * propdata;
 	int i;
 	unsigned int lcd_gamma_multi = 0;
-	
+
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
-	if(nodeoffset < 0) {
+	if (nodeoffset < 0) {
 		printf("lcd driver init: not find /lcd node %s.\n",fdt_strerror(nodeoffset));
 		return ret;
 	}
-	
-	if (pConf->lcd_basic.lcd_bits_option == 1) {
+
+	if (pconf->lcd_basic.lcd_bits_option == 1) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_bits_user", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match lcd_bits_user, use panel typical setting.\n");
 		}
 		else {
-			pConf->lcd_basic.lcd_bits = (unsigned short)(be32_to_cpup((u32*)propdata));
-			printf("lcd_bits = %u\n", pConf->lcd_basic.lcd_bits);
+			pconf->lcd_basic.lcd_bits = (unsigned short)(be32_to_cpup((u32*)propdata));
+			printf("lcd_bits = %u\n", pconf->lcd_basic.lcd_bits);
 		}
 	}
-	
+
 	//hardware design config
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
+	if (pconf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "ttl_rb_bit_swap", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match ttl_rb_bit_swap, use default setting.\n");
 		}
 		else {
-			pConf->lcd_control.ttl_config->rb_swap = (unsigned char)(be32_to_cpup((u32*)propdata));
-			pConf->lcd_control.ttl_config->bit_swap = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
-			printf("ttl rb_swap = %u, bit_swap = %u\n", pConf->lcd_control.ttl_config->rb_swap, pConf->lcd_control.ttl_config->bit_swap);
+			pconf->lcd_control.ttl_config->rb_swap = (unsigned char)(be32_to_cpup((u32*)propdata));
+			pconf->lcd_control.ttl_config->bit_swap = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
+			printf("ttl rb_swap = %u, bit_swap = %u\n", pconf->lcd_control.ttl_config->rb_swap, pconf->lcd_control.ttl_config->bit_swap);
 		}
 	}
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
+	if (pconf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lvds_pn_port_swap", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match lvds_pn_port_swap, use default setting.\n");
-			pConf->lcd_control.lvds_config->pn_swap = 0;
-			pConf->lcd_control.lvds_config->port_swap = 0;
+			pconf->lcd_control.lvds_config->pn_swap = 0;
+			pconf->lcd_control.lvds_config->port_swap = 0;
 		} else {
-			pConf->lcd_control.lvds_config->pn_swap = be32_to_cpup((u32*)propdata);
-			pConf->lcd_control.lvds_config->port_swap = be32_to_cpup((((u32*)propdata)+1));
+			pconf->lcd_control.lvds_config->pn_swap = be32_to_cpup((u32*)propdata);
+			pconf->lcd_control.lvds_config->port_swap = be32_to_cpup((((u32*)propdata)+1));
 			printf("lvds pn_swap = %u, port_swap=%u\n",
-				pConf->lcd_control.lvds_config->pn_swap,
-				pConf->lcd_control.lvds_config->port_swap);
+				pconf->lcd_control.lvds_config->pn_swap,
+				pconf->lcd_control.lvds_config->port_swap);
 		}
 	}
-	
+
 	//recommend setting
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "valid_hvsync_de", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match valid_hvsync_de, use default setting.\n");
 	}
 	else {
-		pConf->lcd_timing.hvsync_valid = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_timing.de_valid = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		lcd_print("valid hvsync = %u, de = %u\n", pConf->lcd_timing.hvsync_valid, pConf->lcd_timing.de_valid);
+		pconf->lcd_timing.hvsync_valid = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_timing.de_valid = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		lcd_print("valid hvsync = %u, de = %u\n", pconf->lcd_timing.hvsync_valid, pconf->lcd_timing.de_valid);
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "hsign_hoffset_vsign_voffset", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match hsign_hoffset_vsign_voffset, use default setting.\n");
-		pConf->lcd_timing.h_offset = 0;
-		pConf->lcd_timing.v_offset = 0;
+		pconf->lcd_timing.h_offset = 0;
+		pconf->lcd_timing.v_offset = 0;
 	}
 	else {
-		pConf->lcd_timing.h_offset = ((be32_to_cpup((u32*)propdata) << 31) | ((be32_to_cpup((((u32*)propdata)+1)) & 0xffff) << 0));
-		pConf->lcd_timing.v_offset = ((be32_to_cpup((((u32*)propdata)+2)) << 31) | ((be32_to_cpup((((u32*)propdata)+3)) & 0xffff) << 0));
-		lcd_print("h_offset = %s%u, ", (((pConf->lcd_timing.h_offset >> 31) & 1) ? "-" : ""), (pConf->lcd_timing.h_offset & 0xffff));
-		lcd_print("v_offset = %s%u\n", (((pConf->lcd_timing.v_offset >> 31) & 1) ? "-" : ""), (pConf->lcd_timing.v_offset & 0xffff));
-	}	
+		pconf->lcd_timing.h_offset = ((be32_to_cpup((u32*)propdata) << 31) | ((be32_to_cpup((((u32*)propdata)+1)) & 0xffff) << 0));
+		pconf->lcd_timing.v_offset = ((be32_to_cpup((((u32*)propdata)+2)) << 31) | ((be32_to_cpup((((u32*)propdata)+3)) & 0xffff) << 0));
+		lcd_print("h_offset = %s%u, ", (((pconf->lcd_timing.h_offset >> 31) & 1) ? "-" : ""), (pconf->lcd_timing.h_offset & 0xffff));
+		lcd_print("v_offset = %s%u\n", (((pconf->lcd_timing.v_offset >> 31) & 1) ? "-" : ""), (pconf->lcd_timing.v_offset & 0xffff));
+	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "dither_user_ctrl", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match dither_user_ctrl, use default setting.\n");
 	}
 	else {
-		pConf->lcd_effect.dith_user = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_effect.dith_cntl_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		lcd_print("dither_user = %u, dither_ctrl = 0x%x\n", pConf->lcd_effect.dith_user, pConf->lcd_effect.dith_cntl_addr);
+		pconf->lcd_effect.dith_user = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_effect.dith_cntl_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		lcd_print("dither_user = %u, dither_ctrl = 0x%x\n", pconf->lcd_effect.dith_user, pconf->lcd_effect.dith_cntl_addr);
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "vadj_brightness_contrast_saturation", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match vadj_brightness_contrast_saturation, use default setting.\n");
 	}
 	else {
-		pConf->lcd_effect.vadj_brightness = be32_to_cpup((u32*)propdata);
-		pConf->lcd_effect.vadj_contrast = be32_to_cpup((((u32*)propdata)+1));
-		pConf->lcd_effect.vadj_saturation = be32_to_cpup((((u32*)propdata)+2));
-		lcd_print("vadj_brightness = 0x%x, vadj_contrast = 0x%x, vadj_saturation = 0x%x\n", pConf->lcd_effect.vadj_brightness, pConf->lcd_effect.vadj_contrast, pConf->lcd_effect.vadj_saturation);
+		pconf->lcd_effect.vadj_brightness = be32_to_cpup((u32*)propdata);
+		pconf->lcd_effect.vadj_contrast = be32_to_cpup((((u32*)propdata)+1));
+		pconf->lcd_effect.vadj_saturation = be32_to_cpup((((u32*)propdata)+2));
+		lcd_print("vadj_brightness = 0x%x, vadj_contrast = 0x%x, vadj_saturation = 0x%x\n", pconf->lcd_effect.vadj_brightness, pconf->lcd_effect.vadj_contrast, pconf->lcd_effect.vadj_saturation);
 	}
-	
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_en_reverse", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match gamma_en_reverse, use default setting.\n");
 	}
 	else {
-		pConf->lcd_effect.gamma_ctrl = ((be32_to_cpup((u32*)propdata) << GAMMA_CTRL_EN) | ((be32_to_cpup((((u32*)propdata)+1))) << GAMMA_CTRL_REVERSE));
-		lcd_print("gamma_en = %u, gamma_reverse = %u\n", ((pConf->lcd_effect.gamma_ctrl >> GAMMA_CTRL_EN) & 1), ((pConf->lcd_effect.gamma_ctrl >> GAMMA_CTRL_REVERSE) & 1));
+		pconf->lcd_effect.gamma_ctrl = ((be32_to_cpup((u32*)propdata) << GAMMA_CTRL_EN) | ((be32_to_cpup((((u32*)propdata)+1))) << GAMMA_CTRL_REVERSE));
+		lcd_print("gamma_en = %u, gamma_reverse = %u\n", ((pconf->lcd_effect.gamma_ctrl >> GAMMA_CTRL_EN) & 1), ((pconf->lcd_effect.gamma_ctrl >> GAMMA_CTRL_REVERSE) & 1));
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_multi_rgb_coeff", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match gamma_multi_rgb_coeff, use default setting.\n");
 	}
 	else {
 		lcd_gamma_multi = be32_to_cpup((u32*)propdata);
-		pConf->lcd_effect.gamma_r_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		pConf->lcd_effect.gamma_g_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+2)));
-		pConf->lcd_effect.gamma_b_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+3)));
-		lcd_print("gamma_multi = %u, gamma_r_coeff = %u, gamma_g_coeff = %u, gamma_b_coeff = %u\n", lcd_gamma_multi, pConf->lcd_effect.gamma_r_coeff, pConf->lcd_effect.gamma_g_coeff, pConf->lcd_effect.gamma_b_coeff);
+		pconf->lcd_effect.gamma_r_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		pconf->lcd_effect.gamma_g_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+2)));
+		pconf->lcd_effect.gamma_b_coeff = (unsigned short)(be32_to_cpup((((u32*)propdata)+3)));
+		lcd_print("gamma_multi = %u, gamma_r_coeff = %u, gamma_g_coeff = %u, gamma_b_coeff = %u\n", lcd_gamma_multi, pconf->lcd_effect.gamma_r_coeff, pconf->lcd_effect.gamma_g_coeff, pconf->lcd_effect.gamma_b_coeff);
 	}
 	if (lcd_gamma_multi == 1) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_table_r", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match gamma_table_r, use default table.\n");
-			lcd_setup_gamma_table(pConf, 0);
+			lcd_setup_gamma_table(pconf, 0);
 		}
 		else {
 			for (i=0; i<256; i++) {
-				pConf->lcd_effect.GammaTableR[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableR[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
 			}
 			lcd_print("load gamma_table_r.\n");
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_table_g", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match gamma_table_g, use default table.\n");
-			lcd_setup_gamma_table(pConf, 1);
+			lcd_setup_gamma_table(pconf, 1);
 		}
 		else {
 			for (i=0; i<256; i++) {
-				pConf->lcd_effect.GammaTableG[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableG[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
 			}
 			lcd_print("load gamma_table_g.\n");
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_table_b", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match gamma_table_b, use default table.\n");
-			lcd_setup_gamma_table(pConf, 2);
+			lcd_setup_gamma_table(pconf, 2);
 		}
 		else {
 			for (i=0; i<256; i++) {
-				pConf->lcd_effect.GammaTableB[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableB[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
 			}
 			lcd_print("load gamma_table_b.\n");
 		}
 	}
 	else {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "gamma_table", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match gamma_table, use default table.\n");
-			lcd_setup_gamma_table(pConf, 3);
+			lcd_setup_gamma_table(pconf, 3);
 		}
 		else {
 			for (i=0; i<256; i++) {
-				pConf->lcd_effect.GammaTableR[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
-				pConf->lcd_effect.GammaTableG[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
-				pConf->lcd_effect.GammaTableB[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableR[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableG[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
+				pconf->lcd_effect.GammaTableB[i] = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)) << 2);
 			}
 			lcd_print("load gamma_table.\n");
 		}
 	}
-	
+
 	//default setting
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "clock_spread_spectrum", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match clock_spread_spectrum, use default setting.\n");
 	}
 	else {
-		pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (be32_to_cpup((u32*)propdata) << CLK_CTRL_SS);
-		lcd_print("lcd clock spread_spectrum = %u\n", (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf);
+		pconf->lcd_timing.clk_ctrl = (pconf->lcd_timing.clk_ctrl & ~(0xf << CLK_CTRL_SS)) | (be32_to_cpup((u32*)propdata) << CLK_CTRL_SS);
+		lcd_print("lcd clock spread_spectrum = %u\n", (pconf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf);
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "clock_auto_generation", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match clock_auto_generation, use default setting.\n");
 	}
 	else {
-		pConf->lcd_timing.clk_ctrl = ((pConf->lcd_timing.clk_ctrl & ~(1 << CLK_CTRL_AUTO)) | (be32_to_cpup((u32*)propdata) << CLK_CTRL_AUTO));
-		lcd_print("lcd clock auto_generation = %u\n", (pConf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1);
+		pconf->lcd_timing.clk_ctrl = ((pconf->lcd_timing.clk_ctrl & ~(1 << CLK_CTRL_AUTO)) | (be32_to_cpup((u32*)propdata) << CLK_CTRL_AUTO));
+		lcd_print("lcd clock auto_generation = %u\n", (pconf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1);
 	}
-	if (((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1) == 0) {
+	if (((pconf->lcd_timing.clk_ctrl >> CLK_CTRL_AUTO) & 1) == 0) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "clk_pll_div_clk_ctrl", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match clk_pll_div_clk_ctrl, use default setting.\n");
 		}
 		else {
-			pConf->lcd_timing.pll_ctrl = be32_to_cpup((u32*)propdata);
-			pConf->lcd_timing.div_ctrl = be32_to_cpup((((u32*)propdata)+1));
-			pConf->lcd_timing.clk_ctrl = (pConf->lcd_timing.clk_ctrl & ~(0xffff >> 0)) | (be32_to_cpup((((u32*)propdata)+2)) >> 0);
-			printf("pll_ctrl = 0x%x, div_ctrl = 0x%x, clk_ctrl=0x%x\n", pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, (pConf->lcd_timing.clk_ctrl & 0xffff));
+			pconf->lcd_timing.pll_ctrl = be32_to_cpup((u32*)propdata);
+			pconf->lcd_timing.div_ctrl = be32_to_cpup((((u32*)propdata)+1));
+			pconf->lcd_timing.clk_ctrl = (pconf->lcd_timing.clk_ctrl & ~(0xffff >> 0)) | (be32_to_cpup((((u32*)propdata)+2)) >> 0);
+			printf("pll_ctrl = 0x%x, div_ctrl = 0x%x, clk_ctrl=0x%x\n", pconf->lcd_timing.pll_ctrl, pconf->lcd_timing.div_ctrl, (pconf->lcd_timing.clk_ctrl & 0xffff));
 		}
 	}
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
+	if (pconf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lvds_vswing", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match lvds_vswing, use default setting.\n");
 		}
 		else {
-			pConf->lcd_control.lvds_config->lvds_vswing = be32_to_cpup((u32*)propdata);
-			printf("lvds_vswing level = %u\n", pConf->lcd_control.lvds_config->lvds_vswing);
+			pconf->lcd_control.lvds_config->lvds_vswing = be32_to_cpup((u32*)propdata);
+			printf("lvds_vswing level = %u\n", pconf->lcd_control.lvds_config->lvds_vswing);
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lvds_user_repack", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			lcd_print("don't find to match lvds_user_repack, use default setting.\n");
-			pConf->lcd_control.lvds_config->lvds_repack_user = 0;
-			pConf->lcd_control.lvds_config->lvds_repack = 1;
+			pconf->lcd_control.lvds_config->lvds_repack_user = 0;
+			pconf->lcd_control.lvds_config->lvds_repack = 1;
 		}
 		else {
-			pConf->lcd_control.lvds_config->lvds_repack_user = be32_to_cpup((u32*)propdata);
-			pConf->lcd_control.lvds_config->lvds_repack = be32_to_cpup((((u32*)propdata)+1));
+			pconf->lcd_control.lvds_config->lvds_repack_user = be32_to_cpup((u32*)propdata);
+			pconf->lcd_control.lvds_config->lvds_repack = be32_to_cpup((((u32*)propdata)+1));
 			if ((be32_to_cpup((u32*)propdata)) == 0) {
-				lcd_print("lvds_repack_user = %u, lvds_repack = %u\n", pConf->lcd_control.lvds_config->lvds_repack_user, pConf->lcd_control.lvds_config->lvds_repack);
+				lcd_print("lvds_repack_user = %u, lvds_repack = %u\n", pconf->lcd_control.lvds_config->lvds_repack_user, pconf->lcd_control.lvds_config->lvds_repack);
 			}
 			else {
-				printf("lvds_repack = %u\n", pConf->lcd_control.lvds_config->lvds_repack);
+				printf("lvds_repack = %u\n", pconf->lcd_control.lvds_config->lvds_repack);
 			}
-		}
-	}
-	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_EDP) {
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "edp_user_link_rate_lane_count", NULL);
-		if(propdata == NULL){
-			lcd_print("don't find to match edp_user_link_rate_lane_count, use default setting.\n");
-			pConf->lcd_control.edp_config->link_user = 0;
-			pConf->lcd_control.edp_config->link_rate = 1;
-			pConf->lcd_control.edp_config->lane_count = 4;
-		}
-		else {
-			pConf->lcd_control.edp_config->link_user = (unsigned char)(be32_to_cpup((u32*)propdata));
-			pConf->lcd_control.edp_config->link_rate = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
-			pConf->lcd_control.edp_config->lane_count = (unsigned char)(be32_to_cpup((((u32*)propdata)+2)));
-			if (pConf->lcd_control.edp_config->link_user > 0) {
-				printf("edp link_rate = %s, lane_count = %u\n", ((pConf->lcd_control.edp_config->link_rate == 0) ? "1.62G":"2.7G"), pConf->lcd_control.edp_config->lane_count);
-			}
-			else {
-				lcd_print("edp user = %u, link_rate = %s, lane_count = %u\n", pConf->lcd_control.edp_config->link_user, ((pConf->lcd_control.edp_config->link_rate == 0) ? "1.62G":"2.7G"), pConf->lcd_control.edp_config->lane_count);
-			}
-		}
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "edp_link_adaptive_vswing", NULL);
-		if(propdata == NULL){
-			lcd_print("don't find to match edp_link_adaptive_vswing, use default setting.\n");
-			pConf->lcd_control.edp_config->link_adaptive = 0;
-			pConf->lcd_control.edp_config->vswing = 0;
-			pConf->lcd_control.edp_config->preemphasis = 0;
-		}
-		else {
-			pConf->lcd_control.edp_config->link_adaptive = (unsigned char)(be32_to_cpup((u32*)propdata));
-			pConf->lcd_control.edp_config->vswing = (unsigned char)(be32_to_cpup((((u32*)propdata)+1)));
-			pConf->lcd_control.edp_config->preemphasis = 0;
-			if (pConf->lcd_control.edp_config->link_adaptive == 0) {
-				printf("edp swing_level = %u\n", pConf->lcd_control.edp_config->vswing);
-			}
-			else {
-				lcd_print("edp link_adaptive = %u, swing_level = %u\n", pConf->lcd_control.edp_config->link_adaptive, pConf->lcd_control.edp_config->vswing);
-			}
-		}
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "edp_sync_clock_mode", NULL);
-		if(propdata == NULL){
-			lcd_print("don't find to match edp_sync_clock_mode, use default setting.\n");
-			pConf->lcd_control.edp_config->sync_clock_mode = 1;
-		}
-		else {
-			pConf->lcd_control.edp_config->sync_clock_mode = (be32_to_cpup((u32*)propdata) & 1);
-			printf("edp sync_clock_mode = %u\n", pConf->lcd_control.edp_config->sync_clock_mode);
-		}
-		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "edp_edid_timing_used", NULL);
-		if(propdata == NULL){
-			lcd_print("don't find to match edp_edid_timing_used, use default setting.\n");
-			pConf->lcd_control.edp_config->edid_timing_used = 0;
-		}
-		else {
-			pConf->lcd_control.edp_config->edid_timing_used = (be32_to_cpup((u32*)propdata) & 1);
-			printf("edp edid_timing_used = %u\n", pConf->lcd_control.edp_config->edid_timing_used);
 		}
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "rgb_base_coeff", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		lcd_print("don't find to match rgb_base_coeff, use default setting.\n");
 	}
 	else {
-		pConf->lcd_effect.rgb_base_addr = (unsigned short)(be32_to_cpup((u32*)propdata));
-		pConf->lcd_effect.rgb_coeff_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		lcd_print("rgb_base = 0x%x, rgb_coeff = 0x%x\n", pConf->lcd_effect.rgb_base_addr, pConf->lcd_effect.rgb_coeff_addr);
+		pconf->lcd_effect.rgb_base_addr = (unsigned short)(be32_to_cpup((u32*)propdata));
+		pconf->lcd_effect.rgb_coeff_addr = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		lcd_print("rgb_base = 0x%x, rgb_coeff = 0x%x\n", pconf->lcd_effect.rgb_base_addr, pconf->lcd_effect.rgb_coeff_addr);
 	}
 	// propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "video_on_pixel_line", NULL);
 	// if(propdata == NULL){
 		// lcd_print("don't find to match video_on_pixel_line, use default setting.\n");
 	// }
 	// else {
-		// pConf->lcd_timing.video_on_pixel = (unsigned short)(be32_to_cpup((u32*)propdata));
-		// pConf->lcd_timing.video_on_line = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
-		// lcd_print("video_on_pixel = %u, video_on_line = %u\n", pConf->lcd_timing.video_on_pixel, pConf->lcd_timing.video_on_line);
+		// pconf->lcd_timing.video_on_pixel = (unsigned short)(be32_to_cpup((u32*)propdata));
+		// pconf->lcd_timing.video_on_line = (unsigned short)(be32_to_cpup((((u32*)propdata)+1)));
+		// lcd_print("video_on_pixel = %u, video_on_line = %u\n", pconf->lcd_timing.video_on_pixel, pconf->lcd_timing.video_on_line);
 	// }
 
 	return ret;
 }
 
-static int _get_lcd_power_config(Lcd_Config_t *pConf)
+static int _get_lcd_power_config(Lcd_Config_t *pconf)
 {
 	int i;
 	int index;
@@ -1537,21 +1323,21 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 	struct fdt_property *prop;
 	char *p;
 	const char * str;
-	
+
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
-	if(nodeoffset < 0) {
+	if (nodeoffset < 0) {
 		printf("lcd driver init: not find /lcd node %s.\n",fdt_strerror(nodeoffset));
 		return ret;
 	}
-	
+
 	//lcd power on/off only for uboot
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "power_on_uboot", NULL);
 	if (propdata == NULL) {
 		lcd_print("faild to get power_on_uboot\n");
-		pConf->lcd_power_ctrl.power_on_uboot.type = LCD_POWER_TYPE_MAX;
-		pConf->lcd_power_ctrl.power_on_uboot.gpio = GPIO_MAX;
-		pConf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
-		pConf->lcd_power_ctrl.power_on_uboot.delay = 0;
+		pconf->lcd_power_ctrl.power_on_uboot.type = LCD_POWER_TYPE_MAX;
+		pconf->lcd_power_ctrl.power_on_uboot.gpio = GPIO_MAX;
+		pconf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
+		pconf->lcd_power_ctrl.power_on_uboot.delay = 0;
 	}
 	else {
 		prop = container_of(propdata, struct fdt_property, data);
@@ -1559,58 +1345,58 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 		str = p;
 		if ((strcmp(str, "null") == 0) || ((strcmp(str, "n") == 0))) {
 			lcd_print("no power_on_uboot config\n");
-			pConf->lcd_power_ctrl.power_on_uboot.type = LCD_POWER_TYPE_MAX;
-			pConf->lcd_power_ctrl.power_on_uboot.gpio = GPIO_MAX;
-			pConf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
-			pConf->lcd_power_ctrl.power_on_uboot.delay = 0;
+			pconf->lcd_power_ctrl.power_on_uboot.type = LCD_POWER_TYPE_MAX;
+			pconf->lcd_power_ctrl.power_on_uboot.gpio = GPIO_MAX;
+			pconf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
+			pconf->lcd_power_ctrl.power_on_uboot.delay = 0;
 		}
 		else {
-			for(index = 0; index < LCD_POWER_TYPE_MAX; index++) {
-				if(!strcmp(str, lcd_power_type_table[index]))
+			for (index = 0; index < LCD_POWER_TYPE_MAX; index++) {
+				if (!strcmp(str, lcd_power_type_table[index]))
 					break;
 			}
-			pConf->lcd_power_ctrl.power_on_uboot.type = index;
-			if (pConf->lcd_power_ctrl.power_on_uboot.type < LCD_POWER_TYPE_SIGNAL) {
+			pconf->lcd_power_ctrl.power_on_uboot.type = index;
+			if (pconf->lcd_power_ctrl.power_on_uboot.type < LCD_POWER_TYPE_SIGNAL) {
 				p += strlen(p) + 1;
 				str = p;
-				if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_gpio_name_map_num(str);
+				if (pconf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
+					pconf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_gpio_name_map_num(str);
 				}
-				else if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
+				else if (pconf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
+					pconf->lcd_power_ctrl.power_on_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
 				str = p;
 				if ((strcmp(str, "output_low") == 0) || (strcmp(str, "0") == 0)) {
-					pConf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_OUTPUT_LOW;
+					pconf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_OUTPUT_LOW;
 				}
 				else if ((strcmp(str, "output_high") == 0) || (strcmp(str, "1") == 0)) {
-					pConf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_OUTPUT_HIGH;
+					pconf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_OUTPUT_HIGH;
 				}
 				else if ((strcmp(str, "input") == 0) || (strcmp(str, "2") == 0)) {
-					pConf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
+					pconf->lcd_power_ctrl.power_on_uboot.value = LCD_GPIO_INPUT;
 				}
 			}
-			pConf->lcd_power_ctrl.power_on_uboot.delay = 50;
-			lcd_print("find power_on_uboot: type = %s(%d), ", lcd_power_type_table[pConf->lcd_power_ctrl.power_on_uboot.type], pConf->lcd_power_ctrl.power_on_uboot.type);
-			if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
-				lcd_print("gpio = %d, ", pConf->lcd_power_ctrl.power_on_uboot.gpio);
-				lcd_print("value = %d\n", pConf->lcd_power_ctrl.power_on_uboot.value);
+			pconf->lcd_power_ctrl.power_on_uboot.delay = 50;
+			lcd_print("find power_on_uboot: type = %s(%d), ", lcd_power_type_table[pconf->lcd_power_ctrl.power_on_uboot.type], pconf->lcd_power_ctrl.power_on_uboot.type);
+			if (pconf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_CPU) {
+				lcd_print("gpio = %d, ", pconf->lcd_power_ctrl.power_on_uboot.gpio);
+				lcd_print("value = %d\n", pconf->lcd_power_ctrl.power_on_uboot.value);
 			}
-			else if (pConf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
-				lcd_print("gpio = %d, ", pConf->lcd_power_ctrl.power_on_uboot.gpio);
-				lcd_print("value = %d\n", pConf->lcd_power_ctrl.power_on_uboot.value);
+			else if (pconf->lcd_power_ctrl.power_on_uboot.type == LCD_POWER_TYPE_PMU) {
+				lcd_print("gpio = %d, ", pconf->lcd_power_ctrl.power_on_uboot.gpio);
+				lcd_print("value = %d\n", pconf->lcd_power_ctrl.power_on_uboot.value);
 			}
 		}
 	}
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "power_off_uboot", NULL);
 	if (propdata == NULL) {
 		lcd_print("faild to get power_off_uboot\n");
-		pConf->lcd_power_ctrl.power_off_uboot.type = LCD_POWER_TYPE_MAX;
-		pConf->lcd_power_ctrl.power_off_uboot.gpio = GPIO_MAX;
-		pConf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
-		pConf->lcd_power_ctrl.power_off_uboot.delay = 0;
+		pconf->lcd_power_ctrl.power_off_uboot.type = LCD_POWER_TYPE_MAX;
+		pconf->lcd_power_ctrl.power_off_uboot.gpio = GPIO_MAX;
+		pconf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
+		pconf->lcd_power_ctrl.power_off_uboot.delay = 0;
 	}
 	else {
 		prop = container_of(propdata, struct fdt_property, data);
@@ -1618,52 +1404,52 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 		str = p;
 		if ((strcmp(str, "null") == 0) || ((strcmp(str, "n") == 0))) {
 			lcd_print("no power_off_uboot config\n");
-			pConf->lcd_power_ctrl.power_off_uboot.type = LCD_POWER_TYPE_MAX;
-			pConf->lcd_power_ctrl.power_off_uboot.gpio = GPIO_MAX;
-			pConf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
-			pConf->lcd_power_ctrl.power_off_uboot.delay = 0;
+			pconf->lcd_power_ctrl.power_off_uboot.type = LCD_POWER_TYPE_MAX;
+			pconf->lcd_power_ctrl.power_off_uboot.gpio = GPIO_MAX;
+			pconf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
+			pconf->lcd_power_ctrl.power_off_uboot.delay = 0;
 		}
 		else {
-			for(index = 0; index < LCD_POWER_TYPE_MAX; index++) {
-				if(!strcmp(str, lcd_power_type_table[index]))
+			for (index = 0; index < LCD_POWER_TYPE_MAX; index++) {
+				if (!strcmp(str, lcd_power_type_table[index]))
 					break;
 			}
-			pConf->lcd_power_ctrl.power_off_uboot.type = index;
-			if (pConf->lcd_power_ctrl.power_off_uboot.type < LCD_POWER_TYPE_SIGNAL) {
+			pconf->lcd_power_ctrl.power_off_uboot.type = index;
+			if (pconf->lcd_power_ctrl.power_off_uboot.type < LCD_POWER_TYPE_SIGNAL) {
 				p += strlen(p) + 1;
 				str = p;
-				if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_gpio_name_map_num(str);
+				if (pconf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
+					pconf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_gpio_name_map_num(str);
 				}
-				else if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
+				else if (pconf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
+					pconf->lcd_power_ctrl.power_off_uboot.gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
 				str = p;
 				if ((strcmp(str, "output_low") == 0) || (strcmp(str, "0") == 0)) {
-					pConf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_OUTPUT_LOW;
+					pconf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_OUTPUT_LOW;
 				}
 				else if ((strcmp(str, "output_high") == 0) || (strcmp(str, "1") == 0)) {
-					pConf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_OUTPUT_HIGH;
+					pconf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_OUTPUT_HIGH;
 				}
 				else if ((strcmp(str, "input") == 0) || (strcmp(str, "2") == 0)) {
-					pConf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
+					pconf->lcd_power_ctrl.power_off_uboot.value = LCD_GPIO_INPUT;
 				}
 			}
-			pConf->lcd_power_ctrl.power_off_uboot.delay = 0;
-			lcd_print("find power_off_uboot: type = %s(%d), ", lcd_power_type_table[pConf->lcd_power_ctrl.power_off_uboot.type], pConf->lcd_power_ctrl.power_off_uboot.type);
-			if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
-				lcd_print("gpio = %d, ", pConf->lcd_power_ctrl.power_off_uboot.gpio);
-				lcd_print("value = %d\n", pConf->lcd_power_ctrl.power_off_uboot.value);
+			pconf->lcd_power_ctrl.power_off_uboot.delay = 0;
+			lcd_print("find power_off_uboot: type = %s(%d), ", lcd_power_type_table[pconf->lcd_power_ctrl.power_off_uboot.type], pconf->lcd_power_ctrl.power_off_uboot.type);
+			if (pconf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_CPU) {
+				lcd_print("gpio = %d, ", pconf->lcd_power_ctrl.power_off_uboot.gpio);
+				lcd_print("value = %d\n", pconf->lcd_power_ctrl.power_off_uboot.value);
 			}
-			else if (pConf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
-				lcd_print("gpio = %d, ", pConf->lcd_power_ctrl.power_off_uboot.gpio);
-				lcd_print("value = %d\n", pConf->lcd_power_ctrl.power_off_uboot.value);
+			else if (pconf->lcd_power_ctrl.power_off_uboot.type == LCD_POWER_TYPE_PMU) {
+				lcd_print("gpio = %d, ", pconf->lcd_power_ctrl.power_off_uboot.gpio);
+				lcd_print("value = %d\n", pconf->lcd_power_ctrl.power_off_uboot.value);
 			}
 		}
 	}
-	
+
 	//lcd power on
 	for (i=0; i < LCD_POWER_CTRL_STEP_MAX; i++) {
 		sprintf(propname, "power_on_step_%d", i+1);
@@ -1679,45 +1465,45 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 			if ((strcmp(str, "null") == 0) || ((strcmp(str, "n") == 0))) {
 				break;
 			}
-			for(index = 0; index < LCD_POWER_TYPE_MAX; index++) {
-				if(!strcmp(str, lcd_power_type_table[index]))
+			for (index = 0; index < LCD_POWER_TYPE_MAX; index++) {
+				if (!strcmp(str, lcd_power_type_table[index]))
 					break;
 			}
-			pConf->lcd_power_ctrl.power_on_config[i].type = index;
-			if (pConf->lcd_power_ctrl.power_on_config[i].type < LCD_POWER_TYPE_SIGNAL) {
+			pconf->lcd_power_ctrl.power_on_config[i].type = index;
+			if (pconf->lcd_power_ctrl.power_on_config[i].type < LCD_POWER_TYPE_SIGNAL) {
 				p += strlen(p) + 1;
 				str = p;
-				if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_gpio_name_map_num(str);
+				if (pconf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
+					pconf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_gpio_name_map_num(str);
 				}
-				else if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
+				else if (pconf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
+					pconf->lcd_power_ctrl.power_on_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
 				str = p;
 				if ((strcmp(str, "output_low") == 0) || (strcmp(str, "0") == 0)) {
-					pConf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_OUTPUT_LOW;
+					pconf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_OUTPUT_LOW;
 				}
 				else if ((strcmp(str, "output_high") == 0) || (strcmp(str, "1") == 0)) {
-					pConf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_OUTPUT_HIGH;
+					pconf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_OUTPUT_HIGH;
 				}
 				else if ((strcmp(str, "input") == 0) || (strcmp(str, "2") == 0)) {
-					pConf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_INPUT;
+					pconf->lcd_power_ctrl.power_on_config[i].value = LCD_GPIO_INPUT;
 				}
 			}
 		}
 	}
-	pConf->lcd_power_ctrl.power_on_step = i;
-	lcd_print("lcd_power_on_step = %d\n", pConf->lcd_power_ctrl.power_on_step);
+	pconf->lcd_power_ctrl.power_on_step = i;
+	lcd_print("lcd_power_on_step = %d\n", pconf->lcd_power_ctrl.power_on_step);
 
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "power_on_delay", NULL);
 	if (propdata == NULL) {
 		printf("faild to get power_on_delay\n");
 	}
 	else {
-		for (i=0; i<pConf->lcd_power_ctrl.power_on_step; i++) {
-			pConf->lcd_power_ctrl.power_on_config[i].delay = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)));
+		for (i=0; i<pconf->lcd_power_ctrl.power_on_step; i++) {
+			pconf->lcd_power_ctrl.power_on_config[i].delay = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)));
 		}
 	}
 
@@ -1728,7 +1514,7 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 		if (propdata == NULL) {
 			lcd_print("faild to get %s\n", propname);
 			break;
-		}	
+		}
 		else {
 			prop = container_of(propdata, struct fdt_property, data);
 			p = prop->data;
@@ -1736,72 +1522,72 @@ static int _get_lcd_power_config(Lcd_Config_t *pConf)
 			if ((strcmp(str, "null") == 0) || ((strcmp(str, "n") == 0))) {
 				break;
 			}
-			for(index = 0; index < LCD_POWER_TYPE_MAX; index++) {
-				if(!strcmp(str, lcd_power_type_table[index]))
+			for (index = 0; index < LCD_POWER_TYPE_MAX; index++) {
+				if (!strcmp(str, lcd_power_type_table[index]))
 					break;
 			}
-			pConf->lcd_power_ctrl.power_off_config[i].type = index;
-			if (pConf->lcd_power_ctrl.power_off_config[i].type < LCD_POWER_TYPE_SIGNAL) {
+			pconf->lcd_power_ctrl.power_off_config[i].type = index;
+			if (pconf->lcd_power_ctrl.power_off_config[i].type < LCD_POWER_TYPE_SIGNAL) {
 				p += strlen(p) + 1;
 				str = p;
-				if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
-					pConf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_gpio_name_map_num(str);
+				if (pconf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
+					pconf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_gpio_name_map_num(str);
 				}
-				else if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
-					pConf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
+				else if (pconf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
+					pconf->lcd_power_ctrl.power_off_config[i].gpio = aml_lcd_pmu_gpio_name_map_num(str);
 				}
 
 				p += strlen(p) + 1;
 				str = p;
 				if ((strcmp(str, "output_low") == 0) || (strcmp(str, "0") == 0)) {
-					pConf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_OUTPUT_LOW;
+					pconf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_OUTPUT_LOW;
 				}
 				else if ((strcmp(str, "output_high") == 0) || (strcmp(str, "1") == 0)) {
-					pConf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_OUTPUT_HIGH;
+					pconf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_OUTPUT_HIGH;
 				}
 				else if ((strcmp(str, "input") == 0) || (strcmp(str, "2") == 0)) {
-					pConf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_INPUT;
+					pconf->lcd_power_ctrl.power_off_config[i].value = LCD_GPIO_INPUT;
 				}
 			}
 		}
 	}
-	pConf->lcd_power_ctrl.power_off_step = i;
-	lcd_print("lcd_power_off_step = %d\n", pConf->lcd_power_ctrl.power_off_step);
-	
+	pconf->lcd_power_ctrl.power_off_step = i;
+	lcd_print("lcd_power_off_step = %d\n", pconf->lcd_power_ctrl.power_off_step);
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "power_off_delay", NULL);
 	if (propdata == NULL) {
 		printf("faild to get power_off_delay\n");
 	}
 	else {
-		for (i=0; i<pConf->lcd_power_ctrl.power_off_step; i++) {
-			pConf->lcd_power_ctrl.power_off_config[i].delay = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)));
+		for (i=0; i<pconf->lcd_power_ctrl.power_off_step; i++) {
+			pconf->lcd_power_ctrl.power_off_config[i].delay = (unsigned short)(be32_to_cpup((((u32*)propdata)+i)));
 		}
 	}
-	
-	for (i=0; i<pConf->lcd_power_ctrl.power_on_step; i++) {
-		lcd_print("power on step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pConf->lcd_power_ctrl.power_on_config[i].type], pConf->lcd_power_ctrl.power_on_config[i].type);
-		if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
-			lcd_print("power on step %d: gpio = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].gpio);
-			lcd_print("power on step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].value);
+
+	for (i=0; i<pconf->lcd_power_ctrl.power_on_step; i++) {
+		lcd_print("power on step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pconf->lcd_power_ctrl.power_on_config[i].type], pconf->lcd_power_ctrl.power_on_config[i].type);
+		if (pconf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_CPU) {
+			lcd_print("power on step %d: gpio = %d\n", i+1, pconf->lcd_power_ctrl.power_on_config[i].gpio);
+			lcd_print("power on step %d: value = %d\n", i+1, pconf->lcd_power_ctrl.power_on_config[i].value);
 		}
-		else if (pConf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
-			lcd_print("power on step %d: gpio = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].gpio);
-			lcd_print("power on step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].value);
+		else if (pconf->lcd_power_ctrl.power_on_config[i].type == LCD_POWER_TYPE_PMU) {
+			lcd_print("power on step %d: gpio = %d\n", i+1, pconf->lcd_power_ctrl.power_on_config[i].gpio);
+			lcd_print("power on step %d: value = %d\n", i+1, pconf->lcd_power_ctrl.power_on_config[i].value);
 		}
-		lcd_print("power on step %d: delay = %d\n", i+1, pConf->lcd_power_ctrl.power_on_config[i].delay);
+		lcd_print("power on step %d: delay = %d\n", i+1, pconf->lcd_power_ctrl.power_on_config[i].delay);
 	}
-	
-	for (i=0; i<pConf->lcd_power_ctrl.power_off_step; i++) {
-		lcd_print("power off step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pConf->lcd_power_ctrl.power_off_config[i].type], pConf->lcd_power_ctrl.power_off_config[i].type);
-		if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
-			lcd_print("power off step %d: gpio = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].gpio);
-			lcd_print("power off step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].value);
+
+	for (i=0; i<pconf->lcd_power_ctrl.power_off_step; i++) {
+		lcd_print("power off step %d: type = %s(%d)\n", i+1, lcd_power_type_table[pconf->lcd_power_ctrl.power_off_config[i].type], pconf->lcd_power_ctrl.power_off_config[i].type);
+		if (pconf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_CPU) {
+			lcd_print("power off step %d: gpio = %d\n", i+1, pconf->lcd_power_ctrl.power_off_config[i].gpio);
+			lcd_print("power off step %d: value = %d\n", i+1, pconf->lcd_power_ctrl.power_off_config[i].value);
 		}
-		else if (pConf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
-			lcd_print("power off step %d: gpio = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].gpio);
-			lcd_print("power off step %d: value = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].value);
+		else if (pconf->lcd_power_ctrl.power_off_config[i].type == LCD_POWER_TYPE_PMU) {
+			lcd_print("power off step %d: gpio = %d\n", i+1, pconf->lcd_power_ctrl.power_off_config[i].gpio);
+			lcd_print("power off step %d: value = %d\n", i+1, pconf->lcd_power_ctrl.power_off_config[i].value);
 		}
-		lcd_print("power off step %d: delay = %d\n", i+1, pConf->lcd_power_ctrl.power_off_config[i].delay);
+		lcd_print("power off step %d: delay = %d\n", i+1, pconf->lcd_power_ctrl.power_off_config[i].delay);
 	}
 	return ret;
 }
@@ -1821,15 +1607,15 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 #ifdef CONFIG_AML_BL_EXTERN
 	struct aml_bl_extern_driver_t *bl_extern_driver;
 #endif
-	
+
 	nodeoffset = fdt_path_offset(dt_addr, "/backlight");
-	if(nodeoffset < 0) {
+	if (nodeoffset < 0) {
 		printf("backlight init: not find /backlight node %s.\n",fdt_strerror(nodeoffset));
 		return ret;
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_level_default_uboot_kernel", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get bl_level_default_uboot_kernel\n");
 		bl_conf->level_default = BL_LEVEL_DFT;
 	}
@@ -1838,7 +1624,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	lcd_print("bl level default uboot=%u\n", bl_conf->level_default);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_level_middle_mapping", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get bl_level_middle_mapping\n");
 		bl_conf->level_mid = BL_LEVEL_MID_DFT;
 		bl_conf->level_mid_mapping = BL_LEVEL_MID_MAPPED_DFT;
@@ -1849,7 +1635,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	lcd_print("bl level mid=%u, mid_mapping=%u\n", bl_conf->level_mid, bl_conf->level_mid_mapping);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_level_max_min", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get bl_level_max_min\n");
 		bl_conf->level_min = BL_LEVEL_MIN_DFT;
 		bl_conf->level_max = BL_LEVEL_MAX_DFT;
@@ -1859,9 +1645,9 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->level_min = (be32_to_cpup((((u32*)propdata)+1)));
 	}
 	lcd_print("bl level max=%u, min=%u\n", bl_conf->level_max, bl_conf->level_min);
-	
+
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_power_on_delay", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get bl_power_on_delay\n");
 		bl_conf->power_on_delay = 100;
 	}
@@ -1870,7 +1656,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	lcd_print("bl power_on_delay: %ums\n", bl_conf->power_on_delay);
 	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_ctrl_method", NULL);
-	if(propdata == NULL){
+	if (propdata == NULL) {
 		printf("faild to get bl_ctrl_method\n");
 		bl_conf->method = BL_CTL_PWM_NEGATIVE;
 	}
@@ -1878,7 +1664,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->method = (be32_to_cpup((u32*)propdata) > BL_CTL_MAX) ? (BL_CTL_MAX-1) : (unsigned char)(be32_to_cpup((u32*)propdata));
 	}
 	lcd_print("bl control_method: %s(%u)\n", bl_ctrl_method_table[bl_conf->method], bl_conf->method);
-	
+
 	if (bl_conf->method == BL_CTL_GPIO) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_port_on_off", NULL);
 		if (propdata == NULL) {
@@ -1905,7 +1691,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->gpio_on = LCD_GPIO_OUTPUT_LOW;
 			else
 				bl_conf->gpio_on = LCD_GPIO_OUTPUT_HIGH;
-			
+
 			p += strlen(p) + 1;
 			str = p;
 			if (strncmp(str, "2", 1) == 0)
@@ -1916,9 +1702,9 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->gpio_off = LCD_GPIO_OUTPUT_LOW;
 		}
 		lcd_print("bl gpio =%d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on,bl_conf->gpio_off);
-		
+
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_gpio_dim_max_min", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_gpio_dim_max_min\n");
 			bl_conf->dim_max = 0x0;
 			bl_conf->dim_min = 0xf;
@@ -1931,7 +1717,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	else if ((bl_conf->method == BL_CTL_PWM_NEGATIVE) || (bl_conf->method == BL_CTL_PWM_POSITIVE)) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_port_gpio_used", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_port_gpio_used\n");
 			str = "PWM_C";
 			bl_conf->pwm_port = BL_PWM_C;
@@ -1949,13 +1735,11 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->pwm_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->pwm_port = BL_PWM_D;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 			else if (strcmp(str, "PWM_E") == 0)
 				bl_conf->pwm_port = BL_PWM_E;
 			else if (strcmp(str, "PWM_F") == 0)
 				bl_conf->pwm_port = BL_PWM_F;
-#endif
-			
+
 			p += strlen(p) + 1;
 			str = p;
 			if (strncmp(str, "1", 1) == 0)
@@ -1991,7 +1775,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 					bl_conf->gpio_on = LCD_GPIO_OUTPUT_LOW;
 				else
 					bl_conf->gpio_on = LCD_GPIO_OUTPUT_HIGH;
-					
+
 				p += strlen(p) + 1;
 				str = p;
 				if (strncmp(str, "2", 1) == 0)
@@ -2004,7 +1788,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			lcd_print("bl gpio = %d, bl_gpio_on = %d ,bl_gpio_off= %d\n", bl_conf->gpio, bl_conf->gpio_on, bl_conf->gpio_off);
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_freq", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			pwm_freq = 300000;
 			printf("faild to get bl_pwm_freq, default set to %uHz\n", pwm_freq);
 		}
@@ -2022,7 +1806,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->pwm_pre_div = pwm_pre_div;
 		lcd_print("bl pwm_frequency = %uHz, pwm_cnt = %u, pre_div = %u\n", pwm_freq, bl_conf->pwm_cnt, bl_conf->pwm_pre_div);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_duty_max_min", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_duty_max_min\n");
 			bl_para[0] = 100;
 			bl_para[1] = 20;
@@ -2037,7 +1821,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 	}
 	else if (bl_conf->method == BL_CTL_PWM_COMBO) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_low_level_switch", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_combo_high_low_level_switch\n");
 			tmp = bl_conf->level_mid;
 		}
@@ -2051,7 +1835,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->combo_level_switch = tmp;
 		lcd_print("bl pwm_combo level switch =%u\n", bl_conf->combo_level_switch);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_port_method", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_combo_high_port_method\n");
 			str = "PWM_C";
 			bl_conf->combo_high_port = BL_PWM_C;
@@ -2069,13 +1853,11 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->combo_high_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->combo_high_port = BL_PWM_D;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 			else if (strcmp(str, "PWM_E") == 0)
 				bl_conf->pwm_port = BL_PWM_E;
 			else if (strcmp(str, "PWM_F") == 0)
 				bl_conf->pwm_port = BL_PWM_F;
-#endif
-			
+
 			p += strlen(p) + 1;
 			str = p;
 			if (strncmp(str, "1", 1) == 0)
@@ -2086,7 +1868,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		lcd_print("bl pwm_combo high port: %s(%u)\n", propdata, bl_conf->combo_high_port);
 		lcd_print("bl pwm_combo high method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_high_method], bl_conf->combo_high_method);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_low_port_method", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_combo_low_port_method\n");
 			str = "PWM_D";
 			bl_conf->combo_low_port = BL_PWM_D;
@@ -2104,13 +1886,11 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->combo_low_port = BL_PWM_C;
 			else if (strcmp(str, "PWM_D") == 0)
 				bl_conf->combo_low_port = BL_PWM_D;
-#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
 			else if (strcmp(str, "PWM_E") == 0)
 				bl_conf->pwm_port = BL_PWM_E;
 			else if (strcmp(str, "PWM_F") == 0)
 				bl_conf->pwm_port = BL_PWM_F;
-#endif
-			
+
 			p += strlen(p) + 1;
 			str = p;
 			if (strncmp(str, "1", 1) == 0)
@@ -2121,9 +1901,9 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		lcd_print("bl pwm_combo low port: %s(%u)\n", propdata, bl_conf->combo_low_port);
 		lcd_print("bl pwm_combo low method: %s(%u)\n", bl_ctrl_method_table[bl_conf->combo_low_method], bl_conf->combo_low_method);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_high_freq_duty_max_min", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_combo_high_freq_duty_max_min\n");
-			bl_para[0] = 300000;	//freq=300k
+			bl_para[0] = 300000; //freq=300k
 			bl_para[1] = 100;
 			bl_para[2] = 50;
 		}
@@ -2145,7 +1925,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		bl_conf->combo_high_duty_min = (bl_conf->combo_high_cnt * bl_para[2] / 100);
 		lcd_print("bl pwm_combo high freq=%uHz, duty_max=%u\%, duty_min=%u\%\n", pwm_freq, bl_para[1], bl_para[2]);
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "bl_pwm_combo_low_freq_duty_max_min", NULL);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get bl_pwm_combo_low_freq_duty_max_min\n");
 			bl_para[0] = 1000;	//freq=1k
 			bl_para[1] = 100;
@@ -2187,31 +1967,31 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 		}
 #endif
 	}
-	
+
 	//get backlight pinmux for pwm
 	len = 0;
 	switch (bl_conf->method) {
-		case BL_CTL_PWM_NEGATIVE:
-		case BL_CTL_PWM_POSITIVE:
-			nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
-			if(nodeoffset < 0)
-				printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
-			else
-				len = 1;
-			break;
-		case BL_CTL_PWM_COMBO:
-			nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight_combo");
-			if(nodeoffset < 0)
-				printf("backlight init: not find /pinmux/lcd_backlight_combo node %s.\n",fdt_strerror(nodeoffset));
-			else
-				len = 1;
-			break;
-		default:
-			break;
+	case BL_CTL_PWM_NEGATIVE:
+	case BL_CTL_PWM_POSITIVE:
+		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight");
+		if (nodeoffset < 0)
+			printf("backlight init: not find /pinmux/lcd_backlight node %s.\n",fdt_strerror(nodeoffset));
+		else
+			len = 1;
+		break;
+	case BL_CTL_PWM_COMBO:
+		nodeoffset = fdt_path_offset(dt_addr, "/pinmux/lcd_backlight_combo");
+		if (nodeoffset < 0)
+			printf("backlight init: not find /pinmux/lcd_backlight_combo node %s.\n",fdt_strerror(nodeoffset));
+		else
+			len = 1;
+		break;
+	default:
+		break;
 	}
 	if (len > 0) {
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "amlogic,setmask", &len);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get amlogic,setmask\n");
 			bl_conf->pinmux_set_num = 0;
 		}
@@ -2223,7 +2003,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 			}
 		}
 		propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "amlogic,clrmask", &len);
-		if(propdata == NULL){
+		if (propdata == NULL) {
 			printf("faild to get amlogic,clrmask\n");
 			bl_conf->pinmux_clr_num = 0;
 		}
@@ -2234,7 +2014,7 @@ static int _get_lcd_backlight_config(Lcd_Bl_Config_t *bl_conf)
 				bl_conf->pinmux_clr[i][1] = be32_to_cpup((((u32*)propdata)+2*i+1));
 			}
 		}
-	
+
 		for (i=0; i<bl_conf->pinmux_set_num; i++) {
 			lcd_print("backlight pinmux set %d: mux_num = %d, mux_mask = 0x%x\n", i+1, bl_conf->pinmux_set[i][0], bl_conf->pinmux_set[i][1]);
 		}
@@ -2257,7 +2037,7 @@ static void prepare_lcd_debug(void)
 		lcd_print_flag = simple_strtoul(getenv("lcd_print_flag"), NULL, 10);
 #endif
 	lcd_print("lcd print flag: %u\n", lcd_print_flag);
-	
+
 	if (getenv("lcd_debug_flag") == NULL)
 		lcd_debug_flag = 0;
 	else
@@ -2272,7 +2052,7 @@ static inline void _set_panel_info(void)
 	panel_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 0);
 	panel_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
 	panel_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
-	
+
 	lcd_print("panel_info: resolution = %ux%u\n", panel_info.vl_col, panel_info.vl_row);
 	lcd_print("panel_info: vl_bpix = %u\n", panel_info.vl_bpix);
 }
@@ -2281,18 +2061,18 @@ static void print_lcd_info(void)
 {
     unsigned lcd_clk;
     int h_adj, v_adj;
-    Lcd_Config_t *pConf = pDev->pConf;
+    Lcd_Config_t *pconf = pDev->pconf;
 
-    lcd_clk = (pConf->lcd_timing.lcd_clk / 1000);
-    h_adj = ((pConf->lcd_timing.h_offset >> 31) & 1);
-    v_adj = ((pConf->lcd_timing.v_offset >> 31) & 1);
+    lcd_clk = (pconf->lcd_timing.lcd_clk / 1000);
+    h_adj = ((pconf->lcd_timing.h_offset >> 31) & 1);
+    v_adj = ((pconf->lcd_timing.v_offset >> 31) & 1);
 
     printf("LCD mode: %s %ubit, %ux%u@%u.%uHz\n"
            "lcd_clk           %u.%03uMHz\n"
            "ss_level          %d\n"
            "clk_pol           %d\n\n",
-           lcd_type_table[pConf->lcd_basic.lcd_type], pConf->lcd_basic.lcd_bits, pConf->lcd_basic.h_active, pConf->lcd_basic.v_active, (pConf->lcd_timing.sync_duration_num / 10), (pConf->lcd_timing.sync_duration_num % 10),
-           (lcd_clk / 1000), (lcd_clk % 1000), ((pConf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf), ((pConf->lcd_timing.pol_ctrl >> POL_CTRL_CLK) & 1));
+           lcd_type_table[pconf->lcd_basic.lcd_type], pconf->lcd_basic.lcd_bits, pconf->lcd_basic.h_active, pconf->lcd_basic.v_active, (pconf->lcd_timing.sync_duration_num / 10), (pconf->lcd_timing.sync_duration_num % 10),
+           (lcd_clk / 1000), (lcd_clk % 1000), ((pconf->lcd_timing.clk_ctrl >> CLK_CTRL_SS) & 0xf), ((pconf->lcd_timing.pol_ctrl >> POL_CTRL_CLK) & 1));
 
     printf("h_period          %d\n"
            "v_period          %d\n"
@@ -2307,69 +2087,50 @@ static void print_lcd_info(void)
            "de_valid          %d\n"
            "h_offset          %s%d\n"
            "v_offset          %s%d\n\n",
-           pConf->lcd_basic.h_period, pConf->lcd_basic.v_period,
-           pConf->lcd_timing.hsync_width, pConf->lcd_timing.hsync_bp, ((pConf->lcd_timing.pol_ctrl >> POL_CTRL_HS) & 1),
-           pConf->lcd_timing.vsync_width, pConf->lcd_timing.vsync_bp, ((pConf->lcd_timing.pol_ctrl >> POL_CTRL_VS) & 1),
-           (((pConf->lcd_timing.vsync_h_phase >> 31) & 1) ? "-":""), (pConf->lcd_timing.vsync_h_phase & 0xffff), pConf->lcd_timing.hvsync_valid, pConf->lcd_timing.de_valid,
-           (h_adj ? "-" : ""), (pConf->lcd_timing.h_offset & 0xffff), (v_adj ? "-" : ""), (pConf->lcd_timing.v_offset & 0xffff));
+           pconf->lcd_basic.h_period, pconf->lcd_basic.v_period,
+           pconf->lcd_timing.hsync_width, pconf->lcd_timing.hsync_bp, ((pconf->lcd_timing.pol_ctrl >> POL_CTRL_HS) & 1),
+           pconf->lcd_timing.vsync_width, pconf->lcd_timing.vsync_bp, ((pconf->lcd_timing.pol_ctrl >> POL_CTRL_VS) & 1),
+           (((pconf->lcd_timing.vsync_h_phase >> 31) & 1) ? "-":""), (pconf->lcd_timing.vsync_h_phase & 0xffff), pconf->lcd_timing.hvsync_valid, pconf->lcd_timing.de_valid,
+           (h_adj ? "-" : ""), (pconf->lcd_timing.h_offset & 0xffff), (v_adj ? "-" : ""), (pconf->lcd_timing.v_offset & 0xffff));
 
-    switch (pConf->lcd_basic.lcd_type) {
+    switch (pconf->lcd_basic.lcd_type) {
         case LCD_DIGITAL_TTL:
             printf("rb_swap           %u\n"
                    "bit_swap          %u\n\n",
-                   pConf->lcd_control.ttl_config->rb_swap, pConf->lcd_control.ttl_config->bit_swap);
+                   pconf->lcd_control.ttl_config->rb_swap, pconf->lcd_control.ttl_config->bit_swap);
             break;
         case LCD_DIGITAL_LVDS:
             printf("vswing_level      %u\n"
                    "lvds_repack       %u\n"
-                   "pn_swap           %u\n\n",
-                   pConf->lcd_control.lvds_config->lvds_vswing, pConf->lcd_control.lvds_config->lvds_repack, pConf->lcd_control.lvds_config->pn_swap);
-            break;
-        case LCD_DIGITAL_MIPI:
-            printf("dsi_lane_num      %u\n"
-                   "dsi_bit_rate      %u.%03uMHz\n"
-                   "operation_mode    %u(%s), %u(%s)\n"
-                   "transfer_ctrl     %u, %u\n\n",
-                   pConf->lcd_control.mipi_config->lane_num,
-                   (pConf->lcd_control.mipi_config->bit_rate / 1000000), ((pConf->lcd_control.mipi_config->bit_rate % 1000000) / 1000),
-                   ((pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_INIT) &1), (((pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_INIT) & 1) ? "COMMAND" : "VIDEO"),
-                   ((pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_DISP) & 1), (((pConf->lcd_control.mipi_config->operation_mode>>BIT_OPERATION_MODE_DISP) & 1) ? "COMMAND" : "VIDEO"),
-                   ((pConf->lcd_control.mipi_config->transfer_ctrl>>BIT_TRANS_CTRL_CLK) & 1), ((pConf->lcd_control.mipi_config->transfer_ctrl>>BIT_TRANS_CTRL_SWITCH) & 3));
-            break;
-        case LCD_DIGITAL_EDP:
-            printf("link_rate         %s\n"
-                   "lane_count        %u\n"
-                   "link_adaptive     %u\n"
-                   "vswing            %u\n"
-                   "max_lane_count    %u\n"
-                   "sync_clock_mode   %u\n"
-                   "EDID timing used  %u\n\n",
-                   ((pConf->lcd_control.edp_config->link_rate == 0) ? "1.62G" : "2.7G"), pConf->lcd_control.edp_config->lane_count,
-                   pConf->lcd_control.edp_config->link_adaptive, pConf->lcd_control.edp_config->vswing,
-                   pConf->lcd_control.edp_config->max_lane_count, pConf->lcd_control.edp_config->sync_clock_mode, pConf->lcd_control.edp_config->edid_timing_used);
+				   "dual_port         %u\n"
+                   "port_swap         %u\n"
+				   "pn_swap           %u\n\n",
+                   pconf->lcd_control.lvds_config->lvds_vswing, pconf->lcd_control.lvds_config->lvds_repack,
+				   pconf->lcd_control.lvds_config->dual_port, pconf->lcd_control.lvds_config->port_swap,
+				   pconf->lcd_control.lvds_config->pn_swap);
             break;
         default:
             break;
     }
 
-    if (pConf->lcd_effect.dith_user)
-        printf("dither_ctrl       0x%x\n", pConf->lcd_effect.dith_cntl_addr);
+    if (pconf->lcd_effect.dith_user)
+        printf("dither_ctrl       0x%x\n", pconf->lcd_effect.dith_cntl_addr);
 
     printf("pll_ctrl          0x%08x\n"
            "div_ctrl          0x%08x\n"
            "clk_ctrl          0x%08x\n"
            "video_on_pixel    %d\n"
            "video_on_line     %d\n\n",
-           pConf->lcd_timing.pll_ctrl, pConf->lcd_timing.div_ctrl, pConf->lcd_timing.clk_ctrl,
-           pConf->lcd_timing.video_on_pixel, pConf->lcd_timing.video_on_line);
+           pconf->lcd_timing.pll_ctrl, pconf->lcd_timing.div_ctrl, pconf->lcd_timing.clk_ctrl,
+           pconf->lcd_timing.video_on_pixel, pconf->lcd_timing.video_on_line);
 
-    if (pConf->lcd_misc_ctrl.print_clk)
-        pConf->lcd_misc_ctrl.print_clk();
+    if (pconf->lcd_misc_ctrl.print_clk)
+        pconf->lcd_misc_ctrl.print_clk();
 }
 
-static void lcd_config_assign(Lcd_Config_t *pConf)
+static void lcd_config_assign(Lcd_Config_t *pconf)
 {
-    pConf->lcd_power_ctrl.power_ctrl = lcd_power_ctrl;
+    pconf->lcd_power_ctrl.power_ctrl = lcd_power_ctrl;
 }
 
 int lcd_probe(void)
@@ -2381,7 +2142,7 @@ int lcd_probe(void)
 #ifdef CONFIG_AML_BL_EXTERN
 	struct aml_bl_extern_driver_t *bl_extern_driver;
 #endif
-	
+
 	pDev = (lcd_dev_t *)malloc(sizeof(lcd_dev_t));
 	if (!pDev) {
 		printf("[lcd]: Not enough memory.\n");
@@ -2389,7 +2150,7 @@ int lcd_probe(void)
 	}
 	prepare_lcd_debug();
 	dts_ready = 0;	//prepare dts_ready flag, default no dts
-	
+
 #ifdef CONFIG_OF_LIBFDT
 #ifdef CONFIG_DT_PRELOAD
 #ifdef CONFIG_DTB_LOAD_ADDR
@@ -2398,7 +2159,7 @@ int lcd_probe(void)
 	dt_addr = (char *)0x0f000000;
 #endif
 	ret = fdt_check_header(dt_addr);
-	if(ret < 0) {
+	if (ret < 0) {
 		dts_ready = 0;
 		printf("check dts: %s, load default lcd parameters\n", fdt_strerror(ret));
 	} else {
@@ -2406,20 +2167,20 @@ int lcd_probe(void)
 	}
 #endif
 #endif
-	
+
 	if (lcd_debug_flag > 0)
 		dts_ready = 0;
-	if(dts_ready == 0) {
-		pDev->pConf = &lcd_config_dft;
+	if (dts_ready == 0) {
+		pDev->pconf = &lcd_config_dft;
 		pDev->bl_config = &bl_config_dft;
-		if (pDev->pConf->lcd_basic.model_name == NULL) {
-			pDev->pConf->lcd_basic.model_name = PANEL_MODEL_DEFAULT;
+		if (pDev->pconf->lcd_basic.model_name == NULL) {
+			pDev->pconf->lcd_basic.model_name = PANEL_MODEL_DEFAULT;
 		}
-		else if (strncmp(pDev->pConf->lcd_basic.model_name, "none", 4) == 0) {
+		else if (strncmp(pDev->pconf->lcd_basic.model_name, "none", 4) == 0) {
 			printf("no lcd exist!\n");
 			return 1;
 		}
-		lcd_default_config_init(pDev->pConf);
+		lcd_default_config_init(pDev->pconf);
 #ifdef CONFIG_AML_LCD_EXTERN
 		lcd_extern_driver = aml_lcd_extern_get_driver();
 		if (lcd_extern_driver == NULL) {
@@ -2451,39 +2212,38 @@ int lcd_probe(void)
 			}
 		}
 #endif
-		printf("load default lcd model: %s\n", pDev->pConf->lcd_basic.model_name);
-	}
-	else {
+		printf("load default lcd model: %s\n", pDev->pconf->lcd_basic.model_name);
+	} else {
 #ifdef CONFIG_OF_LIBFDT
-		pDev->pConf = get_lcd_config();
+		pDev->pconf = get_lcd_config();
 		pDev->bl_config = (Lcd_Bl_Config_t *)&bl_config;
-		_get_lcd_model_timing(pDev->pConf);
-		_get_lcd_default_config(pDev->pConf);
-		_get_lcd_power_config(pDev->pConf);
+		_get_lcd_model_timing(pDev->pconf);
+		_get_lcd_default_config(pDev->pconf);
+		_get_lcd_power_config(pDev->pconf);
 		_get_lcd_backlight_config(pDev->bl_config);
 #endif
 	}
-	
+
 	_set_panel_info();
-	lcd_config_assign(pDev->pConf);
-	lcd_config_probe(pDev->pConf);
-	
-	pDev->pConf->lcd_misc_ctrl.print_version();
-	_lcd_init(pDev->pConf);
+	lcd_config_assign(pDev->pconf);
+	lcd_config_probe(pDev->pconf);
+
+	pDev->pconf->lcd_misc_ctrl.print_version();
+	_lcd_init(pDev->pconf);
 	if (lcd_print_flag > 0)
 		print_lcd_info();
-	
+
 	return ret;
 }
 
 int lcd_remove(void)
 {
 	lcd_backlight_power_ctrl(OFF);
-	pDev->pConf->lcd_misc_ctrl.module_disable();
-	lcd_config_remove();
+	pDev->pconf->lcd_misc_ctrl.module_disable();
+
 	if (dts_ready > 0) {
-		if (pDev->pConf->lcd_basic.model_name)
-			free(pDev->pConf->lcd_basic.model_name);
+		if (pDev->pconf->lcd_basic.model_name)
+			free(pDev->pconf->lcd_basic.model_name);
 	}
 	if (pDev)
 		free(pDev);
@@ -2544,7 +2304,7 @@ static void _lcd_power_off(void)
 static void _lcd_test(unsigned num)
 {
 	if (pDev != NULL)
-		pDev->pConf->lcd_misc_ctrl.lcd_test(num);
+		pDev->pconf->lcd_misc_ctrl.lcd_test(num);
 	else
 		printf("lcd is OFF, can't display test pattern\n");
 }
@@ -2552,7 +2312,7 @@ static void _lcd_test(unsigned num)
 static void _lcd_info(void)
 {
 	if (pDev != NULL) {
-		pDev->pConf->lcd_misc_ctrl.print_version();
+		pDev->pconf->lcd_misc_ctrl.print_version();
 		print_lcd_info();
 	}
 	else {
@@ -2575,4 +2335,3 @@ struct panel_operations panel_oper =
 };
 //****************************************
 
-#endif
