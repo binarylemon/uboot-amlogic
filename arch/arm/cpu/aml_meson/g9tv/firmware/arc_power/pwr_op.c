@@ -82,7 +82,7 @@ void printf_arc(const char *str)
 
 #ifdef CONFIG_RN5T618
 unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
-{    
+{
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
@@ -148,10 +148,10 @@ unsigned short hard_i2c_read8_16(unsigned char SlaveAddr, unsigned char RegAddr)
     while (1) {
         ctrl = (*I2C_CONTROL_REG);
         if (ctrl & (1 << 3)) {          // error case
-            return 0;    
+            return 0;
         }
         if (!(ctrl & (1 << 2))) {       // controller becomes idle
-            break;    
+            break;
         }
     }
 
@@ -170,7 +170,7 @@ unsigned short i2c_pmu_read_12(unsigned int reg, int size)
     if (size == 1) {
         val = hard_i2c_read8(I2C_RN5T618_ADDR, reg);
     } else {
-        val = hard_i2c_read8_16(I2C_RN5T618_ADDR, reg);    
+        val = hard_i2c_read8_16(I2C_RN5T618_ADDR, reg);
     }
     return val;
 }
@@ -220,9 +220,9 @@ void chip_power_off_at_24M()
  	//wait_uart_empty();
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 29), P_AO_RTI_PIN_MUX_REG);  //close vdde_pwm
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 21), P_AO_RTI_PIN_MUX_REG);
-	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 28), P_AO_GPIO_O_EN_N); 
-	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 12), P_AO_GPIO_O_EN_N); 
-	
+	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 28), P_AO_GPIO_O_EN_N);
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 12), P_AO_GPIO_O_EN_N);
+
   	//f_serial_puts("close stb...\n");
  	//wait_uart_empty();
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 10),P_AO_RTI_PIN_MUX_REG); //close stb
@@ -256,7 +256,7 @@ void chip_power_on_at_24M()
 	//wait_uart_empty();
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 29), P_AO_RTI_PIN_MUX_REG);  //vdde pwm
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 21), P_AO_RTI_PIN_MUX_REG);
-	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 28), P_AO_GPIO_O_EN_N); 
+	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 28), P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 12), P_AO_GPIO_O_EN_N);
 	//udelay__(500);
 
@@ -267,6 +267,65 @@ void chip_power_on_at_24M()
 	writel(readl(P_AO_RTI_PWR_CNTL_REG0)&~(0x3 << 3),P_AO_RTI_PWR_CNTL_REG0 );
 	//udelay__(200);
 }
+
+
+#ifdef	CONFIG_ARC_BREATH_LIGHT_ENABLE
+static  int pwm_cnt, pwm_pre_div;
+
+static int integer_div(const int x, const int y)
+{
+	int dividend = x;
+	int multi;
+	int result = 0;
+	while (dividend >= y) {
+		multi = 1;
+		while ( multi * y <= (dividend >> 1) ) {
+			multi <<= 1;
+		}
+		result += multi;
+		dividend -= multi * y;
+	}
+	return result;
+}
+
+static void init_breath_light(unsigned int freq)
+{
+	unsigned int i;
+	unsigned int bl_freq;
+
+	bl_freq = ((freq >= (32 *1000* 500)) ? (32 * 500) : freq);
+	for (i=0; i<0x7f; i++) {
+		pwm_pre_div = i;
+		pwm_cnt = integer_div((32 * 1000*1000),((pwm_pre_div + 1) * bl_freq)) - 2;
+		if (pwm_cnt <= 0xffff)
+			break;
+	}
+
+	//writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(0x1 << 28),P_AO_RTI_PIN_MUX_REG);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)|(0x1 << 22),P_AO_RTI_PIN_MUX_REG ); //set GPIOAO_11 to PWM_AO_A
+}
+
+static inline void set_breath_light_step( unsigned int pwm_min,unsigned int step)
+{
+	unsigned int level;
+	const unsigned int pwm_max = 100;
+	unsigned int a = 0;
+
+	writel((readl(P_AO_PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pwm_pre_div<<8) | (1<<0)) ,P_AO_PWM_MISC_REG_AB);
+	for (a = pwm_min; a <= pwm_max; a+=step ) {
+		level = pwm_cnt *  a / pwm_max;
+		writel((level << 16) | (pwm_cnt - level),P_AO_PWM_PWM_A);
+	   udelay__(10);
+	}
+	for (a = a - step; a > pwm_min; a-=step ) {
+		level = pwm_cnt *  a / pwm_max;
+		writel((level << 16) | ( pwm_cnt - level),P_AO_PWM_PWM_A);
+		udelay__(10);
+	}
+
+}
+#endif
 
 unsigned int g9tv_ref_wakeup(unsigned int flags)
 {
@@ -287,9 +346,12 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 #ifdef	CONFIG_SARADC_WAKEUP_FOR_ARC
 	saradc_init();
 	adc_start_sample(0);
-#endif	
+#endif
 
 
+#ifdef	CONFIG_ARC_BREATH_LIGHT_ENABLE
+	init_breath_light(CONFIG_BREATH_LIGHT_FREQ);
+#endif
 
     do {
         if ((flags == 0x87654321) && (!power_status)) {      // suspend from uboot
@@ -298,6 +360,9 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
             break;
         }
 
+#ifdef	CONFIG_ARC_BREATH_LIGHT_ENABLE
+        set_breath_light_step(CONFIG_BREATH_LIGHT_MIN,CONFIG_BREATH_LIGHT_STEP);
+#endif
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
 		if(readl(P_AO_RTI_STATUS_REG2) == 0x4853ffff){
@@ -322,7 +387,7 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 		 adc_start_sample(0);
 #endif
 	}
-#endif	
+#endif
 
 
 	    if((readl(P_AO_RTC_ADDR1) >> 12) & 0x1) {

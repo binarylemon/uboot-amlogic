@@ -79,6 +79,16 @@
 	#define CONFIG_CMD_MEMORY  1
 #endif /*CONFIG_CMD_SF*/
 
+//Enable  breaking light
+#define CONFIG_BREATH_LIGHT_ENABLE
+#define BREATH_LIRHT_GPIO GPIOAO_11
+#define BREATH_LIRHT_STATUS  1
+//Enable  breaking light for arc
+//#define CONFIG_ARC_BREATH_LIGHT_ENABLE
+//#define CONFIG_BREATH_LIGHT_FREQ   32000
+//#define CONFIG_BREATH_LIGHT_STEP   30
+//#define CONFIG_BREATH_LIGHT_MIN    0
+
 //Amlogic SARADC support
 #define CONFIG_SARADC     1
 #define CONFIG_CMD_SARADC 1

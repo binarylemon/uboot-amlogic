@@ -20,12 +20,12 @@ ARCCPP=arc-elf32-em4-cpp
 #ARCCC_FLAGS = -mA7 -mno-volatile-cache -O2 -D__ARC__ -DCONFIG_ARC -I. -Iinclude -Wall
 
 #BASEFLAGS = -arcv2em -core1 -Xcd -Xbs -DAML_ARCEM4
-BASEFLAGS = -mARCv2EM  
+BASEFLAGS = -mARCv2EM
 #CC_FLAGS = $(BASEFLAGS) -O -HL -Hnocrt -Hnolib  -I$(ucode) -c $(CC_FLAGS_ADD) -DARC6 -DAO_ARC
-CC_FLAGS = $(BASEFLAGS) -O  -c $(CC_FLAGS_ADD) 
+CC_FLAGS = $(BASEFLAGS) -O  -c $(CC_FLAGS_ADD)
 #ASM_FLAGS = $(BASEFLAGS) -HL -Hnocrt -Hnolib $(ASM_FLAGS_ADD) -I$(ucode) -c  $(ASM_FLAGS_ADD)
-#LD_FLAGS =  -Bbase=0x00000000 -L${METAWARE_ROOT}/arc/lib/av2em/le -l ct -l mw 
-#DUMP_FLAGS = -z 
+#LD_FLAGS =  -Bbase=0x00000000 -L${METAWARE_ROOT}/arc/lib/av2em/le -l ct -l mw
+#DUMP_FLAGS = -z
 
 
 ARCCC_FLAGS = $(CC_FLAGS) -Iinclude -Wall
@@ -76,6 +76,26 @@ ifdef CONFIG_SARADC_WAKEUP_FOR_ARC
 endif
 
 
+
+ifdef CONFIG_ARC_BREATH_LIGHT_ENABLE
+    ARCCC_FLAGS += -DCONFIG_ARC_BREATH_LIGHT_ENABLE=$(CONFIG_ARC_BREATH_LIGHT_ENABLE)
+endif
+ifdef CONFIG_BREATH_LIGHT_FREQ
+    ARCCC_FLAGS += -DCONFIG_BREATH_LIGHT_FREQ=$(CONFIG_BREATH_LIGHT_FREQ)
+endif
+ifdef CONFIG_BREATH_LIGHT_STEP
+    ARCCC_FLAGS += -DCONFIG_BREATH_LIGHT_STEP=$(CONFIG_BREATH_LIGHT_STEP)
+endif
+ifdef CONFIG_BREATH_LIGHT_MIN
+    ARCCC_FLAGS += -DCONFIG_BREATH_LIGHT_MIN=$(CONFIG_BREATH_LIGHT_MIN)
+endif
+
+
+
+
+
+
+
 ifdef CONFIG_SARADC_CHANEL_CNT
     ARCCC_FLAGS += -DCONFIG_SARADC_CHANEL_CNT=$(CONFIG_SARADC_CHANEL_CNT)
 endif
@@ -104,8 +124,8 @@ ARCCOPY_FLAGS= -I elf32-little -O binary
 
 obj =$(SRCTREE)/build/arc_power/
 
-ARCLD_FLAGS   =  -Bstatic -T $(obj)romboot.lds -L$(ARCGCCLIBPATH) -lgcc 
-ARCLD_FLAGS += -marcelf 
+ARCLD_FLAGS   =  -Bstatic -T $(obj)romboot.lds -L$(ARCGCCLIBPATH) -lgcc
+ARCLD_FLAGS += -marcelf
 define MAP_OUT_OPTION
 	  -Map $(obj)code_elf.map
 endef
@@ -115,7 +135,7 @@ endef
 CSRCS = i2c.c arc_pwr.c mmc.c lib/*.c
 OBJS = $(CSRCS:%.c=$(obj)%.o)
 
-#all : clean $(obj)code_elf.out 
+#all : clean $(obj)code_elf.out
 all : clean $(obj)code_elf.out $(obj)arc_pwr.bin
 
 $(obj)arc_pwr.bin: $(obj)code_elf.out
@@ -123,36 +143,36 @@ $(obj)arc_pwr.bin: $(obj)code_elf.out
 
 $(obj)code_elf.out: $(obj)romboot.lds Makefile  $(obj)start_arc.o $(OBJS)
 	$(ARCLD) $(ARCLD_FLAGS) $(filter %.o,$^)  $(MAP_OUT_OPTION) --cref -o $@
-ifneq ($(OS),Windows_NT)	
+ifneq ($(OS),Windows_NT)
 	$(ARCOBJCOPY) -I elf32-little --gap-fill=0xff -O binary $@ $(@:%.out=%.bin)
-endif	
+endif
 	./bin2code arc_code $(obj)code_elf.bin $(SRCTREE)/build/include2/arc_code.dat
 
-down: $(obj)code_elf.out	
+down: $(obj)code_elf.out
 	mdb -jtag -OKN $<
-	
+
 $(obj)%.o:	%.s
 	@$(call MKDIR, $(@D))
 	$(ARCCC)  $(ARCASM_FLAGS)  \
 		-o $@ $< -c
-		
+
 $(obj)%.o:	%.S
 	@$(call MKDIR, $(@D))
 	$(ARCCC)   $(ASM_FLAGS)  \
-		-o $@ $< -c		
-		
+		-o $@ $< -c
+
 $(obj)%.S:	%.s
 	@$(call MKDIR, $(@D))
-	$(ARCCPP) -I. -ansi -D__ASSEMBLY__ -MD -MT $@ -E $< -o $@	
-	
+	$(ARCCPP) -I. -ansi -D__ASSEMBLY__ -MD -MT $@ -E $< -o $@
+
 $(obj)%.o:	%.c
 	@$(call MKDIR, $(@D))
 	$(ARCCC)  $(ARCCC_FLAGS) -o $@ $< -c
-	
+
 clean:
 	rm -r -f $(obj)
 	rm -f $(SRCTREE)/build/include2/arc_code.dat
-	
+
 help:
 	@echo "test arc_power"
 	@echo "VPATH_LIST="$(VPATH_LIST)
@@ -161,6 +181,6 @@ help:
 	@echo "SOC="$(SOC)
 
 $(obj)romboot.lds: romboot.lds
-	@$(call MKDIR, $(@D))	
+	@$(call MKDIR, $(@D))
 	$(ARCCPP) $(ARCCPPFLAGS) $(ARCLDPPFLAGS) -std=c99 -D__ASSEMBLY__ -P - <$^ >$@
 -include $(wildcard $(OBJS:%.o=%.d))

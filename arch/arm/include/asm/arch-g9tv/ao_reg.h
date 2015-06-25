@@ -252,4 +252,12 @@
 #define AO_SAR_ADC_REG12			((0x01 << 10) | (0x8c << 2))
 #define P_AO_SAR_ADC_REG12			AOBUS_REG_ADDR(AO_SAR_ADC_REG12)
 
+#define AO_PWM_PWM_A		((0x01 << 10) | (0x54 << 2))
+#define P_AO_PWM_PWM_A		AOBUS_REG_ADDR(AO_PWM_PWM_A)
+#define AO_PWM_PWM_B		((0x01 << 10) | (0x55 << 2))
+#define P_AO_PWM_PWM_B		AOBUS_REG_ADDR(AO_PWM_PWM_B)
+#define AO_PWM_MISC_REG_AB        ((0x01 << 10) | (0x56 << 2))
+#define P_AO_PWM_MISC_REG_AB        AOBUS_REG_ADDR(AO_PWM_MISC_REG_AB)
+#define AO_PWM_DELTA_SIGMA_AB     ((0x01 << 10) | (0x57 << 2))
+#define P_AO_PWM_DELTA_SIGMA_AB      AOBUS_REG_ADDR(AO_PWM_DELTA_SIGMA_AB)
 #endif

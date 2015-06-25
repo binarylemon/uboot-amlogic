@@ -2,6 +2,7 @@
 #include <asm/mach-types.h>
 #include <asm/arch/memory.h>
 #include <malloc.h>
+#include <amlogic/gpio.h>
 
 #if defined(CONFIG_CMD_NET)
 #include <asm/arch/aml_eth_reg.h>
@@ -116,6 +117,17 @@ void auto_update_env(void)
 	if(strcmp(cur_ver, last_ver) != 0 ) {
 		run_command("defenv", 0);
 		saveenv();
+	}
+}
+#endif
+
+#ifdef CONFIG_BREATH_LIGHT_ENABLE
+static void set_breathing_light(unsigned int status)
+{
+	if ( BREATH_LIRHT_STATUS == status ) {
+		amlogic_gpio_direction_output(BREATH_LIRHT_GPIO, 1);
+	} else {
+		amlogic_gpio_direction_output(BREATH_LIRHT_GPIO, 0);
 	}
 }
 #endif
@@ -251,9 +263,13 @@ int switch_boot_mode(void)
     set_regs_bandwidth();
     uboot_show_logo();
 
+#ifdef CONFIG_BREATH_LIGHT_ENABLE
+     writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);
+     set_breathing_light(0);
+#endif
+
     return 0;
 }
-
 #endif
 
 
@@ -480,6 +496,12 @@ int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
+
+	//start breathing light
+#ifdef CONFIG_BREATH_LIGHT_ENABLE
+		 writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);
+		 set_breathing_light(1);
+#endif
 
 #ifdef CONFIG_UBOOT_BUILD_VERSION_INFO
     print_build_version_info();
