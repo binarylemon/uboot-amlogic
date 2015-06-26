@@ -360,9 +360,9 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 	lcd_printf("dtd_bl:panel_power_pin: %s--%d \n",propdata,bl_config->bl_power.gpio);
 
 
-	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_en_on", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_en_gpio_on", NULL);
 	if (propdata == NULL) {
-		printf("lcd error: faild to get backlight/bl_en_on \n");
+		printf("lcd error: faild to get backlight/bl_en_gpio_on \n");
 		return 0;
 	} else {
 		bl_config->bl_power.on_value	 = be32_to_cpup((u32*)propdata);
@@ -390,6 +390,41 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 		 bl_config->bl_power.bl_off_delay = be32_to_cpup((u32*)propdata);
 	 }
 	 lcd_printf("dtd_bl:bl_off_delay = %d \n",bl_config->bl_power.bl_off_delay);
+
+
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_gpio", NULL);
+	 unsigned int pwm_pin;
+	 pwm_pin = gpioname_to_pin(propdata);
+	 if (pwm_pin<0) {
+		 printf("lcd error: wrong gpio number %s\n",propdata);	  //----------------//
+		 return 0;
+	 }
+	 if (propdata == NULL) {
+		 printf("lcd error: faild to get bl_pwm_gpio\n");
+		 return 0;
+	 } else {
+		 bl_config->bl_pwm.pwm_gpio = pwm_pin;
+	 }
+	 lcd_printf("dtd_bl:bl_pwm_gpio: %s--%d \n",propdata,bl_config->bl_pwm.pwm_gpio);
+
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_on_delay", NULL);
+	 if (propdata == NULL) {
+		 printf("lcd error: faild to get backlight/bl_pwm_on_delay \n");
+		 return 0;
+	 } else {
+		 bl_config->bl_pwm.pwm_on_delay = be32_to_cpup((u32*)propdata);
+	 }
+	 lcd_printf("dtd_bl:pwm_on_delay = %d \n",bl_config->bl_pwm.pwm_on_delay);
+
+	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_off_delay", NULL);
+	 if (propdata == NULL) {
+		printf("lcd error: faild to get backlight/bl_pwm_off_delay \n");
+		return 0;
+	 } else {
+		bl_config->bl_pwm.pwm_off_delay = be32_to_cpup((u32*)propdata);
+	 }
+	 lcd_printf("dtd_bl:pwm_off_delay = %d \n",bl_config->bl_pwm.pwm_off_delay);
+
 
 	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_port", NULL);
 	 if (propdata == NULL) {

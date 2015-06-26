@@ -82,9 +82,9 @@ static void panel_power_ctrl(Bool_t status)
 		mdelay(pDev->pConf->lcd_power_ctrl.panel_power->panel_on_delay);
 
 	} else {
+		mdelay(pDev->pConf->lcd_power_ctrl.panel_power->panel_off_delay);
 		amlogic_gpio_direction_output(pDev->pConf->lcd_power_ctrl.panel_power->gpio,
 									  pDev->pConf->lcd_power_ctrl.panel_power->off_value);
-		mdelay(pDev->pConf->lcd_power_ctrl.panel_power->panel_off_delay);
 	}
 }
 
@@ -114,12 +114,12 @@ static int aml_lcd_pinmux_clr(unsigned int mux_index, unsigned int mux_mask)
 	}
 }
 
-static void set_backlight_pwm_freq(void)
+static void set_backlight_pwm_freq(unsigned int pwm_freq, unsigned int *cnt, unsigned int *pre_div)
 {
-	int i;
-	unsigned bl_freq, pwm_cnt, pwm_pre_div;
+	unsigned int i;
+	unsigned int bl_freq, pwm_cnt, pwm_pre_div;
 
-	bl_freq = ((pDev->bl_config->bl_pwm.pwm_freq >= (FIN_FREQ * 500)) ? (FIN_FREQ * 500) : pDev->bl_config->bl_pwm.pwm_freq);
+	bl_freq = (( pwm_freq >= (FIN_FREQ * 500)) ? (FIN_FREQ * 500) : pwm_freq);
 
 	for (i=0; i<0x7f; i++) {
 		pwm_pre_div = i;
@@ -127,77 +127,90 @@ static void set_backlight_pwm_freq(void)
 		if (pwm_cnt <= 0xffff)
 			break;
 	}
+	*cnt = pwm_cnt;
+	*pre_div = pwm_pre_div;
+
 	lcd_printf("bl_freq = %d  cnt= %d  pwm_pre_div = %d\n",bl_freq,pwm_cnt,pwm_pre_div);
-
-	pDev->bl_config->bl_pwm.pwm_cnt = pwm_cnt;
-	pDev->bl_config->bl_pwm.pwm_pre_div = pwm_pre_div;
-	pDev->bl_config->bl_pwm.pwm_max = pwm_cnt * pDev->bl_config->bl_pwm.pwm_duty_max / 100;
-	pDev->bl_config->bl_pwm.pwm_min = pwm_cnt * pDev->bl_config->bl_pwm.pwm_duty_min / 100;
-
 }
 
-static void set_lcd_backlight_level(unsigned level)
+static void set_backlight_pwm_port(unsigned int pwm_port, unsigned int pwm_hi,unsigned int pwm_lo,unsigned int pwm_pre_div)
+{
+	switch (pwm_port) {
+			case BL_PWM_A:
+				aml_write_reg32(P_PWM_MISC_REG_AB, (aml_read_reg32(P_PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pwm_pre_div<<8) | (1<<0)));
+				aml_write_reg32(P_PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_B:
+				aml_write_reg32(P_PWM_MISC_REG_AB, (aml_read_reg32(P_PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pwm_pre_div<<16) | (1<<1)));
+				aml_write_reg32(P_PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_C:
+				aml_write_reg32(P_PWM_MISC_REG_CD, (aml_read_reg32(P_PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pwm_pre_div<<8) | (1<<0)));
+				aml_write_reg32(P_PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_D:
+				aml_write_reg32(P_PWM_MISC_REG_CD, (aml_read_reg32(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pwm_pre_div<<16) | (1<<1)));
+				aml_write_reg32(P_PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_E:
+				aml_write_reg32(P_PWM_MISC_REG_EF, (aml_read_reg32(P_PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pwm_pre_div<<8) | (1<<0)));
+				aml_write_reg32(P_PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
+				break;
+			case BL_PWM_F:
+				aml_write_reg32(P_PWM_MISC_REG_EF, (aml_read_reg32(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pwm_pre_div<<16) | (1<<1)));
+				aml_write_reg32(P_PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
+				break;
+			default:
+				break;
+		}
+}
+
+static void set_lcd_backlight_level(Bool_t status, unsigned level)
 {
 	unsigned int pwm_hi = 0, pwm_lo = 0;
 	unsigned int pwm_range,level_range,val_range;
 	unsigned int i;
+	unsigned int pwm_cnt,pwm_pre_div;
 
-	set_backlight_pwm_freq();
+	if ( ON == status) {
 
-	level = (level > pDev->bl_config->bl_pwm.level_max ? pDev->bl_config->bl_pwm.level_max : (level < pDev->bl_config->bl_pwm.level_min ? pDev->bl_config->bl_pwm.level_min : level));
-	lcd_printf("level = %d \n",level);
+		mdelay(pDev->bl_config->bl_pwm.pwm_on_delay);
 
-	val_range   = level - pDev->bl_config->bl_pwm.level_min;
-	pwm_range   = pDev->bl_config->bl_pwm.pwm_max - pDev->bl_config->bl_pwm.pwm_min;
-	level_range = pDev->bl_config->bl_pwm.level_max - pDev->bl_config->bl_pwm.level_min;
+		set_backlight_pwm_freq(pDev->bl_config->bl_pwm.pwm_freq, &pwm_cnt, &pwm_pre_div);
+		pDev->bl_config->bl_pwm.pwm_max = pwm_cnt * pDev->bl_config->bl_pwm.pwm_duty_max / 100;
+		pDev->bl_config->bl_pwm.pwm_min = pwm_cnt * pDev->bl_config->bl_pwm.pwm_duty_min / 100;
 
-	level = val_range * pwm_range / level_range + pDev->bl_config->bl_pwm.pwm_min;
+		level = (level > pDev->bl_config->bl_pwm.level_max ? pDev->bl_config->bl_pwm.level_max :
+				(level < pDev->bl_config->bl_pwm.level_min ? pDev->bl_config->bl_pwm.level_min : level));
+		lcd_printf("level = %d \n",level);
 
-	if (pDev->bl_config->bl_pwm.pwm_positive) {
-		pwm_hi = level;
-		pwm_lo = pDev->bl_config->bl_pwm.pwm_cnt - level;
-	} else {
-		pwm_hi= pDev->bl_config->bl_pwm.pwm_cnt - level;
-		pwm_lo= level;
-	}
+		val_range   = level - pDev->bl_config->bl_pwm.level_min;
+		pwm_range   = pDev->bl_config->bl_pwm.pwm_max - pDev->bl_config->bl_pwm.pwm_min;
+		level_range = pDev->bl_config->bl_pwm.level_max - pDev->bl_config->bl_pwm.level_min;
+		level = val_range * pwm_range / level_range + pDev->bl_config->bl_pwm.pwm_min;
 
-	lcd_printf("total_level= %u pwm_hi= %u pwm_lo= %u \n", level,pwm_hi,pwm_lo);
+		if (pDev->bl_config->bl_pwm.pwm_positive) {
+			pwm_hi = level;
+			pwm_lo = pwm_cnt - level;
+		} else {
+			pwm_hi = pwm_cnt - level;
+			pwm_lo = level;
+		}
+		lcd_printf("total_level= %u pwm_hi= %u pwm_lo= %u \n", level ,pwm_hi ,pwm_lo);
 
-	switch (pDev->bl_config->bl_pwm.pwm_port) {
-		case BL_PWM_A:
-			aml_write_reg32(P_PWM_MISC_REG_AB, (aml_read_reg32(P_PWM_MISC_REG_AB) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->bl_pwm.pwm_pre_div<<8) | (1<<0)));
-			aml_write_reg32(P_PWM_PWM_A, (pwm_hi << 16) | (pwm_lo));
-			break;
-		case BL_PWM_B:
-			aml_write_reg32(P_PWM_MISC_REG_AB, (aml_read_reg32(P_PWM_MISC_REG_AB) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->bl_pwm.pwm_pre_div<<16) | (1<<1)));
-			aml_write_reg32(P_PWM_PWM_B, (pwm_hi << 16) | (pwm_lo));
-			break;
-		case BL_PWM_C:
-			aml_write_reg32(P_PWM_MISC_REG_CD, (aml_read_reg32(P_PWM_MISC_REG_CD) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->bl_pwm.pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
-			aml_write_reg32(P_PWM_PWM_C, (pwm_hi << 16) | (pwm_lo));
-			break;
-		case BL_PWM_D:
-			aml_write_reg32(P_PWM_MISC_REG_CD, (aml_read_reg32(PWM_MISC_REG_CD) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->bl_pwm.pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
-			aml_write_reg32(P_PWM_PWM_D, (pwm_hi << 16) | (pwm_lo));
-			break;
-		case BL_PWM_E:
-			aml_write_reg32(P_PWM_MISC_REG_EF, (aml_read_reg32(P_PWM_MISC_REG_EF) & ~(0x7f<<8)) | ((1 << 15) | (pDev->bl_config->bl_pwm.pwm_pre_div<<8) | (1<<0)));  //enable pwm clk & pwm output
-			aml_write_reg32(P_PWM_PWM_E, (pwm_hi << 16) | (pwm_lo));
-			break;
-		case BL_PWM_F:
-			aml_write_reg32(P_PWM_MISC_REG_EF, (aml_read_reg32(PWM_MISC_REG_EF) & ~(0x7f<<16)) | ((1 << 23) | (pDev->bl_config->bl_pwm.pwm_pre_div<<16) | (1<<1)));  //enable pwm clk & pwm output
-			aml_write_reg32(P_PWM_PWM_F, (pwm_hi << 16) | (pwm_lo));
-			break;
-		default:
-			break;
-	}
+		set_backlight_pwm_port(pDev->bl_config->bl_pwm.pwm_port,
+								pwm_hi,pwm_lo,pwm_pre_div);
 
-	//set pin mux
-	for (i=0; i<pDev->bl_config->bl_pwm.pinmux_clr_num; i++) {
-		aml_lcd_pinmux_clr(pDev->bl_config->bl_pwm.pinmux_clr[i][0],pDev->bl_config->bl_pwm.pinmux_clr[i][1]);
-	}
-	for (i=0; i<pDev->bl_config->bl_pwm.pinmux_set_num; i++) {
-		aml_lcd_pinmux_set( pDev->bl_config->bl_pwm.pinmux_set[i][0], pDev->bl_config->bl_pwm.pinmux_set[i][1]);
+		//set pin mux
+		for (i=0; i<pDev->bl_config->bl_pwm.pinmux_clr_num; i++) {
+			aml_lcd_pinmux_clr(pDev->bl_config->bl_pwm.pinmux_clr[i][0],pDev->bl_config->bl_pwm.pinmux_clr[i][1]);
+		}
+		for (i=0; i<pDev->bl_config->bl_pwm.pinmux_set_num; i++) {
+			aml_lcd_pinmux_set( pDev->bl_config->bl_pwm.pinmux_set[i][0], pDev->bl_config->bl_pwm.pinmux_set[i][1]);
+		}
+	}else{
+		amlogic_gpio_direction_output(pDev->bl_config->bl_pwm.pwm_gpio, level);
+		mdelay(pDev->bl_config->bl_pwm.pwm_off_delay);
 	}
 }
 
@@ -215,9 +228,12 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 					pDev->bl_config->bl_power.off_value));
 
 	if ( ON == status) {
+		mdelay(pDev->bl_config->bl_power.bl_on_delay);
+
+
+
 		amlogic_gpio_direction_output(pDev->bl_config->bl_power.gpio,
 									   pDev->bl_config->bl_power.on_value);
-		mdelay(pDev->bl_config->bl_power.bl_on_delay);
 	}else{
 		amlogic_gpio_direction_output(pDev->bl_config->bl_power.gpio,
 									  pDev->bl_config->bl_power.off_value);
@@ -282,10 +298,10 @@ static void _lcd_init(Lcd_Config_t *pConf)
 
 	lcd_set_current_vmode(VMODE_LCD);	//init lcd port
 
-	lcd_backlight_power_ctrl(ON);  //enable backlight power
+	set_lcd_backlight_level(ON,pDev->bl_config->bl_pwm.level_default);// set backlight  pwm on level
 	udelay(50);
 
-	set_lcd_backlight_level(pDev->bl_config->bl_pwm.level_default);// set backlight  pwm on level
+	lcd_backlight_power_ctrl(ON);  //enable backlight power
 	udelay(50);
 }
 
@@ -317,10 +333,10 @@ static int lcd_probe(void)
 
 static int lcd_remove(void)
 {
-	set_lcd_backlight_level(pDev->bl_config->bl_pwm.level_min);// set backlight  pwm off level
+	lcd_backlight_power_ctrl(OFF);  //disable backlight power
 	udelay(50);
 
-	lcd_backlight_power_ctrl(OFF);  //disable backlight power
+	set_lcd_backlight_level(OFF, 0);// set backlight  pwm off level
 	udelay(50);
 
 	_disable_display_driver(pDev->pConf); //disable lcd signal
@@ -355,7 +371,7 @@ static void _panel_power_off(void)
 
 static void _set_backlight_level(unsigned level)
 {
-	set_lcd_backlight_level(level);
+	set_lcd_backlight_level(ON,level);
 }
 
 static unsigned _get_backlight_level(void)

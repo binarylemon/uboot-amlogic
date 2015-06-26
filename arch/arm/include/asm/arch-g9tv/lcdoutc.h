@@ -276,9 +276,11 @@ typedef struct {
 	unsigned level_min;
 	unsigned level_max;
 
+	unsigned pwm_on_delay;
+	unsigned pwm_off_delay;
+	unsigned pwm_gpio;
+
 	unsigned pwm_port;
-	unsigned pwm_cnt;
-	unsigned pwm_pre_div;
 	unsigned pwm_max;
 	unsigned pwm_min;
 	unsigned pwm_positive;
