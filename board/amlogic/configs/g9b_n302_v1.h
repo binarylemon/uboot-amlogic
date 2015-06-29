@@ -200,8 +200,16 @@
 	"firstboot=1\0" \
 	"store=0\0"\
 	"sdcburncfg=aml_sdc_burn.ini\0"\
+	"upgrade_check="\
+                "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
+                "if itest ${upgrade_step} == 1; then  "\
+                    "defenv; setenv upgrade_step 2; saveenv;"\
+                "fi; "\
+		"\0"\
 	"preboot="\
+		"run upgrade_check;"\
 		"run prepare; "\
+        "run storeargs;"\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
 		"run switch_bootmode\0" \
 		\
