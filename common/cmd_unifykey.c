@@ -22,6 +22,7 @@
 #define wrnP(fmt...)   printf("wrn:"fmt)
 
 extern int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char* errInfo, unsigned* fmtLen);
+extern unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyValLen, char* errInfo);
 
 static int key_drv_init(void)
 {
@@ -127,9 +128,48 @@ static int do_serialno_get(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
     return 0;
 }
 
+//unifykey set <keyName> [<keyValLen> <keyValBuf>]
+static int do_key_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    int rcode = 0;
+    char errInf[512];
+    char* keyName = argv[1];
+    char* keyValBuf = NULL;
+    int  keyValLen  = 0;
+
+    if (argc < 2) {
+        cmd_usage(cmdtp);
+    }
+
+    if (argc < 4) //env mode: unifykey set <keyName> [<keyValLen> <keyValBuf>]
+    {
+        keyValBuf = getenv(keyName);
+        if (!keyValBuf) {
+            errorP("env[%s] not found.\n", keyName);
+            return __LINE__;
+        }
+        keyValLen = strlen(keyValBuf);
+    }
+    else//addr mode: unifykey set <keyName> [<keyValLen> <keyValBuf>]
+    {
+        keyValLen = simple_strtoul(argv[2], NULL, 0);
+        keyValBuf = (char*)simple_strtoul(argv[3], NULL, 16);
+    }
+
+    rcode = key_drv_init();
+    if (rcode) {
+        errorP("fail in key_drv_init\n");
+        return __LINE__;
+    }
+
+    rcode = v2_key_burn((char*)keyName, (u8*)keyValBuf, keyValLen, errInf);
+    return rcode == keyValLen ? 0 : __LINE__;
+}
+
 static cmd_tbl_t cmd_key_sub[] = {
 	U_BOOT_CMD_MKENT(get,    4, 0, do_key_get, "", ""),
 	U_BOOT_CMD_MKENT(getserialno,    4, 0, do_serialno_get, "", ""),
+	U_BOOT_CMD_MKENT(set,    6, 0, do_key_set, "", ""),
 };
 
 static int do_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -152,7 +192,7 @@ static int do_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 U_BOOT_CMD(
    unifykey,         //command name
-   5,               //maxargs
+   7,               //maxargs
    0,               //repeatable
    do_key,   //command function
    "unifykey read/write based on the driver keymanage",           //description
@@ -161,5 +201,7 @@ U_BOOT_CMD(
    "unifykey get  --- Read the key and save it as env if it is string\n"
    "    - e.g. \n"
    "        to read usid from emmc/nand and save value with env in name usid: <unifykey get usid> \n"   //usage
+   "unifykey set ---set the key value from env or memory buf\n"
+   "    unifykey set <keyName> [<keyValLen> <keyValBuf>]"
 );
 
