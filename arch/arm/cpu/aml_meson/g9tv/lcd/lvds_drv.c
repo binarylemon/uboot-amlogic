@@ -121,7 +121,7 @@ static void lvds_phy_config(int lvds_vx1_sel)
 	if (lvds_vx1_sel == 0) { //lvds
 		aml_write_reg32(P_HHI_DIF_CSI_PHY_CNTL1, 0x6c6cca80);
 		aml_write_reg32(P_HHI_DIF_CSI_PHY_CNTL2, 0x0000006c);
-		aml_write_reg32(P_HHI_DIF_CSI_PHY_CNTL3, 0x0fff0800);
+		aml_write_reg32(P_HHI_DIF_CSI_PHY_CNTL3, 0x00000800);
 		//od   clk 1039.5 / 2 = 519.75 = 74.25*7
 		aml_write_reg32(P_HHI_LVDS_TX_PHY_CNTL0, 0x0fff0040);
 	}
@@ -189,8 +189,8 @@ unsigned int  lvds_init(Lcd_Config_t *pConf)
 	set_pll_lvds(pConf);
 	venc_set_lvds(pConf);
 	set_control_lvds(pConf);
-	init_lvds_phy(pConf);
 	set_tcon_lvds(pConf);
+	init_lvds_phy(pConf);
 
 	return 0;
 }
