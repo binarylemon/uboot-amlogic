@@ -205,11 +205,13 @@ static void amlogic_usb3_phy_init(struct amlogic_usb3_phy *phy)
 		usb_aml_reg = (amlogic_usb3_phy *)((unsigned int)phy+i*PHY_REGISTER_SIZE);
 
 		usb_aml_reg->usb_r3 = (1<<13) | (0x68<<24);
+		udelay(2);
 		r0.d32 = usb_aml_reg->usb_r0;
 		r0.b.p30_phy_reset = 1;
 		usb_aml_reg->usb_r0 = r0.d32;
 		udelay(2);
 		r0.b.p30_phy_reset = 0;
+		r0.b.p30_tx_vboost_lvl = 0x4;
 		usb_aml_reg->usb_r0 = r0.d32;
 	
 
@@ -258,10 +260,18 @@ static void amlogic_usb3_phy_init(struct amlogic_usb3_phy *phy)
 		/*
 		* TX_FULL_SWING  to 127
 		*/
+		data = cr_bus_read(0x30);
+		data &= ~(0xf << 4);
+		cr_bus_write(0x30, data);
+
+		/*
+		* TX_FULL_SWING  to 127
+		*/
 		r1.d32 = usb_aml_reg->usb_r1;
 		r1.b.p30_pcs_tx_swing_full = 127;
 		r1.b.u3h_fladj_30mhz_reg = 0x20;
 		usb_aml_reg->usb_r1 = r1.d32;
+		udelay(2);
 
 		/*
 		* TX_DEEMPH_3_5DB  to 22
@@ -270,6 +280,7 @@ static void amlogic_usb3_phy_init(struct amlogic_usb3_phy *phy)
 		r2.b.p30_pcs_tx_deemph_3p5db = 22;
 		usb_aml_reg->usb_r2 = r2.d32;
 
+		udelay(2);
 		/*
 		* LOS_BIAS	to 0x5
 		* LOS_LEVEL to 0x9
@@ -277,6 +288,8 @@ static void amlogic_usb3_phy_init(struct amlogic_usb3_phy *phy)
 		r3.d32 = usb_aml_reg->usb_r3;
 		r3.b.p30_los_bias = 0x5;
 		r3.b.p30_los_level = 0x9;
+		r3.b.p30_ssc_en = 1;
+		r3.b.p30_ssc_range = 2;
 		usb_aml_reg->usb_r3 = r3.d32;
 	}
 
@@ -407,7 +420,7 @@ static int dwc3_core_init(struct dwc3 *dwc3_reg)
 
 	reg = xhci_readl(&dwc3_reg->g_ctl);
 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
-	reg &= ~DWC3_GCTL_DISSCRAMBLE;
+	reg |= DWC3_GCTL_DISSCRAMBLE;
 	switch (DWC3_GHWPARAMS1_EN_PWROPT(dwc3_hwparams1)) {
 	case DWC3_GHWPARAMS1_EN_PWROPT_CLK:
 		reg &= ~DWC3_GCTL_DSBLCLKGTNG;
