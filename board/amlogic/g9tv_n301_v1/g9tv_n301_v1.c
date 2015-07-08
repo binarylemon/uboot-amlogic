@@ -499,8 +499,18 @@ int board_init(void)
 
 	//start breathing light
 #ifdef CONFIG_BREATH_LIGHT_ENABLE
+	u32 reboot_mode_current = reboot_mode;
 		 writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);
-		 set_breathing_light(1);
+	switch (reboot_mode_current) {
+		case AMLOGIC_NORMAL_BOOT:
+		case AMLOGIC_FACTORY_RESET_REBOOT:
+		case AMLOGIC_UPDATE_REBOOT:
+					set_breathing_light(0);
+					break;
+		default:
+					set_breathing_light(1);
+					break;
+	}
 #endif
 
 #ifdef CONFIG_UBOOT_BUILD_VERSION_INFO

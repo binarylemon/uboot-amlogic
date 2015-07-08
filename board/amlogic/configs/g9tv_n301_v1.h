@@ -80,6 +80,7 @@
 #endif /*CONFIG_CMD_SF*/
 
 //Enable  breaking light
+#define SPL_JTAG_FUNCTION_DISABLE /*disable jtag function*/
 #define CONFIG_BREATH_LIGHT_ENABLE
 #define BREATH_LIRHT_GPIO GPIOAO_11
 #define BREATH_LIRHT_STATUS  1

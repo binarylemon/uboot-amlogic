@@ -1,3 +1,24 @@
+//breath light init function
+#ifdef CONFIG_BREATH_LIGHT_ENABLE
+void spl_init_breath_light(unsigned int status)
+{
+    //disable jtag,use for GPIOAO_11 as gpio
+    writel(readl(0xda004004)&~(0x3),0xda004004);
+    writel(readl(0xc8100014)&~(1<<22),0xc8100014);
+    writel(readl(0xc8100014)&~(1<<28),0xc8100014);
+    //set GPIOAO_11 output
+    writel(readl(0xc8100024)&~(1<<11),0xc8100024);
+
+    if (status) {
+        //set output level bit  1
+            writel(readl(0xc8100024)|(1<<27),0xc8100024);
+        }
+        else {
+            //set output level bit  0
+            writel(readl(0xc8100024)&~(1<<27),0xc8100024);
+        }
+}
+#endif
 
 /*
  * arch/arm/cpu/aml_meson/g9tv/firmware/arch_init.c
@@ -29,9 +50,25 @@ void arch_init(void) {
 
 	writel((readl(0xDA000004)|0x08000000), 0xDA000004);	//set efuse PD=1
 
+#ifdef SPL_JTAG_FUNCTION_DISABLE          /*disable jtag function*/
+	#ifdef CONFIG_BREATH_LIGHT_ENABLE
+		u32 reboot_mode_current = readl(0xc8100004);
+
+		switch (reboot_mode_current) {
+			case 0x01010101:				/*AMLOGIC_NORMAL_BOOT*/
+			case 0x02020202:				/*AMLOGIC_FACTORY_RESET_REBOOT*/
+			case 0x03030303:				/*AMLOGIC_UPDATE_REBOOT*/
+					spl_init_breath_light(!BREATH_LIRHT_STATUS);
+					break;
+			default:
+					spl_init_breath_light(BREATH_LIRHT_STATUS);
+					break;
+			}
+	#endif
+#else
 	//A9 JTAG enable
 	writel(0x102,0xda004004);
-
+#endif
 	//TDO enable
 	writel(readl(0xc8100014)|0x4000,0xc8100014);
 
