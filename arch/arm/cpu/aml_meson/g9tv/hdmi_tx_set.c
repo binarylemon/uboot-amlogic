@@ -477,7 +477,7 @@ void config_hdmi20_tx ( HDMI_Video_Codes_t vic, struct hdmi_format_para *para,
     data32  = 0;
     data32 |= (default_phase    << 2);  // [  2] default_phase
     data32 |= (0                << 1);  // [  1] set_avmute
-    data32 |= (0                << 0);  // [  0] clear_avmute
+    data32 |= (1                << 0);  // [  0] clear_avmute
     hdmitx_wr_reg(HDMITX_DWC_FC_GCP,    data32);
 
     //write AVI Infoframe packet configuration
