@@ -138,25 +138,25 @@ void vpp_set_matrix_ycbcr2rgb (int vd1_or_vd2_or_post, int mode)
 		//1.164     0       1.596
 		//1.164   -0.392    -0.813
 		//1.164   2.017     0
-		aml_write_reg32(P_VPP_MATRIX_COEF00_01, 0x04000000);
-		aml_write_reg32(P_VPP_MATRIX_COEF02_10, 0x059C0400);
-		aml_write_reg32(P_VPP_MATRIX_COEF11_12, 0x1EA01D24);
-		aml_write_reg32(P_VPP_MATRIX_COEF20_21, 0x04000718);
+		aml_write_reg32(P_VPP_MATRIX_COEF00_01, 0x04A80000);
+		aml_write_reg32(P_VPP_MATRIX_COEF02_10, 0x066204A8);
+		aml_write_reg32(P_VPP_MATRIX_COEF11_12, 0x1e701cbf);
+		aml_write_reg32(P_VPP_MATRIX_COEF20_21, 0x04A80812);
 		aml_write_reg32(P_VPP_MATRIX_COEF22, 0x00000000);
 		aml_write_reg32(P_VPP_MATRIX_OFFSET0_1, 0x00000000);
 		aml_write_reg32(P_VPP_MATRIX_OFFSET2, 0x00000000);
-		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET0_1, 0x00000E00);
+		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET0_1, 0x0FC00E00);
 		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET2, 0x00000E00);
 	}else if (mode == 1) {//ycbcr full range, 601 conversion
-		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET0_1, 0x0000600);
-		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET2, 0x0600);
+		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET0_1, 0x0000E00);
+		aml_write_reg32(P_VPP_MATRIX_PRE_OFFSET2, 0x0E00);
 		//	1	0			1.402
 		//	1	-0.34414	-0.71414
 		//	1	1.772		0
 		aml_write_reg32(P_VPP_MATRIX_COEF00_01, (0x400 << 16) |0);
 		aml_write_reg32(P_VPP_MATRIX_COEF02_10, (0x59c << 16) |0x400);
-		aml_write_reg32(P_VPP_MATRIX_COEF11_12, (0x1ea0 << 16) |0x1d25);
-		aml_write_reg32(P_VPP_MATRIX_COEF20_21, (0x400 << 16) |0x717);
+		aml_write_reg32(P_VPP_MATRIX_COEF11_12, (0x1ea0 << 16) |0x1d24);
+		aml_write_reg32(P_VPP_MATRIX_COEF20_21, (0x400 << 16) |0x718);
 		aml_write_reg32(P_VPP_MATRIX_COEF22, 0x0);
 		aml_write_reg32(P_VPP_MATRIX_OFFSET0_1, 0x0);
 		aml_write_reg32(P_VPP_MATRIX_OFFSET2, 0x0);
