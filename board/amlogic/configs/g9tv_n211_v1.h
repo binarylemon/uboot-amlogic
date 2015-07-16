@@ -185,6 +185,7 @@
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
 	"outputmode=panel\0" \
+	"hdmiinplugevent=1\0"\
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
 	"video_dev=panel\0" \
@@ -222,7 +223,7 @@
 		"\0"\
     \
     "storeargs="\
-        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded vmode=${outputmode} uboot_display=disable\0"\
+        "setenv bootargs ${initargs} logo=osd0,${outputmode},loaded vmode=${outputmode} uboot_display=disable hdmiinplugevent=${hdmiinplugevent}\0"\
     \
     "prepare="\
         "logo size ${outputmode}; video open; video clear; video open ${outputmode};"\

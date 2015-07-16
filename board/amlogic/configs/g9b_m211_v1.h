@@ -202,6 +202,7 @@
 	"store=0\0"\
     "wipe_data=successful\0"\
 	"cvbs_drv=0\0"\
+	"hdmiinplugevent=1\0"\
 	"upgrade_check="\
                 "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
                 "if itest ${upgrade_step} == 1; then  "\
@@ -238,7 +239,7 @@
                 "fi;\0"\
             \
           "storeargs="\
-                "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},panel androidboot.firstboot=${firstboot} uboot_display=0\0"\
+                "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},panel androidboot.firstboot=${firstboot} uboot_display=0 hdmiinplugevent=${hdmiinplugevent}\0"\
             \
 	"switch_bootmode="\
                 "if test ${reboot_mode} = factory_reset; then "\
