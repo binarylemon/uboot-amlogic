@@ -26,6 +26,7 @@
 #include <linux/list.h>
 #include <amlogic/aml_lcd.h>
 
+#if 0
 /* for GAMMA_CNTL_PORT */
    /// GAMMA VCOM POL
    #define LCD_GAMMA_VCOM_POL       7
@@ -123,123 +124,6 @@
    #define LCD_PACK_RVS             1
    #define LCD_PACK_LITTLE          0
 
-typedef enum
-{
-    LCD_NULL = 0,
-    LCD_DIGITAL_TTL,
-    LCD_DIGITAL_LVDS,
-    LCD_DIGITAL_MINILVDS,
-    LCD_DIGITAL_VBYONE,
-    LCD_TYPE_MAX,
-} Lcd_Type_t;
-
-typedef struct {
-    int channel_num;
-    int hv_sel;
-    int tcon_1st_hs_addr;
-    int tcon_1st_he_addr;
-    int tcon_1st_vs_addr;
-    int tcon_1st_ve_addr;
-    int tcon_2nd_hs_addr;
-    int tcon_2nd_he_addr;
-    int tcon_2nd_vs_addr;
-    int tcon_2nd_ve_addr;
-} Mlvds_Tcon_Config_t;
-
-typedef struct {
-	unsigned int lvds_prem_ctl;
-    unsigned int lvds_swing_ctl;
-    unsigned int lvds_vcm_ctl;
-    unsigned int lvds_ref_ctl;
-    unsigned int lvds_phy_ctl0;
-    unsigned int lvds_fifo_wr_mode;
-} Lvds_Phy_Control_t;
-
-typedef struct {
-    int mlvds_insert_start;
-    int total_line_clk;
-    int test_dual_gate;
-    //int test_bit_num;
-    int test_pair_num;
-//  int set_mlvds_pinmux;
-    int phase_select;
-    int TL080_phase;
-    //Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
-    //Lvds_Phy_Control_t *lvds_phy_control;
-    int scan_function;
-} Mlvds_Config_t;
-
-typedef struct {
-    int lvds_repack;
-    int pn_swap;
-    int dual_port;
-    int port_reverse;
-    //int bit_num;
-    //Lvds_Phy_Control_t *lvds_phy_control;
-} Lvds_Config_t;
-
-// Refer to LCD Spec
-typedef struct {
-    u16 h_active;   	// Horizontal display area
-    u16 v_active;     	// Vertical display area
-    u16 h_period;       // Horizontal total period time
-    u16 v_period;       // Vertical total period time
-    u16 screen_ratio_width;      // screen aspect ratio width
-    u16 screen_ratio_height;     // screen aspect ratio height
-    u32 screen_actual_width;/* screen physical width in "mm" unit */
-    u32 screen_actual_height;/* screen physical height in "mm" unit */
-
-    Lcd_Type_t lcd_type;  // only support 3 kinds of digital panel, not include analog I/F
-    u16 lcd_bits;         // 6 or 8 bits
-}Lcd_Basic_t;
-
-typedef struct {
-	//u16 clk_source;		 /*video pll clock, must be multiple of 12, from 384~744*/
-    u32 pll_ctrl;        /* video PLL settings */
-    u32 div_ctrl;        /* video pll div settings */
-	u32 clk_ctrl;        /* video clock settings */  //[19:16]ss_ctrl, [12]pll_sel, [8]div_sel, [4]vclk_sel, [3:0]xd
-    u16 sync_duration_num;
-    u16 sync_duration_den;
-
-	u16 video_on_pixel;
-    u16 video_on_line;
-
-    u16 sth1_hs_addr;
-    u16 sth1_he_addr;
-    u16 sth1_vs_addr;
-    u16 sth1_ve_addr;
-
-    u16 oeh_hs_addr;
-    u16 oeh_he_addr;
-    u16 oeh_vs_addr;
-    u16 oeh_ve_addr;
-
-    u16 vcom_hswitch_addr;
-    u16 vcom_vs_addr;
-    u16 vcom_ve_addr;
-
-    u16 cpv1_hs_addr;
-    u16 cpv1_he_addr;
-    u16 cpv1_vs_addr;
-    u16 cpv1_ve_addr;
-
-    u16 stv1_hs_addr;
-    u16 stv1_he_addr;
-    u16 stv1_vs_addr;
-    u16 stv1_ve_addr;
-
-    u16 oev1_hs_addr;
-    u16 oev1_he_addr;
-    u16 oev1_vs_addr;
-    u16 oev1_ve_addr;
-
-    u16 pol_cntl_addr;
-    u16 inv_cnt_addr;
-    u16 tcon_misc_sel_addr;
-    u16 dual_port_cntl_addr;
-} Lcd_Timing_t;
-
-// Fine Effect Tune
 typedef struct {
     u16 gamma_cntl_port;
     u16 gamma_vcom_hswitch_addr;
@@ -258,37 +142,257 @@ typedef struct {
     u16 GammaTableB[256];
 } Lcd_Effect_t;
 
+typedef enum
+{
+   LCD_NULL = 0,
+   LCD_DIGITAL_TTL,
+   LCD_DIGITAL_LVDS,
+  // LCD_DIGITAL_MINILVDS,
+   LCD_DIGITAL_VBYONE,
+   LCD_TYPE_MAX,
+} Lcd_Type_t;
+
+#endif
+
+typedef enum
+{
+	LCD_DIGITAL_LVDS = 0,
+	LCD_DIGITAL_VBYONE,
+	LCD_DIGITAL_TTL,
+  // LCD_DIGITAL_MINILVDS,
+   LCD_TYPE_MAX,
+} Lcd_Type_t;
+
+typedef struct {
+	Lcd_Type_t lcd_type;		// LCD_DIGITAL_TTL /LCD_DIGITAL_LVDS/LCD_DIGITAL_VBYONE
+    u16 h_active;		// Horizontal display area
+    u16 v_active;		// Vertical display area
+    u16 h_period;		// Horizontal total period time
+    u16 v_period;		// Vertical total period time
+	u16 video_on_pixel;
+    u16 video_on_line;
+
+    u16 screen_ratio_width;		// screen aspect ratio width
+    u16 screen_ratio_height;		// screen aspect ratio height
+    u32 screen_actual_width;		/* screen physical width in "mm" unit */
+    u32 screen_actual_height;		/* screen physical height in "mm" unit */
+}Lcd_Basic_t;
+
+typedef struct {
+	u32 hpll_clk;
+	u32 hpll_od;
+	u32 hdmi_pll_cntl5;
+
+    u16 sync_duration_num;
+    u16 sync_duration_den;
+
+    u16 sth1_hs_addr;
+    u16 sth1_he_addr;
+    u16 sth1_vs_addr;
+    u16 sth1_ve_addr;
+
+    u16 stv1_hs_addr;
+    u16 stv1_he_addr;
+    u16 stv1_vs_addr;
+    u16 stv1_ve_addr;
+} Lcd_Timing_t;
+
+typedef struct {
+	int lvds_bits;				// 6 / 8 /10  bits
+    int lvds_repack;
+    int pn_swap;
+    int dual_port;
+    int port_reverse;
+    int lvds_fifo_wr_mode;
+} Lvds_Config_t;
+
+typedef struct {
+	int lane_count;
+    int byte;
+    int region;
+    int color_fmt;
+} Vbyone_Config_t;
+
 typedef struct {
 	Lvds_Config_t *lvds_config;
-	Mlvds_Config_t *mlvds_config;
-	Mlvds_Tcon_Config_t *mlvds_tcon_config;    //Point to TCON0~7
-	Lvds_Phy_Control_t *lvds_phy_control;
-} Lvds_Mlvds_Config_t;
+	Vbyone_Config_t *vbyone_config;
 
-typedef enum {
-    OFF = 0,
-    ON = 1,
-} Bool_t;
+	//TTL_Config_t *ttl_config;
+	//DSI_Config_t *mipi_config;
+	//EDP_Config_t *edp_config;
+	//MLVDS_Config_t *mlvds_config;
+	//MLVDS_Tcon_Config_t *mlvds_tcon_config;
+} Lcd_Control_Config_t;
+
+//****panel power control only for uboot ***//
+typedef struct {
+	unsigned int gpio;
+	unsigned short on_value;
+	unsigned short off_value;
+	unsigned short panel_on_delay;
+	unsigned short panel_off_delay;
+} Panel_Power_Config_t;
 
 // Power Control
 typedef struct {
-    int cur_bl_level;
-    void (*power_ctrl)(Bool_t status);
-    void (*backlight_ctrl)(Bool_t status);
-    unsigned (*get_bl_level)(void);
-    void (*set_bl_level)(unsigned bl_level);
-    int (*lcd_suspend)(void *args);
-    int (*lcd_resume)(void *args);
+	Panel_Power_Config_t *panel_power;
 } Lcd_Power_Ctrl_t;
 
 typedef struct {
     Lcd_Basic_t lcd_basic;
     Lcd_Timing_t lcd_timing;
-    Lcd_Effect_t lcd_effect;
-	Lvds_Mlvds_Config_t lvds_mlvds_config;
+	Lcd_Control_Config_t lcd_control;
+    //Lcd_Effect_t lcd_effect;
 	Lcd_Power_Ctrl_t lcd_power_ctrl;
 } Lcd_Config_t;
 
-Lcd_Config_t lcd_config;
+Lcd_Config_t lcd_config_dft;
+
+
+//===============backlight control config===================//
+//****Backlight pwm control only for uboot ***//
+typedef enum {
+    OFF = 0,
+    ON = 1,
+} Bool_t;
+
+typedef enum {
+	BL_PWM_A = 0,
+	BL_PWM_B,
+	BL_PWM_C,
+	BL_PWM_D,
+	BL_PWM_E,
+	BL_PWM_F,
+	BL_PWM_MAX,
+} BL_PWM_t;
+
+//****backlight pwm control only for uboot ***//
+typedef struct {
+	unsigned pwm_freq;			/** backlight control pwm frequency(unit: Hz) */
+	unsigned pwm_duty_max;			/** brightness diminig duty_max(unit: %, positive logic) */
+	unsigned pwm_duty_min; 			/** brightness diminig duty_min(unit: %, positive logic) */
+
+	unsigned level_default;
+	unsigned level_min;
+	unsigned level_max;
+
+	unsigned pwm_on_delay;
+	unsigned pwm_off_delay;
+	unsigned pwm_gpio;
+
+	unsigned pwm_port;
+	unsigned pwm_max;
+	unsigned pwm_min;
+	unsigned pwm_positive;
+
+	unsigned pinmux_set_num;
+	unsigned pinmux_set[15][2];
+	unsigned pinmux_clr_num;
+	unsigned pinmux_clr[15][2];
+} Bl_Pwm_Config_t;
+
+//****backlight power control only for uboot ***//
+typedef struct {
+	unsigned int gpio;
+	unsigned short on_value;
+	unsigned short off_value;
+	unsigned short bl_on_delay;
+	unsigned short bl_off_delay;
+} Bl_Power_Config_t;
+
+typedef struct {
+	Bl_Power_Config_t bl_power;
+	Bl_Pwm_Config_t   bl_pwm;
+} Lcd_Bl_Config_t;
+
+Lcd_Bl_Config_t bl_config_dft;
+
+
+//============lcd & backlight config=================//
+typedef struct {
+	Lcd_Config_t 	*pConf;
+	Lcd_Bl_Config_t *bl_config;
+} lcd_dev_t;
+
+typedef struct {
+	const char *panel_type;
+
+	Lcd_Type_t lcd_type;		// LCD_DIGITAL_TTL /LCD_DIGITAL_LVDS/LCD_DIGITAL_VBYONE
+	u16 h_active;
+	u16 v_active;
+	u16 h_period;
+	u16 v_period;
+	u16 video_on_pixel;
+    u16 video_on_line;
+
+	u32 hpll_clk;
+	u32 hpll_od;
+	u32 hdmi_pll_cntl5;
+
+    //u16 sync_duration_num;
+    //u16 sync_duration_den;
+
+    u16 sth1_hs_addr;
+    u16 sth1_he_addr;
+    u16 sth1_vs_addr;
+    u16 sth1_ve_addr;
+    u16 stv1_hs_addr;
+    u16 stv1_he_addr;
+    u16 stv1_vs_addr;
+    u16 stv1_ve_addr;
+
+    int lcd_spc_val0;
+    int lcd_spc_val1;
+    int lcd_spc_val2;
+    int lcd_spc_val3;
+    int lcd_spc_val4;
+    int lcd_spc_val5;
+	int lcd_spc_val6;
+	int lcd_spc_val7;
+	int lcd_spc_val8;
+	int lcd_spc_val9;
+	int lcd_spc_val10;
+	int lcd_spc_val11;
+	int lcd_spc_val12;
+	int lcd_spc_val13;
+	int lcd_spc_val14;
+	int lcd_spc_val15;
+
+	unsigned int panel_gpio;
+	unsigned short panel_on_value;
+	unsigned short panel_off_value;
+	unsigned short panel_on_delay;
+	unsigned short panel_off_delay;
+
+	unsigned int bl_gpio;
+	unsigned short bl_on_value;
+	unsigned short bl_off_value;
+	unsigned short bl_on_delay;
+	unsigned short bl_off_delay;
+
+	unsigned pwm_port;
+	unsigned pwm_freq;
+	unsigned pwm_duty_max;
+	unsigned pwm_duty_min;
+	unsigned pwm_positive;
+
+	unsigned level_default;
+	unsigned level_min;
+	unsigned level_max;
+
+}Ext_Lcd_Config_t;
+
+#define LCD_TYPE_MAX 	15
+
+
+//#define __DBG__LCD__
+#ifdef __DBG__LCD__
+#define lcd_printf(fmt,args...) do { printf("[lcd]:FILE:%s:[%d],"fmt"",\
+                                                 __FILE__,__LINE__,## args);} \
+                                         while (0)
+#else
+#define lcd_printf(fmt,args...)
+#endif
+
 
 #endif /* LCDOUTC_H */

@@ -25,7 +25,11 @@ COBJS-$(CONFIG_VPU_PRESET) += vpu.o
 
 COBJS-$(CONFIG_VIDEO_AMLLCD) += aml_lcd_gpio.o
 
-COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcdoutc.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcd/lcd_common.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcd/lvds_drv.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcd/vbyone_drv.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcd/get_lcd_config.o
+COBJS-$(CONFIG_VIDEO_AMLLCD_TV) += lcd/lcdoutc.o
 
 COBJS-$(CONFIG_VIDEO_AMLLCD_TABLET) += lcd_tablet/lcdoutc.o
 COBJS-$(CONFIG_VIDEO_AMLLCD_TABLET) += lcd_tablet/lcd_config.o
