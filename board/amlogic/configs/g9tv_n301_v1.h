@@ -251,7 +251,7 @@
         "video open; video clear;"\
         "video dev enable;"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; bmp scale;"\
+        "bmp display ${bootup_offset}; bmp scale; video dev bl_on;"\
         "\0"\
 	\
 	"storeboot="\
@@ -265,14 +265,11 @@
 		"if test ${reboot_mode} = normal; then "\
 			"run storeargs; "\
 		"else if test ${reboot_mode} = factory_reset; then "\
-			"run prepare; "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
 			"run storeargs; "\
-			"run prepare; "\
 			"run update; "\
 		"else if test ${reboot_mode} = usb_burning; then "\
-			"run prepare; "\
 			"run usb_burning; "\
 		"else "\
 			"run storeargs; "\

@@ -239,6 +239,8 @@ static void lcd_backlight_power_ctrl(Bool_t status)
 									  pDev->bl_config->bl_power.off_value);
 		mdelay(pDev->bl_config->bl_power.bl_off_delay);
 	}
+	udelay(50);
+	printf("%s: %d\n", __func__, status);
 }
 
 static inline void _init_display_driver(Lcd_Config_t *pConf_t)
@@ -281,6 +283,7 @@ static inline void _enable_vsync_interrupt(void)
 
 static void _lcd_module_enable(void)
 {
+	printf("%s\n", __func__);
 	_init_display_driver(pDev->pConf);
 	_enable_vsync_interrupt();
 }
@@ -301,8 +304,8 @@ static void _lcd_init(Lcd_Config_t *pConf)
 	set_lcd_backlight_level(ON,pDev->bl_config->bl_pwm.level_default);// set backlight  pwm on level
 	udelay(50);
 
-	lcd_backlight_power_ctrl(ON);  //enable backlight power
-	udelay(50);
+	//lcd_backlight_power_ctrl(ON);  //enable backlight power
+	//udelay(50);
 }
 
 static int lcd_probe(void)
@@ -334,7 +337,7 @@ static int lcd_probe(void)
 static int lcd_remove(void)
 {
 	lcd_backlight_power_ctrl(OFF);  //disable backlight power
-	udelay(50);
+	//udelay(50);
 
 	set_lcd_backlight_level(OFF, 0);// set backlight  pwm off level
 	udelay(50);

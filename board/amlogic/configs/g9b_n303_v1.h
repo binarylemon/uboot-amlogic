@@ -215,7 +215,7 @@
         "video open; video clear;"\
         "video dev enable;"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; bmp scale;"\
+        "bmp display ${bootup_offset}; bmp scale; video dev bl_on;"\
         "\0"\
 	\
 	"storeboot="\

@@ -261,7 +261,7 @@ int switch_boot_mode(void)
 #endif
 	switch_boot_mode_power();
     set_regs_bandwidth();
-    uboot_show_logo();
+    //uboot_show_logo();
 
 #ifdef CONFIG_BREATH_LIGHT_ENABLE
      writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);
