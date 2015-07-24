@@ -837,6 +837,13 @@ void timera_intr_init()
 	writel(readl(P_AO_RTC_ADDR0) |	(0x1 << 5), P_AO_RTC_ADDR0);
 }
 
+void timera_intr_uninit()
+{
+	writel((readl(P_ISA_TIMER_MUX) & (~(1<<16))), P_ISA_TIMER_MUX);// disable timea
+
+	writel(readl(P_AO_RTC_ADDR0) &	(~(0x1 << 5)), P_AO_RTC_ADDR0);
+}
+
 int Process_Cec_Clk_Irq()
 {
 	unsigned value = 0;
@@ -921,8 +928,11 @@ unsigned int detect_key(unsigned int flags)
                 }
             }
         } else {
-            cec_node_init();
+            //cec_node_init();
         }
+#endif
+#ifdef CONFIG_NON_32K
+    timera_intr_uninit();
 #endif
 #ifdef CONFIG_AML1218
 	#ifndef CONFIG_ALWAYS_POWER_ON		/* only for tablet */
@@ -987,7 +997,7 @@ unsigned int detect_key(unsigned int flags)
 				}
             }
         } else {
-            cec_node_init();
+            //cec_node_init();
         }
 #endif
 
