@@ -231,7 +231,66 @@ static int erase_env_protect(struct amlnand_chip *aml_chip, int blk)
 	return ret;
 }
 
+int  amlnf_erase_reserve(uint64_t off, uint64_t erase_len)
+{
+	struct amlnand_chip *aml_chip = aml_nand_chip;
+	struct hw_controller *controller = &(aml_chip->controller);
+	struct chip_operation *operation = &(aml_chip->operation);
+	struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+	struct nand_flash *flash = &(aml_chip->flash);
 
+	//uint64_t  erase_addr,  erase_off;
+	unsigned erase_shift, write_shift, pages_per_blk;
+	int  start_blk,total_blk, ret = 0;
+
+
+	erase_shift = ffs(flash->blocksize) - 1;
+	write_shift =  ffs(flash->pagesize) - 1;
+	start_blk = (int)(off >> erase_shift);
+	total_blk = (int)((erase_len+off) >> erase_shift);
+	pages_per_blk = (1 << (erase_shift - write_shift));
+	//max_blk = 1024*flash->pagesize >> erase_shift + 48 ;
+
+	aml_nand_msg("start_blk =%d,total_blk=%d",start_blk, total_blk);
+	/*if(start_blk > max_blk || total_blk > max_blk){
+		aml_nand_msg("blk num out of range");
+		return -1;
+	}*/
+
+	for (;start_blk< total_blk; start_blk++) {
+		memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+		ops_para->page_addr =(((start_blk - start_blk % controller->chip_num) /controller->chip_num)) * pages_per_blk;
+		ops_para->chipnr = start_blk % controller->chip_num;
+		controller->select_chip(controller, ops_para->chipnr );
+
+		aml_nand_dbg("page_addr =%lx",ops_para->page_addr);
+		ret = operation->block_isbad(aml_chip);
+		if (ret) {
+			aml_nand_msg("nand blk %d is  bad block ", start_blk);
+			//start_blk++;
+			continue;
+		}
+
+#ifdef AML_NAND_UBOOT
+		nand_get_chip();
+#else
+		nand_get_chip(aml_chip);
+#endif
+
+		ret = operation->erase_block(aml_chip);
+#ifdef AML_NAND_UBOOT
+		nand_release_chip();
+#else
+		nand_release_chip(aml_chip);
+#endif
+		if (ret < 0) {
+			ret = operation->block_markbad(aml_chip);
+		}
+
+	}
+
+	return 0;
+}
 int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
 {
 	struct amlnand_chip *aml_chip = aml_nand_chip;

@@ -279,6 +279,17 @@ E_SWITCH_BACK:
 				return 0;
 			}
 		}
+		else if(strcmp(area, "nfbbt") == 0){
+			if (POR_NAND_BOOT()) {
+				store_dbg("NAND BOOT,erase data : %s %d  off =%llx ,size=%llx",__func__,__LINE__, off, size);
+				ret = run_command("amlnf erase_nfbbt",0);
+				if (ret != 0) {
+					store_msg("nand cmd %s failed ",cmd);
+					return -1;
+				}
+				return ret;
+			}
+		}
 		else {
 			goto usage;
 		}

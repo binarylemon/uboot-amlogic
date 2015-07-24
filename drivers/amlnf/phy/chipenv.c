@@ -2634,7 +2634,7 @@ int aml_nand_scan_hynix_info(struct amlnand_chip *aml_chip)
 
                 if (((controller->mfr_type == NAND_MFR_SAMSUNG) && ((col0_oob != 0xFF) || (col0_data != 0xFF))) \
                     || ((controller->mfr_type == NAND_MFR_TOSHIBA) && ((col0_oob != 0xFF) || (col0_data != 0xFF))) \
- || ((controller->mfr_type  == NAND_MFR_MICRON) && ((col0_oob == 0x0) || (col0_oob != 0xFF))) \
+                    ||((controller->mfr_type  == NAND_MFR_MICRON ) && ((col0_oob == 0x0))) \
  || ((controller->mfr_type  == NAND_MFR_HYNIX) && (col0_oob != 0xFF)) \
  || ((controller->mfr_type  == NAND_MFR_SANDISK) && (col0_oob != 0xFF))) {
 

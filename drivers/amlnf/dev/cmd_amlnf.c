@@ -12,6 +12,7 @@
 *****************************************************************/
 
 #include "../include/amlnf_dev.h"
+#include "../include/phynand.h"
 extern void amlnf_get_chip_size(uint64_t *size);
 #ifdef AML_NAND_UBOOT
 extern void amlnf_disprotect(uchar * name);
@@ -31,11 +32,12 @@ extern int  amlnf_markbad_reserved_ops(uint32_t start_blk);
 extern int amlnf_init(unsigned char flag);
 extern int amlnf_exit(void);
 extern void amldev_dumpinfo(struct amlnand_phydev *phydev);
+extern int  amlnf_erase_reserve(uint64_t off, uint64_t erase_len);
 //static int plane_mode = 0;
 struct amlnf_dev * nftl_device = NULL;
 struct amlnand_phydev *phy_device=NULL;
 static int nand_protect = 1;
-
+extern struct amlnand_chip * aml_nand_chip;
 static inline int isstring(char *p)
 {
 	char *endptr = p;
@@ -234,13 +236,41 @@ DATA_FLUSH:
     return ret;
 }
 
+static void show_nand_bbt_info(struct amlnand_chip *aml_chip)
+{
+    unsigned int i,j;
+    unsigned int blk_num;
+    unsigned short * tmp_status;// = &aml_chip->block_status->blk_status[0][0];
+    struct nand_flash *flash_chip = &(aml_chip->flash);
+	if (NULL == aml_chip) {
+        aml_nand_msg("%s,aml_chip NULL",__func__);
+        return;
+    }
+    blk_num = (flash_chip->chipsize *1024) / (flash_chip->blocksize/1024);
+    aml_nand_msg("blk_num:%d,total chip:%d",blk_num,aml_chip->controller.chip_num);
+	for (j=0;j<aml_chip->controller.chip_num;j++) {
+        tmp_status = &aml_chip->block_status->blk_status[j][0];
+        aml_nand_msg("chip num:%d",j);
+		for (i=0;i<blk_num;i++)
+        {
+			if (i%16 == 0) {
+                printk("%08x: ",i);
+            }
+            printk("%02x ",tmp_status[i]);
+			if (i%16 == 15) {
+                printk("\n");
+            }
+        }
+    }
+    printk("\nshow end ---\n");
+}
 
 int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	struct amlnand_phydev *phydev = NULL;
 	struct phydev_ops  * devops = NULL;
 	struct amlnf_dev *nftl_dev;
-
+	struct amlnand_chip *aml_chip = aml_nand_chip;
 	uint64_t addr, off, size, chipsize, erase_addr, erase_len, erase_off;
 	//unsigned erase_shift, write_shift, writesize, erasesize, pages_per_blk;
 	//unsigned char read, devread, nfread_flag;
@@ -249,6 +279,11 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	int  start_secor, length,  ret = 0;
 	char *cmd,*protect_name, *dev_name;
     uint32_t *markbad_reserved_addr = NULL;
+    int test_blk1=0,test_blk2=0,phy_erase_shift,min_blk_val,max_blk_val;
+    nand_arg_info  *shipped_bbtinfo = &aml_chip->shipped_bbtinfo;
+    nand_arg_info  *nand_bbtinfo = &aml_chip->nand_bbtinfo;
+    struct nand_flash *flash = &aml_chip->flash;
+    unsigned  erasesize;
 
 	/* at least two arguments please */
 	if (argc < 1)
@@ -855,6 +890,65 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
         ret = amlnf_markbad_reserved_ops(*markbad_reserved_addr);
 
 		printf("NAND %s %s\n", "MARKBAD", (ret <0) ? "ERROR" : "OK");
+		return 0;
+	}
+	if (strcmp(cmd, "show_bbt") == 0) {
+		show_nand_bbt_info(aml_chip);
+		return 0;
+	}
+
+	if (strcmp(cmd, "erase_nfbbt")== 0)
+	{
+		if (aml_chip == NULL) {
+			aml_nand_msg("aml_chip not init");
+			return -1;
+		}
+
+		erasesize = flash->blocksize;
+
+		test_blk1 =  (nand_bbtinfo->valid_blk_addr);
+
+		test_blk2 =  (shipped_bbtinfo->valid_blk_addr);
+
+		phy_erase_shift = ffs(erasesize) - 1;	/*实际物理快偏移值*/
+		erase_len =  erasesize;
+
+		min_blk_val = (flash->pagesize * 1024)>> phy_erase_shift;	/*protect uboot area*/
+		max_blk_val = (flash->chipsize *1024)/(erasesize /1024);
+
+		aml_nand_msg("nbbt-blk:%d,fbbt-blk:%d,min:%d,max:%d",test_blk1,test_blk2,min_blk_val,max_blk_val);
+
+		if (test_blk1 == 0 && test_blk2 == 0) {
+			off = min_blk_val << phy_erase_shift;
+			erase_len = (min_blk_val + 48 + 5) << phy_erase_shift;
+			aml_nand_msg("erase all reserve");
+			ret=amlnf_erase_reserve(off,erase_len);
+			if (ret != 0) {
+				aml_nand_msg("erase reserve err");
+				return -1;
+			}
+			return 0;
+		}
+		if (test_blk1 >= min_blk_val && test_blk1 < max_blk_val ) {
+			off = erasesize * test_blk1;
+			aml_nand_msg("erase nbbt");
+			ret=amlnf_erase_reserve(off,erase_len);
+			if (ret != 0) {
+				aml_nand_msg("erase nbbt err");
+				return -1;
+			}
+		}
+
+		if (test_blk2 >= min_blk_val && test_blk2 < max_blk_val ) {
+			off = erasesize * test_blk2;
+
+			aml_nand_msg("erase fbbt");
+			ret=amlnf_erase_reserve(off,erase_len);
+			if (ret != 0) {
+				aml_nand_msg("erase fbbt err");
+				return -1;
+			}
+		}
 		return 0;
 	}
 usage:
