@@ -35,7 +35,7 @@ static void osd_layer_init(GraphicDevice gdev, int layer)
                 gdev.fb_width,
                 gdev.fb_height,
                 gdev.fb_width,
-                gdev.fb_height * 2,
+                gdev.fb_height,
                 0,
                 0,
                 gdev.fb_width- 1,
@@ -295,14 +295,6 @@ int video_display_bitmap(ulong bmp_image, int x, int y)
 		height = info->vl_row - y;
 #endif
 
-#ifdef CONFIG_OSD_SCALE_ENABLE
-        if(getenv("bmp_osd_control")) {
-                osd_enable_hw(simple_strtoul(getenv("bmp_osd_control"), NULL, 10), osd_index);
-        }
-        else{
-                osd_enable_hw(0, osd_index);//default to close osd in 'bmp display'
-        }
-#endif
 	bmap = (uchar *)bmp + le32_to_cpu (bmp->header.data_offset);
 	fb   = (uchar *) (info->vd_base +
 		(y + height - 1) * lcd_line_length + x*(LCD_BPP/8));

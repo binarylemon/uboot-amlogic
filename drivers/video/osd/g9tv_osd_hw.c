@@ -115,6 +115,10 @@ static int  g_vf_visual_width;
 static int  g_vf_width;
 static int  g_vf_height;
 
+#define  	VOUT_ENCL	0
+#define  	VOUT_ENCI	1
+#define   	VOUT_ENCP	2
+
 static unsigned int filt_coef0[] =   //bicubic
 {
 	0x00800000,
@@ -371,9 +375,6 @@ static void osd_fiq_isr(void)
 void vsync_isr(void)
 #endif
 {
-#define  	VOUT_ENCI	1
-#define   	VOUT_ENCP	2
-#define  	VOUT_ENCT	3
 	unsigned  int  fb0_cfg_w0,fb1_cfg_w0;
 	unsigned  int  odd_or_even_line;
 	unsigned  int  scan_line_number = 0;
@@ -714,12 +715,7 @@ void osd_setup(	u32 xoffset,
 		osd_hw.color_info[index]=color;
 		add_to_update_list(index,OSD_COLOR_MODE);
 	}
-	if(osd_hw.enable[index] == DISABLE)
-	{
-		osd_hw.enable[index]=ENABLE;
-		add_to_update_list(index,OSD_ENABLE);
-		
-	}
+
 	if(memcmp(&pan_data,&osd_hw.pandata[index],sizeof(pandata_t))!= 0 ||
 		memcmp(&disp_data,&osd_hw.dispdata[index],sizeof(dispdata_t))!=0)
 	{
@@ -814,8 +810,9 @@ void osd_free_scale_enable_hw(u32 index,u32 enable)
 			add_to_update_list(index,DISP_GEOMETRY);
 			add_to_update_list(index,DISP_FREESCALE_ENABLE);
 		}
-
-		osd_enable_hw(osd_hw.enable[index],index);
+		mdelay(16);
+		vsync_isr();
+		osd_wait_vsync_hw();
 	}else{
 	static  dispdata_t	save_disp_data={0,0,0,0};
 	static  pandata_t	save_pan_data={0,0,0,0};
@@ -1679,12 +1676,39 @@ static   void  osd1_update_enable(void)
 	remove_from_update_list(OSD1,OSD_ENABLE);
 	}
 }
-static   void  osd2_update_enable(void)
+
+static void osd2_update_enable(void)
 {
+	unsigned int enc_line_last = 0;
+	unsigned int enc_line_cur = 0;
+	unsigned int enc_add = 0;
+	unsigned char output_type=0;
+	output_type=readl(P_VPU_VIU_VENC_MUX_CTRL)&0x3;
+	switch (output_type)
+	{
+		case VOUT_ENCL:
+			enc_add = (unsigned int)P_ENCL_INFO_READ;
+			break;
+		case VOUT_ENCP:
+			enc_add = (unsigned int)P_ENCP_INFO_READ;
+			break;
+		case VOUT_ENCI:
+			enc_add = (unsigned int)P_ENCI_INFO_READ;
+			break;
+	}
+
 	if (osd_hw.free_scale_mode[OSD2]){
 		if (osd_hw.enable[OSD2] == ENABLE){
-			setreg_mask(P_VPP_MISC,VPP_OSD1_POSTBLEND);
-			setreg_mask(P_VPP_MISC,VPP_POSTBLEND_EN);
+				enc_line_last = (readl(enc_add)&0x1fff0000)>>16;
+				while (1) {
+					enc_line_cur = (readl(enc_add)&0x1fff0000)>>16;
+					if (enc_line_cur < enc_line_last) {
+						setreg_mask(P_VPP_MISC, VPP_OSD1_POSTBLEND|VPP_POSTBLEND_EN);
+						break;
+					}else{
+						enc_line_last = enc_line_cur;
+					}
+				}
 		}else{
 			clrreg_mask(P_VPP_MISC,VPP_OSD1_POSTBLEND);
 		}
@@ -2100,9 +2124,8 @@ void osd_init_hw(void)
 	writel(data32, P_VIU_OSD1_FIFO_CTRL_STAT);
 	writel(data32, P_VIU_OSD2_FIFO_CTRL_STAT);
 
-	setbits_le32(P_VPP_MISC,VPP_POSTBLEND_EN);
-	clrbits_le32(P_VPP_MISC, VPP_PREBLEND_EN);
-	clrbits_le32(P_VPP_MISC,VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND );
+	clrbits_le32(P_VPP_MISC, VPP_POSTBLEND_EN |VPP_PREBLEND_EN);
+	clrbits_le32(P_VPP_MISC, VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND);
 	//data32  = 0x1          << 0; // osd_blk_enable
 	#ifdef CONFIG_M6TV
 	data32 = 0x0 << 0; // osd_blk_enable
@@ -2134,10 +2157,9 @@ void osd_init_hw(void)
 #endif	
 	//changed by Elvis Yu
 	//CLEAR_MPEG_REG_MASK(VPP_MISC,VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND );
-	clrbits_le32(P_VPP_MISC,
-		VPP_OSD1_POSTBLEND|VPP_OSD2_POSTBLEND|VPP_VD1_POSTBLEND|VPP_VD2_POSTBLEND);
+	clrbits_le32(P_VPP_MISC, VPP_VD1_POSTBLEND|VPP_VD2_POSTBLEND);
 	_debug("READ_MPEG_REG(VPP_MISC) = 0x%08x\n", READ_MPEG_REG(VPP_MISC));
-	
+
 	osd_hw.enable[OSD2]=osd_hw.enable[OSD1]=DISABLE;
 	osd_hw.fb_gem[OSD1].canvas_idx=OSD1_CANVAS_INDEX;
 	osd_hw.fb_gem[OSD2].canvas_idx=OSD2_CANVAS_INDEX;
