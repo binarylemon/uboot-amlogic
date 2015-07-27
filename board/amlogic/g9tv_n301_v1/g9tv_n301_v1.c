@@ -138,6 +138,7 @@ static void uboot_show_logo(void)
 	char *p = NULL;
 	if ((p = getenv("prepare")) != NULL) {
 		run_command(p, 0);
+		run_command("run storeargs",0);
 	}
 }
 
