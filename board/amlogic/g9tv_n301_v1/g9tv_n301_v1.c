@@ -625,6 +625,113 @@ struct aml_nand_device aml_nand_mid_device = {
 };
 #endif
 
+#if (CONFIG_DDR_CLK == 720)
+static int ddr_spread_spectrum_720M(cmd_tbl_t *cmdtp,u32 ddr_spread)
+{
+	if (ddr_spread) {
+			switch (ddr_spread) {
+				case 25:
+					 writel(0xca7e3823, AM_DDR_PLL_CNTL2);
+					 writel(0x9312023c, AM_DDR_PLL_CNTL);
+					break;
+				case 50:
+					 writel(0xca7e3823, AM_DDR_PLL_CNTL2);
+					 writel(0x9212023c, AM_DDR_PLL_CNTL);
+					break;
+				case 100:
+					writel(0xca724823, AM_DDR_PLL_CNTL2);
+					writel(0x9122023c, AM_DDR_PLL_CNTL);
+					break;
+				case 150:
+					 writel(0xca724823, AM_DDR_PLL_CNTL2);
+					 writel(0x9822023c, AM_DDR_PLL_CNTL);
+					break;
+				case 200:
+					 writel(0xca724823, AM_DDR_PLL_CNTL2);
+					 writel(0x9022023c, AM_DDR_PLL_CNTL);
+					break;
+				default:
+					goto usage;
+					break;
+			}
+		} else {
+			goto usage;
+		}
+	return 0;
+usage:
+	return cmd_usage(cmdtp);
+
+}
+#endif
+
+#if (CONFIG_DDR_CLK == 792)
+static int ddr_spread_spectrum_792M(cmd_tbl_t *cmdtp,u32 ddr_spread)
+{
+	if (ddr_spread) {
+			switch (ddr_spread) {
+				case 25:
+					 writel(0xca7e3823, AM_DDR_PLL_CNTL2);
+					 writel(0x93110221, AM_DDR_PLL_CNTL);
+					break;
+				case 50:
+					 writel(0xca7e3823, AM_DDR_PLL_CNTL2);
+					 writel(0x92110221, AM_DDR_PLL_CNTL);
+					break;
+				case 100:
+					writel(0xca724823, AM_DDR_PLL_CNTL2);
+					writel(0x91210221, AM_DDR_PLL_CNTL);
+					break;
+				case 150:
+					 writel(0xca724823, AM_DDR_PLL_CNTL2);
+					 writel(0x98210221, AM_DDR_PLL_CNTL);
+					break;
+				case 200:
+					 writel(0xca724823, AM_DDR_PLL_CNTL2);
+					 writel(0x90210221, AM_DDR_PLL_CNTL);
+					break;
+				default:
+					goto usage;
+					break;
+			}
+		} else {
+			goto usage;
+		}
+		return 0;
+
+usage:
+	return cmd_usage(cmdtp);
+
+}
+#endif
+static int ddr_spread_spectrum(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	u32 ddr_spread = 0;
+
+	if (argc > 2)
+		goto usage;
+
+	ddr_spread = simple_strtoul (getenv ("ddr_spread"), NULL, 10);
+#if (CONFIG_DDR_CLK == 720)
+	ddr_spread_spectrum_720M(cmdtp,ddr_spread);
+#endif
+
+#if (CONFIG_DDR_CLK == 792)
+	ddr_spread_spectrum_792M(cmdtp,ddr_spread);
+#endif
+//	printf("AM_DDR_PLL_CNTL2:%lx AM_DDR_PLL_CNTL:%lx \n",readl(AM_DDR_PLL_CNTL2),readl(AM_DDR_CLK_CNTL));
+	return 0;
+usage:
+	return cmd_usage(cmdtp);
+
+}
+
+U_BOOT_CMD(
+	ddr_spread,	2,	1,	ddr_spread_spectrum ,
+	"DDR PLL spread spectrum",
+	"spread spectrum - it support 0.25% 0.5% 1% 1.5% 2%(720MHz,792MHz)\n"
+);
+
+
 static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	const char *cmd;

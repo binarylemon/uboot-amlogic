@@ -183,6 +183,7 @@
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
 	"outputmode=1080p50hz\0" \
+	"ddr_spread=100\0" \
 	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
 	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
     "video_dev=tvout\0" \
@@ -245,6 +246,7 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
+		"ddr_spread;"\
         "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
