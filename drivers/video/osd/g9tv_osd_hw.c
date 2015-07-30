@@ -1731,7 +1731,7 @@ static void osd2_update_enable(void)
 			{
 				clrbits_le32(P_VPP_MISC,VPP_VD1_POSTBLEND);
 			}
-			setbits_le32(P_VPP_MISC,VPP_OSD2_POSTBLEND);
+			setbits_le32(P_VPP_MISC,VPP_OSD2_POSTBLEND|VPP_POSTBLEND_EN);
 		}
 		
 	}
