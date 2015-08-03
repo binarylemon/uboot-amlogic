@@ -8,6 +8,7 @@
 #include <arc_pwr.h>
 
 #include <pwr_op.c>
+#include <asm/arch/reboot.h>
 
 //#define CC_ENABLE_PRINT_INT
 
@@ -235,6 +236,7 @@ inline void switch_32K_to_24M(void)
 #define pwr_ddr_off
 void enter_power_down()
 {
+	unsigned int uboot_suspend_type = AMLOGIC_LOCK_REBOOT;
 	unsigned int uboot_cmd_flag=readl(P_AO_RTI_STATUS_REG2);//u-boot suspend cmd flag
 	unsigned int vcin_state = 0;
 	int wdt_flag;
@@ -298,7 +300,18 @@ void enter_power_down()
 	//	writel(readl(P_WATCHDOG_TC)&(~(1<<19)),P_WATCHDOG_TC);
 
 #if 1
+#ifndef CONFIG_REBOOT_DUMMY_SUSPEND
 	vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
+#else
+	uboot_suspend_type = readl(P_AO_RTI_STATUS_REG1);
+	if (uboot_suspend_type == AMLOGIC_LOCK_REBOOT || uboot_suspend_type == AMLOGIC_CHARGING_REBOOT) {
+		vcin_state = p_arc_pwr_op->detect_key(uboot_cmd_flag);
+	}
+	else
+	{
+		vcin_state = FLAG_WAKEUP_PWRKEY;
+}
+#endif
 #else
 	int i;
 	for(i=0;i<10;i++)
@@ -387,7 +400,9 @@ int main(void)
 	p_arc_pwr_op = &arc_pwr_op;
 //	timer_init();
 	arc_pwr_register((struct arc_pwr_op *)p_arc_pwr_op);//init arc_pwr_op
+#ifndef CONFIG_REBOOT_DUMMY_SUSPEND
 	writel(0,P_AO_RTI_STATUS_REG1);
+#endif
 	f_serial_puts("sleep .......\n");
 	arc_param->serial_disable=0;
 
