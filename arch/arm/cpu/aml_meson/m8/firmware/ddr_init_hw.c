@@ -20,7 +20,8 @@ void init_dmc_m8m2(struct ddr_set * timing_set)
 	writel((0x1f | (0xf << 6)), P_DMC_2ARB_CTRL);
 
 	//enable the DMC auto refresh function
-	writel(0x20109a27, P_DMC_REFR_CTRL2);
+	//writel(0x20109a27, P_DMC_REFR_CTRL2);
+	writel(0x20104e00|(timing_set->t_pctl_100ns_pck), P_DMC_REFR_CTRL2);
 	writel(0x80389f, P_DMC_REFR_CTRL1);
 
 	//enable the dc_reqs.
