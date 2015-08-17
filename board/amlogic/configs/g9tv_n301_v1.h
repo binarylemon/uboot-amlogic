@@ -17,6 +17,8 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 
+#define CONFIG_INSTABOOT
+
 //UART B sectoion
 #define CONFIG_UART_B_FUNCTION_ADD
 

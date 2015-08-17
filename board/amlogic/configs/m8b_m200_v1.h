@@ -6,7 +6,7 @@
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
-//#define CONFIG_INSTABOOT
+#define CONFIG_INSTABOOT
 //#define CONFIG_MUTE_PRINT
 
 // cart type of each port
