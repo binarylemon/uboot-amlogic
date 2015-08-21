@@ -186,6 +186,7 @@ int hub_port_reset(struct usb_device *dev, int port,
 	ALLOC_CACHE_ALIGN_BUFFER(struct usb_port_status, portsts, 1);
 	unsigned short portstatus, portchange;
 
+	wait_ms(200);
 	debug("hub_port_reset: resetting port %d...\n", port);
 	for (tries = 0; tries < MAX_TRIES; tries++) {
 

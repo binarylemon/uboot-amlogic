@@ -1403,6 +1403,12 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 	     */
 	    (dev->descriptor.idVendor == 0x0781 &&
 	     dev->descriptor.idProduct == 0x5406)
+	     ||
+	    (dev->descriptor.idVendor == 0xed1 &&
+	     dev->descriptor.idProduct == 0x6981)
+	     ||
+	    (dev->descriptor.idVendor == 0x58f &&
+	     dev->descriptor.idProduct == 0x6387)
 	    )
 		USB_STOR_PRINTF("usb_stor_get_info: skipping RESET..\n");
 	else
