@@ -215,8 +215,12 @@
 	"firstboot=1\0" \
     "is_suspend=false\0"\
 	"store=0\0"\
+	"wipe_data=successful\0"\
+	"wipe_cache=successful\0"\
+	"wipe_param=successful\0"\
 	"preboot="\
 		"echo preboot...;" \
+		"run factory_reset_poweroff_protect;"\
 		"run check_rebootmode;"\
 		"run prepare;"\
 		"run storeargs;"\
@@ -244,6 +248,20 @@
         "fi; "\
         "imgread kernel recovery ${loadaddr}; "\
         "bootm\0" \
+	"factory_reset_poweroff_protect="\
+		"echo wipe_data=${wipe_data}; "\
+		"echo wipe_cache=${wipe_cache}; "\
+		"echo wipe_param=${wipe_param};"\
+		"if test ${wipe_data} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_cache} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_param} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi\0" \
+		\
 	"update="\
         "echo update...; "\
         "if usb start; then "\

@@ -192,6 +192,9 @@
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"wipe_data=successful\0"\
+	"wipe_cache=successful\0"\
+	"wipe_param=successful\0"\
 	"sdcburncfg=aml_sdc_burn.ini\0"\
 	"upgrade_check="\
                 "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
@@ -200,6 +203,7 @@
                 "fi; "\
 		"\0"\
 	"preboot="\
+		"run factory_reset_poweroff_protect;"\
 		"run upgrade_check;"\
 		"run prepare; "\
         "run storeargs;"\
@@ -245,6 +249,20 @@
 			"bootm;"\
 		"else "\
 			"echo no recovery in flash; "\
+		"fi\0" \
+		\
+	"factory_reset_poweroff_protect="\
+		"echo wipe_data=${wipe_data}; "\
+		"echo wipe_cache=${wipe_cache}; "\
+		"echo wipe_param=${wipe_param};"\
+		"if test ${wipe_data} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_cache} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_param} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
 		"fi\0" \
 		\
 	"update="\
