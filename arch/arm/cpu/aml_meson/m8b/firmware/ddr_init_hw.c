@@ -89,11 +89,10 @@ void ddr_info_dump(struct ddr_set * timing_set)
 	unsigned int ddr_key;
 
 	ddr_key = readl(P_RAND64_ADDR0);
+	writel(ddr_key, DMC_SEC_KEY);
 	dmc_sec_ctrl_value = 0x80000000 | (1<<0);
 	writel(dmc_sec_ctrl_value, DMC_SEC_CTRL);
 	while( readl(DMC_SEC_CTRL) & 0x80000000 ) {}
-	writel(ddr_key &0x0000ffff, DMC_SEC_KEY0);
-	writel((ddr_key >>16)&0x0000ffff, DMC_SEC_KEY1);
 
 #ifdef CONFIG_DUMP_DDR_INFO
 	dmc_sec_ctrl_value = readl(DMC_SEC_CTRL);
