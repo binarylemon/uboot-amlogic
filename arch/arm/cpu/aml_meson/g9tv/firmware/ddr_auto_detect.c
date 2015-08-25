@@ -31,9 +31,9 @@ void print_ddr_channel(void){
 	channel_set = readl(P_DMC_DDR_CTRL);
 	if(0x3==((channel_set>>26)&0x3)){/*one channel*/
 		if(0x1==((channel_set>>24)&0x1))/*ddr 0 only*/
-			serial_puts("DDR 0 only");
-		else
 			serial_puts("DDR 1 only");
+		else
+			serial_puts("DDR 0 only");
 	}
 	else
 		serial_puts("DDR 0 + DDR 1");
@@ -150,16 +150,6 @@ unsigned int dtar_reset(struct ddr_set * timing_reg){
 		case CFG_DDR_TWO_CHANNEL_SWITCH_BIT_8:
 			ddr_channel_switch = 0x1;
 			dtar_addr_0_offset = 0; dtar_addr_1_offset = 1<<8; break;
-		case CFG_DDR_TWO_CHANNEL_SWITCH_BIT_30:
-			if(timing_reg->phy_memory_size<=0x40000000){
-				serial_puts("DDR size lower than 1GB, doesn't support 2 channel switch bit30!\n");
-				AML_WATCH_DOG_START();
-				while(1);
-			}
-			else{
-				dtar_addr_0_offset = 0; dtar_addr_1_offset = 0x40000000;
-			}
-			break;
 		case CFG_DDR_TWO_CHANNEL_DDR0_LOW:
 			ddr_channel_switch = 0x2;
 			dtar_addr_0_offset = 0; dtar_addr_1_offset = ddr0_size; break;
