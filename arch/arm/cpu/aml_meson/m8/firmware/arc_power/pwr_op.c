@@ -86,7 +86,7 @@ void printf_arc(const char *str)
 
 #ifdef CONFIG_RN5T618
 unsigned char hard_i2c_read8(unsigned char SlaveAddr, unsigned char RegAddr)
-{    
+{
     // Set the I2C Address
     (*I2C_SLAVE_ADDR) = ((*I2C_SLAVE_ADDR) & ~0xff) | SlaveAddr;
     // Fill the token registers
@@ -152,10 +152,10 @@ unsigned short hard_i2c_read8_16(unsigned char SlaveAddr, unsigned char RegAddr)
     while (1) {
         ctrl = (*I2C_CONTROL_REG);
         if (ctrl & (1 << 3)) {          // error case
-            return 0;    
+            return 0;
         }
         if (!(ctrl & (1 << 2))) {       // controller becomes idle
-            break;    
+            break;
         }
     }
 
@@ -174,7 +174,7 @@ unsigned short i2c_pmu_read_12(unsigned int reg, int size)
     if (size == 1) {
         val = hard_i2c_read8(I2C_RN5T618_ADDR, reg);
     } else {
-        val = hard_i2c_read8_16(I2C_RN5T618_ADDR, reg);    
+        val = hard_i2c_read8_16(I2C_RN5T618_ADDR, reg);
     }
     return val;
 }
@@ -271,11 +271,11 @@ void rn5t618_set_bits(unsigned char addr, unsigned char bit, unsigned char mask)
 #define MODE_PSM                2
 #define MODE_AUTO               0
 
-inline void power_off_ddr15() 
+inline void power_off_ddr15()
 {
     rn5t618_set_bits(0x0030, 0x00, 0x01);    // DCDC3
 }
-inline void power_on_ddr15() 
+inline void power_on_ddr15()
 {
     rn5t618_set_bits(0x0030, 0x01, 0x01);
 }
@@ -318,9 +318,9 @@ void rn5t618_shut_down()
         serial_put_hex(reg_coulomb[2], 8);
         serial_put_hex(reg_coulomb[3], 8);
         printf_arc("\n");
-        curr_coulomb = (reg_coulomb[3] <<  0) | 
-                       (reg_coulomb[2] <<  8) | 
-                       (reg_coulomb[1] << 16) | 
+        curr_coulomb = (reg_coulomb[3] <<  0) |
+                       (reg_coulomb[2] <<  8) |
+                       (reg_coulomb[1] << 16) |
                        (reg_coulomb[0] << 24);
         if (flag & 0x40) {                                  // already saved
             reg_save[0] = i2c_pmu_read_b(0x00bd);
@@ -333,9 +333,9 @@ void rn5t618_shut_down()
             serial_put_hex(reg_save[2], 8);
             serial_put_hex(reg_save[3], 8);
             printf_arc("\n");
-            save_coulomb = (reg_save[3] <<  0) | 
-                           (reg_save[2] <<  8) | 
-                           (reg_save[1] << 16) | 
+            save_coulomb = (reg_save[3] <<  0) |
+                           (reg_save[2] <<  8) |
+                           (reg_save[1] << 16) |
                            (reg_save[0] << 24);
             curr_coulomb += save_coulomb;
         }
@@ -343,7 +343,7 @@ void rn5t618_shut_down()
         reg_coulomb[1] = (curr_coulomb >> 16) & 0xff;
         reg_coulomb[2] = (curr_coulomb >>  8) & 0xff;
         reg_coulomb[3] = (curr_coulomb >>  0) & 0xff;
-        printf_arc("save coulomb:"); 
+        printf_arc("save coulomb:");
         serial_put_hex(reg_coulomb[0], 8);
         serial_put_hex(reg_coulomb[1], 8);
         serial_put_hex(reg_coulomb[2], 8);
@@ -355,7 +355,7 @@ void rn5t618_shut_down()
         i2c_pmu_write_b(0x00c3, reg_coulomb[3]);
         i2c_pmu_write_b(0x00ff, 0x00);                     // back to banck 0;
         rn5t618_set_bits(0x0007, 0x40, 0x60);              // set flag
-        rn5t618_set_bits(0x00EF, 0x08, 0x08);              // clear coulomb 
+        rn5t618_set_bits(0x00EF, 0x08, 0x08);              // clear coulomb
     }
 
 #ifdef CONFIG_RESET_TO_SYSTEM
@@ -365,7 +365,7 @@ void rn5t618_shut_down()
     rn5t618_set_gpio(1, 1);
     udelay__(100 * 1000);
     rn5t618_set_bits(0x00EF, 0x00, 0x10);                     // disable coulomb counter
-    rn5t618_set_bits(0x00E0, 0x00, 0x01);                     // disable fuel gauge 
+    rn5t618_set_bits(0x00E0, 0x00, 0x01);                     // disable fuel gauge
     rn5t618_set_bits(0x000f, 0x00, 0x01);
     rn5t618_set_bits(0x000E, 0x01, 0x01);
     while (1);
@@ -373,13 +373,13 @@ void rn5t618_shut_down()
 
 int find_idx(int start, int target, int step, int size)
 {
-    int i = 0;  
-    do { 
+    int i = 0;
+    do {
         if (start >= target) {
-            break;    
-        }    
+            break;
+        }
         start += step;
-        i++; 
+        i++;
     } while (i < size);
     return i;
 }
@@ -405,7 +405,7 @@ void rn5t618_set_dcdc_voltage(int dcdc, int voltage)
 void rn5t618_set_dcdc_mode(int dcdc, int mode)
 {
     int addr = 0x2C + (dcdc - 1) * 2;
-    unsigned char bits = (mode << 4) & 0xff; 
+    unsigned char bits = (mode << 4) & 0xff;
 
     rn5t618_set_bits(addr, bits, 0x30);
     udelay__(50);
@@ -424,13 +424,13 @@ void rn5t618_set_gpio(int gpio, int output)
         gpio_dir = i2c_pmu_read_b(0x0090);
     }
     if (!gpio_out) {
-        gpio_out = i2c_pmu_read_b(0x0091);    
+        gpio_out = i2c_pmu_read_b(0x0091);
     }
     gpio_out &= ~(1 << gpio);
     gpio_out |= (val << gpio);
     i2c_pmu_write_b(0x0091, gpio_out);                      // set output
     gpio_dir |= (1 << gpio);
-    i2c_pmu_write_b(0x0090, gpio_dir);                      // set output mode 
+    i2c_pmu_write_b(0x0090, gpio_dir);                      // set output mode
     udelay__(50);
 }
 
@@ -523,7 +523,7 @@ void rn5t618_power_on_at_24M()                                          // need 
 
 #if defined(CONFIG_ENABLE_PMU_WATCHDOG) || defined(CONFIG_RESET_TO_SYSTEM)
     i2c_pmu_write_b(0x0012, 0x00);                      // disable watchdog
-    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog 
+    i2c_pmu_write_b(0x000b, 0x01);                      // disable watchdog
     i2c_pmu_write_b(0x0013, 0x00);                      // clear watch dog IRQ
 #endif
 
@@ -539,7 +539,7 @@ void rn5t618_power_on_at_24M()                                          // need 
 
     reg_ldo |= (LDO3_BIT | LDO4_BIT);
     i2c_pmu_write_b(0x0044, reg_ldo);
-	
+
 #if defined(CONFIG_DCDC_PFM_PMW_SWITCH)
 #if CONFIG_DCDC_PFM_PMW_SWITCH
     rn5t618_set_dcdc_mode(3, MODE_PWM);
@@ -570,7 +570,7 @@ void rn5t618_power_on_at_24M()                                          // need 
         udelay__(10 * 1000);
         rn5t618_set_bits(0x00B3, 0x03, 0x03);
     }
-    rn5t618_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened 
+    rn5t618_set_gpio(3, 0);                                     // close ldo 1.2v when vcck is opened
 }
 
 void rn5t618_power_off_at_32K_1()
@@ -581,7 +581,7 @@ void rn5t618_power_off_at_32K_1()
 	reg  = readl(P_AO_I2C_M_0_CONTROL_REG);
 	reg &= 0xCFC00FFF;
 	if  (readl(P_AO_RTI_STATUS_REG2) == 0x87654321) {
-    	reg |= (I2C_CLK_DIV_IN_SUSPEND << 12);              // suspended from uboot 
+		reg |= (I2C_CLK_DIV_IN_SUSPEND << 12);              // suspended from uboot
     } else {
 		reg |= (I2C_CLK_DIV_IN_SUSPEND << 12);               // suspended from kernel
     }
@@ -612,7 +612,7 @@ void rn5t618_power_on_at_32K_1()        // need match power sequence of  power_o
 	writel(reg,P_AO_I2C_M_0_CONTROL_REG);
 	writel(0,P_AO_I2C_M_0_SLAVE_ADDR);
 	udelay__(10);
-	
+
 }
 
 void rn5t618_power_off_at_32K_2()       // If has nothing to do, just let null
@@ -637,9 +637,9 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
- //   backup_remote_register();
+   backup_remote_register();
     //set the ir_remote to 32k mode at ARC
- //   init_custom_trigger();
+   init_custom_trigger();
 #endif
 
     writel(readl(P_AO_GPIO_O_EN_N)|(1 << 3),P_AO_GPIO_O_EN_N);
@@ -792,7 +792,7 @@ unsigned int rn5t618_detect_key(unsigned int flags)
 	writel(gpio_mask,0xc8100080);
 
 #ifdef CONFIG_IR_REMOTE_WAKEUP
-//	resume_remote_register();
+	resume_remote_register();
 #endif
 
     return ret;
