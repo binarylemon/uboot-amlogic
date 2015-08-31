@@ -107,13 +107,26 @@ delay_loop:
 	ldr r1,=0xffff
 	str r1,[r0]
 
-/*
-wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
+	//ddr scrable function
+	ldr r10,=0xc81000a4
+	ldr r1,[r10,#0]
+	ldr r9,=0xda00201c
+	str r1,[r9,#0]     /*DMC_SEC_KEY*/
+
+	ldr r10,=0xc81000a0
+	ldr r1,[r10,#0]
+	ldr r10,=0x80000000
+	orr r1,r1,r10
+
+	ldr r0,=0xda002018
+	str r1,[r0] /*DMC_SEC_CTRL*/
+
+__wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	ldr r2, [r0]
-	and r2, r2, r1
+	and r2, r2, r10
 	cmp r2, #0
-	bne wait_dmc_sec_ctrl
-*/
+	bne __wait_dmc_sec_ctrl
+
 #endif
        LDR  r0, =0xc8100004 /*AO_RTI_STATUS_REG1*/
        mov  r1, #12

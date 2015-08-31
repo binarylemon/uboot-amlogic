@@ -119,7 +119,7 @@ void udelay__(int i)
 #define delay_1s() delay_tick(TICK_OF_ONE_SECOND);
 
 #ifdef CONFIG_MESON_TRUSTZONE
-volatile unsigned char temp_arm_base[620];
+volatile unsigned char temp_arm_base[684];
 #endif
 
 //volatile unsigned * arm_base=(volatile unsigned *)0x8000;

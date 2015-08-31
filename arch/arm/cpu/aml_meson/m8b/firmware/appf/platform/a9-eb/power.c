@@ -95,6 +95,8 @@ void pwr_delay(int n)
 #define P_AO_RTC_ADDR3				0xc810074c
 #define P_AO_RTC_ADDR4				0xc8100750
 
+#define DMC_SEC_KEY                 0xda00201c
+#define DMC_SEC_CTRL                0xda002018
 
 #define RESET0_REGISTER                            0x1101
 #define RESET1_REGISTER                            0x1102
@@ -148,6 +150,7 @@ void run_arc_program()
 	unsigned address0;
 	unsigned* pbuffer;
 	unsigned* pbuffer1;
+	unsigned dmc_sec_ctrl_addr, dmc_sec_key_addr;
 	vaddr1 = 0xd9010000; //store ddr trainning original data
 	vaddr2 = 0xd9000000;
 
@@ -189,6 +192,11 @@ void run_arc_program()
 		pbuffer++;
 		pbuffer1++;
 	}
+
+	dmc_sec_ctrl_addr = 0xc81000a0;
+	dmc_sec_key_addr = 0xc81000a4;
+	*(unsigned int *)dmc_sec_ctrl_addr = readl(DMC_SEC_CTRL);
+	*(unsigned int *)dmc_sec_key_addr = readl(DMC_SEC_KEY);
 
 	clean_dcache_v7_l1();
 
