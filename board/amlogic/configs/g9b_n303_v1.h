@@ -391,7 +391,7 @@
 
 #define CONFIG_DUMP_DDR_INFO 1
 #define CONFIG_ENABLE_WRITE_LEVELING 1
-//#define DDR_SCRAMBE_ENABLE  1
+#define DDR_SCRAMBE_ENABLE  1
 
 #define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
 #define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
