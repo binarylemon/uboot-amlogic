@@ -1626,7 +1626,6 @@ static DSI_Config_t lcd_mipi_config = {
     .transfer_ctrl = 0,
     .dsi_init_on = &dsi_init_on_table[0],
     .dsi_init_off = &dsi_init_off_table[0],
-    .lcd_extern_init = 0,
 };
 
 static EDP_Config_t lcd_edp_config = {

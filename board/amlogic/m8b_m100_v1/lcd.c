@@ -119,7 +119,6 @@ static DSI_Config_t lcd_mipi_config = {
     .transfer_ctrl  = ((0 << BIT_TRANS_CTRL_CLK) | (0 << BIT_TRANS_CTRL_SWITCH)),
     .dsi_init_on  = &mipi_init_on_table[0],
     .dsi_init_off = &mipi_init_off_table[0],
-    .lcd_extern_init = LCD_EXTERN_INIT,
 #endif
 };
 
@@ -256,6 +255,9 @@ Lcd_Config_t lcd_config_dft = {
 		.gamma_b_coeff = GAMMA_B_COEFF,
 	},
 	.lcd_control = {
+#ifdef CONFIG_AML_LCD_EXTERN
+		.extern_index = EXTERN_INDEX;
+#endif
 		.mipi_config = &lcd_mipi_config,
 		.lvds_config = &lcd_lvds_config,
 		.ttl_config = &lcd_ttl_config,

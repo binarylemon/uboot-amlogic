@@ -2,7 +2,7 @@
  * AMLOGIC lcd external driver.
  *
  * Communication protocol:
- * MIPI 
+ * MIPI
  *
  */
 
@@ -10,23 +10,11 @@
 #include <asm/arch/io.h>
 #include <asm/arch/gpio.h>
 #include <amlogic/aml_lcd_extern.h>
+#include "lcd_extern.h"
 
-//#define LCD_EXT_DEBUG_INFO
-#ifdef LCD_EXT_DEBUG_INFO
-#define DBG_PRINT(...)		printf(__VA_ARGS__)
-#else
-#define DBG_PRINT(...)
-#endif
-
-#define LCD_EXTERN_DEVICE_NODE    "/lcd_extern_mipi_KD080D13"
-#define LCD_EXTERN_NAME			"lcd_mipi_KD080D13"
+#define LCD_EXTERN_INDEX		0
+#define LCD_EXTERN_NAME			"mipi_KD080D13"
 #define LCD_EXTERN_TYPE			LCD_EXTERN_MIPI
-
-static struct aml_lcd_extern_driver_t lcd_ext_driver;
-static struct lcd_extern_config_t lcd_ext_config ={
-	.name = LCD_EXTERN_NAME,
-	.type = LCD_EXTERN_TYPE,
-};
 
 //******************** mipi command ********************//
 //format:  data_type, num, data....
@@ -83,35 +71,35 @@ static unsigned char mipi_init_off_table[] = {
 	0xff,0xff,   //ending flag
 };
 
-static int get_lcd_extern_config(void)
+static int lcd_extern_driver_update(struct aml_lcd_extern_driver_t *ext_drv)
 {
-#ifdef CONFIG_OF_LIBFDT
-	char *dt_addr = lcd_ext_driver.dt_addr;
-	char *of_node = LCD_EXTERN_DEVICE_NODE;
-	struct lcd_extern_config_t *pdata = &lcd_ext_config;
-
-	if (get_lcd_extern_dt_data(dt_addr, of_node, pdata) != 0){
-		printf("[error] %s probe: failed to get dt data\n", LCD_EXTERN_NAME);
+	if (ext_drv == NULL) {
+		LCD_EXT_PR("%s driver is null\n", LCD_EXTERN_NAME);
 		return -1;
 	}
-#endif
+
+	if (ext_drv->config.type == LCD_EXTERN_MAX) { //default for no dt
+		ext_drv->config.index = LCD_EXTERN_INDEX;
+		ext_drv->config.type = LCD_EXTERN_TYPE;
+		strcpy(ext_drv->config.name, LCD_EXTERN_NAME);
+	}
+	ext_drv->init_on_cmd_8  = &mipi_init_on_table[0];
+	ext_drv->init_off_cmd_8 = &mipi_init_off_table[0];
+
 	return 0;
 }
 
-static struct aml_lcd_extern_driver_t lcd_ext_driver = {
-	.name = LCD_EXTERN_NAME,
-	.type = LCD_EXTERN_TYPE,
-	.reg_read = NULL,
-	.reg_write = NULL,
-	.power_on = NULL,
-	.power_off = NULL,
-	.init_on_cmd_8  = &mipi_init_on_table[0],
-	.init_off_cmd_8 = &mipi_init_off_table[0],
-	.dt_addr = NULL,
-	.get_lcd_ext_config = get_lcd_extern_config,
-};
-
-struct aml_lcd_extern_driver_t* aml_lcd_extern_get_driver(void)
+int aml_lcd_extern_mipi_KD080D13_get_default_index(void)
 {
-	return &lcd_ext_driver;
+	return LCD_EXTERN_INDEX;
+}
+
+int aml_lcd_extern_mipi_KD080D13_probe(struct aml_lcd_extern_driver_t *ext_drv)
+{
+	int ret = 0;
+
+	ret = lcd_extern_driver_update(ext_drv);
+
+	DBG_PRINT("%s: %d\n", __func__, ret);
+	return ret;
 }

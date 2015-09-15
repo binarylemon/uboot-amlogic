@@ -24,8 +24,8 @@
 
 /***************************************************************/
 //  DEV_ADDR = 0x70 or 0x78 , Displayport mode and HDCP registers
-#define SP_TX_HDCP_STATUS							  				0x00
-#define SP_TX_HDCP_AUTH_PASS						  			0x02//bit position
+#define SP_TX_HDCP_STATUS							0x00
+#define SP_TX_HDCP_AUTH_PASS						  	0x02//bit position
 
 #define SP_TX_HDCP_CONTROL_0_REG                  		0x01
 #define SP_TX_HDCP_CONTROL_0_STORE_AN            0x80//bit position
@@ -121,18 +121,18 @@
 #define SP_TX_AUD_CTRL_AUD_EN							0x01
 
 
-#define SP_TX_PKT_EN_REG              					0x90
-#define SP_TX_PKT_AUD_UP								0x80  // bit position
-#define SP_TX_PKT_AVI_UD              					0x40  // bit position
-#define SP_TX_PKT_MPEG_UD             					0x20  // bit position    
-#define SP_TX_PKT_SPD_UD              					0x10  // bit position   
-#define SP_TX_PKT_AUD_EN								0x08  // bit position=
-#define SP_TX_PKT_AVI_EN              					0x04  // bit position          
-#define SP_TX_PKT_MPEG_EN             					0x02  // bit position     
-#define SP_TX_PKT_SPD_EN              					0x01  // bit position       
+#define SP_TX_PKT_EN_REG						0x90
+#define SP_TX_PKT_AUD_UP						0x80  // bit position
+#define SP_TX_PKT_AVI_UD						0x40  // bit position
+#define SP_TX_PKT_MPEG_UD						0x20  // bit position
+#define SP_TX_PKT_SPD_UD						0x10  // bit position
+#define SP_TX_PKT_AUD_EN						0x08  // bit position=
+#define SP_TX_PKT_AVI_EN						0x04  // bit position
+#define SP_TX_PKT_MPEG_EN						0x02  // bit position
+#define SP_TX_PKT_SPD_EN						0x01  // bit position
 
 
-#define SP_TX_HDCP_CTRL 												0x92
+#define SP_TX_HDCP_CTRL 						0x92
 
 #define SP_TX_LINK_BW_SET_REG         				 0xA0
 #define SP_TX_LANE_COUNT_SET_REG      				 0xA1
@@ -178,32 +178,32 @@
 //#define SP_TX_LINK_TEST_COUNT                     0xC0
 
 
-#define SP_TX_PLL_CTRL_REG											0xC7	
-#define SP_TX_PLL_CTRL_PLL_PD           						0x80        // bit position
-#define SP_TX_PLL_CTRL_PLL_RESET        					0x40        // bit position 
-//#define SP_TX_PLL_CTRL_CPREG_BLEED      					0x08        // bit position 
+#define SP_TX_PLL_CTRL_REG							0xC7
+#define SP_TX_PLL_CTRL_PLL_PD           					0x80        // bit position
+#define SP_TX_PLL_CTRL_PLL_RESET        					0x40        // bit position
+//#define SP_TX_PLL_CTRL_CPREG_BLEED      					0x08        // bit position
 
 #define SP_TX_ANALOG_POWER_DOWN_REG                   			0xC8
-#define SP_TX_ANALOG_POWER_DOWN_MACRO_PD              	0x20        // bit position 
-#define SP_TX_ANALOG_POWER_DOWN_AUX_PD                		0x10        // bit position 
-//#define SP_TX_ANALOG_POWER_DOWN_CH3_PD                		0x08        // bit position 
-//#define SP_TX_ANALOG_POWER_DOWN_CH2_PD                		0x04        // bit position 
-#define SP_TX_ANALOG_POWER_DOWN_CH1_PD                		0x02        // bit position 
-#define SP_TX_ANALOG_POWER_DOWN_CH0_PD                		0x01        // bit position 
+#define SP_TX_ANALOG_POWER_DOWN_MACRO_PD              	0x20        // bit position
+#define SP_TX_ANALOG_POWER_DOWN_AUX_PD                		0x10        // bit position
+//#define SP_TX_ANALOG_POWER_DOWN_CH3_PD                		0x08        // bit position
+//#define SP_TX_ANALOG_POWER_DOWN_CH2_PD                		0x04        // bit position
+#define SP_TX_ANALOG_POWER_DOWN_CH1_PD                		0x02        // bit position
+#define SP_TX_ANALOG_POWER_DOWN_CH0_PD                		0x01        // bit position
 
 
-#define SP_TX_ANALOG_TEST_REG                         					0xC9
-#define SP_TX_ANALOG_TEST_MACRO_RST                   				0x20       // bit position 
-#define SP_TX_ANALOG_TEST_PLL_TEST                    				0x10       // bit position 
-#define SP_TX_ANALOG_TEST_CH3_TEST                    				0x08       // bit position 
-#define SP_TX_ANALOG_TEST_CH2_TEST                    				0x04       // bit position 
-#define SP_TX_ANALOG_TEST_CH1_TEST                    				0x02       // bit position 
-#define SP_TX_ANALOG_TEST_CH0_TEST                    				0x01       // bit position 
+#define SP_TX_ANALOG_TEST_REG                         				0xC9
+#define SP_TX_ANALOG_TEST_MACRO_RST                   				0x20       // bit position
+#define SP_TX_ANALOG_TEST_PLL_TEST                    				0x10       // bit position
+#define SP_TX_ANALOG_TEST_CH3_TEST                    				0x08       // bit position
+#define SP_TX_ANALOG_TEST_CH2_TEST                    				0x04       // bit position
+#define SP_TX_ANALOG_TEST_CH1_TEST                    				0x02       // bit position
+#define SP_TX_ANALOG_TEST_CH0_TEST                    				0x01       // bit position
 
-#define SP_TX_GNS_CTRL_REG                            							0xCD
-#define SP_EQ_LOOP_CNT											0x40//bit position
-#define SP_TX_VIDEO_MAP_CTRL                 			                            0x02       // bit position 
-#define SP_TX_RS_CTRL                        					              	0x01       // bit position 
+#define SP_TX_GNS_CTRL_REG                            				0xCD
+#define SP_EQ_LOOP_CNT								0x40//bit position
+#define SP_TX_VIDEO_MAP_CTRL                 					0x02       // bit position
+#define SP_TX_RS_CTRL                        					0x01       // bit position
 
 #define SP_TX_DOWN_SPREADING_CTRL1                                               0xD0   //guochuncheng
 #define SP_TX_DOWN_SPREADING_CTRL2                                               0xD1
@@ -219,7 +219,7 @@
 #define SP_TX_I2C_STRETCH_CTRL_REG                                                              0xDB
 #define SP_TX_AUX_STATUS            										0xE0
 #define SP_TX_DEFER_CTRL_REG            									0xE2
-#define SP_TXL_DEFER_CTRL_EN  					                     		       0x80       // bit position 
+#define SP_TXL_DEFER_CTRL_EN  					                     		       0x80       // bit position
 
 #define SP_TX_BUF_DATA_COUNT_REG											0xE4
 #define SP_TX_AUX_CTRL_REG              										0xE5
@@ -230,7 +230,7 @@
 #define SP_TX_AUX_ADDR_19_16_REG        									0xE8
 
 #define SP_TX_AUX_CTRL_REG2                                                 0xE9
-#define SP_TX_ADDR_ONLY_BIT													0x02//bit 1
+#define SP_TX_ADDR_ONLY_BIT							0x02//bit 1
 
 #define SP_TX_BUF_DATA_0_REG                          0xf0
 #define SP_TX_BUF_DATA_1_REG                          0xf1
@@ -535,7 +535,7 @@
 #define SP_TX_MPEG_DATA27            0xCE
 
 //#define GNSS_CTRL_REG				0xCD
-//#define ENABLE_SSC_FILTER			0x80//bit 
+//#define ENABLE_SSC_FILTER			0x80//bit
 
 //#define SSC_D_VALUE					 0xD0
 //#define SSC_CTRL_REG2					 0xD1

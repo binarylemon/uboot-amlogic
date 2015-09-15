@@ -165,7 +165,6 @@ static void print_info(void)
             i += n;
         }
     }
-    DPRINT("DSI INIT EXTERN:        %d\n", dsi_config->lcd_extern_init);
     DPRINT("================================================\n");
 }
 
@@ -1155,7 +1154,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 {
     unsigned int      operation_mode_disp, operation_mode_init;
 #ifdef CONFIG_AML_LCD_EXTERN
-    struct aml_lcd_extern_driver_t *lcd_extern_driver;
+    struct aml_lcd_extern_driver_t *ext_drv;
 #endif
     unsigned int init_flag = 0;
 
@@ -1163,20 +1162,19 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
     operation_mode_disp = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_DISP) & 1);
     operation_mode_init = ((pConf->lcd_control.mipi_config->operation_mode >> BIT_OPERATION_MODE_INIT) & 1);
 
-    if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
-        lcd_extern_driver = aml_lcd_extern_get_driver();
-        if (lcd_extern_driver == NULL) {
+    if (pConf->lcd_control.extern_index < LCD_EXTERN_INDEX_INVALID) {
+        ext_drv = aml_lcd_extern_get_driver();
+        if (ext_drv == NULL) {
             DPRINT("no lcd_extern driver\n");
-        }
-        else {
-            if (lcd_extern_driver->init_on_cmd_8) {
-                init_flag += dsi_write_cmd(lcd_extern_driver->init_on_cmd_8);
-                DPRINT("[extern]%s dsi init on\n", lcd_extern_driver->name);
+        } else {
+            if (ext_drv->init_on_cmd_8) {
+                init_flag += dsi_write_cmd(ext_drv->init_on_cmd_8);
+                DPRINT("[extern]%s dsi init on\n", ext_drv->config.name);
             }
         }
-#endif
     }
+#endif
 
     if (pConf->lcd_control.mipi_config->dsi_init_on) {
         init_flag += dsi_write_cmd(pConf->lcd_control.mipi_config->dsi_init_on);
@@ -1199,7 +1197,7 @@ void mipi_dsi_link_on(Lcd_Config_t *pConf)
 void mipi_dsi_link_off(Lcd_Config_t *pConf)
 {
 #ifdef CONFIG_AML_LCD_EXTERN
-    struct aml_lcd_extern_driver_t *lcd_extern_driver;
+    struct aml_lcd_extern_driver_t *ext_drv;
 #endif
 
     if (pConf->lcd_control.mipi_config->dsi_init_off) {
@@ -1207,20 +1205,20 @@ void mipi_dsi_link_off(Lcd_Config_t *pConf)
         lcd_print("dsi init off\n");
     }
 
-    if (pConf->lcd_control.mipi_config->lcd_extern_init > 0) {
 #ifdef CONFIG_AML_LCD_EXTERN
-        lcd_extern_driver = aml_lcd_extern_get_driver();
-        if (lcd_extern_driver == NULL) {
+    if (pConf->lcd_control.extern_index < LCD_EXTERN_INDEX_INVALID) {
+
+        ext_drv = aml_lcd_extern_get_driver();
+        if (ext_drv == NULL) {
             DPRINT("no lcd_extern driver\n");
-        }
-        else {
-            if (lcd_extern_driver->init_off_cmd_8) {
-                dsi_write_cmd(lcd_extern_driver->init_off_cmd_8);
-                DPRINT("[extern]%s dsi init off\n", lcd_extern_driver->name);
+        } else {
+            if (ext_drv->init_off_cmd_8) {
+                dsi_write_cmd(ext_drv->init_off_cmd_8);
+                DPRINT("[extern]%s dsi init off\n", ext_drv->config.name);
             }
         }
-#endif
     }
+#endif
 }
 
 void set_mipi_dsi_control_config(Lcd_Config_t *pConf)

@@ -37,6 +37,7 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x500404ad,0x00414400,0x71486900,44,2156,0,1079,2100,2164,3,5,
 		8,1,0,1,1,0x3,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
+		0xff,0,0,
 		GPIOY_6,1,0,50,50,
 		BL_PWM_B,180,100,25,1,60,10,255},
 		
@@ -45,6 +46,7 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x500404ad,0x00414400,0x71486900,44,2156,0,1079,2100,2164,3,5,
 		8,1,0,1,1,0x3,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
+		0xff,0,0,
 		GPIOY_6,1,0,50,50,
 		BL_PWM_B,180,100,25,1,128,10,255},
 
@@ -53,6 +55,7 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x5000068c,0x00454400,0x71c86900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,20,20,
+		0xff,0,0,
 		GPIOY_6,1,0,450,10,
 		BL_PWM_B,180,100,25,1,128,10,255},
 
@@ -61,6 +64,7 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x500404ad,0x00454400,0x71486900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,15,500,
+		0xff,0,0,
 		GPIOY_6,1,0,200,200,
 		BL_PWM_B,180,100,25,1,128,10,255},
 
@@ -69,23 +73,26 @@ Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX] = {
 		0x5000068c,0x00454400,0x71c86900,20,30,0,809,20,1200,3,5,
 		8,1,0,0,0,0x101,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
+		0xff,0,0,
 		GPIOY_6,1,0,600,200,
 		BL_PWM_B,180,100,25,1,128,10,255},
 
 	//==============For vx1==============//
 		{/*BOE: HV550QU2-305 vx1 : 3840x2160@60hz 8lane pixel clk@74.5mhz */
-		"vbyone_0",LCD_DIGITAL_VBYONE,3840,2160,4400,2250,90,560,
+		"vbyone_0",LCD_DIGITAL_VBYONE,3840,2160,4400,2250,557,90,
 		Rsv_val,Rsv_val,Rsv_val,47,80,47,80,47,47,3,9,
 		8,4,2,4,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
+		0xff,0,0,
 		GPIOY_6,1,0,50,50,
 		BL_PWM_B,180,100,25,1,128,10,255},
 
 		{/*vx1 : 3840x2160@50hz 8lane pixel clk@74.5mhz */
-		"vbyone_1",LCD_DIGITAL_VBYONE,3840,2160,4980,2250,1437,90,
+		"vbyone_1",LCD_DIGITAL_VBYONE,3840,2160,4980,2250,557,90,
 		Rsv_val,Rsv_val,Rsv_val,47,80,47,80,47,47,3,9,
-		8,4,2,4,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
+		8,4,1,4,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,Rsv_val,
 		GPIOH_10,1,0,50,50,
+		0xff,0,0,
 		GPIOY_6,1,0,50,50,
 		BL_PWM_B,180,100,25,1,128,10,255},
 };
@@ -108,6 +115,14 @@ static Lvds_Config_t lcd_lvds_config={
 	.port_reverse	= 1,
 	.lvds_fifo_wr_mode	= 0x3, //fifo:0x3->double,  0x101->single
 };
+
+#ifdef CONFIG_AML_LCD_EXTERN
+struct lcd_extern_config_s lcd_extern_config = {
+	.index = LCD_EXTERN_INDEX_INVALID,
+	.on_delay = 0,
+	.off_delay = 0,
+};
+#endif
 
 //****panel power control only for uboot ***//
 static Panel_Power_Config_t lcd_panel_power =
@@ -151,8 +166,11 @@ Lcd_Config_t lcd_config_dft =
 	},
 
 	.lcd_control = {
-		.lvds_config	=	&lcd_lvds_config,
-		.vbyone_config	=	&lcd_vbyone_config,
+#ifdef CONFIG_AML_LCD_EXTERN
+		.ext_config	= &lcd_extern_config,
+#endif
+		.lvds_config	= &lcd_lvds_config,
+		.vbyone_config	= &lcd_vbyone_config,
 	},
 
 	.lcd_power_ctrl = {

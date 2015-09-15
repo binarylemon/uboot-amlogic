@@ -28,6 +28,14 @@
 #define VS_POL               1 /** vsync_polarity(0=negative, 1=positive) */
 #define VSYNC_H_ADJUST_SIGN  0  /** 0=positive,1=negative */
 #define VSYNC_H_ADJUST       0  /** vertical_hbegin_adjust */
+
+#ifdef CONFIG_AML_LCD_EXTERN
+#define EXTERN_INDEX         LCD_EXTERN_INDEX_INVALID
+#endif
 //************************************************
+// EDP config
+//************************************************
+#define LCD_EDP_CONFIG
+#define MAX_LANE_COUNT        1
 
 #endif

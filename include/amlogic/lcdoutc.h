@@ -27,6 +27,9 @@
 #include <asm/arch/cpu.h>
 #include <amlogic/aml_lcd.h>
 #include <asm/arch/aml_lcd_gpio.h>
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/aml_lcd_extern.h>
+#endif
 
 //**********************************************
 //debug print define
@@ -210,7 +213,7 @@ typedef struct DSI_Config_s{
 
     unsigned char *dsi_init_on;
     unsigned char *dsi_init_off;
-    unsigned char lcd_extern_init;
+    //unsigned char lcd_extern_init;
 }DSI_Config_t;
 
 typedef struct {
@@ -272,6 +275,7 @@ typedef struct {
 } MLVDS_Config_t;
 
 typedef struct {
+	int extern_index;
 	DSI_Config_t *mipi_config;
 	EDP_Config_t *edp_config;
 	LVDS_Config_t *lvds_config;

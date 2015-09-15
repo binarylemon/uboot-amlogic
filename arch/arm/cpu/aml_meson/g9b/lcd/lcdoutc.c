@@ -27,9 +27,11 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/timing.h>
 #include <asm/arch/gpio.h>
-
 #include <amlogic/vinfo.h>
 #include <amlogic/gpio.h>
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/aml_lcd_extern.h>
+#endif
 
 #define PANEL_NAME	"panel"
 
@@ -39,9 +41,7 @@ extern unsigned int vbyone_init(Lcd_Config_t *pConf);
 extern void set_backlight_default_pinmux(Lcd_Bl_Config_t *bl_config);
 extern void _set_panel_info(void);
 
-extern int reset_lcd_config(Lcd_Config_t *pConf);
-extern int reset_bl_config(Lcd_Bl_Config_t *bl_config);
-
+extern int get_lcd_config(Lcd_Config_t *pConf, Lcd_Bl_Config_t *bl_config);
 
 unsigned int (*init_lcd_port[])(Lcd_Config_t *pConf) = {
 	lvds_init,
@@ -71,6 +71,9 @@ static unsigned int aml_lcd_pinmux_reg[] = {
 extern void mdelay(unsigned long msec);
 static void panel_power_ctrl(Bool_t status)
 {
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct aml_lcd_extern_driver_t *ext_drv;
+#endif
 	lcd_printf("statu=%s gpio=%d value=%d \n",(status ? "ON" : "OFF"),
 		pDev->pConf->lcd_power_ctrl.panel_power->gpio,
 		(status ?pDev->pConf->lcd_power_ctrl.panel_power->on_value:
@@ -78,13 +81,34 @@ static void panel_power_ctrl(Bool_t status)
 
 	if ( ON == status) {
 		amlogic_gpio_direction_output(pDev->pConf->lcd_power_ctrl.panel_power->gpio,
-									   pDev->pConf->lcd_power_ctrl.panel_power->on_value);
+						pDev->pConf->lcd_power_ctrl.panel_power->on_value);
 		mdelay(pDev->pConf->lcd_power_ctrl.panel_power->panel_on_delay);
-
+#ifdef CONFIG_AML_LCD_EXTERN
+		if (pDev->pConf->lcd_control.ext_config->index < LCD_EXTERN_INDEX_INVALID) {
+			ext_drv = aml_lcd_extern_get_driver();
+			if (ext_drv) {
+				if (ext_drv->power_on)
+					ext_drv->power_on();
+			}
+			if (pDev->pConf->lcd_control.ext_config->on_delay > 0)
+				mdelay(pDev->pConf->lcd_control.ext_config->on_delay);
+		}
+#endif
 	} else {
+#ifdef CONFIG_AML_LCD_EXTERN
+		if (pDev->pConf->lcd_control.ext_config->index < LCD_EXTERN_INDEX_INVALID) {
+			if (pDev->pConf->lcd_control.ext_config->off_delay > 0)
+				mdelay(pDev->pConf->lcd_control.ext_config->off_delay);
+			ext_drv = aml_lcd_extern_get_driver();
+			if (ext_drv) {
+				if (ext_drv->power_off)
+					ext_drv->power_off();
+			}
+		}
+#endif
 		mdelay(pDev->pConf->lcd_power_ctrl.panel_power->panel_off_delay);
 		amlogic_gpio_direction_output(pDev->pConf->lcd_power_ctrl.panel_power->gpio,
-									  pDev->pConf->lcd_power_ctrl.panel_power->off_value);
+						pDev->pConf->lcd_power_ctrl.panel_power->off_value);
 	}
 }
 
@@ -310,6 +334,8 @@ static void _lcd_init(Lcd_Config_t *pConf)
 
 static int lcd_probe(void)
 {
+	printf("lcd: driver version: %s\n", LCD_DRV_DATE);
+
 	pDev = (lcd_dev_t *)malloc(sizeof(lcd_dev_t));
 	if (!pDev) {
 		free(pDev);
@@ -322,8 +348,7 @@ static int lcd_probe(void)
 	pDev->bl_config = &bl_config_dft;
 	set_backlight_default_pinmux(pDev->bl_config);
 
-	reset_lcd_config(pDev->pConf);
-	reset_bl_config(pDev->bl_config);
+	get_lcd_config(pDev->pConf, pDev->bl_config);
 
 	_set_panel_info();
 
@@ -344,9 +369,12 @@ static int lcd_remove(void)
 
 	_disable_display_driver(pDev->pConf); //disable lcd signal
 
-	panel_power_ctrl(OFF);			// disable panel power
+	panel_power_ctrl(OFF);  // disable panel power
 	udelay(50);
 
+#ifdef CONFIG_AML_LCD_EXTERN
+	aml_lcd_extern_remove();
+#endif
 	free(pDev);
 	pDev = NULL;
 	return 0;

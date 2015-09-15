@@ -27,6 +27,10 @@
 #define VS_POL               0  /** vsync_polarity(0=negative, 1=positive) */
 #define VSYNC_H_ADJUST_SIGN  0  /** 0=positive,1=negative */
 #define VSYNC_H_ADJUST       0  /** adj_sign(0=positive, 1=negative), adj_value. default is 0 */
+
+#ifdef CONFIG_AML_LCD_EXTERN
+#define EXTERN_INDEX         LCD_EXTERN_INDEX_INVALID
+#endif
 //************************************************
 // MIPI DSI config
 //************************************************

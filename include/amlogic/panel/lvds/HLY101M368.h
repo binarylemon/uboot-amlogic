@@ -27,6 +27,10 @@
 #define VS_POL               0 /** vsync_polarity(0 for negative, 1 for positive) */
 #define VSYNC_H_ADJUST_SIGN  0  /** 0=positive,1=negative */
 #define VSYNC_H_ADJUST       0  /** vertical_hbegin_adjust */
+
+#ifdef CONFIG_AML_LCD_EXTERN
+#define EXTERN_INDEX         LCD_EXTERN_INDEX_INVALID
+#endif
 //************************************************
 
 #endif

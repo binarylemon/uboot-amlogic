@@ -1,9 +1,11 @@
 #include <common.h>
 #include <asm/arch/lcdoutc.h>
-
 #include <amlogic/gpio.h>
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/aml_lcd_extern.h>
+#endif
 
-static const int load_id = 1;
+static int load_id;
 
 #ifdef CONFIG_OF_LIBFDT
 #include <libfdt.h>
@@ -16,27 +18,14 @@ static const char* lcd_type_table[]={
 };
 #endif
 
-static int _load_lcd_config_from_dtd(Lcd_Config_t *pConf)
+static int _load_lcd_config_from_dtd(char *dt_addr, Lcd_Config_t *pConf)
 {
 #ifdef CONFIG_OF_LIBFDT
-	static char * dt_addr;
 	int parent_offset;
 	int child_offset;
 	char propname[30];
 	char* propdata;
 	int i;
-
-#ifdef CONFIG_DT_PRELOAD
-#ifdef CONFIG_DTB_LOAD_ADDR
-	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
-#else
-	dt_addr = (char *)0x0f000000;
-#endif
-	if (fdt_check_header(dt_addr) < 0) {
-		printf("lcd error: check dts: %s, load default lcd parameters\n", fdt_strerror(fdt_check_header(dt_addr)));
-		return 0;
-	}
-#endif
 
 	parent_offset = fdt_path_offset(dt_addr, "/lcd");
 	if (parent_offset < 0) {
@@ -194,17 +183,30 @@ static int _load_lcd_config_from_dtd(Lcd_Config_t *pConf)
 	lcd_printf("dtd_lcd:panel_on_delay = %d \n",pConf->lcd_power_ctrl.panel_power->panel_on_delay);
 	lcd_printf("dtd_lcd:panel_off_delay = %d \n",pConf->lcd_power_ctrl.panel_power->panel_off_delay);
 
+#ifdef CONFIG_AML_LCD_EXTERN
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "lcd_extern_att", NULL);
+	if (propdata == NULL) {
+		printf("lcd: no lcd_extern_att\n");
+		return 0;
+	} else {
+		pConf->lcd_control.ext_config->index = be32_to_cpup((u32*)propdata);
+		pConf->lcd_control.ext_config->on_delay = be32_to_cpup((((u32*)propdata)+2));
+		pConf->lcd_control.ext_config->off_delay = be32_to_cpup((((u32*)propdata)+3));
+	}
+	lcd_printf("dtd_lcd:lcd_extern index = %d \n",pConf->lcd_control.ext_config->index);
+	lcd_printf("dtd_lcd:lcd_extern power_on_delay = %d \n",pConf->lcd_control.ext_config->on_delay);
+	lcd_printf("dtd_lcd:lcd_extern power_off_delay = %d \n",pConf->lcd_control.ext_config->off_delay);
+#endif
 #endif
 
 	return 0;
 }
 
-
 extern Ext_Lcd_Config_t ext_lcd_config[LCD_TYPE_MAX];
 
 static int _load_lcd_config_from_bsp(Lcd_Config_t *pConf)
 {
-	Ext_Lcd_Config_t *ext_config = NULL;
+	Ext_Lcd_Config_t *ext_lcd = NULL;
 	char *panel_type = getenv("panel_type");
 	unsigned int i = 0;
 
@@ -213,9 +215,9 @@ static int _load_lcd_config_from_bsp(Lcd_Config_t *pConf)
 		return 0;
 	}
 	for (i = 0 ; i < LCD_TYPE_MAX ; i++) {
-		ext_config = &ext_lcd_config[i];
-		if (strcmp(ext_config->panel_type, panel_type) == 0) {
-			lcd_printf("ext_config:use panel_type = %s \n",ext_config->panel_type);
+		ext_lcd = &ext_lcd_config[i];
+		if (strcmp(ext_lcd->panel_type, panel_type) == 0) {
+			lcd_printf("ext_lcd:use panel_type = %s \n",ext_lcd->panel_type);
 			break ;
 		}
 	}
@@ -223,55 +225,67 @@ static int _load_lcd_config_from_bsp(Lcd_Config_t *pConf)
 		printf("lcd error: out of range use defult lcd config\n ");
 		return 0;
 	}else{
-		pConf->lcd_basic.lcd_type = ext_config->lcd_type;
-		pConf->lcd_basic.h_active = ext_config->h_active;
-		pConf->lcd_basic.v_active = ext_config->v_active;
-		pConf->lcd_basic.h_period = ext_config->h_period;
-		pConf->lcd_basic.v_period = ext_config->v_period;
-		pConf->lcd_basic.video_on_pixel = ext_config->video_on_pixel;
-		pConf->lcd_basic.video_on_line  = ext_config->video_on_line;
+		pConf->lcd_basic.lcd_type = ext_lcd->lcd_type;
+		pConf->lcd_basic.h_active = ext_lcd->h_active;
+		pConf->lcd_basic.v_active = ext_lcd->v_active;
+		pConf->lcd_basic.h_period = ext_lcd->h_period;
+		pConf->lcd_basic.v_period = ext_lcd->v_period;
+		pConf->lcd_basic.video_on_pixel = ext_lcd->video_on_pixel;
+		pConf->lcd_basic.video_on_line  = ext_lcd->video_on_line;
 
-		pConf->lcd_timing.hpll_clk = ext_config->hpll_clk;
-		pConf->lcd_timing.hpll_od  = ext_config->hpll_od;
-		pConf->lcd_timing.hdmi_pll_cntl5 = ext_config->hdmi_pll_cntl5;
+		pConf->lcd_timing.hpll_clk = ext_lcd->hpll_clk;
+		pConf->lcd_timing.hpll_od  = ext_lcd->hpll_od;
+		pConf->lcd_timing.hdmi_pll_cntl5 = ext_lcd->hdmi_pll_cntl5;
 
-		pConf->lcd_timing.sth1_hs_addr   = ext_config->sth1_hs_addr;
-		pConf->lcd_timing.sth1_he_addr   = ext_config->sth1_he_addr;
-		pConf->lcd_timing.sth1_vs_addr   = ext_config->sth1_vs_addr;
-		pConf->lcd_timing.sth1_ve_addr   = ext_config->sth1_ve_addr;
-		pConf->lcd_timing.stv1_hs_addr   = ext_config->stv1_hs_addr;
-		pConf->lcd_timing.stv1_he_addr   = ext_config->stv1_he_addr;
-		pConf->lcd_timing.stv1_vs_addr   = ext_config->stv1_vs_addr;
-		pConf->lcd_timing.stv1_ve_addr   = ext_config->stv1_ve_addr;
+		pConf->lcd_timing.sth1_hs_addr   = ext_lcd->sth1_hs_addr;
+		pConf->lcd_timing.sth1_he_addr   = ext_lcd->sth1_he_addr;
+		pConf->lcd_timing.sth1_vs_addr   = ext_lcd->sth1_vs_addr;
+		pConf->lcd_timing.sth1_ve_addr   = ext_lcd->sth1_ve_addr;
+		pConf->lcd_timing.stv1_hs_addr   = ext_lcd->stv1_hs_addr;
+		pConf->lcd_timing.stv1_he_addr   = ext_lcd->stv1_he_addr;
+		pConf->lcd_timing.stv1_vs_addr   = ext_lcd->stv1_vs_addr;
+		pConf->lcd_timing.stv1_ve_addr   = ext_lcd->stv1_ve_addr;
 
-		pConf->lcd_power_ctrl.panel_power->gpio				= ext_config->panel_gpio;
-		pConf->lcd_power_ctrl.panel_power->on_value			= ext_config->panel_on_value;
-		pConf->lcd_power_ctrl.panel_power->off_value		= ext_config->panel_off_value;
-		pConf->lcd_power_ctrl.panel_power->panel_on_delay 	= ext_config->panel_on_delay;
-		pConf->lcd_power_ctrl.panel_power->panel_off_delay	= ext_config->panel_off_delay;
+		pConf->lcd_power_ctrl.panel_power->gpio				= ext_lcd->panel_gpio;
+		pConf->lcd_power_ctrl.panel_power->on_value			= ext_lcd->panel_on_value;
+		pConf->lcd_power_ctrl.panel_power->off_value		= ext_lcd->panel_off_value;
+		pConf->lcd_power_ctrl.panel_power->panel_on_delay 	= ext_lcd->panel_on_delay;
+		pConf->lcd_power_ctrl.panel_power->panel_off_delay	= ext_lcd->panel_off_delay;
 
 		if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_VBYONE) {
-			pConf->lcd_control.vbyone_config->lane_count	= ext_config->lcd_spc_val0;
-			pConf->lcd_control.vbyone_config->byte			= ext_config->lcd_spc_val1;
-			pConf->lcd_control.vbyone_config->region		= ext_config->lcd_spc_val2;
-			pConf->lcd_control.vbyone_config->color_fmt		= ext_config->lcd_spc_val3;
+			pConf->lcd_control.vbyone_config->lane_count	= ext_lcd->lcd_spc_val0;
+			pConf->lcd_control.vbyone_config->byte			= ext_lcd->lcd_spc_val1;
+			pConf->lcd_control.vbyone_config->region		= ext_lcd->lcd_spc_val2;
+			pConf->lcd_control.vbyone_config->color_fmt		= ext_lcd->lcd_spc_val3;
 		}else if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_TTL) {
 			printf("this is ttl att \n");
 		}else{
-			pConf->lcd_control.lvds_config->lvds_bits	 = ext_config->lcd_spc_val0;
-			pConf->lcd_control.lvds_config->lvds_repack = ext_config->lcd_spc_val1;
-			pConf->lcd_control.lvds_config->pn_swap     = ext_config->lcd_spc_val2;
-			pConf->lcd_control.lvds_config->dual_port   = ext_config->lcd_spc_val3;
-			pConf->lcd_control.lvds_config->port_reverse= ext_config->lcd_spc_val4;
-			pConf->lcd_control.lvds_config->lvds_fifo_wr_mode = ext_config->lcd_spc_val5;
+			pConf->lcd_control.lvds_config->lvds_bits	 = ext_lcd->lcd_spc_val0;
+			pConf->lcd_control.lvds_config->lvds_repack = ext_lcd->lcd_spc_val1;
+			pConf->lcd_control.lvds_config->pn_swap     = ext_lcd->lcd_spc_val2;
+			pConf->lcd_control.lvds_config->dual_port   = ext_lcd->lcd_spc_val3;
+			pConf->lcd_control.lvds_config->port_reverse= ext_lcd->lcd_spc_val4;
+			pConf->lcd_control.lvds_config->lvds_fifo_wr_mode = ext_lcd->lcd_spc_val5;
 		}
 
-		lcd_printf("ext_config:h_active = %d \n",pConf->lcd_basic.h_active);
-		lcd_printf("ext_config:v_active = %d \n",pConf->lcd_basic.v_active);
-		lcd_printf("ext_config:h_period = %d \n",pConf->lcd_basic.h_period);
-		lcd_printf("ext_config:v_period = %d \n",pConf->lcd_basic.v_period);
-		lcd_printf("ext_config:lcd_type = %d \n",pConf->lcd_basic.lcd_type);
-		lcd_printf("ext_config:lcd_bits = %d \n",pConf->lcd_control.lvds_config->lvds_bits);
+#ifdef CONFIG_AML_LCD_EXTERN
+		pConf->lcd_control.ext_config->index  = ext_lcd->extern_index;
+		pConf->lcd_control.ext_config->on_delay = ext_lcd->extern_on_delay;
+		pConf->lcd_control.ext_config->off_delay = ext_lcd->extern_off_delay;
+#endif
+
+		lcd_printf("ext_lcd:h_active = %d \n",pConf->lcd_basic.h_active);
+		lcd_printf("ext_lcd:v_active = %d \n",pConf->lcd_basic.v_active);
+		lcd_printf("ext_lcd:h_period = %d \n",pConf->lcd_basic.h_period);
+		lcd_printf("ext_lcd:v_period = %d \n",pConf->lcd_basic.v_period);
+		lcd_printf("ext_lcd:lcd_type = %d \n",pConf->lcd_basic.lcd_type);
+		lcd_printf("ext_lcd:lcd_bits = %d \n",pConf->lcd_control.lvds_config->lvds_bits);
+
+#ifdef CONFIG_AML_LCD_EXTERN
+		lcd_printf("ext_lcd:extern_index = %d \n",pConf->lcd_control.ext_config->index);
+		lcd_printf("ext_lcd:extern_on_delay = %d \n",pConf->lcd_control.ext_config->on_delay);
+		lcd_printf("ext_lcd:extern_off_delay = %d \n",pConf->lcd_control.ext_config->off_delay);
+#endif
 
 		return 1;
 	}
@@ -279,49 +293,40 @@ static int _load_lcd_config_from_bsp(Lcd_Config_t *pConf)
 	return 0;
 }
 
-static int _find_lcd_config(Lcd_Config_t *pConf)
+static int _find_lcd_config(char *dt_addr, Lcd_Config_t *pConf)
 {
+	int ret;
+#ifdef CONFIG_AML_LCD_EXTERN
+	int index;
+#endif
+
 	if (load_id == 1 ) {
 		printf("lcd: load lcd config from dtd \n");
-		return _load_lcd_config_from_dtd(pConf);
-	}else if (load_id == 2) {
+		ret = _load_lcd_config_from_dtd(dt_addr, pConf);
+	} else if (load_id == 0) {
 		printf("lcd: load lcd config from lcd.c \n");
-		return _load_lcd_config_from_bsp(pConf);
-	}else{
+		ret = _load_lcd_config_from_bsp(pConf);
+	} else {
 		printf("lcd: use lcd defult config \n");
-		return 0;
+		ret = -1;
 	}
+#ifdef CONFIG_AML_LCD_EXTERN
+	index = pConf->lcd_control.ext_config->index;
+	if (index < LCD_EXTERN_INDEX_INVALID)
+		aml_lcd_extern_probe(dt_addr, index);
+#endif
+
+	return ret;
 }
 
-int reset_lcd_config(Lcd_Config_t *pConf)
-{
-	if (_find_lcd_config(pConf))
-		return 1;
-	else
-		return 0;
-}
-
-static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
+static int _load_bl_config_from_dtd(char *dt_addr, Lcd_Bl_Config_t *bl_config)
 {
 #ifdef CONFIG_OF_LIBFDT
-	static char * dt_addr;
 	int parent_offset;
 	char* propdata;
 	char *sel;
 	char propname[30];
 	int child_offset;
-
-#ifdef CONFIG_DT_PRELOAD
-#ifdef CONFIG_DTB_LOAD_ADDR
-	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
-#else
-	dt_addr = (char *)0x0f000000;
-#endif
-	if (fdt_check_header(dt_addr) < 0) {
-		printf("lcd error: check dts: %s, load default lcd parameters\n", fdt_strerror(fdt_check_header(dt_addr)));
-		return 0;
-	}
-#endif
 
 	lcd_printf("\n");
 	parent_offset = fdt_path_offset(dt_addr, "/backlight");
@@ -549,7 +554,7 @@ static int _load_bl_config_from_dtd(Lcd_Bl_Config_t *bl_config)
 
 static int _load_bl_config_from_bsp(Lcd_Bl_Config_t *bl_config)
 {
-	Ext_Lcd_Config_t *ext_config = NULL;
+	Ext_Lcd_Config_t *ext_lcd = NULL;
 	char *panel_type = getenv("panel_type");
 	unsigned int i = 0;
 
@@ -558,9 +563,9 @@ static int _load_bl_config_from_bsp(Lcd_Bl_Config_t *bl_config)
 		return 0;
 	}
 	for (i = 0 ; i < LCD_TYPE_MAX ; i++) {
-		ext_config = &ext_lcd_config[i];
-		if (strcmp(ext_config->panel_type, panel_type) == 0) {
-			lcd_printf("ext_config:use panel_type = %s \n",ext_config->panel_type);
+		ext_lcd = &ext_lcd_config[i];
+		if (strcmp(ext_lcd->panel_type, panel_type) == 0) {
+			lcd_printf("ext_lcd:use panel_type = %s \n",ext_lcd->panel_type);
 			break ;
 		}
 	}
@@ -568,21 +573,21 @@ static int _load_bl_config_from_bsp(Lcd_Bl_Config_t *bl_config)
 		printf("lcd error: out of range use defult bl config\n ");
 		return 0;
 	}else{
-		bl_config->bl_power.gpio		 = ext_config->bl_gpio;
-		bl_config->bl_power.on_value	 = ext_config->bl_on_value;
-		bl_config->bl_power.off_value	 = ext_config->bl_off_value;
-		bl_config->bl_power.bl_on_delay = ext_config->bl_on_delay;
-		bl_config->bl_power.bl_off_delay= ext_config->bl_off_delay;
+		bl_config->bl_power.gpio		 = ext_lcd->bl_gpio;
+		bl_config->bl_power.on_value	 = ext_lcd->bl_on_value;
+		bl_config->bl_power.off_value	 = ext_lcd->bl_off_value;
+		bl_config->bl_power.bl_on_delay = ext_lcd->bl_on_delay;
+		bl_config->bl_power.bl_off_delay= ext_lcd->bl_off_delay;
 
-		bl_config->bl_pwm.pwm_port = ext_config->pwm_port;
-		bl_config->bl_pwm.pwm_freq = ext_config->pwm_freq;
-		bl_config->bl_pwm.pwm_duty_max = ext_config->pwm_duty_max;
-		bl_config->bl_pwm.pwm_duty_min = ext_config->pwm_duty_min;
-		bl_config->bl_pwm.pwm_positive = ext_config->pwm_positive;
+		bl_config->bl_pwm.pwm_port = ext_lcd->pwm_port;
+		bl_config->bl_pwm.pwm_freq = ext_lcd->pwm_freq;
+		bl_config->bl_pwm.pwm_duty_max = ext_lcd->pwm_duty_max;
+		bl_config->bl_pwm.pwm_duty_min = ext_lcd->pwm_duty_min;
+		bl_config->bl_pwm.pwm_positive = ext_lcd->pwm_positive;
 
-		bl_config->bl_pwm.level_default = ext_config->level_default;
-		bl_config->bl_pwm.level_min = ext_config->level_min;
-		bl_config->bl_pwm.level_max = ext_config->level_max;
+		bl_config->bl_pwm.level_default = ext_lcd->level_default;
+		bl_config->bl_pwm.level_min = ext_lcd->level_min;
+		bl_config->bl_pwm.level_max = ext_lcd->level_max;
 
 		lcd_printf("bl_config:bl_gpio = %d \n",bl_config->bl_power.gpio);
 		lcd_printf("bl_config:on_value = %d \n",bl_config->bl_power.on_value);
@@ -606,24 +611,45 @@ static int _load_bl_config_from_bsp(Lcd_Bl_Config_t *bl_config)
 	return 0;
 }
 
-static int _find_bl_config(Lcd_Bl_Config_t *bl_config)
+static int _find_bl_config(char *dt_addr, Lcd_Bl_Config_t *bl_config)
 {
+	int ret;
+
 	if (load_id == 1 ) {
 		printf("lcd: load bl config from dtd \n");
-		return _load_bl_config_from_dtd(bl_config);
-	}else if (load_id == 2) {
+		ret = _load_bl_config_from_dtd(dt_addr, bl_config);
+	} else if (load_id == 0) {
 		printf("lcd: load bl config from lcd.c \n");
-		return _load_bl_config_from_bsp(bl_config);
-	}else{
+		ret = _load_bl_config_from_bsp(bl_config);
+	} else {
 		printf("lcd: use defult config \n");
-		return 0;
+		ret = -1;
 	}
+
+	return ret;
 }
 
-int reset_bl_config(Lcd_Bl_Config_t *bl_config)
+int get_lcd_config(Lcd_Config_t *pConf, Lcd_Bl_Config_t *bl_config)
 {
-	if (_find_bl_config(bl_config))
-		return 1;
+	char *dt_addr = NULL;
+
+	load_id = 0;
+#ifdef CONFIG_OF_LIBFDT
+#ifdef CONFIG_DT_PRELOAD
+#ifdef CONFIG_DTB_LOAD_ADDR
+	dt_addr = (char *)CONFIG_DTB_LOAD_ADDR;
+#else
+	dt_addr = (char *)0x0f000000;
+#endif
+	if (fdt_check_header(dt_addr) < 0)
+		printf("lcd error: check dts: %s, load default lcd parameters\n", fdt_strerror(fdt_check_header(dt_addr)));
 	else
-		return 0;
+		load_id = 1;
+#endif
+#endif
+
+	_find_lcd_config(dt_addr, pConf);
+	_find_bl_config(dt_addr, bl_config);
+
+	return 0;
 }

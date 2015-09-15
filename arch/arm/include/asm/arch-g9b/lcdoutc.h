@@ -25,6 +25,16 @@
 #include <common.h>
 #include <linux/list.h>
 #include <amlogic/aml_lcd.h>
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/aml_lcd_extern.h>
+#endif
+
+//**********************************
+//lcd driver version
+//**********************************
+#define LCD_DRV_TYPE      "g9b"
+#define LCD_DRV_DATE      "20150916"
+//**********************************
 
 #if 0
 /* for GAMMA_CNTL_PORT */
@@ -213,10 +223,20 @@ typedef struct {
     int color_fmt;
 } Vbyone_Config_t;
 
+#ifdef CONFIG_AML_LCD_EXTERN
+struct lcd_extern_config_s {
+	unsigned int index;
+	unsigned int on_delay;
+	unsigned int off_delay;
+};
+#endif
+
 typedef struct {
 	Lvds_Config_t *lvds_config;
 	Vbyone_Config_t *vbyone_config;
-
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct lcd_extern_config_s *ext_config;
+#endif
 	//TTL_Config_t *ttl_config;
 	//DSI_Config_t *mipi_config;
 	//EDP_Config_t *edp_config;
@@ -363,6 +383,10 @@ typedef struct {
 	unsigned short panel_off_value;
 	unsigned short panel_on_delay;
 	unsigned short panel_off_delay;
+
+	int extern_index;
+	int extern_on_delay;
+	int extern_off_delay;
 
 	unsigned int bl_gpio;
 	unsigned short bl_on_value;

@@ -259,6 +259,9 @@ Lcd_Config_t lcd_config_dft = {
 		.gamma_b_coeff = GAMMA_B_COEFF,
 	},
 	.lcd_control = {
+#ifdef CONFIG_AML_LCD_EXTERN
+		.extern_index = EXTERN_INDEX;
+#endif
 		.lvds_config = &lcd_lvds_config,
 		.ttl_config = &lcd_ttl_config,
 	},

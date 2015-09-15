@@ -610,7 +610,7 @@ static int lcd_power_ctrl(Bool_t status)
 	struct aml_pmu_driver *pmu_driver;
 #endif
 #ifdef CONFIG_AML_LCD_EXTERN
-	struct aml_lcd_extern_driver_t *lcd_extern_driver;
+	struct aml_lcd_extern_driver_t *ext_drv;
 #endif
 
 	lcd_print("%s(): %s\n", __FUNCTION__, (status ? "ON" : "OFF"));
@@ -673,14 +673,13 @@ static int lcd_power_ctrl(Bool_t status)
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
-					lcd_extern_driver = aml_lcd_extern_get_driver();
-					if (lcd_extern_driver == NULL) {
+					ext_drv = aml_lcd_extern_get_driver();
+					if (ext_drv == NULL) {
 						printf("no lcd_extern driver\n");
-					}
-					else {
-						if (lcd_extern_driver->power_on)
-							lcd_extern_driver->power_on();
-						lcd_print("%s power on\n", lcd_extern_driver->name);
+					} else {
+						if (ext_drv->power_on)
+							ext_drv->power_on();
+						lcd_print("%s power on\n", ext_drv->config.name);
 					}
 #endif
 					break;
@@ -728,14 +727,13 @@ static int lcd_power_ctrl(Bool_t status)
 					break;
 				case LCD_POWER_TYPE_INITIAL:
 #ifdef CONFIG_AML_LCD_EXTERN
-					lcd_extern_driver = aml_lcd_extern_get_driver();
-					if (lcd_extern_driver == NULL) {
+					ext_drv = aml_lcd_extern_get_driver();
+					if (ext_drv == NULL) {
 						printf("no lcd_extern driver\n");
-					}
-					else {
-						if (lcd_extern_driver->power_off)
-							lcd_extern_driver->power_off();
-						lcd_print("%s power off\n", lcd_extern_driver->name);
+					} else {
+						if (ext_drv->power_off)
+							ext_drv->power_off();
+						lcd_print("%s power off\n", ext_drv->config.name);
 					}
 #endif
 					break;
@@ -907,9 +905,6 @@ static int _get_lcd_model_timing(Lcd_Config_t *pconf)
 	char* propdata;
 	char propname[LCD_MODEL_LEN_MAX];
 	int i;
-#ifdef CONFIG_AML_LCD_EXTERN
-	struct aml_lcd_extern_driver_t *lcd_ext_driver;
-#endif
 
 	nodeoffset = fdt_path_offset(dt_addr, "/lcd");
 	if (nodeoffset < 0) {
@@ -1053,19 +1048,13 @@ static int _get_lcd_model_timing(Lcd_Config_t *pconf)
 	}
 
 #ifdef CONFIG_AML_LCD_EXTERN
-	lcd_ext_driver = aml_lcd_extern_get_driver();
-	if (lcd_ext_driver == NULL) {
-		printf("no lcd_extern driver\n");
+	propdata = (char *)fdt_getprop(dt_addr, nodeoffset, "lcd_extern_index", NULL);
+	if (propdata == NULL) {
+		pConf->lcd_control.extern_index = LCD_EXTERN_INDEX_INVALID;
 	} else {
-		lcd_ext_driver->dt_addr = dt_addr;
-		if (lcd_ext_driver->get_lcd_ext_config) {
-			ret = lcd_ext_driver->get_lcd_ext_config();
-			if (ret)
-				printf("[lcd_extern] get_lcd_ext_config error\n");
-			else
-				lcd_print("%s get_lcd_ext_config\n", lcd_ext_driver->name);
-		}
+		pConf->lcd_control.extern_index = be32_to_cpup((u32*)propdata);
 	}
+	lcd_print("lcd_extern_index = %d\n", pConf->lcd_control.extern_index);
 #endif
 
 	return ret;
@@ -2137,7 +2126,7 @@ int lcd_probe(void)
 {
 	int ret = 0;
 #ifdef CONFIG_AML_LCD_EXTERN
-	struct aml_lcd_extern_driver_t *lcd_extern_driver;
+	int index;
 #endif
 #ifdef CONFIG_AML_BL_EXTERN
 	struct aml_bl_extern_driver_t *bl_extern_driver;
@@ -2181,21 +2170,7 @@ int lcd_probe(void)
 			return 1;
 		}
 		lcd_default_config_init(pDev->pconf);
-#ifdef CONFIG_AML_LCD_EXTERN
-		lcd_extern_driver = aml_lcd_extern_get_driver();
-		if (lcd_extern_driver == NULL) {
-			printf("no lcd_extern driver\n");
-		}
-		else {
-			if (lcd_extern_driver->get_lcd_ext_config) {
-				ret = lcd_extern_driver->get_lcd_ext_config();
-				if (ret)
-					printf("[lcd_extern] get_lcd_ext_config error\n");
-				else
-					lcd_print("%s get_lcd_ext_config\n", lcd_extern_driver->name);
-			}
-		}
-#endif
+
 		backlight_default_config_init(pDev->bl_config);
 #ifdef CONFIG_AML_BL_EXTERN
 		bl_extern_driver = aml_bl_extern_get_driver();
@@ -2223,6 +2198,11 @@ int lcd_probe(void)
 		_get_lcd_backlight_config(pDev->bl_config);
 #endif
 	}
+#ifdef CONFIG_AML_LCD_EXTERN
+	index = pDev->pConf.lcd_control.extern_index;
+	if (index < LCD_EXTERN_INDEX_INVALID)
+		aml_lcd_extern_probe(dt_addr, index);
+#endif
 
 	_set_panel_info();
 	lcd_config_assign(pDev->pconf);
@@ -2241,6 +2221,9 @@ int lcd_remove(void)
 	lcd_backlight_power_ctrl(OFF);
 	pDev->pconf->lcd_misc_ctrl.module_disable();
 
+#ifdef CONFIG_AML_LCD_EXTERN
+	aml_lcd_extern_remove();
+#endif
 	if (dts_ready > 0) {
 		if (pDev->pconf->lcd_basic.model_name)
 			free(pDev->pconf->lcd_basic.model_name);
