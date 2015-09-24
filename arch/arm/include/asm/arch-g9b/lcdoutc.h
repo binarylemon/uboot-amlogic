@@ -283,14 +283,21 @@ typedef enum {
 	BL_PWM_D,
 	BL_PWM_E,
 	BL_PWM_F,
+	BL_PWM_VS,
 	BL_PWM_MAX,
 } BL_PWM_t;
 
+#define XTAL_FREQ_HZ		(24*1000*1000) /* 24M in HZ */
+#define XTAL_HALF_FREQ_HZ	(24*1000*500)  /* 24M/2 in HZ */
+
+#define AML_BL_FREQ_DEF			1000	/* unit: HZ */
+#define AML_BL_FREQ_VS_DEF		2 /* multiple 2 of vfreq */
+
 //****backlight pwm control only for uboot ***//
 typedef struct {
-	unsigned pwm_freq;			/** backlight control pwm frequency(unit: Hz) */
-	unsigned pwm_duty_max;			/** brightness diminig duty_max(unit: %, positive logic) */
-	unsigned pwm_duty_min; 			/** brightness diminig duty_min(unit: %, positive logic) */
+	unsigned pwm_freq;	/* pwm_vs: 1~4(vfreq multiple), other pwm: real freq(unit: Hz) */
+	unsigned pwm_duty_max;	/** brightness diminig duty_max(unit: %, positive logic) */
+	unsigned pwm_duty_min; 	/** brightness diminig duty_min(unit: %, positive logic) */
 
 	unsigned level_default;
 	unsigned level_min;
@@ -301,6 +308,8 @@ typedef struct {
 	unsigned pwm_gpio;
 
 	unsigned pwm_port;
+	unsigned int pwm_cnt;
+	unsigned int pre_div;
 	unsigned pwm_max;
 	unsigned pwm_min;
 	unsigned pwm_positive;

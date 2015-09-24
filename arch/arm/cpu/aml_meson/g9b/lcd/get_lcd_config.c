@@ -448,6 +448,8 @@ static int _load_bl_config_from_dtd(char *dt_addr, Lcd_Bl_Config_t *bl_config)
 			 bl_config->bl_pwm.pwm_port = BL_PWM_E;
 		 else if (strcmp(propdata, "PWM_F") == 0)
 			 bl_config->bl_pwm.pwm_port = BL_PWM_F;
+		 else if (strcmp(propdata, "PWM_VS") == 0)
+			 bl_config->bl_pwm.pwm_port = BL_PWM_VS;
 	 }
 	 lcd_printf("dtd_bl:pwm_port = %d \n",bl_config->bl_pwm.pwm_port);
 
@@ -465,11 +467,24 @@ static int _load_bl_config_from_dtd(char *dt_addr, Lcd_Bl_Config_t *bl_config)
 	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_freq", NULL);
 	 if (propdata == NULL) {
 		 printf("lcd error: faild to get backlight/bl_pwm_freq \n");
-		 return 0;
+		 if (bl_config->bl_pwm.pwm_port == BL_PWM_VS)
+			 bl_config->bl_pwm.pwm_freq = AML_BL_FREQ_VS_DEF;
+		 else
+			 bl_config->bl_pwm.pwm_freq = AML_BL_FREQ_DEF;
 	 } else {
 		 bl_config->bl_pwm.pwm_freq = be32_to_cpup((u32*)propdata);
 	 }
-	 lcd_printf("dtd_bl:pwm_freq = %d \n",bl_config->bl_pwm.pwm_freq);
+	 if (bl_config->bl_pwm.pwm_port == BL_PWM_VS) {
+		 if (bl_config->bl_pwm.pwm_freq > 4) {
+			 printf("lcd error: faild to get backlight/pwm_positive\n");
+			 bl_config->bl_pwm.pwm_freq = AML_BL_FREQ_VS_DEF;
+		 }
+		 lcd_printf("dtd_bl:pwm_vs_freq = %d x vfreq\n", bl_config->bl_pwm.pwm_freq);
+	 } else {
+		 if (bl_config->bl_pwm.pwm_freq > XTAL_HALF_FREQ_HZ)
+			bl_config->bl_pwm.pwm_freq = XTAL_HALF_FREQ_HZ;
+		 lcd_printf("dtd_bl:pwm_freq = %d \n", bl_config->bl_pwm.pwm_freq);
+	 }
 
 	 propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pwm_duty_max_min", NULL);
 	 if (propdata == NULL) {
@@ -505,7 +520,10 @@ static int _load_bl_config_from_dtd(char *dt_addr, Lcd_Bl_Config_t *bl_config)
 
 	int len = 0;
 	unsigned int i = 0;
-	parent_offset = fdt_path_offset(dt_addr, "/pinmux/bl_pwm_pins");
+	if (bl_config->bl_pwm.pwm_port == BL_PWM_VS)
+		parent_offset = fdt_path_offset(dt_addr, "/pinmux/bl_pwm_vs_pins");
+	else
+		parent_offset = fdt_path_offset(dt_addr, "/pinmux/bl_pwm_pins");
 	if (propdata == NULL) {
 		printf("lcd error: backlight init: not find /pinmux/bl_pwm_pins node %s.\n",fdt_strerror(parent_offset));
 		return 0;

@@ -192,8 +192,8 @@ Lcd_Bl_Config_t bl_config_dft = {
 		.bl_off_delay	=	50            /** backlight power off delay time (unit: ms)*/
 	},
 	.bl_pwm = {
-		.pwm_port = BL_PWM_B,             /** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D) */
-		.pwm_freq = 180,				/** backlight control pwm frequency(unit: Hz) */
+		.pwm_port = BL_PWM_B, /** pwm port name(BL_PWM_A, BL_PWM_B, BL_PWM_C, BL_PWM_D, BL_PWM_VS) */
+		.pwm_freq = 180,      /** pwm_vs: 1~4(vfreq multiple), other pwm: real freq(unit: Hz) */
 		.pwm_duty_max = 100,			/** brightness diminig duty_max(unit: %, positive logic) */
 		.pwm_duty_min = 25,				/** brightness diminig duty_min(unit: %, positive logic) */
 		.pwm_positive = 1,				/** brightness pwm polarity   1: positive 0: negative */
