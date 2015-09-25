@@ -185,6 +185,7 @@ static void aml_bl_pwm_duty_set(Bl_Pwm_Config_t *bl_pwm_conf,
 			high = (pwm_high * 10 / n + 5) / 10;
 		else
 			high = (pwm_low * 10 / n + 5) / 10;
+		high = (high > 1) ? high : 1;
 		for (i = 0; i < n; i++) {
 			vs[i] = 1 + (sw * i);
 			ve[i] = vs[i] + high - 1;
