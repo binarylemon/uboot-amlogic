@@ -263,7 +263,7 @@ static void set_lcd_backlight_level(Bool_t status, unsigned level)
 		pwm_lo = pwm_cnt - level;
 		lcd_printf("pwm_hi= %u pwm_lo= %u \n", pwm_hi, pwm_lo);
 
-		aml_bl_pwm_duty_set(&pDev->bl_config->bl_pwm, pwm_hi, pwm_hi);
+		aml_bl_pwm_duty_set(&pDev->bl_config->bl_pwm, pwm_hi, pwm_lo);
 
 		//set pin mux
 		for (i=0; i<pDev->bl_config->bl_pwm.pinmux_clr_num; i++) {
