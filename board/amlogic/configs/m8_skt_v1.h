@@ -448,7 +448,7 @@
 //#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK           636 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK           792 //696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT //m8 doesn't support
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12
 
@@ -533,5 +533,24 @@
 #endif // CONFIG_SECURE_STORAGE_BURNED
 
 #endif //CONFIG_MESON_TRUSTZONE
+
+#if defined(CONFIG_VLSI_EMULATOR)
+	#undef CONFIG_DDR_SIZE
+	#define CONFIG_DDR_SIZE 1024
+
+	#undef CONFIG_BOOTCOMMAND
+	#define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
+
+	#define CONFIG_NO_DDR_PUB_VT_CHECK 1
+
+	#undef CONFIG_CMD_AUTOSCRIPT
+
+	#undef CONFIG_CMD_REBOOT
+	#undef CONFIG_PREBOOT
+
+	#undef CONFIG_AML_SUSPEND
+	#undef CONFIG_CMD_SUSPEND
+	#define CONFIG_AML_DISABLE_CRYPTO_UBOOT
+#endif
 
 #endif //__CONFIG_M8_SKT_V1_H__

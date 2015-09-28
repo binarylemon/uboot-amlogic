@@ -51,11 +51,10 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	//print boot time, build time
 	boot_info();
 
+#if !defined(CONFIG_VLSI_EMULATOR)
 #ifdef CONFIG_POWER_SPL
 	power_init(POWER_INIT_MODE_NORMAL);
 #endif
-
-#if !defined(CONFIG_VLSI_EMULATOR)
 	// initial pll
 	pll_init(&__plls);
 
