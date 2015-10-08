@@ -771,7 +771,7 @@ int rn5t618_init(void)
 
     rn5t618_set_bits(0x00B3, 0x00, 0x40);                       // enable rapid-charge to charge end
 
-    rn5t618_set_bits(0x00BC, 0x01, 0x03);                       // set DIE shut temp to 120 Celsius
+    rn5t618_set_bits(0x00BC, 0x03, 0x03);                       // set DIE shut temp to 135 Celsius
     rn5t618_set_bits(0x00BA, 0x00, 0x0c);                       // set VWEAK to 3.0V
     rn5t618_set_bits(0x00BB, 0x00, 0x80);                       // set VWEAK to 3.0v
     udelay(100 * 1000);                                         // delay a short time
