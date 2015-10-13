@@ -386,7 +386,7 @@ void board_init_f (ulong bootflag)
 		addr = 0x9FE00000;
 #endif
 
-#ifdef AUDIO_DSP_START_PHY_ADDR 
+#ifdef AUDIO_DSP_START_PHY_ADDR
 //arc run vsync code in 0x9FD00000 space,when kernel is kernel3.10,size is 1Mbyte
 	#if (AUDIO_DSP_START_PHY_ADDR == 0x9FD00000)
 	if(addr > 0x9FD00000)
@@ -536,7 +536,7 @@ unsigned int emmc_init(void)
     struct mmc *mmc = NULL;
 	mmc = find_mmc_device(1);
 	if (mmc) {
-		ret = mmc_init(mmc); // init eMMC/tSD+    
+		ret = mmc_init(mmc); // init eMMC/tSD+
 	}
 	return ret;
 }
@@ -568,7 +568,7 @@ void get_device_boot_flag(void)
 			if(ret){
 				printf("NAND boot, eMMC init failed\n");
 			}
-			
+
 			if(ret && init_flag){
 			//error case
 				device_boot_flag = CARD_BOOT_FLAG;
@@ -599,12 +599,12 @@ void get_device_boot_flag(void)
 			else{
 				device_boot_flag = SPI_BOOT_FLAG;
 			}
-			
+
 			ret = amlnf_init(0x5);
 			if(ret){
 				printf("EMMC boot, nand init failed\n");
 			}
-			
+
 			if(ret && init_flag){
 			//error case
 				device_boot_flag = CARD_BOOT_FLAG;
@@ -621,7 +621,7 @@ void get_device_boot_flag(void)
 		}
 	}
 	else{  //SPI boot or other case, shoulde init all the device here.
-	//for SPI boot, init env first+        
+	//for SPI boot, init env first+
 		printf("enter spi boot\n");
 		ret = spi_env_relocate_spec();
 		if(ret == 0){
@@ -1084,6 +1084,10 @@ extern int amlnf_init(struct platform_device *pdev);
 #endif
 	}
 #endif
+	char *uartb = getenv("uartb_enable");
+	if (strcmp(uartb,"on") == 0) {
+		run_command("uart init",0);
+	}
 
 	AML_LOG_TE("board");
 

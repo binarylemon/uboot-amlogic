@@ -8,13 +8,26 @@
 const char* UPGRADE_FBC_REQUEST_CMD = "reboot -r upgrade\n";
 const char* UPGRADE_FBC_REBOOT = "reboot\n";
 char UPGRADE_FBC_REQUEST_HDMI_CMD[64] = {0x5a,0x5a,0xe,0x0,0x0,0x1,0x88,0x88,0x88,0x88,0x20,0x43,0xd8,0x55};
+unsigned char WIFI_BT_RESET_CMD[64]={0x5a,0x5a,0xb,0x0,0x0,0x79,0x0,0,0,0,0};
 #define UPGRADE_FBC_REQUEST_CNT 3
 #define FBC_BOOT_MAIN_ADDR_INDEX    2
 #define SPI_BIN_MEM_ADDR    0x12000000
 #define CONFIG_UART_B_CMD_LEN   64
 #define CONFIG_UART_B_FIFO_LEN  64
 #define FBC_RESPONSE_ARRAY_LEN  1024
+#define MAX_CMD_NUM 64
 int is_uart_b_init = 0;
+
+typedef struct fbc_cmd_e{
+    char *cmd_name;
+	int cmd_len;
+	unsigned char *cmd;
+} fbc_cmd_t;
+
+fbc_cmd_t fbc_send_cmd[MAX_CMD_NUM]={
+    {"wifibtreset",7,WIFI_BT_RESET_CMD},
+};
+
 
 /*
  *tip : uart_b(uart1) TFIFO/RFIFO is 64 Bytes
@@ -153,6 +166,21 @@ unsigned int datacrc32(unsigned int crc, const unsigned char *ptr, unsigned int 
     }
     return ~crcu32;
 }
+
+int addcrctodatabuf(unsigned char data_buf[], int data_len)
+{
+    unsigned int tmp_crc = 0;
+    tmp_crc = datacrc32(0, data_buf, data_len);
+    data_buf[data_len + 0] = (tmp_crc >> 0) & 0xFF;
+    data_buf[data_len + 1] = (tmp_crc >> 8) & 0xFF;
+    data_buf[data_len + 2] = (tmp_crc >> 16) & 0xFF;
+    data_buf[data_len + 3] = (tmp_crc >> 24) & 0xFF;
+    printf("crc value is %x,%x,%x,%x\n",data_buf[data_len + 0],data_buf[data_len + 1],data_buf[data_len + 2],data_buf[data_len + 3]);
+
+    return 0;
+
+}
+
 
 void print_rfifo(void)
 {
@@ -448,6 +476,63 @@ static int do_uart_b(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
             return cmd_usage(cmdtp);
         }
     }
+
+    if (!strcmp("sendcmd", argv[1])) {
+        int count;
+        char getc_temp;
+        int i;
+        fbc_cmd_t tmp_cmd ;
+
+        while ((readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & (UART_STAT_MASK_RFIFO_CNT | UART_STAT_MASK_RFIFO_FULL)))
+        {
+            getc_temp = serial_getc_uart_b();
+        }
+        serial_clear_error_uart_b();    //clear error
+
+		if (!is_uart_b_init)
+        {
+            printf("Please run 'uart init' command to init uart b\n");
+            return 0;
+        }
+
+		for (i=0;i < MAX_CMD_NUM;i++) {
+            if (strcmp(fbc_send_cmd[i].cmd_name,argv[2]) == 0) {
+                tmp_cmd = fbc_send_cmd[i];
+                break;
+            }
+        }
+
+		if (i == MAX_CMD_NUM) {
+            printf("no suitable cmd in cmd buffer,exit\n");
+            return 0;
+        }
+
+        addcrctodatabuf(tmp_cmd.cmd, tmp_cmd.cmd_len);
+
+		for (count=1;count<=UPGRADE_FBC_REQUEST_CNT;count++)
+        {
+            serial_write_bytes_uart_b((char *)tmp_cmd.cmd,tmp_cmd.cmd_len+4);
+            msdelay(1000);
+            if (0 != (readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & UART_STAT_MASK_RFIFO_CNT))
+            {
+                printf("success send request cmd to fbc for %d time\n\n", count);
+                while ((readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & (UART_STAT_MASK_RFIFO_CNT | UART_STAT_MASK_RFIFO_FULL)))
+                {
+                    getc_temp = serial_getc_uart_b();   //read the data at RFIFO
+                }
+                serial_clear_error_uart_b();    //clear error
+                break;
+            }
+            else if(  (0==((readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & UART_STAT_MASK_RECV_FIFO_OF)>>24))
+                    & (0==((readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & UART_STAT_MASK_RFIFO_FULL)>>19))
+                    & (1==((readl(CBUS_REG_ADDR(UART_PORT_1+UART_STATUS)) & UART_STAT_MASK_RFIFO_EMPTY)>>20))  )
+            {
+                printf("serial does not connect\n");
+            }
+        }
+
+    }
+
 
     if(!strcmp("r", argv[1]))
     {
