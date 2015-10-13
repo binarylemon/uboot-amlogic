@@ -209,7 +209,7 @@
 	"powermode=on\0" \
 	"pstandby=on\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
@@ -224,6 +224,7 @@
 	"wipe_cache=successful\0"\
 	"wipe_param=successful\0"\
 	"sdcburncfg=aml_sdc_burn.ini\0"\
+	"try_auto_burn=update 700 750;\0"\
 	"upgrade_check="\
                 "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
                 "if itest ${upgrade_step} == 1; then  "\
@@ -251,6 +252,7 @@
         "\0"\
 	\
 	"storeboot="\
+	    "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
         "echo Booting...; "\
 		"ddr_spread;"\
         "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
