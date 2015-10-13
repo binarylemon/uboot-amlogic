@@ -477,8 +477,8 @@ static int _load_lcd_config_from_bsp(Lcd_Config_t *pConf)
 	lcd_printf("ext_lcd:lcd_type = %d \n",pConf->lcd_basic.lcd_type);
 	if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_VBYONE) {
 		lcd_printf("ext_lcd:lane_count = %d \n", pConf->lcd_control.vbyone_config->lane_count);
-		lcd_printf("ext_lcd:byte_mode = %d \n", pConf->lcd_control.vbyone_config->byte_mode);
-		lcd_printf("ext_lcd:region_num = %d \n", pConf->lcd_control.vbyone_config->region_num);
+		lcd_printf("ext_lcd:byte_mode = %d \n", pConf->lcd_control.vbyone_config->byte);
+		lcd_printf("ext_lcd:region_num = %d \n", pConf->lcd_control.vbyone_config->region);
 		lcd_printf("ext_lcd:color_fmt = %d \n", pConf->lcd_control.vbyone_config->color_fmt);
 	} else if (pConf->lcd_basic.lcd_type == LCD_DIGITAL_LVDS) {
 		lcd_printf("ext_lcd:lcd_bits = %d \n", pConf->lcd_control.lvds_config->lvds_bits);
