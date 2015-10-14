@@ -138,7 +138,6 @@ static void uboot_show_logo(void)
 	char *p = NULL;
 	if ((p = getenv("prepare")) != NULL) {
 		run_command(p, 0);
-		run_command("run storeargs",0);
 	}
 }
 
@@ -159,21 +158,18 @@ int switch_boot_mode_power(void)
         break;
         case AMLOGIC_UPDATE_REBOOT: {
             printf("bootload update mode\n");
-            uboot_show_logo();
             run_command("run update",0);
             return 0;
         }
         break;
         case AMLOGIC_FACTORY_RESET_REBOOT: {
             printf("bootload factory reset mode\n");
-            uboot_show_logo();
             run_command("run recovery",0);
             return 0;
         }
         break;
         case MESON_USB_BURNER_REBOOT: {
             printf("bootload burnimg mode\n");
-            uboot_show_logo();
             run_command("burnimg",0);
             //burn_img_package();
             reboot_mode = 0;
@@ -262,7 +258,7 @@ int switch_boot_mode(void)
 #endif
 	switch_boot_mode_power();
     set_regs_bandwidth();
-    //uboot_show_logo();
+    uboot_show_logo();
 
 #ifdef CONFIG_BREATH_LIGHT_ENABLE
      writel(readl(P_AO_SECURE_REG1)&~(0x3),P_AO_SECURE_REG1);

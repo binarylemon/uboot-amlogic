@@ -249,7 +249,6 @@
 	"preboot="\
 		"run factory_reset_poweroff_protect;"\
 		"run upgrade_check;"\
-		"run prepare; "\
         "run storeargs;"\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
 		"run switch_bootmode\0" \
@@ -279,9 +278,9 @@
 		"if test ${reboot_mode} = normal; then "\
 			"run storeargs; "\
 		"else if test ${reboot_mode} = factory_reset; then "\
+		    "run prepare; "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
-			"run prepare; "\
 			"run storeargs; "\
 			"run update; "\
 		"else if test ${reboot_mode} = usb_burning; then "\

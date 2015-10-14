@@ -40,6 +40,12 @@
 #define CONFIG_POWER_MODE
 
 #define PWRKEY_WAKEUP_FLAGE 0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag.
+//Enable Auto update script
+#define CONFIG_AML_AUTOSCRIPT
+//#define SCAN_MMC_PARTITION 4
+#define SCAN_USB_PARTITION 4
+#define AML_AUTOSCRIPT  "aml_autoscript"
+
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -220,7 +226,6 @@
 	"preboot="\
 		"run factory_reset_poweroff_protect;"\
 		"run upgrade_check;"\
-		"run prepare; "\
         "run storeargs;"\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
 		"run switch_bootmode\0" \
@@ -249,6 +254,7 @@
 		"if test ${reboot_mode} = normal; then "\
 			"run storeargs; "\
 		"else if test ${reboot_mode} = factory_reset; then "\
+		    "run prepare; "\
 			"run recovery; "\
 		"else if test ${reboot_mode} = update; then "\
 			"run storeargs; "\

@@ -14,6 +14,12 @@
 #include <asm/arch/io.h>
 #endif /*CONFIG_AML_I2C*/
 
+#ifdef CONFIG_AUTO_UPDATE_ENV
+#include <version.h>
+#include <timestamp.h>
+#endif /*CONFIG_AUTO_UPDATE_ENV*/
+
+#include <asm/arch/reboot.h>
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_CMD_NET)
@@ -98,7 +104,123 @@ int board_eth_init(bd_t *bis)
 }
 #endif /* (CONFIG_CMD_NET) */
 
+#ifdef CONFIG_AUTO_UPDATE_ENV
+void auto_update_env(void)
+{
+	char *last_ver = getenv("ubootversion");
+	char *cur_ver = U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")";
+	//printf("last = %s \n",last_ver);
+	//printf("cur = %s \n",cur_ver);
+	if (strcmp(cur_ver, last_ver) != 0 ) {
+		run_command("defenv", 0);
+		saveenv();
+	}
+}
+#endif
+
 #ifdef CONFIG_SWITCH_BOOT_MODE
+static void uboot_show_logo(void)
+{
+	char *p = NULL;
+	if ((p = getenv("prepare")) != NULL) {
+		run_command(p, 0);
+	}
+}
+int switch_boot_mode_power(void)
+{
+	u32 reboot_mode_current = reboot_mode;
+	//unsigned int suspend_status_current = readl(P_AO_RTI_STATUS_REG0);
+	unsigned int suspend_status_current2 = readl(P_AO_RTI_STATUS_REG2);
+
+	char *suspend = getenv("suspend");
+	printf("STATUS_REG1=%x STATUS_REG2=%x  suspend=%s  \n",reboot_mode_current,suspend_status_current2,suspend);
+
+	switch (reboot_mode_current) {
+		case AMLOGIC_NORMAL_BOOT: {
+			printf("bootload normal boot mode\n");
+		return 0;
+		}
+        break;
+        case AMLOGIC_UPDATE_REBOOT: {
+            printf("bootload update mode\n");
+            run_command("run update",0);
+            return 0;
+        }
+        break;
+        case AMLOGIC_FACTORY_RESET_REBOOT: {
+            printf("bootload factory reset mode\n");
+            run_command("run recovery",0);
+            return 0;
+        }
+        break;
+        case MESON_USB_BURNER_REBOOT: {
+            printf("bootload burnimg mode\n");
+            run_command("burnimg",0);
+            //burn_img_package();
+            reboot_mode = 0;
+            run_command("reset",0);
+			return 0;
+		}
+		break;
+		case AMLOGIC_CHARGING_REBOOT:
+		break;
+		case AMLOGIC_LOCK_REBOOT:
+		break;
+	}
+
+#ifdef CONFIG_POWER_MODE
+	char *powermode = getenv("powermode");// standby,on,last,;
+	if (!strcmp(powermode, "standby")) {//--------standby------
+		char *pstandby = getenv("pstandby");
+		if (!strcmp(pstandby, "on")) {
+			if ( PWRKEY_WAKEUP_FLAGE == suspend_status_current2 ) {
+				writel(0,P_AO_RTI_STATUS_REG2);
+				setenv("pstandby","off");
+				saveenv();
+			return 0; //boot linux
+			}else{
+				run_command("suspend", 0);
+			}
+		}else{
+				setenv("pstandby","on");
+				saveenv();
+				run_command("suspend", 0);
+		}
+	}else if(!strcmp(powermode, "last")){	//---------last------
+			if (PWRKEY_WAKEUP_FLAGE == suspend_status_current2) {
+				writel(0,P_AO_RTI_STATUS_REG2);
+				setenv("suspend","off");//reboot
+				saveenv();
+				return 0;
+			}
+		if (!strcmp(suspend, "off")) {
+			return 0;
+		}else if(!strcmp(suspend,"on")){
+			run_command("suspend",0);
+		}
+		return 0;
+	}else if(!strcmp(powermode, "on")){ 	//---------on------
+		if (PWRKEY_WAKEUP_FLAGE == suspend_status_current2) {
+			writel(0,P_AO_RTI_STATUS_REG2);
+			setenv("suspend","off");//power up
+			saveenv();
+			return 0;
+		}
+		if (!strcmp(suspend,"off")) {
+			return 0;  //boot linux
+		}
+	    if (!strcmp(suspend,"on")) {
+			setenv("suspend","off");
+			saveenv();
+			run_command("suspend",0);  // press power , reboot
+			}
+		return 0;
+	}
+#endif
+
+return 0;
+}
+
 void set_regs_bandwidth(void)
 {
 	aml_write_reg32(P_VPU_VDIN_ASYNC_HOLD_CTRL, 0x80408040);
@@ -116,8 +238,12 @@ void set_regs_bandwidth(void)
 int switch_boot_mode(void)
 {
 	printf("######### switch_boot_mode ##########\n");
-
+#ifdef CONFIG_AUTO_UPDATE_ENV
+	auto_update_env();
+#endif
+	switch_boot_mode_power();
 	set_regs_bandwidth();
+	uboot_show_logo();
 	return 0;
 }
 #endif

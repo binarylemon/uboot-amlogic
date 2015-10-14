@@ -38,7 +38,14 @@
 #define CONFIG_SWITCH_BOOT_MODE
 #define CONFIG_POWER_MODE
 
-#define PWRKEY_WAKEUP_FLAGE 0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag.
+#define PWRKEY_WAKEUP_FLAGE      0x1234abcd //IR, power key, low power, adapter plug in/out and so on, are all use this flag.
+
+//Enable Auto update script
+#define CONFIG_AML_AUTOSCRIPT
+//#define SCAN_MMC_PARTITION 4
+#define SCAN_USB_PARTITION 4
+#define AML_AUTOSCRIPT  "aml_autoscript"
+
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
