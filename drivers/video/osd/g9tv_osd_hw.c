@@ -345,23 +345,23 @@ void osd_reg_debug(void)
 {
 	int i = 0;
 
-	printf("P_VPP_MISC(0x%x): 0x%x\n", P_VPP_MISC, readl(P_VPP_MISC));
+	printf("P_VPP_MISC(0x%x): 0x%lx\n", P_VPP_MISC, readl(P_VPP_MISC));
 	printf("OSD1:\n");
 	for(i=0x1a10; i<0x1a30; i++)
 	{
 #ifdef CONFIG_AML_MESON_8
-		printf("0x%08x(0x%04x): 0x%x\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
+		printf("0x%08lx(0x%04lx): 0x%lx\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
 #else
-		printf("0x%08x: 0x%x\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
+		printf("0x%08x: 0x%lx\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
 #endif
 	}
 	printf("OSD2:\n");
 	for(i=0x1a30; i<0x1a50; i++)
 	{
 #ifdef CONFIG_AML_MESON_8
-                printf("0x%08x(0x%04x): 0x%x\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
+                printf("0x%08x(0x%04lx): 0x%lx\n", VPU_REG_ADDR(i), i, readl(VPU_REG_ADDR(i)));
 #else
-		printf("0x%x: 0x%x\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
+		printf("0x%x: 0x%lx\n", CBUS_REG_ADDR(i), readl(CBUS_REG_ADDR(i)));
 #endif
 	}
 }
@@ -1682,23 +1682,28 @@ static void osd2_update_enable(void)
 	unsigned int enc_line_last = 0;
 	unsigned int enc_line_cur = 0;
 	unsigned int enc_add = 0;
+	unsigned int enc_en = 0;
 	unsigned char output_type=0;
 	output_type=readl(P_VPU_VIU_VENC_MUX_CTRL)&0x3;
 	switch (output_type)
 	{
 		case VOUT_ENCL:
 			enc_add = (unsigned int)P_ENCL_INFO_READ;
+			enc_en = (unsigned int)P_ENCL_VIDEO_EN;
 			break;
 		case VOUT_ENCP:
 			enc_add = (unsigned int)P_ENCP_INFO_READ;
+			enc_en = (unsigned int)P_ENCP_VIDEO_EN;
 			break;
 		case VOUT_ENCI:
 			enc_add = (unsigned int)P_ENCI_INFO_READ;
+			enc_en = (unsigned int)P_ENCI_VIDEO_EN;
 			break;
 	}
 
 	if (osd_hw.free_scale_mode[OSD2]){
 		if (osd_hw.enable[OSD2] == ENABLE){
+			if (readl(enc_en) & 0x1) {
 				enc_line_last = (readl(enc_add)&0x1fff0000)>>16;
 				while (1) {
 					enc_line_cur = (readl(enc_add)&0x1fff0000)>>16;
@@ -1709,6 +1714,9 @@ static void osd2_update_enable(void)
 						enc_line_last = enc_line_cur;
 					}
 				}
+			} else {
+				setreg_mask(P_VPP_MISC, VPP_OSD1_POSTBLEND|VPP_POSTBLEND_EN);
+			}
 		}else{
 			clrreg_mask(P_VPP_MISC,VPP_OSD1_POSTBLEND);
 		}
