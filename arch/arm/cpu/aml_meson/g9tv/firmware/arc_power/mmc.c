@@ -1500,6 +1500,8 @@ void hx_ddr_power_down_leave()
 void ddr_self_refresh(void)
 {
 	//DDR suspend
+	f_serial_puts("skip  ddr_self_refresh\n");
+	return;
 	f_serial_puts("enter ddr_self_refresh\n");
 	hx_ddr_power_down_enter();	
 }
@@ -1510,6 +1512,7 @@ void ddr_self_refresh(void)
 void ddr_resume(void)
 {
 	//DDR resume
+	return;
 	f_serial_puts("enter ddr_resume\n");
 	hx_ddr_power_down_leave();
 }

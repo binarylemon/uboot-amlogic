@@ -458,7 +458,7 @@ int main(void)
 	        if((c == 0)||(c!='r'))
 	        {
 	            #ifdef _UART_DEBUG_COMMUNICATION_
-	            serial_put_hex(cmd,32);
+	            serial_put_hex(readl(P_AO_RTI_STATUS_REG1),32);
 	            f_serial_puts(" arm boot fail\n\n");
 	            wait_uart_empty();
 	            #endif

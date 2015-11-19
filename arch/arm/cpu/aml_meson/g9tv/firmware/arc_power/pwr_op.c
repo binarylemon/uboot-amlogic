@@ -218,6 +218,7 @@ void chip_power_off_at_24M()
 {
 	//f_serial_puts("close vdde_pwm...\n");
  	//wait_uart_empty();
+	return;
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 29), P_AO_RTI_PIN_MUX_REG);  //close vdde_pwm
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 21), P_AO_RTI_PIN_MUX_REG);
 	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 28), P_AO_GPIO_O_EN_N);
@@ -242,6 +243,7 @@ void chip_power_off_at_24M()
 
 void chip_power_on_at_24M()
 {
+	return;
 	writel(readl(P_AO_RTI_PIN_MUX_REG)&~(1 << 9),P_AO_RTI_PIN_MUX_REG); //open ddr
 	writel(readl(P_AO_GPIO_O_EN_N)|(1 << 19),P_AO_GPIO_O_EN_N);
 	writel(readl(P_AO_GPIO_O_EN_N)&~(1 << 3),P_AO_GPIO_O_EN_N);
