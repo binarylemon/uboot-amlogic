@@ -479,7 +479,8 @@ struct amlogic_usb_config g_usb_config_g9TV_skt={
 #ifdef CONFIG_IR_REMOTE
 void board_ir_init(void)
 {
-	writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
+	//writel(0x00005801,P_AO_RTI_PIN_MUX_REG);
+	writel(readl(P_AO_RTI_PIN_MUX_REG)|(1<<14)|(1<<12)|(1<<11)|(1<<0),P_AO_RTI_PIN_MUX_REG);
 	writel(0x30fa0013,P_AO_IR_DEC_REG0);
 	writel(0x0ee8be40,P_AO_IR_DEC_REG1);
 	writel(0x01d801ac,P_AO_IR_DEC_LDR_ACTIVE);
