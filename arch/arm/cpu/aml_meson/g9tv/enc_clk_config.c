@@ -81,10 +81,12 @@ static void hpll_load_en(void);
             while((!(aml_read_reg32_d(reg) & (1 << 31)))\
                     & (time_out < 10000))               \
                 time_out ++;                            \
+            if (aml_read_reg32_d(reg) & (1 << 31)) {    \
+                printk("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
+                cnt = 0;                                \
+            }                                           \
         }                                               \
-        if(cnt < 9)                                     \
-            printk("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
-    }while(0);
+    }while(0)
 
 // viu_channel_sel: 1 or 2
 // viu_type_sel: 0: 0=ENCL, 1=ENCI, 2=ENCP, 3=ENCT.
