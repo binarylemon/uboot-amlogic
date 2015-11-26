@@ -194,6 +194,38 @@ void hdmitx_rd_check_reg (unsigned long addr, unsigned long exp_data, unsigned l
 unsigned long modulo(unsigned long a, unsigned long b);
 signed int to_signed(unsigned int a);
 
+static void hdmitx_set_spdinfo(void)
+{
+#ifdef CONFIG_HDMITX_SPD
+    const char *vend_name = (const char *)(CONFIG_HDMITX_SPD_VENDOR_NAME);
+    const char *product_des = (const char *)(CONFIG_HDMITX_SPD_PRODUCT_DESC);
+    size_t len_v = strlen(vend_name);
+    size_t len_p = strlen(product_des);
+    size_t i;
+
+    /* clear data */
+    for (i = 0; i < 8; i++)
+        hdmitx_wr_reg(HDMITX_DWC_FC_SPDVENDORNAME0+i, 0);
+    for (i = 0; i < 16; i++)
+        hdmitx_wr_reg(HDMITX_DWC_FC_SDPPRODUCTNAME0+i, 0);
+    hdmitx_wr_reg(HDMITX_DWC_FC_SPDDEVICEINF, 0);
+
+    /* set data */
+    for (i = 0; (i < len_v) && (i < 8); i++) {
+        hdmitx_wr_reg(HDMITX_DWC_FC_SPDVENDORNAME0+i, (uchar)vend_name[i]);
+    }
+    for (i = 0; (i < len_p) && (i < 16); i++) {
+        hdmitx_wr_reg(HDMITX_DWC_FC_SDPPRODUCTNAME0+i, (uchar)product_des[i]);
+    }
+    hdmitx_wr_reg(HDMITX_DWC_FC_SPDDEVICEINF, 1); /* Fixed Value, Digital STB */
+    hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO0, 1, 4, 1);
+    hdmitx_wr_reg(HDMITX_DWC_FC_DATAUTO1, 0);
+    hdmitx_wr_reg(HDMITX_DWC_FC_DATAUTO2, 0x10);
+#else
+    return;
+#endif
+}
+
 void config_hdmi20_tx ( HDMI_Video_Codes_t vic, struct hdmi_format_para *para,
                         unsigned char   color_depth,            // Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit.
                         unsigned char   input_color_format,     // Pixel format: 0=RGB444; 1=YCbCr422; 2=YCbCr444; 3=YCbCr420.
@@ -527,6 +559,8 @@ void config_hdmi20_tx ( HDMI_Video_Codes_t vic, struct hdmi_format_para *para,
     hdmitx_wr_reg(HDMITX_DWC_FC_DATAUTO1,   0);
     hdmitx_wr_reg(HDMITX_DWC_FC_DATAUTO2,   0);
     hdmitx_wr_reg(HDMITX_DWC_FC_DATMAN,     0);
+
+    hdmitx_set_spdinfo();
 
     //packet scheduller configuration for AVI, GCP, AUDI, ACR.
     data32  = 0;

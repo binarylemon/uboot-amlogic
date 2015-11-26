@@ -79,6 +79,10 @@
 #define CONFIG_AML_HDMI_TX  1
 #define CONFIG_OSD_SCALE_ENABLE 1
 
+#define CONFIG_HDMITX_SPD /* NAME and DESC should be matched with kernel dts */
+#define CONFIG_HDMITX_SPD_VENDOR_NAME "Amlogic" /* Max Chars: 8Bytes */
+#define CONFIG_HDMITX_SPD_PRODUCT_DESC "N210 Ref Board" /* Max Chars: 16Bytes */
+
 #define CONFIG_CMD_CPU_TEMP
 
 //Enable storage devices
