@@ -198,6 +198,7 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
+	int ret;
 
 	if ((start + blkcnt) > mmc->block_dev.lba) {
 		printf("MMC: block number 0x%lx exceeds max(0x%lx)\n",
@@ -223,10 +224,9 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 	data.blocksize = mmc->write_bl_len;
 	data.flags = MMC_DATA_WRITE;
 
-	if (mmc_send_cmd(mmc, &cmd, &data)) {
+	ret = mmc_send_cmd(mmc, &cmd, &data);
+	if (ret)
 		printf("mmc write failed\n");
-		return 0;
-	}
 
 	if (blkcnt > 1) {
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
@@ -238,7 +238,8 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 			return 0;
 		}
 	}
-
+	if (ret)
+		return 0;
 	return blkcnt;
 }
 
@@ -279,7 +280,7 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
-
+	int ret;
 	if (blkcnt > 1)
 		cmd.cmdidx = MMC_CMD_READ_MULTIPLE_BLOCK;
 	else
@@ -298,8 +299,7 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 	data.blocksize = mmc->read_bl_len;
 	data.flags = MMC_DATA_READ;
 
-	if (mmc_send_cmd(mmc, &cmd, &data))
-		return 0;
+	ret = mmc_send_cmd(mmc, &cmd, &data);
 
 	if (blkcnt > 1) {
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
@@ -311,8 +311,10 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 			return 0;
 		}
 	}
-
-	return blkcnt;
+	if (ret)
+		return 0;
+	else
+		return blkcnt;
 }
 
 static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
