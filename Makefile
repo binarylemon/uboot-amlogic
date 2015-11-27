@@ -448,7 +448,7 @@ ifdef CONFIG_AML_SECU_BOOT_V2
 	@./tools/secu_boot/encrypto3 $@
 ifdef CONFIG_AML_CRYPTO_UBOOT
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
-	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
+	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 0000
 ifdef CONFIG_AML_SECU_BOOT_V2_2RSA
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key-2x.$(RSA_KEY_EXT) \
 	$@.aml.encrypt $@.aml.encrypt.2x $@.aml.encrypt.2x.efuse $(BOOT_KEY_PATH)/aml-aes-key-2x.aes
@@ -525,7 +525,7 @@ endif
 	@./tools/secu_boot/encrypto3 $(obj)$(AML_USB_UBOOT_NAME)
 ifdef CONFIG_AML_CRYPTO_UBOOT
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) \
-	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes
+	$@.aml $@.aml.encrypt $@.aml.efuse $(BOOT_KEY_PATH)/aml-aes-key.aes 0000
 	@./tools/secu_boot/aml_encrypt_$(SOC) $(BOOT_KEY_PATH)/aml-rsa-key.$(RSA_KEY_EXT) $(obj)$(AML_USB_UBOOT_NAME).aml \
 	$(obj)$(AML_USB_UBOOT_NAME).aml.encrypt dummy $(BOOT_KEY_PATH)/aml-aes-key.aes
 ifdef CONFIG_AML_SECU_BOOT_V2_2RSA
