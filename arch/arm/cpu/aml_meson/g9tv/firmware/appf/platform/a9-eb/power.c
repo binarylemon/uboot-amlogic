@@ -255,8 +255,8 @@ void run_arc_program()
 	}
 
 	//save DMC_SEC_CTRL,DMC_SEC_KEY
-	dmc_sec_ctrl_addr = 0xd9010300;
-	dmc_sec_key0_addr = 0xd9010304;
+	dmc_sec_ctrl_addr = 0xc81000a0;
+	dmc_sec_key0_addr = 0xc81000a4;
 	*(unsigned int*)dmc_sec_ctrl_addr = readl(DMC_SEC_CTRL);
 	*(unsigned int*)dmc_sec_key0_addr = readl(DMC_SEC_KEY);
 

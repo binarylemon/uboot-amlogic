@@ -152,13 +152,14 @@ wait_dmc_sec_ctrl: //while( readl(DMC_SEC_CTRL) & (1<<31)) {}
 	   DMB
 	   ISB
 
-//ddr scrable function
-	ldr r10,=0x10300
-	ldr r1,[r10,#4]   /*sram 0x10304 addr*/
+	//ddr scrable function
+	ldr r10,=0xc81000a4
+	ldr r1,[r10,#0]
 	ldr r9,=0xda00201c
-	str r1,[r9,#0]     /*DMC_SEC_KEY0*/
+	str r1,[r9,#0]     /*DMC_SEC_KEY*/
 
-	ldr r1,[r10,#0]   /*sram 0x10300 addr*/
+	ldr r10,=0xc81000a0
+	ldr r1,[r10,#0]
 	ldr r10,=0x80000000
 	orr r1,r1,r10
 

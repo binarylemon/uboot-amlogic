@@ -337,7 +337,9 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
     int battery_voltage;
     int ret = FLAG_WAKEUP_PWRKEY;
     int low_bat_cnt = 0;
-
+    unsigned int delay_time  = readl(P_AO_RTI_STATUS_REG2);
+    unsigned int init_time = readl(0xc1100000 + 0x2655*4);
+    delay_time = delay_time * 1000 * 1000; // CONVERT TO US
 #ifdef CONFIG_IR_REMOTE_WAKEUP
     //backup the remote config (on arm)
     backup_remote_register();
@@ -349,7 +351,6 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
 	saradc_init();
 	adc_start_sample(0);
 #endif
-
 
 #ifdef	CONFIG_ARC_BREATH_LIGHT_ENABLE
 	init_breath_light(CONFIG_BREATH_LIGHT_FREQ);
@@ -396,6 +397,13 @@ unsigned int g9tv_ref_wakeup(unsigned int flags)
             exit_reason = 7;
 			ret = FLAG_WAKEUP_ALARM;
             break;
+        }
+        if (delay_time != 0) {
+                if ((readl(0xc1100000 + 0x2655*4) - init_time) >= delay_time) {
+                        exit_reason = 7;
+                        ret = FLAG_WAKEUP_ALARM;
+                        break;
+                }
         }
 
 #ifdef CONFIG_BT_WAKEUP

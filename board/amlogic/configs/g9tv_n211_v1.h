@@ -9,6 +9,8 @@
 #define PWM_F                               6
 #define CONFIG_VDDEE_PWM                    PWM_F
 
+#define STANDBY_24M
+
 
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
