@@ -42,7 +42,7 @@ struct partitions partition_table[]={
 		},
 		{
 			.name = "cache",
-			.size = 512*SZ_1M,
+			.size = 4096ULL*SZ_1M,
 			.mask_flags = STORE_CACHE,
 		},
 		{

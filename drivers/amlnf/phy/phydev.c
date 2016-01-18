@@ -1122,8 +1122,8 @@ int amlnand_phydev_init(struct amlnand_chip *aml_chip)
 	struct dev_para *dev_para = NULL;
 	struct amlnf_partition *partition = NULL;
 	
-	uint64_t  offset = 0, dev_size = 0, chip_size =0, phydev_pre_size =0;
-	unsigned start_blk, total_blk, tmp_write_shift, tmp_erase_shift, tmp_offset=0, tmp_blk = 0, pages_per_blk;
+	uint64_t  offset = 0, dev_size = 0, chip_size =0, phydev_pre_size =0, tmp_offset=0;
+	unsigned start_blk, total_blk, tmp_write_shift, tmp_erase_shift, tmp_blk = 0, pages_per_blk;
 	unsigned char boot_flag = 0, plane_num = 1;
 	int i, j, k, ret = 0;	
     uint64_t bad_blk[128];
