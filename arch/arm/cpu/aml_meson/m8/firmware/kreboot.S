@@ -293,6 +293,34 @@ end_sec_dmc_handler:
 	str   r1, [r0]
 	dsb
 
+/*Retore ddr data which is rewrite by ddr trainning. See power.c for more info*/
+	ldr r0, =0x10000 //The sram address which save the data
+	ldr r1, [r0]
+	ldr r2, [r0,#4]!
+
+	ldr r5, =0xffffffff
+	cmp r1, r5
+	beq store_ch2
+
+	mov r4, #32 //trainning len
+store_loop1:
+	ldr r3, [r0, #4]!
+	str r3, [r1], #4
+	sub r4, r4, #1
+	cmp r4, #0
+	bne store_loop1
+
+store_ch2:
+	cmp r2, r5
+	beq end_ch_store
+	mov r4, #32 //trainning len
+store_loop2:
+	ldr r3, [r0, #4]!
+	str r3, [r2], #4
+	sub r4, r4, #1
+	cmp r4, #0
+	bne store_loop2
+end_ch_store:
 
 /* for debug */
 //    adr r1,reset_addr
