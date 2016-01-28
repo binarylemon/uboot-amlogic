@@ -395,8 +395,12 @@ struct ARC_PARAM *arc_param = (struct ARC_PARAM *)(ARC_PARAM_ADDR);	//
 typedef unsigned int uint32_t;
 typedef unsigned int appf_u32;
 
+static __inline__ void aml_write_reg32(uint32_t _reg, const uint32_t _value)
+{
+	writel(_value, _reg);
+};
 
-static __inline__ void aml_set_reg32_bits1(uint32_t _reg, const uint32_t _value,
+static __inline__ void aml_set_reg32_bits(uint32_t _reg, const uint32_t _value,
 					  const uint32_t _start,
 					  const uint32_t _len)
 {
@@ -408,18 +412,18 @@ static __inline__ void aml_set_reg32_bits1(uint32_t _reg, const uint32_t _value,
 void meson_set_cpu_power_ctrl(unsigned int cpu, int is_power_on)
 {
 	if (is_power_on) {	/* SCU Power on CPU */
-		//aml_set_reg32_bits1(MESON_CPU_POWER_CTRL_REG, 0x0 ,(cpu << 3),2);              /* Reset enable*/
-		aml_set_reg32_bits1(P_HHI_SYS_CPU_CLK_CNTL, 1, (cpu + 24), 1);	/* Power on */
-		aml_set_reg32_bits1(P_AO_RTI_PWR_A9_CNTL1, 0x0, ((cpu + 1) << 1),
+		//aml_set_reg32_bits(MESON_CPU_POWER_CTRL_REG, 0x0 ,(cpu << 3),2);              /* Reset enable*/
+		aml_set_reg32_bits(P_HHI_SYS_CPU_CLK_CNTL, 1, (cpu + 24), 1);	/* Power on */
+		aml_set_reg32_bits(P_AO_RTI_PWR_A9_CNTL1, 0x0, ((cpu + 1) << 1),
 				   2);
 		udelay(10);	/* Isolation disable */
-		aml_set_reg32_bits1(P_AO_RTI_PWR_A9_CNTL0, 0x0, cpu, 1);	/* Reset disable */
-		aml_set_reg32_bits1(P_HHI_SYS_CPU_CLK_CNTL, 0, (cpu + 24), 1);
+		aml_set_reg32_bits(P_AO_RTI_PWR_A9_CNTL0, 0x0, cpu, 1);	/* Reset disable */
+		aml_set_reg32_bits(P_HHI_SYS_CPU_CLK_CNTL, 0, (cpu + 24), 1);
 	} else {
-		//aml_set_reg32_bits1(MESON_CPU_POWER_CTRL_REG,0x3,(cpu << 3),2);                /* Isolation enable */
-		aml_set_reg32_bits1(P_AO_RTI_PWR_A9_CNTL0, 0x1, cpu, 1);
+		//aml_set_reg32_bits(MESON_CPU_POWER_CTRL_REG,0x3,(cpu << 3),2);                /* Isolation enable */
+		aml_set_reg32_bits(P_AO_RTI_PWR_A9_CNTL0, 0x1, cpu, 1);
 		udelay__(100);	/* Power off */
-		aml_set_reg32_bits1(P_AO_RTI_PWR_A9_CNTL1, 0x3, ((cpu + 1) << 1),
+		aml_set_reg32_bits(P_AO_RTI_PWR_A9_CNTL1, 0x3, ((cpu + 1) << 1),
 				   2);
 	}
 	//dsb();
