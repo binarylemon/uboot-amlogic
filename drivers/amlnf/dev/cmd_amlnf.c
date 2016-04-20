@@ -26,7 +26,7 @@ extern int nand_read_ops(struct amlnand_phydev *phydev);
 extern int nand_write_ops(struct amlnand_phydev *phydev);
 extern int nand_erase(struct amlnand_phydev *phydev);
 extern void amlnand_dump_page(struct amlnand_phydev *phydev);
-extern int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag);
+extern int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag, unsigned char mark_flag);
 extern int  amlnf_markbad_reserved_ops(uint32_t start_blk);
 
 extern int amlnf_init(unsigned char flag);
@@ -799,7 +799,7 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 
 		erase_addr =erase_off= off;
 		erase_len = size;
-		ret = amlnf_erase_ops(off,erase_len,scrub_flag);
+		ret = amlnf_erase_ops(off,erase_len,scrub_flag, 1);
 		if(ret < 0){
 			aml_nand_msg("nand erase failed");
 		}

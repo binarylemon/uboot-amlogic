@@ -291,7 +291,7 @@ int  amlnf_erase_reserve(uint64_t off, uint64_t erase_len)
 
 	return 0;
 }
-int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
+int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag, unsigned char mark_flag)
 {
 	struct amlnand_chip *aml_chip = aml_nand_chip;
 	struct hw_controller *controller = &(aml_chip->controller);	
@@ -307,7 +307,9 @@ int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
 
 	erase_shift = ffs(flash->blocksize) - 1;
 	write_shift =  ffs(flash->pagesize) - 1;
+
 	start_blk = (int)(off >> erase_shift);
+
 	total_blk = (int)(erase_len >> erase_shift);
 	pages_per_blk = (1 << (erase_shift -write_shift));
 
@@ -321,7 +323,6 @@ int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
 				start_blk = ((1024 / pages_per_blk ));
 			#endif */
 	}
-	aml_nand_dbg("start_blk =%d,total_blk=%d",start_blk, total_blk);
 
 	for(;start_blk< total_blk; start_blk++){
 		memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));			
@@ -355,11 +356,11 @@ int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag)
 #else
 		nand_release_chip(aml_chip);
 #endif				
-		if(ret < 0){
+		if ((ret < 0) && (mark_flag)) {
 			ret = operation->block_markbad(aml_chip);
 			continue;
 		}
-			
+
 		percent = (start_blk * 100) / total_blk;
 		
 		if ((percent != percent_complete)&&((percent %10)==0)) {

@@ -76,6 +76,12 @@ static int amlnand_oops_handle(struct amlnand_chip *aml_chip, int flag)
     int percent = 0, percent_complete = -1;
     unsigned char *buf = NULL;
     unsigned int buf_size = MAX(CONFIG_SECURE_SIZE, CONFIG_KEYSIZE);
+	if (flag == NAND_BOOT_ERASE_ALL || flag == NAND_BOOT_SCRUB_ALL) {
+		if (flash->id[0] == NAND_MFR_SANDISK) {
+            aml_nand_msg("Skip second erase flash");
+            return 0;
+        }
+    }
 
     buf = aml_nand_malloc(buf_size);
     if (!buf) {
@@ -3215,6 +3221,49 @@ int shipped_bbt_valid_ops(struct amlnand_chip *aml_chip)
 exit_error0:
     return ret;
 }
+extern int  amlnf_erase_ops(uint64_t off, uint64_t erase_len,unsigned char scrub_flag, unsigned char mark_flag);
+static void scrub_flash_first(struct amlnand_chip *aml_chip)
+{
+    struct hw_controller *controller = &aml_chip->controller;
+    struct nand_flash *flash = &aml_chip->flash;
+    uint64_t erase_len = 0,off;
+    unsigned char *buf = NULL;
+    unsigned int buf_size = MAX(CONFIG_SECURE_SIZE,CONFIG_KEYSIZE);
+    int ret;
+
+	if (flash->id[0] == NAND_MFR_SANDISK) {
+        aml_nand_msg("%s(), scrub sandisk 1st...", __func__);
+
+        buf = aml_nand_malloc(buf_size);
+		if (!buf) {
+          aml_nand_msg("aml_sys_info_init : malloc failed");
+        }
+        memset(buf,0x0,buf_size);
+
+        #ifdef CONFIG_SECURITYKEY
+            ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_key),buf,(unsigned char *)KEY_INFO_HEAD_MAGIC, CONFIG_KEYSIZE);
+			if (ret < 0) {
+                aml_nand_msg("can't find nand key\n");
+            }
+        #endif
+
+        #ifdef CONFIG_SECURE_NAND
+            ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_secure),buf,(unsigned char *)SECURE_INFO_HEAD_MAGIC, CONFIG_SECURE_SIZE);
+			if (ret < 0) {
+                aml_nand_msg("can't find nand secure_ptr\n");
+            }
+        #endif
+        erase_len = ((uint64_t)(flash->chipsize*controller->chip_num))<<20;
+        //aml_nand_msg("erase_len:%llx",erase_len);
+        off = 0;
+        amlnf_erase_ops(off, erase_len, 1, 0);
+    }
+
+	if (buf) {
+        kfree(buf);
+        buf = NULL;
+    }
+}
 
 /*****************************************************************************
 *Name         :amlnand_get_dev_configs
@@ -3263,7 +3312,7 @@ int amlnand_get_dev_configs(struct amlnand_chip *aml_chip)
 
     if ((aml_chip->init_flag > NAND_BOOT_ERASE_PROTECT_CACHE)) { /* upgrade will enter */
 
-/* ret = amlnand_info_init(aml_chip, &(aml_chip->shipped_bbtinfo),aml_chip->shipped_bbt_ptr,SHIPPED_BBT_HEAD_MAGIC, sizeof(struct shipped_bbt)); */
+        scrub_flash_first(aml_chip);
 
         ret = amlnand_info_init(aml_chip, (unsigned char *)&(aml_chip->nand_bbtinfo), (unsigned char *)(aml_chip->block_status), (unsigned char *)BBT_HEAD_MAGIC, sizeof(struct block_status));
         if (ret < 0) {
