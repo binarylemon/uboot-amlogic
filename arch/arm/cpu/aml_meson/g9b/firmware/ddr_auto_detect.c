@@ -148,7 +148,7 @@ memory size auto detect function support:
 #endif
 			break;
 		}
-		if (cur_mask_addr >= (0x20000000 >> mem_mode)) {
+		if (cur_mask_addr > (0x20000000 >> mem_mode)) {
 			/*32bit max 2GB, 16bit max 1GB*/
 			break;
 		}
