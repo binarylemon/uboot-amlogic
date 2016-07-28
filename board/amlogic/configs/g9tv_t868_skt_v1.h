@@ -1,5 +1,5 @@
-#ifndef __CONFIG_G9TV_SKT_V1_H__
-#define __CONFIG_G9TV_SKT_V1_H__
+#ifndef __CONFIG_G9TV_T868_SKT_V1_H__
+#define __CONFIG_G9TV_T868_SKT_V1_H__
 
 #define CONFIG_SECURITYKEY
 //#define TEST_UBOOT_BOOT_SPEND_TIME
@@ -73,6 +73,7 @@
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
+#define CONFIG_SUSPEN_NO_INIT_LCD
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
@@ -123,13 +124,13 @@
 #endif //#if defined(CONFIG_CMD_USB)
 
 #define CONFIG_UCL 1
-#define CONFIG_SELF_COMPRESS 
+#define CONFIG_SELF_COMPRESS
 //#define CONFIG_PREBOOT "mw da004004 80000510;mw c81000014 4000;mw c1109900 0"
 
 #define CONFIG_CMD_AUTOSCRIPT
 
 #define CONFIG_CMD_REBOOT 1
-#define CONFIG_PREBOOT 
+#define CONFIG_PREBOOT
 
 #define  CONFIG_AML_GATE_INIT	1
 
@@ -137,8 +138,11 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
+#define CONFIG_NO_LCD_INIT_IN_BOARDC	1
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x12000000\0" \
+	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
@@ -146,16 +150,23 @@
 	"boardname=g9tv_board\0" \
 	"chipname=g9tv\0" \
 	"initrd_high=60000000\0" \
-	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend logo=osd0,1080p,loaded \0" \
-	"video_dev=tvout\0" \
-	"display_width=2048\0" \
-	"display_height=1536\0" \
+	"outputmode=1080p\0" \
+	"ddr_spread=100\0" \
+	"panel_type=lvds_0\0" \
+	"bootargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8 no_console_suspend \0" \
+	"initargs=root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init console=ttyS0,115200n8  no_console_suspend \0" \
+	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
+	"video_dev=panel\0" \
+	"display_width=1920\0" \
+	"display_height=1080\0" \
 	"display_bpp=16\0" \
 	"display_color_format_index=16\0" \
 	"display_layer=osd2\0" \
 	"display_color_fg=0xffff\0" \
 	"display_color_bg=0\0" \
-	"fb_addr=0x15100000\0" \
+	"fb_addr=0x7a000000\0" \
+	"fb_width=1920\0" \
+	"fb_height=1080\0" \
 	"partnum=2\0" \
 	"p0start=1000000\0" \
 	"p0size=400000\0" \
@@ -163,47 +174,118 @@
 	"p1start=1400000\0" \
 	"p1size=8000000\0" \
 	"p1path=android.rootfs\0" \
+	"powermode=on\0" \
+	"pstandby=on\0" \
 	"bootstart=0\0" \
-	"bootsize=60000\0" \
+	"bootsize=100000\0" \
 	"bootpath=u-boot.bin\0" \
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
+	"lcd_reverse=0\0" \
+	"osd_reverse=n\0" \
+	"panel_reverse=n\0" \
+	"suspend=off\0" \
 	"upgrade_step=0\0" \
 	"firstboot=1\0" \
 	"store=0\0"\
+	"wipe_data=successful\0"\
+	"wipe_cache=successful\0"\
+	"wipe_param=successful\0"\
+	"sdcburncfg=aml_sdc_burn.ini\0"\
+	"try_auto_burn=update 700 750;\0"\
+	"upgrade_check="\
+                "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
+                "if itest ${upgrade_step} == 1; then  "\
+                    "defenv; setenv upgrade_step 2; saveenv;"\
+                "fi; "\
+		"\0"\
 	"preboot="\
-		"echo preboot...;" \
-		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
-        "run switch_bootmode\0" \
+		"run factory_reset_poweroff_protect;"\
+		"run upgrade_check;"\
+        "run storeargs;"\
+		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
+		"run switch_bootmode\0" \
+		\
+    "storeargs="\
+        "setenv bootargs ${initargs} logo=osd1,${outputmode},loaded panel_reverse=${panel_reverse} osd_reverse=${osd_reverse} panel_type=${panel_type}\0"\
     \
-   	"update="\
-   		"echo update...; "\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-        "fi;"\
-        "run recovery\0" \
-    \
-	"switch_bootmode="\
-		"echo switch_bootmode...;" \
-		"if test ${reboot_mode} = factory_reset; then run recovery;else if test ${reboot_mode} = update; then run recovery;fi;fi" \
-            "\0"\
-    \
+    "prepare="\
+        "logo size ${outputmode};"\
+        "lcd_reverse_operate;"\
+        "video open; video clear;"\
+        "video dev enable;"\
+        "imgread pic logo bootup ${loadaddr_logo}; "\
+        "bmp display ${bootup_offset}; bmp scale; video dev bl_on;"\
+        "\0"\
+	\
 	"storeboot="\
+	    "if test ${reboot_mode} = charging; then run try_auto_burn; fi;"\
         "echo Booting...; "\
+		"ddr_spread;"\
+        "setenv bootargs ${bootargs} androidboot.firstboot=${firstboot}; "\
         "imgread kernel boot ${loadaddr};"\
         "bootm;"\
         "run recovery\0" \
     \
+    "switch_bootmode="\
+		"if test ${reboot_mode} = normal; then "\
+			"run storeargs; "\
+		"else if test ${reboot_mode} = factory_reset; then "\
+		    "run prepare; "\
+			"run recovery; "\
+		"else if test ${reboot_mode} = update; then "\
+			"run storeargs; "\
+			"run update; "\
+		"else if test ${reboot_mode} = usb_burning; then "\
+			"run usb_burning; "\
+		"else "\
+			"run storeargs; "\
+		"fi; fi; fi; fi;\0" \
+		\
 	"recovery="\
-        "echo enter recovery;"\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-        "fi; "\
-        "imgread kernel recovery ${loadaddr}; "\
-        "bootm\0" \
+		"echo enter recovery;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm;"\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
+	"factory_reset_poweroff_protect="\
+		"echo wipe_data=${wipe_data}; "\
+		"echo wipe_cache=${wipe_cache}; "\
+		"echo wipe_param=${wipe_param};"\
+		"if test ${wipe_data} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_cache} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi; "\
+		"if test ${wipe_param} = failed; then "\
+		    "run prepare; run storeargs; run recovery;"\
+		"fi\0" \
+		\
+	"update="\
+		/*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+		"echo update...; "\
+		"if mmcinfo; then "\
+			"if fatexist mmc 0 ${sdcburncfg}; then "\
+				"sdc_burn ${sdcburncfg}; "\
+			"else "\
+				"if fatload mmc 0 ${loadaddr} aml_autoscript; then "\
+					"autoscr ${loadaddr}; "\
+				"fi; "\
+				"if fatload mmc 0 ${loadaddr} recovery.img; then "\
+				"bootm; fi; "\
+			"fi;"\
+		"fi;"\
+		"if imgread kernel recovery ${loadaddr}; then "\
+			"bootm; "\
+		"else "\
+			"echo no recovery in flash; "\
+		"fi\0" \
+		\
 
-
-#define CONFIG_BOOTCOMMAND   "setenv bootcmd run storeboot; run storeboot"
+#define CONFIG_BOOTCOMMAND   "run storeboot"
 
 #define CONFIG_AUTO_COMPLETE	1
 #define CONFIG_ENV_SIZE         (64*1024)
@@ -231,37 +313,39 @@
 
 #ifdef CONFIG_NAND_BOOT
 	#define CONFIG_AMLROM_NANDBOOT 1
-#endif 
+#endif
 
 
 #ifdef CONFIG_SPI_BOOT
 	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_IS_IN_SPI_FLASH
-	#define CONFIG_CMD_SAVEENV	
+	#define CONFIG_CMD_SAVEENV
 	#define CONFIG_ENV_SECT_SIZE		0x10000
 	#define CONFIG_ENV_OFFSET           0x1f0000
 #elif defined CONFIG_NAND_BOOT
 	#define CONFIG_ENV_IS_IN_AML_NAND
 	#define CONFIG_CMD_SAVEENV
-	#define CONFIG_ENV_OVERWRITE	
+	#define CONFIG_ENV_OVERWRITE
 	#define CONFIG_ENV_OFFSET       0x400000
 	#define CONFIG_ENV_BLOCK_NUM    2
 #elif defined CONFIG_MMC_BOOT
 	#define CONFIG_ENV_IS_IN_MMC
 	#define CONFIG_CMD_SAVEENV
-    #define CONFIG_SYS_MMC_ENV_DEV        0	
-	#define CONFIG_ENV_OFFSET       0x1000000		
+    #define CONFIG_SYS_MMC_ENV_DEV        0
+	#define CONFIG_ENV_OFFSET       0x1000000
 #else
 	#define CONFIG_ENV_IS_NOWHERE    1
 #endif
 
 #endif
 
+//enable auto update env--> defenv;save;
+#define CONFIG_AUTO_UPDATE_ENV 1
 
 //----------------------------------------------------------------------
 //Please set the CPU clock(unit: MHz)
 //legal value: 600, 792, 996, 1200
-#define CPU_CLK 		    (792)
+#define CPU_CLK 		    (600)
 #define CONFIG_SYS_CPU_CLK	(CPU_CLK)
 //----------------------------------------------------------------------
 
@@ -277,18 +361,18 @@
 //#define CONFIG_DDR_LOW_POWER_DISABLE 1
 
 //For DDR PUB WL/WD/RD/RG-LVT, WD/RD-BVT disable
-#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
+//#define CONFIG_PUB_WLWDRDRGLVTWDRDBVT_DISABLE 1
 
 //current DDR clock range (408~804)MHz with fixed step 12MHz
-#define CONFIG_DDR_CLK           792 //696 //768  //792// (636)
+#define CONFIG_DDR_CLK           636 //696 //768  //792// (636)
 #define CONFIG_DDR_MODE          CFG_DDR_BUS_WIDTH_32BIT
 #define CONFIG_DDR_CHANNEL_SET   CFG_DDR_TWO_CHANNEL_SWITCH_BIT_12
 #define  CONFIG_CMD_DDR_TEST
 //On board DDR capacity
 /*DDR capactiy support 512MB, 1GB, 1.5GB, 2GB, 3GB*/
 #define CONFIG_DDR_SIZE          2048 //MB. Legal value: 512, 1024, 1536, 2048, 3072
-#define CONFIG_DDR_BDL_DEBUG
-#define CONFIG_DDR_READ_BDL_DEBUG
+//#define CONFIG_DDR_BDL_DEBUG
+//#define CONFIG_DDR_READ_BDL_DEBUG
 
 #define CONFIG_DDR_ZQ_POWER_ON
 
@@ -309,8 +393,8 @@
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 //#define DDR_SCRAMBE_ENABLE  1
 
-#define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */      
-#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */  
+#define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */
+#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
@@ -365,4 +449,4 @@
    #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
 #endif
 
-#endif //__CONFIG_G9TV_SKT_V1_H__
+#endif //__CONFIG_G9TV_T868_SKT_V1_H__

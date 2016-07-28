@@ -59,7 +59,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M6_DONGLE_G35_V1 with TEE"
 	@echo config command: \"make m6_dongle_g35_v1_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M6S_SKT_V1", relative to chip M6S
 	@echo config command: \"make m6s_skt_v1_config\"
@@ -163,7 +163,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8B_M201_1G"
 	@echo config command: \"make m8b_m201_1G_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M8B_M201C_512M"
 	@echo config command: \"make m8b_m201C_512M_config\"
@@ -187,7 +187,7 @@ endif
 	@echo =======================================================================
 	@echo The mark in board is "M8B_M203_1G"
 	@echo config command: \"make m8b_m203_1G_config\"
-	
+
 	@echo =======================================================================
 	@echo The mark in board is "M8B_FT_V1"
 	@echo config command: \"make m8b_ft_v1_config\"
@@ -217,8 +217,12 @@ endif
 	@echo config command: \"make m8m2_n101_1G_config\"
 
 	@echo =======================================================================
-	@echo The mark in board is "G9TV_SKT_V1"
-	@echo config command: \"make g9tv_skt_v1_config\"
+	@echo The mark in board is "G9TV_T868_SKT_V1"
+	@echo config command: \"make g9tv_t868_skt_v1_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "G9TV_T866_SKT_V1"
+	@echo config command: \"make g9tv_t866_skt_v1_config\"
 
 	@echo =======================================================================
 	@echo The mark in board is "G9TV_N210_V1"

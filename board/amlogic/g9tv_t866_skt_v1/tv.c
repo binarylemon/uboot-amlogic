@@ -43,9 +43,9 @@ extern GraphicDevice aml_gdev;
 vidinfo_t tv_info;
 
 #define H_ACTIVE		800
-#define V_ACTIVE		1280 
-#define H_PERIOD		960 
-#define V_PERIOD		1320 
+#define V_ACTIVE		1280
+#define H_PERIOD		960
+#define V_PERIOD		1320
 #define VIDEO_ON_PIXEL  80
 #define VIDEO_ON_LINE   32
 
@@ -60,8 +60,8 @@ int  video_dac_disable(void)
 {
 	debug("%s\n", __FUNCTION__);
 	SET_CBUS_REG_MASK(VENC_VDAC_SETTING, 0x1f);
-    return 0;    
-}   
+    return 0;
+}
 
 //\\temp
 //static void tv_sync_duration(Lcd_Config_t *pConf)
@@ -69,13 +69,13 @@ int  video_dac_disable(void)
 //	unsigned m, n, od, div, xd;
 //	unsigned pre_div;
 //	unsigned sync_duration;
-//	
+//
 //	m = ((pConf->lcd_timing.pll_ctrl) >> 0) & 0x1ff;
 //	n = ((pConf->lcd_timing.pll_ctrl) >> 9) & 0x1f;
 //	od = ((pConf->lcd_timing.pll_ctrl) >> 16) & 0x3;
 //	div = ((pConf->lcd_timing.div_ctrl) >> 4) & 0x7;
 //	xd = ((pConf->lcd_timing.clk_ctrl) >> 0) & 0xf;
-//	
+//
 //	od = (od == 0) ? 1:((od == 1) ? 2:4);
 //	switch(pConf->lcd_basic.lcd_type)
 //	{
@@ -89,11 +89,11 @@ int  video_dac_disable(void)
 //			pre_div = 1;
 //			break;
 //	}
-//	
-//	sync_duration = m*24*100/(n*od*(div+1)*xd*pre_div);	
+//
+//	sync_duration = m*24*100/(n*od*(div+1)*xd*pre_div);
 //	sync_duration = ((sync_duration * 100000 / H_PERIOD) * 10) / V_PERIOD;
-//	sync_duration = (sync_duration + 5) / 10;	
-//	
+//	sync_duration = (sync_duration + 5) / 10;
+//
 //	pConf->lcd_timing.sync_duration_num = sync_duration;
 //	pConf->lcd_timing.sync_duration_den = 10;
 //}
@@ -101,8 +101,8 @@ int  video_dac_disable(void)
 static void tv_power_on(void)
 {
 	debug("%s\n", __FUNCTION__);
-	video_dac_disable();    
-    //power_on_lcd();      
+	video_dac_disable();
+    //power_on_lcd();
 }
 static void tv_power_off(void)
 {
@@ -120,10 +120,9 @@ static void tv_enable(void)
 	tv_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 10);
 	tv_info.vd_color_fg = simple_strtoul(getenv("display_color_fg"), NULL, 0);
 	tv_info.vd_color_bg = simple_strtoul(getenv("display_color_bg"), NULL, 0);
-	
 //\\temp
 //	tv_sync_duration(&lcd_config);
-	
+
     //return 0;
 }
 
@@ -133,7 +132,7 @@ void tv_disable(void)
     //power_off_lcd();
 }
 
-vidinfo_t tv_info = 
+vidinfo_t tv_info =
 {
 	.vl_col	=	0,		/* Number of columns (i.e. 160) */
 	.vl_row	=	0,		/* Number of rows (i.e. 100) */
@@ -143,7 +142,7 @@ vidinfo_t tv_info =
 	.vd_console_address	=	NULL,	/* Start of console buffer	*/
 	.console_col	=	0,
 	.console_row	=	0,
-	
+
 	.vd_color_fg	=	0,
 	.vd_color_bg	=	0,
 	.max_bl_level	=	255,

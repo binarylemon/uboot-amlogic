@@ -19,13 +19,13 @@ DECLARE_GLOBAL_DATA_PTR;
 #if defined(CONFIG_CMD_NET)
 /*************************************************
   * Amlogic Ethernet controller operation
-  * 
+  *
   * Note: RTL8211F gbit_phy use RGMII interface
   *
   *************************************************/
 static void setup_net_chip(void)
 {
-  	eth_aml_reg0_t eth_reg0;
+	eth_aml_reg0_t eth_reg0;
 	/*m8b mac clock use externel phy clock(125m/25m/2.5m)
 	 setup ethernet clk need calibrate to configre
 	 setup ethernet pinmux use DIF_TTL_0N/P 1N/P 2N/P 3N/P 4N/P GPIOH(3-9) */
@@ -89,7 +89,7 @@ WRITE_CBUS_REG(PREG_ETHERNET_ADDR0, eth_reg0.d32);// rgmii mode
 }
 
 int board_eth_init(bd_t *bis)
-{   	
+{
     setup_net_chip();
     udelay(1000);
 	extern int aml_eth_init(bd_t *bis);
@@ -100,7 +100,7 @@ int board_eth_init(bd_t *bis)
 
 u32 get_board_rev(void)
 {
- 
+
 	return 0x20;
 }
 
@@ -109,15 +109,15 @@ u32 get_board_rev(void)
 #include <asm/arch/sdio.h>
 static int  sdio_init(unsigned port)
 {
-    switch(port)
+    switch (port)
     {
         case SDIO_PORT_A:
             break;
         case SDIO_PORT_B:
-            //todo add card detect 	
+            //todo add card detect
             setbits_le32(P_PREG_PAD_GPIO5_EN_N,1<<29);//CARD_6
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             //enable pull up
             clrbits_le32(P_PAD_PULL_UP_REG3, 0xff<<0);
             break;
@@ -136,30 +136,30 @@ static int  sdio_init(unsigned port)
 
 extern unsigned sdio_debug_1bit_flag;
 static int  sdio_detect(unsigned port)
-{	
+{
     int ret;
-    switch(port)
+    switch (port)
     {
         case SDIO_PORT_A:
             break;
         case SDIO_PORT_B:
             setbits_le32(P_PREG_PAD_GPIO2_EN_N,1<<26);//CARD_6
            ret=readl(P_PREG_PAD_GPIO2_I)&(1<<26)?0:1;
-            	
-			if((readl(P_PERIPHS_PIN_MUX_8)&(3<<9))){ //if uart pinmux set, debug board in
-				if(!(readl(P_PREG_PAD_GPIO2_I)&(1<<24))){
-					printf("sdio debug board detected, sd card with 1bit mode\n");
-		 			sdio_debug_1bit_flag = 1;
-		 		}
-		 		else{ 
-		 			printf("sdio debug board detected, no sd card in\n");
-		 			sdio_debug_1bit_flag = 0;
-		 			return 1;
-		 		}
-		 	}
-		 	
+
+        if ((readl(P_PERIPHS_PIN_MUX_8)&(3<<9))) { //if uart pinmux set, debug board in
+            if (!(readl(P_PREG_PAD_GPIO2_I)&(1<<24))) {
+                printf("sdio debug board detected, sd card with 1bit mode\n");
+                sdio_debug_1bit_flag = 1;
+            }
+            else {
+                printf("sdio debug board detected, no sd card in\n");
+                sdio_debug_1bit_flag = 0;
+                return 1;
+            }
+        }
+
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             break;
         case SDIO_PORT_XC_A:
             break;
@@ -183,7 +183,7 @@ static void sdio_pwr_prepare(unsigned port)
 
 static void sdio_pwr_on(unsigned port)
 {
-    switch(port)
+    switch (port)
     {
         case SDIO_PORT_A:
             break;
@@ -192,7 +192,7 @@ static void sdio_pwr_on(unsigned port)
             clrbits_le32(P_PREG_PAD_GPIO5_EN_N,(1<<31));
 			/// @todo NOT FINISH
             break;
-        case SDIO_PORT_C:    	
+        case SDIO_PORT_C:
             break;
         case SDIO_PORT_XC_A:
             break;
@@ -208,7 +208,7 @@ static void sdio_pwr_on(unsigned port)
 static void sdio_pwr_off(unsigned port)
 {
     /// @todo NOT FINISH
-    switch(port)
+    switch (port)
     {
         case SDIO_PORT_A:
             break;
@@ -234,9 +234,9 @@ static void sdio_pwr_off(unsigned port)
 static void board_mmc_register(unsigned port)
 {
     struct aml_card_sd_info *aml_priv=cpu_sdio_get(port);
-    
+
     struct mmc *mmc = (struct mmc *)malloc(sizeof(struct mmc));
-    if(aml_priv==NULL||mmc==NULL)
+    if (aml_priv == NULL || mmc == NULL)
         return;
     memset(mmc,0,sizeof(*mmc));
     aml_priv->sdio_init=sdio_init;
@@ -244,7 +244,7 @@ static void board_mmc_register(unsigned port)
 	aml_priv->sdio_pwr_off=sdio_pwr_off;
 	aml_priv->sdio_pwr_on=sdio_pwr_on;
 	aml_priv->sdio_pwr_prepare=sdio_pwr_prepare;
-    
+
 // #ifdef CONFIG_TSD
     // // if(mmc->block_dev.dev > 0)//tsd
           // mmc->block_dev.if_type = IF_TYPE_SD;
@@ -255,7 +255,7 @@ static void board_mmc_register(unsigned port)
 
 	sdio_register(mmc, aml_priv);
 
-#if 0    
+#if 0
     strncpy(mmc->name,aml_priv->name,31);
     mmc->priv = aml_priv;
 	aml_priv->removed_flag = 1;
@@ -277,7 +277,7 @@ static void board_mmc_register(unsigned port)
 	mmc->f_min = 200000;
 	mmc->f_max = 50000000;
 	mmc_register(mmc);
-#endif	
+#endif
 }
 int board_mmc_init(bd_t	*bis)
 {
@@ -300,7 +300,7 @@ int board_mmc_init(bd_t	*bis)
 extern void hdmi_tx_power_init(void);
 void hdmi_tx_power_init(void)
 {
-    // 
+    //
     printf("hdmi tx power init\n");
 }
 #endif
@@ -334,12 +334,12 @@ int board_init(void)
 {
 	gd->bd->bi_arch_number=MACH_TYPE_MESON6_SKT;
 	gd->bd->bi_boot_params=BOOT_PARAMS_OFFSET;
-#if CONFIG_JERRY_NAND_TEST //temp test	
+#if CONFIG_JERRY_NAND_TEST //temp test
     nand_init();
-    
-#endif    
-    
-#ifdef CONFIG_AML_I2C  
+
+#endif
+
+#ifdef CONFIG_AML_I2C
 	board_i2c_init();
 #endif /*CONFIG_AML_I2C*/
 #ifdef CONFIG_IR_REMOTE
@@ -398,7 +398,7 @@ static struct aml_nand_platform aml_nand_mid_platform[] = {
         .T_REA = 20,
         .T_RHOH = 15,
     }
-    
+
 };
 
 struct aml_nand_device aml_nand_mid_device = {
@@ -417,25 +417,25 @@ static int do_msr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	int nIndex = 0;
 	int nCounter = 64;
-	
-	if( 2 == argc)
+
+	if ( 2 == argc)
 	{
 		cmd = argv[1];
 		char *endp;
 		nIndex = simple_strtoul(argv[1], &endp, 10);
-		if(nIndex < 0 || nIndex > 63)
+		if (nIndex < 0 || nIndex > 63)
 			goto usage;
 		nCounter = 1;
-	}	
-	
+	}
+
 	extern unsigned long    clk_util_clk_msr(unsigned long clk_mux);
 
 	//printf("\n");
-	for(;((nIndex < 64) && nCounter);nCounter--,nIndex++)
+	for (;((nIndex < 64) && nCounter);nCounter--,nIndex++)
 		printf("MSR clock[%d] = %dMHz\n",nIndex,(int)clk_util_clk_msr(nIndex));
 
 	return 0;
-	
+
 usage:
 	return cmd_usage(cmdtp);
 }
@@ -449,7 +449,7 @@ U_BOOT_CMD(
 
 #ifdef CONFIG_SARADC
 #include <asm/saradc.h>
-/*following key value are test with board 
+/*following key value are test with board
   [M6_SKT_V_1.0 20120112]
   ref doc:
   1. M6_SKT_V1.pdf
@@ -458,42 +458,42 @@ U_BOOT_CMD(
 /*following is test code to test ADC & key pad*/
 static int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	if(argc > 2)
+	if (argc > 2)
 		goto usage;
-	
+
 	u32 nDelay = 0xffff;
 	int nKeyVal = 0;
 	int nCnt = 0;
 	char *endp;
 	int nMaxCnt;
 	int adc_chan = 0; //m8 adc channel 0;m6 adc channel 4
-	if(2 == argc)
+	if (2 == argc)
 		nMaxCnt	= simple_strtoul(argv[1], &endp, 10);
 	else
 		nMaxCnt = 10;
 
 	saradc_enable();
-	while(nCnt < nMaxCnt)
+	while (nCnt < nMaxCnt)
 	{
 		udelay(nDelay);
 		nKeyVal = get_adc_sample(adc_chan);
-		if(nKeyVal > 1021)
+		if (nKeyVal > 1021)
 			continue;
-		
+
 		printf("SARADC CH-4 Get key : %d [%d]\n", nKeyVal,(100*nKeyVal)/1024);
 		nCnt++;
 	}
 	saradc_disable();
 
 	return 0;
-	
+
 usage:
 	return cmd_usage(cmdtp);
 }
 
 U_BOOT_CMD(
 	adc,	2,	1,	do_adc,
-	"M6 ADC test",		
+	"M6 ADC test",
 	"[times] -  read `times' adc key through channel-4, default to read 10 times\n"
 	"		10bit ADC. key value: min=0; max=1024\n"
 	"		SKT BOARD #20: Key1=13 Key2=149 key3=274 key4=393 key5=514\n"
