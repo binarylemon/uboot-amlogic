@@ -118,7 +118,49 @@ error_exit:
 	return ret;
 }
 
+static void mircon_check_l0l3_mode (struct amlnand_chip *aml_chip)
+{
+	struct hw_controller *controller = &(aml_chip->controller);
+	struct chip_operation *operation = &(aml_chip->operation);
+	struct en_slc_info *slc_info = &(controller->slc_info);
+	struct nand_flash *flash = &(aml_chip->flash);
+	unsigned char rand_val[4] ={0, 0, 0, 0};
+	const int slc_addr = 0x92;
+	aml_nand_msg("probe: mircon_check_l0l3_mode");
+	slc_info->mircon_l0l3_mode = 0;
+	if (flash->new_type == MICRON_20NM) {
 
+		operation->get_onfi_para(aml_chip, rand_val, slc_addr);
+		aml_nand_msg("%s, %d,val:%d",__func__, __LINE__, rand_val[0]);
+		if (rand_val[0] == 1)
+		{
+			rand_val[0] = 0;
+			operation->set_onfi_para(aml_chip, rand_val, slc_addr);
+			operation->get_onfi_para(aml_chip, rand_val, slc_addr);
+			aml_nand_msg("%s, %d,val:%d",__func__, __LINE__, rand_val[0]);
+			if (rand_val[0] == 0) {
+				slc_info->mircon_l0l3_mode = 1;
+			}
+			rand_val[0] = 1;
+			operation->set_onfi_para(aml_chip, rand_val, slc_addr);
+			operation->get_onfi_para(aml_chip, rand_val, slc_addr);
+			aml_nand_msg("%s, %d,val:%d",__func__, __LINE__, rand_val[0]);
+		}
+		else if (rand_val[0] == 0)
+		{
+			rand_val[0] = 1;
+			operation->set_onfi_para(aml_chip, rand_val, slc_addr);
+			operation->get_onfi_para(aml_chip, rand_val, slc_addr);
+			aml_nand_msg("%s, %d,val:%d",__func__, __LINE__, rand_val[0]);
+			if (rand_val[0] == 1) {
+				slc_info->mircon_l0l3_mode = 1;
+			}
+		}
+
+		if (slc_info->mircon_l0l3_mode)
+			aml_nand_msg("nand: Support L0L3 MODE");
+	}
+}
 /*
   * fill amlnand_chip struct.
   * including chip partnum detect and multi-chip num detect function.
@@ -190,7 +232,10 @@ static int amlnand_chip_scan(struct amlnand_chip *aml_chip)
 			aml_nand_msg("onfi timing mode set failed: %x", onfi_features[0]);		
 		}
 	}
-#endif	
+#endif
+
+	mircon_check_l0l3_mode(aml_chip);
+
 	ret = NAND_SUCCESS;
 	
 error_exit0:

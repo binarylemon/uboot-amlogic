@@ -398,7 +398,8 @@ void get_sys_clk_rate(int * rate)
 	struct nand_flash *flash = &(aml_chip->flash);
 	//struct phydev_ops *devops = &(phydev->ops);
 	struct hw_controller *controller = &(aml_chip->controller); 
-	
+	struct en_slc_info *slc_info = &(controller->slc_info);
+
 	unsigned en_slc,configure_data, pages_per_blk; 
 	int chip_num=1, nand_read_info, new_nand_type;
 
@@ -407,7 +408,8 @@ void get_sys_clk_rate(int * rate)
 	//en_slc = (( flash->new_type < 10)&&( flash->new_type))? 1:0;
 	configure_data = NFC_CMD_N2M(controller->ran_mode, controller->bch_mode, 0, (controller->ecc_unit >> 3), controller->ecc_steps);	
 
-    if(( flash->new_type < 10)&&( flash->new_type)){
+    if (( flash->new_type < 10) && ( flash->new_type ||
+		(slc_info->mircon_l0l3_mode == 1))){
         en_slc = 1;
     }
     else if(flash->new_type == SANDISK_19NM){
@@ -419,7 +421,6 @@ void get_sys_clk_rate(int * rate)
         
 #ifdef CONFIG_NAND_AML_M8
 	int i;
-	struct en_slc_info *slc_info = &(controller->slc_info);
 	memset(page0_buf, 0x0, flash->pagesize);
 
 	struct nand_page0_cfg_t *info_cfg = (struct nand_page0_cfg_t *)page0_buf;
@@ -453,6 +454,10 @@ void get_sys_clk_rate(int * rate)
 	info->nand_read_info = nand_read_info;
 	info->pages_in_block = pages_per_blk;
 	info->new_nand_type = new_nand_type;
+	if (slc_info->mircon_l0l3_mode == 1)
+		info->new_nand_type |= (1<<31);/* mircon l0l3 type mode*/
+	printk("new_type = 0x%x\n", info->new_nand_type);
+	printk("pages_in_block = 0x%x\n", info->pages_in_block);
 #else
 
 	memset(page0_buf, 0xbb, flash->pagesize);

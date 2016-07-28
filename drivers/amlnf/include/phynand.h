@@ -435,6 +435,7 @@ struct en_slc_info {
 	unsigned char	reg_addr[EN_SLC_REG_NUM];
 	unsigned char	reg_def_val[MAX_CHIP_NUM][EN_SLC_REG_NUM];
 	char	reg_offs_val[EN_SLC_REG_NUM];
+	int mircon_l0l3_mode; /*mark micon L0_L3 mode*/
 	int (*init)(struct hw_controller *controller);
 	int (*enter)(struct hw_controller *controller);
 	int (*exit)(struct hw_controller *controller);

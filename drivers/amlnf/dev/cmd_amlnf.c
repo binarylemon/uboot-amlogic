@@ -265,6 +265,134 @@ static void show_nand_bbt_info(struct amlnand_chip *aml_chip)
     printk("\nshow end ---\n");
 }
 
+static int is_rand_page(struct amlnand_chip *aml_chip, unsigned char page)
+{
+    struct hw_controller *controller = &(aml_chip->controller);
+    struct en_slc_info *slc_info = &(controller->slc_info);
+    struct nand_flash *flash = &(aml_chip->flash);
+    int i;
+    unsigned char *pbuf = slc_info->pagelist;
+
+	if (slc_info->mircon_l0l3_mode == 1 || flash->new_type == HYNIX_1YNM ) {
+		for (i=0;i<128;i++) {
+            aml_nand_dbg("pbuf[i]:%x,page:%x",pbuf[i],page);
+			if (pbuf[i] == page)
+                return 0;
+			if (pbuf[i] > page)
+                return 1;
+        }
+    }
+    return 0;
+}
+static int amlnf_dump_phy_page(unsigned int page_addr, unsigned char *buf)
+{
+    int ret =0;
+    struct amlnand_chip *aml_chip = aml_nand_chip;
+    struct hw_controller *controller = &(aml_chip->controller);
+    struct chip_operation *operation = &(aml_chip->operation);
+    struct chip_ops_para *ops_para = &(aml_chip->ops_para);
+    struct nand_flash *flash = &(aml_chip->flash);
+    struct en_slc_info *slc_info = &(controller->slc_info);
+    struct amlnand_phydev * phy_dev;
+    unsigned char phys_erase_shift, phys_page_shift,temp_rand,temp_bch;
+    unsigned int page_off_set, chip_pages,i ,j, buf_len,pages_per_blk;
+    uint64_t chip_size;
+    unsigned char rand_val[4] ={0, 0, 0, 0};
+    const int slc_addr = 0x92;
+	if (aml_chip == NULL) {
+        aml_nand_msg("Pls run \"amlnf init 0\" ");
+        return -1;
+    }
+    phys_erase_shift = ffs(flash->blocksize) - 1;
+    phys_page_shift =  ffs(flash->pagesize) - 1;
+    pages_per_blk = (1 << (phys_erase_shift -phys_page_shift));
+    chip_size = ((uint64_t)(flash->chipsize*controller->chip_num))<<20;
+    chip_pages = (unsigned int)(chip_size >> phys_page_shift);
+	if (page_addr >= chip_pages) {
+        aml_nand_msg("Pls the page addr error, eg. page_addr < %d", chip_pages);
+        return -1;
+    }
+    phy_dev = aml_phy_get_dev(NAND_CODE_NAME);
+	if (phy_dev == NULL)
+        page_off_set = 1024;
+    else{
+        page_off_set = phy_dev->offset >> phys_page_shift;
+    }
+    aml_nand_msg("page_off_set:%x", page_off_set);
+
+    memset((unsigned char *)ops_para, 0x0, sizeof(struct chip_ops_para));
+	if (page_addr < page_off_set) {
+		if (((flash->new_type) && (flash->new_type < 10)) ||\
+            (flash->new_type == SANDISK_19NM) ||
+            (page_addr <1024 && slc_info->mircon_l0l3_mode ==1)){
+            ops_para->option |= DEV_SLC_MODE;
+        }
+    }
+    ops_para->option |= DEV_MULTI_CHIP_MODE;
+    ops_para->page_addr = page_addr;
+	if (buf)
+        ops_para->data_buf = buf;
+    else
+        ops_para->data_buf = aml_chip->user_page_buf;
+
+    temp_rand = controller->ran_mode;
+    temp_bch = controller->bch_mode;
+    controller->bch_mode = NAND_ECC_NONE;
+
+	if ((ops_para->option & DEV_SLC_MODE)) {
+		if (flash->new_type != HYNIX_1YNM && flash->new_type != MICRON_20NM) {
+			if (((flash->new_type > 0) && (flash->new_type < 10))) {
+                ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1)))\
+                    |(slc_info->pagelist[(ops_para->page_addr>>1) % 256]);
+            }
+			if (flash->new_type == SANDISK_19NM) {
+                ops_para->page_addr = (ops_para->page_addr & (~(pages_per_blk -1)))\
+                                |((ops_para->page_addr % pages_per_blk) << 1);
+            }
+        }
+		if (is_rand_page(aml_chip, ops_para->page_addr % pages_per_blk))
+            controller->ran_mode = 0;
+    }
+
+    aml_nand_msg("ops_para->page_addr:%x rand:%d, pages_per_blk:%d",
+        ops_para->page_addr, controller->ran_mode, pages_per_blk);
+
+    ops_para->chipnr = 0;
+    controller->select_chip(controller, ops_para->chipnr );
+    nand_get_chip();
+    rand_val[0] = 0;
+	if (flash->new_type == MICRON_20NM && controller->ran_mode == 0)
+        operation->set_onfi_para(aml_chip, rand_val, slc_addr);
+    ret = operation->read_page(aml_chip);
+    rand_val[0] = 1;
+	if (flash->new_type == MICRON_20NM && controller->ran_mode == 0)
+        operation->set_onfi_para(aml_chip, rand_val, slc_addr);
+    nand_release_chip();
+    controller->ran_mode = temp_rand;
+    controller->bch_mode = temp_bch;
+	if (!buf) {
+        aml_nand_msg("dump page :%08x", page_addr);
+		if (!ret) {
+            buf_len = flash->pagesize + flash->oobsize;
+            buf_len *= controller->chip_num;
+			for (i=0; i< (unsigned int)(controller->chip_num); i++) {
+                printk("chip_num:%02d",i);
+				for (j=0; j<(buf_len); j++) {
+                //for(j=0; j<(buf_len>>2); j++){
+					if (j%16 == 0)
+                        printk("\n%08x: ", j);
+                    printk("%02x ", ops_para->data_buf[j]);
+                }
+                printk("\n");
+            }
+        }
+        else{
+            aml_nand_msg("dump page :%08x error", page_addr);
+        }
+    }
+    return ret;
+}
+
 int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	struct amlnand_phydev *phydev = NULL;
@@ -284,7 +412,7 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
     nand_arg_info  *nand_bbtinfo = &aml_chip->nand_bbtinfo;
     struct nand_flash *flash = &aml_chip->flash;
     unsigned  erasesize;
-
+    unsigned long dump_page_addr = 0, mem_addr;
 	/* at least two arguments please */
 	if (argc < 1)
 		goto usage;
@@ -949,6 +1077,26 @@ int do_amlnfphy(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 				return -1;
 			}
 		}
+		return 0;
+	}
+	if (strcmp(cmd, "raw_dump") == 0) {
+		if (argc < 3) {
+			goto usage;
+		}
+
+		if (!(str2long(argv[2], (unsigned long*)&dump_page_addr))) {
+			aml_nand_msg("'%s' is not a number", argv[2]);
+			goto usage;
+		}
+		mem_addr = 0;
+		if (argc >= 4) {
+			if (!(str2long(argv[3], (unsigned long*)&mem_addr))) {
+				aml_nand_msg("'%s' is not a number", argv[3]);
+				goto usage;
+			}
+		}
+		amlnf_dump_phy_page(dump_page_addr,(unsigned char *)mem_addr);
+
 		return 0;
 	}
 usage:
