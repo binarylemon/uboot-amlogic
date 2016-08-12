@@ -7,7 +7,7 @@ extern int amlnand_save_info_by_name(struct amlnand_chip *aml_chip, unsigned cha
 extern int aml_sys_info_error_handle(struct amlnand_chip *aml_chip);
 extern int aml_sys_info_init(struct amlnand_chip *aml_chip);
 extern int aml_nand_update_ubootenv(struct amlnand_chip *aml_chip, char *env_ptr);
-extern int amlnand_get_partition_table(void);
+extern int amlnand_get_partition_table(struct amlnand_chip *aml_chip);
 
 #ifdef AML_NAND_UBOOT
 /* extern struct amlnf_partition amlnand_config; */
@@ -2055,39 +2055,69 @@ static void init_dev_para(struct dev_para*dev_para_ptr, struct amlnf_partition *
 }
 static void amlnand_get_dev_num(struct amlnand_chip *aml_chip, struct amlnf_partition *config_init)
 {
-    /* struct dev_para *dev_para = NULL; */
     struct dev_para*dev_para_ptr = NULL;
-    /* struct amlnf_partition *partition = NULL; */
-    /* struct amlnf_partition * partition_ptr =NULL; */
-    /* int j, i,k,tmp_num=0,partiton_num=0,dev_num=0,ret=0; */
     int i, tmp_num = 0;
-    int device_num = PHY_DEV_NUM;
+    int device_num;
+    int dev_flag;
+    u32 option;
+
+    device_num = (aml_chip->h_cache_dev)? 3 : 2;
 
     if (boot_device_flag == 1) {
         memcpy((void *)(aml_chip->config_ptr->dev_para[tmp_num].name), NAND_BOOT_NAME, strlen(NAND_BOOT_NAME));
         aml_chip->config_ptr->dev_para[tmp_num].nr_partitions = 0;
         aml_chip->config_ptr->dev_para[tmp_num].option = 0;
         tmp_num++;
-        device_num = PHY_DEV_NUM + 1;
+        device_num += 1;
     }
     aml_chip->config_ptr->dev_num = device_num;
 
     for (i = 0; tmp_num < device_num; tmp_num++, i++) {
         dev_para_ptr = &(aml_chip->config_ptr->dev_para[tmp_num]);
         if (i == 0) {
-            memcpy((void *)(dev_para_ptr->name), NAND_CACHE_NAME, strlen(NAND_CACHE_NAME));
-            init_dev_para(dev_para_ptr, config_init, STORE_CACHE);
-            dev_para_ptr->option = NAND_DATA_OPTION;
+			if (aml_chip->h_cache_dev) {
+                memcpy((void *)(dev_para_ptr->name),
+                    NAND_CACHE_NAME,
+                    strlen(NAND_CACHE_NAME));
+                dev_flag = STORE_CACHE;
+                option = NAND_DATA_OPTION;
+            } else {
+                memcpy((void *)(dev_para_ptr->name),
+                    NAND_CODE_NAME,
+                    strlen(NAND_CODE_NAME));
+                dev_flag = STORE_CODE;
+                option = NAND_CODE_OPTION;
+            }
+            init_dev_para(dev_para_ptr, config_init, dev_flag);
+            dev_para_ptr->option = option;
         } else if (i == 1) {
-            memcpy((void *)(dev_para_ptr->name), NAND_CODE_NAME, strlen(NAND_CODE_NAME));
-            init_dev_para(dev_para_ptr, config_init, STORE_CODE);
-            dev_para_ptr->option = NAND_CODE_OPTION;
+			if (aml_chip->h_cache_dev) {
+                memcpy((void *)(dev_para_ptr->name),
+                    NAND_CODE_NAME,
+                    strlen(NAND_CODE_NAME));
+                dev_flag = STORE_CODE;
+                option = NAND_CODE_OPTION;
+            } else {
+                memcpy((void *)(dev_para_ptr->name),
+                    NAND_DATA_NAME,
+                    strlen(NAND_DATA_NAME));
+                dev_flag = STORE_DATA;
+                option = NAND_DATA_OPTION;
+            }
+            init_dev_para(dev_para_ptr, config_init, dev_flag);
+            dev_para_ptr->option = option;
         } else if (i == 2) {
-            memcpy((void *)(dev_para_ptr->name), NAND_DATA_NAME, strlen(NAND_DATA_NAME));
-            init_dev_para(dev_para_ptr, config_init, STORE_DATA);
-            dev_para_ptr->option = NAND_DATA_OPTION;
+			if (aml_chip->h_cache_dev) {
+                memcpy((void *)(dev_para_ptr->name),
+                    NAND_DATA_NAME,
+                    strlen(NAND_DATA_NAME));
+                dev_flag = STORE_DATA;
+                option = NAND_DATA_OPTION;
+                init_dev_para(dev_para_ptr, config_init, dev_flag);
+                dev_para_ptr->option = option;
+            }
         } else {
-            aml_nand_msg("amlnand_get_dev_num : something wrong here!!");
+            aml_nand_msg("%s : something wrong here!!", __func__);
             break;
         }
     }
@@ -2106,19 +2136,24 @@ int amlnand_configs_confirm(struct amlnand_chip *aml_chip)
     struct dev_para *dev_para_cmp = NULL;
     unsigned char  confirm_flag = 0;
     int i, tmp_num = 0, ret = 0;
-    int device_num = PHY_DEV_NUM;
+    int device_num;
+
+    device_num = (aml_chip->h_cache_dev)? 3 : 2;
 
     ret = phrase_driver_version(config_ptr->driver_version, DRV_PHY_VERSION);
     if (ret) {
-        aml_nand_msg("driver_version in nand  %d.%02d.%03d.%04d ", (config_ptr->driver_version >> 24)&0xff,
-        (config_ptr->driver_version >> 16)&0xff, (config_ptr->driver_version >> 8)&0xff, (config_ptr->driver_version)&0xff);
+        aml_nand_msg("driver_version in nand  %d.%02d.%03d.%04d ",
+        (config_ptr->driver_version >> 24)&0xff,
+        (config_ptr->driver_version >> 16)&0xff,
+        (config_ptr->driver_version >> 8)&0xff,
+        (config_ptr->driver_version)&0xff);
         /* confirm_flag = 1; */
     }
 
 
     if (boot_device_flag == 1) {
         tmp_num++;
-        device_num = PHY_DEV_NUM + 1;
+        device_num += 1;
     }
 
     /* check device num */
@@ -2131,25 +2166,44 @@ int amlnand_configs_confirm(struct amlnand_chip *aml_chip)
     for (i = 0; tmp_num < device_num; tmp_num++, i++) {
         dev_para_cmp = &(aml_chip->config_ptr->dev_para[tmp_num]);
         if (i == 0) {
-            ret = confirm_dev_para(dev_para_cmp, configs_init, STORE_CACHE);
+			if (aml_chip->h_cache_dev)
+                ret = confirm_dev_para(dev_para_cmp,
+                    configs_init, STORE_CACHE);
+            else
+                    ret = confirm_dev_para(dev_para_cmp,
+                        configs_init, STORE_CODE);
             if (ret) {
                 confirm_flag = 1;
                 break;
             }
         } else if (i == 1) {
-            ret = confirm_dev_para(dev_para_cmp, configs_init, STORE_CODE);
+			if (aml_chip->h_cache_dev)
+                ret = confirm_dev_para(dev_para_cmp,
+                    configs_init, STORE_CODE);
+            else
+                ret = confirm_dev_para(dev_para_cmp,
+                    configs_init, STORE_DATA);
             if (ret) {
                 confirm_flag = 1;
                 break;
             }
         } else if (i == 2) {
-            ret = confirm_dev_para(dev_para_cmp, configs_init, STORE_DATA);
-            if (ret) {
+			if (aml_chip->h_cache_dev) {
+                ret = confirm_dev_para(dev_para_cmp,
+                    configs_init, STORE_DATA);
+				if (ret) {
+                    confirm_flag = 1;
+                    break;
+                }
+            } else {
+                aml_nand_msg("%s %d: something wrong here!!",
+                    __func__, __LINE__);
                 confirm_flag = 1;
                 break;
             }
         } else {
-            aml_nand_msg("amlnand_get_dev_num : something wrong here!!");
+            aml_nand_msg("%s %d : something wrong here!!",
+                    __func__, __LINE__);
             confirm_flag = 1;
             break;
         }
@@ -2641,8 +2695,9 @@ int aml_nand_scan_hynix_info(struct amlnand_chip *aml_chip)
                 if (((controller->mfr_type == NAND_MFR_SAMSUNG) && ((col0_oob != 0xFF) || (col0_data != 0xFF))) \
                     || ((controller->mfr_type == NAND_MFR_TOSHIBA) && ((col0_oob != 0xFF) || (col0_data != 0xFF))) \
                     ||((controller->mfr_type  == NAND_MFR_MICRON ) && ((col0_oob == 0x0))) \
- || ((controller->mfr_type  == NAND_MFR_HYNIX) && (col0_oob != 0xFF)) \
- || ((controller->mfr_type  == NAND_MFR_SANDISK) && (col0_oob != 0xFF))) {
+                    || ((controller->mfr_type  == NAND_MFR_HYNIX) && (col0_oob != 0xFF)) \
+                    || ((controller->mfr_type  == NAND_MFR_SANDISK) && (col0_oob != 0xFF))
+                    ||((controller->mfr_type  == NAND_MFR_WINBOND ) && (col0_oob != 0xFF))) {
 
                     col0_oob = 0xff;
                     aml_nand_msg("mfr_type:%x detect factory Bad block at read_cnt:%d and block:%d and chip:%d", \
@@ -3286,7 +3341,7 @@ int amlnand_get_dev_configs(struct amlnand_chip *aml_chip)
 
 #ifdef AML_NAND_UBOOT
 
-    ret = amlnand_get_partition_table();
+    ret = amlnand_get_partition_table(aml_chip);
     if (ret < 0) {
         aml_nand_msg("nand malloc buf failed");
         goto exit_error0;

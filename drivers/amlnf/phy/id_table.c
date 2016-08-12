@@ -16,28 +16,6 @@
 
 #ifdef AML_SLC_NAND_SUPPORT
 struct nand_flash flash_ids_slc[] = {
-
-/***for SLC nand***/
-	{"NAND 128MiB 3,3V 8-bit",	{0, 0x79}, 512, 128, 0x4000, 0, 0, 0},
-
-
-	{"NAND 256MiB 3,3V 8-bit",	{0, 0x71}, 512, 256, 0x4000, 0, 0, 0},
-
-	/*512 Megabit */
-	{"NAND 64MiB 3,3V 8-bit",	{0, 0xF2}, 0,  64, 0, 0, 0, 0},
-
-	/* 1 Gigabit */
-	{"NAND 128MiB 3,3V 8-bit",	{0, 0xF1}, 0, 128, 0, 0, 0, 0},
-
-	/* 2 Gigabit */
-	{"NAND 256MiB 3,3V 8-bit",	{0, 0xDA}, 0, 256, 0, 0, 0, 0},
-
-	/* 4 Gigabit */
-	{"NAND 512MiB 3,3V 8-bit",	{0, 0xDC}, 0, 512, 0, 0, 0, 0},
-
-	/* 8 Gigabit */
-	{"NAND 1GiB 3,3V 8-bit",		{0, 0xD3}, 0, 1024, 0, 0, 0, 0},
-
 	{NULL,}
 };
 #endif
@@ -73,6 +51,12 @@ struct nand_flash flash_ids_mlc[] = {
 	{"C revision NAND 4GiB MT29F32G-C", {NAND_MFR_MICRON, 0x68, 0x04, 0x4a, 0xa9}, 4096, 4096, 0x100000, 224, 1, 16, 15, 5, 0, NAND_MULTI_PLANE_MODE},
 	{"C revision NAND 8GiB MT29F64G-C", {NAND_MFR_MICRON, 0x88, 0x04, 0x4b, 0xa9}, 8192, 8192, 0x200000, 448, 1, 16, 15, 5, 0, NAND_MULTI_PLANE_MODE},
 	{"C revision NAND 32GiB MT29F256G-C", {NAND_MFR_MICRON, 0xa8, 0x05, 0xcb, 0xa9}, 8192, 16384, 0x200000, 448, 2, 16, 15, 5, 0, NAND_MULTI_PLANE_MODE},
+	{"Micron SLC 512MiB 1,8V 8-bit",	{NAND_MFR_MICRON, 0xac, 0x90, 0x26, 0x54}, 4096, 512, 0x40000, 116, 1, 16, 15, 0, 0, 0},
+	{"EMST SLC   512MiB 1.8V 8-bit",	{0xc8, 0xac, 0x90, 0x15, 0x54}, 2048, 512, 0x20000, 64, 1, 16, 15, 0, 0, 0},
+	{"Toshiba SLC   512MiB 1.8V 8-bit",	{0x98, 0xac, 0x90, 0x26, 0x76}, 4096, 512, 0x40000, 116, 1, 16, 15, 0, 0, 0},	//
+	{"Toshiba SLC   512MiB 3.3V 8-bit",	{0x98, 0xdc, 0x90, 0x26, 0x76}, 4096, 512, 0x40000, 116, 1, 16, 15, 0, 0, 0},	//
+	{"Toshiba SLC   256MiB 3.3V 8-bit",	{0x98, 0xda, 0x90, 0x15, 0x76}, 2048, 256, 0x20000, 64, 1, 16, 15, 0, 0, 0},	//
+	{"Winbond SLC   256MiB 3.3V 8-bit",	{NAND_MFR_WINBOND, 0xda, 0x90, 0x95, 0x04}, 2048, 256, 0x20000, 64, 1, 16, 15, 0, 0, 0},	//
 
 	{"1 Generation NAND 4GiB JS29F32G08AA-1", {NAND_MFR_INTEL, 0x68, 0x04, 0x46, 0xA9}, 4096, 4096, 0x100000, 218, 1, 20, 15, 0, 0, NAND_MULTI_PLANE_MODE},
 	{"1 Generation NAND 8GiB JS29F64G08AA-1", {NAND_MFR_INTEL, 0x88, 0x24, 0x4b, 0xA9}, 8192, 8192, 0x200000, 448, 1, 20, 15, 0, 0, NAND_MULTI_PLANE_MODE},
@@ -97,6 +81,7 @@ struct nand_flash flash_ids_mlc[] = {
 	{"A serials NAND 16GiB TC58TEG7DDLTA00 ", {NAND_MFR_TOSHIBA, 0x3A, 0x94, 0x93, 0x76, 0x51}, 16384, 16384, 0x400000, 1280, 1, 20, 25, 0, TOSHIBA_15NM, NAND_MULTI_PLANE_MODE },
 #endif
 #ifdef NEW_NAND_SUPPORT
+
 	{"A serials NAND 8GiB SDTNQGAMA-008G ", {NAND_MFR_SANDISK, 0xDE, 0x94, 0x93, 0x76, 0x57}, 16384, 8192, 0x400000, 1280, 1, 20, 25, 0, SANDISK_19NM, NAND_MULTI_PLANE_MODE},
 	{"A serials NAND 4GiB SDTNQGAMA-004G ", {NAND_MFR_SANDISK, 0xD7, 0x84, 0x93, 0x72, 0x57}, 16384, 4096, 0x400000, 1280, 1, 20, 25, 0, SANDISK_19NM, 0},
 	{"A serials NAND 8GiB SDTNPMAHEM-008G ", {NAND_MFR_SANDISK, 0xDE, 0xA4, 0x82, 0x76, 0x56}, 8192, 8192, 0x200000, 640, 1, 20, 25, 0, SANDISK_24NM, 0},

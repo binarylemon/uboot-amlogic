@@ -95,6 +95,7 @@ typedef union nand_core_clk {
 #define NAND_MFR_AMD				0x01
 #define NAND_MFR_INTEL				0x89
 #define NAND_MFR_SANDISK			0x45
+#define NAND_MFR_WINBOND			0xef
 
 
 /***nand runing status***/
@@ -750,6 +751,8 @@ struct amlnand_chip {
 	unsigned char  protect;
 	unsigned char debug_flag;
 	unsigned char shipped_retry_flag; /* do factory bad block detect less than 2 times*/
+
+	u32 h_cache_dev;
 };
 
 extern struct nand_flash flash_ids_slc[];
