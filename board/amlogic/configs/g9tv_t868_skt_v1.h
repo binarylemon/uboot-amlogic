@@ -5,7 +5,7 @@
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 #define CONFIG_POWER_SPL
-#define CONFIG_PWM_VDDEE_VOLTAGE            1050   //VDDEE voltage when boot, must have
+#define CONFIG_PWM_VDDEE_VOLTAGE            1070   //VDDEE voltage when boot, must have
 #define PWM_F                               6
 #define CONFIG_VDDEE_PWM                    PWM_F
 
@@ -31,9 +31,9 @@
 //Enable HDMI Tx
 //#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
-//#define CONFIG_VIDEO_AMLLCD
-//#define CONFIG_VIDEO_AMLLCD_TV
-//#define LCD_BPP LCD_COLOR16
+#define CONFIG_VIDEO_AMLLCD
+#define CONFIG_VIDEO_AMLLCD_TV
+#define LCD_BPP LCD_COLOR16
 
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
@@ -58,8 +58,11 @@
 #define CONFIG_CMD_NAND  1
 #define CONFIG_VIDEO_AML 1
 #define CONFIG_CMD_BMP 1
-#define CONFIG_VIDEO_AMLTVOUT 1
-#define CONFIG_AML_HDMI_TX 1
+//#define CONFIG_VIDEO_AMLTVOUT 1
+//#define CONFIG_AML_HDMI_TX 1
+#define CONFIG_OSD_SCALE_ENABLE 1
+#define CONFIG_OSD_SUPERSCALE_ENABLE 1
+
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -73,7 +76,7 @@
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
-#define CONFIG_SUSPEN_NO_INIT_LCD
+//#define CONFIG_SUSPEN_NO_INIT_LCD
 //#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
@@ -138,7 +141,7 @@
 #define CONFIG_BOOTDELAY	1
 #define CONFIG_BOOTFILE		boot.img
 
-#define CONFIG_NO_LCD_INIT_IN_BOARDC	1
+//#define CONFIG_NO_LCD_INIT_IN_BOARDC	1
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"ubootversion=" U_BOOT_VERSION "("U_BOOT_DATE "-" U_BOOT_TIME")""\0" \
 	"loadaddr=0x12000000\0" \
@@ -202,6 +205,7 @@
 	"preboot="\
 		"run factory_reset_poweroff_protect;"\
 		"run upgrade_check;"\
+		"run prepare; "\
         "run storeargs;"\
 		"get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode}; "\
 		"run switch_bootmode\0" \
@@ -214,6 +218,7 @@
         "lcd_reverse_operate;"\
         "video open; video clear;"\
         "video dev enable;"\
+        "video dev open ${outputmode};"\
         "imgread pic logo bootup ${loadaddr_logo}; "\
         "bmp display ${bootup_offset}; bmp scale; video dev bl_on;"\
         "\0"\
@@ -420,6 +425,7 @@
  */
 //#define CONFIG_CMD_RUNARC 1 /* runarc */
 #define CONFIG_AML_SUSPEND 1
+#define CONFIG_CMD_LOGO
 
 
 /*
@@ -430,7 +436,7 @@
 
 #if defined(CONFIG_VLSI_EMULATOR)
    #undef CONFIG_DDR_CLK
-   #define CONFIG_DDR_CLK    792
+   #define CONFIG_DDR_CLK    720
    #undef CONFIG_DDR_SIZE
    #define CONFIG_DDR_SIZE   1024
    #undef CONFIG_BOOTCOMMAND
