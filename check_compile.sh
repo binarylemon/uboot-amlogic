@@ -45,6 +45,7 @@ fi
 declare RESULT
 declare -i LOOP_NUM
 declare -i CFG_START=0
+declare -i FAIL_COUNTER=0
 
 # Use a dummy file as the Secure OS binary to check compilation
 # for TEE enabled build.
@@ -122,6 +123,11 @@ do
   declare -i BAR_LOOP
   for cfg in ${ARRAY[@]}
   do
+    # skip _tee config, 2016.08.24 added, for jenkins compile check
+    if [[ $cfg == *_tee ]]
+    then
+      continue
+    fi
     LOOP_NUM=$LOOP_NUM+1
     RESULT=$RESULT'#--------'
     if [ "$LOOP_NUM" -lt "10" ]
@@ -143,8 +149,12 @@ do
     #make -j >> $cfg'_config'.log 2>&1
     make $cfg'_config'
     make -j
+
+    # check make -j result
     if [ $? != 0 ]
-    then RESULT=$RESULT'-failed---'
+    then
+      RESULT=$RESULT'-failed---'
+      FAIL_COUNTER=$FAIL_COUNTER+1
     else RESULT=$RESULT'-pass-----'
     fi
     RESULT=$RESULT'#\n'
@@ -155,3 +165,4 @@ do
 done
 
 echo -e $RESULT
+exit $FAIL_COUNTER
