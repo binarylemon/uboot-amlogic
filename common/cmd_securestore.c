@@ -29,100 +29,105 @@ int do_securestore(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		goto usage;
 
 	cmd = argv[1];
-	if((!strcmp(cmd,"nand"))||(!strcmp(cmd,"spi"))){
-		if(!strcmp(cmd,"nand")){
+	if ((!strcmp(cmd, "nand"))
+			|| (!strcmp(cmd, "spi"))
+			|| (!strcmp(cmd, "emmc"))) {
+		if (!strcmp(cmd,"nand"))
 			storage_type = SECURE_STORAGE_NAND_TYPE;
-		}
-		if(!strcmp(cmd,"spi")){
+		if (!strcmp(cmd,"spi"))
 			storage_type = SECURE_STORAGE_SPI_TYPE;
-		}
-		if(argc == 3){
-			if(!strcmp(argv[2],"permit")){
+		if (!strcmp(cmd,"emmc"))
+			storage_type = SECURE_STORAGE_EMMC_TYPE;
+
+		if (argc == 3) {
+			if (!strcmp(argv[2], "permit")) {
 				storage_status = SECURE_STORAGE_WRITE_PERMIT;
-				printf("secure storage write to %s permit\n",cmd);
+				printf("secure storage write to %s permit\n", cmd);
 			}
-			if(!strcmp(argv[2],"prohibit")){
+			if (!strcmp(argv[2], "prohibit")) {
 				storage_status = SECURE_STORAGE_WRITE_PROHIBIT;
-				printf("secure storage write to %s prohibited\n",cmd);
+				printf("secure storage write to %s prohibited\n", cmd);
 			}
 		}
 		return 0;
 	}
-	if(!strcmp(cmd,"emmc")){
-		//storage_type = SECURE_STORAGE_EMMC_TYPE;
-		return 0;
-	}
-	if(!storage_type ){
+	if (!storage_type ) {
 		printf("please set device\n");
 		return 1;
 	}
-	if(!strcmp(cmd,"write")){
-		if((argc > 2)&&(argc < 4)){
+	if (!strcmp(cmd,"write")) {
+		if ((argc > 2) && (argc < 4))
 			goto usage;
-		}
-		if(storage_status != SECURE_STORAGE_WRITE_PERMIT){
+		if (storage_status != SECURE_STORAGE_WRITE_PERMIT) {
 			printf("secure storage write is prohibited\n");
 			goto usage;
 		}
-		if(argc >=4){
+		if (argc >= 4) {
 			addr = simple_strtoul(argv[2], NULL, 16);
 			len = simple_strtoul(argv[3], NULL, 16);
-		}
-		else{
+		} else {
 			addr =  SECUREOS_KEY_DEFAULT_ADDR_TEST;
 			len = SECUREOS_KEY_DEFAULT_SIZE_TEST;
 		}
-		if(storage_type == SECURE_STORAGE_NAND_TYPE){
-			err = secure_storage_nand_write((char*)addr,len);
-			if(err){
-				printf("%s:%d,write key fail to nand\n",__func__,__LINE__);
+		if (storage_type == SECURE_STORAGE_NAND_TYPE) {
+			err = secure_storage_nand_write((char*)addr, len);
+			if (err) {
+				printf("%s:%d,write key fail to nand\n", __func__, __LINE__);
 				return err;
 			}
 			printf("write to nand ok\n");
-		}
-		else if(storage_type == SECURE_STORAGE_SPI_TYPE){
-			err = secure_storage_spi_write((char*)addr,len);
-			if(err){
-				printf("%s:%d,write key fail to spi\n",__func__,__LINE__);
+		} else if (storage_type == SECURE_STORAGE_SPI_TYPE) {
+			err = secure_storage_spi_write((char*)addr, len);
+			if (err) {
+				printf("%s:%d,write key fail to spi\n", __func__, __LINE__);
 				return err;
 			}
 			printf("write to spi ok\n");
-		}
-		else{
+		} else if (storage_type == SECURE_STORAGE_EMMC_TYPE) {
+			err = secure_storage_emmc_write((char*)addr,len);
+			if (err) {
+				printf("%s:%d,write key fail to emmc\n", __func__, __LINE__);
+				return err;
+			}
+			printf("write to emmc ok\n");
+		} else {
 			printf("not support\n");
 			return 1;
 		}
 		return 0;
 	}
-	if(!strcmp(cmd,"read")){
-		if((argc > 2)&&(argc < 4)){
+	if (!strcmp(cmd,"read")) {
+		if ((argc > 2) && (argc < 4))
 			goto usage;
-		}
-		if(argc >=4){
+		if (argc >= 4) {
 			addr = simple_strtoul(argv[2], NULL, 16);
 			len = simple_strtoul(argv[3], NULL, 16);
-		}
-		else{
+		} else {
 			addr =  SECUREOS_KEY_DEFAULT_ADDR_TEST;
 			len = SECUREOS_KEY_DEFAULT_SIZE_TEST;
 		}
-		if(storage_type == SECURE_STORAGE_NAND_TYPE){
-			err = secure_storage_nand_read((char*)addr,len);
-			if(err){
-				printf("%s:%d,read key fail from nand\n",__func__,__LINE__);
+		if (storage_type == SECURE_STORAGE_NAND_TYPE) {
+			err = secure_storage_nand_read((char*)addr, len);
+			if (err) {
+				printf("%s:%d,read key fail from nand\n", __func__, __LINE__);
 				return err;
 			}
 			printf("from nand read key ok\n");
-		}
-		else if(storage_type == SECURE_STORAGE_SPI_TYPE){
-			err = secure_storage_spi_read((char*)addr,len);
-			if(err){
-				printf("%s:%d,read key fail from spi\n",__func__,__LINE__);
+		} else if (storage_type == SECURE_STORAGE_SPI_TYPE) {
+			err = secure_storage_spi_read((char*)addr, len);
+			if (err) {
+				printf("%s:%d,read key fail from spi\n", __func__, __LINE__);
 				return 1;
 			}
 			printf("from spi read key ok\n");
-		}
-		else{
+		} else if (storage_type == SECURE_STORAGE_EMMC_TYPE) {
+			err = secure_storage_emmc_read((char*)addr, len);
+			if (err) {
+				printf("%s:%d,read key fail from emmc\n", __func__, __LINE__);
+				return 1;
+			}
+			printf("from emmc read key ok\n");
+		} else {
 			printf("not support\n");
 			return 1;
 		}

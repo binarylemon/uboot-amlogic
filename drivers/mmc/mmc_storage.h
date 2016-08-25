@@ -14,6 +14,7 @@
 #include <emmc_partitions.h>
 
 
+#define MMC_SECURE_STORAGE_REPAIR
 #define MMC_MALLOC_FAILED  1
 #define STORAGE_READ_FAILED 2
 #define STORAGE_WRITE_FAILED 3
