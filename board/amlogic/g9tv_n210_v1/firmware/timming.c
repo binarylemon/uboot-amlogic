@@ -463,6 +463,10 @@ static struct ddr_set __ddr_setting={
 	#define	SYS_PLL_N  (1)
 	#define	SYS_PLL_M  (50)
 	#define SYS_PLL_OD (0)
+#elif (1392 == CONFIG_SYS_CPU_CLK)
+	#define	SYS_PLL_N  (1)
+	#define	SYS_PLL_M  (58)
+	#define SYS_PLL_OD (0)
 #else
 	#error "CONFIG_SYS_CPU_CLK is not set! Please set CPU clock first!\n"
 #endif

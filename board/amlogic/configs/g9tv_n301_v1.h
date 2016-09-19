@@ -394,7 +394,8 @@
 //----------------------------------------------------------------------
 //Please set the CPU clock(unit: MHz)
 //legal value: 600, 792, 996, 1200
-#define CPU_CLK 		    (1200)
+//#define CPU_CLK 		    (1200)
+#define CPU_CLK 		    (1392)
 #define CONFIG_SYS_CPU_CLK	(CPU_CLK)
 //----------------------------------------------------------------------
 
