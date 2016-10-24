@@ -247,6 +247,24 @@ int aml_sec_boot_check(unsigned char *pSRC)
 	unsigned char szCheck[36];
 	unsigned char szHash[32];
 
+#if !defined(CONFIG_AMLROM_SPL)
+#if defined(CONFIG_AML_ANDROID_HDR_SIG)
+		int aml_android_hdr_check(unsigned char *pSRC);
+		t_func_v3 fp_03 = (t_func_v3)g_action[g_nStep][3];
+		fp_03((int)&nState,0,4);
+		if (nState & (1<<7)) //check for secure only
+		{
+			nRet = aml_android_hdr_check(pSRC - 0x800); //move to android header, fixed 2KB
+			if (nRet)
+			{
+				MSG_SHOW ((nState & (1<<23)) ? "Aml log : M8-R2048 HDR of ":"Aml log : M8-R1024 HDR of ");
+				MSG_SHOW (AML_MSG_FAIL);
+				goto exit;
+			}
+		}
+#endif  //#if defined(CONFIG_AML_ANDROID_HDR_SIG)
+#endif
+
 
 	nRet = aml_m8_sec_boot_check(pSRC,0,0,0,0,&nState);
 	if(nRet || !(nState & (1<<7)))
@@ -441,6 +459,97 @@ exit:
 
 	return nRet;
 }
+
+#if defined(CONFIG_AML_ANDROID_HDR_SIG)
+int aml_android_hdr_check(unsigned char *pSRC)
+{
+#define AMLOGIC_CHKBLK_ID  (0x434C4D41) //414D4C43 AMLC
+#define AMLOGIC_CHKBLK_VER (1)
+
+	typedef struct {
+		unsigned int	nSizeH; 	   ////4@0
+		unsigned int	nLength1;      ////4@4
+		unsigned int	nLength2;      ////4@8
+		unsigned int	nLength3;      ////4@12
+		unsigned int	nLength4;      ////4@16
+		unsigned char	szkey1[116];   ////116@20
+		unsigned char	szkey2[108];   ////108@136
+		unsigned int	nSizeT;        ////4@244
+		unsigned int	nVer;          ////4@248
+		unsigned int	unAMLID;       ////4@252
+	}st_aml_chk_blk; //256
+
+	typedef struct{
+		int ver; int len;
+		unsigned char szBuf1[12];
+		unsigned char szBuf2[188];
+	} st_crypto_blk1;
+
+	int i;
+	int nRet = -1;
+	st_crypto_blk1 cb1_ctx;
+	st_aml_chk_blk chk_blk;
+	unsigned char szkey[32+16];
+	unsigned char *pBuf = (unsigned char *)&chk_blk;
+	unsigned int nState  = 0;
+
+	for (g_nStep = 0;g_nStep<sizeof(g_action)/sizeof(g_action[0]);++g_nStep)
+	{
+		if (!g_action[g_nStep][0])
+			goto exit;
+		if ((*(unsigned int *)0xd9040004) == g_action[g_nStep][0])
+			break;
+	}
+
+	t_func_v3 fp_01 = (t_func_v3)g_action[g_nStep][1]; //void rsa_init(1,2,3)
+	t_func_v3 fp_03 = (t_func_v3)g_action[g_nStep][3]; //void efuse_read(1,2,3)
+	t_func_r2 fp_04 = (t_func_r2)g_action[g_nStep][4]; //int boot_rsa_read_puk(a,b)
+	t_func_r3 fp_05 = (t_func_r3)g_action[g_nStep][5]; //int rsa_public(1,2,3)
+	t_func_v4 fp_09 = (t_func_v4)g_action[g_nStep][9]; //void sha2(1,2,3,4)
+	t_func_r3 fp_10 = (t_func_r3)g_action[g_nStep][10]; //int memcpy(1,2,3)
+	t_func_r3 fp_11 = (t_func_r3)g_action[g_nStep][11];//int memcmp(1,2,3)
+	t_func_v3 fp_13 = (t_func_v3)g_action[g_nStep][13];//void memset(1,2,3)
+
+	fp_13((int)g_action[g_nStep][14],0,4);
+
+	fp_01((int)&cb1_ctx,0,0);
+
+	fp_03((int)&nState,0,4);
+	if (!(nState & (1<<7)))
+	{
+		nRet = 0;
+		goto exit;
+	}
+
+	fp_04((int)&cb1_ctx,(nState & (1<<23)) ? 1 : 0);
+
+	cb1_ctx.len = (nState & (1<<23)) ? 256 : 128;
+
+	fp_10((int)(unsigned char*)&chk_blk,(int)(unsigned char*)(pSRC+(2<<10)-sizeof(chk_blk)),sizeof(chk_blk));
+
+	for (i = 0;i< sizeof(chk_blk);i+=cb1_ctx.len)
+		if (fp_05((int)&cb1_ctx, (int)pBuf+i,(int)pBuf+i ))
+			goto exit;
+
+	if(AMLOGIC_CHKBLK_ID != chk_blk.unAMLID ||
+		AMLOGIC_CHKBLK_VER < chk_blk.nVer)
+		goto exit;
+
+	if (sizeof(st_aml_chk_blk) != chk_blk.nSizeH ||
+		sizeof(st_aml_chk_blk) != chk_blk.nSizeT ||
+		chk_blk.nSizeT != chk_blk.nSizeH)
+		goto exit;
+
+	fp_09((int) pSRC,chk_blk.nLength3, (int)szkey, 0 );
+
+	nRet = fp_11((int)szkey,(int)chk_blk.szkey1,32);
+
+exit:
+
+	return nRet;
+}
+#endif //#if defined(CONFIG_AML_ANDROID_HDR_SIG)
+
 #endif
 
 int aml_is_secure_set(void)
