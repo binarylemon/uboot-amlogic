@@ -68,8 +68,6 @@ ELF	:= $(addprefix $(obj),$(ELF))
 #BIN	:= $(addprefix $(obj),$(BIN))
 #SREC	:= $(addprefix $(obj),$(SREC))
 
-gcclibdir := $(shell dirname `$(CC) -print-libgcc-file-name`)
-
 CPPFLAGS += -I..
 
 # For PowerPC there's no need to compile standalone applications as a
@@ -96,8 +94,7 @@ $(LIB):	$(obj).depend $(LIBOBJS)
 $(ELF):
 $(obj)%:	$(obj)%.o $(LIB)
 		$(LD) -g -Ttext $(STANDALONE_LOAD_ADDR) \
-			-o $@ -e $(SYM_PREFIX)$(notdir $(<:.o=)) $< $(LIB) \
-			-L$(gcclibdir) -lgcc
+		-o $@ -e $(SYM_PREFIX)$(notdir $(<:.o=)) $< $(LIB) $(PLATFORM_LIB)
 
 $(SREC):
 $(obj)%.srec:	$(obj)%

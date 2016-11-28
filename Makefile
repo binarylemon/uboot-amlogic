@@ -607,7 +607,7 @@ $(obj)u-boot-comp-comp: $(obj)u-boot-comp.bin $(UCL_BOOTLIBS) $(LIBS)  firmware
 	$(LD) -Bstatic -T $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/uclboot/u-boot.lds \
 			-Ttext $(UCL_TEXT_BASE) $(PLATFORM_LDFLAGS) --cref $(obj)arch/$(ARCH)/cpu/$(CPU)/uclboot/start.o \
 			--start-group $(UCL_BOOTLIBS)  $(UCL_LIBS) \
-			--end-group  $(PLATFORM_LIBGCC) \
+			--end-group  $(PLATFORM_LIBS) \
 			-Map $(obj)u-boot-ucl_a.map -o $@
 
 endif #end CONFIG_IMPROVE_UCL_DEC

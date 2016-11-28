@@ -77,9 +77,9 @@ TARGETS	+= $(LIBGCC)
 endif
 
 # For EABI conformant tool chains, provide eabi_compat()
-#ifneq (,$(findstring -mabi=aapcs-linux,$(PLATFORM_CPPFLAGS)))
+ifneq (,$(findstring -mabi=aapcs-linux,$(PLATFORM_CPPFLAGS)))
 TARGETS	+= $(obj)eabi_compat.o
-#endif
+endif
 
 all:	$(TARGETS)
 
