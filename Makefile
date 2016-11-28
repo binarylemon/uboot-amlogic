@@ -685,7 +685,7 @@ endif
 $(OBJS):	depend
 		$(MAKE) -C $(CPUDIR) $(if $(REMOTE_BUILD),$@,$(notdir $@))
 
-$(LIBS):	depend $(SUBDIRS) $(obj)firmware.bin
+$(LIBS):	depend $(SUBDIRS)
 		$(MAKE) -C $(dir $(subst $(obj),,$@))
 
 $(UCL_BOOTLIBS):	$(obj)u-boot-comp.bin depend $(SUBDIRS)
