@@ -153,6 +153,18 @@ endif
 	@echo config command: \"make m8b_m200_1G_tee_config\"
 
 	@echo =======================================================================
+	@echo The mark in board is "A111_M400"
+	@echo config command: \"make a111_m400_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "A111_M400 with TEE"
+	@echo config command: \"make a111_m400_tee_config\"
+
+	@echo =======================================================================
+	@echo The mark in board is "A111_M400 with nand"
+	@echo config command: \"make a111_m400_nand_config\"
+
+	@echo =======================================================================
 	@echo The mark in board is "M8B_M101_512M"
 	@echo config command: \"make m8b_m101_512M_config\"
 

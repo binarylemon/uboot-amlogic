@@ -711,6 +711,97 @@ void aml1218_shut_down()
 
 #ifdef CONFIG_PWM_VDDEE_VOLTAGE
 
+#ifdef CONFIG_MACH_M8B_M400
+static int vcck_pwm_on(void)
+{
+    //set GPIODV 9 to PWM C
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3, 1, 24, 1);
+    
+    /* set  pwm_c regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 8, 7);  //pwm_c_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 4, 2);  //pwm_c_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 15, 1);  //pwm_c_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 1, 0, 1);  //enable pwm_c
+    
+    return 0;
+}
+static int usb_power_on(void)
+{
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_1, 0, 26, 1); //pin mux
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_EN_N, 0, 19, 1);//GPIOH_0 enable
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_O, 1, 19, 1);//GPIOH_0 output enable
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_I, 1, 19, 1);//GPIOH_0 input disable
+}
+static int vcck_pwm_off(void)
+{
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 0, 1);  //disable pwm_c
+    return 0;
+}
+static int vddee_pwm_on(void)
+{
+    //set GPIOAO 13 to PWM E
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_10, 1, 13, 1);
+    
+    /* set  pwm_e regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 8, 7);  //pwm_e_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 4, 2);  //pwm_e_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 15, 1);  //pwm_e_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 0, 1);  //enable pwm_e
+    
+    return 0;
+}
+static int vddee_pwm_off(void)
+{
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 0, 1);  //disable pwm_e
+    return 0;
+}
+
+
+static int pwm_duty_cycle_set_vddEE(int duty_high,int duty_total)
+{
+    int pwm_reg=0;
+
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 8, 7);  //pwm_e_clk_div
+    if(duty_high > duty_total){
+        printf_arc("error: duty_high larger than duty_toral !!!\n");
+        return -1; 
+    }
+    aml_write_reg32(P_PWM_PWM_E, (duty_high << 16) | (duty_total-duty_high));
+    __udelay(100000);
+
+    pwm_reg = aml_read_reg32(P_PWM_PWM_E);
+#if 1
+    printf_arc("##### P_PWM_PWM_E value = ");
+    serial_put_hex(pwm_reg, 32);
+    printf_arc("\n");
+#endif
+    return 0;
+}
+
+int m8b_pwm_set_vddEE_voltage(int voltage)
+{
+    printf_arc("m8b_pwm_set_vddEE_voltage\n");
+    
+    int duty_high = 0;
+    int duty_high_tmp = 0;
+    vcck_pwm_on();
+    vddee_pwm_on();
+    usb_power_on();
+    printf_arc("## VDDEE voltage = 0x");
+    serial_put_hex(voltage, 16);
+    printf_arc("\n");
+
+    //duty
+    duty_high = (28 - (((voltage-860)*103) >> 10) );
+
+    printf_arc("##### duty_high = 0x");
+    serial_put_hex(duty_high, 16);
+    printf_arc("\n");
+
+    pwm_duty_cycle_set_vddEE(duty_high,28);
+
+}
+#else
 static int vcck_pwm_on(void)
 {
     //aml_set_reg32_bits(P_PREG_PAD_GPIO2_EN_N, 0, 29, 1);
@@ -798,6 +889,8 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
     pwm_duty_cycle_set(duty_high,28);
     return 0;
 }
+
+#endif
 
 void m8b_pwm_power_off_at_24M(void)
 {
