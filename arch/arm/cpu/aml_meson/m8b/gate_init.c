@@ -77,11 +77,13 @@ void gate_init(void)
 	
 	/* close efuse */
 	CLK_GATE_OFF(EFUSE);
-	
+#ifdef CONFIG_MACH_M8B_M400	
 	/* can't open HDMI */
-	//CLK_GATE_OFF(HDMI_INTR_SYNC);                   // CBUS[0x1052], gate off HDMI interrupt synchronization
+	CLK_GATE_OFF(HDMI_INTR_SYNC);                   // CBUS[0x1052], gate off HDMI interrupt synchronization
 	/* can't bootup if close HDMI_PCLK */
-	//CLK_GATE_OFF(HDMI_PCLK);                        // CBUS[0x1052], gate off HDMI PCLK
+	CLK_GATE_OFF(HDMI_PCLK);                        // CBUS[0x1052], gate off HDMI PCLK
+	CLK_GATE_OFF(VDIN1);
+#endif
 	CLK_GATE_OFF(MISC_DVIN);                        // CBUS[0x1052], gate off DVIN 
 	//CLK_GATE_OFF(SECURE_AHP_APB3);                  // CBUS[0x1052], gate off Secure AHB to APB3 Bridge
 
@@ -131,7 +133,11 @@ void gate_init(void)
 	CLK_GATE_OFF(CTS_VDAC);
 #endif
 #ifndef CONFIG_VIDEO_AMLLCD
-	CLK_GATE_OFF(VCLK2_VENCL);                          // CBUS[0x1054], gate off VCLK2_VENCL 
+	CLK_GATE_OFF(VCLK2_VENCL);                          // CBUS[0x1054], gate off VCLK2_VENCL
+#ifdef CONFIG_MACH_M8B_M400
+	CLK_GATE_OFF(CTS_ENCL);
+	CLK_GATE_OFF(EDP_CLK);
+#endif
 	CLK_GATE_OFF(CTS_ENCL);
 #endif
 
@@ -140,5 +146,30 @@ void gate_init(void)
 	CLK_GATE_OFF(RANDOM_NUM_GEN1);                  // CBUS[0x1054], gate off RANDOM_NUM_GEN1
 	//CLK_GATE_OFF(VCLK2_ENCT);                       // CBUS[0x1054], gate off VCLK2_ENCT
 	CLK_GATE_OFF(VCLK2_OTHER1);                     // CBUS[0x1054], gate off VCLK2_OTHER1
+
+#ifdef CLOSE_GATE_TVOUT
+	CLK_GATE_OFF(VCLK2_VENCI);
+	CLK_GATE_OFF(VCLK2_VENCI1);
+	CLK_GATE_OFF(VCLK2_VENCP);
+	//CLK_GATE_OFF(VCLK2_VENCP1);   
+	CLK_GATE_OFF(VCLK2_VENCT);
+	CLK_GATE_OFF(VCLK2_VENCT1);
+	CLK_GATE_OFF(VCLK2_OTHER);
+	//CLK_GATE_OFF(VCLK2_ENCP);
+	CLK_GATE_OFF(ENC480P);
+ 	CLK_GATE_OFF(VCLK2_OTHER1);                     // CBUS[0x1054], gate off VCLK2_OTHER1
+	CLK_GATE_OFF(VPU_INTR);
+	CLK_GATE_OFF(DAC_CLK);                          // CBUS[0x1054], gate off DAC_CLK 
+	CLK_GATE_OFF(CTS_VDAC);
+#endif
+
+#ifdef CLOSE_GATE_NAND
+	CLK_GATE_OFF(NAND);
+#endif
+	
+#ifdef CLOSE_GATE_MEDIA_CPU
+	CLK_GATE_OFF(MEDIA_CPU);
+#endif
+	
 #endif
 }

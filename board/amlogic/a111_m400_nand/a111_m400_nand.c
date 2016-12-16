@@ -556,14 +556,15 @@ inline int get_key(void)
     return (readl(P_AO_GPIO_I) & (1 << 3)) ? 0 : 1;
 }
 
-
-
 void borad_power_init(void)
 {
 	printf("power init\n");
 	//power on VCC5V
-	gpio_amlogic_requst(NULL, GPIODV_29);
-	gpio_amlogic_direction_output(NULL, GPIODV_29, 0);
+	gpio_amlogic_requst(NULL, GPIOAO_2);
+	gpio_amlogic_direction_output(NULL, GPIOAO_2, 0);
+	//power on VCCK
+	gpio_amlogic_requst(NULL, GPIOAO_12);
+	gpio_amlogic_direction_output(NULL, GPIOAO_12, 1);
 
 }
 
@@ -787,8 +788,8 @@ void board_dt_id_process(void)
 	}
 	mem_size = mem_size >> 20;	//MB
 	char dt_name[64] = {0};
-	strcat(dt_name, "a111_a200_");  //please change this name when you add a new config
-	debug_print("aml_dt: %s\n", getenv("aml_dt"));
+//	strcat(dt_name, "a111_m400_");  //please change this name when you add a new config
+//	debug_print("aml_dt: %s\n", getenv("aml_dt"));
 	switch (mem_size) {
 		case 2048: //2GB
 			strcat(dt_name, "2g");

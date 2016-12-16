@@ -399,6 +399,7 @@
 //board/amlogic/m8_m201_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
+//#define CONFIG_DDR_BYPASS_PHY_PLL // emmc version can not enable
 #define CONFIG_DUMP_DDR_INFO 1
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
@@ -513,6 +514,7 @@
 
 #endif //CONFIG_MESON_TRUSTZONE
 
-
-
+#define CLOSE_GATE_TVOUT
+#define CLOSE_GATE_NAND
+#define CLOSE_GATE_MEDIA_CPU
 #endif //__CONFIG_M8B_M201_V1_H__

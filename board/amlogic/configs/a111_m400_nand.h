@@ -549,7 +549,7 @@
 //board/amlogic/m8_m200_v1/firmware/timming.c
 //arch/arm/cpu/aml_meson/m8/mmutable.s
 
-//#define CONFIG_DDR_BYPASS_PHY_PLL
+#define CONFIG_DDR_BYPASS_PHY_PLL
 #define CONFIG_DUMP_DDR_INFO 1
 #define CONFIG_ENABLE_WRITE_LEVELING 1
 
@@ -664,6 +664,7 @@
 
 #endif //CONFIG_MESON_TRUSTZONE
 
-
+#define CLOSE_GATE_TVOUT
+#define CLOSE_GATE_MEDIA_CPU
 
 #endif //__CONFIG_M8B_M400_NAND_H__
