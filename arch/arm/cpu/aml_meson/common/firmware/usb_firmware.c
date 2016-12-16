@@ -138,7 +138,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         unsigned char* tplTempAddr = tplTargeTextBase + 0x800000;
         unsigned  decompressedLen = 0;
 
-		memcpy(tplTempAddr, tplTargeTextBase, __TEXT_SIZE); //here need fine tune!!
+    memcpy(tplTempAddr, tplTargeTextBase, (1U<<20)/*__TEXT_SIZE*/); //here need fine tune!!
 
         ret = _usb_ucl_decompress(tplTempAddr, tplTargeTextBase, &decompressedLen);
         if(ret){

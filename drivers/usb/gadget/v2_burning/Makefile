@@ -40,6 +40,7 @@ COBJS-y += aml_sysrecovery/aml_sysrecovery.o
 COBJS-$(CONFIG_DETECT_SYS_RECOVERY_KEY) += aml_sysrecovery/cmd_detect_sys_recovery_key.o
 COBJS-$(CONFIG_SUPPORT_SDC_KEYBURN) += v2_sdc_burn/sdc_burnkeys/optimus_key_burn.o 
 COBJS-$(CONFIG_SUPPORT_SDC_KEYBURN) += v2_sdc_burn/sdc_burnkeys/sdc_keysprovider.o v2_sdc_burn/sdc_burnkeys/sdc_bootPart_license.o
+COBJS-$(CONFIG_STORE_INF_NOT_HERE)	+= v2_common/store_if.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

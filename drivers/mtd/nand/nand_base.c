@@ -2639,8 +2639,8 @@ static void nand_set_defaults(struct nand_chip *chip, int busw)
  * Get the flash and manufacturer id and lookup if the type is supported
  */
 static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
-						  struct nand_chip *chip,
-						  int busw, int *maf_id)
+	struct nand_chip *chip,
+	int busw, int *maf_id)
 {
 	struct nand_flash_dev *type = NULL;
 	int i, dev_id, maf_idx;
@@ -3108,6 +3108,9 @@ int nand_scan(struct mtd_info *mtd, int maxchips)
 		BUG();
 	}
 #endif
+	/*
+	nand_scan_ident do not search flash id
+	*/
 	ret = nand_scan_ident(mtd, maxchips);
 	if (!ret)
 	{

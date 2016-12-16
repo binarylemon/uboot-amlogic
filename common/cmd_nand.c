@@ -30,6 +30,9 @@ int find_dev_and_part(const char *id, struct mtd_device **dev,
 		      u8 *part_num, struct part_info **part);
 #endif
 
+extern unsigned int get_mtd_size(char *name);
+
+
 static int nand_protect = 1;
 
 static int nand_dump(nand_info_t *nand, loff_t off, int only_oob)
@@ -152,7 +155,7 @@ static inline int str2longlong(char *p, unsigned long long *num)
 static int
 arg_off_size(int argc, char *argv[], nand_info_t *nand, loff_t *off, loff_t *size)
 {
-	//int idx = nand_curr_device;
+//	int idx = nand_curr_device;
 /*#if defined(CONFIG_CMD_MTDPARTS)
 	struct mtd_device *dev;
 	struct part_info *part;
@@ -199,10 +202,11 @@ arg_off_size(int argc, char *argv[], nand_info_t *nand, loff_t *off, loff_t *siz
 	} else {
 		*size = nand->size - *off;
 	}
-
-//#if defined(CONFIG_CMD_MTDPARTS)
-//out:
-//#endif
+/*
+#if defined(CONFIG_CMD_MTDPARTS)
+out:
+#endif
+*/
 	//printf("device %d ", idx);
 	if (*size == nand->size)
 		puts("whole chip\n");
@@ -430,7 +434,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		return 0;
 	}
 
-	if (strcmp(cmd, "bad") != 0 && strcmp(cmd, "erase") != 0 &&
+	if (strcmp(cmd, "bad") != 0 && strcmp(cmd, "erase") != 0 && strcmp(cmd, "erase.part") != 0 &&
 	    strncmp(cmd, "dump", 4) != 0 &&
 	    strncmp(cmd, "read", 4) != 0 && strncmp(cmd, "write", 5) != 0 &&
 	    strcmp(cmd, "scrub") != 0 && strcmp(cmd, "markbad") != 0 &&
@@ -492,14 +496,11 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		else
 			printf("\nNAND %s: ", scrub ? "scrub" : "erase");
 		
-		if (argv[argc_cnt])
+		if (!strcmp(argv[argc_cnt], "whole"))
 		{
-			if(!strcmp(argv[argc_cnt], "whole"))
-			{
-				off = 0;
-				size = nand->size;
-				printf("whole chip.\n");
-			}
+			off = 0;
+			size = nand->size;
+			printf("whole chip.\n");
 		}
 		else
 		{
@@ -508,7 +509,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			{
 				goto usage;
 			}
-                    if ((arg_off_size(argc - o, (char **)(argv + o), nand, &off, &size) != 0))
+                    if ((arg_off_size(argc - o, (char **)argv + o, nand, &off, &size) != 0))
                     {
                         return  1;
                     }
@@ -570,6 +571,37 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		return ret == 0 ? 0 : 1;
 	}
 
+	/*
+	 * Syntax is:
+	 *   0    1     2       3
+	 *   nand erase.part part-name
+	 */
+	if (strcmp(cmd, "erase.part") == 0 ) {
+		nand_erase_options_t opts;
+		printk("%s\n", argv[2]);
+
+		if (isstring(argv[2])) {
+			nand = get_mtd_device_nm(argv[2]);
+			if (IS_ERR(nand)) {
+				printf("get nand device err\n");
+				goto usage;
+			}
+		}
+
+		off = 0;
+		size = get_mtd_size(argv[2]);
+
+		memset(&opts, 0, sizeof(opts));
+		opts.offset = off;
+		opts.length = size;
+		opts.jffs2  = 0;
+		opts.quiet  = quiet;
+
+		ret = nand_erase_opts(nand, &opts);
+		printf("%s\n", ret ? "ERROR" : "OK");
+		return ret == 0 ? 0 : 1;
+	}
+
 	if (strncmp(cmd, "dump", 4) == 0) {
 		if (argc < 3)
 			goto usage;
@@ -602,7 +634,6 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			read = strncmp(cmd, "read", 4) == 0; /* 1 = read, 0 = write */
 			printf("\nNAND %s: %s ", read ? "read" : "write", argv[2]);
 			if (argc == 4) {
-				extern unsigned int get_mtd_size(char *name);
 				off = 0;
 				size = get_mtd_size(argv[2]);
 			} else {
@@ -895,6 +926,7 @@ U_BOOT_CMD(nand, CONFIG_SYS_MAXARGS, 1, do_nand,
 	"nand dump[.oob] off - dump page\n"
 	"nand scrub_detect - detect bad blk again\n"
 	"nand scrub - really clean NAND erasing bad blocks (UNSAFE)\n"
+	"nand erase.part partname"
 	"nand markbad off [...] - mark bad block(s) at offset (UNSAFE)\n"
 	"nand biterr off - make a bit error at offset (UNSAFE)"
 #ifdef CONFIG_CMD_NAND_LOCK_UNLOCK

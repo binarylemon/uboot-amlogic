@@ -30,7 +30,7 @@
 
 /* Private own data */
 static struct ubi_device *ubi;
-static char buffer[80];
+//static char buffer[80];
 static int ubi_initialized;
 
 struct selected_dev {
@@ -390,21 +390,15 @@ static int ubi_volume_read(char *volume, char *buf, size_t size)
 	free(tbuf);
 	return err;
 }
-
+/*
 static int ubi_dev_scan(struct mtd_info *info, char *ubidev,
 		const char *vid_header_offset)
 {
-	struct mtd_device *dev;
 	struct part_info *part;
 	struct mtd_partition mtd_part;
 	char ubi_mtd_param_buffer[80];
-	u8 pnum;
 	int err;
 
-	if (find_dev_and_part(ubidev, &dev, &pnum, &part) != 0)
-		return 1;
-
-	sprintf(buffer, "mtd=%d", pnum);
 	memset(&mtd_part, 0, sizeof(mtd_part));
 	mtd_part.name = buffer;
 	mtd_part.size = part->size;
@@ -413,7 +407,7 @@ static int ubi_dev_scan(struct mtd_info *info, char *ubidev,
 
 	strcpy(ubi_mtd_param_buffer, buffer);
 	if (vid_header_offset)
-		sprintf(ubi_mtd_param_buffer, "mtd=%d,%s", pnum,
+		sprintf(ubi_mtd_param_buffer, "mtd=%s",
 				vid_header_offset);
 	err = ubi_mtd_param_parse(ubi_mtd_param_buffer, NULL);
 	if (err) {
@@ -431,7 +425,7 @@ static int ubi_dev_scan(struct mtd_info *info, char *ubidev,
 
 	return 0;
 }
-
+*/
 static int do_ubi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	size_t size = 0;
@@ -441,17 +435,12 @@ static int do_ubi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	if (argc < 2)
 		return cmd_usage(cmdtp);
 
-	if (mtdparts_init() != 0) {
-		printf("Error initializing mtdparts!\n");
-		return 1;
-	}
-
 	if (strcmp(argv[1], "part") == 0) {
 		char mtd_dev[16];
-		struct mtd_device *dev;
-		struct part_info *part;
+		//struct mtd_device *dev;
+		//struct part_info *part;
 		const char *vid_header_offset = NULL;
-		u8 pnum;
+		//u8 pnum;
 
 		/* Print current partition */
 		if (argc == 2) {
@@ -487,18 +476,10 @@ static int do_ubi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		if (ubi_initialized) {
 			ubi_exit();
 			del_mtd_partitions(ubi_dev.mtd_info);
+			ubi = NULL;
 		}
 
-		/*
-		 * Search the mtd device number where this partition
-		 * is located
-		 */
-		if (find_dev_and_part(argv[2], &dev, &pnum, &part)) {
-			printf("Partition %s not found!\n", argv[2]);
-			return 1;
-		}
-		sprintf(mtd_dev, "%s%d", MTD_DEV_TYPE(dev->id->type), dev->id->num);
-		ubi_dev.mtd_info = get_mtd_device_nm(mtd_dev);
+		ubi_dev.mtd_info = get_mtd_device_nm(argv[2]);
 		if (IS_ERR(ubi_dev.mtd_info)) {
 			printf("Partition %s not found on device %s!\n", argv[2], mtd_dev);
 			return 1;
@@ -509,8 +490,13 @@ static int do_ubi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		if (argc > 3)
 			vid_header_offset = argv[3];
 		strcpy(ubi_dev.part_name, argv[2]);
-		err = ubi_dev_scan(ubi_dev.mtd_info, ubi_dev.part_name,
-				vid_header_offset);
+		err = ubi_mtd_param_parse(argv[2], NULL);
+		if (err) {
+			printf("UBI init error %d\n", err);
+			ubi_dev.selected = 0;
+			return err;
+		}
+		err = ubi_init();
 		if (err) {
 			printf("UBI init error %d\n", err);
 			ubi_dev.selected = 0;
@@ -518,7 +504,7 @@ static int do_ubi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		}
 
 		ubi = ubi_devices[0];
-
+		ubi_initialized = 1;
 		return 0;
 	}
 

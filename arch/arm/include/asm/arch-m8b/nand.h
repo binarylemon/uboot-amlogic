@@ -9,6 +9,7 @@
 #define NAND_MFR_USER          0x100 
 #define NAND_MFR_EFUSE         0x101 
 
+#define        NAND_PAGELIST_MAGIC     0x4c50414e
 #define abs(value) (((value) < 0) ? ((value)*-1) : (value))
 
 /*
@@ -203,6 +204,7 @@ typedef union nand_core_clk {
 #define NFC_SET_TIMING_SYNC_ADJUST()
 #define NFC_SET_TIMING(mode,cycles,adjust)    		WRITE_CBUS_REG_BITS(NAND_CFG,((cycles)|((adjust&0xf)<<10)|((mode&7)<<5)),0,14)
 #define NFC_SET_DMA_MODE(is_apb,spare_only)        WRITE_CBUS_REG_BITS(NAND_CFG,((spare_only<<1)|(is_apb)),14,2)
+#define NFC_SET_CORE_PLL(val)       (*(volatile unsigned *)(P_HHI_NAND_CLK_CNTL)=(val))
 
 /**
     CMD relative Macros
@@ -222,7 +224,7 @@ typedef union nand_core_clk {
 #define NFC_CMD_RB_INT(ce,time)        ((ce)|RB|(((ce>>10)^0xf)<<14)|(time&0x1f))
 #define NFC_CMD_RBIO(time,io)		   (RB|io|(time&0x1f))
 #define NFC_CMD_RBIO_INT(io,time)      (RB|(((io>>10)^0x7)<<14)|(time&0x1f))
-#define NFC_CMD_SEED(seed)			   (SEED|(0xc2 + seed&0x7fff))
+#define NFC_CMD_SEED(seed)			   ((SEED)|((0xc2)+((seed)&(0x7fff))))
 #define NFC_CMD_STS(tim) 			   (STS|(tim&3))
 #define NFC_CMD_M2N(ran,ecc,sho,pgsz,pag)      ((ran?M2N:M2N_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
 #define NFC_CMD_N2M(ran,ecc,sho,pgsz,pag)      ((ran?N2M:N2M_NORAN)|(ecc<<14)|(sho<<13)|((pgsz&0x7f)<<6)|(pag&0x3f))
@@ -432,7 +434,7 @@ typedef union nand_core_clk {
 #define NAND_FACTORY_BAD					2
 #define BAD_BLK_LEVEL						2  
 #define	FACTORY_BAD_BLOCK_ERROR  159
-#define NAND_MINI_PART_SIZE				0x800000
+#define NAND_MINI_PART_SIZE				0x100000
 #define NAND_MINI_PART_NUM				4
 #define MAX_BAD_BLK_NUM					2000
 #define MAX_MTD_PART_NUM				16
@@ -442,7 +444,7 @@ typedef union nand_core_clk {
 #define BBT_TAIL_MAGIC					"bbte"
 #define MTD_PART_MAGIC					"anpt"
 
-#define NAND_SYS_PART_SIZE				0x20000000
+#define NAND_SYS_PART_SIZE				0x8000000
 #define ENV_NAND_SCAN_BLK                            50
 #define REMAIN_TAIL_BLOCK_NUM		8
 #define NAND_KEY_SAVE_MULTI_BLOCK
@@ -509,6 +511,7 @@ struct env_valid_node_t {
         int rd_flag;
         struct env_valid_node_t *next;
 #endif
+	int16_t env_status;
 };
 
 struct env_free_node_t {
@@ -563,7 +566,8 @@ struct aml_nand_bch_desc{
 #define RETRY_NAND_COPY_NUM	4
 
 #define	READ_RETRY_REG_NUM   	8
-#define	READ_RETRY_CNT   		20
+#define	READ_RETRY_CNT   		30
+#define	HYNIX_RETRY_CNT		20
 
 
 #define	ENHANCE_SLC_REG_NUM   	5
@@ -587,8 +591,10 @@ struct aml_nand_bch_desc{
 #define	HYNIX_20NM_8GB 		3		//
 #define	HYNIX_20NM_4GB 		4		//
 #define	HYNIX_20NM_LGA_8GB 		5		//
+#define	HYNIX_1YNM_8GB 		6
 //for Toshiba
 #define	TOSHIBA_24NM 			20		//TC58NVG5D2HTA00
+#define	TOSHIBA_A19NM 			21
 										//TC58NVG6D2GTA00
 //for SAMSUNG
 #define	SUMSUNG_2XNM 			30	
@@ -597,6 +603,8 @@ struct aml_nand_bch_desc{
 //for SANDISK
 #define    SANDISK_19NM			50
 #define     SANDISK_24NM			51
+#define     SANDISK_A19NM		52
+
 
 #define      DYNAMIC_REG_NUM        3
 #define      DYNAMIC_REG_INIT_NUM        9
@@ -612,6 +620,8 @@ struct aml_nand_bch_desc{
 #define	NAND_CMD_SANDISK_INIT_ONE				0x3B
 #define	NAND_CMD_SANDISK_INIT_TWO				0xB9
 
+#define	NAND_CMD_SANDISK_DSP_ON					0x26
+#define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
 #define	NAND_CMD_SANDISK_LOAD_VALUE_ONE			0x53
 #define	NAND_CMD_SANDISK_LOAD_VALUE_TWO			0x54
 
@@ -620,19 +630,8 @@ struct aml_nand_bch_desc{
 #define 	NAND_CMD_SANDISK_SLC  						0xA2     
 #define   NAND_CMD_SANDISK_SET_VALUE					0XEF
 #define   NAND_CMD_SANDISK_GET_VALUE					0XEE
-
 #define	NAND_CMD_SANDISK_SET_OUTPUT_DRV			0x10
 #define	NAND_CMD_SANDISK_SET_VENDOR_SPC			0x80
-#define	NAND_CMD_SANDISK_INIT_ONE					0x3B
-#define	NAND_CMD_SANDISK_INIT_TWO					0xB9
-#define	NAND_CMD_SANDISK_LOAD_VALUE_ONE			0x53
-#define	NAND_CMD_SANDISK_LOAD_VALUE_TWO			0x54
-#define	NAND_CMD_SANDISK_DSP_OFF					0x25
-#define	NAND_CMD_SANDISK_DSP_ON						0x26
-#define	NAND_CMD_SANDISK_RETRY_STA					 0x5D
-#define	NAND_CMD_SANDISK_TEST_MODE1					0x5c
-#define	NAND_CMD_SANDISK_TEST_MODE2					0xc5
-#define	NAND_CMD_SANDISK_TEST_MODE_ACCESS			0x55
 
 #define	NAND_CMD_MICRON_SET_TOGGLE_SPC			0x01
 
@@ -829,17 +828,17 @@ static inline struct aml_nand_chip *mtd_to_nand_chip(struct mtd_info *mtd)
 static void inline  nand_get_chip(void )
 {
     // pull up enable
-	SET_CBUS_REG_MASK(P_PAD_PULL_UP_EN_REG2, 0x84ff);
+	SET_CBUS_REG_MASK(PAD_PULL_UP_EN_REG2, 0x84ff);
 
     // pull direction, dqs pull down
-	SET_CBUS_REG_MASK(P_PAD_PULL_UP_REG2, 0x0400);
+	SET_CBUS_REG_MASK(PAD_PULL_UP_REG2, 0x0400);
 
-	SET_CBUS_REG_MASK(P_PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
+	SET_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
 }
 
 static void inline nand_release_chip(void)
 {
-	CLEAR_CBUS_REG_MASK(P_PAD_PULL_UP_REG2, 0x0400);
+	CLEAR_CBUS_REG_MASK(PAD_PULL_UP_REG2, 0x0400);
 	CLEAR_CBUS_REG_MASK(PERIPHS_PIN_MUX_2, ((0x3ff<<18) | (1<<17)));
 }
 

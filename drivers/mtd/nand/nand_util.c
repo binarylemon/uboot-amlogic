@@ -802,7 +802,7 @@ int nand_read_skip_bad(nand_info_t *nand, loff_t offset, loff_t *length,
 #include <asm/arch/nand.h>
 
 int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
-			u_char *buf, int protect_flag)
+	u_char *buf, int protect_flag)
 {
 	struct mtd_oob_ops aml_oob_ops;
 	struct erase_info aml_uboot_erase_info;
@@ -811,11 +811,10 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 	unsigned char *data_buf;
 	struct mtd_info *mtd = nand;
 
-    //printf("%s\n", __func__);
+	//printf("%s\n", __func__);
 	memset(&aml_uboot_erase_info, 0, sizeof(struct erase_info));
 
-	if (offset != 0) 
-	{
+	if (offset != 0) {
 		printk("Wrong addr begin\n");
 		return 1;
 	}
@@ -865,13 +864,11 @@ int romboot_nand_write(nand_info_t *nand, loff_t offset, size_t * plen,
 		if ((writed_len + unit_size) > (*plen)) {
 			memcpy(data_buf, buf + buf_offset, (*plen - writed_len));
 			aml_oob_ops.datbuf = data_buf;
-		}
-		else if (unit_size != mtd->writesize) {
+		} else if (unit_size != mtd->writesize) {
 			memset(data_buf, 0x5a, mtd->writesize);
 			memcpy(data_buf, buf + buf_offset, unit_size);
 			aml_oob_ops.datbuf = data_buf;	
-		}
-		else
+		}else
 			aml_oob_ops.datbuf = buf + buf_offset;
 		//aml_oob_ops.oobbuf = (unsigned char *)oob_buf;
 
@@ -922,8 +919,8 @@ int romboot_nand_read(nand_info_t *nand, loff_t offset, size_t *plen, u_char *bu
 	}
 	do {
 
-		if (addr >= mtd->writesize * 256)
-			break;
+		//if (addr >= mtd->writesize * 256)
+		//	break;
 
 //never check bad block in nandboot area
 /*
