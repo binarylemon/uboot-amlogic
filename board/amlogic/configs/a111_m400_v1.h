@@ -516,5 +516,4 @@
 
 #define CLOSE_GATE_TVOUT
 #define CLOSE_GATE_NAND
-#define CLOSE_GATE_MEDIA_CPU
 #endif //__CONFIG_M8B_M201_V1_H__
