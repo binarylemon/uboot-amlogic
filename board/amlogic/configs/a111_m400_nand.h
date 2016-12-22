@@ -6,7 +6,7 @@
 #define CONFIG_MACH_M8B_M400
 #define CONFIG_POWER_SPL
 #define CONFIG_PWM_VDDEE_VOLTAGE            1100   //VDDEE voltage when boot, must have
-#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    1100 //VDDEE voltage when suspend, must have
+#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    950 //VDDEE voltage when suspend, must have
 
 #ifdef CONFIG_NAND_BASE_MTD
 #define CONFIG_SPI_NAND_EMMC_COMPATIBLE		1

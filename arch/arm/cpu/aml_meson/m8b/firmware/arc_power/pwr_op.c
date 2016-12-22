@@ -714,6 +714,13 @@ void aml1218_shut_down()
 #ifdef CONFIG_MACH_M8B_M400
 static int vcck_pwm_on(void)
 {
+    //set GPIOAO_12 high
+    aml_set_reg32_bits(0xc8100014, 0, 17, 1); //GPIOAO_12 pin mux //AO_RTI_PIN_MUX_REG
+    aml_set_reg32_bits(0xc8100014, 0, 14, 1); //GPIOAO_12 pin mux //AO_RTI_PIN_MUX_REG
+    aml_set_reg32_bits(0xc8100024, 0, 12,1); //GPIOAO_12 out enable
+    aml_set_reg32_bits(0xc8100024, 1, 28,1); //GPIOAO_12 out high
+    aml_set_reg32_bits(0xc8100028, 0, 12,1); //GPIOAO_12 in disable
+    
     //set GPIODV 9 to PWM C
     aml_set_reg32_bits(P_PERIPHS_PIN_MUX_3, 1, 24, 1);
     
@@ -725,22 +732,61 @@ static int vcck_pwm_on(void)
     
     return 0;
 }
+static int vcck_pwm_off(void)
+{
+    //set GPIOAO_12 low
+    aml_set_reg32_bits(0xc8100014, 0, 17, 1); //GPIOAO_12 pin mux
+    aml_set_reg32_bits(0xc8100014, 0, 14, 1); //GPIOAO_12 pin mux
+    aml_set_reg32_bits(0xc8100024, 0, 12,1); //GPIOAO_12 out enable
+    aml_set_reg32_bits(0xc8100024, 0, 28,1); //GPIOAO_12 out low
+    aml_set_reg32_bits(0xc8100028, 0, 12,1); //GPIOAO_12 in disable
+
+    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 0, 1);  //disable pwm_c
+    return 0;
+}
 static int usb_power_on(void)
 {
     aml_set_reg32_bits(P_PERIPHS_PIN_MUX_1, 0, 26, 1); //pin mux
     aml_set_reg32_bits(P_PREG_PAD_GPIO3_EN_N, 0, 19, 1);//GPIOH_0 enable
-    aml_set_reg32_bits(P_PREG_PAD_GPIO3_O, 1, 19, 1);//GPIOH_0 output enable
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_O, 1, 19, 1);//GPIOH_0 output enable high
     aml_set_reg32_bits(P_PREG_PAD_GPIO3_I, 1, 19, 1);//GPIOH_0 input disable
-}
-static int vcck_pwm_off(void)
-{
-    aml_set_reg32_bits(P_PWM_MISC_REG_CD, 0, 0, 1);  //disable pwm_c
     return 0;
 }
+static int usb_power_off(void)
+{
+    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_1, 0, 26, 1); //pin mux
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_EN_N, 0, 19, 1);//GPIOH_0 enable
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_O, 0, 19, 1);//GPIOH_0 output enable low
+    aml_set_reg32_bits(P_PREG_PAD_GPIO3_I, 1, 19, 1);//GPIOH_0 input disable
+    return 0;
+}
+static int power_on_5v_3v3(void)
+{
+    //set GPIOAO_2 low
+    aml_set_reg32_bits(0xc8100014, 0, 10, 1); //GPIOAO_2 pin mux //AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 8, 1); //GPIOAO_2 pin mux //AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100024, 0, 2, 1); //GPIOAO_2 out enable
+    aml_set_reg32_bits(0xc8100024, 0, 18, 1); //GPIOAO_2 out low
+    aml_set_reg32_bits(0xc8100028, 0, 2, 1); //GPIOAO_2 in disable
+    return 0;
+}
+static int power_off_5v_3v3(void)
+{
+    //set GPIOAO_2 high
+    aml_set_reg32_bits(0xc8100014, 0, 10, 1); //GPIOAO_2 pin mux//AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 8, 1); //GPIOAO_2 pin mux//AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100024, 0, 2, 1); //GPIOAO_2 out enable
+    aml_set_reg32_bits(0xc8100024, 1, 18, 1); //GPIOAO_2 out high
+    aml_set_reg32_bits(0xc8100028, 0, 2, 1); //GPIOAO_2 in disable
+    return 0;
+}
+
 static int vddee_pwm_on(void)
 {
     //set GPIOAO 13 to PWM E
-    aml_set_reg32_bits(P_PERIPHS_PIN_MUX_10, 1, 13, 1);
+    aml_set_reg32_bits(0xc8100014, 1, 13, 1); //AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 3, 1);//AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 31, 1);//AO_RTI_PIN_MUX_REG 
     
     /* set  pwm_e regs */
     aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 8, 7);  //pwm_e_clk_div
@@ -778,15 +824,20 @@ static int pwm_duty_cycle_set_vddEE(int duty_high,int duty_total)
     return 0;
 }
 
-int m8b_pwm_set_vddEE_voltage(int voltage)
+int m8b_pwm_set_vddEE_voltage(int voltage , int power_on)
 {
     printf_arc("m8b_pwm_set_vddEE_voltage\n");
     
     int duty_high = 0;
     int duty_high_tmp = 0;
-    vcck_pwm_on();
+    if(power_on == 1) {
+    	vcck_pwm_on();
+    	usb_power_on();
+    } else if(power_on == 0) {
+	usb_power_off();
+	vcck_pwm_off();
+    }
     vddee_pwm_on();
-    usb_power_on();
     printf_arc("## VDDEE voltage = 0x");
     serial_put_hex(voltage, 16);
     printf_arc("\n");
@@ -894,22 +945,38 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
 
 void m8b_pwm_power_off_at_24M(void)
 {
+#ifdef CONFIG_MACH_M8B_M400
+    m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE,0);    
+#else
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);    
+#endif
 }
 
 void m8b_pwm_power_on_at_24M(void)
 {
+#ifdef CONFIG_MACH_M8B_M400
+    m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE,1);
+#else
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
+#endif
 }
     
 void m8b_pwm_power_off_at_32K_1(void)
 {
-    m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE); 
+#ifdef CONFIG_MACH_M8B_M400
+    power_off_5v_3v3();
+#else
+    m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE);    
+#endif
 }
     
 void m8b_pwm_power_on_at_32K_1(void)
 {
+#ifdef CONFIG_MACH_M8B_M400
+    power_on_5v_3v3();
+#else
     m8b_pwm_set_vddEE_voltage(CONFIG_PWM_VDDEE_VOLTAGE);
+#endif
 }
 #endif 
 
@@ -1150,11 +1217,20 @@ void arc_pwr_register(struct arc_pwr_op *pwr_op)
 	pwr_op->power_on_ddr15      = 0;//aml1218_power_on_ddr15;
 	pwr_op->shut_down           = aml1218_shut_down;
 #endif
- #ifdef CONFIG_PWM_VDDEE_VOLTAGE
+
+#ifdef CONFIG_PWM_VDDEE_VOLTAGE
+
+#ifdef CONFIG_MACH_M8B_M400
+    pwr_op->power_off_at_24M    = m8b_pwm_power_off_at_24M;
+    pwr_op->power_on_at_24M     = m8b_pwm_power_on_at_24M;
+    pwr_op->power_off_at_32K_1  = m8b_pwm_power_off_at_32K_1;
+    pwr_op->power_on_at_32K_1   = m8b_pwm_power_on_at_32K_1;
+#else
     pwr_op->power_off_at_24M    = m8b_pwm_power_off_at_24M;
     pwr_op->power_on_at_24M     = m8b_pwm_power_on_at_24M;
     pwr_op->power_off_at_32K_1  = 0;//m8b_pwm_power_off_at_32K_1;
     pwr_op->power_on_at_32K_1   = 0;//m8b_pwm_power_on_at_32K_1;
+#endif
 #endif
 	pwr_op->detect_key			= detect_key;
 
