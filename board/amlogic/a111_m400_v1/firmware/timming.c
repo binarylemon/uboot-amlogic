@@ -14,7 +14,20 @@
 
 static int init_pctl_ddr3(struct ddr_set * timing_set);
 
-#if (CFG_DDR_CLK >= 384) && (CFG_DDR_CLK < 750)
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+#if (CFG_DDR_CLK >= 336) && (CFG_DDR_CLK < 400)
+	#define CFG_PLL_OD 1
+	#define CFG_PLL_N  1
+	#define CFG_PLL_M  (((CFG_DDR_CLK/6)*6)/12)*2
+#elif (CFG_DDR_CLK >= 400) // && (CONFIG_DDR_CLK <= 912)
+	#define CFG_PLL_OD 0
+	#define CFG_PLL_N  1
+	#define CFG_PLL_M  (((CFG_DDR_CLK/12)*12)/24)*2
+#else
+	#error "Over PLL range! Please check CONFIG_DDR_CLK with file m8_skt_v1.h! \n"
+#endif
+#else
+#if (CFG_DDR_CLK >= 336) && (CFG_DDR_CLK < 750)
 	#define CFG_PLL_OD 2
 	#define CFG_PLL_N  1
 	#define CFG_PLL_M  (((CFG_DDR_CLK/6)*6)/12)
@@ -25,11 +38,12 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 #else
 	#error "Over PLL range! Please check CFG_DDR_CLK with file m8_skt_v1.h! \n"
 #endif
+#endif
 
 #if (CFG_DDR_CLK >= 384 ) && (CFG_DDR_CLK <533)
 	#define DDR3_7_7_7
 #elif  (CFG_DDR_CLK >= 533 ) && (CFG_DDR_CLK <667)
-	#define DDR3_9_9_9 
+	#define DDR3_9_9_9
 #elif  (CFG_DDR_CLK >= 667 ) && (CFG_DDR_CLK <=912)
 	#define DDR3_11_11_11
 #endif
@@ -107,7 +121,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 
 	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
-		
+
 	#define CFG_DDR_CL    (9)
 	#define CFG_DDR_WR    (12)
 	#define CFG_DDR_CWL   (8)
@@ -151,7 +165,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 
 	#define CFG_DDR_REFI  (78)
 	#define CFG_DDR_REFI_MDDR3  (4)
-		
+
 	#define CFG_DDR_CL    (11)
 	#define CFG_DDR_WR    (12)
 	#define CFG_DDR_CWL   (8)
@@ -210,7 +224,7 @@ static struct ddr_set __ddr_setting={
 
 	.t_pctl_mcfg =   1 |	//[B0] mem-bl: 0 for 4; 1 for 8
 			  (0 << 2) |	//[B2] bl8int_en.   enable bl8 interrupt function.Only valid for DDR2
-			  				// and is ignored for mDDR/LPDDR2 and DDR3
+							// and is ignored for mDDR/LPDDR2 and DDR3
 	          (1 << 5) |    //[B5] ddr3en: 1: ddr3 protocal; 0 : ddr2 protocal
 	          (1 << 3) |    //[B3]two_t_en: DDR 2T mode, default is disable
 	          (((((CFG_DDR_FAW+CFG_DDR_RRD-1)/CFG_DDR_RRD)-4)&0x3)<<18) | //[B19,B18] tfaw_cfg
@@ -232,7 +246,7 @@ static struct ddr_set __ddr_setting={
 
 	//.t_pub_acbdlr0 = 0,
 	.t_pub_acbdlr0 = 0x14,
-	
+
 	.t_pub_dcr = 0x8b,
 
 
@@ -457,16 +471,15 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
 	//[B7]enable gating
 	//[B9]XTAL/32KHz, 0 : 24MHz, 1:32KHz
 	//0x105d [0xc1104174]
-    .mpeg_clk_cntl= (5 << 12) |    //[B14,B13,B12] select fclk_div4: 2.55GHz/4=637.5MHz
+    .mpeg_clk_cntl= (7 << 12) |    //[B14,B13,B12] select fclk_div4: 2.55GHz/4=637.5MHz
     				(1 << 8 ) |    //[B8] select pll
     				(1 << 7 ) |    //[B7] cntl_hi_mpeg_div_en, enable gating
-                    (3 << 0 ) |    //[B6-B0] div  (n+1)  fclk_div5=2.55G/4=637.5MHz, clk81=637.5MHz/(3+1)=159.375MHz
+                    (3 << 0 ) |                //[B6-B0] div  (n+1)  fclk_div5=2.55G/5=510MHz, clk81=510MHz/(3+1)=127.5MHz 
 					(1 << 15),     //[B15] Connect clk81 to the PLL divider output
 
 	.vid_pll_cntl = 0x6001043D,
 	.vid2_pll_cntl = 0x61000032,
-	.clk81=159375000, //2.55GHz/4/4=159.375MHz
-
+	.clk81=127500000, //2.55GHz/5/4=127.5MHz
 #if defined (CONFIG_VLSI_EMULATOR)
     .spi_setting=0xeb949, //it need fine tune?
 #else	
@@ -476,7 +489,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
     .sdio_cmd_clk_divide=5,
     .sdio_time_short=(250*180000)/(2*(12)),
     .uart=
-        (159375000/(CONFIG_BAUDRATE*4) -1)
+        (127500000/(CONFIG_BAUDRATE*4) -1)
         | UART_STP_BIT 
         | UART_PRTY_BIT
         | UART_CHAR_LEN 

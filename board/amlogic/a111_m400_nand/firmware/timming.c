@@ -471,15 +471,15 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
 	//[B7]enable gating
 	//[B9]XTAL/32KHz, 0 : 24MHz, 1:32KHz
 	//0x105d [0xc1104174]
-    .mpeg_clk_cntl= (5 << 12) |    //[B14,B13,B12] select fclk_div4: 2.55GHz/4=637.5MHz
+    .mpeg_clk_cntl= (7 << 12) |    //[B14,B13,B12] select fclk_div4: 2.55GHz/5=510MHz
 					(1 << 8 ) |    //[B8] select pll
 					(1 << 7 ) |    //[B7] cntl_hi_mpeg_div_en, enable gating
-                    (3 << 0 ) |    //[B6-B0] div  (n+1)  fclk_div5=2.55G/4=637.5MHz, clk81=637.5MHz/(3+1)=159.375MHz
+                   (3 << 0 ) |    //[B6-B0] div  (n+1)  fclk_div5=2.55G/5=510MHz, clk81=510MHz/(3+1)=127.5MHz 
 					(1 << 15),     //[B15] Connect clk81 to the PLL divider output
 
 	.vid_pll_cntl = 0x6001043D,
 	.vid2_pll_cntl = 0x61000032,
-	.clk81=159375000, //2.55GHz/4/4=159.375MHz
+	.clk81=127500000, //2.55GHz/5/4=127.5MHz
 
 #if defined (CONFIG_VLSI_EMULATOR)
     .spi_setting=0xeb949, //it need fine tune?
@@ -490,7 +490,7 @@ STATIC_PREFIX_DATA struct pll_clk_settings __plls
     .sdio_cmd_clk_divide=5,
     .sdio_time_short=(250*180000)/(2*(12)),
     .uart=
-        (159375000/(CONFIG_BAUDRATE*4) -1)
+        (127500000/(CONFIG_BAUDRATE*4) -1)
         | UART_STP_BIT
         | UART_PRTY_BIT
         | UART_CHAR_LEN
