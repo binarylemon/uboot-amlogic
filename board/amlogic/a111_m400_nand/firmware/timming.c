@@ -19,7 +19,7 @@ static int init_pctl_ddr3(struct ddr_set * timing_set);
 	#define CFG_PLL_OD 1
 	#define CFG_PLL_N  1
 	#define CFG_PLL_M  (((CFG_DDR_CLK/6)*6)/12)*2
-#elif (CFG_DDR_CLK >= 400) // && (CONFIG_DDR_CLK <= 912)
+#elif (CFG_DDR_CLK >= 400) && (CONFIG_DDR_CLK <= 912)
 	#define CFG_PLL_OD 0
 	#define CFG_PLL_N  1
 	#define CFG_PLL_M  (((CFG_DDR_CLK/12)*12)/24)*2

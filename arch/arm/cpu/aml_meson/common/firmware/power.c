@@ -18,8 +18,14 @@ extern void hard_i2c_write168(unsigned char SlaveAddr, unsigned short RegAddr, u
 #endif
 
 #define PWM_D   4
+#define PWM_E   5
+
 #ifndef CONFIG_VDDEE_PWM
+#ifdef CONFIG_MACH_M8B_M400
+#define CONFIG_VDDEE_PWM    PWM_E
+#else
 #define CONFIG_VDDEE_PWM    PWM_D
+#endif
 #endif
 
 #ifdef CONFIG_AW_AXP20
@@ -1433,6 +1439,22 @@ static int vcck_pwm_off(void)
     return 0;
 }
 
+static int vddee_pwm_on(void)
+{
+    //set GPIOAO 13 to PWM E
+    aml_set_reg32_bits(0xc8100014, 1, 13, 1); //AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 3, 1);//AO_RTI_PIN_MUX_REG 
+    aml_set_reg32_bits(0xc8100014, 0, 31, 1);//AO_RTI_PIN_MUX_REG 
+    
+    /* set  pwm_e regs */
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 8, 7);  //pwm_e_clk_div
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 4, 2);  //pwm_e_clk_sel
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 15, 1);  //pwm_e_clk_en
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 1, 0, 1);  //enable pwm_e
+    
+    return 0;
+}
+
 static int pwm_duty_cycle_set(int duty_high,int duty_total)
 {
     int pwm_reg=0;
@@ -1458,6 +1480,17 @@ static int pwm_duty_cycle_set(int duty_high,int duty_total)
     aml_write_reg32(P_PWM_PWM_F, (duty_high << 16) | (duty_total-duty_high));
     __udelay(100000);
     pwm_reg = aml_read_reg32(P_PWM_PWM_F);
+
+#elif (CONFIG_VDDEE_PWM == PWM_E)
+    serial_puts("PWM_E output to control vddee !!!\n");
+    aml_set_reg32_bits(P_PWM_MISC_REG_EF, 0, 8, 7);  //pwm_e_clk_div
+    if(duty_high > duty_total){
+        serial_puts("error: duty_high larger than duty_toral !!!\n");
+        return -1; 
+    }
+    aml_write_reg32(P_PWM_PWM_E, (duty_high << 16) | (duty_total-duty_high));
+    __udelay(100000);
+    pwm_reg = aml_read_reg32(P_PWM_PWM_E);
 #endif
 
     return 0;
@@ -1468,15 +1501,20 @@ int m8b_pwm_set_vddEE_voltage(int voltage)
 
     int duty_high = 0;
     vcck_pwm_on();
+    vddee_pwm_on();
 
 
-    duty_high = 28-(voltage-860)/10;
+    duty_high = (28 - (((voltage-860)*103) >> 10) );
 
 #if 1
     serial_puts("##### VDDEE voltage = 0x");
     serial_put_hex(voltage, 16);
 	serial_put_dec(voltage);
     serial_puts("\n");
+    serial_puts("##### duty_high = 0x");
+    serial_put_hex(duty_high, 16);
+    serial_puts("\n");
+
 #endif
     pwm_duty_cycle_set(duty_high,28);
     return 0;
