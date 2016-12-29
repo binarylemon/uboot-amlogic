@@ -555,6 +555,55 @@ pub_init_ddr0:
 
 	DDR0_SUSPEND_LOAD(_APD_CTRL);
 	DDR0_SUSPEND_LOAD(_CLK_CTRL);
+
+#ifdef   CONFIG_DDR_BYPASS_PHY_PLL   //jiaxing debug
+//if(ddr_channel_0_power)
+    {
+        writel(0x12b,P_DDR0_CLK_CTRL);
+        hx_serial_puts("Aml log : DDR0 - pub 0 phy pir=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PIR)),32);
+                while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<0)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 phy init ok=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+                while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<1)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 plllock=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok=\n");
+                //hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+    }
+        while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<2)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 ddl done=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+        while(!((readl(P_DDR0_PUB_PGSR0)) &(0x1<<3)) )
+                {
+                //hx_serial_puts("Aml log : DDR0 - pub 0 iddone ok\n");
+                hx_serial_puts("Aml log : DDR0 - pub 0 zq ok=\n");
+                hx_serial_put_hex((readl(P_DDR0_PUB_PGSR0)),32);
+                }
+
+        writel(((0x80000000)),P_DDR0_PUB_PLLCR);
+        __udelay(1);
+        writel((0xc0000000),P_DDR0_PUB_PLLCR);
+        __udelay(1);
+        writel(((0x80000000)),P_DDR0_PUB_PLLCR);
+        __udelay(1);
+        writel(((0xa0000000)),P_DDR0_PUB_PLLCR);
+        writel(0x41, P_DDR0_PUB_PIR);
+        __udelay(1);
+        writel(0x0, P_DDR0_PUB_PIR);
+        udelay(1);
+        __udelay(1);
+        __udelay(1);
+#endif
 	//writel(g_ddr_settings[_CLK_CTRL]|1,P_DDR0_CLK_CTRL);
 	hx_serial_puts("Aml log : DDR0 - APD,CLK set done\n");
 	DDR0_SUSPEND_LOAD(_PUB_IOVCR0);
@@ -702,6 +751,10 @@ pub_init_ddr0:
 
 	hx_serial_puts("Aml log : HX DDR PUB training begin:\n");
 
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL   //jiaxing debug
+	goto DDR_INIT_BYPASS_PLL;
+#endif
+
 	//HX PUB INIT
 
 	//===============================================
@@ -829,6 +882,73 @@ pub_init_ddr0:
 	hx_serial_puts("Aml log : DDR0 - BIT deskew & data eye done\n");
 #endif
 	//===============================================
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+DDR_INIT_BYPASS_PLL:
+
+#if (!(defined LPDDR2))&& (!(defined LPDDR3))
+	hx_serial_puts("Aml log : DDR0 - start training");
+	writel(0x1002ffe1, P_DDR0_PUB_PIR);
+	hx_serial_puts("Aml log : DDR0 - start training1");
+	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x80000f5f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x40000fff) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x00000fff) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f)){
+		//ddr_udelay(10);
+		if(readl(P_DDR0_PUB_PGSR0) &( PUB_PGSR0_DTERR|PUB_PGSR0_ZCERR))
+			{
+			hx_serial_puts("Aml log : DDR0 - PUB_PGSR0_ERR with [");
+			hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			hx_serial_puts("] retry...\n");
+			goto pub_init_ddr0;
+		}
+	}
+	hx_serial_puts("Aml log : DDR0 - training done PGSR0 = 0x");
+	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	hx_serial_puts("\n");
+#endif
+
+#ifdef LPDDR2
+	writel(0x1002f161, P_DDR0_PUB_PIR);
+	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x80000f5f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x40000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x00000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f)){
+		//ddr_udelay(10);
+		if(readl(P_DDR0_PUB_PGSR0) &( PUB_PGSR0_DTERR|PUB_PGSR0_ZCERR)){
+			hx_serial_puts("Aml log : DDR0 - PUB_PGSR0_ERR with [");
+			hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			hx_serial_puts("] retry...\n");
+			goto pub_init_ddr0;
+		}
+	}
+	hx_serial_puts("Aml log : DDR0 - training done PGSR0 = 0x");
+	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	hx_serial_puts("\n");
+#endif
+#else
+#ifdef LPDDR2
+	writel(0xf173, P_DDR0_PUB_PIR);
+	while((readl(P_DDR0_PUB_PGSR0) != 0x80000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f1f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0x80000f5f) && \
+		(readl(P_DDR0_PUB_PGSR0) != 0xC0000f5f)){
+		//ddr_udelay(10);
+		if(readl(P_DDR0_PUB_PGSR0) &( PUB_PGSR0_DTERR|PUB_PGSR0_ZCERR)){
+			hx_serial_puts("Aml log : DDR0 - PUB_PGSR0_ERR with [");
+			hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+			hx_serial_puts("] retry...\n");
+			goto pub_init_ddr0;
+		}
+	}
+	hx_serial_puts("Aml log : DDR0 - training done PGSR0 = 0x");
+	hx_serial_put_hex(readl(P_DDR0_PUB_PGSR0),32);
+	hx_serial_puts("\n");
+#endif
+#endif
 
 	DDR0_SUSPEND_LOAD(_PUB_PGCR3);		
 	DDR0_SUSPEND_LOAD(_PUB_DXCCR);
@@ -837,8 +957,12 @@ pub_init_ddr0:
 	hx_serial_puts("Aml log : DDR0 - PCTL enter run state\n");
 
 	nTempVal = readl(P_DDR0_PUB_PGSR0);
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+	if(((nTempVal >> 20) & 0xfff ) != 0x400 )
+#else
 	if((( (nTempVal >> 20) & 0xfff ) != 0xC00 ) && 
 		(( (nTempVal >> 20) & 0xfff ) != 0x800 ))
+#endif
 	{
 		hx_serial_puts("\nAml log : DDR0 PUB init fail with PGSR0 : 0x");
 		hx_serial_put_hex(nTempVal,32);
@@ -949,11 +1073,20 @@ static void hx_ddr_pll_init()
 
     writel(0, P_DDR0_SOFT_RESET);
     //writel(0, P_DDR1_SOFT_RESET);
-
+#ifdef CONFIG_DDR_BYPASS_PHY_PLL
+	writel(0x80000040, P_DDR_CLK_CNTL);
+	writel(0x90000040, P_DDR_CLK_CNTL);
+	writel(0xb0000040, P_DDR_CLK_CNTL);
+	writel(0x9000a940, P_DDR_CLK_CNTL);
+	writel(0xb000a940, P_DDR_CLK_CNTL);
+	writel(0x9000b940, P_DDR_CLK_CNTL);
+	writel(0xb000b940, P_DDR_CLK_CNTL);
+#else
 	writel(0x80004040,P_DDR_CLK_CNTL);
 	writel(0x90004040,P_DDR_CLK_CNTL);
 	writel(0xb0004040,P_DDR_CLK_CNTL);
 	writel(0x90004040,P_DDR_CLK_CNTL);
+#endif
 	writel(0xffffffff, P_DMC_SOFT_RST);
 	writel(0xffffffff, P_DMC_SOFT_RST1);
 	hx_serial_puts("done\n");	  
