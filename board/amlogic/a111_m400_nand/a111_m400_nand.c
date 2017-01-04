@@ -618,11 +618,11 @@ static struct mtd_partition normal_partition_info[] = {
     {
         .name = "upgrade",
         .offset = 12*SZ_1M,
-        .size = 136*SZ_1M,
+        .size = 152*SZ_1M,
     },
     {
         .name = "boot1",
-        .offset = 148*SZ_1M,
+        .offset = 164*SZ_1M,
         .size = 9*SZ_1M,
     },
     {

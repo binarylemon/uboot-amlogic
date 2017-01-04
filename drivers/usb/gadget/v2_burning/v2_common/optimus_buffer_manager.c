@@ -129,7 +129,7 @@ int optimus_buf_manager_tplcmd_init(const char* mediaType,  const char* partName
         _bufManager.partBaseOffset = (u32)partBaseOffset;
     }
 
-    if(_bufManager.transferBufSz < writeBackUnitSz && strcmp("mem", mediaType)){
+    if(_bufManager.transferBufSz < writeBackUnitSz && !cacheAll2Mem){
         DWN_ERR("write back size 0x%x > max size 0x%x\n", writeBackUnitSz, _bufManager.transferBufSz);
         return OPT_DOWN_FAIL;
     }
