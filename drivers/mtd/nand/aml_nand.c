@@ -178,6 +178,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"A revision NAND 1GiB sF1G-A", {1, 0xf1, 0x80, 0x1d, 0x01,0xf1}, 2048, 128, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH12_MODE )},
 	{"A revision NAND 1GiB sF1G-A", {1, 0xf1, 0x0, 0x1d, 0x01,0xf1}, 2048, 128, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
 	{"A revision NAND 1GiB W29N01GV ", {0xef, 0xf1, 0x80, 0x95, 0x00,0x00}, 2048, 128, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},	//winbond.
+	{"A revision NAND 2Gib W29N02GV ", {0xef, 0xda, 0x90, 0x95, 0x04, 0x00}, 2048, 256, 0x20000, 64, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
 	{"A revision NAND 1GiB H27U1G8F2CTR ", {0xad, 0xf1, 0x80, 0x1d, 0xad, 0xf1}, 2048, 128, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},	//hynix.
 	{"A revision NAND 4Gib EMST ", {0xc8, 0xac, 0x90, 0x15, 0x54, 0x7f}, 2048, 512, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},	//emst.
 	{"A revision NAND 4Gib EMST ", {0xc8, 0xda, 0x90, 0x95, 0x44, 0x7f}, 2048, 256, 0x20000, 64, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},  //emst.
