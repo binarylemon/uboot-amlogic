@@ -115,12 +115,12 @@ int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* f
         const unsigned itemSizeNotAligned /* if item offset 3 and bytepercluste 4k, then it's 4k -3 */)
 {
     int rcode = 0;
-    s64 partCapInByte   = 0;
     const char* destMediaType = "store";
     const u64 partBaseOffset = 0;
-
+#ifndef CONFIG_NAND_BASE_MTD
     if(strcmp("bootloader", partName))//TODO:bootloader size can't get yet!
     {
+        s64 partCapInByte   = 0;
         partCapInByte = storage_get_partition_size_in_byte(partName);
         if(partCapInByte < imgItemSz || !partCapInByte){
             SDC_ERR("partCapInByte 0x[%x, %x] < imgItemSz 0x[%x, %x]\n", 
@@ -128,7 +128,7 @@ int sdc_burn_buf_manager_init(const char* partName, s64 imgItemSz, const char* f
             return __LINE__;
         }
     }
-
+#endif// #ifndef CONFIG_NAND_BASE_MTD
     rcode = optimus_parse_img_download_info(partName, imgItemSz, fileFmt, destMediaType, partBaseOffset);
     if(rcode){
         SDC_ERR("fail in init down info, rcode %d\n", rcode);
