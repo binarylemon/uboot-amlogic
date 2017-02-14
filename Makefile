@@ -212,6 +212,7 @@ LIBS += drivers/input/libinput.o
 LIBS += drivers/misc/libmisc.o
 LIBS += drivers/mmc/libmmc.o
 
+LIBS += drivers/fwupdate/libfwup.o
 
 ifneq ($(CONFIG_NEXT_NAND),y)
 
