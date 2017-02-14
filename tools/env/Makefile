@@ -23,14 +23,17 @@
 
 include $(TOPDIR)/config.mk
 
-ifdef CONFIG_AML_MESON 
-HOSTSRCS	:=  fw_env_aml.c 
+#ifdef CONFIG_AML_MESON 
+#HOSTSRCS	:=  fw_env_aml.c 
 HOSTCC = arm-none-linux-gnueabi-gcc
-else
-HOSTSRCS := fw_env.c 
-endif
+#else
+#HOSTSRCS := fw_env.c 
+#endif
 
-HOSTSRCS += $(obj)crc32.c  fw_env_main.c
+HOSTSRCS := $(obj)crc32.c  fw_env_main.c
+HOSTSRCSCONST +=  $(HOSTSRCS) fw_env.c 
+HOSTSRCSENV += $(HOSTSRCS) fw_env_aml.c 
+
 HEADERS	:= fw_env.h
 
 # Compile for a hosted environment on the target
@@ -43,13 +46,15 @@ ifeq ($(MTD_VERSION),old)
 HOSTCPPFLAGS += -DMTD_OLD
 endif
 
-all:	$(obj)fw_printenv
+all:	$(obj)fw_printenv $(obj)fw_printconst
 
 #ln -s $(obj)fw_printenv $(obj)fw_setenv
 	
 # Some files complain if compiled with -pedantic, use HOSTCFLAGS_NOPED
-$(obj)fw_printenv:	$(HOSTSRCS) $(HEADERS)
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCS)
+$(obj)fw_printenv:	$(HOSTSRCSENV) $(HEADERS)
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCSENV)
+$(obj)fw_printconst:	$(HOSTSRCSCONST) $(HEADERS)
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -DFWCONST -o $@ $(HOSTSRCSCONST)
 
 clean:
 	rm -f $(obj)fw_printenv $(obj)crc32.c

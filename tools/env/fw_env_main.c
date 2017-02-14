@@ -45,8 +45,13 @@
 #include <getopt.h>
 #include "fw_env.h"
 
+#ifndef FWCONST
 #define	CMD_PRINTENV	"fw_printenv"
 #define CMD_SETENV	"fw_setenv"
+#else
+#define	CMD_PRINTENV	"fw_printconst"
+#define CMD_SETENV	"fw_setconst"
+#endif // FWCONST
 
 static struct option long_options[] = {
 	{"script", required_argument, NULL, 's'},

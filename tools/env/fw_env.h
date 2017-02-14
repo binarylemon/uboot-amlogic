@@ -27,7 +27,11 @@
  * See included "fw_env.config" sample file (TRAB board)
  * for notes on configuration.
  */
+#ifndef FWCONST
 #define CONFIG_FILE     "/etc/fw_env.config"
+#else
+#define CONFIG_FILE     "/etc/fw_const.config"
+#endif // FWCONST
 
 #define HAVE_REDUND /* For systems with 2 env sectors */
 #define DEVICE1_NAME      "/dev/mtd1"
@@ -39,6 +43,7 @@
 #define ENV2_SIZE         0x4000
 #define DEVICE2_ESIZE     0x4000
 
+#ifndef FWCONST
 #define CONFIG_BAUDRATE		115200
 #define CONFIG_BOOTDELAY	5	/* autoboot after 5 seconds	*/
 #define CONFIG_BOOTCOMMAND							\
@@ -46,6 +51,7 @@
 	"setenv bootargs root=/dev/nfs nfsroot=${serverip}:${rootpath} "	\
 	"ip=${ipaddr}:${serverip}:${gatewayip}:${netmask}:${hostname}::off; "	\
 	"bootm"
+#endif // FWCONST
 
 extern int   fw_printenv(int argc, char *argv[]);
 extern char *fw_getenv  (char *name);
