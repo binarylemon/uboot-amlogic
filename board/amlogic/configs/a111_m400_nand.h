@@ -16,8 +16,6 @@
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
 #define CONFIG_RBTREE
-//#define MTDIDS_DEFAULT "nand2=nandnormal\0"
-//#define MTDPARTS_DEFAULT "mtdparts=nandnormal:102m@11m(nand2)\0"
 #define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 
 #define CONFIG_AML_V2_USBTOOL 1
@@ -45,10 +43,7 @@
 //#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
-//#define CONFIG_AML_I2C      1
 
-//Enable HDMI Tx
-//#define CONFIG_VIDEO_AMLTVOUT 1
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
 #define LCD_BPP LCD_COLOR16
@@ -65,7 +60,7 @@
 #define CONFIG_POWER_KEY_NOT_SUPPORTED_FOR_BURN 1//power key and poweroff can't work
 #define CONFIG_SD_BURNING_SUPPORT_UI     0//have bmp display to indicate burning state when sdcard burning
 #define CONFIG_SHA1
-#endif//#ifdef CONFIG_NEXT_NAND
+#endif
 
 #define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
 #define CONFIG_CMD_PWM  1
@@ -74,8 +69,6 @@
 #define CONFIG_CMD_NAND  1
 //#define CONFIG_VIDEO_AML 1
 //#define CONFIG_CMD_BMP 1
-#define CONFIG_VIDEO_AMLTVOUT 1
-#define CONFIG_AML_HDMI_TX  1
 #define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
@@ -91,11 +84,10 @@
 #define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
-//#define CONFIG_IR_REMOTE 1
 #define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
-#define CONFIG_CMD_NET   1
+//#define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
 	#define CONFIG_AML_ETHERNET 1
 	#define RGMII_PHY_INTERFACE    1
@@ -103,8 +95,6 @@
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
-	//#define CONFIG_NET_RGMII
-	//#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
 	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
 	#define CONFIG_HOSTNAME        arm_m8
 	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
@@ -112,7 +102,7 @@
 	#define CONFIG_GATEWAYIP       10.18.9.1           /* Our getway ip address */
 	#define CONFIG_SERVERIP        10.18.9.113         /* Tftp server ip address */
 	#define CONFIG_NETMASK         255.255.255.0
-#endif /* (CONFIG_CMD_NET) */
+#endif
 
 //I2C definitions
 //#define CONFIG_AML_I2C			1
@@ -120,7 +110,7 @@
 #define CONFIG_CMD_I2C			1
 #define HAS_AO_MODULE
 #define CONFIG_SYS_I2C_SPEED	400000
-#endif	//#ifdef CONFIG_AML_I2C
+#endif
 
 
 #define CONFIG_SDIO_B1   1
@@ -128,7 +118,6 @@
 #define CONFIG_SDIO_B    1
 #define CONFIG_SDIO_C    1
 #define CONFIG_ENABLE_EXT_DEVICE_RETRY 1
-
 
 #define CONFIG_MMU                    1
 #define CONFIG_PAGE_OFFSET 	0xc0000000
@@ -146,9 +135,7 @@
 	#define CONFIG_USB_STORAGE      1
 	#define CONFIG_USB_DWC_OTG_HCD  1
 	#define CONFIG_USB_DWC_OTG_294	1
-#endif //#if defined(CONFIG_CMD_USB)
-
-#define CONFIG_ENABLE_CVBS 1
+#endif
 
 #define CONFIG_UCL 1
 #define CONFIG_SELF_COMPRESS
@@ -177,10 +164,7 @@
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
-	"hdmimode=1080p\0" \
-	"cvbsmode=576cvbs\0" \
 	"outputmode=1080p\0" \
-	"vdac_config=0x10\0" \
 	"initargs=root=/dev/ubi0_0 rootfstype=ubifs init=/init console=ttyS0,115200n8 no_console_suspend\0"\
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
@@ -233,34 +217,27 @@
         "if irdetect; then run update; fi\0" \
     \
 	"update="\
-        /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
+        /*first try usb burning, second sdc_burn, third autoscr*/\
         "run usb_burning; "\
         "if mmcinfo; then "\
             "if fatexist mmc 0 ${sdcburncfg}; then "\
                 "run sdc_burning; "\
             "else "\
                 "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-                "run recovery;"\
             "fi;"\
-        "else "\
-            "run recovery;"\
         "fi;\0"\
     \
-	"storeargs="\
-        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${hdmimode}\0"\
+    "storeargs="\
+        "setenv bootargs ${initargs} logo=osd1,loaded,${fb_addr},${outputmode}\0"\
     "bootsdargs="\
-       "setenv bootargs root=/dev/mmcblk0p1 rw rootfstype=ext2 rootwait init=/sbin/init console=ttyS0,115200n8 no_console_suspend vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${hdmimode}\0"\
+       "setenv bootargs ${initargs} logo=osd1,loaded,${fb_addr},${outputmode}\0"\
     "bootupdateargs="\
-	"setenv bootargs root=/dev/mmcblk0p1 rw rootfstype=vfat rootwait init=/sbin/init console=ttyS0,115200n8 no_console_suspend vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${hdmimode} firmware=rootfs.tar.gz\0"\
+	"setenv bootargs ${initargs} firmware=rootfs.tar.gz logo=osd1,loaded,${fb_addr},${outputmode} \0"\
 	"switch_bootmode="\
-        "if test ${reboot_mode} = factory_reset; then "\
-                "run recovery;"\
-        "else if test ${reboot_mode} = update; then "\
+        "if test ${reboot_mode} = update; then "\
 			"run update;"\
         "else if test ${reboot_mode} = usb_burning; then "\
 			"run usb_burning;"\
-        "else if test ${wipe_data} = failed; then "\
-			"echo wipe_data=${wipe_data}; run recovery;"\
         "else " \
 			"  "\
         "fi;fi;fi;fi\0" \
@@ -273,9 +250,6 @@
 	\
 	"storeboot="\
         "echo Booting...; "\
-        "if unifykey get usid; then  "\
-            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
-        "fi;"\
         "imgread kernel boot ${loadaddr};"\
         "bootm\0"\
     \
@@ -283,7 +257,7 @@
         "echo Booting ...;"\
          "run bootsdargs; "\
          "mmcinfo;"\
-         "ext2load mmc 0 ${loadaddr} boot.img;"\
+         "fatload mmc 0 ${loadaddr} boot.img;"\
          "bootm\0" \
      "bootupdate="\
         "echo Updating...;"\
@@ -291,164 +265,6 @@
          "mmcinfo;"\
          "fatload mmc 0 ${loadaddr} boot.img;"\
          "bootm\0" \
-     \
-	"recovery="\
-        "echo enter recovery;"\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-        "fi; "\
-        "if usb start 0; then "\
-                "if fatload usb 0 ${loadaddr} recovery.img; then bootm; fi;"\
-        "fi;"\
-	      "if imgread kernel recovery ${loadaddr}; then "\
-	        "bootm; "\
-				"else "\
-					"echo no recovery in flash; "\
-				"fi;\0" \
-    \
-	"usb_burning=update 1000\0" \
-    "sdc_burning=sdc_burn ${sdcburncfg}\0"
-#else
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"loadaddr=0x12000000\0" \
-	"loadaddr_logo=0x13000000\0" \
-	"testaddr=0x12400000\0" \
-	"console=ttyS0,115200n8\0" \
-	"bootm_low=0x00000000\0" \
-	"bootm_size=0x80000000\0" \
-	"mmcargs=setenv bootargs console=${console} " \
-	"boardname=m8_board\0" \
-	"chipname=8726m8\0" \
-	"initrd_high=60000000\0" \
-	"hdmimode=1080p\0" \
-	"cvbsmode=576cvbs\0" \
-	"outputmode=1080p\0" \
-	"vdac_config=0x10\0" \
-	"initargs=root=/dev/system rootfstype=ext4 init=/sbin/init console=ttyS0,115200n8 no_console_suspend\0"\
-	"video_dev=tvout\0" \
-	"display_width=1920\0" \
-	"display_height=1080\0" \
-	"display_bpp=16\0" \
-	"display_color_format_index=16\0" \
-	"display_layer=osd2\0" \
-	"display_color_fg=0xffff\0" \
-	"display_color_bg=0\0" \
-	"fb_addr=0x7900000\0" \
-	"fb_width=1280\0"\
-	"fb_height=720\0"\
-	"partnum=2\0" \
-	"p0start=1000000\0" \
-	"p0size=400000\0" \
-	"p0path=uImage\0" \
-	"p1start=1400000\0" \
-	"p1size=8000000\0" \
-	"p1path=android.rootfs\0" \
-	"bootstart=0\0" \
-	"bootsize=100000\0" \
-	"bootpath=u-boot.bin\0" \
-	"sdcburncfg=aml_sdc_burn.ini\0"\
-	"normalstart=1000000\0" \
-	"normalsize=400000\0" \
-	"upgrade_step=2\0" \
-	"firstboot=1\0" \
-	"store=0\0"\
-        "wipe_data=success\0"\
-	"preloaddtb=imgread dtb boot ${loadaddr}\0" \
-	"preboot="\
-        "if itest ${upgrade_step} == 3; then run prepare; run storeargs; run update; fi; "\
-        "if itest ${upgrade_step} == 1; then  "\
-            "defenv; setenv upgrade_step 2; saveenv;"\
-        "fi; "\
-        "run prepare;"\
-        "run storeargs;"\
-        "get_rebootmode; clear_rebootmode; echo reboot_mode=${reboot_mode};" \
-        "run update_key; " \
-	"run update_ir; " \
-        "run switch_bootmode\0" \
-    \
-    "update_key="\
-        "saradc open 0; " \
-        "if saradc get_in_range 0 0x50; then " \
-            "msleep 50; " \
-            "if saradc get_in_range 0 0x50; then echo update by key...; run update; fi;" \
-        "fi\0" \
-    \
-	"update_ir="\
-        "if irdetect; then run update; fi\0" \
-    \
-	"update="\
-        /*first try usb burning, second sdc_burn, third autoscr, last recovery*/\
-        "run usb_burning; "\
-        "if mmcinfo; then "\
-            "if fatexist mmc 0 ${sdcburncfg}; then "\
-                "run sdc_burning; "\
-            "else "\
-                "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-                "run recovery;"\
-            "fi;"\
-        "else "\
-            "run recovery;"\
-        "fi;\0"\
-    \
-	"storeargs="\
-        "setenv bootargs ${initargs} vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} androidboot.firstboot=${firstboot} hdmitx=${hdmimode}\0"\
-    "bootsdargs="\
-       "setenv bootargs root=/dev/mmcblk0p1 rw rootfstype=ext2 rootwait init=/sbin/init console=ttyS0,115200n8 no_console_suspend vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${hdmimode}\0"\
-    "bootupdateargs="\
-	"setenv bootargs root=/dev/mmcblk0p1 rw rootfstype=vfat rootwait init=/sbin/init console=ttyS0,115200n8 no_console_suspend vdaccfg=${vdac_config} logo=osd1,loaded,${fb_addr},${outputmode},full hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${hdmimode} firmware=rootfs.tar.gz\0"\
-	"switch_bootmode="\
-        "if test ${reboot_mode} = factory_reset; then "\
-                "run recovery;"\
-        "else if test ${reboot_mode} = update; then "\
-			"run update;"\
-        "else if test ${reboot_mode} = usb_burning; then "\
-			"run usb_burning;"\
-        "else if test ${wipe_data} = failed; then "\
-			"echo wipe_data=${wipe_data}; run recovery;"\
-        "else " \
-			"  "\
-        "fi;fi;fi;fi\0" \
-    \
-    "prepare="\
-        "logo size ${outputmode}; video open; video clear; video dev open ${outputmode};"\
-        "imgread pic logo bootup ${loadaddr_logo}; "\
-        "bmp display ${bootup_offset}; bmp scale;"\
-        "\0"\
-	\
-	"storeboot="\
-        "echo Booting...; "\
-        "if unifykey get usid; then  "\
-            "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
-        "fi;"\
-        "imgread kernel boot ${loadaddr};"\
-        "bootm\0"\
-    \
-     "bootsdcard="\
-        "echo Booting ...;"\
-         "run bootsdargs; "\
-         "mmcinfo;"\
-         "ext2load mmc 0 ${loadaddr} boot.img;"\
-         "bootm\0" \
-     "bootupdate="\
-        "echo Updating...;"\
-         "run bootupdateargs; "\
-         "mmcinfo;"\
-         "fatload mmc 0 ${loadaddr} boot.img;"\
-         "bootm\0" \
-     \
-	"recovery="\
-        "echo enter recovery;"\
-        "if mmcinfo; then "\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then bootm;fi;"\
-        "fi; "\
-        "if usb start 0; then "\
-                "if fatload usb 0 ${loadaddr} recovery.img; then bootm; fi;"\
-        "fi;"\
-	      "if imgread kernel recovery ${loadaddr}; then "\
-	        "bootm; "\
-				"else "\
-					"echo no recovery in flash; "\
-				"fi;\0" \
     \
 	"usb_burning=update 1000\0" \
     "sdc_burning=sdc_burn ${sdcburncfg}\0"
