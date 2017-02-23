@@ -39,8 +39,8 @@ static int is_sys_recovery_key_pressed(int hKey)
         int val = -1;
 
         val=amlogic_get_value(hKey);
-
-        return val != 1;
+        
+        return val == 1;
 }
 
 static int assert_key_is_pressed_in_a_period(unsigned nMillSeconds, const char* keyName, const char* keyType)
@@ -51,11 +51,11 @@ static int assert_key_is_pressed_in_a_period(unsigned nMillSeconds, const char* 
         hKey = store_key_open(keyName, keyType);
         if(hKey < 0){
                 errorP("Fail to init key for aml_sysrecovery, hKey=%d\n", hKey);
-                return __LINE__;
+                return 1;
         }
 
         if(!is_sys_recovery_key_pressed(hKey)){
-                return __LINE__;
+                return 1;
         }
 
         MsgP("pin=%d\n",hKey);
@@ -68,12 +68,10 @@ static int assert_key_is_pressed_in_a_period(unsigned nMillSeconds, const char* 
                         return 0;
                 }
         }
-        if(!is_sys_recovery_key_pressed(hKey)){
-                MsgP("key released in time %u[ms]\n", (unsigned)get_timer(start));
-                return __LINE__;
-        }
 
-        return 1;//restore key released in time @nMillSeconds
+        MsgP("key released in time %u[ms]\n", (unsigned)get_timer(start));
+
+        return 1;
 }
 
 //test If the recovery_key pressed time >= @nMillSeconds
