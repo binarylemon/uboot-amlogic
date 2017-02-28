@@ -191,6 +191,7 @@
 	"normalstart=1000000\0" \
 	"normalsize=400000\0" \
 	"upgrade_step=2\0" \
+	"try_auto_burn=update 700 750;\0"\
 	"firstboot=1\0" \
 	"store=0\0"\
         "wipe_data=success\0"\
@@ -249,6 +250,7 @@
         "\0"\
 	\
 	"storeboot="\
+	"run try_auto_burn;"\
         "echo Booting...; "\
         "imgread kernel boot ${loadaddr};"\
         "bootm\0"\
