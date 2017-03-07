@@ -30,6 +30,9 @@
 #endif	//CONFIG_NAND_BASE_MTD
 
 #define CONFIG_SECURITYKEY
+#define CONFIG_EFUSE 1
+#define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
+
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 // cart type of each port
@@ -81,7 +84,6 @@
 //Amlogic SARADC support
 #define CONFIG_SARADC 1
 #define CONFIG_CMD_SARADC
-#define CONFIG_EFUSE 1
 //#define CONFIG_MACHID_CHECK 1
 #define CONFIG_CMD_SUSPEND 1
 #define CONFIG_IR_REMOTE 1
