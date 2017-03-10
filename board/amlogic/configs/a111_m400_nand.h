@@ -32,7 +32,7 @@
 #define CONFIG_SECURITYKEY
 #define CONFIG_EFUSE 1
 #define CONFIG_UNIFY_KEY_MANAGE 1       //Support burning key with usb tool
-
+#define CONFIG_AML_NAND_KEY 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
 // cart type of each port
