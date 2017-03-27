@@ -43,7 +43,7 @@
 #define ENV2_SIZE         0x4000
 #define DEVICE2_ESIZE     0x4000
 
-#ifndef FWCONST
+#if 0	//#ifndef FWCONST
 #define CONFIG_BAUDRATE		115200
 #define CONFIG_BOOTDELAY	5	/* autoboot after 5 seconds	*/
 #define CONFIG_BOOTCOMMAND							\

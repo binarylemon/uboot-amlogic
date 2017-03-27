@@ -25,7 +25,7 @@ include $(TOPDIR)/config.mk
 
 #ifdef CONFIG_AML_MESON 
 #HOSTSRCS	:=  fw_env_aml.c 
-HOSTCC = arm-none-linux-gnueabi-gcc
+#HOSTCC = arm-none-linux-gnueabi-gcc
 #else
 #HOSTSRCS := fw_env.c 
 #endif
@@ -51,10 +51,12 @@ all:	$(obj)fw_printenv $(obj)fw_printconst
 #ln -s $(obj)fw_printenv $(obj)fw_setenv
 	
 # Some files complain if compiled with -pedantic, use HOSTCFLAGS_NOPED
+$(obj)fw_printaml:	$(HOSTSRCSENV) $(HEADERS)
+	$(CC) $(PLATFORM_CPPFLAGS) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCSENV)
 $(obj)fw_printenv:	$(HOSTSRCSENV) $(HEADERS)
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCSENV)
+	$(CC) $(PLATFORM_CPPFLAGS) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCSCONST)
 $(obj)fw_printconst:	$(HOSTSRCSCONST) $(HEADERS)
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -DFWCONST -o $@ $(HOSTSRCSCONST)
+	$(CC) $(PLATFORM_CPPFLAGS) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -DFWCONST -o $@ $(HOSTSRCSCONST)
 
 clean:
 	rm -f $(obj)fw_printenv $(obj)crc32.c
