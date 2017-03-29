@@ -1354,9 +1354,9 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 #endif
 
 	/* 4 copies of same data. */
-	for (partition_num = 0; partition_num < 4; partition_num++) {
+	for (partition_num = 0; partition_num < 2; partition_num++) {
 
-		ret = nfio_page_read((partition_num<<8), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
+		ret = nfio_page_read((partition_num<<9), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
 
 		if (ret == ERROR_NAND_ECC) {
 
@@ -1766,7 +1766,9 @@ STATIC_PREFIX void send_reset_cmd(unsigned ext)
 
 	chip_num  = MAX_CE_NUM_SUPPORT;
 	ce_mask = page0_info->ce_mask;
-
+	serial_puts("ce_mask:\n");
+	serial_put_hex(ce_mask,32);
+	serial_puts("\n");
 	for (i = 0; i < chip_num; i++) {
 
 		if (ce_mask&(0x01<<i)) {

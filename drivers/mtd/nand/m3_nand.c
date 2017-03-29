@@ -983,6 +983,7 @@ static int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 				info->nand_read_info = nand_read_info;
 				info->pages_in_block = pages_per_blk;
 				info->new_nand_type = new_nand_type;
+				info->ce_mask = 0x01;	/*fixme! ce num is set 0x01*/
 			}
 			
 #endif //CONFIG_NAND_AML_M8

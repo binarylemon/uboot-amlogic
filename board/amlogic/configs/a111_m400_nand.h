@@ -43,7 +43,6 @@
 //UART Sectoion
 #define CONFIG_CONS_INDEX   2
 #define CONFIG_IR_REMOTE_WAKEUP 1
-//#define CONFIG_SECURE_NAND  1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
 
@@ -478,8 +477,7 @@
 #define CONFIG_CMD_SECURESTORE
 #define CONFIG_CMD_RANDOM
 /* secure storage support both spi and emmc */
-#define CONFIG_SECURE_MMC
-#define CONFIG_SPI_NOR_SECURE_STORAGE
+#define CONFIG_SECURE_NAND  1
 #endif // CONFIG_SECURE_STORAGE_BURNED
 
 #endif //CONFIG_MESON_TRUSTZONE

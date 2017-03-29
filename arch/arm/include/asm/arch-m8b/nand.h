@@ -103,8 +103,8 @@ typedef union nand_core_clk {
 
 #define NAND_CONVERST_ADDR	  0xa0000000
 #define M3_BOOT_WRITE_SIZE	  		0x600
-#define M3_BOOT_COPY_NUM	  		4
-#define M3_BOOT_PAGES_PER_COPY	 	256
+#define M3_BOOT_COPY_NUM	  		2
+#define M3_BOOT_PAGES_PER_COPY	 	512
 
 #ifdef CONFIG_SECURE_NAND
 
