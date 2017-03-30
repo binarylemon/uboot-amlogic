@@ -167,8 +167,8 @@ static void m3_nand_hw_init(struct aml_nand_chip *aml_chip)
     //NAND PLL 160MHz
     NFC_SET_CORE_PLL(((0<<9) | (1<<8) | 3));
 
-    bus_cycle  = 4;
-    bus_timing = bus_cycle + 2;
+    bus_cycle  = 6;
+    bus_timing = bus_cycle + 1;
 #else
     int sys_clk_rate, sys_time, start_cycle, end_cycle;
     int T_REA = DEFAULT_T_REA, T_RHOH = DEFAULT_T_RHOH , Tcycle;
@@ -214,8 +214,8 @@ static void m3_nand_adjust_timing(struct aml_nand_chip *aml_chip)
 	//NAND PLL 212MHz
 	NFC_SET_CORE_PLL(((1<<9) | (1<<8) | 3));
 
-	bus_cycle  = 5;
-	bus_timing = bus_cycle + 2;
+	bus_cycle  = 6;
+	bus_timing = bus_cycle + 1;
 #else
 	int sys_clk_rate, sys_time, start_cycle, end_cycle, Tcycle;
 
