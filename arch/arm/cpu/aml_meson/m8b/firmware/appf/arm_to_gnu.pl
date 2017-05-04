@@ -260,12 +260,12 @@ foreach $line (@in)
     # upper case characters in NEON register aliases...
     # So we'll have to lower case them all, and cross our fingers!
     #===============================================================
-    my ($reg,$loreg);
-    foreach $reg (keys(%register_aliases))
-    {
-        $loreg=lc($reg);
-        $instruction=~s/(\W)$reg(\W|$)/\1$loreg\2/g;
-    }
+#    my ($reg,$loreg);
+#    foreach $reg (keys(%register_aliases))
+#    {
+#        $loreg=lc($reg);
+#        $instruction=~s/(\W)$reg(\W|$)/\1$loreg\2/g;
+#    }
     
     # ************ GNU BUG WORK AROUND #2 ********************
     #
@@ -273,14 +273,14 @@ foreach $line (@in)
     # overriding the register alias types in the instruction
     #===============================================================
 
-    if ($line=~m/\s*V[A-Za-z0-9]*\.[USFusf][0-9]*\s/)
-    {
-        foreach $reg (keys(%register_aliases))
-        {
-            $reg=lc($reg);
-            $instruction=~s/(\W)$reg(\W|$)/\1${reg}_notype\2/g;
-        }
-    }
+#    if ($line=~m/\s*V[A-Za-z0-9]*\.[USFusf][0-9]*\s/)
+#    {
+#        foreach $reg (keys(%register_aliases))
+#        {
+#            $reg=lc($reg);
+#            $instruction=~s/(\W)$reg(\W|$)/\1${reg}_notype\2/g;
+#        }
+#    }
     
     # ************ GNU BUG WORK AROUND #3 ********************
     #
@@ -288,8 +288,8 @@ foreach $line (@in)
     # So we switch them to MRS/MSR... seems to work.
     #===============================================================
 
-    $instruction=~s/^\s*VMRS(.*)/        MRS$1/ig;
-    $instruction=~s/^\s*VMSR(.*)/        MSR$1/ig;
+#    $instruction=~s/^\s*VMRS(.*)/        MRS$1/ig;
+#    $instruction=~s/^\s*VMSR(.*)/        MSR$1/ig;
     
 
     #--------------------------------------------------------------------------

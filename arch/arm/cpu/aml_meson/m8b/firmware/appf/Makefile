@@ -50,14 +50,16 @@ OBJECTS= $(OUTDIR)/os_api.o \
 CPU=cortex-a5
 GCC= TRUE
 ifeq "$(GCC)" "TRUE"
-CC=arm-none-eabi-gcc
-AS=arm-none-eabi-gcc
-LD=arm-none-eabi-ld
-fromelf=arm-none-eabi-objcopy
+#CC=arm-none-eabi-gcc
+#AS=arm-none-eabi-gcc
+AS=$(CC)
+#LD=arm-none-eabi-ld
+#fromelf=arm-none-eabi-objcopy
+fromelf=$(OBJCOPY)
 MAPFILE=appf.gls
-CFLAGS= -g -O2 -fpie -fpic -mcpu=$(CPU) -I. -DNO_PCU -I$(EXTINCDIR) -I$(EXTINCDIR2) -I$(EXTINCDIR3) 
+CFLAGS= -g -O2 -fpie -fpic -mcpu=$(CPU) -fno-delete-null-pointer-checks -I. -DNO_PCU -I$(EXTINCDIR) -I$(EXTINCDIR2) -I$(EXTINCDIR3) 
 # -DUSE_REALVIEW_EB_RESETS
-ASFLAGS= -g -mcpu=$(CPU) -mfpu=vfpv4 -c
+ASFLAGS= -g -mcpu=$(CPU) -mfloat-abi=hard -mfpu=vfpv4 -c
 LDFLAGS= -g -nostartfiles -pie -fpic -static -e $(ENTRY_POINT) --verbose -T $(MAPFILE) -M
 
 $(OUTDIR)/%.o : $(OUTDIR)/%.S	# Remove make's implicit rule for .S files
