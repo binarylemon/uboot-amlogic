@@ -1,6 +1,8 @@
 #ifndef __CONFIG_M8B_M400_NAND_H__
 #define __CONFIG_M8B_M400_NAND_H__
 
+#include <configs/sue_fwupdate_common.h>
+
 #define CONFIG_MACH_MESON8_M400  // generate M8 M200 machid number
 
 #define CONFIG_MACH_M8B_M400
@@ -158,6 +160,41 @@
 #define CONFIG_BOOTFILE		boot.img
 
 #ifdef CONFIG_NAND_BASE_MTD
+#if !defined(CONFIG_DDR3_256MB)
+#define CONFIG_EXTRA_ENV_SETTINGS_TMP \
+	"loadaddr=0x12000000\0" \
+	"loadaddr_logo=0x13000000\0" \
+	"testaddr=0x12400000\0" \
+	"bootm_size=0x80000000\0" \
+	"initrd_high=0x60000000\0" \
+	"fdt_addr=0x14000000\0" \
+	"fdt_high=0xffffffff\0" \
+	"swu_load_addr=0x15000000\0"
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS_TMP \
+	"loadaddr=0x6000000\0" \
+	"loadaddr_logo=0x7000000\0" \
+	"testaddr=0x9000000\0" \
+	"bootm_size=0x8000000\0" \
+	"initrd_high=0x6000000\0" \
+	"fdt_addr=0x8000000\0" \
+	"fdt_high=0xffffffff\0" \
+	"swu_load_addr=0x6000000\0"
+#endif
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_EXTRA_ENV_SETTINGS_TMP \
+	SUE_FWUPDATE_EXTRA_ENV_SETTINGS \
+	"console=ttyS3,115200n8\0" \
+	"preboot=" \
+		"if get_gpio_key 1000; then " \
+			"setenv usb_update_req 1; " \
+			"echo \"INFO: USB update request is active\"; " \
+		"else " \
+			"setenv usb_update_req 0; " \
+			"echo \"INFO: USB update request is NOT active\"; " \
+		"fi\0"
+#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x12000000\0" \
 	"loadaddr_logo=0x13000000\0" \
@@ -278,8 +315,8 @@
 #endif
 
 
-#define CONFIG_BOOTCOMMAND   "run storeboot"
 
+#define CONFIG_BOOTCOMMAND	SUE_FWUPDATE_BOOTCOMMAND
 #define CONFIG_AUTO_COMPLETE	1
 
 
@@ -500,6 +537,10 @@
 
 #endif //CONFIG_MESON_TRUSTZONE
 
-#define CLOSE_GATE_TVOUT
+#define CONFIG_CMD_IMI	1
+
+
+
+#define CONFIG_CMD_SETEXPR	1
 
 #endif //__CONFIG_M8B_M400_NAND_H__
