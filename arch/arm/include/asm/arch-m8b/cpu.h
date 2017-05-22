@@ -199,7 +199,7 @@
 #define CONFIG_SYS_MALLOC_LEN   (12<<20)
 
 #define CONFIG_SYS_MAXARGS      16
-#define CONFIG_SYS_CBSIZE          1024
+#define CONFIG_SYS_CBSIZE	(2 * 1024)
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 
 #define CONFIG_VPU_PRESET		1

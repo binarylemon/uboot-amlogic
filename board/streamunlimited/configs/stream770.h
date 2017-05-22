@@ -23,7 +23,7 @@
 #define CONFIG_AML_V2_USBTOOL 1
 #define CONFIG_SHA1
 #define CONFIG_STORE_INF_NOT_HERE       1
-#define CONFIG_ENV_SIZE         (16*1024)
+#define CONFIG_ENV_SIZE		(128 * 1024)
 
 #else	//CONFIG_NAND_BASE_MTD
 #define CONFIG_ENV_SIZE         (64*1024)
