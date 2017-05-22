@@ -106,13 +106,14 @@
 #endif
 
 //I2C definitions
-//#define CONFIG_AML_I2C			1
+#define CONFIG_AML_I2C			1
 #ifdef CONFIG_AML_I2C
 #define CONFIG_CMD_I2C			1
 #define HAS_AO_MODULE
 #define CONFIG_SYS_I2C_SPEED	400000
 #endif
 
+#define CONFIG_AXP152_POWER	1
 
 #define CONFIG_SDIO_B1   1
 #define CONFIG_SDIO_A    1
