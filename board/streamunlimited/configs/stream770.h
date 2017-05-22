@@ -542,5 +542,6 @@
 
 
 #define CONFIG_CMD_SETEXPR	1
+#define CONFIG_CMD_ENV_EXISTS	1
 
 #endif //__CONFIG_M8B_M400_NAND_H__
