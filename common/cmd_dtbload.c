@@ -11,10 +11,12 @@ int do_dtbload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 #ifdef CONFIG_OF_LIBFDT
     void    *hdr;
+#if defined(CONFIG_ANDROID_IMG)	
     void    *dest_addr;
     unsigned    offset1;
     unsigned    offset2;
     unsigned    fdt_addr;
+#endif
     //int ret;
     //char dest[11];
 
@@ -25,7 +27,6 @@ int do_dtbload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #if defined(CONFIG_ANDROID_IMG)	
     boot_img_hdr *hdr_addr = hdr;
-#endif
 
     if((genimg_get_format(hdr)) == IMAGE_FORMAT_ANDROID)
     {
@@ -60,6 +61,7 @@ int do_dtbload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                 printf("load dtb file to memory 0x%x\n",(unsigned int)dest_addr);
         }
     }
+#endif
 #endif
     return 0;
 }
