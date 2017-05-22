@@ -59,7 +59,7 @@ static void aml_i2c_set_clk(struct aml_i2c *i2c)
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	unsigned int i2c_clock_set;
 	unsigned int sys_clk;
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 	//have not thought about sleep mode, sleep mode is low system clock
 	sys_clk = get_clk81();
 	AML_I2C_DBG(1, "clk81 is 0x%x\n", sys_clk);
@@ -139,7 +139,7 @@ static void aml_i2c_dbg(struct aml_i2c *i2c)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	int i;
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 
 	if(i2c->i2c_debug == 0)
 		return ;
@@ -201,7 +201,7 @@ static void aml_i2c_set_token_list(struct aml_i2c *i2c)
 static void aml_i2c_hw_init(struct aml_i2c *i2c, unsigned int use_pio)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 
 	aml_i2c_set_clk(i2c);
 
@@ -215,7 +215,7 @@ static void aml_i2c_hw_init(struct aml_i2c *i2c, unsigned int use_pio)
 static int aml_i2c_check_error(struct aml_i2c *i2c)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 	ctrl = (struct aml_i2c_reg_ctrl*)&(i2c->master_regs->i2c_ctrl);
 	
 	if(ctrl->error)
@@ -232,7 +232,7 @@ static int aml_i2c_wait_ack(struct aml_i2c *i2c)
 {
 	AML_I2C_DBG(1, "FILE:%s:%d, FUNC:%s\n", __FILE__,__LINE__,__func__);
 	int i;
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 	
 	for(i=0; i<i2c->wait_count; i++) {
 		udelay(i2c->wait_ack_interval);
@@ -532,7 +532,7 @@ int aml_i2c_xfer_slow(struct i2c_msg *msgs,
 	if (ret == 0)
 		return num;
 	else {
-		struct aml_i2c_reg_ctrl* ctrl;
+		volatile struct aml_i2c_reg_ctrl* ctrl;
 
 		ctrl = ((struct aml_i2c_reg_ctrl*)&(i2c->master_regs->i2c_ctrl));
 		//if(ctrl->cur_token == TOKEN_START)
@@ -556,7 +556,7 @@ __attribute__((unused))  static ssize_t show_i2c_debug(void)
 __attribute__((unused))  static ssize_t show_i2c_info(void)
 {
 	struct aml_i2c *i2c = &g_aml_i2c_data;
-	struct aml_i2c_reg_ctrl* ctrl;
+	volatile struct aml_i2c_reg_ctrl* ctrl;
 
 	printf( "i2c master %s current slave addr is 0x%x\n", 
 						i2c->master_no?"b":"a", i2c->cur_slave_addr);
@@ -686,7 +686,7 @@ int aml_i2c_init(void)
 int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
 	int ret;
-	struct i2c_msg *msgs = {0};
+	struct i2c_msg msg[2];
     /*
 	 * I2C data address within the chip.  This can be 1 or
 	 * 2 bytes long.  Some day it might be 3 bytes long :-).
@@ -732,44 +732,9 @@ int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	}
 
 
-	if(len==1)
-	{
-		struct i2c_msg msg[] = {
-        	{
-            	.addr = chip,
-            	.flags = 0,
-            	.len = alen,             //I2C data address length.
-            	.buf = devaddr,
-        	},
-        	{
-            	.addr = chip,
-            	.flags = 1,
-            	.len = 1,                //read 1 byte from I2C data address.
-            	.buf = buffer,
-        	}
-    	};
-		msgs = msg;
-	}
-	else if(len>1)
-	{
-		struct i2c_msg msg[] = {
-        	{
-            	.addr = chip,
-            	.flags = 0,
-            	.len = alen,             //I2C data address length.
-            	.buf = devaddr,
-        	},
-        	{
-            	.addr = chip,
-            	.flags = 1,
-            	.len = len,              //read len bytes from I2C data address.
-            	.buf = buffer,
-        	}
-		};
-		msgs = msg;
-	}
-	
-	ret = aml_i2c_xfer(msgs, 2);
+	msg[0] = ((struct i2c_msg) {.addr = chip, .flags = 0, .len = alen, .buf = devaddr});
+	msg[1] = ((struct i2c_msg) {.addr = chip, .flags = 1, .len = len, .buf = buffer});
+	ret = aml_i2c_xfer(msg, 2);
     if (ret < 0) {
         printf("%s: i2c transfer failed\n", __FUNCTION__);
 		return ret;
@@ -794,7 +759,7 @@ int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buf
 {
 	int ret;
 	int length = 0;
-	struct i2c_msg *msgs;
+	struct i2c_msg msg;
 	uint8_t buff[3];
 
     /*
@@ -865,16 +830,6 @@ int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buf
 			*/
 
 		}
-
-    	struct i2c_msg msg[] = {
-        	{
-       	 	.addr = chip,
-        	.flags = 0,
-        	.len = length,
-        	.buf = buff,
-       		}
-    	};
-		msgs = msg;
 	}
 	else
 	{
@@ -884,8 +839,9 @@ int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buf
 		printf("I2C write data length is %d. \n",len);
 		return -1;
 	}
-	
-	ret = aml_i2c_xfer(msgs, 1);
+
+	msg = ((struct i2c_msg) {.addr = chip, .flags = 0, .len = length, .buf = buff});
+	ret = aml_i2c_xfer(&msg, 1);
     if (ret < 0) {
         printf("%s: i2c transfer failed\n", __FUNCTION__);
 		return ret;
@@ -994,4 +950,3 @@ int i2c_set_bus_speed(unsigned int speed)
 	}
 	
 }
-
