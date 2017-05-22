@@ -78,7 +78,11 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	serial_puts(" us\n");
 
 #if defined(CONFIG_AML_A5) && defined(CONFIG_AML_SECU_BOOT_V2) && defined(CONFIG_AML_SPL_L1_CACHE_ON)
-    asm volatile ("ldr	sp, =(0x2000000)");
+#if !defined(CONFIG_DDR3_256MB)
+    asm volatile ("ldr	sp, =(0x12000000)");
+#else
+    asm volatile ("ldr  sp, =(0x2000000)");
+#endif
     //serial_puts("aml log : set SP to 0x12000000\n");
 #endif
 
