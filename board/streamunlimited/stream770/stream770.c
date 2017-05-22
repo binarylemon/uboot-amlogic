@@ -611,26 +611,30 @@ int board_init(void)
 #define	SZ_1M	0x100000
 static struct mtd_partition normal_partition_info[] = {
     {
-        .name = "boot",
-        .offset = 3*SZ_1M,
-        .size = 9*SZ_1M,
+        .name = "constants",
+        .offset = 3 * SZ_1M,
+        .size = 0x80000,
     },
     {
-        .name = "upgrade",
-        .offset = 12*SZ_1M,
-        .size = 152*SZ_1M,
+        .name = "u-boot-env",
+        .offset = MTDPART_OFS_APPEND,
+        .size = 0x80000,
     },
     {
-        .name = "boot1",
-        .offset = 164*SZ_1M,
-        .size = 9*SZ_1M,
+        .name = "swufit",
+        .offset = MTDPART_OFS_APPEND,
+        .size = 32 * SZ_1M,
     },
     {
-        .name = "userdata",
+        .name = "fit",
+        .offset = MTDPART_OFS_APPEND,
+        .size = 12 * SZ_1M,
+    },
+    {
+        .name = "data",
         .offset = MTDPART_OFS_APPEND,
         .size = MTDPART_SIZ_FULL,
     },
-
 };
 
 static struct aml_nand_platform aml_nand_mid_platform[] = {
