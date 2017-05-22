@@ -627,6 +627,10 @@ static void board_i2c_init(void)
 
 	if (!axp152_init())
 	{
+		/* set VDD_EE and VDDCPU to 1.1V. VDD_EE must be set to 1.1V
+		 * for better CPU stability - 0.9V is too low and some boards
+		 * are not flashable */
+		axp152_set_dcdc2(1100);
 		axp152_set_ldo0(AXP152_LDO0_MVOLT_3300);
 	}
 
