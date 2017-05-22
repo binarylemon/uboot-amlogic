@@ -18,7 +18,6 @@
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
 #define CONFIG_RBTREE
-#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 
 #define CONFIG_AML_V2_USBTOOL 1
 #define CONFIG_SHA1
