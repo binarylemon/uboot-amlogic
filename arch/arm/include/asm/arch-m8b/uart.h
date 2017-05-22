@@ -26,8 +26,10 @@
 #elif CONFIG_CONS_INDEX==2
 #define UART_PORT_CONS UART_PORT_AO
 #define USE_AO_UART   1
+#elif CONFIG_CONS_INDEX==3
+#define UART_PORT_CONS UART_PORT_2
 #else
-#error Please define CONFIG_CONS_INDEX==[0|1]
+#error Please define CONFIG_CONS_INDEX==[0|1|2|3]
 #endif
 /*
 #define UART_PORT_0     CBUS_REG_ADDR(UART0_WFIFO)
@@ -47,6 +49,7 @@
 #define UART_CLK_SRC    CLK81
 #define UART_PORT_0     UART0_WFIFO
 #define UART_PORT_1     UART1_WFIFO
+#define UART_PORT_2     UART2_WFIFO
 #define UART_PORT_AO    P_AO_UART_WFIFO
 #define UART_WFIFO      0
 #define UART_RFIFO      1

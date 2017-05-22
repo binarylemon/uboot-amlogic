@@ -3,10 +3,9 @@
 #include <asm/arch/io.h>
 #include <asm/arch/uart.h>
 SPL_STATIC_FUNC int serial_set_pin_port(unsigned port_base)
-
 {
-    //UART in "Always On Module"
-    //GPIOAO_0==tx,GPIOAO_1==rx
-    //setbits_le32(P_AO_RTI_PIN_MUX_REG,3<<11);
-    return 0;
+	// UART C
+	// GPIODV_24==tx,GPIODV_25==rx
+	setbits_le32(P_PERIPHS_PIN_MUX_6, 3 << 22);
+	return 0;
 }

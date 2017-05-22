@@ -41,7 +41,7 @@
 #define PORT_C_CARD_TYPE            CARD_TYPE_MMC // CARD_TYPE_MMC/CARD_TYPE_SD
 
 //UART Sectoion
-#define CONFIG_CONS_INDEX   2
+#define CONFIG_CONS_INDEX	3
 #define CONFIG_IR_REMOTE_WAKEUP 1
 //support "boot,bootd"
 //#define CONFIG_CMD_BOOTD 1
