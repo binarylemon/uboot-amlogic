@@ -19,6 +19,11 @@
 
 #endif /*CONFIG_AML_I2C*/
 
+#include <nand.h>
+
+#include "../common/device_interface.h"
+
+static struct sue_device_info __attribute__((section (".data"))) current_device;
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -686,7 +691,51 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-    key_init();
+	key_init();
+
+	sue_carrier_ops_init(&current_device);
+	sue_carrier_init(&current_device);
+	return 0;
+}
+
+int board_early_init_f(void)
+{
+	sue_device_detect(&current_device);
+	return 0;
+}
+
+int board_late_init(void)
+{
+	char buffer[64];
+
+//	if (fwupdate_init(&current_device) < 0) {
+//		printf("ERROR: fwupdate_init() call failed!\n");
+//	}
+
+//	if (sue_setup_mtdparts() < 0) {
+//		printf("ERROR: sue_setup_mtdparts() call failed!\n");
+//	}
+
+//	imx_iomux_v3_setup_multiple_pads(wdog_pads, ARRAY_SIZE(wdog_pads));
+//	set_wdog_reset((struct wdog_regs *)WDOG1_BASE_ADDR);
+//
+	printf("nand_info->size=%lld\n", nand_info[0]->size);
+
+	sprintf(buffer, "%s%c%c_%s",
+			sue_device_get_canonical_module_name(&current_device), 
+			(gd->ram_size >> 20 > 256) ? '4' : '2',
+			(nand_info[0]->size >> 20 > 256) ? '4' : '2',
+			sue_device_get_canonical_carrier_name(&current_device));
+	printf("Setting fit_config: %s\n", buffer);
+	setenv("fit_config", buffer);
+
+	// pass board 'secure' state (ie, locked secure fuses/..) to env
+//	snprintf(buffer, sizeof(buffer), "%d", is_hab_enabled() ? 1 : 0);
+//	printf("Setting secure_board: %s\n", buffer);
+//	setenv("secure_board", buffer);
+
+	sue_carrier_late_init(&current_device);
+
 	return 0;
 }
 

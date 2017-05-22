@@ -50,6 +50,9 @@
 //#define CONFIG_VIDEO_AMLLCD
 #define LCD_BPP LCD_COLOR16
 
+#define CONFIG_BOARD_EARLY_INIT_F
+#define BOARD_LATE_INIT
+
 #define CONFIG_ACS
 #ifdef CONFIG_ACS
 #define CONFIG_DDR_SIZE_IND_ADDR 0xD9000000	//pass memory size, spl->uboot
