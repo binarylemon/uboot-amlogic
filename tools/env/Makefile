@@ -23,9 +23,12 @@
 
 include $(TOPDIR)/config.mk
 
-HOSTSRCS	:=  fw_env.c 
-#HOSTCC = arm-none-linux-gnueabi-gcc
-HOSTCC = arm-linux-gnueabihf-gcc 
+ifdef CONFIG_AML_MESON 
+HOSTSRCS	:=  fw_env_aml.c 
+HOSTCC = arm-none-linux-gnueabi-gcc
+else
+HOSTSRCS := fw_env.c 
+endif
 
 HOSTSRCS += $(obj)crc32.c  fw_env_main.c
 HEADERS	:= fw_env.h

@@ -1,13 +1,4 @@
 
-###########################################################
-1¡¢complie fw_printenv tool
-   cd uboot
-   make tools-all
-			
-2¡¢copy build/tools/env/fw_printenv to board bin folder.
-   ln -s /bin/fw_printenv fw_setenv
-
-##########################################################
 This is a demo implementation of a Linux command line tool to access
 the U-Boot's environment variables.
 
