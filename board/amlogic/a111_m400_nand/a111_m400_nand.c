@@ -600,7 +600,6 @@ int board_init(void)
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
 	key_init();
-
 	/* 32k clock init */
 	printf("init 32k clock\n");
         aml_set_reg32_mask(P_PERIPHS_PIN_MUX_9,0x1<<19);//set mode GPIOX_10-->CLK_OUT3
