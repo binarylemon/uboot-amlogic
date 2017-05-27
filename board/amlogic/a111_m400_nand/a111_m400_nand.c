@@ -599,7 +599,13 @@ int board_init(void)
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
 
-    key_init();
+	key_init();
+
+	/* 32k clock init */
+	printf("init 32k clock\n");
+        aml_set_reg32_mask(P_PERIPHS_PIN_MUX_9,0x1<<19);//set mode GPIOX_10-->CLK_OUT3
+        WRITE_CBUS_REG(PWM_PWM_E, 0x16d016d);
+        WRITE_CBUS_REG(PWM_MISC_REG_EF, 0x8001);
 	return 0;
 }
 
