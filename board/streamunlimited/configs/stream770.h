@@ -1,14 +1,14 @@
-#ifndef __CONFIG_M8B_M400_NAND_H__
-#define __CONFIG_M8B_M400_NAND_H__
+#ifndef __CONFIG_STREAM770_H__
+#define __CONFIG_STREAM770_H__
 
 #include <configs/sue_fwupdate_common.h>
 
-#define CONFIG_MACH_MESON8_M400  // generate M8 M200 machid number
+//#define CONFIG_MACH_MESON8_M400	// generate M8 M200 machid number
 
-#define CONFIG_MACH_M8B_M400
-#define CONFIG_POWER_SPL
-#define CONFIG_PWM_VDDEE_VOLTAGE            900   //VDDEE voltage when boot, must have
-#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    950 //VDDEE voltage when suspend, must have
+//#define CONFIG_MACH_M8B_M400
+#define CONFIG_POWER_SPL	// init power for all domians, must have
+//#define CONFIG_PWM_VDDEE_VOLTAGE            900   //VDDEE voltage when boot, must have
+//#define CONFIG_PWM_VDDEE_SUSPEND_VOLTAGE    950 //VDDEE voltage when suspend, must have
 
 #ifdef CONFIG_NAND_BASE_MTD
 #define CONFIG_SPI_NAND_EMMC_COMPATIBLE		1
@@ -18,6 +18,7 @@
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
 #define CONFIG_RBTREE
+//#define CONFIG_CMD_IMGREAD  1   //read the actual size of boot.img/recovery.img/logo.img use cmd 'imgread'
 
 #define CONFIG_AML_V2_USBTOOL 1
 #define CONFIG_SHA1
@@ -49,7 +50,7 @@
 
 //Enable LCD output
 //#define CONFIG_VIDEO_AMLLCD
-#define LCD_BPP LCD_COLOR16
+//#define LCD_BPP LCD_COLOR16
 
 #define CONFIG_BOARD_EARLY_INIT_F
 #define BOARD_LATE_INIT
@@ -75,7 +76,7 @@
 #define CONFIG_CMD_NAND  1
 //#define CONFIG_VIDEO_AML 1
 //#define CONFIG_CMD_BMP 1
-#define CONFIG_OSD_SCALE_ENABLE 1
+//#define CONFIG_OSD_SCALE_ENABLE 1
 
 //Enable storage devices
 #define CONFIG_CMD_SF    1
@@ -89,7 +90,7 @@
 #define CONFIG_CMD_SARADC
 //#define CONFIG_MACHID_CHECK 1
 //#define CONFIG_CMD_SUSPEND 1
-#define CONFIG_IR_REMOTE 1
+//#define CONFIG_IR_REMOTE 1
 #define CONFIG_L2_OFF	 1
 
 //#define CONFIG_CMD_NET   1
@@ -164,8 +165,8 @@
 	"loadaddr=0x12000000\0" \
 	"loadaddr_logo=0x13000000\0" \
 	"testaddr=0x12400000\0" \
-	"bootm_size=0x80000000\0" \
-	"initrd_high=0x60000000\0" \
+	"bootm_size=0x20000000\0" \
+	"initrd_high=0x1e000000\0" \
 	"fdt_addr=0x14000000\0" \
 	"fdt_high=0xffffffff\0" \
 	"swu_load_addr=0x15000000\0"
@@ -174,9 +175,9 @@
 	"loadaddr=0x6000000\0" \
 	"loadaddr_logo=0x7000000\0" \
 	"testaddr=0x9000000\0" \
-	"bootm_size=0x8000000\0" \
-	"initrd_high=0x6000000\0" \
-	"fdt_addr=0x8000000\0" \
+	"bootm_size=0x10000000\0" \
+	"initrd_high=0x0e000000\0" \
+	"fdt_addr=0x08000000\0" \
 	"fdt_high=0xffffffff\0" \
 	"swu_load_addr=0x6000000\0"
 #endif
@@ -465,8 +466,9 @@
 #define CONFIG_OF_LIBFDT	1
 #define CONFIG_DT_PRELOAD	1
 #define CONFIG_SYS_BOOTMAPSZ   PHYS_MEMORY_SIZE       /* Initial Memory map for Linux */
+//#define CONFIG_ANDROID_IMG	1
 
-#define CONFIG_CMD_IMGPACK 1
+//#define CONFIG_CMD_IMGPACK 1
 
 //M8 security boot
 //#define CONFIG_SECU_BOOT	1
@@ -490,27 +492,6 @@
 * CPU switch test for uboot
 */
 //#define CONFIG_TEST_CPU_SWITCH 1
-
-
-#if defined(CONFIG_VLSI_EMULATOR)
-   //#undef CFG_DDR3_2GB
-
-   #undef CONFIG_BOOTCOMMAND
-   #define CONFIG_BOOTCOMMAND "echo Uboot for PXP is run..."
-
-   //#define CFG_DDR3_1GB
-   #define CONFIG_NO_DDR_PUB_VT_CHECK 1
-
-   #undef CONFIG_CMD_AUTOSCRIPT
-
-   #undef CONFIG_CMD_REBOOT
-   #undef CONFIG_PREBOOT
-
-   #undef CONFIG_AML_SUSPEND
-   #undef CONFIG_CMD_SUSPEND
-
-   #define CONFIG_AML_DISABLE_CRYPTO_UBOOT
-#endif
 
 /*
  * Secure OS
@@ -536,6 +517,8 @@
 
 #endif //CONFIG_MESON_TRUSTZONE
 
+#define CLOSE_GATE_TVOUT
+
 #define CONFIG_CMD_IMI	1
 
 
@@ -543,4 +526,4 @@
 #define CONFIG_CMD_SETEXPR	1
 #define CONFIG_CMD_ENV_EXISTS	1
 
-#endif //__CONFIG_M8B_M400_NAND_H__
+#endif //__CONFIG_STREAM770_H__
