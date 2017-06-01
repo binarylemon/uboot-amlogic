@@ -909,6 +909,10 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	mem_size_arg_process();
 #endif
 
+#ifdef CONFIG_CMD_RSVMEM
+	run_command("rsvmem check", 0);
+#endif
+
 	boot_fn = boot_os[images.os.os];
 
 	if (boot_fn == NULL) {

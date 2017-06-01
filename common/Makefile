@@ -242,6 +242,7 @@ COBJS-$(CONFIG_AML_AXI_RATIO)+=cmd_clockchange.o
 COBJS-$(CONFIG_AML_JPEG_LOGO) += cmd_jpeg.o
 COBJS-$(CONFIG_AML_JPEG_LOGO) += jdecEngine.o
 COBJS-$(CONFIG_INSTABOOT) += instaboot.o cmd_wipeisb.o
+COBJS-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o
 
 COBJS	:= $(sort $(COBJS-y))
 XCOBJS	:= $(sort $(XCOBJS-y))
