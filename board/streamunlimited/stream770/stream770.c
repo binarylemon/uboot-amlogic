@@ -693,6 +693,12 @@ int board_init(void)
 
 	key_init();
 
+	/* 32k clock init */
+	printf("init 32k clock (from 24MHz xtal src)\n");
+        aml_set_reg32_mask(P_PERIPHS_PIN_MUX_9, 1 << 19);	//set mode GPIOX_10-->CLK_OUT3
+        WRITE_CBUS_REG(PWM_PWM_E, 0x32aa32a8);
+        WRITE_CBUS_REG(PWM_MISC_REG_EF, 0x8031);
+
 	sue_carrier_ops_init(&current_device);
 	sue_carrier_init(&current_device);
 	return 0;
