@@ -166,7 +166,7 @@
 	"chipname=8726m8\0" \
 	"initrd_high=60000000\0" \
 	"outputmode=1080p\0" \
-	"initargs=root=/dev/ubi0_0 rootfstype=ubifs init=/sbin/init console=ttyS0,115200n8 no_console_suspend\0"\
+	"initargs=root=/dev/ubi0_0 rootfstype=ubifs init=/sbin/init console=ttyS0,115200n8 no_console_suspend system_partition_name=upgrade\0"\
 	"video_dev=tvout\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
