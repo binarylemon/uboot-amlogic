@@ -181,6 +181,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 	{"A revision NAND 1GiB H27U1G8F2CTR ", {0xad, 0xf1, 0x80, 0x1d, 0xad, 0xf1}, 2048, 128, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},	//hynix.
 	{"A revision NAND 4Gib EMST ", {0xc8, 0xac, 0x90, 0x15, 0x54, 0x7f}, 2048, 512, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},	//emst.
 	{"A revision NAND 4Gib EMST ", {0xc8, 0xda, 0x90, 0x95, 0x44, 0x7f}, 2048, 256, 0x20000, 64, 1, 20, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},  //emst.
+	{"A revision NAND 4Gib TC ",   {0x98, 0xdc, 0x90, 0x26, 0x76, 0x16}, 4096, 512, 0x40000, 256, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},  //emst.
 	{"A revision NAND 4Gib TC58NVG1S3HBAI4 ", {0x98, 0xda, 0x90, 0x15, 0x76}, 2048, 256, 0x20000, 64, 1, 20, 25, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
 	{"A revision NAND 4Gib MT29F2G08ABA ", {NAND_MFR_MICRON, 0xda, 0x90, 0x95, 0x06}, 2048, 256, 0x20000, 64, 1, 16, 15, 0, (NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
 
@@ -2367,6 +2368,7 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 				sprintf(temp_parts->name, "mtd%d", part_num++);
 			}
 		}
+
 #ifdef CONFIG_AML_NAND_KEY
 		loff_t key_block;
 		temp_parts = parts + (nr-1);
@@ -2375,9 +2377,16 @@ static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
 		if(temp_parts->size == MTDPART_SIZ_FULL){
 			temp_parts->size = mtd->size - temp_parts->offset - key_block*mtd->erasesize;
 		}
-		else{
+		else {
 			temp_parts->size -= key_block*mtd->erasesize;
 		}
+#endif
+
+#ifdef CONFIG_SECURE_NAND
+		loff_t secure_block;
+		temp_parts = parts + (nr-1);
+		secure_block = aml_chip->aml_nandsecure_info->end_block - aml_chip->aml_nandsecure_info->start_block + 1;
+		temp_parts->size -= secure_block * mtd->erasesize;
 #endif
 	}
 
@@ -6381,6 +6390,8 @@ RE_SEARCH:
 	return error;
 }
 
+#define AML_FORCE_ERASE_CHIP	(0)
+
 static int aml_nand_env_init(struct mtd_info *mtd)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
@@ -6395,7 +6406,7 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	struct mtd_oob_ops aml_oob_ops;
 	unsigned char env_oob_buf[sizeof(struct env_oobinfo_t)];
 
-#if 0
+#if (AML_FORCE_ERASE_CHIP)
 	struct erase_info erase_info_read;
 	size_t addr;
 	int ii=0;
@@ -6443,16 +6454,23 @@ static int aml_nand_env_init(struct mtd_info *mtd)
 	if ((default_environment_size + sizeof(struct aml_nand_bbt_info)) > ENV_SIZE)
 		total_blk = start_blk + max_env_blk;
 
-#if 0
+#if (AML_FORCE_ERASE_CHIP)
+	printf("%s() %d: secure valid %d, key valid %d\n", 
+		aml_chip->aml_nandsecure_info->secure_valid,
+		aml_chip->aml_nandkey_info->env_valid);
+	/* disprotect keys & secure */
+	aml_chip->secure_protect = 1;
+	aml_chip->key_protect = 1;
 	addr = 0;
 	do {
 		memset(&erase_info_read, 0, sizeof(struct erase_info));
-			erase_info_read.mtd = mtd;
+		erase_info_read.mtd = mtd;
 		erase_info_read.addr = addr;
 		erase_info_read.len = mtd->erasesize;
-				addr += mtd->erasesize;
+		addr += mtd->erasesize;
 		error = mtd->erase(mtd, &erase_info_read);
-	}while ((ii++) < 1024);
+		printf("...%d\r", ii);
+	}while ((ii++) < 2048);
 	return -ENOMEM;
 #endif
 
@@ -6719,7 +6737,11 @@ static int aml_nand_env_check(struct mtd_info *mtd)
 	loff_t offset =0;
 
 	ret = aml_nand_env_init(mtd);
-	
+
+#if (AML_FORCE_ERASE_CHIP)
+	return 0;
+#endif
+
 	if ((ret !=0)&&((ret != (-1))))
 		return ret;
 
@@ -7793,12 +7815,18 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		err=aml_key_init(aml_chip);
 		if(err)
 			printk("aml key init error\n");
+		printk("%s,%d : key -> start %d,  end %d\n",
+			__func__,__LINE__,aml_chip->aml_nandkey_info->start_block,
+			aml_chip->aml_nandkey_info->end_block);	
 #endif		
 #ifdef CONFIG_SECURE_NAND
 		extern int secure_device_init(struct mtd_info *mtd);
 		err = secure_device_init(mtd);
 		if(err)
 			printk("aml secure init error\n");
+		printk("%s,%d : secure -> start %d,  end %d\n",
+			__func__,__LINE__,aml_chip->aml_nandsecure_info->start_block,
+			aml_chip->aml_nandsecure_info->end_block);	
 #endif
 
 #ifdef NEW_NAND_SUPPORT

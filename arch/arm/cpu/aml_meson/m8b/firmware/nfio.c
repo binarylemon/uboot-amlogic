@@ -197,7 +197,7 @@ STATIC_PREFIX short nfio_read_id(void)
 	return 0;
 }
 #ifdef NAND_RETRY_ROMCODE
-
+#ifndef CONFIG_NAND_BASE_MTD
 #define EFUSE_NAND_EXTRA_CMD        4 /* size: 16 */
 #define EFUSE_LICENSE_OFFSET	    0 /* size:  4 */
 #define LICENSE_NAND_USE_RB_PIN	   (1<<22)
@@ -880,8 +880,10 @@ void read_retry_efuse(int retry, int *cmd)
 	}
 	cmd[i] = 0;*/
 }
+#endif
 void nfio_read_retry(int mode, unsigned ext, unsigned read_page)
 {
+#ifndef CONFIG_NAND_BASE_MTD
 	static int retry = 0;
 	int i, cmd[256];
 
@@ -936,9 +938,11 @@ void nfio_read_retry(int mode, unsigned ext, unsigned read_page)
 	while ((readl(P_NAND_CMD)>>22&0x1f) < 0x1f && cmd[i] != 0) {
 		writel(cmd[i++], P_NAND_CMD);
 	}
+#endif
 }
 static void retry_eixt(unsigned ext)
 {
+#ifndef CONFIG_NAND_BASE_MTD
 	struct spl_read_retry_info *retry_info = &spl_retry_info;
 	if (retry_info->new_retry) {
 		switch (nand_retry.id)
@@ -953,6 +957,7 @@ static void retry_eixt(unsigned ext)
 				break;
 		}
 	}
+#endif
 }
 #else
 void nfio_read_retry(int mode, unsigned ext, unsigned read_page)
@@ -1194,18 +1199,22 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	/*unsigned a2h_cmd_flag = 0;*/
 	unsigned nand_dma_mode = DEFAULT_ECC_MODE;
 #ifdef NAND_RETRY_ROMCODE
+#ifndef CONFIG_NAND_BASE_MTD
 	unsigned license = 0;
 	unsigned toggle_mode = 0;
+#endif
 #endif
 	unsigned no_rb = 1;   /* default no rb */
 
 	struct nand_page0_cfg_t *cfg = (struct nand_page0_cfg_t *)NAND_TEMP_BUF;
 
 #ifdef NAND_RETRY_ROMCODE
+#ifndef CONFIG_NAND_BASE_MTD
 //	efuse_read(&license,EFUSE_LICENSE_OFFSET,sizeof(license));
 
 	toggle_mode = (license&0x7) == POR_1ST_NAND_TOG ? 2:0;
 	no_rb = license & LICENSE_NAND_USE_RB_PIN ? 0 : 1;
+#endif
 #endif
 	/* pull up enable */
 	setbits_le32(P_PAD_PULL_UP_EN_REG2, 0x85ff);
@@ -1262,8 +1271,10 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 	nand_retry.no_rb = no_rb;
 
 #ifdef NAND_RETRY_ROMCODE
+#ifndef CONFIG_NAND_BASE_MTD
     if ( license & LICENSE_NAND_EXTRA_CMD )
 		nand_retry.id = NAND_MFR_EFUSE;
+#endif
  #if 0
 	// set efuse bit to enable read retry
     if ( license & LICENSE_NAND_ENABLE_RETRY ) {
@@ -1308,6 +1319,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 		case NAND_MFR_MICRON :
 			nand_retry.max = 8;
 			break;
+#ifndef CONFIG_NAND_BASE_MTD
 		case NAND_MFR_TOSHIBA :
 			 nand_retry.max = 8;
 			 if (spl_retry_info.new_retry) {
@@ -1317,9 +1329,11 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 				nand_retry.max = 9;
 			 }
 			break;
+#endif
 		case NAND_MFR_SAMSUNG :
 			 nand_retry.max = 15;
 			break;
+#ifndef CONFIG_NAND_BASE_MTD
 		case NAND_MFR_SANDISK :
 			 nand_retry.max = 22;
 			 if (spl_retry_info.new_retry) {
@@ -1329,6 +1343,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 				retry_sandisk_a19_exit(&spl_retry_info, ext);
 			 }
 			break;
+#endif
 		case NAND_MFR_HYNIX :
 		case NAND_MFR_FUJITSU :
 		case NAND_MFR_NATIONAL :
@@ -1364,7 +1379,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 				nand_dma_mode |= (1<<24);
 				temp_max = nand_retry.max;
 				nand_retry.max = 0;
-				ret = nfio_page_read((partition_num<<8), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
+				ret = nfio_page_read((partition_num<<9), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
 				nand_retry.max = temp_max;
 			}
 #if 0		/* no need since romcode already finish this work */
@@ -1372,7 +1387,7 @@ STATIC_PREFIX int nf_init(unsigned ext, unsigned *data_size)
 						nand_retry->id == NAND_MFR_SAMSUNG)) {
 				toggle_mode = 2;
 				(*P_NAND_CFG) |= (toggle_mode<<10);
-				ret = nfio_page_read((partition_num<<8), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
+				ret = nfio_page_read((partition_num<<9), NAND_TEMP_BUF, (unsigned char *)NAND_OOB_BUF, nand_dma_mode);
 			}
 #endif
 		}
@@ -2092,7 +2107,7 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 	unsigned char *oob_buf = (unsigned char *)NAND_OOB_BUF;
 	int i, j, times, times_tamp = 0, ret = 0;
 	unsigned int magic_name, plane, chip_num /*,nand_read_info,ce*/;
-	unsigned int secure_blk, chipnr, tmp_blk, start_blk = 0;
+	unsigned int secure_blk, chipnr, tmp_blk, start_blk = 0, end_blk = 0;
 	struct nand_page0_info_t *page0_info = (struct nand_page0_info_t *)((NAND_TEMP_BUF+384)-sizeof(struct nand_page0_info_t));
 
 	plane = 1;
@@ -2148,10 +2163,16 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 	ok_flag = 0;
 	key_addr = 0;
 	/* read_page = 1024 *data_size; //search from offset page */
-	tmp_blk = start_blk = 4;
+#ifdef CONFIG_NAND_BASE_MTD
+	tmp_blk = start_blk = page0_info->secure_startblock;
+	end_blk = page0_info->secure_endblock;
+#else
+	tmp_blk = start_blk = 1024 / page0_info->pages_in_block; //16 for slc flash; 4 for mlc flash.
+	end_blk = NAND_SEC_MAX_BLK_NUM;
+#endif
 
-	serial_puts("nf_read_secure  step 1\n");
-	for (; start_blk < NAND_SEC_MAX_BLK_NUM; start_blk++) {
+	serial_puts("\nnf_read_secure  step 1\n");
+	for (; start_blk <= end_blk; start_blk++) {
 
 		tmp_page = (((start_blk - start_blk % chip_num) / chip_num) + tmp_blk - tmp_blk/chip_num) * pages_in_block;
 		chipnr = start_blk % chip_num;
@@ -2198,7 +2219,7 @@ STATIC_PREFIX void nf_read_secure(unsigned target)
 	/* serial_puts("\n"); */
 
 	key_addr = 0;
-	sec_pages = (CONFIG_SECURE_SIZE/data_size)+1;
+	sec_pages = (CONFIG_SECURE_SIZE/data_size);
 
 	if (page0_info->new_nand_type == 6)
 		sec_pages++;

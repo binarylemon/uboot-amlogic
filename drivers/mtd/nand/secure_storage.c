@@ -296,7 +296,7 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 	struct nand_chip *chip = &aml_chip->chip;
 	struct secure_oobinfo_t *secure_oobinfo;
 	struct env_free_node_t *secure_free_node, *secure_tmp_node, *secure_prev_node;
-	int error = 0, err, start_blk, tmp_blk, secure_blk, i, pages_per_blk, max_env_blk, phys_erase_shift;
+	int error = 0, err, start_blk, tmp_blk, secure_blk, i, pages_per_blk, max_secure_blk, phys_erase_shift;
 	loff_t offset;
 	unsigned char *data_buf;
 	unsigned int remain_start_block,remain_tatol_block,remain_block,total_blk;
@@ -333,7 +333,7 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 	aml_chip->aml_nandsecure_info->secure_valid_node->phy_blk_addr = -1;
 
 	phys_erase_shift = fls(mtd->erasesize) - 1;
-	max_env_blk = NAND_SECURE_BLK;
+	max_secure_blk = NAND_SECURE_BLK;
 
 	offset = mtd->size - mtd->erasesize;
 	total_blk = (int)(offset >> phys_erase_shift);
@@ -343,20 +343,22 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 #ifdef CONFIG_AML_NAND_KEY
 	remain_tatol_block = REMAIN_BLOCK_NUM;
 	remain_block = 0;
-	remain_start_block = aml_chip->aml_nandkey_info->start_block;
+	remain_start_block = aml_chip->aml_nandkey_info->start_block - 1;
+	aml_chip->aml_nandsecure_info->end_block = remain_start_block;
 	do{
 		offset = mtd->erasesize;
 		offset *= remain_start_block;
+		printk(">>>> off 0x%llx\n", offset);
 		error = mtd->block_isbad(mtd, offset);
 		if (error == FACTORY_BAD_BLOCK_ERROR) {			
-			remain_start_block++;
+			remain_start_block--;
 			continue;
 		}
-		remain_start_block++;
+		remain_start_block--;
 	}while(++remain_block< remain_tatol_block);
 
-	aml_chip->aml_nandsecure_info->start_block = remain_start_block;
-	aml_chip->aml_nandsecure_info->end_block = total_blk;
+	aml_chip->aml_nandsecure_info->start_block = (int)(offset >> phys_erase_shift);
+	//aml_chip->aml_nandsecure_info->end_block = aml_chip->aml_nandkey_info->start_block - 1;
 	printk("%s,%d : secure start blk %d \n",__func__,__LINE__,aml_chip->aml_nandsecure_info->start_block);	
 #else
 	int bad_blk_cnt = 0;
@@ -389,9 +391,8 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 		offset = mtd->erasesize;
 		offset *= start_blk;
 		error = mtd->block_isbad(mtd, offset);
-		if (error) {
+		if (error)
 			continue;
-		}
 
 		aml_oob_ops->mode = MTD_OOB_AUTO;
 		aml_oob_ops->len = mtd->writesize;
@@ -450,7 +451,7 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 				aml_chip->aml_nandsecure_info->secure_valid_node->timestamp = secure_oobinfo->timestamp;
 			}
 		}
-		else if (secure_blk < max_env_blk) {
+		else if (secure_blk < max_secure_blk) {
 			secure_free_node = kzalloc(sizeof(struct env_free_node_t), GFP_KERNEL);
 			if (secure_free_node == NULL){
 					printk("%s %d no mem for secure_free_node\n", __func__, __LINE__);
@@ -482,9 +483,9 @@ static int aml_nand_secure_init(struct mtd_info *mtd)
 		}
 		secure_blk++;
 
-		if ((secure_blk >= max_env_blk) && (aml_chip->aml_nandsecure_info->secure_valid == 1))
+		if ((secure_blk >= max_secure_blk) && (aml_chip->aml_nandsecure_info->secure_valid == 1))
 			break;
-	} while ((++start_blk) <= total_blk);
+	}  while ((++start_blk) <= aml_chip->aml_nandsecure_info->end_block);
 
 	if (aml_chip->aml_nandsecure_info->secure_valid == 1) {
 		aml_oob_ops->mode = MTD_OOB_AUTO;
@@ -619,8 +620,8 @@ int secure_device_init(struct mtd_info *mtd)
 	int ret = 0;//, start_blk, total_blk, i, j, nr, phys_erase_shift;
 	//loff_t offset;
 
-    	nand_secure_mtd = mtd;
-	printk("secure_device_init : %d\n",__LINE__);
+    nand_secure_mtd = mtd;
+	printk("%s(): %d\n", __func__, __LINE__);
 
 	ret = secure_info_check(mtd);
 	if(ret){

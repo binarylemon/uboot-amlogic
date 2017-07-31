@@ -147,8 +147,8 @@ typedef union nand_core_clk {
 #define	KEY_BLOCK_CNT						4		/* for nand key info, rarely update */
 
 /***uboot code***/
-#define	BOOT_COPY_NUM						4
-#define	BOOT_PAGES_PER_COPY				256
+#define	BOOT_COPY_NUM						2
+#define	BOOT_PAGES_PER_COPY				512
 
 #define	MAX_CYCLE_NUM						20
 
