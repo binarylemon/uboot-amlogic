@@ -110,6 +110,7 @@ unsigned main(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         AML_WATCH_DOG_START();
     }
     serial_puts("\nUSB boot signature checked OK.\n");
+	AML_WATCH_DOG_DISABLE();
 
 #ifdef CONFIG_MESON_TRUSTZONE
     {
