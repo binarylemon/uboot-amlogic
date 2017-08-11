@@ -107,7 +107,7 @@
 #endif
 
 //I2C definitions
-//#define CONFIG_AML_I2C			1
+#define CONFIG_AML_I2C			1
 #ifdef CONFIG_AML_I2C
 #define CONFIG_CMD_I2C			1
 #define HAS_AO_MODULE

@@ -768,6 +768,17 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #ifdef CONFIG_AML_I2C
     extern int aml_i2c_init(void);
     aml_i2c_init();
+   {
+   uchar   byte = 0x10;
+   extern int i2c_write(unsigned char chip, unsigned int addr, int alen,unsigned char *buffer, int len);
+   if (i2c_write(0x30, 0x23, 1, &byte, 1) != 0) { //set vcck/vddee to 1.1v
+       printf ("Error writing the chip axp152.\n");
+   }
+   printf("set vcck/vddee 1.1v\n");
+   }
+
+
+	
 #endif
 #if defined(CONFIG_AML_V2_USBTOOL)
 	if(is_tpl_loaded_from_usb())//is uboot loaded from usb or bootable sdcard

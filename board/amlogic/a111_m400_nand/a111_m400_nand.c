@@ -542,6 +542,76 @@ U_BOOT_CMD(
 );
 
 #endif
+#ifdef CONFIG_AML_I2C 
+/*I2C module is board depend*/
+static void board_i2c_set_pinmux(void){
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+    /*********************************************/
+    /*                | I2C_Master_AO        |I2C_Slave            |       */
+    /*********************************************/
+    /*                | I2C_SCK                | I2C_SCK_SLAVE  |      */
+    /* GPIOAO_4  | [AO_PIN_MUX: 6]     | [AO_PIN_MUX: 2]   |     */
+    /*********************************************/
+    /*                | I2C_SDA                 | I2C_SDA_SLAVE  |     */
+    /* GPIOAO_5  | [AO_PIN_MUX: 5]     | [AO_PIN_MUX: 1]   |     */
+    /*********************************************/	
+
+	//disable all other pins which share with I2C_SDA_AO & I2C_SCK_AO
+    clrbits_le32(P_AO_RTI_PIN_MUX_REG, ((1<<2)|(1<<24)|(1<<1)|(1<<23)));
+    //enable I2C MASTER AO pins
+	setbits_le32(P_AO_RTI_PIN_MUX_REG,
+	(MESON_I2C_MASTER_AO_GPIOAO_4_BIT | MESON_I2C_MASTER_AO_GPIOAO_5_BIT));
+	
+    udelay(10000);
+	
+};
+
+struct aml_i2c_platform g_aml_i2c_plat = {
+    .wait_count         = 1000000,
+    .wait_ack_interval  = 5,
+    .wait_read_interval = 5,
+    .wait_xfer_interval = 5,
+    .master_no          = AML_I2C_MASTER_AO,
+    .use_pio            = 0,
+    .master_i2c_speed   = AML_I2C_SPPED_400K,
+    .master_ao_pinmux = {
+        .scl_reg    = MESON_I2C_MASTER_AO_GPIOAO_4_REG,
+        .scl_bit    = MESON_I2C_MASTER_AO_GPIOAO_4_BIT,
+        .sda_reg    = MESON_I2C_MASTER_AO_GPIOAO_5_REG,
+        .sda_bit    = MESON_I2C_MASTER_AO_GPIOAO_5_BIT,
+    }
+};
+
+static void board_i2c_init(void)
+{		
+	//set I2C pinmux with PCB board layout
+	/*@AML9726-MX-MAINBOARD_V1.0.pdf*/
+	/*@AL5631Q+3G_AUDIO_V1.pdf*/
+	board_i2c_set_pinmux();
+
+	//Amlogic I2C controller initialized
+	//note: it must be call before any I2C operation
+	aml_i2c_init();
+
+	//must call aml_i2c_init(); before any I2C operation	
+	/*M6 board*/
+	//udelay(10000);	
+
+	udelay(10000);
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int before_pmu_init =  get_utimer(0);
+#endif
+
+#ifdef CONFIG_PLATFORM_HAS_PMU
+    board_pmu_init();
+#endif
+#ifdef TEST_UBOOT_BOOT_SPEND_TIME
+	unsigned int after_pmu_init =  get_utimer(0);
+	printf("\nPMU init time %d\n", after_pmu_init-before_pmu_init);
+#endif
+}
+#endif
 
 inline void key_init(void)
 {
