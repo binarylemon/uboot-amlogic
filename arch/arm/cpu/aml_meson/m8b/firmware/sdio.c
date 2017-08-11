@@ -679,8 +679,8 @@ serial_puts("test2\n");
 
 #define print(format)  serial_puts(format)
 
-#define MMC_DATA_BUF1   0x12000000
-#define MMC_DATA_BUF2    0x13000000
+#define MMC_DATA_BUF1   0x8200000
+#define MMC_DATA_BUF2    0x8300000
 
 #define SIZE_1M   0x100000
 #define SIZE_1K 	1024

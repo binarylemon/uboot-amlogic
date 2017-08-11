@@ -35,6 +35,7 @@
 #define CONFIG_AML_NAND_KEY 1
 //#define TEST_UBOOT_BOOT_SPEND_TIME
 
+
 // cart type of each port
 #define PORT_A_CARD_TYPE            CARD_TYPE_UNKNOWN
 #define PORT_B_CARD_TYPE            CARD_TYPE_UNKNOWN
@@ -155,16 +156,14 @@
 
 #ifdef CONFIG_NAND_BASE_MTD
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"loadaddr=0x12000000\0" \
-	"loadaddr_logo=0x13000000\0" \
-	"testaddr=0x12400000\0" \
+	"loadaddr=0x9400000\0" \
+	"loadaddr_logo=0x1300000\0" \
+	"testaddr=0x1240000\0" \
 	"console=ttyS0,115200n8\0" \
 	"bootm_low=0x00000000\0" \
-	"bootm_size=0x80000000\0" \
-	"mmcargs=setenv bootargs console=${console} " \
 	"boardname=m8_board\0" \
 	"chipname=8726m8\0" \
-	"initrd_high=60000000\0" \
+	"initrd_high=6000000\0" \
 	"outputmode=1080p\0" \
 	"initargs=root=/dev/ubi0_0 rootfstype=ubifs init=/sbin/init console=ttyS0,115200n8 no_console_suspend system_partition_name=upgrade\0"\
 	"video_dev=tvout\0" \
@@ -356,12 +355,12 @@
 
 #ifdef CONFIG_ACS
 //#define CONFIG_DDR_MODE_AUTO_DETECT	//ddr bus-width auto detection
-#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
+//#define CONFIG_DDR_SIZE_AUTO_DETECT	//ddr size auto detection
 #endif
 
 //On board DDR capactiy
 #if !(defined(CONFIG_DDR3_512MB) || defined(CONFIG_DDR3_1GB) \
-	|| defined(CONFIG_DDR3_2GB))
+	|| defined(CONFIG_DDR3_2GB) || defined(CONFIG_DDR3_256MB))
 	#error "Please set DDR capacity first!\n"
 #endif
 //above setting will affect following:
@@ -376,7 +375,12 @@
 //row size.  2'b01 : A0~A12.   2'b10 : A0~A13.  2'b11 : A0~A14.  2'b00 : A0~A15.
 //col size.   2'b01 : A0~A8,      2'b10 : A0~A9
 #define PHYS_MEMORY_START        (0x00000000) // ???
-#if   defined(CONFIG_DDR3_512MB)
+#if defined(CONFIG_DDR3_256MB)
+	#define CONFIG_DDR3_ROW_SIZE (2)
+	#define CONFIG_DDR3_COL_SIZE (2)
+	#define CONFIG_DDR_ROW_BITS  (14)
+	#define PHYS_MEMORY_SIZE     (0x10000000) // 256MB
+#elif defined(CONFIG_DDR3_512MB)
 	#define CONFIG_DDR3_ROW_SIZE (2)
 	#define CONFIG_DDR3_COL_SIZE (2)
 	#define CONFIG_DDR_ROW_BITS  (14)
@@ -395,8 +399,8 @@
 	#define PHYS_MEMORY_SIZE     (0x80000000) // 2GB
 #endif
 
-#define CONFIG_SYS_MEMTEST_START      0x10000000  /* memtest works on */
-#define CONFIG_SYS_MEMTEST_END        0x18000000  /* 0 ... 128 MB in DRAM */
+#define CONFIG_SYS_MEMTEST_START      0x1000000  /* memtest works on */      
+#define CONFIG_SYS_MEMTEST_END        0x1800000  /* 0 ... 128 MB in DRAM */  
 #define CONFIG_ENABLE_MEM_DEVICE_TEST 1
 #define CONFIG_NR_DRAM_BANKS	      1	          /* CS1 may or may not be populated */
 
