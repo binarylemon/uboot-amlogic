@@ -315,15 +315,6 @@ void  flush_cache(unsigned long start, unsigned long size)
 	flush_dcache_range(start, start + size);
 }
 
-static inline void cp_delay (void)
-{
-	volatile int i;
-	/* copro seems to need some delay between reading and writing */
-	for (i = 0; i < 100; i++)
-		nop();
-	asm volatile("" : : : "memory");
-}
-
 /* to activate the MMU we need to set up virtual memory: use 1M areas */
 static inline void mmu_setup(void)
 {	
@@ -424,7 +415,6 @@ static inline void mmu_setup(void)
 	
 	/* and enable the mmu */
 	reg = get_cr();	/* get control reg. */
-	cp_delay();
 	set_cr(reg | CR_M);
 }
 
@@ -437,7 +427,6 @@ static void cache_enable(uint32_t cache_bit)
 	if (cache_bit == CR_C)
 		mmu_setup();
 	reg = get_cr();	/* get control reg. */
-	cp_delay();
 	set_cr(reg | cache_bit);
 }
 
@@ -458,7 +447,6 @@ static void cache_disable(uint32_t cache_bit)
 		flush_dcache_all();
 	}
 	reg = get_cr();
-	cp_delay();
 	set_cr(reg & ~cache_bit);
 }
 
