@@ -313,19 +313,6 @@ cpu_init_crit:
 	mcr	p15, 0, r0, c1, c0, 0
 
 	/*
-	 * enable fpu
-	 */
-	mrc     p15, 0, r0, c1, c1, 2
-	orr     r0, r0, #0x00000c00         @2_11<<10 ; enable fpu
-	mcr     p15, 0, r0, c1, c1, 2
-
-	ldr     r0, = (0xf << 20)
-	mcr     p15, 0, r0, c1, c0, 2
-
-	mov     r3, #0x40000000
-	vmsr    FPEXC, r3
-
-	/*
 	 * Jump to board specific initialization...
 	 * The Mask ROM will have already initialized
 	 * basic memory. Go here to bump up clock rate and handle

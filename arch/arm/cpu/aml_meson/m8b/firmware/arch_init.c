@@ -54,4 +54,15 @@ void arch_init(void) {
 		serial_puts("\nno sdio debug board detected ");
 		writel(pinmux_2,P_PERIPHS_PIN_MUX_2);
 	}
+
+	/* enable FPU */
+	asm volatile ("mrc  p15, 0, r0, c1, c1, 2");
+	asm volatile ("orr  r0, r0, #0x00000c00");  //         @2_11<<10 ; enable fpu
+	asm volatile ("mcr  p15, 0, r0, c1, c1, 2");
+
+	asm volatile ("ldr  r0, = (0xf << 20)");
+	asm volatile ("mcr  p15, 0, r0, c1, c0, 2");
+
+	asm volatile ("mov  r0, #0x40000000");
+	asm volatile ("vmsr FPEXC, r0");
 }
