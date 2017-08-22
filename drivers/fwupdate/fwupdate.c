@@ -48,7 +48,7 @@ void set_board_state(BoardState state)
 #if CONFIG_AML_PLATFORM
 #include <asm/arch/reg_addr.h>
 #include <asm/arch/io.h>
-#define _AML_RTC_REG_ADDR   P_PREG_STICKY_REG0
+#define _AML_RTC_REG_ADDR   P_PREG_STICKY_REG1
 static int flag_write (uint8_t index, uint8_t data )
 {
     unsigned int rtcWord = 0;
