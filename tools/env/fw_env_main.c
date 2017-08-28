@@ -118,14 +118,14 @@ main(int argc, char *argv[])
 	}
 
 
-	if (strcmp(cmdname, CMD_PRINTENV) == 0) {
+	if (strcmp(cmdname, CMD_PRINTENV) == 0 || strcmp(cmdname, "fw_printaml") == 0) {
 
 		if (fw_printenv (argc, argv) != 0)
 			return EXIT_FAILURE;
 
 		return EXIT_SUCCESS;
 
-	} else if (strcmp(cmdname, CMD_SETENV) == 0) {
+	} else if (strcmp(cmdname, CMD_SETENV) == 0 || strcmp(cmdname, "fw_setaml") == 0) {
 		if (!script_file) {
 			if (fw_setenv(argc, argv) != 0)
 				return EXIT_FAILURE;

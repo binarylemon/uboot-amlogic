@@ -46,7 +46,7 @@ ifeq ($(MTD_VERSION),old)
 HOSTCPPFLAGS += -DMTD_OLD
 endif
 
-all:	$(obj)fw_printenv $(obj)fw_printconst
+all:	$(obj)fw_printaml $(obj)fw_printenv $(obj)fw_printconst
 
 #ln -s $(obj)fw_printenv $(obj)fw_setenv
 	
