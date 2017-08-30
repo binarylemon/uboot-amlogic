@@ -29,10 +29,18 @@
 #include <asm/io.h>
 /*#include "board.h"*/
 
-/* offset indexes in RTC scratch0 register for each flag */
-#define UPDATE_FLAG_INDEX	0
-#define FAIL_FLAG_INDEX		1
-#define BOOT_COUNT_FLAG_INDEX	2
+/* mask and bit shift in RTC scratch register for each flag */
+#define MSK_UPDATE		1
+#define SHIFT_UPDATE		0
+#define MSK_LOCK		0x02
+#define SHIFT_LOCK		1
+#define MSK_SIGN		0x04
+#define SHIFT_SIGN		2
+#define MSK_FAIL		0x100
+#define SHIFT_FAIL		8
+#define MSK_BOOTCNT		0xff0000
+#define SHIFT_BOOTCNT		16
+
 
 #define debugP(fmt...) //printf("L%d:", __LINE__),printf(fmt)
 #define errorP(fmt...) printf("[ERR]L%d:", __LINE__),printf(fmt)
@@ -49,36 +57,28 @@ void set_board_state(BoardState state)
 #include <asm/arch/reg_addr.h>
 #include <asm/arch/io.h>
 #define _AML_RTC_REG_ADDR   P_PREG_STICKY_REG1
-static int flag_write (uint8_t index, uint8_t data )
+static int flag_write(uint32_t msk, uint32_t shift, uint8_t data)
 {
     unsigned int rtcWord = 0;
 
-    MsgP("data is 0x%08x, index %d\n", data, index);
-    if( index > 3 ) {
-        errorP("index[%d] out of [0,2]\n", index);
-        return __LINE__;
-    }
+    MsgP("wr data is 0x%.8x, mask=0x%.8x, shift=%d\n", data, msk, shift);
 
     rtcWord = readl(_AML_RTC_REG_ADDR);
-    rtcWord &= ~(0xffU<<(index * 8));
-    rtcWord |= data << (index * 8);
+    rtcWord = (rtcWord & ~msk) | ((data << shift) & msk);
     writel(rtcWord, _AML_RTC_REG_ADDR);
 
     return 0;
 }
 
-static int flag_read(uint8_t index, uint8_t* data)
+static int flag_read(uint32_t msk, uint32_t shift, uint8_t* data)
 {
     unsigned int rtcWord = 0;
 
-    if( index > 3 ) {
-        errorP("index[%d] out of [0,2]\n", index);
-        return __LINE__;
-    }
-
     rtcWord = readl(_AML_RTC_REG_ADDR);
     MsgP("rtcWord is 0x%08x\n", rtcWord);
-    *data = (rtcWord >> (index * 8)) & 0xffU;
+    *data = (rtcWord & msk) >> shift;
+    
+    MsgP("rd data is 0x%.8x, mask=0x%.8x, shift=%d\n", *data, msk, shift);
 
     return 0;
 }
@@ -136,6 +136,15 @@ static int flag_read(uint8_t index, uint8_t *data)
 
 #endif// #if CONFIG_AML_PLATFORM
 
+#define FWUPDATE_FLAGS(name, msk, shift) \
+	int fwupdate_get##name (uint8_t *ptr) {return flag_read(msk, shift, ptr);} \
+	int fwupdate_set##name (uint8_t val) {return flag_write(msk, shift, val);}
+
+FWUPDATE_FLAGS(UpdateFlag, MSK_UPDATE, SHIFT_UPDATE);
+FWUPDATE_FLAGS(LockFlag, MSK_LOCK, SHIFT_LOCK);
+FWUPDATE_FLAGS(SignFlag, MSK_SIGN, SHIFT_SIGN);
+FWUPDATE_FLAGS(FailFlag, MSK_FAIL, SHIFT_FAIL);
+FWUPDATE_FLAGS(BootCount, MSK_BOOTCNT, SHIFT_BOOTCNT);
 
 int fwupdate_init(void)
 {
@@ -152,35 +161,6 @@ int fwupdate_init(void)
 	return status;
 }
 
-int fwupdate_getUpdateFlag(uint8_t *pUpdateFlag)
-{
-	return flag_read(UPDATE_FLAG_INDEX, pUpdateFlag);
-}
-
-int fwupdate_setUpdateFlag(uint8_t updateFlag)
-{
-	return flag_write(UPDATE_FLAG_INDEX, updateFlag);
-}
-
-int fwupdate_getFailFlag(uint8_t* pFailFlag)
-{
-	return flag_read(FAIL_FLAG_INDEX, pFailFlag);
-}
-
-int fwupdate_setFailFlag(uint8_t failFlag)
-{
-	return flag_write(FAIL_FLAG_INDEX, failFlag);
-}
-
-int fwupdate_getBootCount(uint8_t* pBootCnt)
-{
-	return flag_read(BOOT_COUNT_FLAG_INDEX, pBootCnt);
-}
-
-int fwupdate_setBootCount(uint8_t bootCnt)
-{
-	return flag_write(BOOT_COUNT_FLAG_INDEX, bootCnt);
-}
 
 //detect GPIOX_16 pressed not shorter than 100ms
 static int fwupdate_getUsbUpdateReq(void)
@@ -201,6 +181,8 @@ static int do_fwup(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	char*       fwupflag = NULL;
 	uint8_t     update;
 	uint8_t     fail;
+	uint8_t     lock;
+	uint8_t     sign;
 	uint8_t     bootcnt;
 	char*       bootlimit;
 	uint32_t    bootmax;
@@ -230,6 +212,14 @@ static int do_fwup(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			if (0 != fwupdate_setFailFlag(0)) {
 				return 1;
 			}
+		} else if (strcmp(fwupflag, "lock") == 0) {
+			if (0 != fwupdate_setLockFlag(0)) {
+				return 1;
+			}
+		} else if (strcmp(fwupflag, "sign") == 0) {
+			if (0 != fwupdate_setSignFlag(0)) {
+				return 1;
+			}
 		}
 		return 0;
 	}
@@ -237,12 +227,16 @@ static int do_fwup(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	if (strcmp(cmd, "flags") == 0) {
 		uint8_t failFlag = 0;
 		uint8_t updateFlag = 0;
+		uint8_t lockFlag = 0;
+		uint8_t signFlag = 0;
 
 		fwupdate_getFailFlag(&failFlag);
 		fwupdate_getUpdateFlag(&updateFlag);
+		fwupdate_getLockFlag(&lockFlag);
+		fwupdate_getSignFlag(&signFlag);
 
-		printf("INFO: Update flags: FAIL: %d, UPDATE: %d\n",
-		       failFlag, updateFlag);
+		printf("INFO: Update flags: FAIL: %d, UPDATE: %d, LOCK: %d SIGN: %d\n",
+		       failFlag, updateFlag, lockFlag, signFlag);
 		return 0;
 	}
 
@@ -263,6 +257,14 @@ static int do_fwup(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			}
 		} else if (strcmp(fwupflag, "fail") == 0) {
 			if (0 != fwupdate_setFailFlag(1)) {
+				return 1;
+			}
+		} else if (strcmp(fwupflag, "lock") == 0) {
+			if (0 != fwupdate_setLockFlag(1)) {
+				return 1;
+			}
+		} else if (strcmp(fwupflag, "sign") == 0) {
+			if (0 != fwupdate_setSignFlag(1)) {
 				return 1;
 			}
 		}
@@ -307,6 +309,35 @@ static int do_fwup(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 		return 0;
 	}
 
+	/*
+	 * Syntax is:
+	 *   0    1
+	 *   fwup lock
+	 */
+	if (strcmp(cmd, "lock") == 0) {
+
+		if (0 > fwupdate_getLockFlag(&lock)) {
+			return 1;
+		} else {
+			return (lock ? 0 : 1);
+		}
+		return 0;
+	}
+
+	/*
+	 * Syntax is:
+	 *   0    1
+	 *   fwup sign
+	 */
+	if (strcmp(cmd, "sign") == 0) {
+
+		if (0 > fwupdate_getSignFlag(&sign)) {
+			return 1;
+		} else {
+			return (sign ? 0 : 1);
+		}
+		return 0;
+	}
 	/*
 	 * Syntax is:
 	 *   0    1
@@ -355,6 +386,8 @@ U_BOOT_CMD(
 		"fwup update     - checks if update flag is set\n"
 		"fwup usb_update_req - checks if USB update request active\n"
 		"fwup fail       - checks if fail flag is set\n"
+		"fwup lock       - checks if lock flag is set\n"
+		"fwup sign       - checks if sign flag is set\n"
 		"fwup incbootcnt - increments boot count\n"
 		"fwup bootcnt    - checks if boot count is less than maximum allowed"
 		);
