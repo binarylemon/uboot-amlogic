@@ -710,13 +710,22 @@ int board_early_init_f(void)
 	return 0;
 }
 
+static int is_locked(void)
+{
+	extern uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+	uint32_t reg = meson_trustzone_sram_read_reg32(0xd9018048);
+
+	printf("0xd9018048 = 0x%.8x, bit7=%d\n", reg, (reg >> 7) & 1);
+	return reg & (1 << 7);
+}
+
 int board_late_init(void)
 {
 	char buffer[64];
 
-//	if (fwupdate_init(&current_device) < 0) {
-//		printf("ERROR: fwupdate_init() call failed!\n");
-//	}
+	if (fwupdate_init(&current_device) < 0) {
+		printf("ERROR: fwupdate_init() call failed!\n");
+	}
 
 //	if (sue_setup_mtdparts() < 0) {
 //		printf("ERROR: sue_setup_mtdparts() call failed!\n");
@@ -736,9 +745,9 @@ int board_late_init(void)
 	setenv("fit_config", buffer);
 
 	// pass board 'secure' state (ie, locked secure fuses/..) to env
-//	snprintf(buffer, sizeof(buffer), "%d", is_hab_enabled() ? 1 : 0);
-//	printf("Setting secure_board: %s\n", buffer);
-//	setenv("secure_board", buffer);
+	sprintf(buffer, "%d", is_locked() ? 1 : 0);
+	printf("Setting secure_board: %s\n", buffer);
+	setenv("secure_board", buffer);
 
 	sue_carrier_late_init(&current_device);
 

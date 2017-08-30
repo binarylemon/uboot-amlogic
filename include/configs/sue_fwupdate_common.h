@@ -75,14 +75,21 @@
         "echo \"INFO: resetting...\"; " \
         "reset;\0" \
 \
+    "kernel_common_args=const toenv eth_int_addr; " \
+        "setenv bootargs console=${console} panic=1 " \
+        "fec.macaddr=${eth_int_addr} ${mtdparts} ${optargs}; " \
+        "if test ${secure_board} = 1; " \
+            "then " \
+            "echo \"INFO: board is locked, booting to runlevel 3\"; " \
+            "setenv bootargs ${bootargs} 3; " \
+        "fi;\0" \
 \
     "nandroot=ubi0:nsdk-rootfs rw\0" \
     "nandrootfstype=ubifs rootwait=1\0" \
-    "nandargs=const toenv eth_int_addr; " \
-        "setenv bootargs console=${console} " \
+    "nandargs=run kernel_common_args; " \
+        "setenv bootargs ${bootargs} " \
         "ubi.mtd=5 root=${nandroot} noinitrd ${wdtargs} " \
-        "rootfstype=${nandrootfstype} " \
-        "${mtdparts} ${optargs}\0" \
+        "rootfstype=${nandrootfstype};\0" \
     "nand_boot=echo \"Booting from nand ...\"; " \
         "run nandargs; " \
         "echo \"INFO: loading fit image into RAM...\"; " \
@@ -92,11 +99,10 @@
         "run bootfitimage;\0" \
 \
 \
-    "swunandargs=const toenv eth_int_addr; " \
-        "setenv bootargs console=${console} " \
+    "swunandargs=run kernel_common_args; " \
+        "setenv bootargs ${bootargs} " \
         "factory_state=${factory_state} usb_update_req=${usb_update_req} " \
-        "secure_board=${secure_board} " \
-        "${mtdparts} ${optargs}\0" \
+        "secure_board=${secure_board};\0" \
     "swu_nand_boot=echo \"Booting swu from nand ...\"; " \
         "run swunandargs; " \
         "echo \"INFO: loading swu fit image into RAM...\"; " \
