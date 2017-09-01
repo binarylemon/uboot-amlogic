@@ -155,7 +155,53 @@
         "fi;\0" \
 \
 \
+    "lock=" \
+        "if test ${secure_board} = 0; then " \
+            "echo \"INFO: Prepare to LOCK CPU\"; " \
+	    "if nand read swufit ${fdt_addr}; then " \
+		"setexpr efuse_addr ${swu_load_addr} - 0x1000000; " \
+		"if imxtract ${fdt_addr} efuse ${efuse_addr}; then " \
+		    "if imxtract ${fdt_addr} ubootencrypted ${swu_load_addr}; then " \
+                        "nand erase.part nandboot; " \
+                        "nand write nandboot ${swu_load_addr} 0 0x100000; " \
+                        "efuse secure_boot_set ${efuse_addr}; " \
+                    "fi; " \
+                "fi; " \
+            "fi; " \
+        "fi;\0" \
+\
+\
+    "sign=" \
+	"if nand read swufit ${fdt_addr}; then " \
+            "echo \"INFO: swufit partition load successful\"; " \
+            "sstorekey init; " \
+            "if imxtract ${fdt_addr} aes ${swu_load_addr}; then " \
+                "sstorekey write aes.key ${swu_load_addr} 0x30; " \
+            "fi; " \
+            "if imxtract ${fdt_addr} rsapukn ${swu_load_addr}; then " \
+                "sstorekey write rsa_puk_n ${swu_load_addr} 0x80; " \
+            "fi; " \
+            "if imxtract ${fdt_addr} rsapuke ${swu_load_addr}; then " \
+                "sstorekey write rsa_puk_e ${swu_load_addr} 4; " \
+            "fi; " \
+        "else " \
+            "echo \"ERROR: cannot load swufit image image from nand\"; " \
+            "reset; " \
+        "fi;\0" \
+\
+\
     "swu_boot=" \
+        "if fwup lock; then " \
+            "echo \"INFO: Prepare to lock cpu.\"; " \
+            "fwup clear lock; " \
+	    "run lock; " \
+            "reset; " \
+	"fi; " \
+        "if fwup sign; then " \
+            "echo \"INFO: Prepare to write TA public keys.\"; " \
+            "fwup clear sign; " \
+	    "run sign; " \
+	"fi; " \
         "if fwup fail; " \
             "then " \
             "if test ${bootcount} -gt ${bootlimit}; " \
@@ -214,5 +260,7 @@
 
 #define SUE_FWUPDATE_ALTBOOTCOMMAND \
         "echo \"ERROR: Maximum boot count reached!\"; while true; do sleep 100; done; "
+
+// "nand rom_write ${swu_load_addr} 0 0x100000; " \
 
 #endif /* __SUE_FWUPDATE_COMMON_H */
