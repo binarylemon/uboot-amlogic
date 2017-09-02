@@ -760,6 +760,7 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	AML_LOG_TE("cmd_bootm");
 
+#if 0
 #ifdef CONFIG_AML_SECU_BOOT_V2
 #ifdef CONFIG_MESON_TRUSTZONE
 	extern int meson_trustzone_boot_check(unsigned char *addr);
@@ -780,6 +781,7 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return ret;	
 	}
 #endif //CONFIG_AML_SECU_BOOT_V2
+#endif
 
 
 	AML_LOG_TE("cmd_bootm");
