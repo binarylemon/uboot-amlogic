@@ -712,10 +712,15 @@ int board_early_init_f(void)
 
 static int is_locked(void)
 {
-	extern uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
-	uint32_t reg = meson_trustzone_sram_read_reg32(0xd9018048);
+	uint32_t reg;
 
-	printf("0xd9018048 = 0x%.8x, bit7=%d\n", reg, (reg >> 7) & 1);
+#ifdef CONFIG_MESON_TRUSTZONE
+	extern uint32_t meson_trustzone_sram_read_reg32(uint32_t addr);
+	reg = meson_trustzone_sram_read_reg32(0xd9018048);
+#else
+	reg = readl(0xd9018048);
+#endif
+	//printf("0xd9018048 = 0x%.8x, bit7=%d\n", reg, (reg >> 7) & 1);
 	return reg & (1 << 7);
 }
 
