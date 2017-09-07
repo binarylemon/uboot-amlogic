@@ -677,16 +677,10 @@ int board_init(void)
 	board_ir_init();
 #endif
 #ifdef CONFIG_USB_DWC_OTG_HCD
-
-#ifdef CONFIG_MACH_M8B_M400
 	printf("init usb power on\n");
-	//with hdmi_phd conflict , need disable hdmi config
-	int val = readl(P_PERIPHS_PIN_MUX_1);
-    	writel((val  & (0<<26)), P_PERIPHS_PIN_MUX_1);
-	gpio_amlogic_requst(NULL, GPIOH_0);
-    	gpio_amlogic_direction_output(NULL, GPIOH_0, 1);
+	gpio_amlogic_requst(NULL, GPIOAO_2);
+    	gpio_amlogic_direction_output(NULL, GPIOAO_2, 1);
 
-#endif
 	board_usb_init(&g_usb_config_m6_skt_b,BOARD_USB_MODE_HOST);
 	board_usb_init(&g_usb_config_m6_skt_h,BOARD_USB_MODE_CHARGER);
 #endif /*CONFIG_USB_DWC_OTG_HCD*/
