@@ -274,6 +274,28 @@ static void nand_print_info(int idx)
 #endif
 }
 
+
+/* Adjust a chip/partition size down for bad blocks so we don't
+ * read/write past the end of a chip/partition by accident.
+ */
+static void adjust_size_for_badblocks(loff_t *size, loff_t offset, nand_info_t *nand)
+{
+	loff_t maxoffset = offset + *size;
+	int badblocks = 0;
+
+	/* count badblocks in NAND from offset to offset + size */
+	for (; offset < maxoffset; offset += nand->erasesize) {
+		if (nand_block_isbad(nand, offset))
+			badblocks++;
+	}
+	/* adjust size if any bad blocks found */
+	if (badblocks) {
+		*size -= badblocks * nand->erasesize;
+		printf("size adjusted to 0x%llx (%d bad blocks)\n",
+		       (unsigned long long)*size, badblocks);
+	}
+}
+
 int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int i, dev, ret = 0;
@@ -636,6 +658,7 @@ int do_nand(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			if (argc == 4) {
 				off = 0;
 				size = get_mtd_size(argv[2]);
+				adjust_size_for_badblocks(&size, off, nand);
 			} else {
 				if (arg_off_size(argc - 4, (char **)(argv + 4), nand, &off, &size) != 0)
 					return 1;
