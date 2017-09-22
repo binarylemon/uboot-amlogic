@@ -146,6 +146,30 @@ FWUPDATE_FLAGS(SignFlag, MSK_SIGN, SHIFT_SIGN);
 FWUPDATE_FLAGS(FailFlag, MSK_FAIL, SHIFT_FAIL);
 FWUPDATE_FLAGS(BootCount, MSK_BOOTCNT, SHIFT_BOOTCNT);
 
+#ifdef CONFIG_BOOTCOUNT_LIMIT
+void bootcount_store(ulong a)
+{
+	int status = fwupdate_setBootCount((uint32_t)a);
+
+	if (0 != status)
+		printf("ERROR: fwupdate_setBootCount() failed!\n");
+	else
+		printf("BOOTCOUNT is %ld\n", a);
+}
+
+ulong bootcount_load(void)
+{
+	uint8_t bootcount = 0xFF;
+
+	int status = fwupdate_getBootCount(&bootcount);
+
+	if (0 != status)
+		printf("ERROR: getBootCount() failed!\n");
+
+	return bootcount;
+}
+#endif /* CONFIG_BOOTCOUNT_LIMIT */
+
 int fwupdate_init(void)
 {
 	int status = 0;
