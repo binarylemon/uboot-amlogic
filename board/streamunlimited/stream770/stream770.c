@@ -632,10 +632,13 @@ static void board_i2c_init(void)
 
 	if (!axp152_init())
 	{
+		printf("AXP152: init done\n");
 		/* set VDD_EE and VDDCPU to 1.1V. VDD_EE must be set to 1.1V
 		 * for better CPU stability - 0.9V is too low and some boards
 		 * are not flashable */
+		printf("AXP152: set VDDCPU and VDDEE to 1.1V\n");
 		axp152_set_dcdc2(1100);
+		printf("AXP152: set LDO0 to 3.3V\n");
 		axp152_set_ldo0(AXP152_LDO0_MVOLT_3300);
 	}
 
