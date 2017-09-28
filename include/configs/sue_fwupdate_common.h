@@ -75,9 +75,9 @@
         "echo \"INFO: resetting...\"; " \
         "reset;\0" \
 \
-    "kernel_common_args=const toenv eth_int_addr; " \
+    "kernel_common_args=" \
         "setenv bootargs console=${console} panic=1 " \
-        "fec.macaddr=${eth_int_addr} ${mtdparts} ${optargs}; " \
+        "${mtdparts} ${optargs}; " \
         "if test ${secure_board} = 1; " \
             "then " \
             "echo \"INFO: board is locked, booting to runlevel 3\"; " \
