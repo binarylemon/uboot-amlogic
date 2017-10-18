@@ -150,6 +150,7 @@ STATIC_PREFIX int fw_load_intl(unsigned por_cfg,unsigned target,unsigned size)
     {
         case POR_1ST_NAND:
         //case POR_1ST_NAND_RB:        	
+	    serial_puts("\nQQQ ");serial_put_dec(__LINE__);serial_puts(":");serial_put_dword(temp_addr);serial_put_dword(size);
             rc=nf_read(temp_addr,size);            
             break;
         case POR_1ST_SPI :

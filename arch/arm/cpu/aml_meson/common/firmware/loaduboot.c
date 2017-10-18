@@ -74,16 +74,21 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 	size= 0xC0000; //max is 1MBytes ?
 #else
 	size=__TEXT_SIZE;
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");serial_put_dword(size);
 
 #if defined(AML_UBOOT_SINFO_OFFSET)
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 	unsigned int *pAUINF = (unsigned int *)(((unsigned int)load_uboot & 0xFFFF8000)+(AML_UBOOT_SINFO_OFFSET));
 	size = *pAUINF++; //SPL
 	size = *pAUINF++ - size; //TPL - SPL
 	size += *pAUINF;  // + Secure OS
 	size += 0x200;  //for secure boot, just add 512 without check, for simple
-	if(size < (100<<10) || size > (1<<20)) //illegal size, restore to default from rom_spl.s
+	if(size < (100<<10) || size > (1<<20)) { //illegal size, restore to default from rom_spl.s
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 		size = __TEXT_SIZE;
+	}
 #endif //AML_UBOOT_SINFO_OFFSET
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");serial_put_dword(size);
 
 #endif
 	//boot_id = 1;
@@ -91,9 +96,12 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
         boot_id=0;
 	if(boot_id==0)
     {
+	serial_puts("\nXXXX ");serial_put_dec(__LINE__);serial_puts(":");serial_put_dword(__TEXT_BASE);serial_puts(",");serial_put_dec(size);serial_puts("\n");
        rc=fw_load_intl(por_cfg,__TEXT_BASE,size);
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts(":");serial_put_dec(rc);serial_puts("\n");
 	}else{
 	   rc=fw_load_extl(por_cfg,__TEXT_BASE,size);
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts(":");serial_put_dec(rc);serial_puts("\n");
 	}
 
 	//here no need to flush I/D cache?
@@ -108,6 +116,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 
 
 #ifndef CONFIG_DISABLE_INTERNAL_U_BOOT_CHECK
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 	if(!rc&&check_sum((unsigned*)__TEXT_BASE,0,0)==0)
 	{
 	    fw_print_info(por_cfg,boot_id);
@@ -122,6 +131,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 
 #ifdef CONFIG_ENABLE_WATCHDOG
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts(":");serial_put_dec(rc);serial_puts("\n");
 	if(rc){
 	serial_puts(__FILE__);
 		serial_puts(__FUNCTION__);
@@ -129,7 +139,9 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 		AML_WATCH_DOG_START();
 	}
 #endif
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 #if CONFIG_ENABLE_EXT_DEVICE_RETRY
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 	while(rc)
 	{
 		extern void debug_rom(char * file, int line);
@@ -146,6 +158,7 @@ SPL_STATIC_FUNC int load_uboot(unsigned __TEXT_BASE,unsigned __TEXT_SIZE)
 #endif
 	}
 #endif
+	serial_puts("\n#### ");serial_put_dec(__LINE__);serial_puts("\n");
 	fw_print_info(por_cfg,1);
 
     return rc;

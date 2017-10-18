@@ -2056,13 +2056,29 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 
 	/* pages_in_block = *(volatile int *)(NAND_TEMP_BUF + sizeof(int)); */
 
+	    serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_puts(" - ");
+	    serial_put_dword(total_page);
+	    serial_put_dword(count);
+	    serial_put_dword(data_size);
+	    serial_put_dword(pages);
+	    serial_put_dword(ext);
 	ret = 0;
 	for (i = 0, read_size = 0; i < total_page && read_size < count; i++, read_size += data_size) {
 
+	    serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_puts(" - ");
+	    serial_put_dword(i);
+	    serial_put_dword(read_size);
 		ret = nfio_page_read(page_base+i, mem + read_size, oob_buf, ext);
 
 		for (k = 0; k < pages; k++) {
+	    serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_puts(" - ");serial_put_dword(k);serial_put_dword(*oob_buf);
+			if (k * (data_size / pages) + read_size > count) {
+	    serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_puts("\n");serial_put_dword(k);serial_put_dword(data_size / pages);serial_put_dword(read_size);
+				break;
+			}
+
 			if (((*oob_buf&0xff) != 0x55) && ((((*(oob_buf+1)&0xff) != 0xaa)))) {
+	    serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_puts(" - ");serial_put_dword(k);serial_put_dword(*oob_buf);
 				ret = ERROR_NAND_MAGIC_WORD;
 			}
 			oob_buf += 2;
@@ -2076,8 +2092,10 @@ STATIC_PREFIX short nf_read(unsigned target, unsigned size)
 			read_size -= data_size;
 			i--;
 			next_copy_flag = 1;
-			if (page_base > total_page)
+			if (page_base > total_page) {
+				serial_puts("\nAAA ");serial_put_dec(__LINE__);serial_put_dword(ret);
 				break;
+			}
 		}
 
 #if 0/* defined(CONFIG_AML_SPL_L1_CACHE_ON) */
